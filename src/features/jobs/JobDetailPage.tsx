@@ -1,0 +1,721 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useJobs } from '../../hooks/useJobs';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
+import { formatSalary, timeAgo, formatNumber } from '../../utils/helpers';
+import { useStore } from '../../store/useStore';
+import { useTranslation } from '../../utils/translations';
+
+export const JobDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { getJobById, applyToJob, toggleSaveJob, isJobSaved } = useJobs();
+  const { currentUser } = useAuth();
+  const { showToast } = useToast();
+  const { state } = useStore();
+  const t = useTranslation(state.language);
+  const job = id ? getJobById(id) : undefined;
+
+  if (!job) {
+    return (
+      <div className="container" style={{ padding: '100px 0', textAlign: 'center' }}>
+        <div className="empty-state">
+          <h3>Job Not Found</h3>
+          <p>This job listing may have been removed or doesn't exist.</p>
+          <Link to="/jobs" className="btn btn-primary mt-4">Browse Jobs</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const hasApplied = currentUser?.appliedJobs?.includes(job.id);
+  const saved = isJobSaved(job.id);
+
+  const handleApply = () => {
+    if (!currentUser) {
+      showToast('Please login to apply', 'warning');
+      navigate('/login');
+      return;
+    }
+    if (currentUser.role !== 'candidate') {
+      showToast('Only candidates can apply to jobs', 'error');
+      return;
+    }
+    const result = applyToJob(job.id);
+    if (result.success) {
+      showToast('Application submitted successfully! 🎉 Info sent on WhatsApp.', 'success');
+    } else {
+      showToast(result.error || 'Failed to apply', 'error');
+    }
+  };
+
+  const handleSave = () => {
+    if (!currentUser) {
+      showToast('Please login to save jobs', 'warning');
+      navigate('/login');
+      return;
+    }
+    const currentlySaved = toggleSaveJob(job.id);
+    showToast(currentlySaved ? 'Job saved!' : 'Removed from saved', currentlySaved ? 'success' : 'info');
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: job.title,
+        text: `Check out this job: ${job.title} at ${job.company}`,
+        url: window.location.href,
+      }).catch(err => console.log(err));
+    } else {
+      navigator.clipboard.writeText(window.location.origin + '/#/job/' + job.id);
+      showToast('Job link copied to clipboard!', 'success');
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    const shareUrl = encodeURIComponent(window.location.origin + '/#/job/' + job.id);
+    const shareText = encodeURIComponent(`Check out this job on JobMarket:\n*${job.title}* at *${job.company}*\nLocation: ${job.location}\nSalary: ₹${formatNumber(job.salaryMin)} - ₹${formatNumber(job.salaryMax)}/month\n\nApply here:`);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Calculate matching score
+  let matchScore = 0;
+  if (currentUser && currentUser.role === 'candidate') {
+    if (currentUser.tradeSpecialization && job.trade && currentUser.tradeSpecialization.toLowerCase() === job.trade.toLowerCase()) {
+      matchScore += 50;
+    } else {
+      matchScore += 20;
+    }
+    if (currentUser.preferredShift && job.shiftDetails && currentUser.preferredShift.toLowerCase() === job.shiftDetails.toLowerCase()) {
+      matchScore += 20;
+    } else {
+      matchScore += 10;
+    }
+  } else {
+    const code = (job.id.charCodeAt(0) || 0) + (job.id.charCodeAt(job.id.length - 1) || 0);
+    matchScore = 78 + (code % 19);
+  }
+
+  return (
+    <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '24px 16px 140px 16px' }}>
+      <style>{`
+        .detail-sticky-bar {
+          display: none !important;
+        }
+        @media (max-width: 768px) {
+          #page-content {
+            transform: none !important;
+          }
+          .detail-page-container {
+            position: relative !important;
+            height: calc(100vh - var(--navbar-height) - 80px) !important;
+            overflow-y: auto !important;
+            padding: 16px 16px 120px 16px !important;
+            min-height: auto !important;
+            background: var(--bg) !important;
+          }
+          .detail-sticky-bar {
+            display: flex !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 80px !important;
+            background: #ffffff !important;
+            border-top: 1.5px solid #E2E8F0 !important;
+            padding: 16px 24px !important;
+            z-index: 9999 !important;
+            justify-content: center !important;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.05) !important;
+            align-items: center !important;
+          }
+        }
+      `}</style>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Back Link */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#344BFD',
+            fontSize: '15px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '16px',
+            padding: 0
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to Jobs
+        </button>
+
+        {/* 2-Column Responsive Layout */}
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          
+          {/* LEFT COLUMN: Main details card (Width: flex fill) */}
+          <div style={{ flex: '1 1 600px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '0.3rem',
+              padding: '24px 20px',
+              position: 'relative'
+            }}>
+              {/* Header Row: Title & Action buttons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '4px' }}>
+                <div>
+                  <h1 style={{
+                    fontSize: '16px',
+                    fontWeight: '800',
+                    color: '#0F172A',
+                    margin: '0 0 4px 0',
+                    lineHeight: '1.3'
+                  }}>
+                    {job.title}
+                  </h1>
+                  <p style={{
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#344BFD',
+                    margin: 0
+                  }}>
+                    {job.company}
+                  </p>
+                </div>
+
+                {/* Action buttons (Save & Share) */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleSave}
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid #344BFD',
+                      color: '#344BFD',
+                      padding: '6px 12px',
+                      borderRadius: '0.3rem',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#EEF1FF'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                    {saved ? 'Saved' : 'Save'}
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid #344BFD',
+                      color: '#344BFD',
+                      padding: '6px 12px',
+                      borderRadius: '0.3rem',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#EEF1FF'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    Share
+                  </button>
+
+                  <button
+                    onClick={handleWhatsAppShare}
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid #25D366',
+                      color: '#25D366',
+                      padding: '6px 12px',
+                      borderRadius: '0.3rem',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#E8FBF0'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.18 1.449 4.825 1.451 5.436.002 9.858-4.42 9.86-9.86.002-2.638-1.016-5.119-2.868-6.973C16.611 1.916 14.135.897 11.5.897c-5.444 0-9.866 4.418-9.87 9.858-.002 1.8.48 3.55 1.396 5.11l-1.002 3.658 3.743-.981c1.517.828 3.09 1.258 4.29 1.272zM17.65 14.39c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.95 1.18-.18.2-.35.23-.65.08-1.1-.55-1.92-.95-2.67-2.25-.19-.34.19-.31.54-1.01.06-.11.03-.21-.02-.31-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34H10.1c-.22 0-.58.08-.88.4-.3.32-1.15 1.13-1.15 2.75 0 1.63 1.19 3.2 1.35 3.42.17.22 2.33 3.56 5.65 5 .79.34 1.4.55 1.88.71.8.25 1.52.21 2.1.13.64-.1 1.78-.73 2.03-1.43.25-.7.25-1.29.17-1.43-.07-.15-.27-.23-.57-.38z"/>
+                    </svg>
+                    WhatsApp
+                  </button>
+                </div>
+              </div>
+
+              {/* Subtitle pills row: Full Time, Remote, Date */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '12px 0 20px 0' }}>
+                <span style={{
+                  background: '#ffffff',
+                  color: '#344BFD',
+                  border: '1px solid #94A3B8',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  padding: '4px 10px',
+                  borderRadius: '9999px'
+                }}>
+                  {job.workMode || 'Remote'}
+                </span>
+
+                <span style={{
+                  background: '#F1F5F9',
+                  color: '#344BFD',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  padding: '4px 10px',
+                  borderRadius: '9999px'
+                }}>
+                  {job.jobType}
+                </span>
+              </div>
+
+              {/* Detail specs columns */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '12px',
+                marginBottom: '24px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid #E2E8F0'
+              }}>
+                {/* Location */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span>{job.location}</span>
+                </div>
+
+                {/* Experience */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                  </svg>
+                  <span>{job.minExperience}-{job.maxExperience} Years</span>
+                </div>
+
+                {/* Salary */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                    <line x1="9" y1="11" x2="15" y2="11" />
+                  </svg>
+                  <span>{formatSalary(job.salaryMin, job.salaryMax)}</span>
+                </div>
+
+                {/* Applicants */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span>{job.views || 24} Applicants</span>
+                </div>
+
+                {/* Date Posted */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  <span>{timeAgo(job.postedAt)}</span>
+                </div>
+              </div>
+
+              {/* Job Description section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                  Job Description
+                </h3>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#475569',
+                  lineHeight: '1.6',
+                  margin: 0,
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {job.description || "We are looking for a skilled professional to join our growing team. You will be responsible for executing key operations, ensuring high quality and performance..."}
+                </p>
+              </div>
+
+              {/* Key Responsibilities section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                  Key Responsibilities:
+                </h3>
+                <ul style={{
+                  fontSize: '14px',
+                  color: '#475569',
+                  lineHeight: '1.6',
+                  margin: 0,
+                  paddingLeft: '20px',
+                  listStyleType: 'disc'
+                }}>
+                  {(job.responsibilities && job.responsibilities.length > 0) ? (
+                    job.responsibilities.map((r, i) => <li key={i} style={{ marginBottom: '6px' }}>{r}</li>)
+                  ) : (
+                    <>
+                      <li style={{ marginBottom: '6px' }}>Execute operational deliverables inline with product quality directives.</li>
+                      <li style={{ marginBottom: '6px' }}>Optimize systems and processes for maximum speed and scale.</li>
+                      <li style={{ marginBottom: '6px' }}>Collaborate with cross-functional team members to deliver projects.</li>
+                      <li style={{ marginBottom: '6px' }}>Write clean, maintainable, and well-documented documentation/code.</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              {/* Skills section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                  Skills:
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {(job.skills || []).map(s => (
+                    <span
+                      key={s}
+                      style={{
+                        background: '#EEF1FF',
+                        color: '#344BFD',
+                        fontSize: '12px',
+                        fontWeight: '550',
+                        padding: '6px 12px',
+                        borderRadius: '9999px'
+                      }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Perks & Benefits section */}
+              <div style={{ marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                  Perk & Benefit :
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {job.overtime && (
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                      Overtime (OT) Pay
+                    </span>
+                  )}
+                  {job.canteen && (
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                      Subsidized Canteen
+                    </span>
+                  )}
+                  {job.busFacility && (
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                      Bus Transport
+                    </span>
+                  )}
+                  {job.accommodation && (
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                      Free Stay Hostel
+                    </span>
+                  )}
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    Competitive salary
+                  </span>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    Health insurance
+                  </span>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    Flexible working
+                  </span>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    Professional development budget
+                  </span>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    Modern office
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Sidebar cards (Width: 320px, stacks below on mobile) */}
+          <div className="detail-sidebar" style={{ flex: '0 0 320px', width: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* CARD 1: Apply for this job */}
+            <div className="detail-sidebar-apply-card" style={{
+              background: '#ffffff',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '0.3rem',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Apply for this job</h3>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '14px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>{job.views || 24} Applicants</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '14px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>Most applicants heard back within 2 weeks</span>
+              </div>
+
+              {/* Profile Strength Yellow Alert Box */}
+              <div style={{
+                background: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderRadius: '0.3rem',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', color: '#B45309' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  Profile Strength: 75%
+                </div>
+                {/* Progress bar */}
+                <div style={{ background: '#F59E0B22', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ background: '#344BFD', width: '75%', height: '100%' }}></div>
+                </div>
+                <span style={{ fontSize: '11px', color: '#78350F' }}>Complete your profile to increase your chances</span>
+              </div>
+
+              {/* Apply Button */}
+              {hasApplied ? (
+                <button
+                  disabled
+                  style={{
+                    width: '100%',
+                    background: '#EEF1FF',
+                    color: '#344BFD',
+                    border: 'none',
+                    padding: '14px',
+                    borderRadius: '0.3rem',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    cursor: 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Already Applied
+                </button>
+              ) : (
+                <button
+                  onClick={handleApply}
+                  style={{
+                    width: '100%',
+                    background: '#344BFD',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '14px',
+                    borderRadius: '0.3rem',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#1A2EB8'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#344BFD'}
+                >
+                  Apply Now
+                </button>
+              )}
+
+              <span style={{ fontSize: '11px', color: '#94A3B8', textAlign: 'center' }}>
+                By applying, you agree to our Terms and service
+              </span>
+            </div>
+
+            {/* CARD 2: Job Summary */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '0.3rem',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Job Summary</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748B' }}>Location</span>
+                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+                    </svg>
+                    {job.location}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748B' }}>Salary</span>
+                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                    {formatSalary(job.salaryMin, job.salaryMax)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span style={{ color: '#64748B' }}>Application</span>
+                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                    </svg>
+                    {job.views || 24} Applicants
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: Skills Match */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '0.3rem',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Skills Match</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#475569' }}>
+                  <span>Overall Match</span>
+                  <span>{matchScore}%</span>
+                </div>
+                <div style={{ background: '#E2E8F0', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ background: '#344BFD', width: `${matchScore}%`, height: '100%' }}></div>
+                </div>
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#475569', margin: '0 0 8px 0' }}>Matching Skills</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(job.skills || []).map(s => (
+                    <span
+                      key={s}
+                      style={{
+                        background: '#EEF1FF',
+                        color: '#344BFD',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        padding: '4px 10px',
+                        borderRadius: '9999px'
+                      }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      {/* Floating Bottom Sticky Action Bar (Hidden on desktop, visible on mobile via jobs.css media query) */}
+      <div className="detail-sticky-bar">
+        <div style={{ width: '100%', maxWidth: '800px' }}>
+          {hasApplied ? (
+            <button
+              disabled
+              style={{
+                width: '100%',
+                background: '#EEF1FF',
+                color: '#344BFD',
+                border: 'none',
+                padding: '14px',
+                borderRadius: '0.3rem',
+                fontWeight: '700',
+                fontSize: '15px',
+                cursor: 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Already Applied
+            </button>
+          ) : (
+            <button
+              onClick={handleApply}
+              style={{
+                width: '100%',
+                background: '#344BFD',
+                color: '#ffffff',
+                border: 'none',
+                padding: '14px',
+                borderRadius: '0.3rem',
+                fontWeight: '700',
+                fontSize: '15px',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#1A2EB8'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#344BFD'}
+            >
+              Apply Now
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+export default JobDetailPage;

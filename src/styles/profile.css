@@ -1,0 +1,378 @@
+/* ============================================
+   PROFILE — Profile & Resume Upload
+   ============================================ */
+
+/* ---- Profile Page ---- */
+.profile-page {
+  padding: var(--space-8) 0 var(--space-16);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-header-card {
+  background: var(--gradient-hero);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-8);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--space-8);
+}
+
+.profile-header-card::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  position: relative;
+  z-index: 1;
+}
+
+.profile-avatar-large {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  background: rgba(255,255,255,0.2);
+  border: 3px solid rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-4xl);
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}
+
+.profile-info h1 {
+  font-size: var(--fs-2xl);
+  margin-bottom: var(--space-2);
+}
+
+.profile-info p {
+  color: rgba(255,255,255,0.7);
+  font-size: var(--fs-sm);
+}
+
+.profile-info .profile-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.7);
+}
+
+.profile-edit-btn {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  z-index: 1;
+}
+
+/* Profile sections */
+.profile-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-section-header h2 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.profile-section-body {
+  padding: var(--space-6);
+}
+
+/* Experience / Education items */
+.experience-item {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.experience-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.experience-item:first-child {
+  padding-top: 0;
+}
+
+.exp-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  margin-top: 6px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.exp-dot::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 5px;
+  width: 2px;
+  height: calc(100% + 16px);
+  background: var(--border);
+}
+
+.experience-item:last-child .exp-dot::after {
+  display: none;
+}
+
+.exp-content h4 {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  margin-bottom: 2px;
+}
+
+.exp-content .exp-company {
+  font-size: var(--fs-sm);
+  color: var(--primary);
+  font-weight: var(--fw-medium);
+}
+
+.exp-content .exp-duration {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.exp-content .exp-description {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-relaxed);
+  margin-top: var(--space-2);
+}
+
+/* Skills */
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.skill-tag {
+  padding: 6px 14px;
+  background: var(--primary-50);
+  color: var(--primary-dark);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: all var(--transition-fast);
+}
+
+.skill-tag:hover {
+  background: var(--primary-100);
+}
+
+/* ---- Resume Upload ---- */
+.resume-page {
+  min-height: calc(100vh - var(--navbar-height));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+
+.resume-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-12) var(--space-10);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.resume-card h2 {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-extrabold);
+  margin-bottom: var(--space-2);
+}
+
+.resume-card .resume-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-8);
+}
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-12) var(--space-8);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  margin-bottom: var(--space-6);
+}
+
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+.upload-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.upload-zone:hover .upload-icon,
+.upload-zone.drag-over .upload-icon {
+  background: var(--primary-100);
+  transform: scale(1.05);
+}
+
+.upload-icon svg {
+  width: 40px;
+  height: 40px;
+  color: var(--text-tertiary);
+}
+
+.upload-zone:hover .upload-icon svg,
+.upload-zone.drag-over .upload-icon svg {
+  color: var(--primary);
+}
+
+.upload-text h3 {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  margin-bottom: var(--space-2);
+}
+
+.upload-text p {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+}
+
+.upload-text .browse-link {
+  color: var(--primary);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.upload-text .browse-link:hover {
+  text-decoration: underline;
+}
+
+/* File preview */
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-100);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.file-info {
+  flex: 1;
+  text-align: left;
+}
+
+.file-info h4 {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  margin-bottom: 2px;
+}
+
+.file-info p {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+}
+
+.file-remove {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: none;
+  border: none;
+}
+
+.file-remove:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.resume-actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+}
+
+.resume-actions .btn {
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .profile-top {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .resume-card {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .resume-actions {
+    flex-direction: column;
+  }
+
+  .resume-actions .btn {
+    width: 100%;
+  }
+}
