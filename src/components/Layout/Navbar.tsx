@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                       </svg>
-                      {t.uploadResume}
+                      {currentUser.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
                     </Link>
                     <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
@@ -176,7 +176,9 @@ export const Navbar: React.FC = () => {
               <Link to="/jobs?workMode=Remote" onClick={() => setMobileMenuOpen(false)}>Remote Jobs</Link>
               <Link to="/jobs?jobType=Part-Time" onClick={() => setMobileMenuOpen(false)}>Part-time Jobs</Link>
               <Link to="/jobs?jobType=Freelance" onClick={() => setMobileMenuOpen(false)}>Freelance Jobs</Link>
-              <Link to="/resume" onClick={() => setMobileMenuOpen(false)}>Upload Resume</Link>
+              <Link to="/resume" onClick={() => setMobileMenuOpen(false)}>
+                {currentUser?.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
+              </Link>
             </div>
 
             <div className="footer-col">
@@ -222,7 +224,7 @@ export const Navbar: React.FC = () => {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                         </svg>
-                        {t.uploadResume}
+                        {currentUser.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
                       </button>
                       <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=saved')}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>

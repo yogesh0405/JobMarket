@@ -84,3 +84,30 @@ export const escapeHtml = (str: string): string => {
   div.textContent = str;
   return div.innerHTML;
 };
+
+export const openBase64InNewTab = (base64Data: string, mimeType: string, fileName: string) => {
+  try {
+    const base64Parts = base64Data.split(',');
+    const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : base64Data;
+    const actualMimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : mimeType;
+
+    const byteCharacters = atob(base64WithoutHeader);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: actualMimeType });
+    const fileURL = URL.createObjectURL(blob);
+    
+    const newWindow = window.open(fileURL, '_blank');
+    if (!newWindow) {
+      const link = document.createElement('a');
+      link.href = fileURL;
+      link.download = fileName;
+      link.click();
+    }
+  } catch (error) {
+    console.error('Failed to open resume:', error);
+  }
+};

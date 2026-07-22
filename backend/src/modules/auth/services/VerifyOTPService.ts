@@ -88,6 +88,7 @@ export class VerifyOTPService {
         message: 'Account verified and created successfully.',
         accessToken,
         refreshToken,
+        sessionId: session.id,
         user: {
           id: newUser.id,
           name: newUser.name,

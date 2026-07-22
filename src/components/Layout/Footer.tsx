@@ -1,7 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useStore } from '../../store/useStore';
+import { useTranslation } from '../../utils/translations';
 
 export const Footer: React.FC = () => {
+  const { currentUser } = useAuth();
+  const { state } = useStore();
+  const t = useTranslation(state.language);
   return (
     <footer className="footer">
       <div className="container">
@@ -39,7 +45,9 @@ export const Footer: React.FC = () => {
             <Link to="/jobs?workMode=Remote">Remote Jobs</Link>
             <Link to="/jobs?jobType=Part-Time">Part-time Jobs</Link>
             <Link to="/jobs?jobType=Freelance">Freelance Jobs</Link>
-            <Link to="/resume">Upload Resume</Link>
+            <Link to="/resume">
+              {currentUser?.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
+            </Link>
           </div>
 
           <div className="footer-col">

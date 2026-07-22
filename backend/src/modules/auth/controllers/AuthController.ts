@@ -4,6 +4,7 @@ import { VerifyOTPService } from '../services/VerifyOTPService';
 import { LoginService } from '../services/LoginService';
 import { TokenService } from '../services/TokenService';
 import { LogoutService } from '../services/LogoutService';
+import { UpdateProfileService } from '../services/UpdateProfileService';
 import { AuthenticatedRequest } from '../../../middlewares/authMiddleware';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -107,6 +108,18 @@ export class AuthController {
 
       const { password_hash, ...safeUser } = user;
       res.status(200).json({ success: true, data: safeUser });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const profileData = req.body;
+      
+      const result = await UpdateProfileService.execute(userId, profileData);
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

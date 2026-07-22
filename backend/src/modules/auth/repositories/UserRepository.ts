@@ -14,6 +14,13 @@ export interface User {
   status: string;
   created_at: Date;
   updated_at: Date;
+  headline?: string;
+  location?: string;
+  skills?: string[];
+  preferred_shift?: string;
+  requires_bus?: boolean;
+  requires_accommodation?: boolean;
+  resume?: any;
 }
 
 export class UserRepository {
@@ -56,5 +63,43 @@ export class UserRepository {
   static async updateStatus(id: string, status: string, client: any = pool): Promise<void> {
     const query = 'UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2;';
     await client.query(query, [status, id]);
+  }
+
+  static async updateProfile(userId: string, profileData: Partial<User>, client: any = pool): Promise<User> {
+    const {
+      name, phone, company_name, gst_number, trade_specialization,
+      headline, location, skills, preferred_shift, requires_bus, requires_accommodation,
+      resume
+    } = profileData;
+
+    const query = `
+      UPDATE users 
+      SET 
+        name = $1,
+        phone = $2,
+        company_name = $3,
+        gst_number = $4,
+        trade_specialization = $5,
+        headline = $6,
+        location = $7,
+        skills = $8,
+        preferred_shift = $9,
+        requires_bus = $10,
+        requires_accommodation = $11,
+        resume = $12,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $13
+      RETURNING *;
+    `;
+
+    const values = [
+      name, phone, company_name, gst_number, trade_specialization,
+      headline, location, skills, preferred_shift, requires_bus, requires_accommodation,
+      resume ? JSON.stringify(resume) : null,
+      userId
+    ];
+
+    const result = await client.query(query, values);
+    return result.rows[0];
   }
 }

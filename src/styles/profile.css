@@ -376,3 +376,21 @@
     width: 100%;
   }
 }
+
+/* Responsive Grid for Profile Details */
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 576px) {
+  .profile-details-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .profile-details-grid > div {
+    word-break: break-word;
+  }
+}
+

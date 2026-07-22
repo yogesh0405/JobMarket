@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { getInitials, formatNumber, capitalize, timeAgo } from '../../utils/helpers';
+import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
@@ -31,6 +32,7 @@ export const DashboardPage: React.FC = () => {
   const [preferredShift, setPreferredShift] = useState('');
   const [requiresBus, setRequiresBus] = useState(false);
   const [requiresAccommodation, setRequiresAccommodation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const tab = searchParams.get('tab') || 'overview';
 
@@ -64,24 +66,36 @@ export const DashboardPage: React.FC = () => {
     showToast('Profile link copied to clipboard!', 'success');
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       showToast('Name is required', 'error');
       return;
     }
-    updateUser({
-      name,
-      headline,
-      location,
-      phone,
-      tradeSpecialization,
-      preferredShift,
-      requiresBus,
-      requiresAccommodation
-    });
-    showToast('Profile updated successfully!', 'success');
-    setEditModalOpen(false);
+    setIsSaving(true);
+    try {
+      const result = await updateUser({
+        name,
+        headline,
+        location,
+        phone,
+        tradeSpecialization,
+        preferredShift,
+        requiresBus,
+        requiresAccommodation
+      });
+
+      if (result.success) {
+        showToast('Changes saved', 'success');
+        setEditModalOpen(false);
+      } else {
+        showToast(result.error || 'Failed to update profile.', 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
@@ -255,7 +269,7 @@ export const DashboardPage: React.FC = () => {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    Upload Resume
+                    {currentUser.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
                   </button>
                 </>
               )}
@@ -354,7 +368,17 @@ export const DashboardPage: React.FC = () => {
                   </>
                 )}
 
-                <button type="submit" className="btn btn-primary" style={{ marginTop: 'var(--space-2)' }}>Save Changes</button>
+                <button type="submit" className="btn btn-primary" style={{ marginTop: 'var(--space-2)' }} disabled={isSaving}>
+                  {isSaving ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
+                        <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : 'Save Changes'}
+                </button>
               </form>
             </div>
           </div>
@@ -539,6 +563,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const activeJobs = myJobs.filter(j => j.status === 'active');
   const totalApplicants = myJobs.reduce((sum, j) => sum + (j.applicants?.length || 0), 0);
   const totalViews = myJobs.reduce((sum, j) => sum + (j.views || 0), 0);
+  const [previewResume, setPreviewResume] = useState<any>(null);
 
   const handleDelete = (jobId: string) => {
     if (window.confirm('Are you sure you want to delete this job listing?')) {
@@ -560,7 +585,8 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
 
   const recentApplicants = getRecentApplicants();
 
-  switch (tab) {
+  const renderContent = () => {
+    switch (tab) {
     case 'overview':
       return (
         <>
@@ -716,28 +742,53 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         <div className="applicant-info">
                           <h4>{a.name}</h4>
                           <p>{a.email} · Applied {timeAgo(a.appliedAt)}</p>
-                          {a.phone && (
-                            <a
-                              href={`https://wa.me/${a.phone.replace(/[^0-9]/g, '')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                color: '#16a34a',
-                                fontWeight: '600',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                textDecoration: 'none',
-                                fontSize: '12px',
-                                marginTop: '4px'
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.978L2 22l5.178-1.357a9.945 9.945 0 0 0 4.83 1.259h.004c5.507 0 9.99-4.479 9.991-9.985.002-2.67-1.035-5.18-2.924-7.07C17.189 3.036 14.678 2 12.012 2zm5.727 14.04c-.314.88-1.52 1.616-2.09 1.706-.51.08-1.18.15-3.83-1.02-3.39-1.51-5.58-5.11-5.75-5.36-.17-.25-1.38-2.03-1.38-3.87 0-1.84.9-2.73 1.22-3.08.27-.3.73-.38.96-.38.22 0 .44.01.63.02.2.01.47-.07.73.61.27.69.93 2.51 1.01 2.68.08.17.14.37.02.6-.11.23-.25.37-.37.52-.12.15-.26.3-.37.42-.12.13-.25.27-.1.54.15.26.68 1.2 1.46 1.94.99.96 1.83 1.25 2.09 1.38.26.13.41.11.56-.06.15-.17.65-.81.82-1.09.18-.28.36-.23.61-.13.25.1 1.6.83 1.88.98.28.14.47.21.54.34.07.13.07.76-.24 1.64z"/>
-                              </svg>
-                              Chat on WhatsApp ({a.phone})
-                            </a>
-                          )}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '4px', alignItems: 'center' }}>
+                            {a.phone && (
+                              <a
+                                href={`https://wa.me/${a.phone.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  color: '#16a34a',
+                                  fontWeight: '600',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  textDecoration: 'none',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.978L2 22l5.178-1.357a9.945 9.945 0 0 0 4.83 1.259h.004c5.507 0 9.99-4.479 9.991-9.985.002-2.67-1.035-5.18-2.924-7.07C17.189 3.036 14.678 2 12.012 2zm5.727 14.04c-.314.88-1.52 1.616-2.09 1.706-.51.08-1.18.15-3.83-1.02-3.39-1.51-5.58-5.11-5.75-5.36-.17-.25-1.38-2.03-1.38-3.87 0-1.84.9-2.73 1.22-3.08.27-.3.73-.38.96-.38.22 0 .44.01.63.02.2.01.47-.07.73.61.27.69.93 2.51 1.01 2.68.08.17.14.37.02.6-.11.23-.25.37-.37.52-.12.15-.26.3-.37.42-.12.13-.25.27-.1.54.15.26.68 1.2 1.46 1.94.99.96 1.83 1.25 2.09 1.38.26.13.41.11.56-.06.15-.17.65-.81.82-1.09.18-.28.36-.23.61-.13.25.1 1.6.83 1.88.98.28.14.47.21.54.34.07.13.07.76-.24 1.64z"/>
+                                </svg>
+                                Chat on WhatsApp ({a.phone})
+                              </a>
+                            )}
+                            {a.resume ? (
+                              <button
+                                onClick={() => setPreviewResume(a.resume)}
+                                style={{
+                                  color: 'var(--primary)',
+                                  fontWeight: '600',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  padding: 0,
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                View Resume ({a.resume.name})
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No resume attached</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -781,14 +832,24 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         </>
       );
 
-    case 'post-job':
-      return (
-        <JobPostPage isEmbedded={true} onComplete={() => setTab('manage')} />
-      );
+      case 'post-job':
+        return (
+          <JobPostPage isEmbedded={true} onComplete={() => setTab('manage')} />
+        );
 
-    default:
-      return null;
-  }
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      {renderContent()}
+      {previewResume && (
+        <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />
+      )}
+    </>
+  );
 };
 
 

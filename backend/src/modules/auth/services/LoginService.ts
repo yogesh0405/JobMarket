@@ -64,6 +64,7 @@ export class LoginService {
       return {
         accessToken,
         refreshToken,
+        sessionId: session.id,
         user: {
           id: user.id,
           name: user.name,

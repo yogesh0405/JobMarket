@@ -6,6 +6,8 @@ import { useToast } from '../../hooks/useToast';
 import { getInitials, formatDate, capitalize } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
+import { Resume } from '../../types';
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,26 @@ export const ProfilePage: React.FC = () => {
   const t = useTranslation(state.language);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [previewResume, setPreviewResume] = useState<Resume | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteResume = async () => {
+    if (window.confirm('Are you sure you want to delete your uploaded resume? This action cannot be undone.')) {
+      setIsDeleting(true);
+      try {
+        const result = await updateUser({ resume: null } as any);
+        if (result.success) {
+          showToast('Resume deleted successfully', 'success');
+        } else {
+          showToast(result.error || 'Failed to delete resume', 'error');
+        }
+      } catch (error) {
+        showToast('Failed to delete resume', 'error');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
   const [name, setName] = useState('');
   const [headline, setHeadline] = useState('');
   const [location, setLocation] = useState('');
@@ -26,6 +48,7 @@ export const ProfilePage: React.FC = () => {
   const [preferredShift, setPreferredShift] = useState('');
   const [requiresBus, setRequiresBus] = useState(false);
   const [requiresAccommodation, setRequiresAccommodation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!currentUser) {
     return (
@@ -57,7 +80,7 @@ export const ProfilePage: React.FC = () => {
     setEditModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       showToast('Name is required', 'error');
@@ -69,20 +92,31 @@ export const ProfilePage: React.FC = () => {
       .map(s => s.trim())
       .filter(Boolean);
 
-    updateUser({
-      name,
-      headline,
-      location,
-      phone,
-      skills: updatedSkills,
-      tradeSpecialization,
-      preferredShift,
-      requiresBus,
-      requiresAccommodation
-    });
+    setIsSaving(true);
+    try {
+      const result = await updateUser({
+        name,
+        headline,
+        location,
+        phone,
+        skills: updatedSkills,
+        tradeSpecialization,
+        preferredShift,
+        requiresBus,
+        requiresAccommodation
+      });
 
-    showToast('Profile updated successfully!', 'success');
-    setEditModalOpen(false);
+      if (result.success) {
+        showToast('Changes saved', 'success');
+        setEditModalOpen(false);
+      } else {
+        showToast(result.error || 'Failed to update profile.', 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred. Please try again.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
@@ -101,7 +135,7 @@ export const ProfilePage: React.FC = () => {
             </h2>
           </div>
           <div className="profile-section-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            <div className="profile-details-grid">
               <div><span className="text-sm text-secondary">Email</span><p className="font-medium">{currentUser.email}</p></div>
               <div><span className="text-sm text-secondary">Phone</span><p className="font-medium">{currentUser.phone || 'Not provided'}</p></div>
               <div><span className="text-sm text-secondary">Role</span><p className="font-medium">{capitalize(currentUser.role)}</p></div>
@@ -122,7 +156,7 @@ export const ProfilePage: React.FC = () => {
               </h2>
             </div>
             <div className="profile-section-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="profile-details-grid">
                 <div>
                   <span className="text-sm text-secondary">Trade Specialization</span>
                   <p className="font-medium">{currentUser.tradeSpecialization || 'Not specified'}</p>
@@ -235,29 +269,72 @@ export const ProfilePage: React.FC = () => {
                 </h2>
               </div>
               <div className="profile-section-body">
-                {currentUser.resume ? (
-                  <div className="file-preview">
-                    <div className="file-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                    </div>
-                    <div className="file-info">
-                      <h4>{currentUser.resume.name}</h4>
-                      <p>{currentUser.resume.size}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>No resume uploaded yet.</p>
-                    <Link to="/resume" className="btn btn-primary btn-sm">Upload Resume</Link>
-                  </>
-                )}
+                {(() => {
+                  const resume = currentUser.resume;
+                  if (resume && resume.url) {
+                    return (
+                      <div className="file-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                          <div className="file-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                          </div>
+                          <div className="file-info">
+                            <h4>{resume.name}</h4>
+                            <p>{resume.size}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <button
+                            onClick={() => setPreviewResume(resume)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px solid var(--border)' }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            View
+                          </button>
+                          <button
+                            onClick={handleDeleteResume}
+                            className="btn btn-danger btn-sm"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--danger)', color: '#ffffff', border: 'none' }}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
+                                <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />
+                              </svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                              </svg>
+                            )}
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <>
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>No resume uploaded yet.</p>
+                      <Link to="/resume" className="btn btn-primary btn-sm">Upload Resume</Link>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Resume Preview Modal */}
+      {previewResume && (
+        <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />
+      )}
 
       {/* Edit Profile Modal */}
       {editModalOpen && createPortal(
@@ -353,8 +430,18 @@ export const ProfilePage: React.FC = () => {
                 )}
                 
                 <div className="modal-footer" style={{ borderTop: 'none', padding: 0, marginTop: 'var(--space-2)' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setEditModalOpen(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Changes</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setEditModalOpen(false)} disabled={isSaving}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                    {isSaving ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
+                          <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
+                        </svg>
+                        Saving...
+                      </span>
+                    ) : 'Save Changes'}
+                  </button>
                 </div>
               </form>
             </div>

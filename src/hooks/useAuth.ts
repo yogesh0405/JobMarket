@@ -1,9 +1,18 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { User, UserRole } from '../types';
+import { apiFetch } from '../utils/api';
 
 export const useAuth = () => {
   const { state, dispatch } = useStore();
+
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      dispatch({ type: 'LOGOUT' });
+    };
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+  }, [dispatch]);
 
   const login = useCallback(async (email: string, password: string, role: UserRole) => {
     try {
@@ -27,11 +36,14 @@ export const useAuth = () => {
         return { success: false, error: errorMessage };
       }
 
-      const { accessToken, refreshToken, user: apiUser } = data.data;
+      const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;
 
       // Persist tokens for subsequent authenticated requests
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      if (sessionId) {
+        localStorage.setItem('sessionId', sessionId);
+      }
 
       // Map the backend user shape to the frontend User type
       const user: User = {
@@ -39,15 +51,21 @@ export const useAuth = () => {
         name: apiUser.name,
         email: apiUser.email,
         role: apiUser.role as UserRole,
-        phone: '',
-        createdAt: new Date().toISOString(),
-        profileComplete: false,
-        resume: null,
+        phone: apiUser.phone || '',
+        createdAt: apiUser.created_at || new Date().toISOString(),
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+        resume: apiUser.resume || null,
         experience: [],
         education: [],
-        skills: [],
+        skills: apiUser.skills || [],
         savedJobs: [],
         appliedJobs: [],
+        headline: apiUser.headline || '',
+        location: apiUser.location || '',
+        tradeSpecialization: apiUser.trade_specialization || '',
+        preferredShift: apiUser.preferred_shift || '',
+        requiresBus: !!apiUser.requires_bus,
+        requiresAccommodation: !!apiUser.requires_accommodation,
       };
 
       dispatch({ type: 'LOGIN', payload: user });
@@ -116,11 +134,30 @@ export const useAuth = () => {
   }, []);
 
   const logout = useCallback(() => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('sessionId');
     dispatch({ type: 'LOGOUT' });
   }, [dispatch]);
 
-  const updateUser = useCallback((updates: Partial<User>) => {
-    dispatch({ type: 'UPDATE_USER', payload: updates });
+  const updateUser = useCallback(async (updates: Partial<User>) => {
+    try {
+      const response = await apiFetch('/api/v1/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || data.message || 'Failed to update profile.' };
+      }
+
+      dispatch({ type: 'UPDATE_USER', payload: updates });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Network error. Please try again later.' };
+    }
   }, [dispatch]);
 
   return {

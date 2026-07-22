@@ -138,7 +138,8 @@ export const useJobs = () => {
       email: user.email,
       phone: user.phone || '',
       appliedAt: new Date().toISOString(),
-      status: 'applied'
+      status: 'applied',
+      resume: user.resume || null
     };
 
     dispatch({ type: 'APPLY_JOB', payload: { jobId, applicant } });

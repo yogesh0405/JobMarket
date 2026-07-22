@@ -22,6 +22,7 @@ export interface Resume {
   size: string;
   type: string;
   uploadedAt: string;
+  url?: string;
 }
 
 export interface Applicant {
@@ -31,6 +32,7 @@ export interface Applicant {
   phone?: string;
   appliedAt: string;
   status: ApplicationStatus;
+  resume?: Resume | null;
 }
 
 export interface User {
