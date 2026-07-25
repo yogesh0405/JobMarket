@@ -391,13 +391,27 @@
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-4);
   transition: all var(--transition-fast);
 }
 
 .applicant-card:hover {
   box-shadow: var(--shadow-md);
+}
+
+.applicant-header-wrapper {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.applicant-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
 }
 
 .applicant-avatar {
@@ -706,9 +720,191 @@
     display: none !important;
   }
 
-  /* Hide Applied Jobs and Upload Resume tabs on mobile dashboard for candidates */
+  /* Hide Applied Jobs, Upload Resume, About, Help & Support, Candidates, and Post Job tabs on mobile dashboard navigation */
   .dashboard-nav-item.tab-applied,
-  .dashboard-nav-item.tab-resume {
+  .dashboard-nav-item.tab-resume,
+  .dashboard-nav-item.tab-about,
+  .dashboard-nav-item.tab-support,
+  .dashboard-nav-item.tab-candidates,
+  .dashboard-nav-item.tab-post-job {
     display: none !important;
   }
+
+  .dashboard-page {
+    padding-bottom: 80px !important;
+  }
+
+  .applicant-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-3) !important;
+    padding: var(--space-4) !important;
+  }
+
+  .applicant-header-wrapper {
+    width: 100% !important;
+  }
+
+  .applicant-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-3) !important;
+    margin-top: var(--space-1) !important;
+  }
+
+  .candidates-tab-active .dashboard-sidebar {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   CANDIDATE BROWSER LIST CARD
+   ============================================ */
+.candidate-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.candidate-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.candidate-card-header {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+}
+
+.candidate-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.candidate-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.candidate-header-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.candidate-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.candidate-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.candidate-badge {
+  font-size: 10px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.candidate-headline {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.candidate-info-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.candidate-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.candidate-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.candidate-meta-item svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.candidate-skills-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.candidate-skill-pill {
+  font-size: 11px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.candidate-action-row {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+@media (max-width: 768px) {
+  .candidate-card {
+    padding: var(--space-4);
+  }
+  
+  .candidate-action-row {
+    margin-top: var(--space-2);
+  }
+  
+  .candidate-action-row button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Remove duplicate profile banner card inside the dashboard main layout */
+.dashboard-main .profile-header-card {
+  display: none !important;
 }

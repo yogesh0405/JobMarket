@@ -7,9 +7,11 @@ interface RefreshResponse {
   };
 }
 
+let activeRefreshPromise: Promise<string | null> | null = null;
+
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = (options.headers as Record<string, string>) || {};
-  const token = localStorage.getItem('accessToken');
+  let token = localStorage.getItem('accessToken');
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -26,33 +28,56 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
   // If token is invalid or expired (401 Unauthorized), try to refresh it
   if (response.status === 401) {
+    if (url.includes('/api/v1/auth/refresh')) {
+      return response;
+    }
+
     const refreshToken = localStorage.getItem('refreshToken');
     const sessionId = localStorage.getItem('sessionId');
 
     if (refreshToken && sessionId) {
       try {
-        const refreshResponse = await fetch('/api/v1/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken, sessionId }),
-        });
+        let newAccessToken: string | null = null;
 
-        if (refreshResponse.ok) {
-          const refreshData: RefreshResponse = await refreshResponse.json();
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken, sessionId: newSessionId } = refreshData.data;
+        if (!activeRefreshPromise) {
+          activeRefreshPromise = (async () => {
+            try {
+              const refreshResponse = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken, sessionId }),
+              });
 
-          localStorage.setItem('accessToken', newAccessToken);
-          localStorage.setItem('refreshToken', newRefreshToken);
-          localStorage.setItem('sessionId', newSessionId);
+              if (refreshResponse.ok) {
+                const refreshData: RefreshResponse = await refreshResponse.json();
+                const { accessToken, refreshToken: newRefreshToken, sessionId: newSessionId } = refreshData.data;
 
+                localStorage.setItem('accessToken', accessToken);
+                localStorage.setItem('refreshToken', newRefreshToken);
+                localStorage.setItem('sessionId', newSessionId);
+
+                return accessToken;
+              } else {
+                clearSession();
+                return null;
+              }
+            } catch (err) {
+              clearSession();
+              return null;
+            } finally {
+              activeRefreshPromise = null;
+            }
+          })();
+        }
+
+        newAccessToken = await activeRefreshPromise;
+
+        if (newAccessToken) {
           // Retry the original request with the new access token
           headers['Authorization'] = `Bearer ${newAccessToken}`;
           options.headers = headers;
           
           response = await fetch(url, options);
-        } else {
-          // Refresh token is also expired or invalid - clear session
-          clearSession();
         }
       } catch (err) {
         clearSession();

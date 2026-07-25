@@ -42,7 +42,11 @@ export const LoginPage: React.FC = () => {
       const result = await login(email, password, role);
       if (result.success) {
         showToast(`Welcome back, ${result.user?.name}!`, 'success');
-        navigate('/dashboard');
+        if (result.user?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         showToast(result.error || 'Login failed. Please check your credentials.', 'error');
       }

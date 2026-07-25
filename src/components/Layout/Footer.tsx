@@ -39,29 +39,33 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="footer-col">
-            <h4>For Job Seekers</h4>
-            <Link to="/jobs">Browse Jobs</Link>
-            <Link to="/jobs?workMode=Remote">Remote Jobs</Link>
-            <Link to="/jobs?jobType=Part-Time">Part-time Jobs</Link>
-            <Link to="/jobs?jobType=Freelance">Freelance Jobs</Link>
-            <Link to="/resume">
-              {currentUser?.resume && currentUser.resume.url ? t.myResume : t.uploadResume}
-            </Link>
-          </div>
+          {(!currentUser || currentUser.role === 'candidate') && (
+            <div className="footer-col">
+              <h4>For Job Seekers</h4>
+              <Link to="/jobs">Browse Jobs</Link>
+              <Link to="/jobs?workMode=Remote">Remote Jobs</Link>
+              <Link to="/jobs?jobType=Part-Time">Part-time Jobs</Link>
+              <Link to="/jobs?jobType=Freelance">Freelance Jobs</Link>
+              <Link to="/resume">
+                {currentUser?.resume ? t.myResume : t.uploadResume}
+              </Link>
+            </div>
+          )}
 
-          <div className="footer-col">
-            <h4>For Employers</h4>
-            <Link to="/post-job">Post a Job</Link>
-            <Link to="/signup?role=employer">Create Account</Link>
-            <Link to="/dashboard">Employer Dashboard</Link>
-            <a href="#">Pricing Plans</a>
-          </div>
+          {(!currentUser || currentUser.role === 'employer') && (
+            <div className="footer-col">
+              <h4>For Employers</h4>
+              <Link to="/post-job">Post a Job</Link>
+              <Link to="/signup?role=employer">Create Account</Link>
+              <Link to="/dashboard">Employer Dashboard</Link>
+              <a href="#">Pricing Plans</a>
+            </div>
+          )}
 
           <div className="footer-col">
             <h4>Company</h4>
             <Link to="/about">About Us</Link>
-            <Link to="/contact">Contact Us</Link>
+            <Link to="/contact">Help & Support</Link>
             <a href="#">Careers</a>
             <a href="#">Blog</a>
           </div>

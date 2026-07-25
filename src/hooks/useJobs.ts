@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { Job, JobType, WorkMode } from '../types';
-import { generateId, getCompanyColor } from '../utils/helpers';
+import { apiFetch } from '../utils/api';
+import { Job } from '../types';
 
 export interface JobFilters {
   keyword?: string;
@@ -26,13 +26,19 @@ export const useJobs = () => {
         j.title.toLowerCase().includes(kw) ||
         j.company.toLowerCase().includes(kw) ||
         j.description.toLowerCase().includes(kw) ||
+        (j.location && j.location.toLowerCase().includes(kw)) ||
+        (j.industry && j.industry.toLowerCase().includes(kw)) ||
+        (j.trade && j.trade.toLowerCase().includes(kw)) ||
+        (j.workMode && j.workMode.toLowerCase().includes(kw)) ||
+        (j.jobType && j.jobType.toLowerCase().includes(kw)) ||
+        (j.midcZone && j.midcZone.toLowerCase().includes(kw)) ||
         (j.skills && j.skills.some(s => s.toLowerCase().includes(kw)))
       );
     }
 
     if (filters.location) {
-      const loc = filters.location.toLowerCase();
-      jobs = jobs.filter(j => j.location.toLowerCase().includes(loc));
+      const locs = filters.location.toLowerCase().split(',');
+      jobs = jobs.filter(j => locs.some(loc => j.location.toLowerCase().includes(loc)));
     }
 
     if (filters.jobType) {
@@ -51,12 +57,14 @@ export const useJobs = () => {
     }
 
     if (filters.salaryMin) {
-      jobs = jobs.filter(j => j.salaryMax >= parseInt(filters.salaryMin || '0'));
+      const salMin = parseInt(filters.salaryMin || '0');
+      const monthlySalMin = salMin >= 100000 ? Math.round(salMin / 12) : salMin;
+      jobs = jobs.filter(j => j.salaryMax >= monthlySalMin);
     }
 
     if (filters.industry) {
-      const industries = filters.industry.split(',');
-      jobs = jobs.filter(j => industries.includes(j.industry));
+      const industries = filters.industry.toLowerCase().split(',');
+      jobs = jobs.filter(j => industries.includes(j.industry.toLowerCase()));
     }
 
     // Sort
@@ -85,79 +93,117 @@ export const useJobs = () => {
     return state.jobs.filter(j => j.employerId === employerId);
   }, [state.jobs]);
 
-  const createJob = useCallback((jobData: Omit<Job, 'id' | 'employerId' | 'company' | 'companyLogo' | 'companyColor' | 'status' | 'applicants' | 'views' | 'postedAt'>) => {
-    const user = state.currentUser;
-    if (!user || user.role !== 'employer') return null;
-
-    const companyName = user.companyName || user.name;
-    const job: Job = {
-      id: generateId(),
-      employerId: user.id,
-      company: companyName,
-      companyLogo: companyName[0],
-      companyColor: getCompanyColor(companyName),
-      ...jobData,
-      status: 'active',
-      applicants: [],
-      views: Math.floor(Math.random() * 200) + 10,
-      postedAt: new Date().toISOString()
-    };
-
-    dispatch({ type: 'CREATE_JOB', payload: job });
-    return job;
-  }, [state.currentUser, dispatch]);
-
-  const updateJob = useCallback((id: string, updates: Partial<Job>) => {
-    const job = state.jobs.find(j => j.id === id);
-    if (!job) return null;
-
-    const updatedJob = { ...job, ...updates } as Job;
-    dispatch({ type: 'UPDATE_JOB', payload: updatedJob });
-    return updatedJob;
-  }, [state.jobs, dispatch]);
-
-  const deleteJob = useCallback((id: string) => {
-    dispatch({ type: 'DELETE_JOB', payload: id });
+  const createJob = useCallback(async (jobData: any) => {
+    try {
+      const res = await apiFetch('/api/v1/jobs', {
+        method: 'POST',
+        body: JSON.stringify(jobData)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to create job');
+      dispatch({ type: 'CREATE_JOB', payload: json.data });
+      return json.data;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }, [dispatch]);
 
-  const applyToJob = useCallback((jobId: string) => {
+  const updateJob = useCallback(async (id: string, updates: any) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to update job');
+      dispatch({ type: 'UPDATE_JOB', payload: json.data });
+      return json.data;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }, [dispatch]);
+
+  const deleteJob = useCallback(async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to delete job');
+      dispatch({ type: 'DELETE_JOB', payload: id });
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }, [dispatch]);
+
+  const applyToJob = useCallback(async (jobId: string) => {
     const user = state.currentUser;
     if (!user) return { success: false, error: 'Please login to apply' };
     if (user.role !== 'candidate') return { success: false, error: 'Only candidates can apply' };
 
-    const job = getJobById(jobId);
-    if (!job) return { success: false, error: 'Job not found' };
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/apply`, {
+        method: 'POST'
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to apply to job');
 
-    if (user.appliedJobs && user.appliedJobs.includes(jobId)) {
-      return { success: false, error: 'Already applied to this job' };
+      const applicant = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        appliedAt: new Date().toISOString(),
+        status: 'applied',
+        resume: user.resume || null
+      };
+
+      dispatch({ type: 'APPLY_JOB', payload: { jobId, applicant } });
+      return { success: true };
+    } catch (err: any) {
+      console.error(err);
+      return { success: false, error: err.message || 'Failed to apply' };
     }
+  }, [state.currentUser, dispatch]);
 
-    const applicant = {
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      appliedAt: new Date().toISOString(),
-      status: 'applied',
-      resume: user.resume || null
-    };
+  const updateApplicantStatus = useCallback(async (jobId: string, applicantUserId: string, newStatus: string) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/applicants/${applicantUserId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to update applicant status');
 
-    dispatch({ type: 'APPLY_JOB', payload: { jobId, applicant } });
-    return { success: true };
-  }, [state.currentUser, getJobById, dispatch]);
-
-  const updateApplicantStatus = useCallback((jobId: string, applicantUserId: string, newStatus: string) => {
-    const job = state.jobs.find(j => j.id === jobId);
-    if (!job) return null;
-
-    const updatedApplicants = (job.applicants || []).map(app => 
-      app.userId === applicantUserId ? { ...app, status: newStatus } : app
-    );
-
-    const updatedJob = { ...job, applicants: updatedApplicants } as Job;
-    dispatch({ type: 'UPDATE_JOB', payload: updatedJob });
-    return updatedJob;
+      const job = state.jobs.find(j => j.id === jobId);
+      if (job) {
+        const updatedApplicants = (job.applicants || []).map(app => 
+          app.userId === applicantUserId ? { ...app, status: newStatus as any } : app
+        );
+        dispatch({ type: 'UPDATE_JOB', payload: { ...job, applicants: updatedApplicants } });
+      }
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   }, [state.jobs, dispatch]);
+
+  const fetchEmployerJobs = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/v1/jobs/my-jobs/all');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to fetch my jobs');
+      dispatch({ type: 'SET_JOBS', payload: json.data });
+      return json.data;
+    } catch (err) {
+      console.error('Error fetching employer jobs:', err);
+    }
+  }, [dispatch]);
 
   const toggleSaveJob = useCallback((jobId: string) => {
     const user = state.currentUser;
@@ -184,6 +230,56 @@ export const useJobs = () => {
     return user.savedJobs.map(id => getJobById(id)).filter(Boolean) as Job[];
   }, [state.currentUser, getJobById]);
 
+  const scheduleInterview = useCallback(async (jobId: string, applicantUserId: string, details: { interviewDate: string, interviewTime: string, venueAddress: string, mapsLink?: string }) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/applicants/${applicantUserId}/interview`, {
+        method: 'POST',
+        body: JSON.stringify(details)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to schedule interview');
+
+      const job = state.jobs.find(j => j.id === jobId);
+      if (job) {
+        const updatedApplicants = (job.applicants || []).map(app => 
+          app.userId === applicantUserId ? { ...app, status: 'shortlisted' as any } : app
+        );
+        dispatch({ type: 'UPDATE_JOB', payload: { ...job, applicants: updatedApplicants } });
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error(err);
+      return { success: false, error: err.message || 'Failed to schedule interview' };
+    }
+  }, [state.jobs, dispatch]);
+
+  const sendCustomEmail = useCallback(async (jobId: string, applicantUserId: string, details: { subject: string, message: string }) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/applicants/${applicantUserId}/email`, {
+        method: 'POST',
+        body: JSON.stringify(details)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to send email');
+      return { success: true };
+    } catch (err: any) {
+      console.error(err);
+      return { success: false, error: err.message || 'Failed to send email' };
+    }
+  }, []);
+
+  const getAllCandidates = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/v1/jobs/workers/all');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to fetch candidates');
+      return json.data;
+    } catch (err: any) {
+      console.error(err);
+      throw err;
+    }
+  }, []);
+
   return {
     getJobs,
     getJobById,
@@ -196,6 +292,10 @@ export const useJobs = () => {
     toggleSaveJob,
     isJobSaved,
     getAppliedJobs,
-    getSavedJobs
+    getSavedJobs,
+    fetchEmployerJobs,
+    scheduleInterview,
+    sendCustomEmail,
+    getAllCandidates
   };
 };

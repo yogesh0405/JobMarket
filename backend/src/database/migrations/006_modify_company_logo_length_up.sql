@@ -1,0 +1,1 @@
+ALTER TABLE jobs ALTER COLUMN company_logo TYPE VARCHAR(500);

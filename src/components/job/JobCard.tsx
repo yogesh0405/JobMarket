@@ -77,19 +77,23 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
       {/* Top section: Logo, Title, Save/Share */}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }} className="job-card-header">
         {/* Round architectural design logo (now flat solid color) */}
-        <div style={{ width: '56px', height: '56px', flexShrink: 0 }} className="job-card-logo-container">
-          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', borderRadius: '0.3rem', display: 'block' }} className="job-card-logo">
-            <rect width="100" height="100" fill="#344BFD" />
-            <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
-            <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
-            <path d="M65 90 L65 50 L85 50 L85 90 Z" fill="#ffffff" opacity="0.1" />
-            <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
-            <rect x="57" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
-            <rect x="47" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
-            <rect x="57" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
-            <rect x="47" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
-            <rect x="57" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
-          </svg>
+        <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '0.3rem', overflow: 'hidden', background: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="job-card-logo-container">
+          {job.companyLogo && job.companyLogo.startsWith('http') ? (
+            <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }} className="job-card-logo">
+              <rect width="100" height="100" fill="#344BFD" />
+              <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
+              <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
+              <path d="M65 90 L65 50 L85 50 L85 90 Z" fill="#ffffff" opacity="0.1" />
+              <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
+              <rect x="57" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
+              <rect x="47" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
+              <rect x="57" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
+              <rect x="47" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
+              <rect x="57" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
+            </svg>
+          )}
         </div>
 
         {/* Title & Company */}

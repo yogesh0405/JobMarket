@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './modules/auth/routes/authRoutes';
+import adminRoutes from './modules/admin/routes/adminRoutes';
+import jobRoutes from './modules/jobs/routes/jobRoutes';
+import supportRoutes, { adminSupportRouter } from './modules/support/routes/supportRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
@@ -21,6 +24,10 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/jobs', jobRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/admin/support', adminSupportRouter);
 
 // Global Error Handler
 app.use(errorHandler);

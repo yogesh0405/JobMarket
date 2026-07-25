@@ -45,9 +45,57 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [responsibilities, setResponsibilities] = useState('');
   const [requirements, setRequirements] = useState('');
   const [skills, setSkills] = useState('');
+  const [companyLogo, setCompanyLogo] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_SIZE = 400;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          } else {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const webpDataUrl = canvas.toDataURL('image/webp', 0.85);
+          setCompanyLogo(webpDataUrl);
+        }
+        setIsUploadingLogo(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteLogo = () => {
+    setCompanyLogo('');
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  };
 
   // Industrial fields
   const [trade, setTrade] = useState('');
+  const [customTrade, setCustomTrade] = useState('');
   const [midcZone, setMidcZone] = useState('');
   const [shiftDetails, setShiftDetails] = useState('');
   const [overtime, setOvertime] = useState(false);
@@ -85,7 +133,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setRequirements(existingJob.requirements ? existingJob.requirements.join('\n') : '');
       setSkills(existingJob.skills ? existingJob.skills.join(', ') : '');
 
-      setTrade(existingJob.trade || '');
+      const isCustom = existingJob.trade && !tradesList.includes(existingJob.trade);
+      if (isCustom) {
+        setTrade('Other');
+        setCustomTrade(existingJob.trade || '');
+      } else {
+        setTrade(existingJob.trade || '');
+        setCustomTrade('');
+      }
       setMidcZone(existingJob.midcZone || '');
       setShiftDetails(existingJob.shiftDetails || '');
       setOvertime(!!existingJob.overtime);
@@ -97,6 +152,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setContractDuration(existingJob.contractDuration || '');
       setWalkInDate(existingJob.walkInDate || '');
       setInterviewAddress(existingJob.interviewAddress || '');
+      setCompanyLogo(existingJob.companyLogo || '');
     }
   }, [isEdit, existingJob]);
 
@@ -108,7 +164,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     const parsed = parseJobPrompt(aiPrompt);
 
     if (parsed.title) setTitle(parsed.title);
-    if (parsed.trade) setTrade(parsed.trade);
+    if (parsed.trade) {
+      if (parsed.trade && !tradesList.includes(parsed.trade)) {
+        setTrade('Other');
+        setCustomTrade(parsed.trade);
+      } else {
+        setTrade(parsed.trade);
+      }
+    }
     if (parsed.industry) setIndustry(parsed.industry);
     if (parsed.openings) setOpenings(parsed.openings);
     if (parsed.midcZone) setMidcZone(parsed.midcZone);
@@ -150,7 +213,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     { value: 600000, label: '₹50,000 / mo (~₹6 LPA)' }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !industry || !location || !description) {
       showToast('Please fill in all required fields', 'error');
@@ -174,7 +237,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       requirements: requirements.split('\n').map(req => req.trim()).filter(Boolean),
       skills: skills.split(',').map(s => s.trim()).filter(Boolean),
       // Industrial specific
-      trade,
+      trade: trade === 'Other' ? customTrade : trade,
       midcZone,
       shiftDetails,
       overtime,
@@ -185,21 +248,26 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       attendanceBonus,
       contractDuration: contractDuration || undefined,
       walkInDate: walkInDate || undefined,
-      interviewAddress: interviewAddress || undefined
+      interviewAddress: interviewAddress || undefined,
+      companyLogo: companyLogo || undefined
     };
 
-    if (isEdit && id) {
-      updateJob(id, jobData);
-      showToast('Job updated successfully!', 'success');
-    } else {
-      createJob(jobData);
-      showToast('Job posted successfully! 🎉 Info sent on WhatsApp.', 'success');
-    }
+    try {
+      if (isEdit && id) {
+        await updateJob(id, jobData);
+        showToast('Job updated successfully!', 'success');
+      } else {
+        await createJob(jobData);
+        showToast('Job posted successfully! 🎉 Info sent on WhatsApp.', 'success');
+      }
 
-    if (isEmbedded && onComplete) {
-      onComplete();
-    } else {
-      navigate('/dashboard');
+      if (isEmbedded && onComplete) {
+        onComplete();
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save job', 'error');
     }
   };
 
@@ -245,6 +313,76 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               Plant Job Details
             </div>
             <div className="form-section-body">
+              <div className="form-row" style={{ marginBottom: '20px' }}>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Upload Company / Factory / Hospital Logo</label>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '64px', 
+                      height: '64px', 
+                      borderRadius: '0.3rem', 
+                      background: '#344BFD', 
+                      color: 'white', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      border: '1.5px solid #E2E8F0',
+                      flexShrink: 0
+                    }}>
+                      {companyLogo ? (
+                        <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+                          <rect width="100" height="100" fill="#344BFD" />
+                          <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
+                          <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
+                          <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        </svg>
+                      )}
+                      {isUploadingLogo && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite', color: 'white' }}>
+                            <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
+                            <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary btn-sm" 
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isUploadingLogo}
+                      >
+                        Upload Logo
+                      </button>
+                      {companyLogo && (
+                        <button 
+                          type="button" 
+                          className="btn btn-danger btn-sm" 
+                          style={{ marginLeft: '8px', background: 'var(--danger)', color: 'white', border: 'none' }}
+                          onClick={handleDeleteLogo}
+                          disabled={isUploadingLogo}
+                        >
+                          Remove Logo
+                        </button>
+                      )}
+                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>Supports PNG, JPG, JPEG. Compressed to WebP format.</p>
+                    </div>
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={logoInputRef} 
+                    onChange={handleLogoChange} 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                  />
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Job Title / Role <span className="required">*</span></label>
@@ -281,7 +419,19 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   >
                     <option value="">Select Trade</option>
                     {tradesList.map(t => <option key={t} value={t}>{t}</option>)}
+                    <option value="Other">Other</option>
                   </select>
+                  {trade === 'Other' && (
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ marginTop: '8px' }}
+                      placeholder="Type custom trade specialty"
+                      value={customTrade}
+                      onChange={(e) => setCustomTrade(e.target.value)}
+                      required
+                    />
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">MIDC Zone</label>
@@ -435,50 +585,71 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
                 <label className={`facility-checkbox-card ${overtime ? 'selected' : ''}`}>
                   <input type="checkbox" checked={overtime} onChange={(e) => setOvertime(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">⚡</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: overtime ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.otPay}</h4>
-                    <p>Double rate shift calculation</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.otPay}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Double rate shift calculation</p>
                   </div>
                 </label>
                 <label className={`facility-checkbox-card ${accommodation ? 'selected' : ''}`}>
                   <input type="checkbox" checked={accommodation} onChange={(e) => setAccommodation(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">🏠</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: accommodation ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.accommodation}</h4>
-                    <p>Company-managed hostels</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.accommodation}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Company-managed hostels</p>
                   </div>
                 </label>
                 <label className={`facility-checkbox-card ${busFacility ? 'selected' : ''}`}>
                   <input type="checkbox" checked={busFacility} onChange={(e) => setBusFacility(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">🚌</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: busFacility ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <path d="M8 21h8" />
+                    <path d="M12 17v4" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.busFacility}</h4>
-                    <p>Standard transport routes</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.busFacility}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Standard transport routes</p>
                   </div>
                 </label>
                 <label className={`facility-checkbox-card ${canteen ? 'selected' : ''}`}>
                   <input type="checkbox" checked={canteen} onChange={(e) => setCanteen(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">🍱</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: canteen ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.canteen}</h4>
-                    <p>Subsidized plant meals</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.canteen}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Subsidized plant meals</p>
                   </div>
                 </label>
                 <label className={`facility-checkbox-card ${joiningBonus ? 'selected' : ''}`}>
                   <input type="checkbox" checked={joiningBonus} onChange={(e) => setJoiningBonus(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">💰</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: joiningBonus ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <polyline points="20 12 20 22 4 22 4 12" />
+                    <rect x="2" y="7" width="20" height="5" />
+                    <line x1="12" y1="22" x2="12" y2="7" />
+                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.joiningBonus}</h4>
-                    <p>On joining first month</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.joiningBonus}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>On joining first month</p>
                   </div>
                 </label>
                 <label className={`facility-checkbox-card ${attendanceBonus ? 'selected' : ''}`}>
                   <input type="checkbox" checked={attendanceBonus} onChange={(e) => setAttendanceBonus(e.target.checked)} style={{ display: 'none' }} />
-                  <span className="facility-emoji">💵</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: attendanceBonus ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <circle cx="12" cy="8" r="7" />
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                  </svg>
                   <div className="facility-info">
-                    <h4>{t.attendanceBonus}</h4>
-                    <p>Regular monthly payouts</p>
+                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.attendanceBonus}</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Regular monthly payouts</p>
                   </div>
                 </label>
               </div>

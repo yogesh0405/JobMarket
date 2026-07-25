@@ -10,33 +10,12 @@ const pool = new Pool({
   }
 });
 
-async function checkResume() {
+async function showColumns() {
   try {
-    const res = await pool.query("SELECT id, email, resume FROM users WHERE email = 'raaaj6626@gmail.com'");
-    console.log("Database Row:", JSON.stringify(res.rows[0], null, 2));
-    
-    if (res.rows[0] && res.rows[0].resume) {
-      const resume = res.rows[0].resume;
-      console.log("Type of resume:", typeof resume);
-      if (typeof resume === 'string') {
-        try {
-          const parsed = JSON.parse(resume);
-          console.log("Parsed once, type:", typeof parsed);
-          console.log("Parsed keys:", Object.keys(parsed));
-          console.log("Parsed URL length:", parsed.url ? parsed.url.length : 0);
-          console.log("Parsed URL prefix:", parsed.url ? parsed.url.substring(0, 100) : 'N/A');
-        } catch (e) {
-          console.log("Failed to parse string:", e);
-        }
-      } else {
-        console.log("Resume keys:", Object.keys(resume));
-        if (resume.url) {
-          console.log("Resume URL length:", resume.url.length);
-          console.log("Resume URL start:", resume.url.substring(0, 100));
-          console.log("Resume URL end:", resume.url.substring(resume.url.length - 100));
-        }
-      }
-    }
+    const res = await pool.query(
+      "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users'"
+    );
+    console.log("Columns:", res.rows);
   } catch (err) {
     console.error("Error:", err);
   } finally {
@@ -44,4 +23,4 @@ async function checkResume() {
   }
 }
 
-checkResume();
+showColumns();

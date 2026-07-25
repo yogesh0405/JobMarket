@@ -13,6 +13,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: z.string().default('5m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   BREVO_API_KEY: z.string().min(1, 'BREVO_API_KEY is required'),
+  CLOUDINARY_URL: z.string().min(1, 'CLOUDINARY_URL is required'),
 });
 
 const _env = envSchema.safeParse(process.env);

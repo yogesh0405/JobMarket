@@ -11,10 +11,17 @@ export type StoreAction =
   | { type: 'APPLY_JOB'; payload: { jobId: string; applicant: any } }
   | { type: 'TOGGLE_SAVE_JOB'; payload: { jobId: string } }
   | { type: 'UPDATE_USER'; payload: Partial<User> }
-  | { type: 'SET_LANGUAGE'; payload: 'en' | 'mr' | 'hi' };
+  | { type: 'SET_LANGUAGE'; payload: 'en' | 'mr' | 'hi' }
+  | { type: 'SET_JOBS'; payload: Job[] };
 
 export const storeReducer = (state: StoreState, action: StoreAction): StoreState => {
   switch (action.type) {
+    case 'SET_JOBS':
+      return {
+        ...state,
+        jobs: action.payload
+      };
+
     case 'SET_LANGUAGE':
       return {
         ...state,

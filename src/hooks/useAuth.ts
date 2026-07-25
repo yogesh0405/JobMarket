@@ -52,20 +52,24 @@ export const useAuth = () => {
         email: apiUser.email,
         role: apiUser.role as UserRole,
         phone: apiUser.phone || '',
+        profilePictureUrl: apiUser.profile_picture_url || '',
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
         resume: apiUser.resume || null,
-        experience: [],
-        education: [],
+        experience: apiUser.experience || [],
+        education: apiUser.education || [],
         skills: apiUser.skills || [],
         savedJobs: [],
         appliedJobs: [],
+        appliedJobsWithStatus: [],
         headline: apiUser.headline || '',
         location: apiUser.location || '',
         tradeSpecialization: apiUser.trade_specialization || '',
         preferredShift: apiUser.preferred_shift || '',
         requiresBus: !!apiUser.requires_bus,
         requiresAccommodation: !!apiUser.requires_accommodation,
+        companyName: apiUser.company_name || '',
+        gstNumber: apiUser.gst_number || '',
       };
 
       dispatch({ type: 'LOGIN', payload: user });
@@ -153,10 +157,80 @@ export const useAuth = () => {
         return { success: false, error: data.error || data.message || 'Failed to update profile.' };
       }
 
-      dispatch({ type: 'UPDATE_USER', payload: updates });
+      const apiUser = data.data;
+      const user: User = {
+        id: apiUser.id,
+        name: apiUser.name,
+        email: apiUser.email,
+        role: apiUser.role as UserRole,
+        phone: apiUser.phone || '',
+        profilePictureUrl: apiUser.profile_picture_url || '',
+        createdAt: apiUser.created_at || new Date().toISOString(),
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+        resume: apiUser.resume || null,
+        experience: apiUser.experience || [],
+        education: apiUser.education || [],
+        skills: apiUser.skills || [],
+        savedJobs: state.currentUser?.savedJobs || [],
+        appliedJobs: state.currentUser?.appliedJobs || [],
+        appliedJobsWithStatus: state.currentUser?.appliedJobsWithStatus || [],
+        headline: apiUser.headline || '',
+        location: apiUser.location || '',
+        tradeSpecialization: apiUser.trade_specialization || '',
+        preferredShift: apiUser.preferred_shift || '',
+        requiresBus: !!apiUser.requires_bus,
+        requiresAccommodation: !!apiUser.requires_accommodation,
+        companyName: apiUser.company_name || '',
+        gstNumber: apiUser.gst_number || '',
+      };
+
+      dispatch({ type: 'LOGIN', payload: user });
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Network error. Please try again later.' };
+    }
+  }, [dispatch, state.currentUser]);
+
+  const syncUser = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      const response = await apiFetch('/api/v1/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const apiUser = data.data;
+          const user: User = {
+            id: apiUser.id,
+            name: apiUser.name,
+            email: apiUser.email,
+            role: apiUser.role as UserRole,
+            phone: apiUser.phone || '',
+            profilePictureUrl: apiUser.profile_picture_url || '',
+            createdAt: apiUser.created_at || new Date().toISOString(),
+            profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+            resume: apiUser.resume || null,
+            experience: apiUser.experience || [],
+            education: apiUser.education || [],
+            skills: apiUser.skills || [],
+            savedJobs: [],
+            appliedJobs: apiUser.appliedJobs || [],
+            appliedJobsWithStatus: apiUser.appliedJobsWithStatus || [],
+            headline: apiUser.headline || '',
+            location: apiUser.location || '',
+            tradeSpecialization: apiUser.trade_specialization || '',
+            preferredShift: apiUser.preferred_shift || '',
+            requiresBus: !!apiUser.requires_bus,
+            requiresAccommodation: !!apiUser.requires_accommodation,
+            companyName: apiUser.company_name || '',
+            gstNumber: apiUser.gst_number || '',
+          };
+          dispatch({ type: 'LOGIN', payload: user });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to sync user:', error);
     }
   }, [dispatch]);
 
@@ -166,6 +240,7 @@ export const useAuth = () => {
     signup,
     verifyOtp,
     logout,
-    updateUser
+    updateUser,
+    syncUser
   };
 };

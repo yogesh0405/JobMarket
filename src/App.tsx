@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
 import { HomePage } from './features/home/HomePage';
@@ -8,13 +8,53 @@ import { VerifyOTPPage } from './features/auth/VerifyOTPPage';
 import { JobSearchPage } from './features/jobs/JobSearchPage';
 import { JobDetailPage } from './features/jobs/JobDetailPage';
 import { JobPostPage } from './features/jobs/JobPostPage';
+import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { ResumePage } from './features/profile/ResumePage';
 import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
+import { useAuth } from './hooks/useAuth';
+import { apiFetch } from './utils/api';
+import { useStore } from './store/useStore';
+
+// Admin imports
+import { AdminLayout } from './modules/admin/layouts/AdminLayout';
+import { AdminLoginPage } from './modules/admin/pages/AdminLoginPage';
+import { AdminDashboardPage } from './modules/admin/pages/AdminDashboardPage';
+import { JobApprovalPage } from './modules/admin/pages/JobApprovalPage';
+import { JobsPage } from './modules/admin/pages/JobsPage';
+import { UserManagementPage } from './modules/admin/pages/UserManagementPage';
+import { EmployerManagementPage } from './modules/admin/pages/EmployerManagementPage';
+import { WorkerManagementPage } from './modules/admin/pages/WorkerManagementPage';
+import { CategorySkillManagementPage } from './modules/admin/pages/CategorySkillManagementPage';
+import { ReportsPage } from './modules/admin/pages/ReportsPage';
+import { SettingsPage } from './modules/admin/pages/SettingsPage';
+import { SupportManagementPage } from './modules/admin/pages/SupportManagementPage';
 
 export const App: React.FC = () => {
+  const { syncUser } = useAuth();
+  const { dispatch } = useStore();
+
+  useEffect(() => {
+    syncUser();
+
+    // Fetch jobs from backend database
+    apiFetch('/api/v1/jobs')
+      .then((res: any) => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch jobs');
+      })
+      .then((json: any) => {
+        if (json.success && json.data) {
+          dispatch({ type: 'SET_JOBS', payload: json.data });
+        }
+      })
+      .catch((err: any) => {
+        console.error('Error fetching jobs:', err);
+      });
+  }, [syncUser, dispatch]);
+
   return (
     <Routes>
       {/* Pages WITH Navbar/Footer */}
@@ -24,6 +64,7 @@ export const App: React.FC = () => {
         <Route path="/job/:id" element={<JobDetailPage />} />
         <Route path="/post-job" element={<JobPostPage />} />
         <Route path="/edit-job/:id" element={<JobPostPage />} />
+        <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
         <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
@@ -35,6 +76,22 @@ export const App: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/verify-otp" element={<VerifyOTPPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+
+      {/* Admin Panel (Separate module & layout) */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="job-approvals" element={<JobApprovalPage />} />
+        <Route path="jobs" element={<JobsPage />} />
+        <Route path="users" element={<UserManagementPage />} />
+        <Route path="employers" element={<EmployerManagementPage />} />
+        <Route path="workers" element={<WorkerManagementPage />} />
+        <Route path="categories" element={<CategorySkillManagementPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="support" element={<SupportManagementPage />} />
+      </Route>
 
       {/* Fallback to Home */}
       <Route path="*" element={<Navigate to="/" replace />} />

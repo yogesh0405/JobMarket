@@ -394,3 +394,7 @@
   }
 }
 
+.profile-avatar-large:hover .avatar-upload-overlay {
+  opacity: 1 !important;
+}
+

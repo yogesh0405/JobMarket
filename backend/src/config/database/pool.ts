@@ -13,6 +13,12 @@ pool.on('error', (err, client) => {
   console.error('Unexpected error on idle pg client', err);
 });
 
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    console.error('Database client connection error:', err);
+  });
+});
+
 export const checkDatabaseConnection = async () => {
   try {
     const client = await pool.connect();

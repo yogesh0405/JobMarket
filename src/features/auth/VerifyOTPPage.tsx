@@ -47,11 +47,14 @@ export const VerifyOTPPage: React.FC = () => {
         return;
       }
 
-      const { accessToken, refreshToken, user: apiUser } = data.data;
+      const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;
 
       // Persist tokens
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      if (sessionId) {
+        localStorage.setItem('sessionId', sessionId);
+      }
 
       // Build the user object and log them in immediately after verification
       const user: User = {
@@ -63,8 +66,8 @@ export const VerifyOTPPage: React.FC = () => {
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
         resume: apiUser.resume || null,
-        experience: [],
-        education: [],
+        experience: apiUser.experience || [],
+        education: apiUser.education || [],
         skills: apiUser.skills || [],
         savedJobs: [],
         appliedJobs: [],

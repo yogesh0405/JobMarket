@@ -44,6 +44,11 @@ export const SignupPage: React.FC = () => {
       return;
     }
 
+    if (phone.length !== 10) {
+      showToast('Phone number must be exactly 10 digits', 'error');
+      return;
+    }
+
     if (role === 'candidate' && !email.toLowerCase().trim().endsWith('@gmail.com')) {
       showToast('Users must register using a @gmail.com email address.', 'error');
       return;
@@ -198,7 +203,7 @@ export const SignupPage: React.FC = () => {
                 className={`role-btn ${role === r ? 'active' : ''}`}
                 onClick={() => setRole(r)}
               >
-                {r === 'candidate' ? 'Worker' : 'MSME/Factory'}
+                {r === 'candidate' ? 'Worker' : 'Employer'}
               </button>
             ))}
           </div>

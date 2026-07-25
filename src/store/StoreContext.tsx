@@ -20,13 +20,9 @@ const getInitialState = (): StoreState => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if ((parsed.categories && parsed.categories.some((c: any) => c.name === 'IT & Software')) || (parsed.jobs && parsed.jobs.length < 70)) {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
-      } else {
-        if (!parsed.language) parsed.language = 'en';
-        if (!parsed.qualifications) parsed.qualifications = initialQualifications;
-        return parsed;
-      }
+      if (!parsed.language) parsed.language = 'en';
+      if (!parsed.qualifications) parsed.qualifications = initialQualifications;
+      return parsed;
     } catch (e) {
       console.error('Failed to parse localStorage data', e);
     }

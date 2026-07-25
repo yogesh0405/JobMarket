@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { formatSalary, timeAgo, formatNumber } from '../../utils/helpers';
+import { formatSalary, timeAgo, formatNumber, capitalize } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 
@@ -30,9 +30,11 @@ export const JobDetailPage: React.FC = () => {
   }
 
   const hasApplied = currentUser?.appliedJobs?.includes(job.id);
+  const appDetails = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
   const saved = isJobSaved(job.id);
+  const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!currentUser) {
       showToast('Please login to apply', 'warning');
       navigate('/login');
@@ -42,7 +44,7 @@ export const JobDetailPage: React.FC = () => {
       showToast('Only candidates can apply to jobs', 'error');
       return;
     }
-    const result = applyToJob(job.id);
+    const result = await applyToJob(job.id);
     if (result.success) {
       showToast('Application submitted successfully! 🎉 Info sent on WhatsApp.', 'success');
     } else {
@@ -170,25 +172,45 @@ export const JobDetailPage: React.FC = () => {
               position: 'relative'
             }}>
               {/* Header Row: Title & Action buttons */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '4px' }}>
-                <div>
-                  <h1 style={{
-                    fontSize: '16px',
-                    fontWeight: '800',
-                    color: '#0F172A',
-                    margin: '0 0 4px 0',
-                    lineHeight: '1.3'
-                  }}>
-                    {job.title}
-                  </h1>
-                  <p style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#344BFD',
-                    margin: 0
-                  }}>
-                    {job.company}
-                  </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '0.3rem', overflow: 'hidden', background: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {job.companyLogo && job.companyLogo.startsWith('http') ? (
+                      <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+                        <rect width="100" height="100" fill="#344BFD" />
+                        <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
+                        <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
+                        <path d="M65 90 L65 50 L85 50 L85 90 Z" fill="#ffffff" opacity="0.1" />
+                        <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        <rect x="57" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        <rect x="47" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        <rect x="57" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        <rect x="47" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                        <rect x="57" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <h1 style={{
+                      fontSize: '20px',
+                      fontWeight: '800',
+                      color: '#0F172A',
+                      margin: '0 0 4px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {job.title}
+                    </h1>
+                    <p style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#344BFD',
+                      margin: 0
+                    }}>
+                      {job.company}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Action buttons (Save & Share) */}
@@ -354,6 +376,83 @@ export const JobDetailPage: React.FC = () => {
                   <span>{timeAgo(job.postedAt)}</span>
                 </div>
               </div>
+
+              {/* Application Status Banner (visible to applied candidates) */}
+              {hasApplied && appDetails && (
+                <div style={{ 
+                  background: 'var(--bg-secondary)', 
+                  border: '1.5px dashed var(--primary)', 
+                  borderRadius: '8px', 
+                  padding: '18px', 
+                  marginBottom: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>
+                      Application Status:
+                    </span>
+                    <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
+                      {capitalize(appDetails.status)}
+                    </span>
+                  </div>
+
+                  {appDetails.status === 'shortlisted' && appDetails.interviewDate && (
+                    <div style={{ 
+                      background: 'var(--bg)', 
+                      border: '1px solid var(--border)', 
+                      borderRadius: '6px', 
+                      padding: '14px',
+                      fontSize: '13px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      marginTop: '4px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: '700' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span>Interview Scheduled!</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '2px' }}>
+                        <div>
+                          <strong>Date:</strong> {appDetails.interviewDate}
+                        </div>
+                        <div>
+                          <strong>Time:</strong> {appDetails.interviewTime}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Venue:</strong> {appDetails.venueAddress}
+                      </div>
+                      {appDetails.mapsLink && (
+                        <div style={{ marginTop: '2px' }}>
+                          <a 
+                            href={appDetails.mapsLink} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            style={{ 
+                              color: 'var(--primary)', 
+                              textDecoration: 'none', 
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            Open in Google Maps
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Job Description section */}
               <div style={{ marginBottom: '24px' }}>
@@ -522,28 +621,78 @@ export const JobDetailPage: React.FC = () => {
 
               {/* Apply Button */}
               {hasApplied ? (
+                <>
+                  <button
+                    disabled
+                    style={{
+                      width: '100%',
+                      background: '#EEF1FF',
+                      color: '#344BFD',
+                      border: 'none',
+                      padding: '14px',
+                      borderRadius: '0.3rem',
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      cursor: 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Already Applied
+                  </button>
+                  {appDetails && (
+                    <div style={{ 
+                      marginTop: '12px', 
+                      padding: '12px', 
+                      background: '#EEF1FF', 
+                      borderRadius: '4px', 
+                      border: '1px solid #E2E8F0',
+                      fontSize: '13px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appDetails.status === 'shortlisted' ? '8px' : '0' }}>
+                        <strong>Status:</strong>
+                        <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '11px', padding: '3px 8px' }}>
+                          {capitalize(appDetails.status)}
+                        </span>
+                      </div>
+                      {appDetails.status === 'shortlisted' && appDetails.interviewDate && (
+                        <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid #CBD5E1', paddingTop: '6px' }}>
+                          <div>📅 <strong>{appDetails.interviewDate}</strong> at <strong>{appDetails.interviewTime}</strong></div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>📍 {appDetails.venueAddress}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : isOwner ? (
                 <button
-                  disabled
+                  onClick={() => navigate('/dashboard?tab=manage')}
                   style={{
                     width: '100%',
-                    background: '#EEF1FF',
-                    color: '#344BFD',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
                     border: 'none',
                     padding: '14px',
                     borderRadius: '0.3rem',
                     fontWeight: '700',
                     fontSize: '15px',
-                    cursor: 'not-allowed',
+                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px'
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12"/>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                   </svg>
-                  Already Applied
+                  Manage Job
                 </button>
               ) : (
                 <button
@@ -669,28 +818,60 @@ export const JobDetailPage: React.FC = () => {
       <div className="detail-sticky-bar">
         <div style={{ width: '100%', maxWidth: '800px' }}>
           {hasApplied ? (
+            <>
+              <button
+                disabled
+                style={{
+                  width: '100%',
+                  background: '#EEF1FF',
+                  color: '#344BFD',
+                  border: 'none',
+                  padding: '14px',
+                  borderRadius: '0.3rem',
+                  fontWeight: '700',
+                  fontSize: '15px',
+                  cursor: 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Already Applied (Status: {capitalize(appDetails?.status || 'applied')})
+              </button>
+              {appDetails && appDetails.status === 'shortlisted' && (
+                <div style={{ fontSize: '11px', textAlign: 'center', color: 'var(--primary)', fontWeight: '600', marginTop: '4px' }}>
+                  Interview Scheduled: {appDetails.interviewDate} at {appDetails.interviewTime}
+                </div>
+              )}
+            </>
+          ) : isOwner ? (
             <button
-              disabled
+              onClick={() => navigate('/dashboard?tab=manage')}
               style={{
                 width: '100%',
-                background: '#EEF1FF',
-                color: '#344BFD',
+                background: '#344BFD',
+                color: '#ffffff',
                 border: 'none',
                 padding: '14px',
                 borderRadius: '0.3rem',
                 fontWeight: '700',
                 fontSize: '15px',
-                cursor: 'not-allowed',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <polyline points="20 6 9 17 4 12"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
               </svg>
-              Already Applied
+              Manage Job
             </button>
           ) : (
             <button

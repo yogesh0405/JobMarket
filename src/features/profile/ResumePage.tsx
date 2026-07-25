@@ -51,7 +51,7 @@ export const ResumePage: React.FC = () => {
     );
   }
 
-  if (currentUser.resume && currentUser.resume.url) {
+  if (currentUser.resume) {
     const uploadDate = new Date(currentUser.resume.uploadedAt).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',

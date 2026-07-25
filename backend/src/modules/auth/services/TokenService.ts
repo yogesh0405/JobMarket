@@ -23,8 +23,10 @@ export class TokenService {
         throw new UnauthorizedError('Invalid refresh token');
       }
 
-      const user = await UserRepository.findByEmail(payload.userId); // wait, payload.userId is ID, not email! I need findById
-      // I should add findById to UserRepository or just query here, or pass user.id to verifyRefreshToken
+      const user = await UserRepository.findById(payload.userId);
+      if (!user) {
+        throw new UnauthorizedError('User not found');
+      }
       
       const { accessToken, refreshToken } = generateTokens({ userId: payload.userId, role: payload.role });
       const newRefreshTokenHash = await bcrypt.hash(refreshToken, 10);

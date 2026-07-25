@@ -471,6 +471,7 @@
   }
 
   .navbar-username { display: none; }
+  .navbar-user { display: none; }
   
   .mobile-sidebar-profile {
     display: flex;
@@ -483,7 +484,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(4px);
-  z-index: 998;
+  z-index: 9998 !important;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-base);
@@ -507,7 +508,7 @@
   display: none;
   justify-content: space-around;
   align-items: center;
-  z-index: 995;
+  z-index: 20005;
   padding: 4px 8px;
 }
 
@@ -518,6 +519,10 @@
   
   body {
     padding-bottom: 64px;
+  }
+
+  .mobile-hide-nav {
+    display: none !important;
   }
 }
 
@@ -542,6 +547,43 @@
 .mobile-bottom-item svg {
   width: 22px;
   height: 22px;
+}
+
+/* Floating Action Button (FAB) for Mobile Bottom Nav */
+.mobile-bottom-item.fab-item {
+  position: relative;
+  overflow: visible;
+}
+
+.mobile-bottom-item.fab-item .fab-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -24px;
+  box-shadow: 0 4px 12px rgba(52, 75, 253, 0.35);
+  border: 4px solid var(--surface);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.mobile-bottom-item.fab-item:hover .fab-circle,
+.mobile-bottom-item.fab-item:focus .fab-circle {
+  transform: translateY(-2px);
+  background: var(--primary-light);
+}
+
+.mobile-bottom-item.fab-item span {
+  margin-top: 24px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.mobile-bottom-item.fab-item.active span {
+  color: var(--primary);
 }
 
 /* ---- User Dropdown ---- */
@@ -947,6 +989,30 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+/* Responsive Modal Adjustments for Mobile */
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 0;
+    bottom: 64px; /* Stop before the bottom navigation menu */
+  }
+  .modal {
+    max-height: calc(100vh - 64px);
+    height: 100%;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    padding: var(--space-4) var(--space-6);
+  }
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    max-height: none !important;
+    padding: var(--space-4) var(--space-6) !important;
+  }
 }
 
 /* ---- Stat Cards ---- */
@@ -1553,6 +1619,18 @@
   background: var(--primary-50);
   color: var(--primary);
   font-weight: var(--fw-semibold);
+}
+
+/* Mobile Drawer Content Display Control */
+.mobile-drawer-content {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-drawer-content {
+    display: block;
+    width: 100%;
+  }
 }
 
 

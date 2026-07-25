@@ -1,53 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Resume } from '../../types';
+import { apiFetch } from '../../utils/api';
 
 interface ResumePreviewModalProps {
   resume: Resume | null;
   onClose: () => void;
+  userId?: string;
 }
 
-export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, onClose }) => {
+export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, onClose, userId }) => {
   const [objectUrl, setObjectUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
   useEffect(() => {
-    if (!resume || !resume.url) {
+    if (!resume) {
       setObjectUrl('');
       return;
     }
 
-    try {
-      const base64Data = resume.url;
-      const base64Parts = base64Data.split(',');
-      const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : base64Data;
-      const mimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : resume.type;
+    let isMounted = true;
+    setLoading(true);
+    setErrorMsg('');
 
-      const byteCharacters = atob(base64WithoutHeader);
-      const byteArrays = [];
-      const sliceSize = 512;
-      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        const slice = byteCharacters.slice(offset, offset + sliceSize);
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
+    const fetchUrl = userId ? `/api/v1/auth/resume?userId=${userId}` : '/api/v1/auth/resume';
+
+    apiFetch(fetchUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load resume');
+        return res.json();
+      })
+      .then(data => {
+        if (!isMounted) return;
+        if (data.success && data.url) {
+          const urlStr = data.url;
+          if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+            setObjectUrl(urlStr);
+          } else {
+            const base64Parts = urlStr.split(',');
+            const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : urlStr;
+            const mimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : resume.type;
+
+            const byteCharacters = atob(base64WithoutHeader);
+            const byteArrays = [];
+            const sliceSize = 512;
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+              const slice = byteCharacters.slice(offset, offset + sliceSize);
+              const byteNumbers = new Array(slice.length);
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              byteArrays.push(byteArray);
+            }
+            const blob = new Blob(byteArrays, { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            setObjectUrl(url);
+          }
+        } else {
+          throw new Error('No resume data returned');
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        console.error(err);
+        setErrorMsg('Failed to load resume document.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+      if (objectUrl && objectUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(objectUrl);
       }
-      const blob = new Blob(byteArrays, { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      setObjectUrl(url);
+    };
+  }, [resume, userId]);
 
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } catch (error) {
-      console.error('Failed to convert base64 to blob URL:', error);
-      setObjectUrl(resume.url);
-    }
-  }, [resume]);
-
-  if (!resume || !resume.url) return null;
+  if (!resume) return null;
 
   const isPdf = resume.type === 'application/pdf' || resume.name.toLowerCase().endsWith('.pdf');
   const isImage = resume.type.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(resume.name);
@@ -66,7 +98,22 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
         </div>
         
         <div className="modal-body" style={{ flex: 1, padding: 0, background: '#525659', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
-          {objectUrl && isPdf ? (
+          {loading ? (
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: '#ffffff' }}>
+              <svg className="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite', marginBottom: 'var(--space-4)' }}>
+                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
+                <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
+              </svg>
+              <h3>Loading resume...</h3>
+            </div>
+          ) : errorMsg ? (
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: '#ffffff' }}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ marginBottom: 'var(--space-4)' }}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <h3>{errorMsg}</h3>
+            </div>
+          ) : objectUrl && isPdf ? (
             <iframe 
               src={objectUrl} 
               title={resume.name} 
@@ -88,26 +135,12 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
               <h3>Preview Not Available</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: 'var(--space-2)' }}>This file format cannot be previewed directly in the browser.</p>
-              {objectUrl && (
-                <a 
-                  href={objectUrl} 
-                  download={resume.name} 
-                  className="btn btn-primary mt-6"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  Download File
-                </a>
-              )}
             </div>
           )}
         </div>
         
         <div className="modal-footer" style={{ padding: 'var(--space-4)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', background: 'var(--bg-secondary)' }}>
-          {objectUrl && (
+          {!loading && !errorMsg && objectUrl && (
             <a 
               href={objectUrl} 
               download={resume.name} 

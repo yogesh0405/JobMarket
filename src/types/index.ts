@@ -1,4 +1,4 @@
-export type UserRole = 'candidate' | 'employer';
+export type UserRole = 'candidate' | 'employer' | 'admin';
 export type JobType = 'Full-Time' | 'Part-Time' | 'Contract' | 'Freelance';
 export type WorkMode = 'Remote' | 'Onsite' | 'Hybrid';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'rejected';
@@ -33,12 +33,25 @@ export interface Applicant {
   appliedAt: string;
   status: ApplicationStatus;
   resume?: Resume | null;
+  profilePictureUrl?: string;
+  headline?: string;
+  skills?: string[];
+  preferredShift?: string;
+  requiresBus?: boolean;
+  requiresAccommodation?: boolean;
+  experience?: any[];
+  education?: any[];
+  location?: string;
+  tradeSpecialization?: string;
+  aadhaarVerified?: boolean;
+  createdAt?: string;
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
+  profilePictureUrl?: string;
   password?: string;
   role: UserRole;
   phone: string;
@@ -53,6 +66,14 @@ export interface User {
   resume?: Resume | null;
   savedJobs?: string[];
   appliedJobs?: string[];
+  appliedJobsWithStatus?: {
+    jobId: string;
+    status: string;
+    interviewDate?: string;
+    interviewTime?: string;
+    venueAddress?: string;
+    mapsLink?: string;
+  }[];
   // Industrial & Localized Fields
   aadhaarVerified?: boolean;
   gstNumber?: string;
@@ -78,6 +99,7 @@ export interface Job {
   salaryMin: number;
   salaryMax: number;
   openings: number;
+  filledOpenings?: number;
   minAge?: number;
   maxAge?: number;
   gender?: string;

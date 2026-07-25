@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx tsx src/server.ts",
+    "dev": "npx tsx watch src/server.ts",
     "build": "npx tsc -b tsconfig.json",
     "start": "node dist/server.js",
     "migrate": "npx tsx src/database/scripts/migrate.ts"

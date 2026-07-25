@@ -1,0 +1,1 @@
+ALTER TABLE jobs ADD COLUMN filled_openings INT NOT NULL DEFAULT 0;
