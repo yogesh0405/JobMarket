@@ -21,9 +21,9 @@ export const errorHandler = (
   if ((err as any).code === '23505') {
     return res.status(409).json({
       success: false,
-      message: 'Email already registered',
+      message: 'Resource or record already exists',
       data: null,
-      errors: [(err as any).detail]
+      errors: ['DUPLICATE_ENTRY']
     });
   }
 

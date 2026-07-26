@@ -268,6 +268,29 @@ export class SupportRepository {
     return result.rows[0];
   }
 
+  static async broadcastNotifications(userIds: string[], title: string, message: string, link?: string): Promise<number> {
+    if (userIds.length === 0) return 0;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      let inserted = 0;
+      for (const userId of userIds) {
+        await client.query(
+          `INSERT INTO in_app_notifications (user_id, title, message, link) VALUES ($1, $2, $3, $4)`,
+          [userId, title, message, link || null]
+        );
+        inserted++;
+      }
+      await client.query('COMMIT');
+      return inserted;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   static async findNotificationsByUserId(userId: string): Promise<InAppNotification[]> {
     const query = `
       SELECT * FROM in_app_notifications 

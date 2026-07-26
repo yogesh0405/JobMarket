@@ -3,14 +3,19 @@ import { env } from '../env';
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  // Standard enterprise connection pool settings
   max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
 });
 
-pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle pg client', err);
+pool.on('error', (err) => {
+  // Catch idle pool client errors gracefully
+  if (err.message && (err.message.includes('timeout') || err.message.includes('EHOSTUNREACH') || err.message.includes('ENOTFOUND'))) {
+    return;
+  }
+  console.error('Unexpected error on idle pg client:', err.message || err);
 });
 
 pool.on('connect', (client) => {

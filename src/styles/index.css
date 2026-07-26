@@ -121,7 +121,7 @@
 
   /* Layout */
   --container-max: 1280px;
-  --navbar-height: 72px;
+  --navbar-height: 64px;
   --sidebar-width: 280px;
 }
 
@@ -441,6 +441,28 @@ h1, h2, h3, h4, h5, h6 {
   animation: fadeInUp 400ms ease forwards;
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 1024px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -449,6 +471,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --navbar-height: 56px;
+  }
+  .navbar.has-search-strip + #page-content,
+  body:has(.mobile-search-strip) #page-content {
+    padding-top: 118px !important;
+  }
   html { font-size: 15px; }
   .grid-4,
   .grid-3,

@@ -6,6 +6,7 @@ import { JobCard } from '../../components/job/JobCard';
 import { formatNumber } from '../../utils/helpers';
 import { useTranslation } from '../../utils/translations';
 import { initialHospitalCategories, initialHotelCategories, initialSchoolCategories } from '../../store/seedData';
+import { BannerSlider } from '../../components/home/BannerSlider';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -174,7 +175,12 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="homepage-wrapper">
-      {/* Hero */}
+      {/* Enterprise Promotional Banner Carousel Slider - Immediately below Header */}
+      <div style={{ paddingTop: '0.5rem' }}>
+        <BannerSlider />
+      </div>
+
+      {/* Hero Section */}
       <section className="hero">
         <div className="hero-mesh-overlay"></div>
         <div className="hero-particles">
@@ -200,8 +206,8 @@ export const HomePage: React.FC = () => {
 
             <div className="hero-search">
               <form className="search-bar" onSubmit={handleSearch}>
-                <div className="search-field">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="search-field keyword-field">
+                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                   <input
@@ -211,42 +217,25 @@ export const HomePage: React.FC = () => {
                     onChange={(e) => setKeyword(e.target.value)}
                   />
                 </div>
-                <div className="search-field" ref={industryRef}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#2563eb' }}>
+                <div className="search-field select-field industry-field" ref={industryRef}>
+                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                   </svg>
-                  <div style={{ position: 'relative', flex: 1, width: '100%' }}>
+                  <div className="select-container">
                     <div
                       onClick={() => setIndustryDropdownOpen(!industryDropdownOpen)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: industry ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: 'var(--fs-base)',
-                        padding: '10px 0',
-                        cursor: 'pointer',
-                        userSelect: 'none'
-                      }}
+                      className="custom-select-trigger"
                     >
-                      <span>{industry || 'Select Industry'}</span>
+                      <span className={industry ? "select-value" : "select-placeholder"}>
+                        {industry || 'Select Industry'}
+                      </span>
                       <svg 
+                        className={`select-arrow ${industryDropdownOpen ? 'open' : ''}`}
                         viewBox="0 0 24 24" 
                         fill="none" 
                         stroke="currentColor" 
                         strokeWidth="2" 
-                        style={{ 
-                          width: 16, 
-                          height: 16, 
-                          color: 'var(--text-secondary)',
-                          transform: industryDropdownOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s ease',
-                          pointerEvents: 'none'
-                        }}
                       >
                         <polyline points="6 9 12 15 18 9"/>
                       </svg>
@@ -278,42 +267,25 @@ export const HomePage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="search-field" ref={educationRef}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#2563eb' }}>
+                <div className="search-field select-field education-field" ref={educationRef}>
+                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                     <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
                   </svg>
-                  <div style={{ position: 'relative', flex: 1, width: '100%' }}>
+                  <div className="select-container">
                     <div
                       onClick={() => setEducationDropdownOpen(!educationDropdownOpen)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: education ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: 'var(--fs-base)',
-                        padding: '10px 0',
-                        cursor: 'pointer',
-                        userSelect: 'none'
-                      }}
+                      className="custom-select-trigger"
                     >
-                      <span>{education || 'Select Education'}</span>
+                      <span className={education ? "select-value" : "select-placeholder"}>
+                        {education || 'Select Education'}
+                      </span>
                       <svg 
+                        className={`select-arrow ${educationDropdownOpen ? 'open' : ''}`}
                         viewBox="0 0 24 24" 
                         fill="none" 
                         stroke="currentColor" 
                         strokeWidth="2" 
-                        style={{ 
-                          width: 16, 
-                          height: 16, 
-                          color: 'var(--text-secondary)',
-                          transform: educationDropdownOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.2s ease',
-                          pointerEvents: 'none'
-                        }}
                       >
                         <polyline points="6 9 12 15 18 9"/>
                       </svg>
@@ -345,8 +317,8 @@ export const HomePage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="search-field">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="search-field location-field">
+                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
                   <input
@@ -357,7 +329,10 @@ export const HomePage: React.FC = () => {
                   />
                 </div>
                 <button type="submit" className="search-btn">
-                  {t.searchBtn}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <span>{t.searchBtn}</span>
                 </button>
               </form>
             </div>

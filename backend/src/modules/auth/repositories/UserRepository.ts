@@ -83,7 +83,32 @@ export class UserRepository {
       (user as any).appliedJobsWithStatus = [];
     }
 
+    // Fetch saved job IDs
+    try {
+      const savedQuery = 'SELECT job_id FROM saved_jobs WHERE user_id = $1 ORDER BY created_at DESC;';
+      const savedResult = await pool.query(savedQuery, [id]);
+      (user as any).savedJobs = savedResult.rows.map(row => row.job_id);
+    } catch (err) {
+      console.error('Failed to fetch saved jobs for user:', err);
+      (user as any).savedJobs = [];
+    }
+
     return user;
+  }
+
+  static async toggleSaveJob(userId: string, jobId: string): Promise<{ isSaved: boolean }> {
+    const checkQuery = 'SELECT id FROM saved_jobs WHERE user_id = $1 AND job_id = $2;';
+    const checkResult = await pool.query(checkQuery, [userId, jobId]);
+
+    if (checkResult.rows.length > 0) {
+      // Remove saved job
+      await pool.query('DELETE FROM saved_jobs WHERE user_id = $1 AND job_id = $2;', [userId, jobId]);
+      return { isSaved: false };
+    } else {
+      // Add saved job
+      await pool.query('INSERT INTO saved_jobs (user_id, job_id) VALUES ($1, $2);', [userId, jobId]);
+      return { isSaved: true };
+    }
   }
 
   static async updateStatus(id: string, status: string, client: any = pool): Promise<void> {
@@ -154,7 +179,7 @@ export class UserRepository {
     return result.rows[0];
   }
 
-  static async getAllCandidates(): Promise<User[]> {
+  static async getAllCandidates(): Promise<any[]> {
     const query = `
       SELECT id, email, name, phone, role, status, created_at, updated_at,
              headline, location, skills, preferred_shift, requires_bus,

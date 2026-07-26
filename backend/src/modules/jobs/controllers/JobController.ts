@@ -3,6 +3,8 @@ import { AuthenticatedRequest } from '../../../middlewares/authMiddleware';
 import { JobRepository } from '../repositories/JobRepository';
 import { UserRepository } from '../../auth/repositories/UserRepository';
 import { EmailService } from '../../auth/services/EmailService';
+import { SupportRepository } from '../../support/repositories/SupportRepository';
+import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
 
 export class JobController {
@@ -181,7 +183,7 @@ export class JobController {
 
       const data = await JobRepository.applyToJob(id, userId);
 
-      // Dispatch application email to employer in background
+      // Dispatch in-app notification & email to employer in background
       (async () => {
         try {
           const [candidate, employer] = await Promise.all([
@@ -190,6 +192,24 @@ export class JobController {
           ]);
 
           if (candidate && employer) {
+            // 1. In-app notification for employer deep-linked to candidate page
+            await SupportRepository.createNotification({
+              user_id: employer.id,
+              title: `New Candidate Application`,
+              message: `${candidate.name} applied for "${job.title}"`,
+              link: `/job/${id}/applicants?applicantId=${candidate.id}`
+            });
+
+            // 1b. Header Bell Notification Table Entry
+            await AdvertisementRepository.createNotification(
+              employer.id,
+              `New Candidate Application`,
+              `${candidate.name} applied for "${job.title}"`,
+              'JOB_APPLICATION',
+              `/job/${id}/applicants?applicantId=${candidate.id}`
+            );
+
+            // 2. Email notification for employer
             const resumeUrl = candidate.resume && (candidate.resume as any).url ? (candidate.resume as any).url : null;
             await EmailService.sendJobApplicationEmail(
               employer.email,
@@ -205,7 +225,7 @@ export class JobController {
             );
           }
         } catch (mailErr) {
-          console.error('Failed to send application email in background:', mailErr);
+          console.error('Failed to send application notifications in background:', mailErr);
         }
       })();
 
@@ -252,6 +272,49 @@ export class JobController {
       }
 
       const data = await JobRepository.updateApplicantStatus(id, userId, employerId, status);
+
+      // Dispatch in-app and email notifications to candidate on status update
+      (async () => {
+        try {
+          const [candidate, employer, job] = await Promise.all([
+            UserRepository.findById(userId),
+            UserRepository.findById(employerId),
+            JobRepository.getJobById(id)
+          ]);
+
+          if (candidate && job) {
+            const companyName = employer?.company_name || employer?.name || job.company;
+            // 1. In-app notification
+            await SupportRepository.createNotification({
+              user_id: userId,
+              title: `Application Status Updated: ${status.toUpperCase()}`,
+              message: `Your application for "${job.title}" at ${companyName} is now ${status.toUpperCase()}`,
+              link: `/dashboard?tab=applied`
+            });
+
+            // 1b. Header Bell Notification Table Entry
+            await AdvertisementRepository.createNotification(
+              userId,
+              `Application Status Updated: ${status.toUpperCase()}`,
+              `Your application for "${job.title}" at ${companyName} is now ${status.toUpperCase()}`,
+              'JOB_STATUS',
+              `/dashboard?tab=applied`
+            );
+
+            // 2. Email notification
+            await EmailService.sendApplicationStatusUpdateEmail(
+              candidate.email,
+              candidate.name,
+              job.title,
+              companyName,
+              status
+            );
+          }
+        } catch (notifErr) {
+          console.error('Failed to send status update notification:', notifErr);
+        }
+      })();
+
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -301,6 +364,24 @@ export class JobController {
       if (candidate && employer) {
         (async () => {
           try {
+            // 1. In-app notification for candidate with interview details link
+            await SupportRepository.createNotification({
+              user_id: userId,
+              title: `Interview Scheduled: ${job.title}`,
+              message: `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime}`,
+              link: `/dashboard?tab=applied`
+            });
+
+            // 1b. Header Bell Notification Table Entry
+            await AdvertisementRepository.createNotification(
+              userId,
+              `Interview Scheduled: ${job.title}`,
+              `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime}`,
+              'JOB_INTERVIEW',
+              `/dashboard?tab=applied`
+            );
+
+            // 2. Email notification
             await EmailService.sendInterviewScheduledEmail(
               candidate.email,
               candidate.name,
@@ -312,7 +393,7 @@ export class JobController {
               mapsLink
             );
           } catch (mailErr) {
-            console.error('Failed to send interview email:', mailErr);
+            console.error('Failed to send interview notifications:', mailErr);
           }
         })();
       }
@@ -388,6 +469,18 @@ export class JobController {
 
       const data = await UserRepository.getAllCandidates();
       res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async toggleSaveJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const jobId = req.params.id as string;
+
+      const result = await UserRepository.toggleSaveJob(userId, jobId);
+      res.status(200).json({ success: true, isSaved: result.isSaved, message: result.isSaved ? 'Job saved' : 'Job unsaved' });
     } catch (error) {
       next(error);
     }

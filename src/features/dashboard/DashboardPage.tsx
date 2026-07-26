@@ -16,6 +16,9 @@ import { ResumePage } from '../profile/ResumePage';
 import { JobPostPage } from '../jobs/JobPostPage';
 import { AboutPage } from '../static/AboutPage';
 import { ContactPage } from '../static/ContactPage';
+import { SavedJobsPage } from './SavedJobsPage';
+import { EmployerAdvertisements } from './EmployerAdvertisements';
+import { SecuritySettings } from './SecuritySettings';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,6 +46,8 @@ export const DashboardPage: React.FC = () => {
 
   const tab = searchParams.get('tab') || 'overview';
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     if (!currentUser) {
       showToast('Please log in to access the dashboard', 'warning');
@@ -51,12 +56,39 @@ export const DashboardPage: React.FC = () => {
   }, [currentUser, navigate, showToast]);
 
   useEffect(() => {
-    if (currentUser && currentUser.role === 'employer' && fetchEmployerJobs) {
-      fetchEmployerJobs();
-    }
-  }, [currentUser, fetchEmployerJobs]);
+    let isMounted = true;
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        await syncUser();
+        if (currentUser && currentUser.role === 'employer' && fetchEmployerJobs) {
+          await fetchEmployerJobs();
+        }
+      } catch (err) {
+        console.error('Error syncing dashboard data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    loadDashboardData();
+    return () => { isMounted = false; };
+  }, []);
 
-  if (!currentUser) return null;
+  if (!currentUser || isLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
+        <svg className="animate-spin" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+          <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.1)"/>
+          <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4" fill="currentColor"/>
+        </svg>
+        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Loading profile & dashboard data...</span>
+      </div>
+    );
+  }
+
+  if (tab === 'saved') {
+    return <SavedJobsPage />;
+  }
 
   const setTab = (newTab: string) => {
     setSearchParams({ tab: newTab });
@@ -204,7 +236,7 @@ export const DashboardPage: React.FC = () => {
     <>
       <div className="dashboard-page">
       <div className="container">
-        <div className={`dashboard-layout ${tab === 'candidates' ? 'candidates-tab-active' : ''}`}>
+        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
           {/* Sidebar */}
           <aside className="dashboard-sidebar">
             <div className="dashboard-profile">
@@ -327,6 +359,15 @@ export const DashboardPage: React.FC = () => {
                     </svg>
                     Browse Candidates
                   </button>
+                  <button
+                    className={`dashboard-nav-item tab-advertisements ${tab === 'advertisements' ? 'active' : ''}`}
+                    onClick={() => setTab('advertisements')}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    </svg>
+                    Promotional Banners
+                  </button>
                   <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
                   <button
                     className={`dashboard-nav-item tab-post-job ${tab === 'post-job' ? 'active' : ''}`}
@@ -387,6 +428,16 @@ export const DashboardPage: React.FC = () => {
               )}
               <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
               <button
+                className={`dashboard-nav-item tab-security ${tab === 'security' ? 'active' : ''}`}
+                onClick={() => setTab('security')}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Security & Sessions
+              </button>
+              <button
                 className={`dashboard-nav-item tab-about ${tab === 'about' ? 'active' : ''}`}
                 onClick={() => setTab('about')}
               >
@@ -409,7 +460,9 @@ export const DashboardPage: React.FC = () => {
 
           {/* Main Dashboard Content */}
           <main className="dashboard-main">
-            {tab === 'about' ? (
+            {tab === 'security' ? (
+              <SecuritySettings />
+            ) : tab === 'about' ? (
               <AboutPage />
             ) : tab === 'support' ? (
               <ContactPage />
@@ -644,7 +697,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{Math.floor(Math.random() * 10) + 5}</h3><p>Profile Views</p></div>
+              <div className="stat-info"><h3>{currentUser.profileViews || (currentUser.viewedBy ? currentUser.viewedBy.length : 0)}</h3><p>Profile Views</p></div>
             </div>
             <div className="stat-card">
               <div className="stat-icon warning">
@@ -1112,7 +1165,10 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     }
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'hiring'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'job_details' | 'profile' | 'hiring'>('job_details');
+  const [appSearchQuery, setAppSearchQuery] = useState('');
+  const [appStatusFilter, setAppStatusFilter] = useState('all');
+  const [appJobFilter, setAppJobFilter] = useState('all');
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
@@ -1123,14 +1179,20 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleOpenDetails = (applicant: any, jobId: string, jobTitle: string) => {
-    setViewWorker({ ...applicant, jobId, jobTitle });
-    setEmailSubject(`Regarding your application for ${jobTitle}`);
-    setEmailMessage(`Hi ${applicant.name},\n\nWe would like to connect with you regarding your application for the ${jobTitle} position at ${currentUser?.companyName || currentUser?.name}.\n\nBest regards,\nRecruitment Team\n${currentUser?.companyName || currentUser?.name}`);
-    setActiveSubTab('profile');
-    setInterviewDate('');
-    setInterviewTime('');
-    setVenueAddress('');
-    setMapsLink('');
+    setViewWorker({ ...applicant, jobId, jobTitle, job: myJobs.find(j => j.id === jobId) });
+    setEmailSubject(`Regarding your application for ${jobTitle || applicant.headline || 'Job Opening'}`);
+    setEmailMessage(`Hi ${applicant.name},\n\nWe would like to connect with you regarding your application for the ${jobTitle || applicant.headline || 'Position'} at ${currentUser?.companyName || currentUser?.name}.\n\nBest regards,\nRecruitment Team\n${currentUser?.companyName || currentUser?.name}`);
+    setActiveSubTab('job_details');
+    setInterviewDate(applicant.interviewDate || '');
+    setInterviewTime(applicant.interviewTime || '');
+    setVenueAddress(applicant.venueAddress || '');
+    setMapsLink(applicant.mapsLink || '');
+
+    // Increment profile view metric for candidate
+    const targetUserId = applicant.userId || applicant.id;
+    if (targetUserId) {
+      apiFetch(`/api/v1/users/${targetUserId}/view`, { method: 'POST' }).catch(() => {});
+    }
   };
 
   const handleDelete = (jobId: string) => {
@@ -1144,7 +1206,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     const applicantsList: any[] = [];
     myJobs.forEach(job => {
       (job.applicants || []).forEach(a => {
-        applicantsList.push({ ...a, jobTitle: job.title, jobId: job.id });
+        applicantsList.push({ ...a, jobTitle: job.title, jobId: job.id, job });
       });
     });
     applicantsList.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
@@ -1155,6 +1217,10 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
 
   const renderContent = () => {
     switch (tab) {
+    case 'advertisements':
+    case 'banners':
+    case 'promotions':
+      return <EmployerAdvertisements employerJobs={myJobs} />;
     case 'overview':
       return (
         <>
@@ -1333,116 +1399,193 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'candidates':
       return <CandidatesTab showToast={showToast} handleOpenDetails={handleOpenDetails} />;
 
-    case 'applicants':
+    case 'applicants': {
+      const allApplicants = getRecentApplicants();
+      const filteredApplicants = allApplicants.filter(a => {
+        const matchesSearch = appSearchQuery === '' ||
+          a.name.toLowerCase().includes(appSearchQuery.toLowerCase()) ||
+          a.email.toLowerCase().includes(appSearchQuery.toLowerCase()) ||
+          a.jobTitle.toLowerCase().includes(appSearchQuery.toLowerCase());
+        const matchesStatus = appStatusFilter === 'all' || a.status === appStatusFilter;
+        const matchesJob = appJobFilter === 'all' || a.jobId === appJobFilter;
+        return matchesSearch && matchesStatus && matchesJob;
+      });
+
+      const totalReceived = allApplicants.length;
+      const reviewedCount = allApplicants.filter(a => a.status === 'reviewed').length;
+      const shortlistedCount = allApplicants.filter(a => a.status === 'shortlisted').length;
+      const acceptedCount = allApplicants.filter(a => a.status === 'accepted').length;
+
       return (
         <>
-          <h2 style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>All Applicants</h2>
-          {myJobs.filter(j => (j.applicants?.length || 0) > 0).length > 0 ? (
-            myJobs.filter(j => (j.applicants?.length || 0) > 0).map(job => (
-              <div key={job.id} className="activity-card" style={{ marginBottom: 'var(--space-6)' }}>
-                <div className="activity-header">
-                  <h3>{job.title} <span style={{ fontWeight: 'normal', color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)' }}>({job.applicants?.length} applicants)</span></h3>
-                </div>
-                <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  {job.applicants!.map((a, i) => (
-                    <div key={i} className="applicant-card">
-                      <div className="applicant-header-wrapper">
-                        <div className="applicant-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <h2 style={{ fontSize: 'var(--fs-2xl)', margin: 0, fontWeight: '700' }}>Recent Job Applications</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '4px 0 0' }}>
+              Track candidate applications, review job details, schedule interviews, and communicate directly with applicants.
+            </p>
+          </div>
+
+          {/* Metric Summary Cards */}
+          <div className="dashboard-stats" style={{ marginBottom: 'var(--space-6)' }}>
+            <div className="stat-card">
+              <div className="stat-icon primary">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/>
+                </svg>
+              </div>
+              <div className="stat-info"><h3>{totalReceived}</h3><p>Total Received</p></div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon warning">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div className="stat-info"><h3>{reviewedCount}</h3><p>Under Review</p></div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon accent">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="stat-info"><h3>{shortlistedCount}</h3><p>Interview Scheduled</p></div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon success">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div className="stat-info"><h3>{acceptedCount}</h3><p>Accepted / Hired</p></div>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ flex: '1 1 240px', position: 'relative' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }}>
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Search candidate name, email, job..."
+                  value={appSearchQuery}
+                  onChange={(e) => setAppSearchQuery(e.target.value)}
+                  style={{ width: '100%', paddingLeft: '36px', height: '42px', fontSize: '13px' }}
+                />
+              </div>
+              <div style={{ flex: '1 1 200px' }}>
+                <select
+                  className="form-select"
+                  value={appJobFilter}
+                  onChange={(e) => setAppJobFilter(e.target.value)}
+                  style={{ width: '100%', height: '42px', fontSize: '13px' }}
+                >
+                  <option value="all">All Job Postings ({myJobs.length})</option>
+                  {myJobs.map(job => (
+                    <option key={job.id} value={job.id}>{job.title} ({job.applicants?.length || 0})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Status Pills Container */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Application Status:</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {[
+                  { label: 'All', value: 'all' },
+                  { label: 'Applied', value: 'applied' },
+                  { label: 'Reviewed', value: 'reviewed' },
+                  { label: 'Shortlisted / Interview', value: 'shortlisted' },
+                  { label: 'Accepted', value: 'accepted' },
+                  { label: 'Rejected', value: 'rejected' },
+                ].map(st => (
+                  <button
+                    key={st.value}
+                    onClick={() => setAppStatusFilter(st.value)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: appStatusFilter === st.value ? '700' : '500',
+                      background: appStatusFilter === st.value ? 'var(--primary)' : 'var(--bg)',
+                      color: appStatusFilter === st.value ? '#ffffff' : 'var(--text-secondary)',
+                      border: appStatusFilter === st.value ? '1px solid var(--primary)' : '1px solid var(--border)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      lineHeight: '1.2'
+                    }}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Applications List */}
+          {filteredApplicants.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {filteredApplicants.map((a, i) => (
+                <div key={i} className="activity-card" style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg)', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    
+                    {/* Top Row: Candidate Header + Status Pill & Dropdown */}
+                    <div className="applicant-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: '1 1 220px' }}>
+                        <div className="applicant-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
                           {a.profilePictureUrl ? (
                             <img src={a.profilePictureUrl} alt={a.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'white' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'white' }}>
                               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                               <circle cx="12" cy="7" r="4"/>
                             </svg>
                           )}
                         </div>
-                        <div className="applicant-info">
-                          <h4>{a.name}</h4>
-                          <p>{a.email} · Applied {timeAgo(a.appliedAt)}</p>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '4px', alignItems: 'center' }}>
-                            {a.phone && (
-                              <a
-                                href={`https://wa.me/${a.phone.replace(/[^0-9]/g, '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{
-                                  color: '#16a34a',
-                                  fontWeight: '600',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  textDecoration: 'none',
-                                  fontSize: '12px'
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.978L2 22l5.178-1.357a9.945 9.945 0 0 0 4.83 1.259h.004c5.507 0 9.99-4.479 9.991-9.985.002-2.67-1.035-5.18-2.924-7.07C17.189 3.036 14.678 2 12.012 2zm5.727 14.04c-.314.88-1.52 1.616-2.09 1.706-.51.08-1.18.15-3.83-1.02-3.39-1.51-5.58-5.11-5.75-5.36-.17-.25-1.38-2.03-1.38-3.87 0-1.84.9-2.73 1.22-3.08.27-.3.73-.38.96-.38.22 0 .44.01.63.02.2.01.47-.07.73.61.27.69.93 2.51 1.01 2.68.08.17.14.37.02.6-.11.23-.25.37-.37.52-.12.15-.26.3-.37.42-.12.13-.25.27-.1.54.15.26.68 1.2 1.46 1.94.99.96 1.83 1.25 2.09 1.38.26.13.41.11.56-.06.15-.17.65-.81.82-1.09.18-.28.36-.23.61-.13.25.1 1.6.83 1.88.98.28.14.47.21.54.34.07.13.07.76-.24 1.64z"/>
+                        
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text)', wordBreak: 'break-word' }}>{a.name}</h4>
+                            {a.aadhaarVerified && (
+                              <span className="candidate-badge" style={{ fontSize: '10px', padding: '1px 6px', background: '#dcfce7', color: '#15803d', borderRadius: '10px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                                 </svg>
-                                Chat on WhatsApp ({a.phone})
-                              </a>
-                            )}
-                            <button
-                              onClick={() => handleOpenDetails(a, job.id, job.title)}
-                              style={{
-                                color: 'var(--primary)',
-                                fontWeight: '600',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                background: 'transparent',
-                                border: 'none',
-                                padding: 0,
-                                cursor: 'pointer',
-                                fontSize: '12px'
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                              </svg>
-                              View Details
-                            </button>
-                            <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>·</span>
-                            {a.resume ? (
-                              <button
-                                onClick={() => setPreviewResume({ ...a.resume, userId: a.userId })}
-                                style={{
-                                  color: 'var(--primary)',
-                                  fontWeight: '600',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  background: 'transparent',
-                                  border: 'none',
-                                  padding: 0,
-                                  cursor: 'pointer',
-                                  fontSize: '12px'
-                                }}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                                </svg>
-                                View Resume ({a.resume.name})
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No resume attached</span>
+                                Verified
+                              </span>
                             )}
                           </div>
+                          <p style={{ margin: '1px 0 0', color: 'var(--primary)', fontWeight: '600', fontSize: '13px', wordBreak: 'break-word' }}>
+                            Applied for: <Link to={`/job/${a.jobId}`} style={{ color: 'var(--primary)', textDecoration: 'underline' }}>{a.jobTitle}</Link>
+                          </p>
+                          <p style={{ margin: '1px 0 0', color: 'var(--text-secondary)', fontSize: '12px', wordBreak: 'break-word' }}>
+                            {a.email} {a.phone ? `· ${a.phone}` : ''} · Applied {timeAgo(a.appliedAt)}
+                          </p>
                         </div>
                       </div>
-                      <div className="applicant-actions">
-                        <span className={`status-badge status-${a.status}`}>{capitalize(a.status)}</span>
+
+                      {/* Status Selector & Badge */}
+                      <div className="applicant-status-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className={`status-badge-desktop status-badge status-${a.status}`} style={{ fontSize: '11px', padding: '3px 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          {capitalize(a.status)}
+                        </span>
                         <select
                           value={a.status}
-                          onChange={(e) => updateApplicantStatus(job.id, a.userId, e.target.value)}
+                          onChange={(e) => updateApplicantStatus(a.jobId, a.userId, e.target.value)}
                           style={{
-                            padding: '6px 10px',
+                            padding: '4px 8px',
                             borderRadius: '6px',
                             border: '1px solid var(--border)',
                             fontSize: '12px',
-                            background: 'var(--bg)',
+                            background: 'var(--surface)',
+                            color: 'var(--text-primary)',
                             cursor: 'pointer',
-                            outline: 'none'
+                            fontWeight: '600'
                           }}
                         >
                           <option value="applied">Applied</option>
@@ -1453,23 +1596,59 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         </select>
                       </div>
                     </div>
-                  ))}
+
+                    {/* Scheduled Interview Info Banner (If set) */}
+                    {a.interviewDate && (
+                      <div style={{ padding: '6px 10px', background: 'rgba(37, 99, 235, 0.06)', borderRadius: '6px', border: '1px solid rgba(37, 99, 235, 0.15)', fontSize: '12px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span><strong>Interview Scheduled:</strong> {a.interviewDate} at {a.interviewTime}</span>
+                        {a.venueAddress && <span style={{ opacity: 0.85 }}>({a.venueAddress})</span>}
+                      </div>
+                    )}
+
+                    {/* Bottom Action Bar */}
+                    <div className="applicant-action-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => handleOpenDetails(a, a.jobId, a.jobTitle)}
+                        className="btn btn-primary btn-sm btn-mobile-full"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '6px 12px', fontWeight: '600', borderRadius: '6px' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        View Job & Candidate Details
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/>
                 </svg>
               </div>
-              <h3>No applicants yet</h3>
-              <p>Your job listings will attract candidates soon!</p>
+              <h3>No applications match your search or filter</h3>
+              <p>Try resetting filters or searching for another candidate.</p>
+              <button
+                className="btn btn-ghost btn-sm mt-4"
+                onClick={() => {
+                  setAppSearchQuery('');
+                  setAppStatusFilter('all');
+                  setAppJobFilter('all');
+                }}
+              >
+                Reset Filters
+              </button>
             </div>
           )}
         </>
       );
+    }
 
       case 'post-job':
         return (
@@ -1489,15 +1668,15 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
       )}
       {viewWorker && createPortal(
         <div className="modal-backdrop" onClick={() => setViewWorker(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%' }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px', width: '100%' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Candidate Details</h3>
+              <h3 className="modal-title">Application & Candidate Details</h3>
               <button className="modal-close" onClick={() => setViewWorker(null)}>✕</button>
             </div>
-            <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="modal-body" style={{ maxHeight: '78vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              {/* Header profile */}
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              {/* Top Header Card */}
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                 <div className="applicant-avatar" style={{ width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gradient-accent)', overflow: 'hidden', flexShrink: 0 }}>
                   {viewWorker.profilePictureUrl ? (
                     <img src={viewWorker.profilePictureUrl} alt={viewWorker.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1508,49 +1687,179 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     </svg>
                   )}
                 </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{viewWorker.name}</h3>
+                    {viewWorker.aadhaarVerified && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '12px', fontWeight: '600' }}>
+                        Aadhaar Verified ✓
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '4px 0 0', color: 'var(--primary)', fontWeight: '600', fontSize: '14px' }}>
+                    Applied for: {viewWorker.jobTitle}
+                  </p>
+                  <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                    {viewWorker.email} {viewWorker.phone ? `· ${viewWorker.phone}` : ''}
+                  </p>
+                </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{viewWorker.name}</h3>
-                  <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>{viewWorker.headline || 'Job Seeker'}</p>
+                  <span className={`status-badge status-${viewWorker.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
+                    {capitalize(viewWorker.status)}
+                  </span>
                 </div>
               </div>
 
-              {/* Tab Selector */}
-              {viewWorker.jobId ? (
-                <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
-                  <button 
-                    onClick={() => setActiveSubTab('profile')} 
-                    style={{ 
-                      flex: 1, 
-                      padding: '12px', 
-                      background: 'none', 
-                      border: 'none', 
-                      borderBottom: activeSubTab === 'profile' ? '2px solid var(--primary)' : '2px solid transparent',
-                      fontWeight: activeSubTab === 'profile' ? '700' : '500',
-                      color: activeSubTab === 'profile' ? 'var(--primary)' : 'var(--text-secondary)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Candidate Profile
-                  </button>
-                  <button 
-                    onClick={() => setActiveSubTab('hiring')} 
-                    style={{ 
-                      flex: 1, 
-                      padding: '12px', 
-                      background: 'none', 
-                      border: 'none', 
-                      borderBottom: activeSubTab === 'hiring' ? '2px solid var(--primary)' : '2px solid transparent',
-                      fontWeight: activeSubTab === 'hiring' ? '700' : '500',
-                      color: activeSubTab === 'hiring' ? 'var(--primary)' : 'var(--text-secondary)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Hiring & Communications
-                  </button>
-                </div>
-              ) : null}
+              {/* 3 Tab Navigation Header */}
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', gap: '4px' }}>
+                <button 
+                  onClick={() => setActiveSubTab('job_details')} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px 14px', 
+                    background: 'none', 
+                    border: 'none', 
+                    borderBottom: activeSubTab === 'job_details' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    fontWeight: activeSubTab === 'job_details' ? '700' : '500',
+                    color: activeSubTab === 'job_details' ? 'var(--primary)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Job Info
+                </button>
+                <button 
+                  onClick={() => setActiveSubTab('profile')} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px 14px', 
+                    background: 'none', 
+                    border: 'none', 
+                    borderBottom: activeSubTab === 'profile' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    fontWeight: activeSubTab === 'profile' ? '700' : '500',
+                    color: activeSubTab === 'profile' ? 'var(--primary)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Candidate Profile
+                </button>
+                <button 
+                  onClick={() => setActiveSubTab('hiring')} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px 14px', 
+                    background: 'none', 
+                    border: 'none', 
+                    borderBottom: activeSubTab === 'hiring' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    fontWeight: activeSubTab === 'hiring' ? '700' : '500',
+                    color: activeSubTab === 'hiring' ? 'var(--primary)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Status & Interview
+                </button>
+              </div>
 
-              {activeSubTab === 'profile' ? (
+              {/* Sub-Tab 1: Applied Job Details */}
+              {activeSubTab === 'job_details' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {viewWorker.job ? (
+                    <>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>{viewWorker.job.title}</h4>
+                            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                              {viewWorker.job.company} • {viewWorker.job.location} ({viewWorker.job.workMode || 'On-site'})
+                            </p>
+                          </div>
+                          <Link 
+                            to={`/job/${viewWorker.jobId}`} 
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-ghost btn-sm" 
+                            style={{ fontSize: '12px', padding: '6px 12px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }}
+                          >
+                            View Job Page ↗
+                          </Link>
+                        </div>
+
+                        <div className="grid grid-2" style={{ gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border)', fontSize: '13px' }}>
+                          <div>
+                            <strong>Salary / Stipend:</strong>{' '}
+                            {viewWorker.job.salary?.min ? `₹${formatNumber(viewWorker.job.salary.min)} - ₹${formatNumber(viewWorker.job.salary.max || viewWorker.job.salary.min)} / ${viewWorker.job.salary.period || 'month'}` : 'Competitive / Negotiable'}
+                          </div>
+                          <div>
+                            <strong>Vacancies Allotted:</strong>{' '}
+                            <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{viewWorker.job.filledOpenings || 0}</span> / {viewWorker.job.openings} filled
+                          </div>
+                          <div>
+                            <strong>Job Type / Shift:</strong> {viewWorker.job.jobType || 'Full-time'}
+                          </div>
+                          <div>
+                            <strong>Posted Date:</strong> {new Date(viewWorker.job.postedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {viewWorker.job.description && (
+                        <div>
+                          <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Job Description</h4>
+                          <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+                            {viewWorker.job.description}
+                          </div>
+                        </div>
+                      )}
+
+                      {viewWorker.job.requirements && viewWorker.job.requirements.length > 0 && (
+                        <div>
+                          <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Role Requirements</h4>
+                          <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px' }}>
+                            <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
+                              {viewWorker.job.requirements.map((req: string, idx: number) => (
+                                <li key={idx}>{req}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Applied Position: <strong>{viewWorker.jobTitle}</strong></p>
+                      <Link to={`/job/${viewWorker.jobId}`} className="btn btn-primary btn-sm mt-3" style={{ fontSize: '12px' }}>
+                        View Job Details Page ↗
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sub-Tab 2: Candidate Profile */}
+              {activeSubTab === 'profile' && (
                 <>
                   {/* 1. Account Information */}
                   <div>
@@ -1637,50 +1946,82 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     )}
                   </div>
 
-                  {/* 6. Resume / Portfolio */}
+                  {/* 6. Resume Metadata */}
                   <div>
-                    <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Resume Metadata</h4>
+                    <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Resume Document</h4>
                     {viewWorker.resume ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '10px 14px', borderRadius: '4px', fontSize: '13px', border: '1px solid var(--border)' }}>
-                        <span>📄 {viewWorker.resume.name} ({viewWorker.resume.size || 'N/A'})</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '12px 16px', borderRadius: '6px', fontSize: '13px', border: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: '600' }}>📄 {viewWorker.resume.name} ({viewWorker.resume.size || 'N/A'})</span>
                         <button
                           onClick={() => {
                             setPreviewResume({ ...viewWorker.resume, userId: viewWorker.userId });
-                            setViewWorker(null);
                           }}
                           style={{
-                            color: 'var(--primary)',
+                            color: 'white',
+                            background: 'var(--primary)',
                             fontWeight: '600',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            background: 'transparent',
+                            gap: '6px',
                             border: 'none',
-                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
                             cursor: 'pointer',
-                            fontSize: '13px'
+                            fontSize: '12px'
                           }}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                           </svg>
-                          View Resume
+                          View Resume Document
                         </button>
                       </div>
                     ) : (
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No resume uploaded</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No resume uploaded by candidate</p>
                     )}
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* Sub-Tab 3: Status & Interview Scheduling */}
+              {activeSubTab === 'hiring' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* 1. Update Status */}
-                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <h4 style={{ margin: '0 0 12px', fontSize: '13px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>Application Status</h4>
+                  
+                  {/* Status Pipeline Timeline */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>Application Status Pipeline</h4>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                      {['applied', 'reviewed', 'shortlisted', 'accepted'].map((st, index) => {
+                        const isCurrent = viewWorker.status === st;
+                        const isPassed = ['applied', 'reviewed', 'shortlisted', 'accepted'].indexOf(viewWorker.status) >= index;
+                        return (
+                          <div key={st} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px' }}>
+                            <div style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: isCurrent ? 'var(--primary)' : isPassed ? '#16a34a' : 'var(--border)',
+                              color: isPassed || isCurrent ? '#ffffff' : 'var(--text-tertiary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              marginBottom: '6px'
+                            }}>
+                              {isPassed ? '✓' : index + 1}
+                            </div>
+                            <span style={{ fontSize: '11px', fontWeight: isCurrent ? '700' : '500', color: isCurrent ? 'var(--primary)' : 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                              {st === 'shortlisted' ? 'Interview' : st}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span className={`status-badge status-${viewWorker.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                        {capitalize(viewWorker.status)}
-                      </span>
+                      <label style={{ fontSize: '13px', fontWeight: '600' }}>Change Application Status:</label>
                       <select
                         value={viewWorker.status}
                         onChange={(e) => {
@@ -1694,97 +2035,59 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                           fontSize: '13px',
                           background: 'var(--bg)',
                           cursor: 'pointer',
+                          fontWeight: '600',
                           flex: 1
                         }}
                       >
-                        <option value="applied">Applied</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="shortlisted">Shortlisted</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="applied">1. Applied (Received)</option>
+                        <option value="reviewed">2. Under Review</option>
+                        <option value="shortlisted">3. Shortlisted / Interview Scheduled</option>
+                        <option value="accepted">4. Accepted / Hired</option>
+                        <option value="rejected">5. Rejected</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* 2. Direct Actions */}
-                  <div className="grid grid-2" style={{ gap: '12px' }}>
-                    {viewWorker.phone && (
-                      <a
-                        href={`https://wa.me/${viewWorker.phone.replace(/[^0-9]/g, '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          background: '#16a34a',
-                          color: 'white',
-                          textDecoration: 'none',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          padding: '10px'
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.978L2 22l5.178-1.357a9.945 9.945 0 0 0 4.83 1.259h.004c5.507 0 9.99-4.479 9.991-9.985.002-2.67-1.035-5.18-2.924-7.07C17.189 3.036 14.678 2 12.012 2zm5.727 14.04c-.314.88-1.52 1.616-2.09 1.706-.51.08-1.18.15-3.83-1.02-3.39-1.51-5.58-5.11-5.75-5.36-.17-.25-1.38-2.03-1.38-3.87 0-1.84.9-2.73 1.22-3.08.27-.3.73-.38.96-.38.22 0 .44.01.63.02.2.01.47-.07.73.61.27.69.93 2.51 1.01 2.68.08.17.14.37.02.6-.11.23-.25.37-.37.52-.12.15-.26.3-.37.42-.12.13-.25.27-.1.54.15.26.68 1.2 1.46 1.94.99.96 1.83 1.25 2.09 1.38.26.13.41.11.56-.06.15-.17.65-.81.82-1.09.18-.28.36-.23.61-.13.25.1 1.6.83 1.88.98.28.14.47.21.54.34.07.13.07.76-.24 1.64z"/>
+                  {/* Existing Interview Details Box (If Scheduled) */}
+                  {viewWorker.interviewDate && (
+                    <div style={{ background: 'rgba(37, 99, 235, 0.06)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(37, 99, 235, 0.2)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: '700', fontSize: '14px' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        Chat on WhatsApp
-                      </a>
-                    )}
-                    {viewWorker.resume ? (
-                      <button
-                        className="btn"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          background: 'var(--primary)',
-                          color: 'white',
-                          border: 'none',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          padding: '10px',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => {
-                          setPreviewResume({ ...viewWorker.resume, userId: viewWorker.userId });
-                          setViewWorker(null);
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        View Resume
-                      </button>
-                    ) : (
-                      <button
-                        className="btn"
-                        disabled
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-tertiary)',
-                          border: '1px solid var(--border)',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          padding: '10px',
-                          cursor: 'not-allowed'
-                        }}
-                      >
-                        No Resume Uploaded
-                      </button>
-                    )}
-                  </div>
+                        <span>Scheduled Interview Details</span>
+                      </div>
+                      <div className="grid grid-2" style={{ gap: '10px', fontSize: '13px' }}>
+                        <div><strong>Date:</strong> {viewWorker.interviewDate}</div>
+                        <div><strong>Time:</strong> {viewWorker.interviewTime}</div>
+                      </div>
+                      {viewWorker.venueAddress && (
+                        <div style={{ fontSize: '13px' }}><strong>Venue Address:</strong> {viewWorker.venueAddress}</div>
+                      )}
+                      {viewWorker.mapsLink && (
+                        <div style={{ marginTop: '4px' }}>
+                          <a 
+                            href={viewWorker.mapsLink} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: '12px', color: 'var(--primary)', borderColor: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px' }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            Open Venue in Google Maps ↗
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  {/* 3. Schedule Interview */}
-                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <h4 style={{ margin: '0 0 12px', fontSize: '13px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>Schedule Interview</h4>
+                  {/* Schedule / Reschedule Interview Form */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>
+                      {viewWorker.interviewDate ? 'Reschedule Interview' : 'Schedule Interview'}
+                    </h4>
                     <form onSubmit={async (e) => {
                       e.preventDefault();
                       if (!interviewDate || !interviewTime || !venueAddress) {
@@ -1801,11 +2104,14 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         });
                         if (res.success) {
                           showToast('Interview scheduled and candidate notified via email', 'success');
-                          setViewWorker((prev: any) => ({ ...prev, status: 'shortlisted' }));
-                          setInterviewDate('');
-                          setInterviewTime('');
-                          setVenueAddress('');
-                          setMapsLink('');
+                          setViewWorker((prev: any) => ({
+                            ...prev,
+                            status: 'shortlisted',
+                            interviewDate,
+                            interviewTime,
+                            venueAddress,
+                            mapsLink
+                          }));
                         } else {
                           showToast(res.error || 'Failed to schedule interview', 'error');
                         }
@@ -1817,7 +2123,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div className="grid grid-2" style={{ gap: '12px' }}>
                         <div className="form-group">
-                          <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Date</label>
+                          <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Interview Date</label>
                           <input
                             type="date"
                             className="form-input"
@@ -1828,7 +2134,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                           />
                         </div>
                         <div className="form-group">
-                          <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Time</label>
+                          <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Interview Time</label>
                           <input
                             type="time"
                             className="form-input"
@@ -1840,13 +2146,13 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Venue Address</label>
+                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Venue / Factory Gate Address</label>
                         <textarea
                           className="form-input"
                           required
                           rows={2}
                           value={venueAddress}
-                          placeholder="e.g. Factory Office Main Gate, Chakan MIDC, Pune"
+                          placeholder="e.g. Plant Gate 2, Dream Agency Factory, Chakan MIDC, Pune"
                           onChange={(e) => setVenueAddress(e.target.value)}
                           style={{ padding: '8px', minHeight: '60px', fontFamily: 'inherit' }}
                         />
@@ -1863,17 +2169,70 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         />
                       </div>
                       <button type="submit" className="btn btn-primary" style={{ padding: '10px', fontSize: '13px', fontWeight: '600' }} disabled={isScheduling}>
-                        {isScheduling ? 'Scheduling...' : 'Schedule & Send Email'}
+                        {isScheduling ? 'Scheduling Interview...' : 'Schedule & Notify Worker via Email'}
                       </button>
                     </form>
                   </div>
 
-                  {/* 4. Send Custom Email */}
-                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <h4 style={{ margin: '0 0 12px', fontSize: '13px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>Send Email to Worker</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Direct Actions & Email Hub */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: '700' }}>Direct Worker Communication</h4>
+                    
+                    <div className="grid grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
+                      {viewWorker.phone && (
+                        <a
+                          href={`https://wa.me/${viewWorker.phone.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            background: '#16a34a',
+                            color: 'white',
+                            textDecoration: 'none',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            padding: '10px'
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.335 4.978L2 22l5.178-1.357a9.945 9.945 0 0 0 4.83 1.259h.004c5.507 0 9.99-4.479 9.991-9.985.002-2.67-1.035-5.18-2.924-7.07C17.189 3.036 14.678 2 12.012 2zm5.727 14.04c-.314.88-1.52 1.616-2.09 1.706-.51.08-1.18.15-3.83-1.02-3.39-1.51-5.58-5.11-5.75-5.36-.17-.25-1.38-2.03-1.38-3.87 0-1.84.9-2.73 1.22-3.08.27-.3.73-.38.96-.38.22 0 .44.01.63.02.2.01.47-.07.73.61.27.69.93 2.51 1.01 2.68.08.17.14.37.02.6-.11.23-.25.37-.37.52-.12.15-.26.3-.37.42-.12.13-.25.27-.1.54.15.26.68 1.2 1.46 1.94.99.96 1.83 1.25 2.09 1.38.26.13.41.11.56-.06.15-.17.65-.81.82-1.09.18-.28.36-.23.61-.13.25.1 1.6.83 1.88.98.28.14.47.21.54.34.07.13.07.76-.24 1.64z"/>
+                          </svg>
+                          Chat on WhatsApp
+                        </a>
+                      )}
+                      {viewWorker.resume ? (
+                        <button
+                          className="btn btn-primary"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            padding: '10px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setPreviewResume({ ...viewWorker.resume, userId: viewWorker.userId });
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          View Resume Document
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {/* Email Compose */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
                       <div className="form-group">
-                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Subject</label>
+                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Email Subject</label>
                         <input
                           type="text"
                           className="form-input"
@@ -1891,7 +2250,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                           rows={4}
                           value={emailMessage}
                           onChange={(e) => setEmailMessage(e.target.value)}
-                          style={{ padding: '8px', minHeight: '100px', fontFamily: 'inherit', fontSize: '13px' }}
+                          style={{ padding: '8px', minHeight: '90px', fontFamily: 'inherit', fontSize: '13px' }}
                         />
                       </div>
                       
@@ -1915,7 +2274,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                           </svg>
-                          Open in Gmail
+                          Open in Gmail ↗
                         </a>
                         <a
                           href={`mailto:${viewWorker.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailMessage)}`}
@@ -1938,11 +2297,12 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                             <polyline points="22,6 12,13 2,6"/>
                           </svg>
-                          Open Default Mail App
+                          Default Mail App
                         </a>
                       </div>
                     </div>
                   </div>
+
                 </div>
               )}
 

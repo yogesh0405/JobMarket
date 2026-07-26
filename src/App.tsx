@@ -31,6 +31,8 @@ import { CategorySkillManagementPage } from './modules/admin/pages/CategorySkill
 import { ReportsPage } from './modules/admin/pages/ReportsPage';
 import { SettingsPage } from './modules/admin/pages/SettingsPage';
 import { SupportManagementPage } from './modules/admin/pages/SupportManagementPage';
+import { AdminAdvertisementPage } from './modules/admin/pages/AdminAdvertisementPage';
+import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
 
 export const App: React.FC = () => {
   const { syncUser } = useAuth();
@@ -83,6 +85,7 @@ export const App: React.FC = () => {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="job-approvals" element={<JobApprovalPage />} />
+        <Route path="advertisements" element={<AdminAdvertisementPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="employers" element={<EmployerManagementPage />} />
@@ -91,6 +94,7 @@ export const App: React.FC = () => {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="support" element={<SupportManagementPage />} />
+        <Route path="broadcast" element={<BroadcastPage />} />
       </Route>
 
       {/* Fallback to Home */}

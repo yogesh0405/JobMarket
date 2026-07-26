@@ -31,38 +31,19 @@ export class TokenService {
       const { accessToken, refreshToken } = generateTokens({ userId: payload.userId, role: payload.role });
       const newRefreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        
-        // Revoke old session
-        await SessionRepository.revokeSession(session.id, client);
+      // Update current active session with new refresh token hash and extend expiration date by 7 days
+      const updateQuery = `
+        UPDATE sessions 
+        SET refresh_token_hash = $1, expires_at = NOW() + INTERVAL '7 days'
+        WHERE id = $2 AND revoked = FALSE;
+      `;
+      await pool.query(updateQuery, [newRefreshTokenHash, session.id]);
 
-        // Create new session
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
-        const newSession = await SessionRepository.createSession(
-          payload.userId,
-          newRefreshTokenHash,
-          expiresAt,
-          ipAddress,
-          session.user_agent,
-          session.device_name,
-          client
-        );
-
-        await client.query('COMMIT');
-
-        return {
-          accessToken,
-          refreshToken,
-          sessionId: newSession.id
-        };
-      } catch (dbError) {
-        await client.query('ROLLBACK');
-        throw dbError;
-      } finally {
-        client.release();
-      }
+      return {
+        accessToken,
+        refreshToken,
+        sessionId: session.id
+      };
     } catch (error) {
       logger.error('Refresh token failed', error);
       throw new UnauthorizedError('Invalid or expired refresh token');

@@ -103,17 +103,15 @@ export class AdminRepository {
     `;
 
     const topCategoriesQuery = `
-      SELECT j.trade as category, COUNT(*) as count
+      SELECT COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') as category, COUNT(*)::int as count
       FROM jobs j
-      WHERE j.trade IS NOT NULL
-      GROUP BY j.trade ORDER BY count DESC LIMIT 5;
+      GROUP BY COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') ORDER BY count DESC LIMIT 5;
     `;
 
     const topLocationsQuery = `
-      SELECT j.midc_zone as location, COUNT(*) as count
+      SELECT COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') as location, COUNT(*)::int as count
       FROM jobs j
-      WHERE j.midc_zone IS NOT NULL
-      GROUP BY j.midc_zone ORDER BY count DESC LIMIT 5;
+      GROUP BY COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') ORDER BY count DESC LIMIT 5;
     `;
 
     const [regRes, jobRes, appRes, catRes, locRes] = await Promise.all([

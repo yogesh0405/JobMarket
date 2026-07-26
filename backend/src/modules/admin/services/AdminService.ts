@@ -4,6 +4,9 @@ import { UserRepository } from '../../auth/repositories/UserRepository';
 import { AuditRepository } from '../../auth/repositories/AuditRepository';
 import { BadRequestError, NotFoundError } from '../../../errors/AppError';
 import { pool } from '../../../config/database/pool';
+import { SupportRepository } from '../../support/repositories/SupportRepository';
+import { EmailService } from '../../auth/services/EmailService';
+import { logger } from '../../../utils/logger';
 
 export class AdminService {
   // Stats & Charts
@@ -110,6 +113,30 @@ export class AdminService {
     return { success: true, job: updatedJob };
   }
 
+  static async unpublishJob(jobId: string, adminId: string, ip?: string, ua?: string) {
+    const job = await AdminRepository.getJobDetails(jobId);
+    if (!job) {
+      throw new NotFoundError('Job listing not found');
+    }
+
+    const updatedJob = await AdminRepository.updateJobStatus(jobId, 'UNPUBLISHED');
+    await AuditRepository.logAction('JOB_UNPUBLISHED', adminId, 'Admin', ip, ua, { jobId, title: job.title });
+
+    return { success: true, job: updatedJob };
+  }
+
+  static async deleteJob(jobId: string, adminId: string, ip?: string, ua?: string) {
+    const job = await AdminRepository.getJobDetails(jobId);
+    if (!job) {
+      throw new NotFoundError('Job listing not found');
+    }
+
+    await pool.query('DELETE FROM jobs WHERE id = $1', [jobId]);
+    await AuditRepository.logAction('JOB_DELETED', adminId, 'Admin', ip, ua, { jobId, title: job.title });
+
+    return { success: true, message: 'Job listing deleted successfully' };
+  }
+
   // Categories CRUD
   static async listCategories() {
     return AdminRepository.getCategories();
@@ -166,6 +193,75 @@ export class AdminService {
     await AdminRepository.deleteSkill(id);
     await AuditRepository.logAction('SKILL_DELETED', adminId, 'Admin', ip, ua, { skillId: id });
     return { success: true };
+  }
+
+  static async broadcastNotifications(data: {
+    targetAudience: 'ALL' | 'WORKERS' | 'EMPLOYERS' | 'CATEGORY_WORKERS';
+    category?: string;
+    channels: ('IN_APP' | 'EMAIL')[];
+    subject: string;
+    message: string;
+    actionLink?: string;
+  }, adminId: string, ip?: string, ua?: string) {
+    const { targetAudience, category, channels, subject, message, actionLink } = data;
+
+    if (!channels || channels.length === 0) {
+      throw new BadRequestError('At least one notification channel (IN_APP or EMAIL) must be selected');
+    }
+    if (!subject || !subject.trim() || !message || !message.trim()) {
+      throw new BadRequestError('Subject and message body are required');
+    }
+
+    let query = 'SELECT id, email, name, role, trade_specialization FROM users WHERE status != \'BLOCKED\'';
+    const values: any[] = [];
+
+    if (targetAudience === 'WORKERS') {
+      query += ' AND role = \'candidate\'';
+    } else if (targetAudience === 'EMPLOYERS') {
+      query += ' AND role = \'employer\'';
+    } else if (targetAudience === 'CATEGORY_WORKERS' && category) {
+      query += ' AND role = \'candidate\' AND (LOWER(trade_specialization) = LOWER($1) OR headline ILIKE $2)';
+      values.push(category, `%${category}%`);
+    }
+
+    const { rows: targetUsers } = await pool.query(query, values);
+
+    let inAppDelivered = 0;
+    let emailsSent = 0;
+
+    // 1. Deliver In-App Notifications in Batch
+    if (channels.includes('IN_APP')) {
+      const userIds = targetUsers.map(u => u.id);
+      inAppDelivered = await SupportRepository.broadcastNotifications(userIds, subject, message, actionLink);
+    }
+
+    // 2. Dispatch Email Broadcasts asynchronously via EmailService
+    if (channels.includes('EMAIL')) {
+      for (const u of targetUsers) {
+        EmailService.sendBroadcastNotification(u.email, u.name || 'User', subject, message, actionLink)
+          .then(success => { if (success) emailsSent++; })
+          .catch(err => logger.error(`Broadcast email failed for ${u.email}:`, err));
+      }
+    }
+
+    try {
+      await AuditRepository.logAction('BROADCAST_SENT', adminId, 'Admin', ip, ua, {
+        targetAudience,
+        category,
+        channels,
+        totalRecipients: targetUsers.length,
+        subject
+      });
+    } catch (auditErr) {
+      logger.error('Audit logging failed for broadcast:', auditErr);
+    }
+
+    return {
+      success: true,
+      totalRecipients: targetUsers.length,
+      inAppDelivered,
+      message: `Broadcast successfully dispatched to ${targetUsers.length} users across selected channels.`
+    };
   }
 
   // Settings

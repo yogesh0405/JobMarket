@@ -47,6 +47,17 @@ export class SessionRepository {
     return result.rows[0] || null;
   }
 
+  static async findActiveUserSessions(userId: string): Promise<Session[]> {
+    const query = `
+      SELECT id, user_id, ip_address, user_agent, device_name, expires_at, revoked, created_at, last_used_at
+      FROM sessions
+      WHERE user_id = $1 AND revoked = FALSE
+      ORDER BY last_used_at DESC;
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+  }
+
   static async updateLastUsed(sessionId: string, client: any = pool): Promise<void> {
     const query = 'UPDATE sessions SET last_used_at = CURRENT_TIMESTAMP WHERE id = $1';
     await client.query(query, [sessionId]);

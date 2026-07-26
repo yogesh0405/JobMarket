@@ -103,45 +103,42 @@ export class JobRepository {
 
   static async getJobsByEmployer(employerId: string): Promise<any[]> {
     const query = `
-      SELECT * FROM jobs 
-      WHERE employer_id = $1
-      ORDER BY posted_at DESC
+      SELECT 
+        j.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'userId', ja.user_id,
+              'name', u.name,
+              'email', u.email,
+              'phone', u.phone,
+              'appliedAt', ja.applied_at,
+              'status', ja.status,
+              'resume', u.resume,
+              'tradeSpecialization', u.trade_specialization,
+              'location', u.location,
+              'headline', u.headline,
+              'skills', u.skills,
+              'preferredShift', u.preferred_shift,
+              'requiresBus', u.requires_bus,
+              'requiresAccommodation', u.requires_accommodation,
+              'experience', u.experience,
+              'education', u.education,
+              'profilePictureUrl', u.profile_picture_url,
+              'aadhaarVerified', u.aadhaar_verified,
+              'createdAt', u.created_at
+            )
+          ) FILTER (WHERE ja.user_id IS NOT NULL), '[]'
+        ) as applicants
+      FROM jobs j
+      LEFT JOIN job_applications ja ON j.id = ja.job_id
+      LEFT JOIN users u ON ja.user_id = u.id
+      WHERE j.employer_id = $1
+      GROUP BY j.id
+      ORDER BY j.posted_at DESC
     `;
     const result = await pool.query(query, [employerId]);
-    const jobs = result.rows;
-
-    for (const job of jobs) {
-      const appsQuery = `
-        SELECT 
-          ja.user_id as "userId",
-          u.name,
-          u.email,
-          u.phone,
-          ja.applied_at as "appliedAt",
-          ja.status,
-          u.resume,
-          u.trade_specialization as "tradeSpecialization",
-          u.location,
-          u.headline,
-          u.skills,
-          u.preferred_shift as "preferredShift",
-          u.requires_bus as "requiresBus",
-          u.requires_accommodation as "requiresAccommodation",
-          u.experience,
-          u.education,
-          u.profile_picture_url as "profilePictureUrl",
-          u.aadhaar_verified as "aadhaarVerified",
-          u.created_at as "createdAt"
-        FROM job_applications ja
-        JOIN users u ON ja.user_id = u.id
-        WHERE ja.job_id = $1
-        ORDER BY ja.applied_at DESC
-      `;
-      const appsResult = await pool.query(appsQuery, [job.id]);
-      job.applicants = appsResult.rows;
-    }
-
-    return jobs.map(row => this.mapDbJobToApi(row));
+    return result.rows.map(row => this.mapDbJobToApi(row));
   }
 
   static async createJob(employerId: string, company: string, jobData: JobData): Promise<any> {

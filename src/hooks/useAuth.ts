@@ -214,7 +214,7 @@ export const useAuth = () => {
             experience: apiUser.experience || [],
             education: apiUser.education || [],
             skills: apiUser.skills || [],
-            savedJobs: [],
+            savedJobs: apiUser.savedJobs || state.currentUser?.savedJobs || [],
             appliedJobs: apiUser.appliedJobs || [],
             appliedJobsWithStatus: apiUser.appliedJobsWithStatus || [],
             headline: apiUser.headline || '',

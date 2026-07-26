@@ -18,7 +18,7 @@ export const translations = {
     heroTitle: 'Discover Factory & Technical Jobs near you',
     heroSubtitle: 'Direct hiring for ITI, CNC operators, Welders, Fitters & Helpers in MIDC industrial clusters.',
     searchPlaceholder: 'Job title, trade, or company',
-    locationPlaceholder: 'MIDC Zone or City',
+    locationPlaceholder: 'India (MIDC Zone or City)',
     searchBtn: 'Search Jobs',
     popular: 'Popular Trades',
     statsActiveJobs: 'Active Listings',

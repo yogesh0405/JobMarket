@@ -133,7 +133,7 @@ export class CloudinaryUtil {
         ...params,
       };
 
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

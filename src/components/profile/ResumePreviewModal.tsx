@@ -24,6 +24,47 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
     setLoading(true);
     setErrorMsg('');
 
+    const processResumeUrl = (urlStr: string) => {
+      if (urlStr.startsWith('data:')) {
+        try {
+          const base64Parts = urlStr.split(',');
+          const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : urlStr;
+          const mimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : (resume.type || 'application/pdf');
+
+          const byteCharacters = atob(base64WithoutHeader);
+          const byteArrays = [];
+          const sliceSize = 512;
+          for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+            const slice = byteCharacters.slice(offset, offset + sliceSize);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+          }
+          const blob = new Blob(byteArrays, { type: mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+          setObjectUrl(blobUrl);
+        } catch (e) {
+          console.error('Error converting base64 to Blob:', e);
+          setObjectUrl(urlStr);
+        }
+      } else if (urlStr.includes('/image/upload/') && urlStr.endsWith('.pdf')) {
+        // Fix Cloudinary legacy image path for PDFs
+        setObjectUrl(urlStr.replace('/image/upload/', '/raw/upload/'));
+      } else {
+        setObjectUrl(urlStr);
+      }
+    };
+
+    // If resume object already contains a valid URL or data URL, process it
+    if (resume.url) {
+      processResumeUrl(resume.url);
+      setLoading(false);
+      return;
+    }
+
     const fetchUrl = userId ? `/api/v1/auth/resume?userId=${userId}` : '/api/v1/auth/resume';
 
     apiFetch(fetchUrl)
@@ -34,38 +75,19 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
       .then(data => {
         if (!isMounted) return;
         if (data.success && data.url) {
-          const urlStr = data.url;
-          if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
-            setObjectUrl(urlStr);
-          } else {
-            const base64Parts = urlStr.split(',');
-            const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : urlStr;
-            const mimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : resume.type;
-
-            const byteCharacters = atob(base64WithoutHeader);
-            const byteArrays = [];
-            const sliceSize = 512;
-            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-              const slice = byteCharacters.slice(offset, offset + sliceSize);
-              const byteNumbers = new Array(slice.length);
-              for (let i = 0; i < slice.length; i++) {
-                byteNumbers[i] = slice.charCodeAt(i);
-              }
-              const byteArray = new Uint8Array(byteNumbers);
-              byteArrays.push(byteArray);
-            }
-            const blob = new Blob(byteArrays, { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            setObjectUrl(url);
-          }
+          processResumeUrl(data.url);
         } else {
           throw new Error('No resume data returned');
         }
       })
       .catch(err => {
         if (!isMounted) return;
-        console.error(err);
-        setErrorMsg('Failed to load resume document.');
+        if (resume.url) {
+          processResumeUrl(resume.url);
+        } else {
+          console.error(err);
+          setErrorMsg('Failed to load resume document.');
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -85,7 +107,7 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
   const isImage = resume.type.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(resume.name);
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.75)', zIndex: 9999 }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.75)', zIndex: 99999 }}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '900px', height: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border)' }}>
         <div className="modal-header" style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)' }}>
           <h3 className="modal-title" style={{ margin: 0, fontSize: 'var(--fs-lg)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
@@ -94,17 +116,35 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
             </svg>
             {resume.name}
           </h3>
-          <button className="modal-close" onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}>✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {objectUrl && (
+              <a
+                href={objectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in new tab"
+                style={{
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  textDecoration: 'none'
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </a>
+            )}
+            <button className="modal-close" onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}>✕</button>
+          </div>
         </div>
         
         <div className="modal-body" style={{ flex: 1, padding: 0, background: '#525659', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
           {loading ? (
             <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: '#ffffff' }}>
-              <svg className="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite', marginBottom: 'var(--space-4)' }}>
-                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-              </svg>
-              <h3>Loading resume...</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '500' }}>Loading resume...</h3>
             </div>
           ) : errorMsg ? (
             <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: '#ffffff' }}>
@@ -114,13 +154,19 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
               <h3>{errorMsg}</h3>
             </div>
           ) : objectUrl && isPdf ? (
-            <iframe 
-              src={objectUrl} 
-              title={resume.name} 
-              width="100%" 
-              height="100%" 
-              style={{ border: 'none', background: '#525659' }}
-            />
+            <div style={{ width: '100%', height: '100%', position: 'relative', background: '#323639' }}>
+              <iframe 
+                src={
+                  objectUrl.startsWith('blob:') || objectUrl.startsWith('data:')
+                    ? objectUrl
+                    : `https://docs.google.com/gview?url=${encodeURIComponent(objectUrl)}&embedded=true`
+                }
+                title={resume.name} 
+                width="100%" 
+                height="100%" 
+                style={{ border: 'none', background: '#323639' }}
+              />
+            </div>
           ) : objectUrl && isImage ? (
             <div style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', overflow: 'auto' }}>
               <img 
@@ -140,6 +186,20 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
         </div>
         
         <div className="modal-footer" style={{ padding: 'var(--space-4)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', background: 'var(--bg-secondary)' }}>
+          {objectUrl && (
+            <a 
+              href={objectUrl} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Open Full Document
+            </a>
+          )}
           {!loading && !errorMsg && objectUrl && (
             <a 
               href={objectUrl} 

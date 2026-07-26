@@ -22,14 +22,14 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
 
   const saved = isJobSaved(job.id);
 
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) {
       showToast('Please login to save jobs', 'warning');
       navigate('/login');
       return;
     }
-    const currentlySaved = toggleSaveJob(job.id);
+    const currentlySaved = await toggleSaveJob(job.id);
     showToast(currentlySaved ? 'Job saved!' : 'Job removed from saved', currentlySaved ? 'success' : 'info');
   };
 

@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { UserRole } from '../../types';
 
+import { ForgotPasswordModal } from '../../components/auth/ForgotPasswordModal';
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +19,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
   useEffect(() => {
     // Clear demo credentials — users must log in with real credentials
@@ -153,7 +156,16 @@ export const LoginPage: React.FC = () => {
               <label className="form-checkbox">
                 <input type="checkbox" defaultChecked /> Remember me
               </label>
-              <a href="#" className="auth-forgot" onClick={(e) => { e.preventDefault(); showToast('Password reset info sent on SMS.', 'info'); }}>Forgot Password?</a>
+              <a
+                href="#"
+                className="auth-forgot"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsForgotModalOpen(true);
+                }}
+              >
+                Forgot Password?
+              </a>
             </div>
             
             <button type="submit" className="btn btn-primary btn-lg auth-submit" disabled={isLoading} style={{ background: 'var(--gradient-accent)' }}>
@@ -167,6 +179,12 @@ export const LoginPage: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Forgot Password Email OTP Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+      />
     </div>
   );
 };

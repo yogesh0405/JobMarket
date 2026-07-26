@@ -159,7 +159,8 @@ export const WorkerManagementPage: React.FC = () => {
                           className="btn btn-outline"
                           style={{ padding: '4px 8px', fontSize: '11px', background: 'var(--surface)', border: '1px solid var(--border)' }}
                           onClick={() => {
-                            setPreviewResume(worker.resume);
+                            const resObj = typeof worker.resume === 'string' ? JSON.parse(worker.resume) : worker.resume;
+                            setPreviewResume(resObj);
                             setPreviewUserId(worker.id);
                           }}
                         >

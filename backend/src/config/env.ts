@@ -10,10 +10,11 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('5m'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('1d'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   BREVO_API_KEY: z.string().min(1, 'BREVO_API_KEY is required'),
   CLOUDINARY_URL: z.string().min(1, 'CLOUDINARY_URL is required'),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173'),
 });
 
 const _env = envSchema.safeParse(process.env);

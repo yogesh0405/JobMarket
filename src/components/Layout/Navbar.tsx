@@ -5,6 +5,8 @@ import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation, Language } from '../../utils/translations';
 import { getInitials } from '../../utils/helpers';
+import { HeaderSearchBar } from './HeaderSearchBar';
+import { NavbarNotificationBell } from './NavbarNotificationBell';
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -62,22 +64,32 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
+  const isSearchAllowed = location.pathname === '/' || location.pathname === '/jobs' || location.pathname.startsWith('/jobs');
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch({ type: 'SET_LANGUAGE', payload: e.target.value as Language });
     showToast(e.target.value === 'mr' ? 'भाषा बदलली: मराठी' : e.target.value === 'hi' ? 'भाषा बदली: हिन्दी' : 'Language changed: English', 'info');
   };
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''}`}>
       <div className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
       <div className="navbar-inner">
-        <Link to="/" className="navbar-brand">
-          <div className="navbar-logo" style={{ background: 'var(--gradient-accent)' }}>JM</div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.brand}</span>
-            <span style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '-2px', fontWeight: 'bold' }}>{t.tagline}</span>
-          </div>
-        </Link>
+        <div className="navbar-header-row">
+          <Link to="/" className="navbar-brand">
+            <div className="navbar-logo" style={{ background: 'var(--gradient-accent)' }}>JM</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.brand}</span>
+              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '-2px', fontWeight: 'bold' }}>{t.tagline}</span>
+            </div>
+          </Link>
+
+          {/* DESKTOP SEARCH BAR */}
+          {isSearchAllowed && (
+            <div className="desktop-search-container">
+              <HeaderSearchBar />
+            </div>
+          )}
 
         <div ref={mobileMenuRef} className={`navbar-nav ${mobileMenuOpen ? 'open' : ''}`}>
           {/* MOBILE ONLY DRAWER SECTION */}
@@ -145,6 +157,14 @@ export const Navbar: React.FC = () => {
                           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                         </svg>
                         {t.savedJobs}
+                      </Link>
+                      {/* Security & Sessions */}
+                      <Link to="/dashboard?tab=security" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        Security & Sessions
                       </Link>
                     </>
                   )}
@@ -250,15 +270,23 @@ export const Navbar: React.FC = () => {
           {(!currentUser || currentUser.role !== 'candidate') && (
             <Link to="/post-job" className={`nav-link ${isActive('/post-job') ? 'active' : ''}`}>{t.postJob}</Link>
           )}
-          {currentUser && (
+          {currentUser && currentUser.role !== 'employer' && (
             <Link to="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>{t.dashboard}</Link>
           )}
         </div>
 
-        <div className="navbar-actions" style={{ gap: 'var(--space-2)' }}>
+        <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <NavbarNotificationBell />
+
           {currentUser ? (
-            <div className="navbar-user relative" onClick={() => setDropdownOpen(!dropdownOpen)} ref={dropdownRef} style={{ border: 'none', padding: 0, background: 'transparent' }}>
-              <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div 
+              className="navbar-user relative desktop-only-avatar" 
+              onClick={() => navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard')} 
+              ref={dropdownRef} 
+              style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center' }}
+              title="Dashboard Overview"
+            >
+              <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
                 {currentUser.profilePictureUrl ? (
                   <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -310,6 +338,13 @@ export const Navbar: React.FC = () => {
                       {t.postJob}
                     </button>
                   )}
+                  <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=security')}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Security & Sessions
+                  </button>
                   <div className="dropdown-divider"></div>
                   <button className="dropdown-item danger" onClick={handleLogout}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
@@ -326,13 +361,21 @@ export const Navbar: React.FC = () => {
               <Link to="/signup" className="btn btn-primary btn-sm btn-pill" style={{ background: 'var(--gradient-accent)' }}>{t.signup}</Link>
             </>
           )}
-        </div>
 
-        <div className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          <span></span><span></span><span></span>
+          <div className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <span></span><span></span><span></span>
+          </div>
         </div>
       </div>
-    </nav>
+
+      {/* MOBILE SEARCH STRIP BELOW HEADER ROW */}
+      {isSearchAllowed && (
+        <div className="mobile-search-strip">
+          <HeaderSearchBar />
+        </div>
+      )}
+    </div>
+  </nav>
   );
 };
 export default Navbar;

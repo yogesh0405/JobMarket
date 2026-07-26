@@ -28,11 +28,24 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         language: action.payload
       };
 
-    case 'LOGIN':
+    case 'LOGIN': {
+      const incomingUser = action.payload;
+      const existingUser = state.currentUser?.id === incomingUser.id ? state.currentUser : state.users.find(u => u.id === incomingUser.id);
+
+      const mergedSavedJobs = (incomingUser.savedJobs && incomingUser.savedJobs.length > 0)
+        ? incomingUser.savedJobs
+        : (existingUser?.savedJobs || []);
+
+      const userWithSavedJobs = {
+        ...incomingUser,
+        savedJobs: mergedSavedJobs
+      };
+
       return {
         ...state,
-        currentUser: action.payload
+        currentUser: userWithSavedJobs
       };
+    }
 
     case 'LOGOUT':
       return {

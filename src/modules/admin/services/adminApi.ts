@@ -120,6 +120,24 @@ export class AdminApiService {
     return json.data;
   }
 
+  static async unpublishJob(id: string) {
+    const res = await apiFetch(`/api/v1/admin/jobs/${id}/unpublish`, {
+      method: 'PATCH'
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to unpublish job');
+    return json.data;
+  }
+
+  static async deleteJob(id: string) {
+    const res = await apiFetch(`/api/v1/admin/jobs/${id}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to delete job');
+    return json;
+  }
+
   // Categories CRUD
   static async getCategories() {
     const res = await apiFetch('/api/v1/admin/categories');
@@ -236,5 +254,23 @@ export class AdminApiService {
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to fetch audit logs');
     return json.data;
+  }
+
+  // Broadcast System
+  static async broadcastNotifications(data: {
+    targetAudience: 'ALL' | 'WORKERS' | 'EMPLOYERS' | 'CATEGORY_WORKERS';
+    category?: string;
+    channels: ('IN_APP' | 'EMAIL')[];
+    subject: string;
+    message: string;
+    actionLink?: string;
+  }) {
+    const res = await apiFetch('/api/v1/admin/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to dispatch broadcast');
+    return json;
   }
 }

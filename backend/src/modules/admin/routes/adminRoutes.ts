@@ -33,6 +33,8 @@ router.get('/jobs/pending', AdminController.listPendingJobs);
 router.get('/jobs/:id', AdminController.getJobDetails);
 router.patch('/jobs/:id/approve', adminActionLimiter, AdminController.approveJob);
 router.patch('/jobs/:id/reject', adminActionLimiter, AdminController.rejectJob);
+router.patch('/jobs/:id/unpublish', adminActionLimiter, AdminController.unpublishJob);
+router.delete('/jobs/:id', adminActionLimiter, AdminController.deleteJob);
 
 // Categories
 router.get('/categories', AdminController.listCategories);
@@ -54,5 +56,8 @@ router.patch('/reports/:id/resolve', adminActionLimiter, AdminController.resolve
 router.get('/audit', AdminController.listAuditLogs);
 router.get('/settings', AdminController.getSettings);
 router.put('/settings', adminActionLimiter, AdminController.updateSettings);
+
+// Broadcast Notifications System
+router.post('/broadcast', adminActionLimiter, AdminController.broadcastNotifications);
 
 export default router;

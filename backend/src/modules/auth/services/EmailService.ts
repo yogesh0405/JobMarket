@@ -3,6 +3,164 @@ import { logger } from '../../../utils/logger';
 
 export class EmailService {
   /**
+   * Send System/Marketing Broadcast Email
+   */
+  static async sendBroadcastNotification(toEmail: string, toName: string, subject: string, messageBody: string, actionLink?: string): Promise<boolean> {
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const currentYear = new Date().getFullYear();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${subject} - CSN JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <span style="color:#2563eb;font-size:24px;font-weight:900;letter-spacing:-0.5px;">CSN JobMarket</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;padding:36px;box-shadow:0 4px 20px rgba(0,0,0,0.06);border:1px solid #e2e8f0;">
+              <h2 style="margin:0 0 16px;color:#0f172a;font-size:20px;font-weight:700;">${subject}</h2>
+              <p style="color:#475569;font-size:15px;line-height:1.6;margin-bottom:20px;">
+                Hello <strong>${toName}</strong>,
+              </p>
+              <div style="color:#334155;font-size:15px;line-height:1.7;white-space:pre-line;margin-bottom:28px;">
+                ${messageBody}
+              </div>
+              ${actionLink ? `
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="${actionLink}" style="background-color:#2563eb;color:#ffffff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;display:inline-block;box-shadow:0 4px 12px rgba(37,99,235,0.25);">
+                  View Details &rarr;
+                </a>
+              </div>` : ''}
+              <hr style="border:none;border-top:1px solid #f1f5f9;margin:24px 0;" />
+              <p style="color:#94a3b8;font-size:12px;margin:0;text-align:center;">
+                You received this official notification from CSN JobMarket System Administration.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:20px;color:#94a3b8;font-size:12px;">
+              &copy; ${currentYear} CSN JobMarket Platform. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      if (!env.BREVO_API_KEY) {
+        logger.info(`[EmailService] Simulated Broadcast Email to ${toEmail}: ${subject}`);
+        return true;
+      }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'api-key': env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'CSN JobMarket', email: 'yogeshdand04@gmail.com' },
+          to: [{ email: toEmail, name: toName }],
+          subject: subject,
+          htmlContent: htmlContent
+        })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        logger.error(`[EmailService] Brevo Broadcast send failed for ${toEmail}:`, errorText);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      logger.error(`[EmailService] Broadcast email exception for ${toEmail}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Send Password Reset OTP Email
+   */
+  static async sendPasswordResetOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const currentYear = new Date().getFullYear();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Reset OTP - CSN-JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <span style="color:#1e3a8a;font-size:22px;font-weight:800;">CSN-JobMarket Security</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+              <h2 style="margin:0 0 12px;color:#0f172a;font-size:22px;">Reset Your Password</h2>
+              <p style="color:#64748b;font-size:15px;line-height:1.6;margin-bottom:24px;">
+                Hi <strong>${toName}</strong>, we received a request to reset your password. Use the 6-digit verification code below to proceed:
+              </p>
+              <div style="background:#eff6ff;border:2px dashed #3b82f6;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+                <span style="font-size:32px;font-weight:900;letter-spacing:8px;color:#1e3a8a;">${otpCode}</span>
+              </div>
+              <p style="color:#94a3b8;font-size:13px;">This OTP code expires in 10 minutes. If you did not request a password reset, please ignore this email.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      if (!env.BREVO_API_KEY) {
+        logger.info(`[EmailService] Simulated Password Reset OTP for ${toEmail}: ${otpCode}`);
+        return true;
+      }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'api-key': env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'CSN-JobMarket Security', email: 'no-reply@csnjobmarket.in' },
+          to: [{ email: toEmail, name: toName }],
+          subject: `${otpCode} is your Password Reset OTP Code - CSN-JobMarket`,
+          htmlContent
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      logger.error('Failed to send Password Reset OTP email via Brevo', err);
+      return false;
+    }
+  }
+
+  /**
    * Send a production-quality OTP email via Brevo Transactional API
    */
   static async sendOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {
@@ -764,6 +922,342 @@ export class EmailService {
       return true;
     } catch (error) {
       logger.error('Failed to send support ticket email', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send Professional Transactional Email for Advertisement Approval / Rejection
+   */
+  static async sendAdvertisementStatusEmail(
+    employerEmail: string,
+    employerName: string,
+    adTitle: string,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string
+  ): Promise<boolean> {
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const currentYear = new Date().getFullYear();
+    const isApproved = status === 'APPROVED';
+    const subject = isApproved
+      ? `🎉 Approved: Your Promotional Banner "${adTitle}" is Now Live!`
+      : `⚠️ Action Required: Moderation Update on Banner "${adTitle}"`;
+
+    const statusBadgeColor = isApproved ? '#16a34a' : '#dc2626';
+    const statusText = isApproved ? 'APPROVED & PUBLISHED' : 'REVISION REQUIRED';
+    const topBarGradient = isApproved
+      ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
+      : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advertisement Moderation Status - CSN-JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#1e3a8a;border-radius:12px;padding:10px 20px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">CSN-JobMarket</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+
+              <!-- Top Accent Bar -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:${topBarGradient};height:6px;"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+
+                    <!-- Status Pill -->
+                    <div style="margin-bottom:16px;">
+                      <span style="background-color:${statusBadgeColor};color:#ffffff;padding:4px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:0.5px;display:inline-block;">
+                        ${statusText}
+                      </span>
+                    </div>
+
+                    <!-- Greeting & Headline -->
+                    <p style="margin:0 0 12px;font-size:24px;font-weight:800;color:#0f172a;">
+                      ${isApproved ? 'Your Banner is Live on Homepage!' : 'Banner Revision Required'}
+                    </p>
+                    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+                      Hello <strong style="color:#0f172a;">${employerName}</strong>,
+                      <br/><br/>
+                      ${
+                        isApproved
+                          ? `Great news! Your promotional banner submission <strong style="color:#1e3a8a;">"${adTitle}"</strong> has been reviewed and approved by our moderation team. It is now active and visible to candidates on the CSN-JobMarket homepage.`
+                          : `Our moderation team reviewed your promotional banner submission <strong style="color:#0f172a;">"${adTitle}"</strong>. Before it can be published, a few adjustments are required.`
+                      }
+                    </p>
+
+                    ${
+                      !isApproved && reason
+                        ? `
+                    <!-- Rejection Reason Box -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                      <tr>
+                        <td style="background-color:#fef2f2;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:8px;padding:16px 20px;">
+                          <p style="margin:0 0 4px;font-size:12px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">Moderation Feedback / Reason</p>
+                          <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.5;">${reason}</p>
+                        </td>
+                      </tr>
+                    </table>
+                    `
+                        : ''
+                    }
+
+                    <!-- Guidance / Next Steps -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:28px;">
+                      <tr>
+                        <td>
+                          <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1e293b;">Next Steps:</p>
+                          <p style="margin:0;font-size:13.5px;color:#64748b;line-height:1.55;">
+                            ${
+                              isApproved
+                                ? 'You can monitor real-time impressions, click-through rates (CTR), and performance metrics directly from your employer dashboard.'
+                                : 'Please log in to your employer dashboard, make the required updates to your banner, and click <strong>Resubmit for Approval</strong> for priority re-evaluation.'
+                            }
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- CTA Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;text-align:center;">
+                      <tr>
+                        <td align="center">
+                          <a href="http://localhost:5174/#/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
+                            ${isApproved ? '📊 View Banner Analytics' : '✏️ Edit & Resubmit Banner'}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Divider -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                      <tr><td style="border-top:1px solid #e2e8f0;"></td></tr>
+                    </table>
+
+                    <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.5;">
+                      If you have any questions regarding advertisement policies or require campaign support, contact our support team at <a href="mailto:support@csnjobmarket.com" style="color:#2563eb;text-decoration:none;">support@csnjobmarket.com</a>.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">
+                &copy; ${currentYear} CSN-JobMarket. All rights reserved.
+              </p>
+              <p style="margin:6px 0 0;font-size:11px;color:#cbd5e1;">
+                This is an automated operational notice sent to your registered employer email address.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const payload = {
+      sender: {
+        name: 'CSN-JobMarket Moderation',
+        email: 'yogeshdand04@gmail.com'
+      },
+      to: [{ email: employerEmail, name: employerName }],
+      subject,
+      htmlContent
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error(`Brevo Email API Error (Ad Status): ${JSON.stringify(errorData)}`);
+        return false;
+      }
+
+      logger.info(`Advertisement status email (${status}) dispatched to ${employerEmail} via Brevo`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to send advertisement status email', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send a professional email notice to candidate when application status changes (e.g. reviewed, shortlisted, accepted)
+   */
+  static async sendApplicationStatusUpdateEmail(
+    workerEmail: string,
+    workerName: string,
+    jobTitle: string,
+    companyName: string,
+    newStatus: string
+  ): Promise<boolean> {
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const currentYear = new Date().getFullYear();
+    const formattedStatus = newStatus.toUpperCase();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Application Status Update - CSN-JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#1e3a8a;border-radius:12px;padding:10px 20px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">CSN-JobMarket</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+
+              <!-- Top Accent Bar -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);height:6px;"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+
+                    <p style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Application Status Updated</p>
+                    <p style="margin:0 0 28px;font-size:15px;color:#64748b;line-height:1.6;">
+                      Hi <strong style="color:#0f172a;">${workerName}</strong>, your application status for <strong style="color:#1e3a8a;">${jobTitle}</strong> at <strong style="color:#0f172a;">${companyName}</strong> has been updated to <strong style="color:#2563eb;">${formattedStatus}</strong>.
+                    </p>
+
+                    <!-- Status Box -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:12px;padding:20px;margin-bottom:28px;border:1px solid #e2e8f0;text-align:center;">
+                      <tr>
+                        <td>
+                          <span style="font-size:13px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">New Status</span>
+                          <span style="font-size:22px;font-weight:800;color:#1e3a8a;">${formattedStatus}</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0 0 24px;font-size:15px;color:#64748b;line-height:1.6;">
+                      Log into your candidate dashboard to track your application details and upcoming schedule.
+                    </p>
+
+                    <!-- CTA Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center">
+                          <a href="http://localhost:5173/#/dashboard?tab=applied" target="_blank" style="background-color:#2563eb;color:#ffffff;display:inline-block;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
+                            View Applied Jobs Dashboard ↗
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const payload = {
+      sender: {
+        name: 'CSN-JobMarket Recruitment',
+        email: 'yogeshdand04@gmail.com'
+      },
+      to: [{ email: workerEmail, name: workerName }],
+      subject: `Application Update: ${jobTitle} - ${formattedStatus}`,
+      htmlContent
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error(`Brevo Email API Error (Status Update): ${JSON.stringify(errorData)}`);
+        return false;
+      }
+
+      logger.info(`Application status update email dispatched to ${workerEmail} via Brevo`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to send application status update email', error);
       return false;
     }
   }

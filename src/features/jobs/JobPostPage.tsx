@@ -454,7 +454,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     className="form-input"
                     min="1"
                     value={openings}
-                    onChange={(e) => setOpenings(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setOpenings(Math.max(1, Math.abs(parseInt(e.target.value) || 1)))}
                   />
                 </div>
                 <div className="form-group">

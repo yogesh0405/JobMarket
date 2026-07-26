@@ -16,6 +16,7 @@ export const JobDetailPage: React.FC = () => {
   const { state } = useStore();
   const t = useTranslation(state.language);
   const job = id ? getJobById(id) : undefined;
+  const [isApplying, setIsApplying] = useState(false);
 
   if (!job) {
     return (
@@ -29,8 +30,27 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
-  const hasApplied = currentUser?.appliedJobs?.includes(job.id);
-  const appDetails = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+  const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id);
+  const hasApplied = !!(currentUser?.appliedJobs?.includes(job.id) || applicantRecord);
+  const appDetails = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id) || (applicantRecord ? {
+    jobId: job.id,
+    status: applicantRecord.status || 'applied',
+    appliedAt: applicantRecord.appliedAt
+  } : null);
+
+  const realApplicantCount = (job.applicants && job.applicants.length > 0) ? job.applicants.length : (job.views || 0);
+
+  // Dynamic Profile Strength Calculation based on completed user profile fields
+  let profileStrength = 0;
+  if (currentUser) {
+    if (currentUser.name) profileStrength += 20;
+    if (currentUser.email) profileStrength += 20;
+    if (currentUser.phone) profileStrength += 20;
+    if (currentUser.location) profileStrength += 15;
+    if (currentUser.tradeSpecialization || currentUser.headline) profileStrength += 15;
+    if (currentUser.resume) profileStrength += 10;
+  }
+  if (profileStrength === 0) profileStrength = 75;
   const saved = isJobSaved(job.id);
   const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
 
@@ -44,21 +64,26 @@ export const JobDetailPage: React.FC = () => {
       showToast('Only candidates can apply to jobs', 'error');
       return;
     }
-    const result = await applyToJob(job.id);
-    if (result.success) {
-      showToast('Application submitted successfully! 🎉 Info sent on WhatsApp.', 'success');
-    } else {
-      showToast(result.error || 'Failed to apply', 'error');
+    setIsApplying(true);
+    try {
+      const result = await applyToJob(job.id);
+      if (result.success) {
+        showToast('Application submitted successfully! 🎉 Info sent on WhatsApp.', 'success');
+      } else {
+        showToast(result.error || 'Failed to apply', 'error');
+      }
+    } finally {
+      setIsApplying(false);
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentUser) {
       showToast('Please login to save jobs', 'warning');
       navigate('/login');
       return;
     }
-    const currentlySaved = toggleSaveJob(job.id);
+    const currentlySaved = await toggleSaveJob(job.id);
     showToast(currentlySaved ? 'Job saved!' : 'Removed from saved', currentlySaved ? 'success' : 'info');
   };
 
@@ -112,25 +137,25 @@ export const JobDetailPage: React.FC = () => {
           }
           .detail-page-container {
             position: relative !important;
-            height: calc(100vh - var(--navbar-height) - 80px) !important;
-            overflow-y: auto !important;
-            padding: 16px 16px 120px 16px !important;
-            min-height: auto !important;
+            padding: 16px 16px 160px 16px !important;
+            min-height: 100vh !important;
             background: var(--bg) !important;
           }
           .detail-sticky-bar {
             display: flex !important;
             position: fixed !important;
-            bottom: 0 !important;
+            bottom: 64px !important;
             left: 0 !important;
             right: 0 !important;
-            height: 80px !important;
-            background: #ffffff !important;
-            border-top: 1.5px solid #E2E8F0 !important;
-            padding: 16px 24px !important;
-            z-index: 9999 !important;
+            height: 66px !important;
+            background: rgba(255, 255, 255, 0.98) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-top: 1px solid #E2E8F0 !important;
+            padding: 10px 16px !important;
+            z-index: 10000 !important;
             justify-content: center !important;
-            box-shadow: 0 -4px 16px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.06) !important;
             align-items: center !important;
           }
         }
@@ -365,7 +390,7 @@ export const JobDetailPage: React.FC = () => {
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
-                  <span>{job.views || 24} Applicants</span>
+                  <span>{realApplicantCount} {realApplicantCount === 1 ? 'Applicant' : 'Applicants'}</span>
                 </div>
 
                 {/* Date Posted */}
@@ -398,7 +423,7 @@ export const JobDetailPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {appDetails.status === 'shortlisted' && appDetails.interviewDate && (
+                  {(appDetails as any)?.status === 'shortlisted' && (appDetails as any)?.interviewDate && (
                     <div style={{ 
                       background: 'var(--bg)', 
                       border: '1px solid var(--border)', 
@@ -418,19 +443,19 @@ export const JobDetailPage: React.FC = () => {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '2px' }}>
                         <div>
-                          <strong>Date:</strong> {appDetails.interviewDate}
+                          <strong>Date:</strong> {(appDetails as any).interviewDate}
                         </div>
                         <div>
-                          <strong>Time:</strong> {appDetails.interviewTime}
+                          <strong>Time:</strong> {(appDetails as any).interviewTime}
                         </div>
                       </div>
                       <div>
-                        <strong>Venue:</strong> {appDetails.venueAddress}
+                        <strong>Venue:</strong> {(appDetails as any).venueAddress}
                       </div>
-                      {appDetails.mapsLink && (
+                      {(appDetails as any).mapsLink && (
                         <div style={{ marginTop: '2px' }}>
                           <a 
-                            href={appDetails.mapsLink} 
+                            href={(appDetails as any).mapsLink} 
                             target="_blank" 
                             rel="noreferrer" 
                             style={{ 
@@ -586,7 +611,7 @@ export const JobDetailPage: React.FC = () => {
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <span>{job.views || 24} Applicants</span>
+                <span>{realApplicantCount} {realApplicantCount === 1 ? 'Applicant' : 'Applicants'}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '14px' }}>
@@ -610,11 +635,11 @@ export const JobDetailPage: React.FC = () => {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  Profile Strength: 75%
+                  Profile Strength: {profileStrength}%
                 </div>
                 {/* Progress bar */}
                 <div style={{ background: '#F59E0B22', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ background: '#344BFD', width: '75%', height: '100%' }}></div>
+                  <div style={{ background: '#344BFD', width: `${profileStrength}%`, height: '100%' }}></div>
                 </div>
                 <span style={{ fontSize: '11px', color: '#78350F' }}>Complete your profile to increase your chances</span>
               </div>
@@ -660,10 +685,10 @@ export const JobDetailPage: React.FC = () => {
                           {capitalize(appDetails.status)}
                         </span>
                       </div>
-                      {appDetails.status === 'shortlisted' && appDetails.interviewDate && (
+                      {(appDetails as any)?.status === 'shortlisted' && (appDetails as any)?.interviewDate && (
                         <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid #CBD5E1', paddingTop: '6px' }}>
-                          <div>📅 <strong>{appDetails.interviewDate}</strong> at <strong>{appDetails.interviewTime}</strong></div>
-                          <div style={{ fontSize: '11px', color: '#64748B' }}>📍 {appDetails.venueAddress}</div>
+                          <div>📅 <strong>{(appDetails as any).interviewDate}</strong> at <strong>{(appDetails as any).interviewTime}</strong></div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>📍 {(appDetails as any).venueAddress}</div>
                         </div>
                       )}
                     </div>
@@ -697,22 +722,38 @@ export const JobDetailPage: React.FC = () => {
               ) : (
                 <button
                   onClick={handleApply}
+                  disabled={isApplying}
                   style={{
                     width: '100%',
-                    background: '#344BFD',
+                    background: isApplying ? '#6366F1' : '#344BFD',
                     color: '#ffffff',
                     border: 'none',
                     padding: '14px',
                     borderRadius: '0.3rem',
                     fontWeight: '700',
                     fontSize: '15px',
-                    cursor: 'pointer',
+                    cursor: isApplying ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: isApplying ? 0.85 : 1,
                     transition: 'background 0.2s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#1A2EB8'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#344BFD'}
+                  onMouseEnter={(e) => { if (!isApplying) e.currentTarget.style.background = '#1A2EB8'; }}
+                  onMouseLeave={(e) => { if (!isApplying) e.currentTarget.style.background = '#344BFD'; }}
                 >
-                  Apply Now
+                  {isApplying ? (
+                    <>
+                      <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 0.8s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" />
+                        <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeLinecap="round" />
+                      </svg>
+                      Applying...
+                    </>
+                  ) : (
+                    'Apply Now'
+                  )}
                 </button>
               )}
 
@@ -759,7 +800,7 @@ export const JobDetailPage: React.FC = () => {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
                     </svg>
-                    {job.views || 24} Applicants
+                    {realApplicantCount} {realApplicantCount === 1 ? 'Applicant' : 'Applicants'}
                   </span>
                 </div>
               </div>
@@ -842,9 +883,9 @@ export const JobDetailPage: React.FC = () => {
                 </svg>
                 Already Applied (Status: {capitalize(appDetails?.status || 'applied')})
               </button>
-              {appDetails && appDetails.status === 'shortlisted' && (
+              {appDetails && (appDetails as any).status === 'shortlisted' && (
                 <div style={{ fontSize: '11px', textAlign: 'center', color: 'var(--primary)', fontWeight: '600', marginTop: '4px' }}>
-                  Interview Scheduled: {appDetails.interviewDate} at {appDetails.interviewTime}
+                  Interview Scheduled: {(appDetails as any).interviewDate} at {(appDetails as any).interviewTime}
                 </div>
               )}
             </>
@@ -876,22 +917,38 @@ export const JobDetailPage: React.FC = () => {
           ) : (
             <button
               onClick={handleApply}
+              disabled={isApplying}
               style={{
                 width: '100%',
-                background: '#344BFD',
+                background: isApplying ? '#6366F1' : '#344BFD',
                 color: '#ffffff',
                 border: 'none',
                 padding: '14px',
                 borderRadius: '0.3rem',
                 fontWeight: '700',
                 fontSize: '15px',
-                cursor: 'pointer',
+                cursor: isApplying ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                opacity: isApplying ? 0.85 : 1,
                 transition: 'background 0.2s ease'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#1A2EB8'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#344BFD'}
+              onMouseEnter={(e) => { if (!isApplying) e.currentTarget.style.background = '#1A2EB8'; }}
+              onMouseLeave={(e) => { if (!isApplying) e.currentTarget.style.background = '#344BFD'; }}
             >
-              Apply Now
+              {isApplying ? (
+                <>
+                  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 0.8s linear infinite' }}>
+                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" />
+                    <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeLinecap="round" />
+                  </svg>
+                  Applying...
+                </>
+              ) : (
+                'Apply Now'
+              )}
             </button>
           )}
         </div>

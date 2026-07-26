@@ -80,10 +80,9 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
           response = await fetch(url, options);
         }
       } catch (err) {
-        clearSession();
+        // Network error during refresh - keep session intact
+        console.warn('Network error during silent refresh:', err);
       }
-    } else {
-      clearSession();
     }
   }
 

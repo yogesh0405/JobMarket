@@ -205,12 +205,21 @@ export const useJobs = () => {
     }
   }, [dispatch]);
 
-  const toggleSaveJob = useCallback((jobId: string) => {
+  const toggleSaveJob = useCallback(async (jobId: string) => {
     const user = state.currentUser;
     if (!user) return false;
 
+    const currentlySaved = !(user.savedJobs || []).includes(jobId);
     dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
-    return !(user.savedJobs || []).includes(jobId);
+
+    // Sync with PostgreSQL database
+    try {
+      await apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to sync saved job with database:', err);
+    }
+
+    return currentlySaved;
   }, [state.currentUser, dispatch]);
 
   const isJobSaved = useCallback((jobId: string) => {
@@ -242,7 +251,14 @@ export const useJobs = () => {
       const job = state.jobs.find(j => j.id === jobId);
       if (job) {
         const updatedApplicants = (job.applicants || []).map(app => 
-          app.userId === applicantUserId ? { ...app, status: 'shortlisted' as any } : app
+          app.userId === applicantUserId ? { 
+            ...app, 
+            status: 'shortlisted' as any,
+            interviewDate: details.interviewDate,
+            interviewTime: details.interviewTime,
+            venueAddress: details.venueAddress,
+            mapsLink: details.mapsLink
+          } : app
         );
         dispatch({ type: 'UPDATE_JOB', payload: { ...job, applicants: updatedApplicants } });
       }

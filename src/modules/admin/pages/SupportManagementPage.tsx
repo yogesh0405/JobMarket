@@ -73,14 +73,15 @@ export const SupportManagementPage: React.FC = () => {
   const [admins, setAdmins] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    fetchTickets();
-  }, [page, statusFilter, priorityFilter, categoryFilter, assigneeFilter]);
+    setPage(1);
+    fetchTickets(1, true);
+  }, [statusFilter, priorityFilter, categoryFilter, assigneeFilter]);
 
-  // Handle debounced search text changes manually or on submit
+  // Handle search text submit
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchTickets();
+    fetchTickets(1, true);
   };
 
   useEffect(() => {
@@ -88,10 +89,18 @@ export const SupportManagementPage: React.FC = () => {
     fetchAdminsList();
   }, []);
 
-  const fetchTickets = async () => {
-    setLoading(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const fetchTickets = async (pageNum = 1, isInitial = false) => {
+    if (pageNum === 1 || isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     try {
-      const offset = (page - 1) * limit;
+      const offset = (pageNum - 1) * limit;
       let queryStr = `limit=${limit}&offset=${offset}`;
       if (statusFilter) queryStr += `&status=${statusFilter}`;
       if (priorityFilter) queryStr += `&priority=${priorityFilter}`;
@@ -102,13 +111,29 @@ export const SupportManagementPage: React.FC = () => {
       const res = await apiFetch(`/api/admin/support?${queryStr}`);
       const data = await res.json();
       if (data.success) {
-        setTickets(data.data);
+        const fetchedItems = data.data || [];
+        if (pageNum === 1 || isInitial) {
+          setTickets(fetchedItems);
+        } else {
+          setTickets(prev => [...prev, ...fetchedItems]);
+        }
         setTotalTickets(data.total);
+        setHasMore((pageNum * limit) < data.total);
       }
     } catch (err) {
       showToast('Failed to load support tickets list', 'error');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 40 && hasMore && !loadingMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchTickets(nextPage, false);
     }
   };
 
@@ -139,6 +164,32 @@ export const SupportManagementPage: React.FC = () => {
       console.error('Failed to fetch admin users list:', err);
     }
   };
+
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  // Real-time polling for messages when ticket is open
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch(`/api/support/tickets/${selectedTicket.id}`);
+        const data = await res.json();
+        if (data.success && data.data.messages) {
+          setMessages(data.data.messages);
+        }
+      } catch (err) {
+        // silent polling catch
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.id]);
 
   const handleTicketClick = async (ticket: SupportTicket) => {
     setIsLoadingDetails(true);
@@ -454,8 +505,8 @@ export const SupportManagementPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Ticket Listings Table */}
-          {loading ? (
+          {/* Ticket Listings Queue (Infinite Scroll Container) */}
+          {loading && tickets.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
                 <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.1)"/>
@@ -464,7 +515,18 @@ export const SupportManagementPage: React.FC = () => {
             </div>
           ) : tickets.length > 0 ? (
             <div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                style={{
+                  maxHeight: '650px',
+                  overflowY: 'auto',
+                  paddingRight: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
                 {tickets.map(t => {
                   const isSelected = selectedTicket?.id === t.id;
                   return (
@@ -473,9 +535,9 @@ export const SupportManagementPage: React.FC = () => {
                       onClick={() => handleTicketClick(t)}
                       style={{
                         padding: '16px',
-                        borderRadius: '8px',
+                        borderRadius: '10px',
                         border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
-                        background: isSelected ? 'rgba(52, 75, 253, 0.05)' : 'var(--bg-secondary)',
+                        background: isSelected ? 'rgba(52, 75, 253, 0.06)' : 'var(--bg-secondary)',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex',
@@ -512,29 +574,20 @@ export const SupportManagementPage: React.FC = () => {
                     </div>
                   );
                 })}
+
+                {loadingMore && (
+                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                    <svg className="animate-spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                      <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.1)"/>
+                      <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4" fill="currentColor"/>
+                    </svg>
+                  </div>
+                )}
               </div>
 
-              {/* Pagination controls */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  Showing {(page-1)*limit+1}–{Math.min(page*limit, totalTickets)} of {totalTickets} tickets
-                </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    disabled={page * limit >= totalTickets}
-                    onClick={() => setPage(page + 1)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Next
-                  </button>
-                </div>
+              {/* Status Footer info (Without Previous/Next buttons) */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px', marginTop: '16px', fontSize: '12px', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                Loaded <strong>{tickets.length}</strong> of <strong>{totalTickets}</strong> total tickets
               </div>
             </div>
           ) : (
@@ -544,9 +597,9 @@ export const SupportManagementPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Ticket Conversation & Details (Admins Reply & Assign panel) */}
+        {/* Right Column: Ticket Conversation & Details (Stagnant / Sticky Panel Beside List) */}
         {selectedTicket && (
-          <div className="admin-card" style={{ margin: 0, padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', border: '1px solid var(--border)' }}>
+          <div className="admin-card" style={{ margin: 0, padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', border: '1px solid var(--border)', position: 'sticky', top: '84px' }}>
             
             {/* Meta Control Dashboard Panel */}
             <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -746,6 +799,7 @@ export const SupportManagementPage: React.FC = () => {
                     No replies yet.
                   </div>
                 )}
+                <div ref={chatBottomRef} />
               </div>
             </div>
 

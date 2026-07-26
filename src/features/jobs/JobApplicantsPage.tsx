@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { useToast } from '../../hooks/useToast';
@@ -21,7 +21,7 @@ export const JobApplicantsPage: React.FC = () => {
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [viewWorker, setViewWorker] = useState<any>(null);
 
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'hiring'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'job_details' | 'profile' | 'hiring'>('job_details');
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
@@ -31,15 +31,16 @@ export const JobApplicantsPage: React.FC = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  const handleOpenDetails = (applicant: any, jobId: string, jobTitle: string) => {
-    setViewWorker({ ...applicant, jobId, jobTitle });
+  const handleOpenDetails = (applicant: any, jobId: string, jobTitle: string, targetJob?: any) => {
+    const jobObj = targetJob || job;
+    setViewWorker({ ...applicant, jobId, jobTitle, job: jobObj });
     setEmailSubject(`Regarding your application for ${jobTitle}`);
     setEmailMessage(`Hi ${applicant.name},\n\nWe would like to connect with you regarding your application for the ${jobTitle} position at ${currentUser?.companyName || currentUser?.name}.\n\nBest regards,\nRecruitment Team\n${currentUser?.companyName || currentUser?.name}`);
-    setActiveSubTab('profile');
-    setInterviewDate('');
-    setInterviewTime('');
-    setVenueAddress('');
-    setMapsLink('');
+    setActiveSubTab('job_details');
+    setInterviewDate(applicant.interviewDate || '');
+    setInterviewTime(applicant.interviewTime || '');
+    setVenueAddress(applicant.venueAddress || '');
+    setMapsLink(applicant.mapsLink || '');
   };
 
   useEffect(() => {
@@ -54,6 +55,9 @@ export const JobApplicantsPage: React.FC = () => {
       return;
     }
   }, [currentUser, navigate, showToast]);
+
+  const [searchParams] = useSearchParams();
+  const targetApplicantId = searchParams.get('applicantId');
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -76,7 +80,16 @@ export const JobApplicantsPage: React.FC = () => {
       const appsRes = await apiFetch(`/api/v1/jobs/${id}/applicants`);
       const appsJson = await appsRes.json();
       if (appsRes.ok && appsJson.success) {
-        setApplicants(appsJson.data || []);
+        const fetchedApplicants = appsJson.data || [];
+        setApplicants(fetchedApplicants);
+
+        // Auto-open worker details drawer if targetApplicantId URL parameter exists
+        if (targetApplicantId) {
+          const matchedApplicant = fetchedApplicants.find((a: any) => a.userId === targetApplicantId);
+          if (matchedApplicant) {
+            handleOpenDetails(matchedApplicant, jobData.id, jobData.title, jobData);
+          }
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -84,7 +97,7 @@ export const JobApplicantsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, currentUser, navigate, showToast]);
+  }, [id, currentUser, navigate, showToast, targetApplicantId]);
 
   useEffect(() => {
     if (currentUser && currentUser.role === 'employer') {
@@ -295,41 +308,155 @@ export const JobApplicantsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tab Selector */}
-              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
+              {/* 3 Tab Navigation Header */}
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', gap: '4px' }}>
+                <button 
+                  onClick={() => setActiveSubTab('job_details')} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px 14px', 
+                    background: 'none', 
+                    border: 'none', 
+                    borderBottom: activeSubTab === 'job_details' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                    fontWeight: activeSubTab === 'job_details' ? '700' : '500',
+                    color: activeSubTab === 'job_details' ? 'var(--primary)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Job Info
+                </button>
                 <button 
                   onClick={() => setActiveSubTab('profile')} 
                   style={{ 
                     flex: 1, 
-                    padding: '12px', 
+                    padding: '10px 14px', 
                     background: 'none', 
                     border: 'none', 
-                    borderBottom: activeSubTab === 'profile' ? '2px solid var(--primary)' : '2px solid transparent',
+                    borderBottom: activeSubTab === 'profile' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
                     fontWeight: activeSubTab === 'profile' ? '700' : '500',
                     color: activeSubTab === 'profile' ? 'var(--primary)' : 'var(--text-secondary)',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
                   }}
                 >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
                   Candidate Profile
                 </button>
                 <button 
                   onClick={() => setActiveSubTab('hiring')} 
                   style={{ 
                     flex: 1, 
-                    padding: '12px', 
+                    padding: '10px 14px', 
                     background: 'none', 
                     border: 'none', 
-                    borderBottom: activeSubTab === 'hiring' ? '2px solid var(--primary)' : '2px solid transparent',
+                    borderBottom: activeSubTab === 'hiring' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
                     fontWeight: activeSubTab === 'hiring' ? '700' : '500',
                     color: activeSubTab === 'hiring' ? 'var(--primary)' : 'var(--text-secondary)',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
                   }}
                 >
-                  Hiring & Communications
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Status & Interview
                 </button>
               </div>
 
-              {activeSubTab === 'profile' ? (
+              {/* Sub-Tab 1: Applied Job Details */}
+              {activeSubTab === 'job_details' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {viewWorker.job ? (
+                    <>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>{viewWorker.job.title}</h4>
+                            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                              {viewWorker.job.company} • {viewWorker.job.location} ({viewWorker.job.workMode || 'On-site'})
+                            </p>
+                          </div>
+                          <Link 
+                            to={`/job/${viewWorker.jobId}`} 
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-ghost btn-sm" 
+                            style={{ fontSize: '12px', padding: '6px 12px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }}
+                          >
+                            View Job Page ↗
+                          </Link>
+                        </div>
+
+                        <div className="grid grid-2" style={{ gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border)', fontSize: '13px' }}>
+                          <div>
+                            <strong>Salary / Stipend:</strong>{' '}
+                            {viewWorker.job.salary?.min ? `₹${viewWorker.job.salary.min} - ₹${viewWorker.job.salary.max || viewWorker.job.salary.min} / ${viewWorker.job.salary.period || 'month'}` : 'Competitive / Negotiable'}
+                          </div>
+                          <div>
+                            <strong>Vacancies Allotted:</strong>{' '}
+                            <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{viewWorker.job.filledOpenings || 0}</span> / {viewWorker.job.openings} filled
+                          </div>
+                          <div>
+                            <strong>Job Type / Shift:</strong> {viewWorker.job.jobType || 'Full-time'}
+                          </div>
+                          <div>
+                            <strong>Posted Date:</strong> {new Date(viewWorker.job.postedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {viewWorker.job.description && (
+                        <div>
+                          <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Job Description</h4>
+                          <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+                            {viewWorker.job.description}
+                          </div>
+                        </div>
+                      )}
+
+                      {viewWorker.job.requirements && viewWorker.job.requirements.length > 0 && (
+                        <div>
+                          <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Role Requirements</h4>
+                          <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px' }}>
+                            <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
+                              {viewWorker.job.requirements.map((req: string, idx: number) => (
+                                <li key={idx}>{req}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Applied Position: <strong>{viewWorker.jobTitle}</strong></p>
+                      <Link to={`/job/${viewWorker.jobId}`} className="btn btn-primary btn-sm mt-3" style={{ fontSize: '12px' }}>
+                        View Job Details Page ↗
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeSubTab === 'profile' && (
                 <>
                   {/* 1. Account Information */}
                   <div>
@@ -425,7 +552,6 @@ export const JobApplicantsPage: React.FC = () => {
                         <button
                           onClick={() => {
                             setPreviewResume({ ...viewWorker.resume, userId: viewWorker.userId });
-                            setViewWorker(null);
                           }}
                           style={{
                             color: 'var(--primary)',
@@ -451,7 +577,9 @@ export const JobApplicantsPage: React.FC = () => {
                     )}
                   </div>
                 </>
-              ) : (
+              )}
+
+              {activeSubTab === 'hiring' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* 1. Update Status */}
                   <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -530,7 +658,6 @@ export const JobApplicantsPage: React.FC = () => {
                         }}
                         onClick={() => {
                           setPreviewResume({ ...viewWorker.resume, userId: viewWorker.userId });
-                          setViewWorker(null);
                         }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

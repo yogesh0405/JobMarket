@@ -10,10 +10,6 @@ export const MobileBottomNav: React.FC = () => {
   const t = useTranslation(state.language);
   const location = useLocation();
 
-  if (location.pathname.startsWith('/job/') && !location.pathname.endsWith('/applicants')) {
-    return null;
-  }
-
   // Highlight active state for dashboard tabs
   const isTabActive = (path: string) => {
     return location.pathname + location.search === path;
@@ -39,8 +35,8 @@ export const MobileBottomNav: React.FC = () => {
         <span>{t.findJobs}</span>
       </NavLink>
 
-      {/* Middle Dynamic Button: Post Job / Deployments / Saved */}
-      {currentUser?.role === 'employer' ? (
+      {/* Middle Dynamic Button: Post Job */}
+      {currentUser?.role === 'employer' && (
         <NavLink to="/post-job" className={({ isActive }) => `mobile-bottom-item fab-item ${isActive ? 'active' : ''}`}>
           <div className="fab-circle">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, color: 'white' }}>
@@ -49,23 +45,31 @@ export const MobileBottomNav: React.FC = () => {
           </div>
           <span>{state.language === 'en' ? 'Post' : t.postJob}</span>
         </NavLink>
-      ) : currentUser?.role === 'candidate' ? (
+      )}
+
+      {/* Applications Tab (Candidate: Applied Jobs) */}
+      {currentUser?.role === 'candidate' && (
+        <NavLink to="/dashboard?tab=applied" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <path d="M9 14l2 2 4-4" />
+          </svg>
+          <span>Applied</span>
+        </NavLink>
+      )}
+
+      {/* Candidate Saved Jobs */}
+      {currentUser?.role === 'candidate' && (
         <NavLink to="/dashboard?tab=saved" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=saved') ? 'active' : ''}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
           </svg>
           <span>Saved</span>
         </NavLink>
-      ) : (
-        <NavLink to="/login" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-          </svg>
-          <span>{t.login}</span>
-        </NavLink>
       )}
 
-      {/* Browse Candidates (Employer only) */}
+      {/* Employer Browse Candidates */}
       {currentUser?.role === 'employer' && (
         <NavLink to="/dashboard?tab=candidates" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -79,7 +83,7 @@ export const MobileBottomNav: React.FC = () => {
 
       {/* Profile / Signup */}
       {currentUser ? (
-        <NavLink to={currentUser.role === 'candidate' ? '/profile' : '/dashboard'} className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+        <NavLink to={currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className={`mobile-bottom-item ${isTabActive('/dashboard') || isTabActive('/dashboard?tab=overview') ? 'active' : ''}`}>
           <div className="mobile-bottom-avatar" style={{
             width: '22px',
             height: '22px',

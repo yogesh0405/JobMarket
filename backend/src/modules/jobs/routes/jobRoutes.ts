@@ -18,6 +18,7 @@ router.post('/', requireAuth, actionLimiter, JobController.createJob);
 router.put('/:id', requireAuth, actionLimiter, JobController.updateJob);
 router.delete('/:id', requireAuth, actionLimiter, JobController.deleteJob);
 router.post('/:id/apply', requireAuth, actionLimiter, JobController.applyToJob);
+router.post('/:id/save', requireAuth, actionLimiter, JobController.toggleSaveJob);
 router.get('/:id/applicants', requireAuth, JobController.getApplicantsForJob);
 router.patch('/:id/applicants/:userId/status', requireAuth, actionLimiter, JobController.updateApplicantStatus);
 router.post('/:id/applicants/:userId/interview', requireAuth, actionLimiter, JobController.scheduleInterview);

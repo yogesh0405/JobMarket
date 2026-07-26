@@ -219,6 +219,34 @@ export class AdminController {
     }
   }
 
+  static async unpublishJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const adminId = req.user!.userId;
+      const ip = req.ip;
+      const ua = req.headers['user-agent'];
+
+      const result = await AdminService.unpublishJob(id, adminId, ip, ua);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const adminId = req.user!.userId;
+      const ip = req.ip;
+      const ua = req.headers['user-agent'];
+
+      const result = await AdminService.deleteJob(id, adminId, ip, ua);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Categories CRUD
   static async listCategories(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
@@ -342,6 +370,19 @@ export class AdminController {
       const ua = req.headers['user-agent'];
 
       const result = await AdminService.updateSettings(req.body, adminId, ip, ua);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async broadcastNotifications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const adminId = req.user!.userId;
+      const ip = req.ip;
+      const ua = req.headers['user-agent'];
+
+      const result = await AdminService.broadcastNotifications(req.body, adminId, ip, ua);
       res.status(200).json(result);
     } catch (error) {
       next(error);
