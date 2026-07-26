@@ -43,9 +43,13 @@ export const NavbarNotificationBell: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch REAL DB Notifications (`/api/v1/notifications`)
-      const sysRes = await apiFetch('/api/v1/notifications');
-      if (sysRes.ok) {
+      // Fetch REAL DB Notifications from both system endpoints
+      const [sysRes, suppRes] = await Promise.all([
+        apiFetch('/api/v1/notifications').catch(() => null),
+        apiFetch('/api/support/notifications').catch(() => null)
+      ]);
+
+      if (sysRes && sysRes.ok) {
         const sysJson = await sysRes.json();
         const sysNotifs = sysJson.data || [];
         sysNotifs.forEach((item: any) => {
@@ -63,6 +67,30 @@ export const NavbarNotificationBell: React.FC = () => {
             link: item.link || '/dashboard',
             createdAtTimestamp: createdMs
           });
+        });
+      }
+
+      if (suppRes && suppRes.ok) {
+        const suppJson = await suppRes.json();
+        const suppNotifs = suppJson.data || [];
+        suppNotifs.forEach((item: any) => {
+          // Prevent duplicates if item id exists
+          if (!realItems.some(existing => existing.id === item.id)) {
+            const createdMs = new Date(item.created_at || item.createdAt || Date.now()).getTime();
+            const isToday = (now - createdMs) < oneDayMs;
+            const isRead = item.is_read || item.read || false;
+            realItems.push({
+              id: item.id,
+              title: item.title,
+              message: item.message,
+              time: timeAgo(item.created_at || item.createdAt || new Date().toISOString()),
+              read: isRead,
+              group: isToday ? 'TODAY' : 'EARLIER',
+              type: 'info',
+              link: item.link || '/dashboard',
+              createdAtTimestamp: createdMs
+            });
+          }
         });
       }
 
