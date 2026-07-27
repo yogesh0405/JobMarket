@@ -13,15 +13,35 @@ export const AdminLayout: React.FC = () => {
 
   // Enforce ADMIN role check on mount and update
   useEffect(() => {
-    if (!currentUser) {
+    const token = localStorage.getItem('accessToken');
+    if (!token && !currentUser) {
       navigate('/admin/login');
-    } else if (currentUser.role !== 'admin') {
-      showToast('Unauthorized access to administrative resources.', 'error');
-      navigate('/');
+      return;
+    }
+    if (currentUser) {
+      const role = (currentUser.role || '').toLowerCase().trim();
+      if (role !== 'admin') {
+        showToast('Unauthorized access to administrative resources.', 'error');
+        navigate('/');
+      }
     }
   }, [currentUser, navigate, showToast]);
 
-  if (!currentUser || currentUser.role !== 'admin') {
+  const token = localStorage.getItem('accessToken');
+  if (!currentUser) {
+    if (!token) return null;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: '#ffffff' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '36px', height: '36px', border: '3.5px solid rgba(255, 255, 255, 0.2)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ fontWeight: '600', fontSize: '14px', color: '#94a3b8' }}>Verifying Admin Access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userRole = (currentUser.role || '').toLowerCase().trim();
+  if (userRole !== 'admin') {
     return null; // Don't render layout if not admin
   }
 

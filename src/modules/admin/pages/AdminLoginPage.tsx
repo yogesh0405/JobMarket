@@ -16,7 +16,8 @@ export const AdminLoginPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.role === 'admin') {
+      const role = (currentUser.role || '').toLowerCase().trim();
+      if (role === 'admin') {
         navigate('/admin/dashboard');
       } else {
         navigate('/dashboard');
