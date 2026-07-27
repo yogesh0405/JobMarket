@@ -167,7 +167,36 @@ export const JobsPage: React.FC = () => {
                 {jobs.map((job) => (
                   <tr key={job.id}>
                     <td><strong style={{ cursor: 'pointer', color: 'var(--primary)' }} onClick={() => handleOpenDetails(job.id)}>{job.title}</strong></td>
-                    <td>{job.company}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '6px',
+                          background: (job.company_logo || job.companyLogo) ? 'transparent' : 'var(--primary)',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '800',
+                          fontSize: '12px',
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                          border: '1px solid var(--border)'
+                        }}>
+                          {job.company_logo || job.companyLogo ? (
+                            <img
+                              src={job.company_logo || job.companyLogo}
+                              alt={job.company || 'Company'}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            (job.company || 'C')[0].toUpperCase()
+                          )}
+                        </div>
+                        <span>{job.company}</span>
+                      </div>
+                    </td>
                     <td>{job.location}</td>
                     <td>{job.min_experience} - {job.max_experience} Yrs</td>
                     <td>₹{formatNumber(job.salary_min)} - ₹{formatNumber(job.salary_max)}</td>

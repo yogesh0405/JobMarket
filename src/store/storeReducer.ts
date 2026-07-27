@@ -41,8 +41,32 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         savedJobs: mergedSavedJobs
       };
 
+      const updatedUsers = state.users.map(u => u.id === userWithSavedJobs.id ? userWithSavedJobs : u);
+      if (!state.users.some(u => u.id === userWithSavedJobs.id)) {
+        updatedUsers.push(userWithSavedJobs);
+      }
+
+      const updatedJobs = state.jobs.map(j => {
+        if (!j.applicants || j.applicants.length === 0) return j;
+        const updatedApplicants = j.applicants.map(app => {
+          if (app.userId === userWithSavedJobs.id || app.id === userWithSavedJobs.id) {
+            return {
+              ...app,
+              resume: userWithSavedJobs.resume || null,
+              name: userWithSavedJobs.name || app.name,
+              email: userWithSavedJobs.email || app.email,
+              phone: userWithSavedJobs.phone || app.phone
+            };
+          }
+          return app;
+        });
+        return { ...j, applicants: updatedApplicants };
+      });
+
       return {
         ...state,
+        users: updatedUsers,
+        jobs: updatedJobs,
         currentUser: userWithSavedJobs
       };
     }
@@ -132,19 +156,42 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
     }
 
     case 'UPDATE_USER': {
-      if (!state.currentUser) return state;
+      const targetUserId = action.payload.id || state.currentUser?.id;
+      if (!targetUserId) return state;
 
+      const baseUser = state.currentUser?.id === targetUserId ? state.currentUser : state.users.find(u => u.id === targetUserId);
       const updatedUser = {
-        ...state.currentUser,
+        ...(baseUser || {}),
         ...action.payload
-      };
+      } as User;
 
-      const updatedUsers = state.users.map(u => u.id === state.currentUser?.id ? updatedUser : u);
+      const updatedUsers = state.users.map(u => u.id === targetUserId ? updatedUser : u);
+      if (!state.users.some(u => u.id === targetUserId)) {
+        updatedUsers.push(updatedUser);
+      }
+
+      const updatedJobs = state.jobs.map(j => {
+        if (!j.applicants || j.applicants.length === 0) return j;
+        const updatedApplicants = j.applicants.map(app => {
+          if (app.userId === targetUserId || app.id === targetUserId) {
+            return {
+              ...app,
+              resume: updatedUser.resume || null,
+              name: updatedUser.name || app.name,
+              email: updatedUser.email || app.email,
+              phone: updatedUser.phone || app.phone
+            };
+          }
+          return app;
+        });
+        return { ...j, applicants: updatedApplicants };
+      });
 
       return {
         ...state,
         users: updatedUsers,
-        currentUser: updatedUser
+        jobs: updatedJobs,
+        currentUser: state.currentUser?.id === targetUserId ? updatedUser : state.currentUser
       };
     }
 

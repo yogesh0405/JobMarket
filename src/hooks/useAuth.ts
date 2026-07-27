@@ -184,7 +184,34 @@ export const useAuth = () => {
         gstNumber: apiUser.gst_number || '',
       };
 
+      dispatch({ type: 'UPDATE_USER', payload: user });
       dispatch({ type: 'LOGIN', payload: user });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Network error. Please try again later.' };
+    }
+  }, [dispatch, state.currentUser]);
+
+  const deleteResume = useCallback(async () => {
+    try {
+      const response = await apiFetch('/api/v1/auth/resume', {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || data.message || 'Failed to delete resume.' };
+      }
+
+      if (state.currentUser) {
+        const updatedUser: User = {
+          ...state.currentUser,
+          resume: null
+        };
+        dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+        dispatch({ type: 'LOGIN', payload: updatedUser });
+      }
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Network error. Please try again later.' };
@@ -226,13 +253,14 @@ export const useAuth = () => {
             companyName: apiUser.company_name || '',
             gstNumber: apiUser.gst_number || '',
           };
+          dispatch({ type: 'UPDATE_USER', payload: user });
           dispatch({ type: 'LOGIN', payload: user });
         }
       }
     } catch (error) {
       console.error('Failed to sync user:', error);
     }
-  }, [dispatch]);
+  }, [dispatch, state.currentUser]);
 
   return {
     currentUser: state.currentUser,
@@ -241,6 +269,7 @@ export const useAuth = () => {
     verifyOtp,
     logout,
     updateUser,
+    deleteResume,
     syncUser
   };
 };

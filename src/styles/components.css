@@ -1040,7 +1040,24 @@
     flex: 1;
     overflow-y: auto;
     max-height: none !important;
-    padding: var(--space-4) var(--space-6) !important;
+    padding: var(--space-4) var(--space-6) 100px var(--space-6) !important;
+  .candidate-modal-backdrop {
+    padding: 0 !important;
+    bottom: 64px !important;
+    align-items: flex-end !important;
+  }
+  .candidate-modal {
+    max-height: calc(100vh - 64px) !important;
+    height: calc(100vh - 64px) !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .candidate-modal-body {
+    padding-bottom: 120px !important;
   }
 }
 

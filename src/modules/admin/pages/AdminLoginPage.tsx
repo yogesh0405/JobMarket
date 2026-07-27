@@ -123,13 +123,8 @@ export const AdminLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Link to="/login" style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'none' }}>
-            ← Return to Worker / Employer Login
-          </Link>
-          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-            🔒 This session is monitored and recorded for auditing purposes.
-          </span>
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+          🔒 This session is monitored and recorded for auditing purposes.
         </div>
       </div>
     </div>

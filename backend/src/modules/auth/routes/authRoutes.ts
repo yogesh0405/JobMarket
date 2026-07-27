@@ -33,6 +33,7 @@ router.put('/profile', requireAuth, AuthController.updateProfile);
 router.post('/profile/picture', requireAuth, AuthController.uploadProfilePicture);
 router.delete('/profile/picture', requireAuth, AuthController.deleteProfilePicture);
 router.get('/resume', requireAuth, AuthController.getResume);
+router.delete('/resume', requireAuth, AuthController.deleteResume);
 
 // Security & Sessions (Protected)
 router.post('/change-password', requireAuth, AuthController.changePassword);

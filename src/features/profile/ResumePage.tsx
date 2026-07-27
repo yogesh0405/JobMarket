@@ -6,7 +6,7 @@ import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal'
 
 export const ResumePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, updateUser } = useAuth();
+  const { currentUser, updateUser, deleteResume } = useAuth();
   const { showToast } = useToast();
 
   const [dragOver, setDragOver] = useState(false);
@@ -20,7 +20,7 @@ export const ResumePage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete your uploaded resume? This action cannot be undone.')) {
       setIsDeleting(true);
       try {
-        const result = await updateUser({ resume: null } as any);
+        const result = await deleteResume();
         if (result.success) {
           showToast('Resume deleted successfully', 'success');
         } else {
@@ -51,7 +51,7 @@ export const ResumePage: React.FC = () => {
     );
   }
 
-  if (currentUser.resume) {
+  if (currentUser.resume && (currentUser.resume.name || currentUser.resume.url)) {
     const uploadDate = new Date(currentUser.resume.uploadedAt).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',

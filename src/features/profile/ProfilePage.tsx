@@ -12,7 +12,7 @@ import { Resume } from '../../types';
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, updateUser, syncUser } = useAuth();
+  const { currentUser, updateUser, deleteResume, syncUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
@@ -135,7 +135,7 @@ export const ProfilePage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete your uploaded resume? This action cannot be undone.')) {
       setIsDeleting(true);
       try {
-        const result = await updateUser({ resume: null } as any);
+        const result = await deleteResume();
         if (result.success) {
           showToast('Resume deleted successfully', 'success');
         } else {
@@ -866,7 +866,7 @@ export const ProfilePage: React.FC = () => {
               <div className="profile-section-body">
                 {(() => {
                   const resume = currentUser.resume;
-                  if (resume) {
+                  if (resume && (resume.name || resume.url)) {
                     return (
                       <div className="file-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

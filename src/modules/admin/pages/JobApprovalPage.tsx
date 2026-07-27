@@ -104,47 +104,77 @@ export const JobApprovalPage: React.FC = () => {
           {jobs.map((job) => (
             <div className="admin-card" key={job.id} style={{ margin: 0, padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-                <div>
-                  <span className="status-badge status-pending" style={{ marginBottom: '8px' }}>PENDING REVIEW</span>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>{job.title}</h3>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{job.company}</span>
-                    <span>•</span>
-                    <span>{job.location} ({job.midc_zone || 'General'})</span>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                  {/* Company Logo / Initial Avatar */}
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '10px',
+                    background: (job.company_logo || job.companyLogo) ? 'transparent' : 'var(--primary)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '18px',
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    border: '1px solid var(--border)'
+                  }}>
+                    {job.company_logo || job.companyLogo ? (
+                      <img
+                        src={job.company_logo || job.companyLogo}
+                        alt={job.company || 'Company Logo'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      (job.company || 'C')[0].toUpperCase()
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
-                        <rect x="2" y="6" width="20" height="12" rx="2" />
-                        <circle cx="12" cy="12" r="2" />
-                        <path d="M6 12h.01M18 12h.01" />
-                      </svg>
-                      <strong>Salary:</strong>&nbsp;₹{formatNumber(job.salary_min)} - ₹{formatNumber(job.salary_max)} / month
+
+                  <div>
+                    <span className="status-badge status-pending" style={{ marginBottom: '8px' }}>PENDING REVIEW</span>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>{job.title}</h3>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{job.company}</span>
+                      <span>•</span>
+                      <span>{job.location} ({job.midc_zone || 'General'})</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                      </svg>
-                      <strong>Exp:</strong>&nbsp;{job.min_experience} - {job.max_experience} Yrs
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                      <strong>Vacancies:</strong>&nbsp;{job.openings} openings
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      <strong>Posted:</strong>&nbsp;{new Date(job.posted_at).toLocaleDateString()}
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
+                          <rect x="2" y="6" width="20" height="12" rx="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <path d="M6 12h.01M18 12h.01" />
+                        </svg>
+                        <strong>Salary:</strong>&nbsp;₹{formatNumber(job.salary_min)} - ₹{formatNumber(job.salary_max)} / month
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                        <strong>Exp:</strong>&nbsp;{job.min_experience} - {job.max_experience} Yrs
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <strong>Vacancies:</strong>&nbsp;{job.openings} openings
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', color: 'var(--primary)', flexShrink: 0 }}>
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        <strong>Posted:</strong>&nbsp;{new Date(job.posted_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -178,12 +208,40 @@ export const JobApprovalPage: React.FC = () => {
             </div>
             
             <div className="drawer-body">
-              <div className="drawer-section">
-                <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{selectedJob.title}</h3>
-                <p style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
-                  <strong>Company:</strong> {selectedJob.company} <br />
-                  <strong>Employer:</strong> {selectedJob.employer_name} ({selectedJob.employer_email} | {selectedJob.employer_phone})
-                </p>
+              <div className="drawer-section" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  background: (selectedJob.company_logo || selectedJob.companyLogo) ? 'transparent' : 'var(--primary)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '800',
+                  fontSize: '22px',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  border: '1px solid var(--border)'
+                }}>
+                  {selectedJob.company_logo || selectedJob.companyLogo ? (
+                    <img
+                      src={selectedJob.company_logo || selectedJob.companyLogo}
+                      alt={selectedJob.company || 'Company Logo'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    (selectedJob.company || 'C')[0].toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{selectedJob.title}</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    <strong>Company:</strong> {selectedJob.company} <br />
+                    <strong>Employer:</strong> {selectedJob.employer_name} ({selectedJob.employer_email} | {selectedJob.employer_phone})
+                  </p>
+                </div>
               </div>
 
               <div className="drawer-section">

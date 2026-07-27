@@ -18,8 +18,14 @@ export function sanitizeUserForResponse(user: any) {
   if (!user) return user;
   const { password_hash, ...safeUser } = user;
   if (safeUser.resume) {
-    const { url, ...resumeWithoutUrl } = safeUser.resume;
-    safeUser.resume = resumeWithoutUrl;
+    if (typeof safeUser.resume !== 'object' || Object.keys(safeUser.resume).length === 0) {
+      safeUser.resume = null;
+    } else {
+      const { url, ...resumeWithoutUrl } = safeUser.resume;
+      safeUser.resume = Object.keys(resumeWithoutUrl).length > 0 && (resumeWithoutUrl.name || resumeWithoutUrl.size) ? resumeWithoutUrl : null;
+    }
+  } else {
+    safeUser.resume = null;
   }
   return safeUser;
 }
@@ -155,6 +161,36 @@ export class AuthController {
         return res.status(404).json({ error: 'Resume not found' });
       }
       res.status(200).json({ success: true, url: user.resume.url });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteResume(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const user = await UserRepository.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      if (user.resume && user.resume.url) {
+        const publicId = CloudinaryUtil.extractPublicId(user.resume.url);
+        if (publicId) {
+          try {
+            await CloudinaryUtil.deleteFile(publicId);
+          } catch (err) {
+            console.error('Failed to delete resume file from Cloudinary:', err);
+          }
+        }
+      }
+
+      const updatedUser = await UserRepository.updateProfile(userId, { resume: null });
+      res.status(200).json({
+        success: true,
+        data: sanitizeUserForResponse(updatedUser)
+      });
     } catch (error) {
       next(error);
     }
