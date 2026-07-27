@@ -876,10 +876,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                             {job.salaryMax > 0 && (
                               <>
                                 <span style={{ color: '#cbd5e1' }}>•</span>
-                                <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                                  </svg>
+                                <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center' }}>
                                   ₹{(job.salaryMin / 1000).toFixed(0)}k - ₹{(job.salaryMax / 1000).toFixed(0)}k / mo
                                 </span>
                               </>

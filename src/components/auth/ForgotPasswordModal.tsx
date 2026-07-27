@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { apiFetch } from '../../utils/api';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 
 interface ForgotPasswordModalProps {
@@ -18,6 +19,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   initialEmail = '',
   autoSendOtp = false
 }) => {
+  const { currentUser } = useAuth();
   const { showToast } = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -66,19 +68,37 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       setLoading(false);
       setOtpError(false);
 
-      if (initialEmail) {
-        setEmail(initialEmail);
+      const targetEmail = initialEmail || currentUser?.email || '';
+      if (targetEmail) {
+        setEmail(targetEmail);
         if (autoSendOtp) {
-          sendOtpForEmail(initialEmail);
+          setStep(2);
+          sendOtpForEmail(targetEmail);
         } else {
           setStep(1);
         }
+      } else if (autoSendOtp && currentUser?.email) {
+        setEmail(currentUser.email);
+        setStep(2);
+        sendOtpForEmail(currentUser.email);
       } else {
         setEmail('');
         setStep(1);
       }
     }
-  }, [isOpen, initialEmail, autoSendOtp]);
+  }, [isOpen]);
+
+  // Fallback trigger if currentUser loads after modal opens
+  useEffect(() => {
+    if (isOpen && autoSendOtp && step === 1) {
+      const targetEmail = initialEmail || currentUser?.email;
+      if (targetEmail) {
+        setEmail(targetEmail);
+        setStep(2);
+        sendOtpForEmail(targetEmail);
+      }
+    }
+  }, [isOpen, autoSendOtp, initialEmail, currentUser?.email]);
 
   // Resend OTP countdown
   useEffect(() => {
@@ -250,7 +270,6 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
       {/* Backdrop */}
       <div
-        onClick={onClose}
         style={{
           position: 'fixed',
           inset: 0,
