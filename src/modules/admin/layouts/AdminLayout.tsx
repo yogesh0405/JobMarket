@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
 import '../styles/admin.css';
@@ -13,23 +13,20 @@ export const AdminLayout: React.FC = () => {
 
   // Enforce ADMIN role check on mount and update
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token && !currentUser) {
-      navigate('/admin/login');
-      return;
-    }
     if (currentUser) {
       const role = (currentUser.role || '').toLowerCase().trim();
       if (role !== 'admin') {
         showToast('Admin privileges required. Please log in as Admin.', 'warning');
-        navigate('/admin/login');
       }
     }
-  }, [currentUser, navigate, showToast]);
+  }, [currentUser, showToast]);
 
   const token = localStorage.getItem('accessToken');
+  if (!token) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
   if (!currentUser) {
-    if (!token) return null;
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: '#ffffff' }}>
         <div style={{ textAlign: 'center' }}>
@@ -42,7 +39,7 @@ export const AdminLayout: React.FC = () => {
 
   const userRole = (currentUser.role || '').toLowerCase().trim();
   if (userRole !== 'admin') {
-    return null; // Don't render layout if not admin
+    return <Navigate to="/admin/login" replace />;
   }
 
   const handleLogout = () => {
