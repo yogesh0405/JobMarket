@@ -27,17 +27,27 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [otpError, setOtpError] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const isSendingOtpRef = useRef(false);
 
   // Function to send OTP for an email address
   const sendOtpForEmail = async (targetEmail: string) => {
+    if (isSendingOtpRef.current) return;
+    isSendingOtpRef.current = true;
+
     try {
       setLoading(true);
+      setIsSendingOtp(true);
+      setInlineError(null);
       const res = await apiFetch('/api/v1/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,12 +60,14 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         setStep(2);
         setResendTimer(60);
       } else {
-        showToast(json.error || 'Failed to send OTP', 'error');
+        setInlineError(json.error || 'Failed to send OTP email');
       }
     } catch (err) {
-      showToast('Error requesting password reset OTP', 'error');
+      setInlineError('Error requesting password reset OTP');
     } finally {
       setLoading(false);
+      setIsSendingOtp(false);
+      isSendingOtpRef.current = false;
     }
   };
 
@@ -66,7 +78,10 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       setNewPassword('');
       setConfirmPassword('');
       setLoading(false);
+      setIsSendingOtp(false);
       setOtpError(false);
+      setInlineError(null);
+      isSendingOtpRef.current = false;
 
       const targetEmail = initialEmail || currentUser?.email || '';
       if (targetEmail) {
@@ -77,28 +92,12 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         } else {
           setStep(1);
         }
-      } else if (autoSendOtp && currentUser?.email) {
-        setEmail(currentUser.email);
-        setStep(2);
-        sendOtpForEmail(currentUser.email);
       } else {
         setEmail('');
         setStep(1);
       }
     }
   }, [isOpen]);
-
-  // Fallback trigger if currentUser loads after modal opens
-  useEffect(() => {
-    if (isOpen && autoSendOtp && step === 1) {
-      const targetEmail = initialEmail || currentUser?.email;
-      if (targetEmail) {
-        setEmail(targetEmail);
-        setStep(2);
-        sendOtpForEmail(targetEmail);
-      }
-    }
-  }, [isOpen, autoSendOtp, initialEmail, currentUser?.email]);
 
   // Resend OTP countdown
   useEffect(() => {
@@ -139,6 +138,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     newDigits[index] = value.slice(-1);
     setOtpDigits(newDigits);
     setOtpError(false);
+    setInlineError(null);
 
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -162,6 +162,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         newDigits[i] = pastedData[i];
       }
       setOtpDigits(newDigits);
+      setOtpError(false);
+      setInlineError(null);
       if (pastedData.length === 6) {
         inputRefs.current[5]?.focus();
       } else {
@@ -176,13 +178,14 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     const fullOtp = otpDigits.join('');
     if (fullOtp.length !== 6) {
       setOtpError(true);
-      showToast('Please enter the full 6-digit OTP code', 'error');
+      setInlineError('Please enter the full 6-digit OTP code');
       return;
     }
 
     try {
       setLoading(true);
       setOtpError(false);
+      setInlineError(null);
       const res = await apiFetch('/api/v1/auth/verify-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,11 +198,11 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         setStep(3);
       } else {
         setOtpError(true);
-        showToast(json.error || 'Invalid OTP code', 'error');
+        setInlineError(json.error || 'Invalid or expired OTP code. Please check the code or click Resend OTP.');
       }
     } catch (err) {
       setOtpError(true);
-      showToast('Error verifying OTP code', 'error');
+      setInlineError('Error verifying OTP code. Please try requesting a new OTP.');
     } finally {
       setLoading(false);
     }
@@ -266,6 +269,19 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           20%, 60% { transform: translateX(-6px); }
           40%, 80% { transform: translateX(6px); }
         }
+        @keyframes pulseRing {
+          0% { transform: scale(0.85); opacity: 0.9; }
+          100% { transform: scale(1.45); opacity: 0; }
+        }
+        @keyframes floatMail {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes barLoading {
+          0% { left: -40%; width: 40%; }
+          50% { width: 60%; }
+          100% { left: 100%; width: 40%; }
+        }
       `}</style>
 
       {/* Backdrop */}
@@ -303,10 +319,14 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </svg>
             </div>
             <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-              {step === 1 && 'Forgot Password'}
-              {step === 2 && 'Email OTP Verification'}
-              {step === 3 && 'Set New Password'}
-              {step === 4 && 'Password Reset Complete'}
+              {isSendingOtp ? 'Sending OTP Verification...' : (
+                <>
+                  {step === 1 && 'Forgot Password'}
+                  {step === 2 && 'Email OTP Verification'}
+                  {step === 3 && 'Set New Password'}
+                  {step === 4 && 'Password Reset Complete'}
+                </>
+              )}
             </h2>
           </div>
           <button
@@ -317,7 +337,93 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           </button>
         </div>
 
-        {/* STEP 1: Enter Email */}
+        {/* LOADING ANIMATION SCREEN */}
+        {isSendingOtp ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '28px 12px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {/* Animated Pulsing Mail Icon */}
+            <div style={{
+              position: 'relative',
+              width: '72px',
+              height: '72px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                position: 'absolute',
+                inset: '-8px',
+                borderRadius: '50%',
+                background: 'rgba(37, 99, 235, 0.2)',
+                animation: 'pulseRing 1.6s ease-out infinite'
+              }} />
+              <div style={{
+                position: 'absolute',
+                inset: '-18px',
+                borderRadius: '50%',
+                background: 'rgba(37, 99, 235, 0.1)',
+                animation: 'pulseRing 1.6s ease-out 0.4s infinite'
+              }} />
+
+              <div style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 20px rgba(37, 99, 235, 0.35)',
+                animation: 'floatMail 2s ease-in-out infinite',
+                zIndex: 2
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+            </div>
+
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '15.5px', fontWeight: '800', color: '#0f172a' }}>
+              Sending OTP Verification Code...
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+              Sending a secure 6-digit OTP code to<br/>
+              <strong style={{ color: '#2563eb', fontWeight: '700' }}>{email || currentUser?.email}</strong>
+            </p>
+
+            {/* Horizontal Bar Loading Animation */}
+            <div style={{
+              width: '180px',
+              height: '4px',
+              background: '#e2e8f0',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                height: '100%',
+                width: '40%',
+                background: 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)',
+                borderRadius: '2px',
+                animation: 'barLoading 1.2s ease-in-out infinite'
+              }} />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* STEP 1: Enter Email */}
         {step === 1 && (
           <form onSubmit={handleRequestOTP}>
             <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
@@ -402,6 +508,28 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </div>
             </div>
 
+            {inlineError && (
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fca5a5',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#991b1b',
+                fontSize: '12.5px',
+                fontWeight: '600',
+                lineHeight: 1.4
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{inlineError}</span>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -447,25 +575,61 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             </p>
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min. 6 chars)"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showNewPass ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min. 6 chars)"
+                  style={{ width: '100%', padding: '10px 38px 10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                  title={showNewPass ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPass ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Confirm New Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConfirmPass ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  style={{ width: '100%', padding: '10px 38px 10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                  title={showConfirmPass ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPass ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
@@ -504,6 +668,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               Close Window
             </button>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>,

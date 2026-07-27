@@ -9,6 +9,11 @@ import { CloudinaryUtil } from '../../../utils/cloudinary';
 
 import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
+const isEmployerRole = (r?: string) => {
+  const norm = (r || '').toLowerCase().trim();
+  return norm === 'employer' || norm === 'admin' || norm === 'recruiter';
+};
+
 export class JobController {
   static async getCategories(req: any, res: Response, next: NextFunction) {
     try {
@@ -68,7 +73,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -104,7 +109,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -153,7 +158,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -263,7 +268,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -283,7 +288,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -351,7 +356,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -434,7 +439,7 @@ export class JobController {
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }
@@ -484,7 +489,7 @@ export class JobController {
   static async getAllCandidates(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const role = req.user!.role;
-      if (role !== 'employer') {
+      if (!isEmployerRole(role)) {
         res.status(403).json({ success: false, message: 'Access denied: Employers only' });
         return;
       }

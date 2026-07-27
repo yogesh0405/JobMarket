@@ -817,11 +817,13 @@
 /* Work type / mode toggles */
 .work-toggle-group {
   display: flex;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
 }
 
 .work-toggle {
-  padding: 10px 22px;
+  padding: 8px 16px;
   border: 1.5px solid #cbd5e1;
   border-radius: 99px;
   font-size: var(--fs-sm);
@@ -830,6 +832,27 @@
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
+  white-space: nowrap;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .work-toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .work-toggle {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 100px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    text-align: center;
+    box-sizing: border-box;
+  }
 }
 
 .work-toggle:hover {

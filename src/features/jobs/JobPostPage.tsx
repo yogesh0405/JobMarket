@@ -54,6 +54,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   }, []);
 
   // Form states
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [industry, setIndustry] = useState('');
   const [openings, setOpenings] = useState(1);
@@ -61,6 +62,70 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [maxExperience, setMaxExperience] = useState(0);
   const [salaryMin, setSalaryMin] = useState(0);
   const [salaryMax, setSalaryMax] = useState(0);
+
+  // Custom manual entry states
+  const [isCustomMinExp, setIsCustomMinExp] = useState(false);
+  const [isCustomMaxExp, setIsCustomMaxExp] = useState(false);
+  const [isCustomMinSalary, setIsCustomMinSalary] = useState(false);
+  const [isCustomMaxSalary, setIsCustomMaxSalary] = useState(false);
+
+  const [customMinExpVal, setCustomMinExpVal] = useState('');
+  const [customMaxExpVal, setCustomMaxExpVal] = useState('');
+  const [customMinSalaryVal, setCustomMinSalaryVal] = useState('');
+  const [customMaxSalaryVal, setCustomMaxSalaryVal] = useState('');
+
+  const handleMinExpSelect = (val: string) => {
+    if (val === 'custom') {
+      setIsCustomMinExp(true);
+      return;
+    }
+    setIsCustomMinExp(false);
+    const num = parseInt(val) || 0;
+    setMinExperience(num);
+    if (!isCustomMaxExp && maxExperience < num) {
+      setMaxExperience(num);
+    }
+  };
+
+  const handleMaxExpSelect = (val: string) => {
+    if (val === 'custom') {
+      setIsCustomMaxExp(true);
+      return;
+    }
+    setIsCustomMaxExp(false);
+    const num = parseInt(val) || 0;
+    if (!isCustomMinExp && num < minExperience) {
+      setMinExperience(num);
+    }
+    setMaxExperience(num);
+  };
+
+  const handleMinSalarySelect = (val: string) => {
+    if (val === 'custom') {
+      setIsCustomMinSalary(true);
+      return;
+    }
+    setIsCustomMinSalary(false);
+    const num = parseInt(val) || 0;
+    setSalaryMin(num);
+    if (!isCustomMaxSalary && salaryMax > 0 && salaryMax < num) {
+      setSalaryMax(num);
+    }
+  };
+
+  const handleMaxSalarySelect = (val: string) => {
+    if (val === 'custom') {
+      setIsCustomMaxSalary(true);
+      return;
+    }
+    setIsCustomMaxSalary(false);
+    const num = parseInt(val) || 0;
+    if (!isCustomMinSalary && num > 0 && num < salaryMin) {
+      setSalaryMin(num);
+    }
+    setSalaryMax(num);
+  };
+
   const [location, setLocation] = useState('');
   const [workType, setWorkType] = useState<JobType>('Full-Time');
   const [workMode, setWorkMode] = useState<WorkMode>('Onsite');
@@ -125,6 +190,45 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [customTrade, setCustomTrade] = useState('');
   const [midcZone, setMidcZone] = useState('');
   const [shiftDetails, setShiftDetails] = useState('');
+
+  // Shift Type & Timing Selection states
+  const [shiftCategory, setShiftCategory] = useState<'Day Shift' | 'Night Shift' | 'Rotational Shift' | 'Custom Shift'>('Day Shift');
+  const [shiftTimingOption, setShiftTimingOption] = useState('8:00 AM - 5:00 PM (9 hrs)');
+  const [customTimingText, setCustomTimingText] = useState('');
+
+  const dayShiftTimings = [
+    '8:00 AM - 5:00 PM (9 hrs)',
+    '9:00 AM - 6:00 PM (9 hrs)',
+    '7:00 AM - 4:00 PM (9 hrs)',
+    '8:30 AM - 5:30 PM (9 hrs)',
+    '8:00 AM - 4:00 PM (8 hrs)',
+    'custom'
+  ];
+
+  const nightShiftTimings = [
+    '8:00 PM - 5:00 AM (9 hrs)',
+    '9:00 PM - 6:00 AM (9 hrs)',
+    '10:00 PM - 6:00 AM (8 hrs)',
+    '7:00 PM - 4:00 AM (9 hrs)',
+    'custom'
+  ];
+
+  const rotationalShiftTimings = [
+    '8 hr Rotational (3 Shifts: Morning, Evening, Night)',
+    '12 hr Rotational (2 Shifts: Day & Night)',
+    'custom'
+  ];
+
+  useEffect(() => {
+    if (shiftCategory === 'Custom Shift') {
+      setShiftDetails(customTimingText ? `Custom Shift (${customTimingText})` : 'Custom Shift');
+    } else if (shiftTimingOption === 'custom') {
+      setShiftDetails(`${shiftCategory} (${customTimingText || 'Custom Timing'})`);
+    } else {
+      setShiftDetails(`${shiftCategory} (${shiftTimingOption})`);
+    }
+  }, [shiftCategory, shiftTimingOption, customTimingText]);
+
   const [overtime, setOvertime] = useState(false);
   const [accommodation, setAccommodation] = useState(false);
   const [busFacility, setBusFacility] = useState(false);
@@ -136,9 +240,18 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [interviewAddress, setInterviewAddress] = useState('');
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'employer') {
+    const token = localStorage.getItem('accessToken');
+    if (!token && !currentUser) {
       showToast('Employer access only. Please log in as an employer.', 'error');
       navigate('/login?role=employer');
+      return;
+    }
+    if (currentUser) {
+      const userRole = (currentUser.role || '').toLowerCase().trim();
+      if (userRole !== 'employer' && userRole !== 'admin' && userRole !== 'recruiter') {
+        showToast('Employer access only. Please log in as an employer.', 'error');
+        navigate('/login?role=employer');
+      }
     }
   }, [currentUser, navigate, showToast]);
 
@@ -285,6 +398,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     };
 
     try {
+      setIsSubmitting(true);
       if (isEdit && id) {
         await updateJob(id, jobData);
         showToast('Job updated successfully!', 'success');
@@ -300,6 +414,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       }
     } catch (err: any) {
       showToast(err.message || 'Failed to save job', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -513,24 +629,72 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 </div>
                 <div className="form-group">
                   <label className="form-label">Required Experience</label>
-                  <div className="salary-row">
-                    <select
-                      className="form-select"
-                      value={minExperience}
-                      onChange={(e) => setMinExperience(parseInt(e.target.value) || 0)}
-                    >
-                      <option value="">Min Exp</option>
-                      {expOptions.map(e => <option key={e} value={e}>{e} yr</option>)}
-                    </select>
+                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                    {isCustomMinExp ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          max="50"
+                          placeholder="Min yrs"
+                          value={customMinExpVal}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomMinExpVal(val);
+                            const num = parseInt(val) || 0;
+                            setMinExperience(num);
+                            if (!isCustomMaxExp && maxExperience < num) setMaxExperience(num);
+                          }}
+                        />
+                        <button type="button" onClick={() => setIsCustomMinExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={isCustomMinExp ? 'custom' : minExperience}
+                        onChange={(e) => handleMinExpSelect(e.target.value)}
+                      >
+                        <option value="0">Min Exp (0 yr)</option>
+                        {expOptions.map(e => <option key={e} value={e}>{e} yr</option>)}
+                        <option value="custom">+ Custom Years (Type below)...</option>
+                      </select>
+                    )}
+
                     <span className="to-label">to</span>
-                    <select
-                      className="form-select"
-                      value={maxExperience}
-                      onChange={(e) => setMaxExperience(parseInt(e.target.value) || 0)}
-                    >
-                      <option value="">Max Exp</option>
-                      {expOptions.map(e => <option key={e} value={e}>{e} yr</option>)}
-                    </select>
+
+                    {isCustomMaxExp ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          max="50"
+                          placeholder="Max yrs"
+                          value={customMaxExpVal}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomMaxExpVal(val);
+                            const num = parseInt(val) || 0;
+                            setMaxExperience(num);
+                            if (!isCustomMinExp && num < minExperience) setMinExperience(num);
+                          }}
+                        />
+                        <button type="button" onClick={() => setIsCustomMaxExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={isCustomMaxExp ? 'custom' : maxExperience}
+                        onChange={(e) => handleMaxExpSelect(e.target.value)}
+                      >
+                        <option value="0">Max Exp (0 yr)</option>
+                        {expOptions.filter(e => e >= minExperience).map(e => (
+                          <option key={e} value={e}>{e} yr</option>
+                        ))}
+                        <option value="custom">+ Custom Years (Type below)...</option>
+                      </select>
+                    )}
                   </div>
                 </div>
               </div>
@@ -538,24 +702,72 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Monthly Salary Range</label>
-                  <div className="salary-row">
-                    <select
-                      className="form-select"
-                      value={salaryMin}
-                      onChange={(e) => setSalaryMin(parseInt(e.target.value) || 0)}
-                    >
-                      <option value="">Min Salary</option>
-                      {salaryOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                    {isCustomMinSalary ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          placeholder="Min ₹/mo"
+                          value={customMinSalaryVal}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomMinSalaryVal(val);
+                            const monthly = parseInt(val) || 0;
+                            const annual = monthly * 12;
+                            setSalaryMin(annual);
+                            if (!isCustomMaxSalary && salaryMax > 0 && salaryMax < annual) setSalaryMax(annual);
+                          }}
+                        />
+                        <button type="button" onClick={() => setIsCustomMinSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={isCustomMinSalary ? 'custom' : salaryMin}
+                        onChange={(e) => handleMinSalarySelect(e.target.value)}
+                      >
+                        <option value="0">Min Salary</option>
+                        {salaryOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        <option value="custom">+ Custom Amount (Type below)...</option>
+                      </select>
+                    )}
+
                     <span className="to-label">to</span>
-                    <select
-                      className="form-select"
-                      value={salaryMax}
-                      onChange={(e) => setSalaryMax(parseInt(e.target.value) || 0)}
-                    >
-                      <option value="">Max Salary</option>
-                      {salaryOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+
+                    {isCustomMaxSalary ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          min="0"
+                          placeholder="Max ₹/mo"
+                          value={customMaxSalaryVal}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomMaxSalaryVal(val);
+                            const monthly = parseInt(val) || 0;
+                            const annual = monthly * 12;
+                            setSalaryMax(annual);
+                            if (!isCustomMinSalary && annual > 0 && annual < salaryMin) setSalaryMin(annual);
+                          }}
+                        />
+                        <button type="button" onClick={() => setIsCustomMaxSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={isCustomMaxSalary ? 'custom' : salaryMax}
+                        onChange={(e) => handleMaxSalarySelect(e.target.value)}
+                      >
+                        <option value="0">Max Salary</option>
+                        {salaryOptions.filter(s => s.value === 0 || s.value >= salaryMin).map(s => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                        <option value="custom">+ Custom Amount (Type below)...</option>
+                      </select>
+                    )}
                   </div>
                 </div>
                 <div className="form-group">
@@ -573,14 +785,126 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Shift details</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Day Shift (8 AM - 5 PM) or Night Shift"
-                    value={shiftDetails}
-                    onChange={(e) => setShiftDetails(e.target.value)}
-                  />
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px', display: 'block' }}>
+                    Shift Details & Timing
+                  </label>
+                  
+                  {/* Shift Type Pills */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                    {[
+                      {
+                        id: 'Day Shift',
+                        label: 'Day Shift',
+                        icon: (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                          </svg>
+                        )
+                      },
+                      {
+                        id: 'Night Shift',
+                        label: 'Night Shift',
+                        icon: (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                          </svg>
+                        )
+                      },
+                      {
+                        id: 'Rotational Shift',
+                        label: 'Rotational',
+                        icon: (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                          </svg>
+                        )
+                      },
+                      {
+                        id: 'Custom Shift',
+                        label: 'Custom',
+                        icon: (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                          </svg>
+                        )
+                      }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setShiftCategory(cat.id as any);
+                          if (cat.id === 'Day Shift') setShiftTimingOption('8:00 AM - 5:00 PM (9 hrs)');
+                          else if (cat.id === 'Night Shift') setShiftTimingOption('8:00 PM - 5:00 AM (9 hrs)');
+                          else if (cat.id === 'Rotational Shift') setShiftTimingOption('8 hr Rotational (3 Shifts: Morning, Evening, Night)');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: shiftCategory === cat.id ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                          background: shiftCategory === cat.id ? '#eff6ff' : '#ffffff',
+                          color: shiftCategory === cat.id ? '#1d4ed8' : '#334155',
+                          fontWeight: shiftCategory === cat.id ? '800' : '600',
+                          fontSize: '12.5px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {cat.icon}
+                        <span>{cat.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Shift Timing Selection */}
+                  {shiftCategory !== 'Custom Shift' ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        className="form-select"
+                        value={shiftTimingOption}
+                        onChange={(e) => setShiftTimingOption(e.target.value)}
+                        style={{ flex: 1, minWidth: '160px' }}
+                      >
+                        <option value="">Select Shift Timing...</option>
+                        {shiftCategory === 'Day Shift' && dayShiftTimings.map(t => (
+                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
+                        ))}
+                        {shiftCategory === 'Night Shift' && nightShiftTimings.map(t => (
+                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
+                        ))}
+                        {shiftCategory === 'Rotational Shift' && rotationalShiftTimings.map(t => (
+                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
+                        ))}
+                      </select>
+
+                      {shiftTimingOption === 'custom' && (
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. 8:30 AM to 5:30 PM + 2 hrs OT"
+                          value={customTimingText}
+                          onChange={(e) => setCustomTimingText(e.target.value)}
+                          style={{ flex: 1, minWidth: '180px' }}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. Flexible 9 hours between 7 AM to 9 PM"
+                      value={customTimingText}
+                      onChange={(e) => setCustomTimingText(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Contract Duration (If applicable)</label>
@@ -855,10 +1179,79 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           </div>
 
           {/* Actions */}
-          <div className="post-job-actions">
-            <button type="button" className="btn btn-secondary btn-lg" onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}>Cancel</button>
-            <button type="submit" className="btn btn-primary btn-lg">
-              {isEdit ? 'Update Job' : 'Post Job'}
+          <div
+            className="post-job-actions"
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              boxSizing: 'border-box',
+              marginTop: '24px'
+            }}
+          >
+            <button
+              type="button"
+              disabled={isSubmitting}
+              className="btn btn-secondary btn-lg"
+              onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}
+              style={{
+                flex: 1,
+                width: '100%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '46px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                boxSizing: 'border-box'
+              }}
+            >
+              Cancel
+            </button>
+            
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="btn btn-primary btn-lg"
+              style={{
+                flex: 1,
+                width: '100%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                height: '46px',
+                borderRadius: '8px',
+                background: '#344BFD',
+                color: '#ffffff',
+                fontWeight: '700',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.85 : 1,
+                boxSizing: 'border-box'
+              }}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ animation: 'spin 0.8s linear infinite' }}
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  <span>{isEdit ? 'Updating Job...' : 'Posting Job for Approval...'}</span>
+                </>
+              ) : (
+                <span>{isEdit ? 'Update Job' : 'Post Job'}</span>
+              )}
             </button>
           </div>
         </form>
