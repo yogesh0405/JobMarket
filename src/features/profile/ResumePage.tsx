@@ -67,49 +67,62 @@ export const ResumePage: React.FC = () => {
           <div 
             className="file-preview" 
             style={{ 
-              border: '1px solid var(--border)', 
-              background: 'var(--bg-secondary)', 
-              padding: 'var(--space-4)', 
-              borderRadius: 'var(--radius-lg)', 
-              margin: 'var(--space-6) 0',
+              border: '1px solid #cbd5e1', 
+              background: '#f8fafc', 
+              padding: '16px 20px', 
+              borderRadius: '8px', 
+              margin: '20px 0',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              flexDirection: 'column',
+              gap: '16px',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="file-icon" style={{ background: 'rgba(52, 75, 253, 0.1)', color: 'var(--primary)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
+            {/* File Info Row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                <div className="file-icon" style={{ background: '#eff6ff', color: '#344BFD', padding: '10px', borderRadius: '6px', flexShrink: 0 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div className="file-info" style={{ minWidth: 0, textAlign: 'left', flex: 1 }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentUser.resume.name}
+                  </h4>
+                  <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0 }}>
+                    {currentUser.resume.size} &bull; Uploaded on {uploadDate}
+                  </p>
+                </div>
               </div>
-              <div className="file-info" style={{ marginLeft: 'var(--space-4)' }}>
-                <h4 style={{ fontSize: 'var(--fs-md)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 'var(--space-1)' }}>{currentUser.resume.name}</h4>
-                <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>{currentUser.resume.size} &bull; Uploaded on {uploadDate}</p>
+
+              {/* Active Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '4px', border: '1px solid #86efac', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Active</span>
               </div>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(46, 204, 113, 0.15)', color: '#2ecc71', borderRadius: '50%', width: 32, height: 32 }} title="Active Resume">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              </div>
+            {/* Actions Row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
               <button
                 onClick={() => setPreviewResume(currentUser.resume)}
                 className="btn btn-secondary btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px solid var(--border)' }}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700, flex: '1 1 auto', maxWidth: '140px' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
                 View
               </button>
               <button
                 onClick={handleDeleteResume}
                 className="btn btn-danger btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--danger)', color: '#ffffff', border: 'none' }}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '4px', background: '#ef4444', color: '#ffffff', border: 'none', fontSize: '13px', fontWeight: '700', flex: '1 1 auto', maxWidth: '140px' }}
                 disabled={isDeleting}
               >
                 {isDeleting ? (
@@ -128,14 +141,15 @@ export const ResumePage: React.FC = () => {
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', margin: 0 }}>
               Your resume is saved securely. Upload modifications are disabled.
             </p>
-            <Link to="/dashboard" className="btn btn-secondary btn-md btn-pill mt-4" style={{ display: 'inline-block' }}>
-              Back to Dashboard
-            </Link>
           </div>
         </div>
+
+        {previewResume && (
+          <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />
+        )}
       </div>
     );
   }

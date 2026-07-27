@@ -35,6 +35,7 @@ router.delete('/profile/picture', requireAuth, AuthController.deleteProfilePictu
 router.get('/resume', requireAuth, AuthController.getResume);
 
 // Security & Sessions (Protected)
+router.post('/change-password', requireAuth, AuthController.changePassword);
 router.get('/sessions', requireAuth, AuthController.getSessions);
 router.delete('/sessions/:sessionId', requireAuth, AuthController.revokeSession);
 // Candidate profile view tracking

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { ForgotPasswordModal } from '../../components/auth/ForgotPasswordModal';
 
@@ -15,6 +16,7 @@ interface UserSession {
 }
 
 export const SecuritySettings: React.FC = () => {
+  const { currentUser } = useAuth();
   const { showToast } = useToast();
 
   // Active Sessions state
@@ -189,21 +191,21 @@ export const SecuritySettings: React.FC = () => {
   };
 
   return (
-    <div className="security-settings-container" style={{ maxWidth: '920px', margin: '0 auto', padding: '24px 16px' }}>
+    <div className="security-settings-container" style={{ maxWidth: '920px', margin: '0 auto', padding: '16px 12px' }}>
       {/* Header Banner */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'nowrap' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#344BFD', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.3px', lineHeight: 1.25 }}>
               Security & Login Sessions
             </h1>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: '4px 0 0 0' }}>
+            <p style={{ color: '#64748b', fontSize: '13px', margin: '4px 0 0 0', lineHeight: 1.4 }}>
               Manage active device sessions, change account credentials, or reset your password securely.
             </p>
           </div>
@@ -211,15 +213,15 @@ export const SecuritySettings: React.FC = () => {
       </div>
 
       {/* SECTION 1: ACTIVE LOGIN SESSIONS */}
-      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '24px', marginBottom: '28px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ color: '#2563eb' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Active Login Sessions</h2>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 0 0' }}>Real-time active devices currently authenticated with your account</p>
+              <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Active Login Sessions</h2>
+              <p style={{ fontSize: '12.5px', color: '#64748b', margin: '2px 0 0 0' }}>Real-time active devices currently authenticated with your account</p>
             </div>
           </div>
 
@@ -227,12 +229,12 @@ export const SecuritySettings: React.FC = () => {
             <button
               onClick={handleLogoutAllOther}
               style={{
-                background: 'rgba(239, 68, 68, 0.08)',
-                color: '#dc2626',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                padding: '8px 16px',
-                borderRadius: '10px',
-                fontSize: '13px',
+                background: '#fee2e2',
+                color: '#b91c1c',
+                border: '1px solid #fca5a5',
+                padding: '6px 14px',
+                borderRadius: '4px',
+                fontSize: '12px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
@@ -244,11 +246,11 @@ export const SecuritySettings: React.FC = () => {
         </div>
 
         {loadingSessions ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13.5px' }}>
             Detecting active device sessions...
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {sessions.map((session, index) => {
               const isCurrent = index === 0;
               return (
@@ -258,53 +260,53 @@ export const SecuritySettings: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '16px',
-                    borderRadius: '14px',
-                    border: isCurrent ? '1px solid #bfdbfe' : '1px solid #f1f5f9',
+                    padding: '14px 16px',
+                    borderRadius: '6px',
+                    border: isCurrent ? '1px solid #93c5fd' : '1px solid #e2e8f0',
                     background: isCurrent ? '#f0f9ff' : '#ffffff',
                     flexWrap: 'wrap',
                     gap: '12px'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: isCurrent ? '#dbeafe' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '6px', background: isCurrent ? '#dbeafe' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', flexShrink: 0 }}>
                       {session.deviceType === 'Mobile' ? (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                       ) : (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                       )}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {session.deviceName}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: '800', fontSize: '14.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span>{session.deviceName}</span>
                         {isCurrent && (
-                          <span style={{ fontSize: '11px', fontWeight: '800', background: '#dcfce7', color: '#15803d', padding: '2px 10px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '800', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '4px', border: '1px solid #86efac', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a' }} />
                             Current Active Session
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
+                      <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
                         India • {session.browser} on {session.os}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>
-                      Active since {new Date(session.createdAt).toLocaleDateString()}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between', width: '100%', maxWidth: '300px' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+                      Active since {new Date(session.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                     {!isCurrent && (
                       <button
                         onClick={() => handleRevokeSession(session.id)}
                         style={{
-                          background: 'none',
+                          background: '#ffffff',
                           border: '1px solid #cbd5e1',
                           color: '#ef4444',
                           fontSize: '12px',
                           fontWeight: '700',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
+                          padding: '5px 12px',
+                          borderRadius: '4px',
                           cursor: 'pointer'
                         }}
                       >
@@ -320,89 +322,101 @@ export const SecuritySettings: React.FC = () => {
       </div>
 
       {/* SECTION 2: CHANGE ACCOUNT PASSWORD */}
-      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '20px', padding: '24px', marginBottom: '28px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <div style={{ color: '#2563eb' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Change Account Password</h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 0 0' }}>Update your password regularly to keep your account safe</p>
+            <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Change Account Password</h2>
+            <p style={{ fontSize: '12.5px', color: '#64748b', margin: '2px 0 0 0' }}>Update your password regularly to keep your account safe</p>
           </div>
         </div>
 
-        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '520px' }}>
+        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px' }}>
           {/* Current Password */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Current Password</label>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Current Password</label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showCurrentPass ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                style={{ width: '100%', padding: '11px 40px 11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPass(!showCurrentPass)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                {showCurrentPass ? '👁️' : '🔒'}
+                {showCurrentPass ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
               </button>
             </div>
           </div>
 
           {/* New Password */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>New Password</label>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>New Password</label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showNewPass ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Enter new password (min. 6 characters)"
-                style={{ width: '100%', padding: '11px 40px 11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowNewPass(!showNewPass)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                {showNewPass ? '👁️' : '🔒'}
+                {showNewPass ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
               </button>
             </div>
 
             {newPassword && (
               <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ flex: 1, height: '5px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ flex: 1, height: '4px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                   <div style={{ width: `${(strength.score / 5) * 100}%`, height: '100%', background: strength.color, transition: 'width 0.3s ease' }} />
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: '800', color: strength.color }}>{strength.label}</span>
+                <span style={{ fontSize: '11.5px', fontWeight: '800', color: strength.color }}>{strength.label}</span>
               </div>
             )}
           </div>
 
           {/* Confirm New Password */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Confirm New Password</label>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Confirm New Password</label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showConfirmPass ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                style={{ width: '100%', padding: '11px 40px 11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPass(!showConfirmPass)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                {showConfirmPass ? '👁️' : '🔒'}
+                {showConfirmPass ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
               </button>
             </div>
           </div>
@@ -411,18 +425,17 @@ export const SecuritySettings: React.FC = () => {
             type="submit"
             disabled={submittingPassword}
             style={{
-              marginTop: '8px',
-              padding: '12px 24px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+              marginTop: '6px',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              background: '#344BFD',
               color: '#ffffff',
               border: 'none',
-              fontWeight: '800',
-              fontSize: '14px',
+              fontWeight: '700',
+              fontSize: '13.5px',
               cursor: submittingPassword ? 'not-allowed' : 'pointer',
               opacity: submittingPassword ? 0.7 : 1,
-              width: 'fit-content',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+              width: 'fit-content'
             }}
           >
             {submittingPassword ? 'Updating Password...' : 'Save New Password'}
@@ -433,29 +446,29 @@ export const SecuritySettings: React.FC = () => {
       {/* SECTION 3: EMAIL OTP FORGOT / RESET PASSWORD CARD */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
-          border: '1px solid #dbeafe',
-          borderRadius: '20px',
-          padding: '24px',
+          background: '#f8fafc',
+          border: '1px solid #cbd5e1',
+          borderRadius: '8px',
+          padding: '20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '16px'
+          gap: '14px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', maxWidth: '600px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', maxWidth: '600px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
           </div>
           <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+            <h3 style={{ margin: '0 0 3px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
               Forgot or Lost Your Password?
             </h3>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.45 }}>
+            <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b', lineHeight: 1.45 }}>
               Send a 6-digit OTP verification code to your registered email address to set a new password anytime.
             </p>
           </div>
@@ -467,15 +480,14 @@ export const SecuritySettings: React.FC = () => {
           style={{
             background: '#ffffff',
             color: '#2563eb',
-            border: '2px solid #2563eb',
-            padding: '11px 20px',
-            borderRadius: '12px',
-            fontWeight: '800',
-            fontSize: '13px',
+            border: '1.5px solid #2563eb',
+            padding: '9px 18px',
+            borderRadius: '6px',
+            fontWeight: '700',
+            fontSize: '12.5px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.1)'
+            transition: 'all 0.2s ease'
           }}
         >
           Reset Password via Email OTP →
@@ -486,6 +498,8 @@ export const SecuritySettings: React.FC = () => {
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}
+        initialEmail={currentUser?.email}
+        autoSendOtp={true}
       />
     </div>
   );

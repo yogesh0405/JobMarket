@@ -365,7 +365,10 @@
   }
 
   .resume-card {
-    padding: var(--space-8) var(--space-6);
+    padding: 24px 16px;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .resume-actions {

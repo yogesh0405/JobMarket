@@ -899,44 +899,65 @@ export const ContactPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Notifications Panel */}
-                {notifications.length > 0 && (
-                  <div className="card support-info-card">
-                    <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: '20px' }}>Recent Support Alerts</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {notifications.map(n => (
-                        <div
-                          key={n.id}
-                          onClick={() => {
-                            if (!n.is_read) markNotificationRead(n.id);
-                          }}
-                          style={{
-                            padding: '14px',
-                            background: n.is_read ? 'var(--surface)' : 'rgba(52, 75, 253, 0.05)',
-                            borderRadius: '8px',
-                            border: `1px solid ${n.is_read ? 'var(--border)' : 'var(--primary)'}`,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: 'var(--text-primary)', fontWeight: n.is_read ? '600' : '700' }}>{n.title}</h4>
-                            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>{n.message}</p>
-                            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px', display: 'inline-block' }}>
-                              {new Date(n.created_at).toLocaleString()}
-                            </span>
-                          </div>
-                          {!n.is_read && (
-                            <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%' }}></span>
-                          )}
+                {/* Support Notifications Panel */}
+                {(() => {
+                  const supportAlerts = notifications.filter(n => {
+                    const text = `${n.title} ${n.message}`.toLowerCase();
+                    return text.includes('support') || text.includes('ticket') || text.includes('helpdesk') || text.includes('agent') || text.includes('inquiry');
+                  });
+
+                  if (supportAlerts.length === 0) return null;
+
+                  return (
+                    <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '20px', boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
                         </div>
-                      ))}
+                        <div>
+                          <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Recent Support Alerts</h2>
+                          <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>Customer support and ticket status updates</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {supportAlerts.map(n => (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.is_read) markNotificationRead(n.id);
+                            }}
+                            style={{
+                              padding: '12px 14px',
+                              background: n.is_read ? '#ffffff' : '#f0f9ff',
+                              borderRadius: '6px',
+                              border: n.is_read ? '1px solid #e2e8f0' : '1px solid #93c5fd',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              gap: '12px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <h4 style={{ margin: '0 0 3px', fontSize: '13.5px', color: '#0f172a', fontWeight: n.is_read ? '700' : '800' }}>{n.title}</h4>
+                              <p style={{ margin: 0, fontSize: '12.5px', color: '#475569', lineHeight: 1.45 }}>{n.message}</p>
+                              <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'inline-block', fontWeight: '500' }}>
+                                {new Date(n.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            {!n.is_read && (
+                              <span style={{ width: '8px', height: '8px', background: '#2563eb', borderRadius: '50%', flexShrink: 0, marginTop: '4px' }}></span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
               </div>
 

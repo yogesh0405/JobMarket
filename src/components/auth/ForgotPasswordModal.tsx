@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { apiFetch } from '../../utils/api';
 import { useToast } from '../../hooks/useToast';
@@ -7,31 +7,78 @@ interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialEmail?: string;
+  autoSendOtp?: boolean;
 }
 
-export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialEmail = '',
+  autoSendOtp = false
+}) => {
   const { showToast } = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [email, setEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [otpError, setOtpError] = useState(false);
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Function to send OTP for an email address
+  const sendOtpForEmail = async (targetEmail: string) => {
+    try {
+      setLoading(true);
+      const res = await apiFetch('/api/v1/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail })
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        showToast(`Verification OTP sent to ${targetEmail}`, 'success');
+        setStep(2);
+        setResendTimer(60);
+      } else {
+        showToast(json.error || 'Failed to send OTP', 'error');
+      }
+    } catch (err) {
+      showToast('Error requesting password reset OTP', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Reset modal state on open
   useEffect(() => {
     if (isOpen) {
-      setStep(1);
-      setEmail('');
-      setOtpCode('');
+      setOtpDigits(['', '', '', '', '', '']);
       setNewPassword('');
       setConfirmPassword('');
       setLoading(false);
+      setOtpError(false);
+
+      if (initialEmail) {
+        setEmail(initialEmail);
+        if (autoSendOtp) {
+          sendOtpForEmail(initialEmail);
+        } else {
+          setStep(1);
+        }
+      } else {
+        setEmail('');
+        setStep(1);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialEmail, autoSendOtp]);
 
   // Resend OTP countdown
   useEffect(() => {
@@ -44,63 +91,94 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
     return () => clearInterval(interval);
   }, [resendTimer]);
 
+  // Auto focus first OTP input when reaching step 2
+  useEffect(() => {
+    if (step === 2) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 150);
+    }
+  }, [step]);
+
   if (!isOpen) return null;
 
-  // Step 1: Request OTP
+  // Step 1: Request OTP manually if no initial email
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       showToast('Please enter a valid email address', 'error');
       return;
     }
+    await sendOtpForEmail(email);
+  };
 
-    try {
-      setLoading(true);
-      const res = await apiFetch('/api/v1/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const json = await res.json();
+  // Handle individual OTP digit change
+  const handleOtpDigitChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newDigits = [...otpDigits];
+    newDigits[index] = value.slice(-1);
+    setOtpDigits(newDigits);
+    setOtpError(false);
 
-      if (res.ok) {
-        showToast('OTP sent to your email!', 'success');
-        setStep(2);
-        setResendTimer(60);
-      } else {
-        showToast(json.error || 'Failed to send OTP', 'error');
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Handle Backspace navigation in OTP digits
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle Paste event for 6-digit OTP
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData.length > 0) {
+      const newDigits = ['', '', '', '', '', ''];
+      for (let i = 0; i < pastedData.length; i++) {
+        newDigits[i] = pastedData[i];
       }
-    } catch (err) {
-      showToast('Error requesting password reset', 'error');
-    } finally {
-      setLoading(false);
+      setOtpDigits(newDigits);
+      if (pastedData.length === 6) {
+        inputRefs.current[5]?.focus();
+      } else {
+        inputRefs.current[pastedData.length]?.focus();
+      }
     }
   };
 
   // Step 2: Verify OTP
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode || otpCode.length !== 6) {
-      showToast('Please enter a valid 6-digit OTP code', 'error');
+  const handleVerifyOTP = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length !== 6) {
+      setOtpError(true);
+      showToast('Please enter the full 6-digit OTP code', 'error');
       return;
     }
 
     try {
       setLoading(true);
+      setOtpError(false);
       const res = await apiFetch('/api/v1/auth/verify-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otpCode })
+        body: JSON.stringify({ email, otpCode: fullOtp })
       });
       const json = await res.json();
 
       if (res.ok) {
-        showToast('OTP verified! Now enter your new password.', 'success');
+        showToast('OTP Verified! Enter your new password.', 'success');
         setStep(3);
       } else {
+        setOtpError(true);
         showToast(json.error || 'Invalid OTP code', 'error');
       }
     } catch (err) {
+      setOtpError(true);
       showToast('Error verifying OTP code', 'error');
     } finally {
       setLoading(false);
@@ -125,17 +203,19 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
       return;
     }
 
+    const fullOtp = otpDigits.join('');
+
     try {
       setLoading(true);
       const res = await apiFetch('/api/v1/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otpCode, newPassword })
+        body: JSON.stringify({ email, otpCode: fullOtp, newPassword })
       });
       const json = await res.json();
 
       if (res.ok) {
-        showToast('Password reset successfully!', 'success');
+        showToast('Password updated successfully!', 'success');
         setStep(4);
         if (onSuccess) onSuccess();
       } else {
@@ -149,16 +229,34 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
   };
 
   return ReactDOM.createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+      {/* Dynamic Keyframes for OTP animation */}
+      <style>{`
+        @keyframes modalPopIn {
+          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes otpBoxPulse {
+          0% { border-color: #cbd5e1; transform: scale(1); }
+          50% { border-color: #344BFD; transform: scale(1.05); }
+          100% { border-color: #344BFD; transform: scale(1); }
+        }
+        @keyframes shakeError {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-6px); }
+          40%, 80% { transform: translateX(6px); }
+        }
+      `}</style>
+
       {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15, 23, 42, 0.5)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)'
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)'
         }}
       />
 
@@ -167,26 +265,34 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
         style={{
           position: 'relative',
           width: '420px',
-          maxWidth: '92vw',
+          maxWidth: '100%',
           background: '#ffffff',
-          borderRadius: '20px',
-          padding: '28px',
-          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.25)',
+          borderRadius: '8px',
+          padding: '24px',
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.2)',
           zIndex: 1000000,
-          animation: 'fadeInUp 0.25s ease forwards'
+          animation: 'modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          border: '1px solid #cbd5e1'
         }}
       >
         {/* Header Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>
-            {step === 1 && '🔑 Forgot Password'}
-            {step === 2 && '✉️ Enter Email OTP'}
-            {step === 3 && '🔒 Set New Password'}
-            {step === 4 && '🎉 Password Reset Complete'}
-          </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', pb: '12px', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+              {step === 1 && 'Forgot Password'}
+              {step === 2 && 'Email OTP Verification'}
+              {step === 3 && 'Set New Password'}
+              {step === 4 && 'Password Reset Complete'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '18px', padding: '4px', lineHeight: 1 }}
           >
             ✕
           </button>
@@ -195,19 +301,19 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
         {/* STEP 1: Enter Email */}
         {step === 1 && (
           <form onSubmit={handleRequestOTP}>
-            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
-              Enter your registered email address below. We will send you a 6-digit OTP code to reset your password.
+            <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              Enter your registered email address below. We will send a 6-digit OTP code to verify your request.
             </p>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-                Email Address
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                Registered Email Address
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
             </div>
@@ -216,13 +322,13 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '12px',
-                borderRadius: '10px',
-                background: '#2563eb',
+                padding: '10px',
+                borderRadius: '6px',
+                background: '#344BFD',
                 color: '#ffffff',
                 border: 'none',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '13.5px',
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
@@ -231,53 +337,81 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
           </form>
         )}
 
-        {/* STEP 2: Enter 6-digit OTP */}
+        {/* STEP 2: Enter 6-digit OTP with Individual Animated Input Boxes */}
         {step === 2 && (
           <form onSubmit={handleVerifyOTP}>
-            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
-              We sent a 6-digit OTP verification code to <strong>{email}</strong>. Please enter it below:
+            <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              We sent a 6-digit OTP verification code to <strong style={{ color: '#0f172a' }}>{email}</strong>. Please enter the code below:
             </p>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-                6-Digit OTP Code
+
+            <div style={{ 
+              marginBottom: '20px', 
+              animation: otpError ? 'shakeError 0.4s ease' : 'none' 
+            }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', textAlign: 'center' }}>
+                6-Digit Verification Code
               </label>
-              <input
-                type="text"
-                maxLength={6}
-                value={otpCode}
-                onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #3b82f6', fontSize: '22px', fontWeight: '800', letterSpacing: '6px', textAlign: 'center', outline: 'none' }}
-                required
-              />
+              
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                {otpDigits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={el => (inputRefs.current[idx] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpDigitChange(idx, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(idx, e)}
+                    onPaste={handleOtpPaste}
+                    style={{
+                      width: '42px',
+                      height: '48px',
+                      textAlign: 'center',
+                      fontSize: '20px',
+                      fontWeight: '800',
+                      color: '#0f172a',
+                      borderRadius: '6px',
+                      border: otpError ? '2px solid #ef4444' : digit ? '2px solid #344BFD' : '1px solid #cbd5e1',
+                      background: digit ? '#eff6ff' : '#ffffff',
+                      outline: 'none',
+                      transition: 'all 0.15s ease',
+                      boxShadow: digit ? '0 2px 8px rgba(52, 75, 253, 0.15)' : 'none'
+                    }}
+                  />
+                ))}
+              </div>
             </div>
+
             <button
               type="submit"
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '12px',
-                borderRadius: '10px',
-                background: '#2563eb',
+                padding: '10px',
+                borderRadius: '6px',
+                background: '#344BFD',
                 color: '#ffffff',
                 border: 'none',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '13.5px',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 marginBottom: '12px'
               }}
             >
-              {loading ? 'Verifying OTP...' : 'Verify OTP Code →'}
+              {loading ? 'Verifying OTP Code...' : 'Verify OTP & Continue →'}
             </button>
 
             <div style={{ textAlign: 'center' }}>
               {resendTimer > 0 ? (
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Resend OTP in {resendTimer}s</span>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+                  Resend OTP code in {resendTimer}s
+                </span>
               ) : (
                 <button
                   type="button"
-                  onClick={handleRequestOTP}
-                  style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                  onClick={() => sendOtpForEmail(email)}
+                  style={{ background: 'none', border: 'none', color: '#344BFD', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
                 >
                   Didn't receive code? Resend OTP
                 </button>
@@ -289,28 +423,28 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
         {/* STEP 3: Enter New Password */}
         {step === 3 && (
           <form onSubmit={handleResetPassword}>
-            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
-              Your OTP is verified! Please enter your new password below:
+            <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+              OTP Verified! Enter your new password below to update your account credentials:
             </p>
             <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>New Password</label>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>New Password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Enter new password (min. 6 chars)"
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
             </div>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Confirm New Password</label>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
             </div>
@@ -319,36 +453,36 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '12px',
-                borderRadius: '10px',
-                background: '#10b981',
+                padding: '10px',
+                borderRadius: '6px',
+                background: '#15803d',
                 color: '#ffffff',
                 border: 'none',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '13.5px',
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Resetting Password...' : 'Save New Password & Finish'}
+              {loading ? 'Resetting Password...' : 'Save New Password'}
             </button>
           </form>
         )}
 
         {/* STEP 4: Success Screen */}
         {step === 4 && (
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#dcfce7', color: '#166534', fontSize: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#dcfce7', color: '#15803d', fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', border: '1px solid #86efac' }}>
               ✓
             </div>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Password Reset Successfully</h3>
-            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
-              Your account password has been updated. You can now log in using your new password.
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>Password Reset Successfully</h3>
+            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '18px' }}>
+              Your account password has been updated. You can now use your new password.
             </p>
             <button
               onClick={onClose}
-              style={{ width: '100%', padding: '12px', borderRadius: '10px', background: '#2563eb', color: '#ffffff', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', background: '#344BFD', color: '#ffffff', border: 'none', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer' }}
             >
-              Continue to Login
+              Close Window
             </button>
           </div>
         )}
@@ -357,3 +491,4 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen
     document.body
   );
 };
+export default ForgotPasswordModal;

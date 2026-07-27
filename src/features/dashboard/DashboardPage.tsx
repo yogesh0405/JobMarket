@@ -792,93 +792,203 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'applied':
       return (
         <>
-          <h2 style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>Applied Jobs</h2>
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>Applied Jobs</h2>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', margin: '4px 0 0 0' }}>Track your application progress and scheduled interviews in real time</p>
+          </div>
+
           {appliedJobs.length > 0 ? (
-            <div className="jobs-list" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="jobs-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {appliedJobs.map(job => {
                 const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+                const status = (appDetails?.status || 'applied').toLowerCase();
+                
+                let badgeBg = '#eff6ff';
+                let badgeColor = '#1d4ed8';
+                let badgeBorder = '#bfdbfe';
+                
+                if (status === 'shortlisted' || status === 'accepted') {
+                  badgeBg = '#dcfce7';
+                  badgeColor = '#15803d';
+                  badgeBorder = '#86efac';
+                } else if (status === 'rejected') {
+                  badgeBg = '#fee2e2';
+                  badgeColor = '#b91c1c';
+                  badgeBorder = '#fca5a5';
+                }
+
                 return (
                   <div key={job.id} style={{ 
-                    background: 'var(--bg)', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: '12px', 
-                    padding: '20px', 
+                    background: '#ffffff', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '8px', 
+                    padding: '20px 24px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '16px',
-                    boxShadow: 'var(--shadow-sm)'
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{job.title}</h3>
-                        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                          {job.company} • {job.location} ({job.workMode})
-                        </p>
+                    {/* Top Header Row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                        {/* Company Logo / Initial Avatar */}
+                        <div style={{ 
+                          width: '46px', 
+                          height: '46px', 
+                          borderRadius: '6px', 
+                          background: job.companyLogo ? 'transparent' : '#344BFD', 
+                          color: '#ffffff', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontWeight: '800',
+                          fontSize: '18px',
+                          overflow: 'hidden',
+                          border: '1px solid #e2e8f0',
+                          flexShrink: 0
+                        }}>
+                          {job.companyLogo ? (
+                            <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            (job.company || 'JM').charAt(0).toUpperCase()
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>{job.title}</h3>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
+                            <span style={{ fontSize: '13.5px', color: '#475569', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                                <path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+                              </svg>
+                              {job.company}
+                            </span>
+                            <span style={{ color: '#cbd5e1' }}>•</span>
+                            <span style={{ fontSize: '13.5px', color: '#475569', fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              {job.location} ({job.workMode})
+                            </span>
+                            {job.salaryMax > 0 && (
+                              <>
+                                <span style={{ color: '#cbd5e1' }}>•</span>
+                                <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                  </svg>
+                                  ₹{(job.salaryMin / 1000).toFixed(0)}k - ₹{(job.salaryMax / 1000).toFixed(0)}k / mo
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        {appDetails && (
-                          <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                            {capitalize(appDetails.status)}
-                          </span>
-                        )}
-                      </div>
+
+                      {/* Status Badge */}
+                      {appDetails && (
+                        <span style={{ 
+                          background: badgeBg, 
+                          color: badgeColor, 
+                          border: `1px solid ${badgeBorder}`, 
+                          fontSize: '11px', 
+                          fontWeight: '800', 
+                          padding: '4px 10px', 
+                          borderRadius: '4px',
+                          letterSpacing: '0.6px',
+                          textTransform: 'uppercase'
+                        }}>
+                          {capitalize(appDetails.status)}
+                        </span>
+                      )}
                     </div>
 
+                    {/* Interview Details Card */}
                     {appDetails && appDetails.status === 'shortlisted' && appDetails.interviewDate && (
                       <div style={{ 
-                        background: 'var(--bg-secondary)', 
-                        border: '1px solid var(--border)', 
-                        borderRadius: '8px', 
+                        background: '#f8fafc', 
+                        border: '1px solid #cbd5e1', 
+                        borderRadius: '6px', 
                         padding: '16px',
                         fontSize: '14px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px'
+                        gap: '12px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: '700' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                          </svg>
-                          <span>Interview Scheduled!</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e40af', fontWeight: '800', fontSize: '14px' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span>Interview Scheduled</span>
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#1e40af', background: '#e0e7ff', padding: '2px 8px', borderRadius: '4px', fontWeight: '700', border: '1px solid #c7d2fe' }}>
+                            Action Required
+                          </span>
                         </div>
-                        <div className="grid grid-2" style={{ gap: '12px', marginTop: '4px' }}>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', background: '#ffffff', borderRadius: '6px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
                           <div>
-                            <strong>Date:</strong> {appDetails.interviewDate}
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              Date
+                            </span>
+                            <strong style={{ color: '#0f172a', fontSize: '13.5px' }}>{appDetails.interviewDate}</strong>
                           </div>
                           <div>
-                            <strong>Time:</strong> {appDetails.interviewTime}
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                              Time
+                            </span>
+                            <strong style={{ color: '#0f172a', fontSize: '13.5px' }}>{appDetails.interviewTime}</strong>
+                          </div>
+                          <div style={{ gridColumn: '1 / -1' }}>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                              Venue / Plant Address
+                            </span>
+                            <strong style={{ color: '#0f172a', fontSize: '13.5px' }}>{appDetails.venueAddress}</strong>
                           </div>
                         </div>
-                        <div>
-                          <strong>Venue:</strong> {appDetails.venueAddress}
-                        </div>
+
                         {appDetails.mapsLink && (
-                          <div style={{ marginTop: '4px' }}>
+                          <div>
                             <a 
                               href={appDetails.mapsLink} 
                               target="_blank" 
                               rel="noreferrer" 
                               style={{ 
-                                color: 'var(--primary)', 
+                                background: '#2563eb', 
+                                color: '#ffffff', 
                                 textDecoration: 'none', 
-                                fontWeight: '600',
+                                fontWeight: '700',
+                                fontSize: '12.5px',
+                                padding: '7px 14px',
+                                borderRadius: '4px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '4px'
+                                gap: '6px'
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                                 <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/>
                               </svg>
-                              Open in Google Maps
+                              Open Directions in Google Maps
                             </a>
                           </div>
                         )}
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-                      <Link to={`/job/${job.id}`} className="btn btn-ghost btn-sm" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                    {/* Footer Row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+                        Applied on {new Date(job.postedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                      <Link to={`/job/${job.id}`} className="btn btn-secondary btn-sm" style={{ padding: '6px 14px', fontSize: '12.5px', fontWeight: '700', borderRadius: '4px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#344BFD', textDecoration: 'none' }}>
                         View Job Details →
                       </Link>
                     </div>
