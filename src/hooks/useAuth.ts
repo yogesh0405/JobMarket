@@ -16,7 +16,7 @@ export const useAuth = () => {
 
   const login = useCallback(async (email: string, password: string, role: UserRole) => {
     try {
-      const response = await fetch('/api/v1/auth/login', {
+      const response = await apiFetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role }),
@@ -81,7 +81,7 @@ export const useAuth = () => {
 
   const signup = useCallback(async (userData: any) => {
     try {
-      const response = await fetch('/api/v1/auth/signup', {
+      const response = await apiFetch('/api/v1/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -111,7 +111,7 @@ export const useAuth = () => {
 
   const verifyOtp = useCallback(async (email: string, otp: string) => {
     try {
-      const response = await fetch('/api/v1/auth/verify-otp', {
+      const response = await apiFetch('/api/v1/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otpCode: otp }),
