@@ -7,9 +7,9 @@ import { ResumePreviewModal } from '../profile/ResumePreviewModal';
 export interface CandidateDetailsModalProps {
   viewWorker: any;
   onClose: () => void;
-  updateApplicantStatus?: (jobId: string, userId: string, status: string) => Promise<void>;
-  scheduleInterview?: (jobId: string, userId: string, data: any) => Promise<void>;
-  sendCustomEmail?: (jobId: string, userId: string, data: any) => Promise<void>;
+  updateApplicantStatus?: (jobId: string, userId: string, status: string) => Promise<any> | void;
+  scheduleInterview?: (jobId: string, userId: string, data: any) => Promise<any> | void;
+  sendCustomEmail?: (jobId: string, userId: string, data: any) => Promise<any> | void;
   showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   myJobs?: any[];
 }

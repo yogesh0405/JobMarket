@@ -367,10 +367,10 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            <>
+            <div className="header-auth-buttons">
               <Link to="/login" className="btn btn-ghost btn-sm">{t.login}</Link>
               <Link to="/signup" className="btn btn-primary btn-sm btn-pill" style={{ background: 'var(--gradient-accent)' }}>{t.signup}</Link>
-            </>
+            </div>
           )}
 
           <div className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

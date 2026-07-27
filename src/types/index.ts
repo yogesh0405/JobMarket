@@ -26,6 +26,7 @@ export interface Resume {
 }
 
 export interface Applicant {
+  id?: string;
   userId: string;
   name: string;
   email: string;

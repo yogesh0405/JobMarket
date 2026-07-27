@@ -473,11 +473,14 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 768px) {
   :root {
-    --navbar-height: 56px;
+    --navbar-height: 66px;
+  }
+  #page-content {
+    padding-top: calc(var(--navbar-height) + max(10px, env(safe-area-inset-top, 10px)));
   }
   .navbar.has-search-strip + #page-content,
   body:has(.mobile-search-strip) #page-content {
-    padding-top: 118px !important;
+    padding-top: calc(128px + max(10px, env(safe-area-inset-top, 10px))) !important;
   }
   html { font-size: 15px; }
   .grid-4,
