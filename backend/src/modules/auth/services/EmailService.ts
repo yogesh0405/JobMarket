@@ -147,7 +147,7 @@ export class EmailService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          sender: { name: 'CSN-JobMarket Security', email: 'no-reply@csnjobmarket.in' },
+          sender: { name: 'CSN-JobMarket Security', email: process.env.SENDER_EMAIL || 'yogeshdand04@gmail.com' },
           to: [{ email: toEmail, name: toName }],
           subject: `${otpCode} is your Password Reset OTP Code - CSN-JobMarket`,
           htmlContent
