@@ -276,7 +276,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         }}
       >
         {/* Header Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', pb: '12px', paddingBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -356,7 +356,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
-                    ref={el => (inputRefs.current[idx] = el)}
+                    ref={el => { inputRefs.current[idx] = el; }}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
