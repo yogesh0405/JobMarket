@@ -25,7 +25,7 @@ async function vacuum() {
     `;
     const res = await client.query(tableSizesQuery);
     console.log('--- Database Table Sizes After VACUUM FULL ---');
-    console.table(res.rows.map(r => ({
+    console.table(res.rows.map((r: any) => ({
       table: r.table_name,
       total_size: r.total_size,
       table_size: r.table_size,

@@ -138,7 +138,7 @@ export class JobRepository {
       ORDER BY j.posted_at DESC
     `;
     const result = await pool.query(query, [employerId]);
-    return result.rows.map(row => this.mapDbJobToApi(row));
+    return result.rows.map((row: any) => this.mapDbJobToApi(row));
   }
 
   static async createJob(employerId: string, company: string, jobData: JobData): Promise<any> {
