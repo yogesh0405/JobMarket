@@ -44,6 +44,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
         if (!activeRefreshPromise) {
           activeRefreshPromise = (async () => {
+            try {
               const refreshUrl = `${API_BASE_URL}/api/v1/auth/refresh`;
               const refreshResponse = await fetch(refreshUrl, {
                 method: 'POST',
@@ -80,7 +81,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
           headers['Authorization'] = `Bearer ${newAccessToken}`;
           options.headers = headers;
           
-          response = await fetch(url, options);
+          response = await fetch(targetUrl, options);
         }
       } catch (err) {
         // Network error during refresh - keep session intact
