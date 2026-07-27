@@ -78,23 +78,25 @@ export const App: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/verify-otp" element={<VerifyOTPPage />} />
-      <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      {/* Admin Panel (Separate module & layout) */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="job-approvals" element={<JobApprovalPage />} />
-        <Route path="advertisements" element={<AdminAdvertisementPage />} />
-        <Route path="jobs" element={<JobsPage />} />
-        <Route path="users" element={<UserManagementPage />} />
-        <Route path="employers" element={<EmployerManagementPage />} />
-        <Route path="workers" element={<WorkerManagementPage />} />
-        <Route path="categories" element={<CategorySkillManagementPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="support" element={<SupportManagementPage />} />
-        <Route path="broadcast" element={<BroadcastPage />} />
+      {/* Admin Module (Strictly Isolated Route Hierarchy) */}
+      <Route path="/admin">
+        <Route path="login" element={<AdminLoginPage />} />
+        <Route element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="job-approvals" element={<JobApprovalPage />} />
+          <Route path="advertisements" element={<AdminAdvertisementPage />} />
+          <Route path="jobs" element={<JobsPage />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="employers" element={<EmployerManagementPage />} />
+          <Route path="workers" element={<WorkerManagementPage />} />
+          <Route path="categories" element={<CategorySkillManagementPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="support" element={<SupportManagementPage />} />
+          <Route path="broadcast" element={<BroadcastPage />} />
+        </Route>
       </Route>
 
       {/* Fallback to Home */}
