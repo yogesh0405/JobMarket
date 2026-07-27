@@ -21,8 +21,8 @@ export const AdminLayout: React.FC = () => {
     if (currentUser) {
       const role = (currentUser.role || '').toLowerCase().trim();
       if (role !== 'admin') {
-        showToast('Unauthorized access to administrative resources.', 'error');
-        navigate('/');
+        showToast('Admin privileges required. Please log in as Admin.', 'warning');
+        navigate('/admin/login');
       }
     }
   }, [currentUser, navigate, showToast]);

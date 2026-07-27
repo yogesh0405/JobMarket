@@ -77,6 +77,7 @@ export const Footer: React.FC = () => {
             <a href="#">Privacy Policy</a>
             <a href="#">Terms of Service</a>
             <a href="#">Cookie Policy</a>
+            <Link to="/admin/login" style={{ opacity: 0.85, fontWeight: '600' }}>Admin Portal</Link>
           </div>
         </div>
       </div>

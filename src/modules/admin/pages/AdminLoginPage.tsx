@@ -19,9 +19,8 @@ export const AdminLoginPage: React.FC = () => {
       const role = (currentUser.role || '').toLowerCase().trim();
       if (role === 'admin') {
         navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
       }
+      // If candidate or employer is logged in, do NOT redirect away from /admin/login so they can log in as Admin
     }
   }, [currentUser, navigate]);
 
