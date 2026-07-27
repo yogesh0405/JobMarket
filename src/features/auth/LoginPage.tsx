@@ -29,7 +29,11 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      navigate('/dashboard');
+      if (currentUser.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [currentUser, navigate]);
 

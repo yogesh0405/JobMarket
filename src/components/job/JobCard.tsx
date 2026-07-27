@@ -53,31 +53,31 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
       onClick={() => navigate(`/job/${job.id}`)}
       style={{
         background: '#ffffff',
-        border: '1.5px solid #F1F5F9',
-        borderRadius: '0.3rem',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
         padding: '24px',
         cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)'
+        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(52,75,253,0.12)';
-        e.currentTarget.style.borderColor = '#C7CEFE';
+        e.currentTarget.style.transform = 'translateY(-6px)';
+        e.currentTarget.style.boxShadow = '0 16px 32px -4px rgba(52, 75, 253, 0.16), 0 6px 12px -2px rgba(15, 23, 42, 0.06)';
+        e.currentTarget.style.borderColor = '#344BFD';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)';
-        e.currentTarget.style.borderColor = '#F1F5F9';
+        e.currentTarget.style.boxShadow = '0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)';
+        e.currentTarget.style.borderColor = '#E2E8F0';
       }}
     >
       {/* Top section: Logo, Title, Save/Share */}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', position: 'relative' }} className="job-card-header">
-        {/* Round architectural design logo (now flat solid color) */}
-        <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '0.3rem', overflow: 'hidden', background: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="job-card-logo-container">
+        {/* Architectural design logo */}
+        <div style={{ width: '52px', height: '52px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', background: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,0,0,0.06)' }} className="job-card-logo-container">
           {job.companyLogo && job.companyLogo.startsWith('http') ? (
             <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (

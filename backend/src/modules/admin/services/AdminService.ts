@@ -142,12 +142,14 @@ export class AdminService {
     return AdminRepository.getCategories();
   }
 
-  static async createCategory(name: string, icon: string, adminId: string, ip?: string, ua?: string) {
+  static async createCategory(name: string, icon: string, status: string = 'ACTIVE', adminId?: string, ip?: string, ua?: string) {
     if (!name || !icon) {
       throw new BadRequestError('Category name and icon are required');
     }
-    const cat = await AdminRepository.createCategory(name, icon);
-    await AuditRepository.logAction('CATEGORY_CREATED', adminId, 'Admin', ip, ua, { categoryId: cat.id, name });
+    const cat = await AdminRepository.createCategory(name, icon, status);
+    if (adminId) {
+      await AuditRepository.logAction('CATEGORY_CREATED', adminId, 'Admin', ip, ua, { categoryId: cat.id, name, status });
+    }
     return cat;
   }
 

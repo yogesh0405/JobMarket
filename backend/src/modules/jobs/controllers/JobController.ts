@@ -7,7 +7,29 @@ import { SupportRepository } from '../../support/repositories/SupportRepository'
 import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
 
+import { AdminRepository } from '../../admin/repositories/AdminRepository';
+
 export class JobController {
+  static async getCategories(req: any, res: Response, next: NextFunction) {
+    try {
+      const data = await AdminRepository.getCategories();
+      const activeOnly = data.filter((c: any) => c.status === 'ACTIVE' || !c.status);
+      res.status(200).json({ success: true, data: activeOnly });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSkills(req: any, res: Response, next: NextFunction) {
+    try {
+      const data = await AdminRepository.getSkills();
+      const activeOnly = data.filter((s: any) => s.status === 'ACTIVE' || !s.status);
+      res.status(200).json({ success: true, data: activeOnly });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const data = await JobRepository.getJobs();

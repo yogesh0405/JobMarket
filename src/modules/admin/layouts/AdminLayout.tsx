@@ -28,7 +28,7 @@ export const AdminLayout: React.FC = () => {
   const handleLogout = () => {
     logout();
     showToast('Logged out from Admin Portal', 'info');
-    navigate('/login?role=admin');
+    navigate('/admin/login');
   };
 
   // Generate breadcrumb title based on path

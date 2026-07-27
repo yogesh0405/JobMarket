@@ -29,7 +29,7 @@ export const NavbarNotificationBell: React.FC = () => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
   // Load REAL notifications from Database (PostgreSQL notifications table)
-  const fetchRealNotifications = async () => {
+  const fetchRealNotifications = async (isInitial = false) => {
     if (!currentUser) {
       setNotifications([]);
       setLoading(false);
@@ -41,7 +41,9 @@ export const NavbarNotificationBell: React.FC = () => {
     const oneDayMs = 24 * 60 * 60 * 1000;
 
     try {
-      setLoading(true);
+      if (isInitial && notifications.length === 0) {
+        setLoading(true);
+      }
 
       // Fetch REAL DB Notifications from both system endpoints
       const [sysRes, suppRes] = await Promise.all([
@@ -106,21 +108,21 @@ export const NavbarNotificationBell: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchRealNotifications();
+    fetchRealNotifications(true);
 
     if (!currentUser) return;
 
-    // 1. Lightweight background poll every 10s for real-time notifications
+    // 1. Lightweight background poll every 10s for real-time notifications (smooth silent updates)
     const pollInterval = setInterval(() => {
-      fetchRealNotifications();
+      fetchRealNotifications(false);
     }, 10000);
 
-    // 2. Refresh instantly when tab/window receives focus
-    const handleFocus = () => fetchRealNotifications();
+    // 2. Refresh instantly when tab/window receives focus (smooth silent updates)
+    const handleFocus = () => fetchRealNotifications(false);
     window.addEventListener('focus', handleFocus);
 
     // 3. Listen for global custom 'notifications-updated' event for instant zero-delay updates
-    const handleCustomUpdate = () => fetchRealNotifications();
+    const handleCustomUpdate = () => fetchRealNotifications(false);
     window.addEventListener('notifications-updated', handleCustomUpdate);
 
     return () => {

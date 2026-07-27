@@ -15,10 +15,26 @@ export const BroadcastPage: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
 
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const fetchHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const res = await AdminApiService.getAuditLogs({ page: 1, limit: 30, search: 'BROADCAST_SENT' });
+      setHistoryLogs(res?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch broadcast history logs', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     AdminApiService.getCategories()
       .then(res => setCategoriesList(res || []))
       .catch(() => {});
+    fetchHistory();
   }, []);
 
   const handleChannelToggle = (channel: 'IN_APP' | 'EMAIL') => {
@@ -69,6 +85,7 @@ export const BroadcastPage: React.FC = () => {
       setSubject('');
       setMessage('');
       setActionLink('');
+      fetchHistory();
     } catch (err: any) {
       showToast(err.message || 'Failed to dispatch broadcast', 'error');
     } finally {
@@ -79,7 +96,7 @@ export const BroadcastPage: React.FC = () => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Light Header Banner */}
-      <div style={{ marginBottom: '28px', background: '#ffffff', padding: '24px 30px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '28px', background: '#ffffff', padding: '24px 30px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,9 +116,9 @@ export const BroadcastPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '28px', alignItems: 'start' }}>
         {/* Form Panel */}
-        <div className="admin-card" style={{ padding: '28px', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+        <div className="admin-card" style={{ padding: '28px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
           <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -126,7 +143,7 @@ export const BroadcastPage: React.FC = () => {
                 className="filter-select"
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value as any)}
-                style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '500', background: '#f8fafc', color: '#0f172a' }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '500', background: '#f8fafc', color: '#0f172a' }}
               >
                 <option value="ALL">All Platform Users (Workers & Employers)</option>
                 <option value="WORKERS">Workers / Candidates Only</option>
@@ -148,7 +165,7 @@ export const BroadcastPage: React.FC = () => {
                   className="filter-select"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '500', background: '#f8fafc', color: '#0f172a' }}
+                  style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '500', background: '#f8fafc', color: '#0f172a' }}
                 >
                   <option value="">Select Category...</option>
                   {categoriesList.map((cat) => (
@@ -174,7 +191,7 @@ export const BroadcastPage: React.FC = () => {
                 Dispatch Channels
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: channels.includes('IN_APP') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('IN_APP') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '8px', border: channels.includes('IN_APP') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('IN_APP') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
                   <input
                     type="checkbox"
                     checked={channels.includes('IN_APP')}
@@ -187,7 +204,7 @@ export const BroadcastPage: React.FC = () => {
                   </div>
                 </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: channels.includes('EMAIL') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('EMAIL') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '8px', border: channels.includes('EMAIL') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('EMAIL') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
                   <input
                     type="checkbox"
                     checked={channels.includes('EMAIL')}
@@ -215,7 +232,7 @@ export const BroadcastPage: React.FC = () => {
                 placeholder="e.g., Special MIDC Industrial Hiring Drive in Pune"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', outline: 'none' }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', outline: 'none' }}
               />
             </div>
 
@@ -233,7 +250,7 @@ export const BroadcastPage: React.FC = () => {
                 placeholder="e.g., /jobs or /dashboard?tab=applied-jobs"
                 value={actionLink}
                 onChange={(e) => setActionLink(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', outline: 'none' }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', outline: 'none' }}
               />
             </div>
 
@@ -250,7 +267,7 @@ export const BroadcastPage: React.FC = () => {
                 placeholder="Write your announcement message here..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', resize: 'vertical', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5' }}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', background: '#ffffff', color: '#0f172a', resize: 'vertical', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5' }}
               />
             </div>
 
@@ -261,7 +278,7 @@ export const BroadcastPage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                 color: '#ffffff',
                 border: 'none',
@@ -298,9 +315,9 @@ export const BroadcastPage: React.FC = () => {
         </div>
 
         {/* Live Light Preview & Audit Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
           {/* Light Theme Drawer Card Preview */}
-          <div className="admin-card" style={{ padding: '24px', borderRadius: '16px', background: '#ffffff', color: '#0f172a', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+          <div className="admin-card" style={{ padding: '24px', borderRadius: '8px', background: '#ffffff', color: '#0f172a', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', flexShrink: 0 }}>
             <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '14px', marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }}></div>
@@ -314,8 +331,8 @@ export const BroadcastPage: React.FC = () => {
             </div>
 
             {/* Rendered Light Card Mockup */}
-            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0', display: 'flex', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
@@ -340,21 +357,57 @@ export const BroadcastPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Last Result Box */}
-          {lastResult && (
-            <div className="admin-card" style={{ padding: '20px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#166534', marginBottom: '8px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <strong style={{ fontSize: '14px' }}>Broadcast Campaign Dispatched!</strong>
+          {/* Broadcast History Sidebar Section */}
+          <div className="admin-card" style={{ padding: '20px', borderRadius: '8px', background: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '380px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', flexShrink: 0 }}>
+              <div>
+                <h3 style={{ fontSize: '13px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  Broadcast History
+                </h3>
               </div>
-              <p style={{ fontSize: '13px', color: '#15803d', margin: 0, lineHeight: '1.5' }}>
-                Total Target Recipients: <strong>{lastResult.totalRecipients}</strong> <br />
-                In-App Notifications Inserted: <strong>{lastResult.inAppDelivered}</strong>
-              </p>
+              <button 
+                onClick={fetchHistory}
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', color: '#2563eb', border: '1px solid #bfdbfe', background: '#eff6ff', borderRadius: '6px', padding: '4px 10px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Refresh
+              </button>
             </div>
-          )}
+
+            {loadingHistory ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>Loading history...</div>
+            ) : historyLogs.length === 0 ? (
+              <div style={{ padding: '20px 12px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', fontSize: '12px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                No previous broadcasts found.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
+                {historyLogs.map((log: any) => {
+                  const meta = typeof log.details === 'string' ? JSON.parse(log.details || '{}') : (log.details || {});
+                  return (
+                    <div key={log.id} style={{ padding: '12px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <strong style={{ fontSize: '13px', color: '#0f172a', lineHeight: '1.3' }}>{meta.subject || log.details?.subject || 'System Broadcast'}</strong>
+                        <span style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                          {meta.targetAudience || 'ALL'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                        <span>Sent to <strong>{meta.totalRecipients || 0}</strong> users</span>
+                        <span>{new Date(log.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

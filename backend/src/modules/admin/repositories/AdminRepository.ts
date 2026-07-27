@@ -340,9 +340,14 @@ export class AdminRepository {
     return result.rows;
   }
 
-  static async createCategory(name: string, icon: string): Promise<any> {
-    const query = 'INSERT INTO categories (name, icon) VALUES ($1, $2) RETURNING *;';
-    const result = await pool.query(query, [name, icon]);
+  static async createCategory(name: string, icon: string, status: string = 'ACTIVE'): Promise<any> {
+    const query = `
+      INSERT INTO categories (name, icon, status) 
+      VALUES ($1, $2, $3) 
+      ON CONFLICT (name) DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP 
+      RETURNING *;
+    `;
+    const result = await pool.query(query, [name, icon, status]);
     return result.rows[0];
   }
 

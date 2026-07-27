@@ -195,6 +195,20 @@ export class JobRepository {
       jobData.interviewAddress || null
     ];
 
+    // Auto-register custom category under PENDING_REVIEW status for admin moderation queue
+    if (jobData.industry) {
+      try {
+        await pool.query(
+          `INSERT INTO categories (name, icon, status) 
+           VALUES ($1, '💼', 'PENDING_REVIEW') 
+           ON CONFLICT (name) DO NOTHING;`,
+          [jobData.industry]
+        );
+      } catch (catErr) {
+        console.warn('Custom category auto-registration notice:', catErr);
+      }
+    }
+
     const result = await pool.query(query, values);
     return this.mapDbJobToApi(result.rows[0]);
   }

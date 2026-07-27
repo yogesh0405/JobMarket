@@ -259,12 +259,12 @@ export class AdminController {
 
   static async createCategory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { name, icon } = req.body;
-      const adminId = req.user!.userId;
+      const { name, icon, status } = req.body;
+      const adminId = req.user?.userId;
       const ip = req.ip;
       const ua = req.headers['user-agent'];
 
-      const data = await AdminService.createCategory(name, icon, adminId, ip, ua);
+      const data = await AdminService.createCategory(name, icon, status || 'ACTIVE', adminId, ip, ua);
       res.status(201).json({ success: true, data });
     } catch (error) {
       next(error);

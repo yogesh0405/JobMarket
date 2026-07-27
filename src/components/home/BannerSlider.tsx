@@ -99,18 +99,34 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Fetch Published Active Advertisements strictly from Database API
+  // Fetch Published Active Advertisements strictly from Database API & check master banner toggle
   useEffect(() => {
     let isMounted = true;
-    apiFetch('/api/v1/home/advertisements')
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to load advertisements');
-      })
-      .then((json) => {
-        if (isMounted && json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setAdvertisements(json.data);
-          setCurrentIndex(0);
+    Promise.all([
+      apiFetch('/api/v1/home/advertisements').catch(() => null),
+      apiFetch('/api/v1/admin/settings').catch(() => null)
+    ])
+      .then(async ([adsRes, settingsRes]) => {
+        let isEnabled = true;
+        if (settingsRes && settingsRes.ok) {
+          const sJson = await settingsRes.json();
+          const settingsData = sJson.data || {};
+          if (settingsData.banner_publish_toggle === 'false') {
+            isEnabled = false;
+          }
+        }
+
+        if (!isEnabled) {
+          if (isMounted) setAdvertisements([]);
+          return;
+        }
+
+        if (adsRes && adsRes.ok) {
+          const json = await adsRes.json();
+          if (isMounted && json.success && Array.isArray(json.data)) {
+            setAdvertisements(json.data.length > 0 ? json.data : DEFAULT_PROMOTIONAL_BANNERS);
+            setCurrentIndex(0);
+          }
         }
       })
       .catch((err) => {
@@ -221,6 +237,8 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
         return { text: '📢 Special Announcement', class: 'badge-default' };
     }
   };
+
+  if (advertisements.length === 0) return null;
 
   return (
     <div className="banner-slider-container">

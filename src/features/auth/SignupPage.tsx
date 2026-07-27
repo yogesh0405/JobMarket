@@ -7,8 +7,18 @@ import { UserRole } from '../../types';
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signup, verifyOtp } = useAuth();
+  const { signup, verifyOtp, currentUser } = useAuth();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [currentUser, navigate]);
 
   const roleParam = searchParams.get('role') as UserRole;
   const initialRole: UserRole = (roleParam === 'candidate' || roleParam === 'employer') ? roleParam : 'candidate';

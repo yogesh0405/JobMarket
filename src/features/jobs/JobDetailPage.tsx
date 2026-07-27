@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
@@ -53,6 +54,19 @@ export const JobDetailPage: React.FC = () => {
   if (profileStrength === 0) profileStrength = 75;
   const saved = isJobSaved(job.id);
   const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
+
+  // Auto-scroll smoothly to #apply anchor when linked via URL hash
+  useEffect(() => {
+    if (location.hash === '#apply' || window.location.hash === '#apply') {
+      const timer = setTimeout(() => {
+        const applyEl = document.getElementById('apply');
+        if (applyEl) {
+          applyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash]);
 
   const handleApply = async () => {
     if (!currentUser) {
@@ -137,25 +151,25 @@ export const JobDetailPage: React.FC = () => {
           }
           .detail-page-container {
             position: relative !important;
-            padding: 16px 16px 160px 16px !important;
+            padding: 16px 16px 180px 16px !important;
             min-height: 100vh !important;
             background: var(--bg) !important;
           }
           .detail-sticky-bar {
             display: flex !important;
             position: fixed !important;
-            bottom: 64px !important;
+            bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
             left: 0 !important;
             right: 0 !important;
-            height: 66px !important;
-            background: rgba(255, 255, 255, 0.98) !important;
+            height: 68px !important;
+            background: var(--surface, rgba(255, 255, 255, 0.98)) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
-            border-top: 1px solid #E2E8F0 !important;
+            border-top: 1px solid var(--border-light, #E2E8F0) !important;
             padding: 10px 16px !important;
-            z-index: 10000 !important;
+            z-index: 20000 !important;
             justify-content: center !important;
-            box-shadow: 0 -4px 16px rgba(0,0,0,0.06) !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12) !important;
             align-items: center !important;
           }
         }
@@ -595,7 +609,7 @@ export const JobDetailPage: React.FC = () => {
           <div className="detail-sidebar" style={{ flex: '0 0 320px', width: '320px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* CARD 1: Apply for this job */}
-            <div className="detail-sidebar-apply-card" style={{
+            <div id="apply" className="detail-sidebar-apply-card" style={{
               background: '#ffffff',
               border: '1.5px solid #E2E8F0',
               borderRadius: '0.3rem',
@@ -855,104 +869,107 @@ export const JobDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Bottom Sticky Action Bar (Hidden on desktop, visible on mobile via jobs.css media query) */}
-      <div className="detail-sticky-bar">
-        <div style={{ width: '100%', maxWidth: '800px' }}>
-          {hasApplied ? (
-            <>
+      {/* Floating Bottom Sticky Action Bar (Rendered into document.body via Portal to escape parent container transforms) */}
+      {createPortal(
+        <div className="detail-sticky-bar">
+          <div style={{ width: '100%', maxWidth: '800px' }}>
+            {hasApplied ? (
+              <>
+                <button
+                  disabled
+                  style={{
+                    width: '100%',
+                    background: '#EEF1FF',
+                    color: '#344BFD',
+                    border: 'none',
+                    padding: '14px',
+                    borderRadius: '0.3rem',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    cursor: 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Already Applied (Status: {capitalize(appDetails?.status || 'applied')})
+                </button>
+                {appDetails && (appDetails as any).status === 'shortlisted' && (
+                  <div style={{ fontSize: '11px', textAlign: 'center', color: 'var(--primary)', fontWeight: '600', marginTop: '4px' }}>
+                    Interview Scheduled: {(appDetails as any).interviewDate} at {(appDetails as any).interviewTime}
+                  </div>
+                )}
+              </>
+            ) : isOwner ? (
               <button
-                disabled
+                onClick={() => navigate('/dashboard?tab=manage')}
                 style={{
                   width: '100%',
-                  background: '#EEF1FF',
-                  color: '#344BFD',
+                  background: '#344BFD',
+                  color: '#ffffff',
                   border: 'none',
                   padding: '14px',
                   borderRadius: '0.3rem',
                   fontWeight: '700',
                   fontSize: '15px',
-                  cursor: 'not-allowed',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px'
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                 </svg>
-                Already Applied (Status: {capitalize(appDetails?.status || 'applied')})
+                Manage Job
               </button>
-              {appDetails && (appDetails as any).status === 'shortlisted' && (
-                <div style={{ fontSize: '11px', textAlign: 'center', color: 'var(--primary)', fontWeight: '600', marginTop: '4px' }}>
-                  Interview Scheduled: {(appDetails as any).interviewDate} at {(appDetails as any).interviewTime}
-                </div>
-              )}
-            </>
-          ) : isOwner ? (
-            <button
-              onClick={() => navigate('/dashboard?tab=manage')}
-              style={{
-                width: '100%',
-                background: '#344BFD',
-                color: '#ffffff',
-                border: 'none',
-                padding: '14px',
-                borderRadius: '0.3rem',
-                fontWeight: '700',
-                fontSize: '15px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-              Manage Job
-            </button>
-          ) : (
-            <button
-              onClick={handleApply}
-              disabled={isApplying}
-              style={{
-                width: '100%',
-                background: isApplying ? '#6366F1' : '#344BFD',
-                color: '#ffffff',
-                border: 'none',
-                padding: '14px',
-                borderRadius: '0.3rem',
-                fontWeight: '700',
-                fontSize: '15px',
-                cursor: isApplying ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                opacity: isApplying ? 0.85 : 1,
-                transition: 'background 0.2s ease'
-              }}
-              onMouseEnter={(e) => { if (!isApplying) e.currentTarget.style.background = '#1A2EB8'; }}
-              onMouseLeave={(e) => { if (!isApplying) e.currentTarget.style.background = '#344BFD'; }}
-            >
-              {isApplying ? (
-                <>
-                  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 0.8s linear infinite' }}>
-                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" />
-                    <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeLinecap="round" />
-                  </svg>
-                  Applying...
-                </>
-              ) : (
-                'Apply Now'
-              )}
-            </button>
-          )}
-        </div>
-      </div>
+            ) : (
+              <button
+                onClick={handleApply}
+                disabled={isApplying}
+                style={{
+                  width: '100%',
+                  background: isApplying ? '#6366F1' : '#344BFD',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '14px',
+                  borderRadius: '0.3rem',
+                  fontWeight: '700',
+                  fontSize: '15px',
+                  cursor: isApplying ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  opacity: isApplying ? 0.85 : 1,
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => { if (!isApplying) e.currentTarget.style.background = '#1A2EB8'; }}
+                onMouseLeave={(e) => { if (!isApplying) e.currentTarget.style.background = '#344BFD'; }}
+              >
+                {isApplying ? (
+                  <>
+                    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 0.8s linear infinite' }}>
+                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" />
+                      <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeLinecap="round" />
+                    </svg>
+                    Applying...
+                  </>
+                ) : (
+                  'Apply Now'
+                )}
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

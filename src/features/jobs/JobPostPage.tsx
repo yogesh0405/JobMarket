@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../../utils/api';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -7,6 +8,7 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { Job, JobType, WorkMode } from '../../types';
 import { parseJobPrompt } from '../../utils/aiParser';
+import { AdminApiService } from '../../modules/admin/services/adminApi';
 
 interface JobPostPageProps {
   isEmbedded?: boolean;
@@ -27,6 +29,29 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   // AI Prompt input
   const [aiPrompt, setAiPrompt] = useState('');
+
+  // Live Categories & Skills suggestions state
+  const [availableSkills, setAvailableSkills] = useState<string[]>(['Nursing', 'PLC', 'PYTHON', 'React', 'Shop Floor Safety', 'TIG Welding', 'Welding', 'CNC Operation', 'AutoCAD drafting']);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      apiFetch('/api/v1/jobs/meta/skills').then(r => r.ok ? r.json() : null).catch(() => null),
+      apiFetch('/api/v1/jobs/meta/categories').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]).then(([sksRes, catsRes]) => {
+      if (!isMounted) return;
+      if (sksRes && sksRes.success && Array.isArray(sksRes.data) && sksRes.data.length > 0) {
+        setAvailableSkills(sksRes.data.map((s: any) => typeof s === 'string' ? s : s.name).filter(Boolean));
+      }
+      if (catsRes && catsRes.success && Array.isArray(catsRes.data) && catsRes.data.length > 0) {
+        setAvailableCategories(catsRes.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean));
+      }
+    }).catch(err => {
+      console.warn('Meta categories/skills fetch notice:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -94,6 +119,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   };
 
   // Industrial fields
+  const [customIndustry, setCustomIndustry] = useState('');
+  const [customIndustryIcon, setCustomIndustryIcon] = useState('💼');
   const [trade, setTrade] = useState('');
   const [customTrade, setCustomTrade] = useState('');
   const [midcZone, setMidcZone] = useState('');
@@ -215,14 +242,19 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !industry || !location || !description) {
+    if (!title || !industry || (industry === 'Other' && !customIndustry.trim()) || !location || !description) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
 
+    let finalIndustry = industry;
+    if (industry === 'Other') {
+      finalIndustry = customIndustry.trim();
+    }
+
     const jobData = {
       title,
-      industry,
+      industry: finalIndustry,
       location,
       description,
       openings: Number(openings) || 1,
@@ -396,16 +428,38 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Select Industry <span className="required">*</span></label>
+                  <label className="form-label">Select Industry / Category <span className="required">*</span></label>
                   <select
                     className="form-select"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                     required
                   >
-                    <option value="">Select Industry</option>
-                    {industriesList.map(i => <option key={i} value={i}>{i}</option>)}
+                    <option value="">Select Category / Industry</option>
+                    {Array.from(new Set([...availableCategories, ...industriesList])).map(i => <option key={i} value={i}>{i}</option>)}
+                    <option value="Other">+ Other / Add Custom Category...</option>
                   </select>
+                  {industry === 'Other' && (
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Type custom category name (e.g. Solar Tech)"
+                        value={customIndustry}
+                        onChange={(e) => setCustomIndustry(e.target.value)}
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Emoji"
+                        value={customIndustryIcon}
+                        onChange={(e) => setCustomIndustryIcon(e.target.value)}
+                        style={{ width: '80px', textAlign: 'center' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -746,6 +800,56 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
                 />
+                
+                {/* Live Suggested Skill Tags */}
+                {availableSkills.length > 0 && (
+                  <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                      💡 Click suggested skill tags to add automatically:
+                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {availableSkills.map((sk) => {
+                        const isSelected = skills
+                          .split(',')
+                          .map(s => s.trim().toLowerCase())
+                          .includes(sk.toLowerCase());
+                        
+                        return (
+                          <button
+                            key={sk}
+                            type="button"
+                            onClick={() => {
+                              const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
+                              if (isSelected) {
+                                setSkills(currentList.filter(s => s.toLowerCase() !== sk.toLowerCase()).join(', '));
+                              } else {
+                                setSkills([...currentList, sk].join(', '));
+                              }
+                            }}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '9999px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              border: isSelected ? '1.5px solid #344BFD' : '1px solid #cbd5e1',
+                              background: isSelected ? '#344BFD' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#334155',
+                              boxShadow: isSelected ? '0 2px 8px rgba(52, 75, 253, 0.25)' : 'none',
+                              transition: 'all 0.15s ease',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span>{isSelected ? '✓' : '+'}</span>
+                            <span>{sk}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

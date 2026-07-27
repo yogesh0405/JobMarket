@@ -113,11 +113,28 @@ export const CategorySkillManagementPage: React.FC = () => {
     }
   };
 
+  const officialCategories = categories.filter(c => c.status !== 'PENDING_REVIEW');
+  const pendingCategories = categories.filter(c => c.status === 'PENDING_REVIEW');
+
+  const handleApproveCategory = async (c: any) => {
+    try {
+      await AdminApiService.updateCategory(c.id, {
+        name: c.name,
+        icon: c.icon || '💼',
+        status: 'ACTIVE'
+      });
+      showToast(`Category "${c.name}" approved & added to official list! 🎉`, 'success');
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to approve category', 'error');
+    }
+  };
+
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>Categories & Skills Configuration</h1>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Configure standard industrial trades, professional capabilities, and icons</p>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '60px' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>Categories & Skills Configuration</h1>
+        <p style={{ color: '#64748b', marginTop: '6px', fontSize: '14.5px' }}>Configure standard industrial trades, professional capabilities, and icons</p>
       </div>
 
       {loading ? (
@@ -126,63 +143,142 @@ export const CategorySkillManagementPage: React.FC = () => {
           <div style={{ height: '300px', background: '#e2e8f0', borderRadius: '8px', animation: 'pulse 1.5s infinite' }}></div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '24px' }}>
           
-          {/* Categories Board */}
+          {/* Categories Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Pending Custom Categories from Employers */}
+            {pendingCategories.length > 0 && (
+              <div style={{ background: '#fffbe8', borderRadius: '16px', border: '1.5px solid #fde047', padding: '20px', boxShadow: '0 4px 20px rgba(234, 179, 8, 0.1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#854d0e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>📢 Custom Categories Proposed by Employers</span>
+                  </h3>
+                  <span style={{ background: '#eab308', color: '#ffffff', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: '800' }}>
+                    {pendingCategories.length} PENDING
+                  </span>
+                </div>
+                <p style={{ fontSize: '12.5px', color: '#713f12', margin: '0 0 16px 0' }}>Review custom job categories added by employers during job posting. Approve to make them official for all employers.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendingCategories.map(pc => (
+                    <div key={pc.id} style={{ background: '#ffffff', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '22px' }}>{pc.icon || '💼'}</span>
+                        <div>
+                          <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>{pc.name}</strong>
+                          <span style={{ fontSize: '11px', color: '#ca8a04', fontWeight: '700' }}>Employer Suggested</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => handleApproveCategory(pc)} 
+                          style={{ background: '#10b981', color: '#ffffff', border: 'none', padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          ✓ Approve & Add
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteItem('cat', pc.id)} 
+                          style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '7px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                          ✕ Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 1. Add Category Form */}
-            <div className="admin-card" style={{ margin: 0, padding: '20px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Add New Job Category</h3>
-              <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', margin: '0 0 16px 0' }}>Add New Job Category</h3>
+              <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '11px' }}>Category Name</label>
-                  <input type="text" className="form-input" style={{ background: 'var(--border-light)' }} placeholder="e.g. Electrician" value={catName} onChange={e => setCatName(e.target.value)} required />
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', display: 'block' }}>Category Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', width: '100%' }} 
+                    placeholder="e.g. Electrician" 
+                    value={catName} 
+                    onChange={e => setCatName(e.target.value)} 
+                    required 
+                  />
                 </div>
-                <div style={{ width: '80px' }}>
-                  <label className="form-label" style={{ fontSize: '11px' }}>Emoji Icon</label>
-                  <input type="text" className="form-input" style={{ background: 'var(--border-light)', textAlign: 'center' }} placeholder="🔌" value={catIcon} onChange={e => setCatIcon(e.target.value)} required />
+                <div style={{ width: '90px' }}>
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', display: 'block' }}>Emoji Icon</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', fontSize: '16px', textAlign: 'center', width: '100%' }} 
+                    placeholder="🔌" 
+                    value={catIcon} 
+                    onChange={e => setCatIcon(e.target.value)} 
+                    required 
+                  />
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ padding: '10px 16px' }}>Add</button>
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px', background: '#344BFD', borderRadius: '8px', fontWeight: '700', fontSize: '14px', border: 'none' }}>
+                  Add
+                </button>
               </form>
             </div>
 
-            {/* 2. Categories List */}
-            <div className="admin-card" style={{ margin: 0 }}>
-              <div className="admin-card-header">
-                <h3 className="admin-card-title">Job Categories ({categories.length})</h3>
+            {/* 2. Official Categories List */}
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', overflow: 'hidden' }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>Official Job Categories ({officialCategories.length})</h3>
               </div>
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="admin-table">
+              <div style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>
-                      <th>Icon</th>
-                      <th>Category Name</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>
+                      <th style={{ padding: '12px 16px', width: '60px' }}>Icon</th>
+                      <th style={{ padding: '12px 16px' }}>Category Name</th>
+                      <th style={{ padding: '12px 16px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {categories.map((c) => (
-                      <tr key={c.id}>
-                        <td style={{ fontSize: '20px' }}>{c.icon}</td>
-                        <td><strong>{c.name}</strong></td>
-                        <td>
-                          <span className={`status-badge ${c.status === 'ACTIVE' ? 'status-active' : 'status-blocked'}`}>{c.status}</span>
+                    {officialCategories.map((c) => (
+                      <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '14px 16px', fontSize: '20px' }}>{c.icon}</td>
+                        <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{c.name}</td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{ 
+                            background: c.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2', 
+                            color: c.status === 'ACTIVE' ? '#15803d' : '#b91c1c', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '11px', 
+                            fontWeight: '800', 
+                            letterSpacing: '0.5px' 
+                          }}>
+                            {c.status || 'ACTIVE'}
+                          </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button className="action-btn edit" title="Edit Category" onClick={() => handleEditClick('cat', c)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button 
+                              className="action-btn edit" 
+                              title="Edit Category" 
+                              onClick={() => handleEditClick('cat', c)} 
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#64748b' }}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                 <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                               </svg>
                             </button>
-                            <button className="action-btn delete" title="Delete Category" onClick={() => handleDeleteItem('cat', c.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button 
+                              className="action-btn delete" 
+                              title="Delete Category" 
+                              onClick={() => handleDeleteItem('cat', c.id)} 
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#ef4444' }}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
                               </svg>
                             </button>
                           </div>
@@ -195,55 +291,83 @@ export const CategorySkillManagementPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Skills Board */}
+          {/* Skills Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* 1. Add Skill Form */}
-            <div className="admin-card" style={{ margin: 0, padding: '20px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Add New Skill Tag</h3>
-              <form onSubmit={handleAddSkill} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', margin: '0 0 16px 0' }}>Add New Skill Tag</h3>
+              <form onSubmit={handleAddSkill} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ fontSize: '11px' }}>Skill Name</label>
-                  <input type="text" className="form-input" style={{ background: 'var(--border-light)' }} placeholder="e.g. AutoCAD drafting" value={skillName} onChange={e => setSkillName(e.target.value)} required />
+                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', display: 'block' }}>Skill Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', fontSize: '14px', width: '100%' }} 
+                    placeholder="e.g. AutoCAD drafting" 
+                    value={skillName} 
+                    onChange={e => setSkillName(e.target.value)} 
+                    required 
+                  />
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ padding: '10px 16px' }}>Add Tag</button>
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px', background: '#344BFD', borderRadius: '8px', fontWeight: '700', fontSize: '14px', border: 'none' }}>
+                  Add Tag
+                </button>
               </form>
             </div>
 
             {/* 2. Skills List */}
-            <div className="admin-card" style={{ margin: 0 }}>
-              <div className="admin-card-header">
-                <h3 className="admin-card-title">Skills & Capabilities ({skills.length})</h3>
+            <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)', overflow: 'hidden' }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#0f172a' }}>Skills & Capabilities ({skills.length})</h3>
               </div>
-              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="admin-table">
+              <div style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>
-                      <th>Skill Tag</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>
+                      <th style={{ padding: '12px 16px' }}>Skill Tag</th>
+                      <th style={{ padding: '12px 16px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {skills.map((s) => (
-                      <tr key={s.id}>
-                        <td><strong>{s.name}</strong></td>
-                        <td>
-                          <span className={`status-badge ${s.status === 'ACTIVE' ? 'status-active' : s.status === 'blocked' ? 'status-blocked' : 'status-active'}`}>{s.status}</span>
+                      <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{s.name}</td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{ 
+                            background: s.status === 'ACTIVE' || !s.status ? '#dcfce7' : '#fee2e2', 
+                            color: s.status === 'ACTIVE' || !s.status ? '#15803d' : '#b91c1c', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '11px', 
+                            fontWeight: '800', 
+                            letterSpacing: '0.5px' 
+                          }}>
+                            {s.status || 'ACTIVE'}
+                          </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button className="action-btn edit" title="Edit Skill" onClick={() => handleEditClick('skill', s)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button 
+                              className="action-btn edit" 
+                              title="Edit Skill" 
+                              onClick={() => handleEditClick('skill', s)} 
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#64748b' }}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                 <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                               </svg>
                             </button>
-                            <button className="action-btn delete" title="Delete Skill" onClick={() => handleDeleteItem('skill', s.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button 
+                              className="action-btn delete" 
+                              title="Delete Skill" 
+                              onClick={() => handleDeleteItem('skill', s.id)} 
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#ef4444' }}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="3 6 5 6 21 6" />
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
                               </svg>
                             </button>
                           </div>

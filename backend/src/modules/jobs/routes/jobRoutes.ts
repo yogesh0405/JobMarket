@@ -10,6 +10,8 @@ const actionLimiter = rateLimiter('job_action', 15, 60);
 
 // Public Routes
 router.get('/', JobController.getJobs);
+router.get('/meta/categories', JobController.getCategories);
+router.get('/meta/skills', JobController.getSkills);
 router.get('/:id', JobController.getJobById);
 
 // Protected Routes
