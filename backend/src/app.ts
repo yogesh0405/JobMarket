@@ -26,7 +26,7 @@ const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       callback(new Error('CORS not allowed for this origin'));

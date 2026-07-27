@@ -9,6 +9,8 @@ interface RefreshResponse {
 
 let activeRefreshPromise: Promise<string | null> | null = null;
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = (options.headers as Record<string, string>) || {};
   let token = localStorage.getItem('accessToken');
@@ -24,7 +26,8 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   
   options.headers = headers;
 
-  let response = await fetch(url, options);
+  const targetUrl = url.startsWith('/') && API_BASE_URL ? `${API_BASE_URL}${url}` : url;
+  let response = await fetch(targetUrl, options);
 
   // If token is invalid or expired (401 Unauthorized), try to refresh it
   if (response.status === 401) {
@@ -41,8 +44,8 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
         if (!activeRefreshPromise) {
           activeRefreshPromise = (async () => {
-            try {
-              const refreshResponse = await fetch('/api/v1/auth/refresh', {
+              const refreshUrl = `${API_BASE_URL}/api/v1/auth/refresh`;
+              const refreshResponse = await fetch(refreshUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refreshToken, sessionId }),
