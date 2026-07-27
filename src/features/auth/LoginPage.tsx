@@ -100,16 +100,29 @@ export const LoginPage: React.FC = () => {
 
           {/* Role selector */}
           <div className="auth-role-toggle">
-            {(['candidate', 'employer'] as UserRole[]).map(r => (
-              <button
-                key={r}
-                type="button"
-                className={`role-btn ${role === r ? 'active' : ''}`}
-                onClick={() => setSearchParams({ role: r })}
-              >
-                {r === 'candidate' ? 'Worker' : 'Employer'}
-              </button>
-            ))}
+            <button
+              type="button"
+              className={`role-btn ${role === 'candidate' ? 'active' : ''}`}
+              onClick={() => setSearchParams({ role: 'candidate' })}
+            >
+              Worker
+            </button>
+            <button
+              type="button"
+              className={`role-btn ${role === 'employer' ? 'active' : ''}`}
+              onClick={() => setSearchParams({ role: 'employer' })}
+            >
+              Employer
+            </button>
+            <button
+              type="button"
+              className="role-btn"
+              onClick={() => navigate('/admin/login')}
+              style={{ color: '#2563eb', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
+              <span>🛡️</span>
+              <span>Admin</span>
+            </button>
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
@@ -177,8 +190,9 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <div className="auth-switch">
-            No account? <Link to={`/signup?role=${role}`}>Sign up</Link>
+          <div className="auth-switch" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+            <span>No account? <Link to={`/signup?role=${role}`}>Sign up</Link></span>
+            <Link to="/admin/login" style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'none', fontSize: '13px' }}>🛡️ Admin Login →</Link>
           </div>
 
         </div>

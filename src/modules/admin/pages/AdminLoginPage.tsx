@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
 import '../../admin/styles/admin.css';
@@ -106,8 +106,13 @@ export const AdminLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: 'var(--text-tertiary)' }}>
-          🔒 This session is monitored and recorded for auditing purposes.
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Link to="/login" style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'none' }}>
+            ← Return to Worker / Employer Login
+          </Link>
+          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+            🔒 This session is monitored and recorded for auditing purposes.
+          </span>
         </div>
       </div>
     </div>
