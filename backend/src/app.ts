@@ -25,7 +25,7 @@ app.use(
     // Only compress responses larger than 1KB (prevents CPU waste on tiny payloads)
     threshold: 1024,
     // Custom filter to handle streaming, SSE, or client-bypassed requests
-    filter: (req, res) => {
+    filter: (req: express.Request, res: express.Response) => {
       if (req.headers['x-no-compression']) {
         return false;
       }
