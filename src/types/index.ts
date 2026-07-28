@@ -2,7 +2,7 @@ export type UserRole = 'candidate' | 'employer' | 'admin';
 export type JobType = 'Full-Time' | 'Part-Time' | 'Contract' | 'Freelance';
 export type WorkMode = 'Remote' | 'Onsite' | 'Hybrid';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'rejected';
-export type JobStatus = 'active' | 'closed';
+export type JobStatus = 'active' | 'closed' | 'pending' | 'rejected';
 
 export interface Experience {
   title: string;
@@ -111,6 +111,7 @@ export interface Job {
   perks?: string[];
   featured?: boolean;
   status: JobStatus;
+  dbStatus?: string;
   applicants?: Applicant[];
   views?: number;
   postedAt: string;

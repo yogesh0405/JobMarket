@@ -26,16 +26,26 @@ export const MobileBottomNav: React.FC = () => {
         <span>{t.home}</span>
       </NavLink>
 
-      {/* Find Jobs */}
-      <NavLink to="/jobs" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-        </svg>
-        <span>{t.findJobs}</span>
-      </NavLink>
+      {/* Item 2: Candidates for Employer OR Find Jobs for Candidate/Guest */}
+      {currentUser?.role === 'employer' ? (
+        <NavLink to="/dashboard?tab=candidates" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Candidates</span>
+        </NavLink>
+      ) : (
+        <NavLink to="/jobs" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+          <span>{t.findJobs}</span>
+        </NavLink>
+      )}
 
-      {/* Middle Dynamic Button: Post Job */}
+      {/* Item 3: Center FAB - Post Job for Employer */}
       {currentUser?.role === 'employer' && (
         <NavLink to="/post-job" className={({ isActive }) => `mobile-bottom-item fab-item ${isActive ? 'active' : ''}`}>
           <div className="fab-circle">
@@ -47,36 +57,35 @@ export const MobileBottomNav: React.FC = () => {
         </NavLink>
       )}
 
-      {/* Applications Tab (Candidate: Applied Jobs) */}
+      {/* Candidate Tabs: Applied & Saved */}
       {currentUser?.role === 'candidate' && (
-        <NavLink to="/dashboard?tab=applied" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-            <path d="M9 14l2 2 4-4" />
-          </svg>
-          <span>Applied</span>
-        </NavLink>
+        <>
+          <NavLink to="/dashboard?tab=applied" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <path d="M9 14l2 2 4-4" />
+            </svg>
+            <span>Applied</span>
+          </NavLink>
+
+          <NavLink to="/dashboard?tab=saved" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=saved') ? 'active' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Saved</span>
+          </NavLink>
+        </>
       )}
 
-      {/* Candidate Saved Jobs */}
-      {currentUser?.role === 'candidate' && (
-        <NavLink to="/dashboard?tab=saved" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=saved') ? 'active' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>Saved</span>
-        </NavLink>
-      )}
-
-      {/* Employer Browse Candidates */}
+      {/* Item 4: Manage Jobs for Employer */}
       {currentUser?.role === 'employer' && (
-        <NavLink to="/dashboard?tab=candidates" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}>
+        <NavLink to="/dashboard?tab=manage" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=manage') ? 'active' : ''}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
           </svg>
-          <span>Candidates</span>
+          <span>Manage Jobs</span>
         </NavLink>
       )}
 

@@ -174,10 +174,11 @@ export const SupportManagementPage: React.FC = () => {
     }
   }, [messages]);
 
-  // Real-time polling for messages when ticket is open
+  // Real-time polling for messages when ticket is open (Visibility-aware, 8s interval)
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
       try {
         const res = await apiFetch(`/api/support/tickets/${selectedTicket.id}`);
         const data = await res.json();
@@ -187,7 +188,7 @@ export const SupportManagementPage: React.FC = () => {
       } catch (err) {
         // silent polling catch
       }
-    }, 4000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [selectedTicket?.id]);
 

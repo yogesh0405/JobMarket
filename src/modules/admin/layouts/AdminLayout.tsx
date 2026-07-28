@@ -59,6 +59,7 @@ export const AdminLayout: React.FC = () => {
     if (path.includes('/employers')) return 'Employer Directory';
     if (path.includes('/workers')) return 'Worker Roster';
     if (path.includes('/categories')) return 'Categories & Skills';
+    if (path.includes('/role-tabs')) return 'Homepage Role Tabs Manager';
     if (path.includes('/reports')) return 'User Reports';
     if (path.includes('/settings')) return 'System Settings';
     if (path.includes('/support')) return 'Support Tickets';
@@ -154,6 +155,15 @@ export const AdminLayout: React.FC = () => {
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 6h16M4 12h16M4 18h7"/>
+            </svg>
+          )
+        },
+        {
+          label: 'Role Tabs Manager',
+          path: '/admin/role-tabs',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
             </svg>
           )
         },

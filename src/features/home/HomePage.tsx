@@ -7,6 +7,7 @@ import { formatNumber } from '../../utils/helpers';
 import { useTranslation } from '../../utils/translations';
 import { initialHospitalCategories, initialHotelCategories, initialSchoolCategories } from '../../store/seedData';
 import { BannerSlider } from '../../components/home/BannerSlider';
+import { JobTabbedSection } from '../../components/home/JobTabbedSection';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -348,6 +349,9 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Popular Role Picks Section - Passing all available DB jobs */}
+      <JobTabbedSection jobs={getJobs()} />
 
       {/* Stats Section */}
       <StatsSection totalJobs={state.jobs.length} totalCompanies={state.companies.length} totalCandidates={state.users.length} t={t} />

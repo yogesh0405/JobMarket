@@ -98,6 +98,7 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
   // Touch Swipe State
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const trackedAdIds = useRef<Set<string>>(new Set());
 
   // Fetch Published Active Advertisements strictly from Database API & check master banner toggle
   useEffect(() => {
@@ -106,43 +107,27 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
       apiFetch('/api/v1/home/advertisements').catch(() => null),
       apiFetch('/api/v1/admin/settings').catch(() => null)
     ])
-      .then(async ([adsRes, settingsRes]) => {
-        let isEnabled = true;
-        if (settingsRes && settingsRes.ok) {
-          const sJson = await settingsRes.json();
-          const settingsData = sJson.data || {};
-          if (settingsData.banner_publish_toggle === 'false') {
-            isEnabled = false;
-          }
-        }
-
-        if (!isEnabled) {
-          if (isMounted) setAdvertisements([]);
-          return;
-        }
-
-        if (adsRes && adsRes.ok) {
-          const json = await adsRes.json();
-          if (isMounted && json.success && Array.isArray(json.data)) {
-            setAdvertisements(json.data.length > 0 ? json.data : DEFAULT_PROMOTIONAL_BANNERS);
-            setCurrentIndex(0);
+      .then(async ([adRes, settingsRes]) => {
+        if (adRes && adRes.ok) {
+          const json = await adRes.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setAdvertisements(json.data);
           }
         }
       })
       .catch((err) => {
-        console.warn('Advertisement slider database fetch fallback active:', err);
+        console.error('Failed to load DB advertisements:', err);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  // Record View / Impression for current slide
+  // Record View / Impression for current slide (deduplicated per session)
   useEffect(() => {
     if (advertisements.length > 0 && advertisements[currentIndex] && advertisements[currentIndex].id && !advertisements[currentIndex].id.startsWith('db-default-')) {
       const currentAd = advertisements[currentIndex];
-      apiFetch(`/api/v1/home/advertisements/${currentAd.id}/view`, { method: 'POST' }).catch(() => {});
+      if (!trackedAdIds.current.has(currentAd.id)) {
+        trackedAdIds.current.add(currentAd.id);
+        apiFetch(`/api/v1/home/advertisements/${currentAd.id}/view`, { method: 'POST' }).catch(() => {});
+      }
     }
   }, [currentIndex, advertisements]);
 

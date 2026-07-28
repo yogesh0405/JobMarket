@@ -374,11 +374,10 @@ export class AuthController {
       const normalizedEmail = email.toLowerCase().trim();
       const user = await UserRepository.findByEmail(normalizedEmail);
 
-      // Always return positive message to avoid user enumeration
+      // Verify that user account exists on platform before resetting password
       if (!user) {
-        return res.status(200).json({
-          success: true,
-          message: 'If an account exists with this email, a 6-digit OTP verification code has been sent.'
+        return res.status(404).json({
+          error: 'No account found with this email address. Please check the email entered or sign up for a new account.'
         });
       }
 
@@ -389,12 +388,14 @@ export class AuthController {
       // Store in Redis with 10-minute expiry
       await redisClient.setEx(redisKey, 600, JSON.stringify({ otp: otpCode, attempts: 0 }));
 
+      console.log('\n=========================================\n🔑 PASSWORD RESET OTP CODE FOR', normalizedEmail, ':', otpCode, '\n=========================================\n');
+
       // Send Email
       await EmailService.sendPasswordResetOTP(normalizedEmail, otpCode, user.name);
 
       res.status(200).json({
         success: true,
-        message: 'A 6-digit OTP verification code has been sent to your email.'
+        message: 'A 6-digit OTP verification code has been sent to your registered email address.'
       });
     } catch (error) {
       next(error);

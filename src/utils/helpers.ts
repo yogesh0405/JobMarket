@@ -98,16 +98,76 @@ export const openBase64InNewTab = (base64Data: string, mimeType: string, fileNam
     }
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: actualMimeType });
-    const fileURL = URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
     
-    const newWindow = window.open(fileURL, '_blank');
-    if (!newWindow) {
-      const link = document.createElement('a');
-      link.href = fileURL;
-      link.download = fileName;
-      link.click();
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      a.click();
     }
-  } catch (error) {
-    console.error('Failed to open resume:', error);
+  } catch (err) {
+    console.error('Error opening base64 document:', err);
+  }
+};
+
+/**
+ * Universal Clipboard Copy supporting HTTP IP address, non-secure context, and mobile devices
+ */
+export const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && (window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    console.warn('Navigator clipboard API failed, using fallback:', err);
+  }
+
+  // Fallback for non-HTTPS / IP network access / mobile webviews
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.setAttribute('readonly', '');
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Fallback copyToClipboard failed:', err);
+    return false;
+  }
+};
+
+/**
+ * Universal Share Helper supporting Web Share API + Clipboard Fallback
+ */
+export const shareContent = async (
+  title: string,
+  text: string,
+  url: string,
+  onCopySuccess?: () => void
+): Promise<void> => {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return;
+    } catch (err: any) {
+      if (err && (err.name === 'AbortError' || err.code === 20)) {
+        return; // User dismissed share modal cleanly
+      }
+      console.warn('Native share failed, trying clipboard fallback:', err);
+    }
+  }
+
+  const copied = await copyToClipboard(url);
+  if (copied && onCopySuccess) {
+    onCopySuccess();
   }
 };

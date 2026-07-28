@@ -60,7 +60,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         setStep(2);
         setResendTimer(60);
       } else {
-        setInlineError(json.error || 'Failed to send OTP email');
+        setStep(1);
+        setInlineError(json.error || 'No account found with this email address.');
       }
     } catch (err) {
       setInlineError('Error requesting password reset OTP');
@@ -436,12 +437,35 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); setInlineError(null); }}
                 placeholder="name@example.com"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: inlineError ? '1px solid #ef4444' : '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
                 required
               />
             </div>
+
+            {inlineError && (
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fca5a5',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#991b1b',
+                fontSize: '12.5px',
+                fontWeight: '600',
+                lineHeight: 1.4
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{inlineError}</span>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}

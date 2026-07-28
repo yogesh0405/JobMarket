@@ -112,14 +112,21 @@ export const NavbarNotificationBell: React.FC = () => {
 
     if (!currentUser) return;
 
-    // 1. Lightweight background poll every 10s for real-time notifications (smooth silent updates)
+    // 1. Smart background poll every 30s (only when browser tab is active/visible)
     const pollInterval = setInterval(() => {
-      fetchRealNotifications(false);
-    }, 10000);
+      if (document.visibilityState === 'visible') {
+        fetchRealNotifications(false);
+      }
+    }, 30000);
 
-    // 2. Refresh instantly when tab/window receives focus (smooth silent updates)
-    const handleFocus = () => fetchRealNotifications(false);
-    window.addEventListener('focus', handleFocus);
+    // 2. Refresh instantly when tab/window receives focus or becomes visible
+    const handleFocusOrVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRealNotifications(false);
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisibility);
+    document.addEventListener('visibilitychange', handleFocusOrVisibility);
 
     // 3. Listen for global custom 'notifications-updated' event for instant zero-delay updates
     const handleCustomUpdate = () => fetchRealNotifications(false);
@@ -127,7 +134,8 @@ export const NavbarNotificationBell: React.FC = () => {
 
     return () => {
       clearInterval(pollInterval);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', handleFocusOrVisibility);
+      document.removeEventListener('visibilitychange', handleFocusOrVisibility);
       window.removeEventListener('notifications-updated', handleCustomUpdate);
     };
   }, [currentUser]);

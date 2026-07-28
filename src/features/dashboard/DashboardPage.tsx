@@ -4,12 +4,13 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { apiFetch } from '../../utils/api';
-import { getInitials, formatNumber, capitalize, timeAgo } from '../../utils/helpers';
+import { getInitials, formatNumber, formatSalary, capitalize, timeAgo, shareContent } from '../../utils/helpers';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
 import { CandidateDetailsModal } from '../../components/candidate/CandidateDetailsModal';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobCard } from '../../components/job/JobCard';
 import { Job } from '../../types';
 import { ProfilePage } from '../profile/ProfilePage';
@@ -237,7 +238,7 @@ export const DashboardPage: React.FC = () => {
     <>
       <div className="dashboard-page">
       <div className="container">
-        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
+        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
           {/* Sidebar */}
           <aside className="dashboard-sidebar">
             <div className="dashboard-profile">
@@ -368,17 +369,6 @@ export const DashboardPage: React.FC = () => {
                       <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                     </svg>
                     Promotional Banners
-                  </button>
-                  <button
-                    className={`dashboard-nav-item tab-saved ${tab === 'saved' ? 'active' : ''}`}
-                    onClick={() => setTab('saved')}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span className="desktop-only-text">Saved Jobs</span>
-                    <span className="mobile-only-text">Jobs Saved</span>
-                    <span className="nav-badge">{(currentUser.savedJobs || []).length}</span>
                   </button>
                   <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
                   <button
@@ -709,9 +699,9 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'overview':
       return (
         <>
-          <div className="dashboard-welcome">
-            <h2>Welcome back, {currentUser.name.split(' ')[0]}! 👋</h2>
-            <p>Your Aadhaar is verified. Review factory openings near Chakan MIDC.</p>
+          <div className="dashboard-welcome" style={{ color: '#ffffff' }}>
+            <h2 style={{ color: '#ffffff' }}>Welcome back, {currentUser.name.split(' ')[0]}! 👋</h2>
+            <p style={{ color: 'rgba(255, 255, 255, 0.92)' }}>Your Aadhaar is verified. Review factory openings near Chakan MIDC.</p>
           </div>
 
           <div className="dashboard-stats">
@@ -831,60 +821,50 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                     transition: 'all 0.2s ease',
                     position: 'relative'
                   }}>
-                    {/* Top Header Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                        {/* Company Logo / Initial Avatar */}
-                        <div style={{ 
-                          width: '46px', 
-                          height: '46px', 
-                          borderRadius: '6px', 
-                          background: job.companyLogo ? 'transparent' : '#344BFD', 
-                          color: '#ffffff', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          fontWeight: '800',
-                          fontSize: '18px',
-                          overflow: 'hidden',
-                          border: '1px solid #e2e8f0',
-                          flexShrink: 0
-                        }}>
-                          {job.companyLogo ? (
-                            <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            (job.company || 'JM').charAt(0).toUpperCase()
-                          )}
-                        </div>
+                    {/* Top Header Row: Full Width Title */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.35' }}>{job.title}</h3>
+                    </div>
 
-                        <div>
-                          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px' }}>{job.title}</h3>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
-                            <span style={{ fontSize: '13.5px', color: '#475569', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
-                                <path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
-                              </svg>
-                              {job.company}
-                            </span>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span style={{ fontSize: '13.5px', color: '#475569', fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                              </svg>
-                              {job.location} ({job.workMode})
-                            </span>
-                            {job.salaryMax > 0 && (
-                              <>
-                                <span style={{ color: '#cbd5e1' }}>•</span>
-                                <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center' }}>
-                                  ₹{(job.salaryMin / 1000).toFixed(0)}k - ₹{(job.salaryMax / 1000).toFixed(0)}k / mo
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                    {/* Specs Row: Location, WorkMode, Salary */}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', margin: '4px 0 10px 0', fontSize: '13.5px', color: '#475569' }}>
+                      <span style={{ fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#344BFD' }}>
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {job.location} ({job.workMode || 'On-site'})
+                      </span>
+                      {job.salaryMax > 0 && (
+                        <>
+                          <span style={{ color: '#cbd5e1' }}>•</span>
+                          <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '700', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0', display: 'inline-flex', alignItems: 'center' }}>
+                            ₹{formatSalary(job.salaryMin, job.salaryMax)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Company Row: Small Logo + Company Name */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '8px 12px',
+                      background: '#F8FAFC',
+                      borderRadius: '6px',
+                      border: '1px solid #F1F5F9',
+                      margin: '0 0 12px 0'
+                    }}>
+                      <CompanyDefaultLogo 
+                        logoUrl={job.companyLogo || (job as any).company_logo} 
+                        companyName={job.company} 
+                        size={26} 
+                        borderRadius="6px"
+                      />
+                      <span style={{ fontSize: '13.5px', color: '#1E293B', fontWeight: '600' }}>
+                        {job.company}
+                      </span>
+                    </div>
 
                       {/* Status Badge */}
                       {appDetails && (
@@ -902,7 +882,6 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                           {capitalize(appDetails.status)}
                         </span>
                       )}
-                    </div>
 
                     {/* Interview Details Card */}
                     {appDetails && appDetails.status === 'shortlisted' && appDetails.interviewDate && (
@@ -1262,6 +1241,97 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const activeJobs = myJobs.filter(j => j.status === 'active');
   const totalApplicants = myJobs.reduce((sum, j) => sum + (j.applicants?.length || 0), 0);
   const totalViews = myJobs.reduce((sum, j) => sum + (j.views || 0), 0);
+
+  const renderEmployerTopTabBar = () => (
+    <div className="employer-mobile-top-tab-bar" style={{
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      background: '#ffffff',
+      borderRadius: '8px',
+      padding: '3px',
+      marginBottom: '14px',
+      border: '1px solid #cbd5e1',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
+      <button
+        type="button"
+        onClick={() => setTab('manage')}
+        style={{
+          flex: 1,
+          padding: '7px 10px',
+          borderRadius: '6px',
+          border: 'none',
+          background: tab === 'manage' ? '#344BFD' : 'transparent',
+          color: tab === 'manage' ? '#ffffff' : '#475569',
+          fontWeight: tab === 'manage' ? '700' : '600',
+          fontSize: '12px',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '5px'
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        <span>Manage Jobs</span>
+        <span style={{
+          fontSize: '10.5px',
+          fontWeight: '700',
+          padding: '1px 6px',
+          borderRadius: '4px',
+          background: tab === 'manage' ? 'rgba(255, 255, 255, 0.25)' : '#e2e8f0',
+          color: tab === 'manage' ? '#ffffff' : '#475569'
+        }}>
+          {myJobs.length}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setTab('applicants')}
+        style={{
+          flex: 1,
+          padding: '7px 10px',
+          borderRadius: '6px',
+          border: 'none',
+          background: tab === 'applicants' ? '#344BFD' : 'transparent',
+          color: tab === 'applicants' ? '#ffffff' : '#475569',
+          fontWeight: tab === 'applicants' ? '700' : '600',
+          fontSize: '12px',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '5px'
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Applicants</span>
+        <span style={{
+          fontSize: '10.5px',
+          fontWeight: '700',
+          padding: '1px 6px',
+          borderRadius: '4px',
+          background: tab === 'applicants' ? 'rgba(255, 255, 255, 0.25)' : '#e2e8f0',
+          color: tab === 'applicants' ? '#ffffff' : '#475569'
+        }}>
+          {totalApplicants}
+        </span>
+      </button>
+    </div>
+  );
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [viewWorker, setViewWorker] = useState<any>(null);
   const { scheduleInterview, sendCustomEmail, updateJob } = useJobs();
@@ -1371,9 +1441,9 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'overview':
       return (
         <>
-          <div className="dashboard-welcome">
-            <h2>Welcome back, {currentUser.name.split(' ')[0]}!</h2>
-            <p>GST Verified: {currentUser.gstNumber}. Manage active trade postings below.</p>
+          <div className="dashboard-welcome" style={{ color: '#ffffff' }}>
+            <h2 style={{ color: '#ffffff' }}>Welcome back, {currentUser.name.split(' ')[0]}!</h2>
+            <p style={{ color: 'rgba(255, 255, 255, 0.92)' }}>GST Verified: {currentUser.gstNumber}. Manage active trade postings below.</p>
           </div>
 
           <div className="dashboard-stats">
@@ -1454,94 +1524,254 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         </>
       );
 
-    case 'manage':
+    case 'manage': {
+      const renderJobStatusBadge = (job: Job) => {
+        const dbStatus = job.dbStatus || (job.status === 'active' ? 'APPROVED' : 'PENDING_REVIEW');
+        if (dbStatus === 'PENDING_REVIEW' || job.status === 'pending') {
+          return (
+            <span style={{ padding: '4px 10px', borderRadius: '9999px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: '11.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Pending Admin Review
+            </span>
+          );
+        }
+        if (dbStatus === 'REJECTED' || job.status === 'rejected') {
+          return (
+            <span style={{ padding: '4px 10px', borderRadius: '9999px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', fontSize: '11.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Changes Requested
+            </span>
+          );
+        }
+        if (job.status === 'closed') {
+          return (
+            <span style={{ padding: '4px 10px', borderRadius: '9999px', background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '11.5px', fontWeight: '700' }}>
+              Closed / Filled
+            </span>
+          );
+        }
+        return (
+          <span style={{ padding: '4px 10px', borderRadius: '9999px', background: '#dbeafe', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Active (Live)
+          </span>
+        );
+      };
+
       return (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
-            <h2 style={{ fontSize: 'var(--fs-2xl)' }}>Manage Jobs</h2>
-            <button className="btn btn-primary btn-sm" onClick={() => setTab('post-job')}>+ Post New Job</button>
+          {renderEmployerTopTabBar()}
+          <div style={{ marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Manage Jobs</h2>
+            <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>Track applications, edit vacancies & manage listings</p>
           </div>
+
           {myJobs.length > 0 ? (
-            <div className="manage-jobs-card">
-              <div style={{ overflowX: 'auto', width: '100%' }}>
-                <table className="manage-table">
-                  <thead>
-                    <tr><th>Job Title</th><th>Vacancies</th><th>Applicants</th><th>Views</th><th>Status</th><th>Posted</th><th>Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {myJobs.map(job => (
-                      <tr key={job.id}>
-                        <td>
-                          <span className="table-job-title">{job.title}</span>
-                          <br/>
-                          <span className="table-company">{job.location} · {job.jobType}</span>
-                        </td>
-                        <td>
-                          <span style={{ fontWeight: '600' }}>{job.filledOpenings || 0}</span> / <span>{job.openings}</span> allotted
-                          {job.openings > (job.filledOpenings || 0) ? (
-                            <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px' }}>
-                              ({job.openings - (job.filledOpenings || 0)} open)
+            <>
+              {/* Desktop Table View */}
+              <div className="manage-jobs-card desktop-manage-jobs-table">
+                <div style={{ overflowX: 'auto', width: '100%' }}>
+                  <table className="manage-table">
+                    <thead>
+                      <tr><th>Job Title</th><th>Vacancies</th><th>Applicants</th><th>Views</th><th>Status</th><th>Posted</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                      {myJobs.map(job => (
+                        <tr key={job.id}>
+                          <td>
+                            <span className="table-job-title" style={{ fontWeight: '700', color: '#0f172a' }}>{job.title}</span>
+                            <br/>
+                            <span className="table-company" style={{ color: '#64748b', fontSize: '12px' }}>{job.location} · {job.jobType}</span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: '700' }}>{job.filledOpenings || 0}</span> / <span>{job.openings}</span>
+                            {job.openings > (job.filledOpenings || 0) ? (
+                              <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: '600', marginTop: '2px' }}>
+                                ({job.openings - (job.filledOpenings || 0)} open)
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                (0 open)
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <Link to={`/job/${job.id}/applicants`} style={{ textDecoration: 'none', color: '#344BFD', fontWeight: '800' }}>
+                              {job.applicants?.length || 0} candidates
+                            </Link>
+                          </td>
+                          <td>{job.views || 0}</td>
+                          <td>{renderJobStatusBadge(job)}</td>
+                          <td>{timeAgo(job.postedAt)}</td>
+                          <td>
+                            <div className="table-actions">
+                              <button className="table-action-btn" title="Manage Vacancies" onClick={() => setManageVacanciesJob(job)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                                  <polyline points="9 13 11 15 15 11"/>
+                                </svg>
+                              </button>
+                              <button className="table-action-btn" title="View Applicants" onClick={() => navigate(`/job/${job.id}/applicants`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                              </button>
+                              <button className="table-action-btn" title="Edit" onClick={() => navigate(`/edit-job/${job.id}`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                              </button>
+                              <button className="table-action-btn" title="View Listing" onClick={() => navigate(`/job/${job.id}`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                </svg>
+                              </button>
+                              <button className="table-action-btn danger" title="Delete" onClick={() => handleDelete(job.id)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                              </button>
                             </div>
-                          ) : (
-                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                              (0 open)
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <Link to={`/job/${job.id}/applicants`} style={{ textDecoration: 'none', color: 'var(--primary)', fontWeight: '700' }}>
-                            {job.applicants?.length || 0}
-                          </Link>
-                        </td>
-                        <td>{job.views || 0}</td>
-                        <td><span className={`status-badge status-${job.status}`}>{capitalize(job.status)}</span></td>
-                        <td>{timeAgo(job.postedAt)}</td>
-                        <td>
-                          <div className="table-actions">
-                            <button className="table-action-btn" title="Manage Vacancies" onClick={() => setManageVacanciesJob(job)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                                <polyline points="9 13 11 15 15 11"/>
-                              </svg>
-                            </button>
-                            <button className="table-action-btn" title="View Applicants" onClick={() => navigate(`/job/${job.id}/applicants`)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                              </svg>
-                            </button>
-                            <button className="table-action-btn" title="Edit" onClick={() => navigate(`/edit-job/${job.id}`)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                            </button>
-                            <button className="table-action-btn" title="View Listing" onClick={() => navigate(`/job/${job.id}`)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                              </svg>
-                            </button>
-                            <button className="table-action-btn danger" title="Delete" onClick={() => handleDelete(job.id)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+
+              {/* Mobile Responsive Cards View */}
+              <div className="mobile-manage-jobs-list" style={{ width: '100%', boxSizing: 'border-box' }}>
+                {myJobs.map(job => (
+                  <div key={job.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 14px', boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a', lineHeight: 1.3 }}>{job.title}</h4>
+                        <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>📍 {job.location || 'Onsite'} · {job.jobType}</span>
+                      </div>
+                      {renderJobStatusBadge(job)}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9', textAlign: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Vacancies</div>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '1px' }}>
+                          {job.filledOpenings || 0} / {job.openings}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Applicants</div>
+                        <Link to={`/job/${job.id}/applicants`} style={{ fontSize: '13px', fontWeight: '800', color: '#344BFD', textDecoration: 'none', display: 'block', marginTop: '1px' }}>
+                          {job.applicants?.length || 0}
+                        </Link>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Views</div>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '1px' }}>{job.views || 0}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
+                      {/* Tier 1: Primary Action Button (Full Width) */}
+                      <button 
+                        onClick={() => navigate(`/job/${job.id}/applicants`)} 
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#344BFD', color: '#ffffff', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>View Applicants ({job.applicants?.length || 0})</span>
+                      </button>
+
+                      {/* Tier 2: Secondary Action Toolbar (3 items aligned in 1 row) */}
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button 
+                          onClick={() => setManageVacanciesJob(job)} 
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                          <span>Openings</span>
+                        </button>
+                        <button 
+                          onClick={() => navigate(`/edit-job/${job.id}`)} 
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          <span>Edit</span>
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(job.id)} 
+                          style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="Delete Listing"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="empty-state">
-              <h3>No jobs posted yet</h3>
-              <p>Start posting jobs to find the best talent.</p>
-              <button className="btn btn-primary mt-4" onClick={() => setTab('post-job')}>Post a Job</button>
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '40px 20px',
+              textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: '#eff6ff',
+                color: '#344BFD',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+                border: '1px solid #bfdbfe'
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0' }}>
+                No Job Listings Posted Yet
+              </h3>
+              <p style={{ fontSize: '13.5px', color: '#64748b', maxWidth: '360px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+                Start posting industrial job openings to reach thousands of verified candidates in your MIDC zone.
+              </p>
+              <button 
+                onClick={() => setTab('post-job')}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  background: '#344BFD',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(52, 75, 253, 0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                + Post Your First Job →
+              </button>
             </div>
           )}
         </>
       );
+    }
 
     case 'candidates':
       return <CandidatesTab showToast={showToast} handleOpenDetails={handleOpenDetails} />;
@@ -1564,55 +1794,71 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
       const acceptedCount = allApplicants.filter(a => a.status === 'accepted').length;
 
       return (
-        <>
-          <div style={{ marginBottom: 'var(--space-6)' }}>
-            <h2 style={{ fontSize: 'var(--fs-2xl)', margin: 0, fontWeight: '700' }}>Recent Job Applications</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '4px 0 0' }}>
+        <div style={{ width: '100%', boxSizing: 'border-box' }}>
+          {renderEmployerTopTabBar()}
+          <div style={{ marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '17px', margin: 0, fontWeight: '700', color: '#0f172a' }}>Recent Job Applications</h2>
+            <p style={{ color: '#64748b', fontSize: '11.5px', margin: '2px 0 0' }}>
               Track candidate applications, review job details, schedule interviews, and communicate directly with applicants.
             </p>
           </div>
 
-          {/* Metric Summary Cards */}
-          <div className="dashboard-stats" style={{ marginBottom: 'var(--space-6)' }}>
-            <div className="stat-card">
-              <div className="stat-icon primary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {/* Metric Summary Cards (Compact 2x2 Grid) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '14px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#eff6ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{totalReceived}</h3><p>Total Received</p></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{totalReceived}</h3>
+                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Total Received</p>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon warning">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{reviewedCount}</h3><p>Under Review</p></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{reviewedCount}</h3>
+                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Under Review</p>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon accent">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{shortlistedCount}</h3><p>Interview Scheduled</p></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{shortlistedCount}</h3>
+                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Shortlisted</p>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon success">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{acceptedCount}</h3><p>Accepted / Hired</p></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{acceptedCount}</h3>
+                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Hired</p>
+              </div>
             </div>
           </div>
 
           {/* Filter Bar */}
-          <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ flex: '1 1 240px', position: 'relative' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }}>
+          <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ flex: '1 1 180px', position: 'relative' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <input
@@ -1621,15 +1867,15 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                   placeholder="Search candidate name, email, job..."
                   value={appSearchQuery}
                   onChange={(e) => setAppSearchQuery(e.target.value)}
-                  style={{ width: '100%', paddingLeft: '36px', height: '42px', fontSize: '13px' }}
+                  style={{ width: '100%', paddingLeft: '30px', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 />
               </div>
-              <div style={{ flex: '1 1 200px' }}>
+              <div style={{ flex: '1 1 160px' }}>
                 <select
                   className="form-select"
                   value={appJobFilter}
                   onChange={(e) => setAppJobFilter(e.target.value)}
-                  style={{ width: '100%', height: '42px', fontSize: '13px' }}
+                  style={{ width: '100%', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
                   <option value="all">All Job Postings ({myJobs.length})</option>
                   {myJobs.map(job => (
@@ -1640,14 +1886,14 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
             </div>
 
             {/* Status Pills Container */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Application Status:</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Status:</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                 {[
                   { label: 'All', value: 'all' },
                   { label: 'Applied', value: 'applied' },
                   { label: 'Reviewed', value: 'reviewed' },
-                  { label: 'Shortlisted / Interview', value: 'shortlisted' },
+                  { label: 'Shortlisted', value: 'shortlisted' },
                   { label: 'Accepted', value: 'accepted' },
                   { label: 'Rejected', value: 'rejected' },
                 ].map(st => (
@@ -1655,15 +1901,15 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     key={st.value}
                     onClick={() => setAppStatusFilter(st.value)}
                     style={{
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11.5px',
                       fontWeight: appStatusFilter === st.value ? '700' : '500',
-                      background: appStatusFilter === st.value ? 'var(--primary)' : 'var(--bg)',
-                      color: appStatusFilter === st.value ? '#ffffff' : 'var(--text-secondary)',
-                      border: appStatusFilter === st.value ? '1px solid var(--primary)' : '1px solid var(--border)',
+                      background: appStatusFilter === st.value ? '#344BFD' : '#f1f5f9',
+                      color: appStatusFilter === st.value ? '#ffffff' : '#475569',
+                      border: appStatusFilter === st.value ? '1px solid #344BFD' : '1px solid #cbd5e1',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
                       lineHeight: '1.2'
                     }}
                   >
@@ -1793,7 +2039,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
               </button>
             </div>
           )}
-        </>
+        </div>
       );
     }
 

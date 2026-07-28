@@ -4,9 +4,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { formatSalary, timeAgo, formatNumber, capitalize } from '../../utils/helpers';
+import { formatSalary, timeAgo, formatNumber, capitalize, shareContent } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -102,16 +103,13 @@ export const JobDetailPage: React.FC = () => {
   };
 
   const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: job.title,
-        text: `Check out this job: ${job.title} at ${job.company}`,
-        url: window.location.href,
-      }).catch(err => console.log(err));
-    } else {
-      navigator.clipboard.writeText(window.location.origin + '/#/job/' + job.id);
-      showToast('Job link copied to clipboard!', 'success');
-    }
+    const targetUrl = `${window.location.protocol}//${window.location.host}/#/job/${job.id}`;
+    shareContent(
+      job.title,
+      `Check out this job: ${job.title} at ${job.company}`,
+      targetUrl,
+      () => showToast('Job link copied to clipboard!', 'success')
+    );
   };
 
   const handleWhatsAppShare = () => {
@@ -205,75 +203,51 @@ export const JobDetailPage: React.FC = () => {
           <div style={{ flex: '1 1 600px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{
               background: '#ffffff',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '0.3rem',
-              padding: '24px 20px',
-              position: 'relative'
+              border: '1px solid #CBD5E1',
+              borderRadius: '16px',
+              padding: 'clamp(18px, 4vw, 28px)',
+              position: 'relative',
+              boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.06)'
             }}>
-              {/* Header Row: Title & Action buttons */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '0.3rem', overflow: 'hidden', background: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {job.companyLogo && job.companyLogo.startsWith('http') ? (
-                      <img src={job.companyLogo} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
-                        <rect width="100" height="100" fill="#344BFD" />
-                        <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
-                        <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
-                        <path d="M65 90 L65 50 L85 50 L85 90 Z" fill="#ffffff" opacity="0.1" />
-                        <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        <rect x="57" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        <rect x="47" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        <rect x="57" y="45" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        <rect x="47" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        <rect x="57" y="58" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h1 style={{
-                      fontSize: '20px',
-                      fontWeight: '800',
-                      color: '#0F172A',
-                      margin: '0 0 4px 0',
-                      lineHeight: '1.3'
-                    }}>
-                      {job.title}
-                    </h1>
-                    <p style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#344BFD',
-                      margin: 0
-                    }}>
-                      {job.company}
-                    </p>
-                  </div>
-                </div>
+              {/* 1. Header: Title full width */}
+              <div style={{ marginBottom: '16px' }}>
+                <h1 style={{
+                  fontSize: 'clamp(20px, 4vw, 26px)',
+                  fontWeight: '800',
+                  color: '#0F172A',
+                  margin: '0 0 14px 0',
+                  lineHeight: '1.3',
+                  letterSpacing: '-0.02em'
+                }}>
+                  {job.title}
+                </h1>
 
-                {/* Action buttons (Save & Share) */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                {/* Action buttons (Save, Share, WhatsApp) - Responsive row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  marginBottom: '16px'
+                }}>
                   <button
                     onClick={handleSave}
                     style={{
-                      background: 'transparent',
-                      border: '1.5px solid #344BFD',
-                      color: '#344BFD',
-                      padding: '6px 12px',
-                      borderRadius: '0.3rem',
-                      fontWeight: '600',
-                      fontSize: '13px',
+                      background: saved ? '#EFF6FF' : '#F8FAFC',
+                      border: saved ? '1px solid #BFDBFE' : '1px solid #CBD5E1',
+                      padding: '8px 14px',
                       cursor: 'pointer',
-                      display: 'flex',
+                      color: saved ? '#2563eb' : '#475569',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      transition: 'background 0.2s ease'
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#EEF1FF'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                     </svg>
                     {saved ? 'Saved' : 'Save'}
@@ -282,23 +256,21 @@ export const JobDetailPage: React.FC = () => {
                   <button
                     onClick={handleShare}
                     style={{
-                      background: 'transparent',
-                      border: '1.5px solid #344BFD',
-                      color: '#344BFD',
-                      padding: '6px 12px',
-                      borderRadius: '0.3rem',
-                      fontWeight: '600',
-                      fontSize: '13px',
+                      background: '#F8FAFC',
+                      border: '1px solid #CBD5E1',
+                      padding: '8px 14px',
                       cursor: 'pointer',
-                      display: 'flex',
+                      color: '#475569',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      transition: 'background 0.2s ease'
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#EEF1FF'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                     </svg>
@@ -308,68 +280,103 @@ export const JobDetailPage: React.FC = () => {
                   <button
                     onClick={handleWhatsAppShare}
                     style={{
-                      background: 'transparent',
-                      border: '1.5px solid #25D366',
-                      color: '#25D366',
-                      padding: '6px 12px',
-                      borderRadius: '0.3rem',
-                      fontWeight: '600',
-                      fontSize: '13px',
+                      background: '#E8FBF0',
+                      border: '1px solid #A7F3D0',
+                      padding: '8px 14px',
                       cursor: 'pointer',
-                      display: 'flex',
+                      color: '#059669',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      transition: 'background 0.2s ease'
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      transition: 'all 0.2s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#E8FBF0'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.18 1.449 4.825 1.451 5.436.002 9.858-4.42 9.86-9.86.002-2.638-1.016-5.119-2.868-6.973C16.611 1.916 14.135.897 11.5.897c-5.444 0-9.866 4.418-9.87 9.858-.002 1.8.48 3.55 1.396 5.11l-1.002 3.658 3.743-.981c1.517.828 3.09 1.258 4.29 1.272zM17.65 14.39c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.95 1.18-.18.2-.35.23-.65.08-1.1-.55-1.92-.95-2.67-2.25-.19-.34.19-.31.54-1.01.06-.11.03-.21-.02-.31-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34H10.1c-.22 0-.58.08-.88.4-.3.32-1.15 1.13-1.15 2.75 0 1.63 1.19 3.2 1.35 3.42.17.22 2.33 3.56 5.65 5 .79.34 1.4.55 1.88.71.8.25 1.52.21 2.1.13.64-.1 1.78-.73 2.03-1.43.25-.7.25-1.29.17-1.43-.07-.15-.27-.23-.57-.38z"/>
                     </svg>
                     WhatsApp
                   </button>
                 </div>
+
+                {/* Company Row & Work Mode Badges */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: '#F8FAFC',
+                  borderRadius: '10px',
+                  border: '1px solid #F1F5F9'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CompanyDefaultLogo 
+                      logoUrl={job.companyLogo || (job as any).company_logo} 
+                      companyName={job.company} 
+                      size={32} 
+                      borderRadius="8px"
+                    />
+                    <span style={{
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      color: '#1E293B',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      {job.company}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#2563eb" stroke="#ffffff" strokeWidth="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                      </svg>
+                    </span>
+                  </div>
+
+                  {/* Work Mode & Job Type Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      background: '#EFF6FF',
+                      color: '#1D4ED8',
+                      border: '1px solid #DBEAFE',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      padding: '3px 10px',
+                      borderRadius: '6px'
+                    }}>
+                      {job.workMode || 'Onsite'}
+                    </span>
+                    <span style={{
+                      background: '#F1F5F9',
+                      color: '#334155',
+                      border: '1px solid #E2E8F0',
+                      fontSize: '11.5px',
+                      fontWeight: '600',
+                      padding: '3px 10px',
+                      borderRadius: '6px'
+                    }}>
+                      {job.jobType}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Subtitle pills row: Full Time, Remote, Date */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '12px 0 20px 0' }}>
-                <span style={{
-                  background: '#ffffff',
-                  color: '#344BFD',
-                  border: '1px solid #94A3B8',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  padding: '4px 10px',
-                  borderRadius: '9999px'
-                }}>
-                  {job.workMode || 'Remote'}
-                </span>
-
-                <span style={{
-                  background: '#F1F5F9',
-                  color: '#344BFD',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  padding: '4px 10px',
-                  borderRadius: '9999px'
-                }}>
-                  {job.jobType}
-                </span>
-              </div>
-
-              {/* Detail specs columns */}
+              {/* Detail Specs Responsive Grid (Location, Experience, Salary, Applicants, Date) */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                gap: '12px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '10px 16px',
                 marginBottom: '24px',
-                paddingBottom: '16px',
-                borderBottom: '1px solid #E2E8F0'
+                padding: '14px 16px',
+                background: '#FAFAFC',
+                borderRadius: '12px',
+                border: '1px solid #F1F5F9'
               }}>
                 {/* Location */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '500' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" style={{ flexShrink: 0 }}>
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
@@ -377,8 +384,8 @@ export const JobDetailPage: React.FC = () => {
                 </div>
 
                 {/* Experience */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '500' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" style={{ flexShrink: 0 }}>
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                   </svg>
@@ -386,19 +393,17 @@ export const JobDetailPage: React.FC = () => {
                 </div>
 
                 {/* Salary */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="9" y1="15" x2="15" y2="15" />
-                    <line x1="9" y1="11" x2="15" y2="11" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857', fontSize: '13px', fontWeight: '700' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.2" style={{ flexShrink: 0 }}>
+                    <rect x="2" y="6" width="20" height="12" rx="2" />
+                    <circle cx="12" cy="12" r="2" />
                   </svg>
                   <span>{formatSalary(job.salaryMin, job.salaryMax)}</span>
                 </div>
 
                 {/* Applicants */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '500' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" style={{ flexShrink: 0 }}>
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -408,8 +413,8 @@ export const JobDetailPage: React.FC = () => {
                 </div>
 
                 {/* Date Posted */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontSize: '13px', fontWeight: '500' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" style={{ flexShrink: 0 }}>
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   <span>{timeAgo(job.postedAt)}</span>
@@ -865,7 +870,6 @@ export const JobDetailPage: React.FC = () => {
             </div>
 
           </div>
-
         </div>
       </div>
 

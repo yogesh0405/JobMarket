@@ -22,6 +22,12 @@ const getInitialState = (): StoreState => {
       const parsed = JSON.parse(saved);
       if (!parsed.language) parsed.language = 'en';
       if (!parsed.qualifications) parsed.qualifications = initialQualifications;
+      // Filter out stale mock seed jobs (e.g. j1, j2... j80) from browser cache
+      if (Array.isArray(parsed.jobs)) {
+        parsed.jobs = parsed.jobs.filter((j: any) => j && j.id && !/^j\d+$/.test(String(j.id)));
+      } else {
+        parsed.jobs = [];
+      }
       return parsed;
     } catch (e) {
       console.error('Failed to parse localStorage data', e);
@@ -29,7 +35,7 @@ const getInitialState = (): StoreState => {
   }
   return {
     users: initialUsers,
-    jobs: initialJobs,
+    jobs: [],
     companies: initialCompanies,
     categories: initialCategories,
     qualifications: initialQualifications,

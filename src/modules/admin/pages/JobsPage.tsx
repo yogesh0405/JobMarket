@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
+import { CompanyDefaultLogo } from '../../../components/company/CompanyDefaultLogo';
 import { formatNumber } from '../../../utils/helpers';
 
 export const JobsPage: React.FC = () => {
@@ -169,31 +170,12 @@ export const JobsPage: React.FC = () => {
                     <td><strong style={{ cursor: 'pointer', color: 'var(--primary)' }} onClick={() => handleOpenDetails(job.id)}>{job.title}</strong></td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '6px',
-                          background: (job.company_logo || job.companyLogo) ? 'transparent' : 'var(--primary)',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: '800',
-                          fontSize: '12px',
-                          flexShrink: 0,
-                          overflow: 'hidden',
-                          border: '1px solid var(--border)'
-                        }}>
-                          {job.company_logo || job.companyLogo ? (
-                            <img
-                              src={job.company_logo || job.companyLogo}
-                              alt={job.company || 'Company'}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            (job.company || 'C')[0].toUpperCase()
-                          )}
-                        </div>
+                        <CompanyDefaultLogo 
+                          logoUrl={job.company_logo || job.companyLogo} 
+                          companyName={job.company} 
+                          size={28} 
+                          borderRadius="6px"
+                        />
                         <span>{job.company}</span>
                       </div>
                     </td>

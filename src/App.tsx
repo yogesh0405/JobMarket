@@ -33,6 +33,7 @@ import { SettingsPage } from './modules/admin/pages/SettingsPage';
 import { SupportManagementPage } from './modules/admin/pages/SupportManagementPage';
 import { AdminAdvertisementPage } from './modules/admin/pages/AdminAdvertisementPage';
 import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
+import { RoleTabsManagementPage } from './modules/admin/pages/RoleTabsManagementPage';
 
 export const App: React.FC = () => {
   const { syncUser } = useAuth();
@@ -41,19 +42,20 @@ export const App: React.FC = () => {
   useEffect(() => {
     syncUser();
 
-    // Fetch jobs from backend database
+    // Fetch real jobs from PostgreSQL backend database
     apiFetch('/api/v1/jobs')
       .then((res: any) => {
         if (res.ok) return res.json();
-        throw new Error('Failed to fetch jobs');
+        throw new Error('Failed to fetch database jobs');
       })
       .then((json: any) => {
-        if (json.success && json.data) {
-          dispatch({ type: 'SET_JOBS', payload: json.data });
+        const rawJobs = Array.isArray(json) ? json : (json.data || json.jobs || []);
+        if (Array.isArray(rawJobs)) {
+          dispatch({ type: 'SET_JOBS', payload: rawJobs });
         }
       })
       .catch((err: any) => {
-        console.error('Error fetching jobs:', err);
+        console.error('Error fetching database jobs:', err);
       });
   }, [syncUser, dispatch]);
 
@@ -77,6 +79,7 @@ export const App: React.FC = () => {
         <Route path="employers" element={<EmployerManagementPage />} />
         <Route path="workers" element={<WorkerManagementPage />} />
         <Route path="categories" element={<CategorySkillManagementPage />} />
+        <Route path="role-tabs" element={<RoleTabsManagementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="support" element={<SupportManagementPage />} />

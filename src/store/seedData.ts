@@ -260,7 +260,7 @@ const generateSeedJobs = (): Job[] => {
   return jobs;
 };
 
-export const initialJobs = generateSeedJobs();
+export const initialJobs: Job[] = [];
 
 export const initialUsers: User[] = [
   {
