@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const isSearchAllowed = location.pathname === '/' || location.pathname === '/jobs' || location.pathname.startsWith('/jobs');
+  const isSearchAllowed = (location.pathname === '/' || location.pathname === '/jobs' || location.pathname.startsWith('/jobs')) && location.pathname !== '/jobs/map';
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch({ type: 'SET_LANGUAGE', payload: e.target.value as Language });
@@ -125,6 +125,14 @@ export const Navbar: React.FC = () => {
                       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                     {t.findJobs}
+                  </Link>
+
+                  {/* Job Map */}
+                  <Link to="/jobs/map" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
+                    </svg>
+                    Interactive Job Map
                   </Link>
 
                   {/* Dashboard */}
@@ -237,6 +245,14 @@ export const Navbar: React.FC = () => {
                     {t.findJobs}
                   </Link>
 
+                  {/* Job Map */}
+                  <Link to="/jobs/map" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
+                    </svg>
+                    Interactive Job Map
+                  </Link>
+
                   {/* About Us */}
                   <Link to="/about" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
@@ -277,7 +293,12 @@ export const Navbar: React.FC = () => {
 
           {/* DESKTOP ONLY LINKS */}
           <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
-          <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
+          <Link to="/jobs" className={`nav-link ${isActive('/jobs') && location.pathname !== '/jobs/map' ? 'active' : ''}`}>{t.findJobs}</Link>
+          <Link to="/jobs/map" className={`nav-link ${isActive('/jobs/map') ? 'active' : ''}`}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              📍 Job Map
+            </span>
+          </Link>
           {(!currentUser || currentUser.role !== 'candidate') && (
             <Link to="/post-job" className={`nav-link ${isActive('/post-job') ? 'active' : ''}`}>{t.postJob}</Link>
           )}

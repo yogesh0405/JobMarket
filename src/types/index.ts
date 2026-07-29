@@ -136,6 +136,7 @@ export interface Company {
   size: string;
   location: string;
   color: string;
+  logoUrl?: string;
 }
 
 export interface Category {

@@ -9,6 +9,8 @@ import { useTranslation } from '../../utils/translations';
 import { Job, JobType, WorkMode } from '../../types';
 import { parseJobPrompt } from '../../utils/aiParser';
 import { AdminApiService } from '../../modules/admin/services/adminApi';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+
 
 interface JobPostPageProps {
   isEmbedded?: boolean;
@@ -479,16 +481,12 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       border: '1.5px solid #E2E8F0',
                       flexShrink: 0
                     }}>
-                      {companyLogo ? (
-                        <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
-                          <rect width="100" height="100" fill="#344BFD" />
-                          <path d="M20 90 L20 40 L45 40 L45 90 Z" fill="#ffffff" opacity="0.15" />
-                          <path d="M40 90 L40 25 L70 25 L70 90 Z" fill="#ffffff" opacity="0.25" />
-                          <rect x="47" y="32" width="6" height="8" fill="#ffffff" opacity="0.7" />
-                        </svg>
-                      )}
+                      <CompanyDefaultLogo
+                        logoUrl={companyLogo}
+                        companyName={currentUser?.companyName || currentUser?.name || 'Company'}
+                        size={48}
+                        borderRadius="8px"
+                      />
                       {isUploadingLogo && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite', color: 'white' }}>

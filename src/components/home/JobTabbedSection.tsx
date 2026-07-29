@@ -331,11 +331,11 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
             style={{
               display: 'flex',
               alignItems: 'stretch',
-              gap: '16px',
+              gap: '14px',
               overflowX: 'auto',
               scrollSnapType: 'x mandatory',
-              paddingBottom: '16px',
-              marginBottom: '20px',
+              paddingBottom: '10px',
+              marginBottom: '8px',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch'
@@ -345,8 +345,9 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
               <div
                 key={job.id}
                 style={{
-                  flex: '0 0 340px',
-                  width: '340px',
+                  flex: '0 0 290px',
+                  width: '290px',
+                  minHeight: '240px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignSelf: 'stretch',
@@ -417,7 +418,7 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
 
         {/* Bottom See All Button */}
         {activeCategory && (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginTop: '0px' }}>
             <button
               onClick={() => navigate(activeCategory.targetUrl)}
               style={{

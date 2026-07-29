@@ -8,6 +8,12 @@ const router = Router();
 // Rate limiter for posting/updating/applying actions (15 actions per minute)
 const actionLimiter = rateLimiter('job_action', 15, 60);
 
+// Map & Geographic Search Routes (Must be declared before :id route)
+router.get('/map', JobController.getMapJobs);
+router.get('/nearby', JobController.getNearbyJobs);
+router.post('/geocode', JobController.triggerGeocoding);
+router.get('/admin/map-analytics', requireAuth, JobController.getAdminMapAnalytics);
+
 // Public Routes
 router.get('/', JobController.getJobs);
 router.get('/meta/categories', JobController.getCategories);

@@ -1,24 +1,33 @@
 import React from 'react';
+import { getCompanyLogo } from '../../utils/companyLogos';
 
 interface CompanyDefaultLogoProps {
   logoUrl?: string;
   companyName?: string;
   size?: number;
   borderRadius?: string;
+  companyColor?: string;
 }
 
 export const CompanyDefaultLogo: React.FC<CompanyDefaultLogoProps> = ({
   logoUrl,
   companyName = 'Company',
   size = 28,
-  borderRadius = '6px'
+  borderRadius = '6px',
+  companyColor
 }) => {
-  const isValidImage = Boolean(
-    logoUrl && 
+  const [imgError, setImgError] = React.useState(false);
+
+  // Check if logoUrl is a valid http / data URI string (not single character like 'T' or 'B')
+  const isExternalUrl = Boolean(
+    logoUrl &&
+    logoUrl.length > 5 &&
     (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:image'))
   );
 
-  if (isValidImage) {
+  const isValidImage = isExternalUrl && !imgError;
+
+  if (isValidImage && logoUrl) {
     return (
       <div style={{
         width: `${size}px`,
@@ -27,59 +36,45 @@ export const CompanyDefaultLogo: React.FC<CompanyDefaultLogoProps> = ({
         overflow: 'hidden',
         border: '1px solid rgba(0,0,0,0.08)',
         flexShrink: 0,
-        background: '#ffffff'
+        background: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <img
           src={logoUrl}
           alt={companyName}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
+          onError={() => setImgError(true)}
         />
       </div>
     );
   }
 
-  const iconSize = Math.max(14, Math.round(size * 0.58));
+  // Fallback to high-quality SVG corporate vector logo
+  const generatedLogoUrl = getCompanyLogo(companyName, companyColor);
 
   return (
     <div style={{
       width: `${size}px`,
       height: `${size}px`,
       borderRadius,
-      background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-      color: '#ffffff',
+      overflow: 'hidden',
+      flexShrink: 0,
+      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      flexShrink: 0,
-      boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+      background: '#ffffff'
     }}>
-      <svg
-        width={iconSize}
-        height={iconSize}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ opacity: 0.95 }}
-      >
-        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-        <path d="M9 22v-4h6v4" />
-        <line x1="8" y1="6" x2="8.01" y2="6" strokeWidth="2.5" />
-        <line x1="12" y1="6" x2="12.01" y2="6" strokeWidth="2.5" />
-        <line x1="16" y1="6" x2="16.01" y2="6" strokeWidth="2.5" />
-        <line x1="8" y1="10" x2="8.01" y2="10" strokeWidth="2.5" />
-        <line x1="12" y1="10" x2="12.01" y2="10" strokeWidth="2.5" />
-        <line x1="16" y1="10" x2="16.01" y2="10" strokeWidth="2.5" />
-        <line x1="8" y1="14" x2="8.01" y2="14" strokeWidth="2.5" />
-        <line x1="12" y1="14" x2="12.01" y2="14" strokeWidth="2.5" />
-        <line x1="16" y1="14" x2="16.01" y2="14" strokeWidth="2.5" />
-      </svg>
+      <img
+        src={generatedLogoUrl}
+        alt={companyName}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
     </div>
   );
 };
+
 export default CompanyDefaultLogo;
+

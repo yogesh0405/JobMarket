@@ -54,6 +54,7 @@ export const AdminLayout: React.FC = () => {
     if (path.includes('/dashboard')) return 'Dashboard';
     if (path.includes('/job-approvals')) return 'Job Approvals';
     if (path.includes('/advertisements')) return 'Advertisement Approval';
+    if (path.includes('/map-analytics')) return 'Map & Location Analytics';
     if (path.includes('/jobs')) return 'Platform Jobs';
     if (path.includes('/users')) return 'User Management';
     if (path.includes('/employers')) return 'Employer Directory';
@@ -109,6 +110,15 @@ export const AdminLayout: React.FC = () => {
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          )
+        },
+        {
+          label: 'Map Analytics',
+          path: '/admin/map-analytics',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
             </svg>
           )
         }

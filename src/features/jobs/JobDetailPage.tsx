@@ -317,8 +317,8 @@ export const JobDetailPage: React.FC = () => {
                     <CompanyDefaultLogo 
                       logoUrl={job.companyLogo || (job as any).company_logo} 
                       companyName={job.company} 
-                      size={32} 
-                      borderRadius="8px"
+                      size={44} 
+                      borderRadius="10px"
                     />
                     <span style={{
                       fontSize: '15px',

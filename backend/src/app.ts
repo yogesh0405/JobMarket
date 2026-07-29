@@ -76,6 +76,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/jobs', jobRoutes);
+app.use('/api/jobs', jobRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/admin/support', adminSupportRouter);
 app.use('/api/v1/home', homeAdvertisementRouter);

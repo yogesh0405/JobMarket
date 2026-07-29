@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
+import { CategoryIcon } from '../../../components/icons/CategoryIcon';
 
 export const CategorySkillManagementPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -164,7 +165,7 @@ export const CategorySkillManagementPage: React.FC = () => {
                   {pendingCategories.map(pc => (
                     <div key={pc.id} style={{ background: '#ffffff', border: '1px solid #fef08a', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '22px' }}>{pc.icon || '💼'}</span>
+                        <CategoryIcon name={pc.icon || pc.name} size={22} color="#ca8a04" />
                         <div>
                           <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>{pc.name}</strong>
                           <span style={{ fontSize: '11px', color: '#ca8a04', fontWeight: '700' }}>Employer Suggested</span>
@@ -242,7 +243,9 @@ export const CategorySkillManagementPage: React.FC = () => {
                   <tbody>
                     {officialCategories.map((c) => (
                       <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '14px 16px', fontSize: '20px' }}>{c.icon}</td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <CategoryIcon name={c.icon || c.name} size={20} color="#344BFD" />
+                        </td>
                         <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{c.name}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <span style={{ 

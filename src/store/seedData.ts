@@ -1,76 +1,77 @@
 import { User, Job, Company, Category } from '../types';
+import { getCompanyLogo } from '../utils/companyLogos';
 
 export const initialCompanies: Company[] = [
-  { name: 'Tata AutoComp Systems', industry: 'Automotive', size: '5000+', location: 'Chakan MIDC', color: '#1E3A8A' },
-  { name: 'Bharat Forge Ltd', industry: 'Manufacturing', size: '5000+', location: 'Bhosari MIDC', color: '#B45309' },
-  { name: 'Thermax Industrial', industry: 'Engineering', size: '1000-5000', location: 'Bhosari MIDC', color: '#047857' },
-  { name: 'Rucha Yantra Robotics', industry: 'Industrial Automation', size: '50-200', location: 'Hinjawadi MIDC', color: '#6D28D9' },
-  { name: 'Varroc Engineering', industry: 'Automotive', size: '5000+', location: 'Waluj MIDC', color: '#DC2626' },
-  { name: 'Sigma Electric', industry: 'Electricals', size: '1000-5000', location: 'Chakan MIDC', color: '#0891B2' },
-  { name: 'John Deere India', industry: 'Agro Machinery', size: '1000-5000', location: 'Ranjangaon MIDC', color: '#15803D' },
-  { name: 'Lupin Pharmaceuticals', industry: 'Chemical & Pharma', size: '5000+', location: 'Taloja MIDC', color: '#BE185D' },
-  { name: 'Godrej & Boyce', industry: 'Manufacturing', size: '5000+', location: 'Rabale MIDC', color: '#4338CA' },
-  { name: 'Mahindra Heavy Engines', industry: 'Automotive', size: '5000+', location: 'Chakan MIDC', color: '#DC2626' },
-  { name: 'Finolex Cables', industry: 'Electricals', size: '1000-5000', location: 'Bhosari MIDC', color: '#0369A1' },
-  { name: 'Endurance Technologies', industry: 'Automotive', size: '1000-5000', location: 'Waluj MIDC', color: '#4F46E5' },
-  { name: 'Galaxy Care Hospital', industry: 'Healthcare', size: '500-1000', location: 'Pune City', color: '#EF4444' },
-  { name: 'Grand Regent Hotels', industry: 'Hospitality', size: '200-500', location: 'Mumbai City', color: '#F59E0B' },
-  { name: 'Orchids International School', industry: 'Education', size: '1000-5000', location: 'Bhosari', color: '#10B981' }
+  { name: 'Tata AutoComp Systems', industry: 'Automotive', size: '5000+', location: 'Chakan MIDC', color: '#1E3A8A', logoUrl: getCompanyLogo('Tata AutoComp Systems') },
+  { name: 'Bharat Forge Ltd', industry: 'Manufacturing', size: '5000+', location: 'Bhosari MIDC', color: '#B45309', logoUrl: getCompanyLogo('Bharat Forge Ltd') },
+  { name: 'Thermax Industrial', industry: 'Engineering', size: '1000-5000', location: 'Bhosari MIDC', color: '#047857', logoUrl: getCompanyLogo('Thermax Industrial') },
+  { name: 'Rucha Yantra Robotics', industry: 'Industrial Automation', size: '50-200', location: 'Hinjawadi MIDC', color: '#6D28D9', logoUrl: getCompanyLogo('Rucha Yantra Robotics') },
+  { name: 'Varroc Engineering', industry: 'Automotive', size: '5000+', location: 'Waluj MIDC', color: '#DC2626', logoUrl: getCompanyLogo('Varroc Engineering') },
+  { name: 'Sigma Electric', industry: 'Electricals', size: '1000-5000', location: 'Chakan MIDC', color: '#0891B2', logoUrl: getCompanyLogo('Sigma Electric') },
+  { name: 'John Deere India', industry: 'Agro Machinery', size: '1000-5000', location: 'Ranjangaon MIDC', color: '#15803D', logoUrl: getCompanyLogo('John Deere India') },
+  { name: 'Lupin Pharmaceuticals', industry: 'Chemical & Pharma', size: '5000+', location: 'Taloja MIDC', color: '#BE185D', logoUrl: getCompanyLogo('Lupin Pharmaceuticals') },
+  { name: 'Godrej & Boyce', industry: 'Manufacturing', size: '5000+', location: 'Rabale MIDC', color: '#4338CA', logoUrl: getCompanyLogo('Godrej & Boyce') },
+  { name: 'Mahindra Heavy Engines', industry: 'Automotive', size: '5000+', location: 'Chakan MIDC', color: '#DC2626', logoUrl: getCompanyLogo('Mahindra Heavy Engines') },
+  { name: 'Finolex Cables', industry: 'Electricals', size: '1000-5000', location: 'Bhosari MIDC', color: '#0369A1', logoUrl: getCompanyLogo('Finolex Cables') },
+  { name: 'Endurance Technologies', industry: 'Automotive', size: '1000-5000', location: 'Waluj MIDC', color: '#4F46E5', logoUrl: getCompanyLogo('Endurance Technologies') },
+  { name: 'Galaxy Care Hospital', industry: 'Healthcare', size: '500-1000', location: 'Pune City', color: '#EF4444', logoUrl: getCompanyLogo('Galaxy Care Hospital') },
+  { name: 'Grand Regent Hotels', industry: 'Hospitality', size: '200-500', location: 'Mumbai City', color: '#F59E0B', logoUrl: getCompanyLogo('Grand Regent Hotels') },
+  { name: 'Orchids International School', industry: 'Education', size: '1000-5000', location: 'Bhosari', color: '#10B981', logoUrl: getCompanyLogo('Orchids International School') }
 ];
 
 export const initialCategories: Category[] = [
-  { name: 'Fitter', icon: '🔧', count: 1450 },
-  { name: 'Welder', icon: '⚡', count: 980 },
-  { name: 'CNC Operator', icon: '🖥️', count: 1200 },
-  { name: 'Electrician', icon: '🔌', count: 750 },
-  { name: 'Machinist', icon: '⚙️', count: 850 },
-  { name: 'Helper / Loader', icon: '📦', count: 2100 },
-  { name: 'Quality Inspector', icon: '🔍', count: 480 },
-  { name: 'Apprentice', icon: '🎓', count: 1600 },
-  { name: 'Driver / Forklift', icon: '🚜', count: 320 },
-  { name: 'Security Guard', icon: '🛡️', count: 550 },
-  { name: 'Store Keeper', icon: '📂', count: 420 },
-  { name: 'Technician', icon: '🔬', count: 680 },
-  { name: 'Hospital Jobs', icon: '🏥', count: 1120 },
-  { name: 'Hotel Jobs', icon: '🏨', count: 870 },
-  { name: 'School & College', icon: '🏫', count: 640 },
-  { name: 'Office / Clerk', icon: '💼', count: 510 }
+  { name: 'Fitter', icon: 'wrench', count: 1450 },
+  { name: 'Welder', icon: 'zap', count: 980 },
+  { name: 'CNC Operator', icon: 'monitor', count: 1200 },
+  { name: 'Electrician', icon: 'plug', count: 750 },
+  { name: 'Machinist', icon: 'settings', count: 850 },
+  { name: 'Helper / Loader', icon: 'box', count: 2100 },
+  { name: 'Quality Inspector', icon: 'search', count: 480 },
+  { name: 'Apprentice', icon: 'graduation-cap', count: 1600 },
+  { name: 'Driver / Forklift', icon: 'truck', count: 320 },
+  { name: 'Security Guard', icon: 'shield', count: 550 },
+  { name: 'Store Keeper', icon: 'folder-open', count: 420 },
+  { name: 'Technician', icon: 'microscope', count: 680 },
+  { name: 'Hospital Jobs', icon: 'heart-pulse', count: 1120 },
+  { name: 'Hotel Jobs', icon: 'utensils', count: 870 },
+  { name: 'School & College', icon: 'school', count: 640 },
+  { name: 'Office / Clerk', icon: 'briefcase', count: 510 }
 ];
 
 export const initialQualifications: Category[] = [
-  { name: '12th Pass Jobs', icon: '🎓', count: 63232 },
-  { name: 'B.Com Jobs', icon: '📊', count: 34503 },
-  { name: 'BA Jobs', icon: '📝', count: 28123 },
-  { name: 'B.E./B.Tech Jobs', icon: '⚙️', count: 26397 },
-  { name: 'Diploma Jobs', icon: '📜', count: 26208 },
-  { name: 'BCA Jobs', icon: '💻', count: 21767 },
-  { name: 'BBA Jobs', icon: '📈', count: 21184 },
-  { name: 'B.Sc Jobs', icon: '🔬', count: 19641 },
-  { name: '10th Pass Jobs', icon: '🏫', count: 18617 },
-  { name: 'MBA Jobs', icon: '💼', count: 7098 },
-  { name: 'Vocational Course Jobs', icon: '🔨', count: 5292 },
-  { name: 'MCA Jobs', icon: '🖥️', count: 2825 }
+  { name: '12th Pass Jobs', icon: 'graduation-cap', count: 63232 },
+  { name: 'B.Com Jobs', icon: 'bar-chart', count: 34503 },
+  { name: 'BA Jobs', icon: 'file-text', count: 28123 },
+  { name: 'B.E./B.Tech Jobs', icon: 'settings', count: 26397 },
+  { name: 'Diploma Jobs', icon: 'scroll', count: 26208 },
+  { name: 'BCA Jobs', icon: 'laptop', count: 21767 },
+  { name: 'BBA Jobs', icon: 'trending-up', count: 21184 },
+  { name: 'B.Sc Jobs', icon: 'microscope', count: 19641 },
+  { name: '10th Pass Jobs', icon: 'school', count: 18617 },
+  { name: 'MBA Jobs', icon: 'briefcase', count: 7098 },
+  { name: 'Vocational Course Jobs', icon: 'hammer', count: 5292 },
+  { name: 'MCA Jobs', icon: 'monitor', count: 2825 }
 ];
 
 export const initialHospitalCategories: Category[] = [
-  { name: 'Staff Nurse', icon: '🏥', count: 450 },
-  { name: 'Ward Boy / Assistant', icon: '👦', count: 380 },
-  { name: 'Lab Assistant', icon: '🔬', count: 190 },
-  { name: 'Hospital Receptionist', icon: '📞', count: 120 }
+  { name: 'Staff Nurse', icon: 'heart-pulse', count: 450 },
+  { name: 'Ward Boy / Assistant', icon: 'user', count: 380 },
+  { name: 'Lab Assistant', icon: 'microscope', count: 190 },
+  { name: 'Hospital Receptionist', icon: 'phone', count: 120 }
 ];
 
 export const initialHotelCategories: Category[] = [
-  { name: 'Commi 1 Chef / Cook', icon: '👨‍🍳', count: 320 },
-  { name: 'Hotel Waiter', icon: '🍽️', count: 280 },
-  { name: 'Housekeeping Associate', icon: '🧹', count: 210 },
-  { name: 'Front Desk Executive', icon: '🛎️', count: 160 }
+  { name: 'Commi 1 Chef / Cook', icon: 'chef-hat', count: 320 },
+  { name: 'Hotel Waiter', icon: 'utensils', count: 280 },
+  { name: 'Housekeeping Associate', icon: 'sparkles', count: 210 },
+  { name: 'Front Desk Executive', icon: 'bell-ring', count: 160 }
 ];
 
 export const initialSchoolCategories: Category[] = [
-  { name: 'Primary Teacher', icon: '👩‍🏫', count: 290 },
-  { name: 'High School Teacher', icon: '👩‍🏫', count: 240 },
-  { name: 'Librarian Assistant', icon: '📚', count: 110 },
-  { name: 'Peon / Office Boy', icon: '📦', count: 90 }
+  { name: 'Primary Teacher', icon: 'book-open', count: 290 },
+  { name: 'High School Teacher', icon: 'book-open', count: 240 },
+  { name: 'Librarian Assistant', icon: 'book-text', count: 110 },
+  { name: 'Peon / Office Boy', icon: 'box', count: 90 }
 ];
 
 const pickShift = () => {
@@ -136,7 +137,7 @@ const generateSeedJobs = (): Job[] => {
       applicants: [
         { userId: 'u1', name: 'Rahul Sharma', email: 'worker@demo.com', appliedAt: daysAgo(0.5), status: 'reviewed' }
       ],
-      views: 120, employerId: 'emp1', companyColor: '#1E3A8A', companyLogo: 'T',
+      views: 120, employerId: 'emp1', companyColor: '#1E3A8A', companyLogo: getCompanyLogo('Tata AutoComp Systems', '#1E3A8A'),
       trade: 'Welder', midcZone: 'Chakan MIDC', shiftDetails: 'Rotational (Shift A / B)',
       overtime: true, canteen: true, busFacility: true, accommodation: true, joiningBonus: true
     },
@@ -149,7 +150,7 @@ const generateSeedJobs = (): Job[] => {
       requirements: ['ITI Machinist / Turner trade', '1+ years CNC operation experience'],
       skills: ['CNC Operation', 'Vernier Calipers', 'Micrometer'],
       perks: ['Subsidized Canteen', 'Bus facility available', 'OT Double Rate'],
-      featured: true, postedAt: daysAgo(2), status: 'active', applicants: [], views: 240, employerId: 'emp1', companyColor: '#B45309', companyLogo: 'B',
+      featured: true, postedAt: daysAgo(2), status: 'active', applicants: [], views: 240, employerId: 'emp1', companyColor: '#B45309', companyLogo: getCompanyLogo('Bharat Forge Ltd', '#B45309'),
       trade: 'CNC Operator', midcZone: 'Bhosari MIDC', shiftDetails: 'Rotational (Shift A / B / C)',
       overtime: true, canteen: true, busFacility: true, accommodation: false, attendanceBonus: true
     }
@@ -239,7 +240,7 @@ const generateSeedJobs = (): Job[] => {
       views: Math.floor(Math.random() * 150) + 12,
       employerId: i % 2 === 0 ? 'emp1' : 'emp2',
       companyColor: company.color,
-      companyLogo: company.name[0],
+      companyLogo: getCompanyLogo(company.name, company.color),
       trade,
       midcZone,
       shiftDetails: pickShift(),
@@ -267,35 +268,120 @@ export const initialUsers: User[] = [
     id: 'emp1', name: 'Ramesh Sawant', email: 'factory@demo.com', password: 'demo123',
     role: 'employer', companyName: 'Tata AutoComp Systems', phone: '9876543210',
     createdAt: daysAgo(60), profileComplete: true, gstNumber: '27AAAAA1111A1Z1',
-    location: 'Chakan MIDC'
+    location: 'Chakan MIDC',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'emp2', name: 'HR Manager', email: 'hr@demo.com', password: 'demo123',
     role: 'employer', companyName: 'Bharat Forge Ltd', phone: '9876543211',
     createdAt: daysAgo(45), profileComplete: true, gstNumber: '27BBBBB2222B2Z2',
-    location: 'Bhosari MIDC'
+    location: 'Bhosari MIDC',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80'
   },
   {
-    id: 'u1', name: 'Rahul Sharma', email: 'worker@demo.com', password: 'demo123',
-    role: 'candidate', phone: '9876543212',
+    id: 'u1', name: 'Rajesh Kumar Sharma', email: 'rajesh.sharma@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011001',
     createdAt: daysAgo(30), profileComplete: true,
-    headline: 'Certified ITI Welder',
-    location: 'Chakan MIDC, Pune',
-    experience: [
-      { title: 'Assistant Welder', company: 'Sigma Electric', duration: '2023 - 2025', description: 'Assisted in structural sheet metal TIG welding.' }
-    ],
-    education: [
-      { degree: 'ITI Welder Trade', institution: 'Government ITI Pune', year: '2021 - 2023' }
-    ],
-    skills: ['MIG Welding', 'TIG Welding', 'Fitting', 'Shop Floor Safety'],
-    resume: null,
-    savedJobs: ['j2', 'j4'],
-    appliedJobs: ['j1'],
-    // Industrial profile fields
-    aadhaarVerified: true,
-    tradeSpecialization: 'Welder',
-    preferredShift: 'Rotational (Shift A / B)',
-    requiresBus: true,
-    requiresAccommodation: false
+    headline: 'Senior CNC Operator & Machinist (ITI Certified)',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    experience: [{ title: 'CNC Operator', company: 'Bajaj Auto Ltd', duration: '2020 - Present', description: 'Operated CNC VMC machines.' }],
+    education: [{ degree: 'ITI Machinist', institution: 'Govt ITI Sambhajinagar', year: '2018 - 2020' }],
+    skills: ['CNC Operating', 'VMC', 'Fanuc', 'Shop Safety'],
+    aadhaarVerified: true, tradeSpecialization: 'CNC Machinist'
+  },
+  {
+    id: 'u2', name: 'Amitabh Verma', email: 'amitabh.verma@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011002',
+    createdAt: daysAgo(25), profileComplete: true,
+    headline: 'VMC Programmer & CAD/CAM Designer',
+    location: 'Chikalthana MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+    experience: [{ title: 'VMC Programmer', company: 'Wockhardt Ltd', duration: '2021 - Present', description: 'VMC Programming & CAD design.' }],
+    education: [{ degree: 'Diploma Mech', institution: 'Government Polytechnic', year: '2018 - 2021' }],
+    skills: ['VMC Programming', 'AutoCAD', 'Mastercam'],
+    aadhaarVerified: true, tradeSpecialization: 'VMC Programmer'
+  },
+  {
+    id: 'u3', name: 'Sunil Deshmukh', email: 'sunil.deshmukh@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011003',
+    createdAt: daysAgo(20), profileComplete: true,
+    headline: 'Certified Industrial Electrician & PLC Technician',
+    location: 'Shendra MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80',
+    experience: [{ title: 'Electrician', company: 'Siemens Limited', duration: '2019 - Present', description: 'HT/LT panel wiring & PLC.' }],
+    education: [{ degree: 'ITI Electrician', institution: 'Govt ITI Sambhajinagar', year: '2017 - 2019' }],
+    skills: ['PLC Maintenance', 'Siemens TIA', 'Wiring'],
+    aadhaarVerified: true, tradeSpecialization: 'Industrial Electrician'
+  },
+  {
+    id: 'u4', name: 'Vikram Kulkarni', email: 'vikram.kulkarni@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011004',
+    createdAt: daysAgo(18), profileComplete: true,
+    headline: 'Quality Control Inspector & CMM Specialist',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    skills: ['CMM Inspection', 'IATF 16949', 'Metrology'],
+    aadhaarVerified: true, tradeSpecialization: 'Quality Assurance'
+  },
+  {
+    id: 'u5', name: 'Pradeep Shinde', email: 'pradeep.shinde@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011005',
+    createdAt: daysAgo(15), profileComplete: true,
+    headline: 'High-Pressure Heavy MIG & TIG Welder',
+    location: 'Paithan MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
+    skills: ['MIG Welding', 'TIG Welding', 'Fabrication'],
+    aadhaarVerified: true, tradeSpecialization: 'MIG/TIG Welder'
+  },
+  {
+    id: 'u6', name: 'Sachin Joshi', email: 'sachin.joshi@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011006',
+    createdAt: daysAgo(12), profileComplete: true,
+    headline: 'Warehouse & Inventory Store Supervisor (SAP MM)',
+    location: 'Chikalthana MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    skills: ['SAP MM', 'Inventory Control', 'Dispatch'],
+    aadhaarVerified: true, tradeSpecialization: 'Store Keeper'
+  },
+  {
+    id: 'u7', name: 'Anil Gavhane', email: 'anil.gavhane@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011007',
+    createdAt: daysAgo(10), profileComplete: true,
+    headline: 'Senior Hydraulics & Pneumatics Maintenance Engineer',
+    location: 'Railway Station MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
+    skills: ['Hydraulics', 'Pneumatics', 'Maintenance'],
+    aadhaarVerified: true, tradeSpecialization: 'Plant Maintenance'
+  },
+  {
+    id: 'u8', name: 'Manoj Jadhav', email: 'manoj.jadhav@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011008',
+    createdAt: daysAgo(8), profileComplete: true,
+    headline: 'Certified Heavy Material Handling & Forklift Operator',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80',
+    skills: ['Forklift Operating', 'Material Loading', 'Safety Checklists'],
+    aadhaarVerified: true, tradeSpecialization: 'Forklift Driver'
+  },
+  {
+    id: 'u9', name: 'Sanjay Pawar', email: 'sanjay.pawar@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011009',
+    createdAt: daysAgo(5), profileComplete: true,
+    headline: 'Shop Floor Assembly Line Production Supervisor',
+    location: 'Shendra MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+    skills: ['Production Planning', '5S & Kaizen', 'Shift Management'],
+    aadhaarVerified: true, tradeSpecialization: 'Assembly Line Supervisor'
+  },
+  {
+    id: 'u10', name: 'Vijay Kale', email: 'vijay.kale@demo.com', password: 'demo123',
+    role: 'candidate', phone: '9822011010',
+    createdAt: daysAgo(2), profileComplete: true,
+    headline: 'Tool & Die Maker Fitter Specialist',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    profilePictureUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
+    skills: ['Die Fitting', 'Tool Room', 'Grinding Machine'],
+    aadhaarVerified: true, tradeSpecialization: 'Tool & Die Fitter'
   }
 ];

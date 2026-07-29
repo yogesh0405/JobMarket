@@ -6,7 +6,6 @@ import { EmailService } from '../../auth/services/EmailService';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
-
 import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
 const isEmployerRole = (r?: string) => {
@@ -38,6 +37,114 @@ export class JobController {
   static async getJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const data = await JobRepository.getJobs();
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // --- MAP & GEOLOCATION CONTROLLER ENDPOINTS ---
+
+  /**
+   * GET /api/jobs/map
+   * Returns jobs bounded by north, south, east, west parameters + search filters
+   */
+  static async getMapJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const {
+        north,
+        south,
+        east,
+        west,
+        search,
+        workMode,
+        jobType,
+        salaryMin,
+        salaryMax,
+        minExperience,
+        maxExperience,
+        industry,
+        skills,
+        featured,
+        urgent,
+        limit
+      } = req.query;
+
+      const params = {
+        north: north ? parseFloat(north as string) : undefined,
+        south: south ? parseFloat(south as string) : undefined,
+        east: east ? parseFloat(east as string) : undefined,
+        west: west ? parseFloat(west as string) : undefined,
+        search: search ? (search as string) : undefined,
+        workMode: workMode ? (workMode as string) : undefined,
+        jobType: jobType ? (jobType as string) : undefined,
+        salaryMin: salaryMin ? parseInt(salaryMin as string, 10) : undefined,
+        salaryMax: salaryMax ? parseInt(salaryMax as string, 10) : undefined,
+        minExperience: minExperience ? parseInt(minExperience as string, 10) : undefined,
+        maxExperience: maxExperience ? parseInt(maxExperience as string, 10) : undefined,
+        industry: industry ? (industry as string) : undefined,
+        skills: skills ? (skills as string) : undefined,
+        featured: featured === 'true',
+        urgent: urgent === 'true',
+        limit: limit ? parseInt(limit as string, 10) : 500
+      };
+
+      const data = await JobRepository.getMapJobs(params);
+      res.status(200).json({ success: true, count: data.length, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/jobs/nearby
+   * Returns jobs within radius (km) of given latitude and longitude
+   */
+  static async getNearbyJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { latitude, longitude, radius, search, workMode, limit } = req.query;
+
+      if (!latitude || !longitude) {
+        res.status(400).json({ success: false, message: 'Latitude and longitude parameters are required' });
+        return;
+      }
+
+      const params = {
+        latitude: parseFloat(latitude as string),
+        longitude: parseFloat(longitude as string),
+        radius: radius ? parseFloat(radius as string) : 20,
+        search: search ? (search as string) : undefined,
+        workMode: workMode ? (workMode as string) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : 100
+      };
+
+      const data = await JobRepository.getNearbyJobs(params);
+      res.status(200).json({ success: true, count: data.length, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/jobs/geocode
+   * Triggers manual or batch geocoding for pending/un-geocoded jobs
+   */
+  static async triggerGeocoding(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await JobRepository.geocodePendingJobs();
+      res.status(200).json({ success: true, message: 'Batch geocoding completed', data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/map-analytics
+   * Admin portal analytics for job geographical distribution
+   */
+  static async getAdminMapAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await JobRepository.getAdminMapAnalytics();
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -78,7 +185,6 @@ export class JobController {
         return;
       }
 
-      // Fetch employer to get their company name
       const user = await UserRepository.findById(employerId);
       if (!user) {
         res.status(404).json({ success: false, message: 'Employer not found' });
@@ -88,7 +194,6 @@ export class JobController {
       const companyName = user.company_name || user.name;
       const jobData = { ...req.body };
 
-      // Handle logo upload
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
         const timestamp = Date.now();
         const publicId = `job_logo_${employerId}_${timestamp}`;
@@ -127,18 +232,16 @@ export class JobController {
 
       const jobData = { ...req.body };
 
-      // Handle logo upload & cleanup
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
-        // Delete old logo if exists
         if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {
           const oldPublicId = CloudinaryUtil.extractPublicId(existingJob.companyLogo);
           if (oldPublicId) {
-            await CloudinaryUtil.deleteImage(oldPublicId).catch(err => {
+            await CloudinaryUtil.deleteImage(oldPublicId).catch((err) => {
               console.error('Failed to delete old job logo:', err);
             });
           }
         }
-        
+
         const timestamp = Date.now();
         const publicId = `job_logo_${employerId}_${timestamp}`;
         const cloudinaryUrl = await CloudinaryUtil.uploadImage(jobData.companyLogo, 'job_logos', publicId);
@@ -174,11 +277,10 @@ export class JobController {
         return;
       }
 
-      // Cleanup logo asset
       if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {
         const publicId = CloudinaryUtil.extractPublicId(existingJob.companyLogo);
         if (publicId) {
-          await CloudinaryUtil.deleteImage(publicId).catch(err => {
+          await CloudinaryUtil.deleteImage(publicId).catch((err) => {
             console.error('Failed to delete job logo during deletion:', err);
           });
         }
@@ -210,7 +312,6 @@ export class JobController {
 
       const data = await JobRepository.applyToJob(id, userId);
 
-      // Dispatch in-app notification & email to employer in background
       (async () => {
         try {
           const [candidate, employer] = await Promise.all([
@@ -219,7 +320,6 @@ export class JobController {
           ]);
 
           if (candidate && employer) {
-            // 1. In-app notification for employer deep-linked to candidate page
             await SupportRepository.createNotification({
               user_id: employer.id,
               title: `New Candidate Application`,
@@ -227,7 +327,6 @@ export class JobController {
               link: `/job/${id}/applicants?applicantId=${candidate.id}`
             });
 
-            // 1b. Header Bell Notification Table Entry
             await AdvertisementRepository.createNotification(
               employer.id,
               `New Candidate Application`,
@@ -236,7 +335,6 @@ export class JobController {
               `/job/${id}/applicants?applicantId=${candidate.id}`
             );
 
-            // 2. Email notification for employer
             const resumeUrl = candidate.resume && (candidate.resume as any).url ? (candidate.resume as any).url : null;
             await EmailService.sendJobApplicationEmail(
               employer.email,
@@ -300,7 +398,6 @@ export class JobController {
 
       const data = await JobRepository.updateApplicantStatus(id, userId, employerId, status);
 
-      // Dispatch in-app and email notifications to candidate on status update
       (async () => {
         try {
           const [candidate, employer, job] = await Promise.all([
@@ -311,7 +408,6 @@ export class JobController {
 
           if (candidate && job) {
             const companyName = employer?.company_name || employer?.name || job.company;
-            // 1. In-app notification
             await SupportRepository.createNotification({
               user_id: userId,
               title: `Application Status Updated: ${status.toUpperCase()}`,
@@ -319,7 +415,6 @@ export class JobController {
               link: `/dashboard?tab=applied`
             });
 
-            // 1b. Header Bell Notification Table Entry
             await AdvertisementRepository.createNotification(
               userId,
               `Application Status Updated: ${status.toUpperCase()}`,
@@ -328,7 +423,6 @@ export class JobController {
               `/dashboard?tab=applied`
             );
 
-            // 2. Email notification
             await EmailService.sendApplicationStatusUpdateEmail(
               candidate.email,
               candidate.name,
@@ -391,7 +485,6 @@ export class JobController {
       if (candidate && employer) {
         (async () => {
           try {
-            // 1. In-app notification for candidate with interview details link
             await SupportRepository.createNotification({
               user_id: userId,
               title: `Interview Scheduled: ${job.title}`,
@@ -399,7 +492,6 @@ export class JobController {
               link: `/dashboard?tab=applied`
             });
 
-            // 1b. Header Bell Notification Table Entry
             await AdvertisementRepository.createNotification(
               userId,
               `Interview Scheduled: ${job.title}`,
@@ -408,7 +500,6 @@ export class JobController {
               `/dashboard?tab=applied`
             );
 
-            // 2. Email notification
             await EmailService.sendInterviewScheduledEmail(
               candidate.email,
               candidate.name,

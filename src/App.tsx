@@ -6,6 +6,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
 import { VerifyOTPPage } from './features/auth/VerifyOTPPage';
 import { JobSearchPage } from './features/jobs/JobSearchPage';
+import { JobMapPage } from './features/jobs/JobMapPage';
 import { JobDetailPage } from './features/jobs/JobDetailPage';
 import { JobPostPage } from './features/jobs/JobPostPage';
 import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
@@ -34,6 +35,7 @@ import { SupportManagementPage } from './modules/admin/pages/SupportManagementPa
 import { AdminAdvertisementPage } from './modules/admin/pages/AdminAdvertisementPage';
 import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
 import { RoleTabsManagementPage } from './modules/admin/pages/RoleTabsManagementPage';
+import { AdminMapAnalyticsPage } from './modules/admin/pages/AdminMapAnalyticsPage';
 
 export const App: React.FC = () => {
   const { syncUser } = useAuth();
@@ -84,12 +86,14 @@ export const App: React.FC = () => {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="support" element={<SupportManagementPage />} />
         <Route path="broadcast" element={<BroadcastPage />} />
+        <Route path="map-analytics" element={<AdminMapAnalyticsPage />} />
       </Route>
 
       {/* 3. Public Pages (WITH Navbar/Footer Layout) */}
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/jobs" element={<JobSearchPage />} />
+        <Route path="/jobs/map" element={<JobMapPage />} />
         <Route path="/job/:id" element={<JobDetailPage />} />
         <Route path="/post-job" element={<JobPostPage />} />
         <Route path="/edit-job/:id" element={<JobPostPage />} />

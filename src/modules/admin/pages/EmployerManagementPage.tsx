@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { getInitials } from '../../../utils/helpers';
+import { CompanyDefaultLogo } from '../../../components/company/CompanyDefaultLogo';
+
 
 export const EmployerManagementPage: React.FC = () => {
   const [employers, setEmployers] = useState<any[]>([]);
@@ -128,13 +130,12 @@ export const EmployerManagementPage: React.FC = () => {
                 {employers.map((emp) => (
                   <tr key={emp.id}>
                     <td>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#8b5cf6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', overflow: 'hidden' }}>
-                        {emp.profile_picture_url ? (
-                          <img src={emp.profile_picture_url} alt={emp.company_name || emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          getInitials(emp.company_name || emp.name)
-                        )}
-                      </div>
+                      <CompanyDefaultLogo
+                        logoUrl={emp.profile_picture_url || emp.company_logo}
+                        companyName={emp.company_name || emp.name}
+                        size={32}
+                        borderRadius="50%"
+                      />
                     </td>
                     <td><strong>{emp.company_name || '—'}</strong></td>
                     <td>{emp.name} ({emp.email})</td>

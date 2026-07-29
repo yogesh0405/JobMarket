@@ -112,12 +112,12 @@ export const NavbarNotificationBell: React.FC = () => {
 
     if (!currentUser) return;
 
-    // 1. Smart background poll every 30s (only when browser tab is active/visible)
+    // 1. Smart background poll every 60s (only when browser tab is active/visible)
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchRealNotifications(false);
       }
-    }, 30000);
+    }, 60000);
 
     // 2. Refresh instantly when tab/window receives focus or becomes visible
     const handleFocusOrVisibility = () => {
