@@ -1359,6 +1359,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 background: '#344BFD',
                 color: '#ffffff',
                 fontWeight: '700',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 opacity: isSubmitting ? 0.85 : 1,
                 boxSizing: 'border-box'
