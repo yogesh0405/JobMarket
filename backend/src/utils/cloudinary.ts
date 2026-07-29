@@ -20,6 +20,34 @@ const { apiKey, apiSecret, cloudName } = parseCloudinaryUrl();
 
 export class CloudinaryUtil {
   /**
+   * Generates a signed upload signature for direct Cloudinary uploads from the browser.
+   */
+  static getUploadSignature(folder: string, publicId?: string) {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const params: Record<string, any> = {
+      folder,
+      timestamp,
+    };
+
+    if (publicId) {
+      params.public_id = publicId;
+    }
+
+    const sortedKeys = Object.keys(params).sort();
+    const stringToSign = sortedKeys.map((key) => `${key}=${params[key]}`).join('&') + apiSecret;
+    const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
+
+    return {
+      signature,
+      timestamp,
+      apiKey,
+      cloudName,
+      folder,
+      publicId,
+    };
+  }
+
+  /**
    * Uploads a base64 encoded image to Cloudinary.
    * @param base64Image Base64 data URL (e.g., data:image/webp;base64,...)
    * @param folder The folder path on Cloudinary (e.g., 'profiles')

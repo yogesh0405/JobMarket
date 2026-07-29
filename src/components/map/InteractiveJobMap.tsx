@@ -8,6 +8,7 @@ import { Maximize2, Minimize2, Navigation, RotateCcw } from 'lucide-react';
 import { JobPopupCard } from './JobPopupCard';
 import { createRoot } from 'react-dom/client';
 import { getCompanyLogo } from '../../utils/companyLogos';
+import { BrowserRouter } from 'react-router-dom';
 
 
 interface InteractiveJobMapProps {
@@ -164,11 +165,13 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
       const popupDiv = document.createElement('div');
       const root = createRoot(popupDiv);
       root.render(
-        <JobPopupCard
-          job={job}
-          onSaveJob={onSaveJob}
-          isSaved={isSaved}
-        />
+        <BrowserRouter>
+          <JobPopupCard
+            job={job}
+            onSaveJob={onSaveJob}
+            isSaved={isSaved}
+          />
+        </BrowserRouter>
       );
 
       marker.bindPopup(popupDiv, { maxWidth: 300 });

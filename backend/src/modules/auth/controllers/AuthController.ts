@@ -196,6 +196,62 @@ export class AuthController {
     }
   }
 
+  static async getResumeSignature(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const publicId = `resume_${userId}_${Date.now()}`;
+      const sigData = CloudinaryUtil.getUploadSignature('resumes', publicId);
+      res.status(200).json({ success: true, data: sigData });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async uploadResume(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const { name, size, type, url, base64 } = req.body;
+
+      let finalUrl = url;
+      if (!finalUrl && base64 && base64.startsWith('data:')) {
+        const publicId = `resume_${userId}_${Date.now()}`;
+        finalUrl = await CloudinaryUtil.uploadFile(base64, 'resumes', publicId);
+      }
+
+      if (!finalUrl) {
+        return res.status(400).json({ error: 'Resume URL or file data is required' });
+      }
+
+      const currentUser = await UserRepository.findById(userId);
+      if (currentUser?.resume?.url && currentUser.resume.url !== finalUrl) {
+        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.resume.url);
+        if (oldPublicId) {
+          try {
+            await CloudinaryUtil.deleteFile(oldPublicId);
+          } catch (err) {
+            console.error('Failed to delete old resume file:', err);
+          }
+        }
+      }
+
+      const resumeData = {
+        name: name || 'Resume',
+        size: size || '1.0 MB',
+        type: type || 'application/pdf',
+        uploadedAt: new Date().toISOString(),
+        url: finalUrl
+      };
+
+      const updatedUser = await UserRepository.updateProfile(userId, { resume: resumeData });
+      res.status(200).json({
+        success: true,
+        data: sanitizeUserForResponse(updatedUser)
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async uploadProfilePicture(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;

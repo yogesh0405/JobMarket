@@ -3,16 +3,18 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
+import { uploadResumeFast } from '../../utils/uploadToCloudinary';
 
 export const ResumePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, updateUser, deleteResume } = useAuth();
+  const { currentUser, syncUser, deleteResume } = useAuth();
   const { showToast } = useToast();
 
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -198,40 +200,27 @@ export const ResumePage: React.FC = () => {
     }
 
     setIsUploading(true);
-    const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
-    
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64Data = reader.result as string;
-      
-      const result = await updateUser({
-        resume: {
-          name: selectedFile.name,
-          size: `${sizeMB} MB`,
-          type: selectedFile.type,
-          uploadedAt: new Date().toISOString(),
-          url: base64Data
-        }
-      } as any);
+    setUploadProgress(5);
 
+    try {
+      await uploadResumeFast(selectedFile, (percent) => {
+        setUploadProgress(percent);
+      });
+
+      await syncUser();
+      showToast('Resume uploaded successfully! 🎉', 'success');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      showToast(error.message || 'Failed to upload resume', 'error');
+    } finally {
       setIsUploading(false);
-      if (result.success) {
-        showToast('Resume uploaded successfully! 🎉', 'success');
-        navigate('/dashboard');
-      } else {
-        showToast(result.error || 'Failed to upload resume', 'error');
-      }
-    };
-
-    reader.onerror = () => {
-      setIsUploading(false);
-      showToast('Failed to read file', 'error');
-    };
-
-    reader.readAsDataURL(selectedFile);
+      setUploadProgress(0);
+    }
   };
 
   const sizeMB = selectedFile ? (selectedFile.size / (1024 * 1024)).toFixed(2) : '0';
+  const isImageFile = selectedFile ? selectedFile.type.startsWith('image/') : false;
 
   return (
     <div className="resume-page">
@@ -263,23 +252,55 @@ export const ResumePage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="file-preview">
-            <div className="file-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
+          <div className="file-preview-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="file-preview">
+              <div className="file-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+              <div className="file-info">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h4 style={{ margin: 0 }}>{selectedFile.name}</h4>
+                  {isImageFile && (
+                    <span style={{ fontSize: '10px', background: '#e0e7ff', color: '#3730a3', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      Auto-Compressed
+                    </span>
+                  )}
+                </div>
+                <p style={{ margin: '2px 0 0 0' }}>{sizeMB} MB</p>
+              </div>
+              {!isUploading && (
+                <button className="file-remove" onClick={removeFile}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
             </div>
-            <div className="file-info">
-              <h4>{selectedFile.name}</h4>
-              <p>{sizeMB} MB</p>
-            </div>
-            <button className="file-remove" onClick={removeFile}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
+
+            {/* Live Progress Bar when Uploading */}
+            {isUploading && (
+              <div style={{ marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  <span>{uploadProgress < 20 ? 'Compressing & Preparing...' : 'Uploading Resume...'}</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${uploadProgress}%`,
+                      background: 'linear-gradient(90deg, #344BFD 0%, #6366f1 100%)',
+                      borderRadius: '4px',
+                      transition: 'width 0.2s ease-out'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -305,7 +326,7 @@ export const ResumePage: React.FC = () => {
                   <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
                   <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />
                 </svg>
-                Uploading...
+                Uploading ({uploadProgress}%)...
               </span>
             ) : (
               'Submit'
