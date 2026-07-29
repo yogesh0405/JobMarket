@@ -523,14 +523,14 @@
 .leaflet-popup-content-wrapper {
   border-radius: 14px !important;
   padding: 0 !important;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
   border: 1px solid rgba(226, 232, 240, 0.5) !important;
 }
 
 .leaflet-popup-content {
   margin: 0 !important;
-  width: 280px !important;
+  width: 320px !important;
 }
 
 .leaflet-popup-tip {
@@ -538,7 +538,7 @@
 }
 
 .map-popup-card {
-  padding: 16px 16px 20px 16px;
+  padding: 14px 14px 18px 14px;
   background: #ffffff;
   box-sizing: border-box;
   width: 100%;
@@ -597,7 +597,7 @@
 .map-popup-btn {
   flex: 1;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   text-align: center;

@@ -190,7 +190,7 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
         </BrowserRouter>
       );
 
-      marker.bindPopup(popupDiv, { maxWidth: 300 });
+      marker.bindPopup(popupDiv, { maxWidth: 340 });
 
       marker.on('click', () => {
         onSelectJobRef.current(job);

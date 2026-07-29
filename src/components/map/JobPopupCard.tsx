@@ -96,7 +96,7 @@ export const JobPopupCard: React.FC<JobPopupCardProps> = ({ job, onSaveJob, isSa
             fontWeight: '700',
             fontSize: '12px',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             padding: '7px 12px',
             cursor: 'pointer',
             display: 'inline-flex',
