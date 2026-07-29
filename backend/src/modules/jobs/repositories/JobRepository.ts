@@ -255,7 +255,12 @@ export class JobRepository {
     values.push(limit);
 
     const query = `
-      SELECT * FROM jobs
+      SELECT 
+        id, employer_id, company, company_logo, company_color, title, industry, location,
+        latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy,
+        job_type, work_mode, min_experience, max_experience, salary_min, salary_max,
+        openings, filled_openings, featured, status, posted_at, overtime, trade, midc_zone
+      FROM jobs
       WHERE ${conditions.join(' AND ')}
       ORDER BY featured DESC, posted_at DESC
       LIMIT $${paramIndex}
@@ -299,15 +304,20 @@ export class JobRepository {
     // Haversine Distance calculation in Kilometers
     const query = `
       SELECT * FROM (
-        SELECT *, (
-          6371 * acos(
-            least(1.0, greatest(-1.0, 
-              cos(radians($1)) * cos(radians(latitude)) * 
-              cos(radians(longitude) - radians($2)) + 
-              sin(radians($1)) * sin(radians(latitude))
-            ))
-          )
-        ) AS distance_km
+        SELECT 
+          id, employer_id, company, company_logo, company_color, title, industry, location,
+          latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy,
+          job_type, work_mode, min_experience, max_experience, salary_min, salary_max,
+          openings, filled_openings, featured, status, posted_at, overtime, trade, midc_zone,
+          (
+            6371 * acos(
+              least(1.0, greatest(-1.0, 
+                cos(radians($1)) * cos(radians(latitude)) * 
+                cos(radians(longitude) - radians($2)) + 
+                sin(radians($1)) * sin(radians(latitude))
+              ))
+            )
+          ) AS distance_km
         FROM jobs
         WHERE status = 'APPROVED' 
           AND latitude IS NOT NULL 
