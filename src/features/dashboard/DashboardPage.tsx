@@ -699,10 +699,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'overview':
       return (
         <>
-          <div className="dashboard-welcome" style={{ color: '#ffffff' }}>
-            <h2 style={{ color: '#ffffff' }}>Welcome back, {currentUser.name.split(' ')[0]}! 👋</h2>
-            <p style={{ color: 'rgba(255, 255, 255, 0.92)' }}>Your Aadhaar is verified. Review factory openings near Chakan MIDC.</p>
-          </div>
+
 
           <div className="dashboard-stats">
             <div className="stat-card">
@@ -1441,10 +1438,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'overview':
       return (
         <>
-          <div className="dashboard-welcome" style={{ color: '#ffffff' }}>
-            <h2 style={{ color: '#ffffff' }}>Welcome back, {currentUser.name.split(' ')[0]}!</h2>
-            <p style={{ color: 'rgba(255, 255, 255, 0.92)' }}>GST Verified: {currentUser.gstNumber}. Manage active trade postings below.</p>
-          </div>
+
 
           <div className="dashboard-stats">
             <div className="stat-card">

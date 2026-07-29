@@ -10,6 +10,7 @@ import { Job, JobType, WorkMode } from '../../types';
 import { parseJobPrompt } from '../../utils/aiParser';
 import { AdminApiService } from '../../modules/admin/services/adminApi';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+import { extractCoordinatesFromMapInput, resolveShortMapUrl } from '../../utils/mapUrlParser';
 
 
 interface JobPostPageProps {
@@ -190,8 +191,52 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [customIndustryIcon, setCustomIndustryIcon] = useState('💼');
   const [trade, setTrade] = useState('');
   const [customTrade, setCustomTrade] = useState('');
+  const [isMidcLocation, setIsMidcLocation] = useState(false);
   const [midcZone, setMidcZone] = useState('');
   const [shiftDetails, setShiftDetails] = useState('');
+
+  // Map & Location Link states
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isParsingMapUrl, setIsParsingMapUrl] = useState(false);
+  const [mapUrlStatusMsg, setMapUrlStatusMsg] = useState('');
+
+  const handleGoogleMapsUrlChange = async (inputUrl: string) => {
+    setGoogleMapsUrl(inputUrl);
+    if (!inputUrl.trim()) {
+      setLatitude(null);
+      setLongitude(null);
+      setMapUrlStatusMsg('');
+      return;
+    }
+
+    // 1. Synchronous client-side extraction for standard Google Maps URL / lat,lng formats
+    const coords = extractCoordinatesFromMapInput(inputUrl);
+    if (coords) {
+      setLatitude(coords.latitude);
+      setLongitude(coords.longitude);
+      setMapUrlStatusMsg(`✅ Pinpoint coordinates detected: ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)} (Job will be displayed on Map)`);
+      return;
+    }
+
+    // 2. If short URL or redirect link, resolve via backend
+    if (inputUrl.includes('http')) {
+      setIsParsingMapUrl(true);
+      setMapUrlStatusMsg('⌛ Resolving Google Maps link & extracting coordinates...');
+      const resolved = await resolveShortMapUrl(inputUrl);
+      setIsParsingMapUrl(false);
+      if (resolved) {
+        setLatitude(resolved.latitude);
+        setLongitude(resolved.longitude);
+        setMapUrlStatusMsg(`✅ Pinpoint coordinates extracted: ${resolved.latitude.toFixed(4)}, ${resolved.longitude.toFixed(4)} (Job will be displayed on Map)`);
+      } else {
+        setMapUrlStatusMsg('⚠️ Unable to extract pinpoint coordinates from this link. Default city location will be used.');
+      }
+    } else {
+      setMapUrlStatusMsg('⚠️ Invalid Google Maps link format.');
+    }
+  };
 
   // Shift Type & Timing Selection states
   const [shiftCategory, setShiftCategory] = useState<'Day Shift' | 'Night Shift' | 'Rotational Shift' | 'Custom Shift'>('Day Shift');
@@ -284,6 +329,13 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         setCustomTrade('');
       }
       setMidcZone(existingJob.midcZone || '');
+      setIsMidcLocation(!!existingJob.midcZone);
+      setGoogleMapsUrl((existingJob as any).googleMapsUrl || (existingJob as any).google_maps_url || '');
+      setLatitude(existingJob.latitude || null);
+      setLongitude(existingJob.longitude || null);
+      if (existingJob.latitude && existingJob.longitude) {
+        setMapUrlStatusMsg(`✅ Pinpoint coordinates saved: ${existingJob.latitude.toFixed(4)}, ${existingJob.longitude.toFixed(4)}`);
+      }
       setShiftDetails(existingJob.shiftDetails || '');
       setOvertime(!!existingJob.overtime);
       setAccommodation(!!existingJob.accommodation);
@@ -339,7 +391,23 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const industriesList = ['IT & Software', 'Marketing', 'Finance', 'Healthcare', 'Education',
     'Design & Creative', 'Logistics', 'Construction', 'Automotive', 'FMCG', 'Agriculture', 'HR & Admin', 'Manufacturing', 'Mechanical & Assembly', 'Electricals'];
 
-  const midcList = ['Chakan MIDC', 'Bhosari MIDC', 'Ranjangaon MIDC', 'Hinjawadi MIDC', 'Rabale MIDC', 'Taloja MIDC', 'Waluj MIDC', 'Butibori MIDC'];
+  const midcList = [
+    'Waluj MIDC (Chhatrapati Sambhajinagar)',
+    'Chikalthana MIDC (Chhatrapati Sambhajinagar)',
+    'Paithan MIDC (Chhatrapati Sambhajinagar)',
+    'Shendra DMIC / MIDC (Chhatrapati Sambhajinagar)',
+    'Bidkin DMIC / MIDC (Chhatrapati Sambhajinagar)',
+    'Railway Station Industrial Area (Chhatrapati Sambhajinagar)',
+    'Chakan MIDC (Pune)',
+    'Bhosari MIDC (Pune)',
+    'Ranjangaon MIDC (Pune)',
+    'Hinjawadi MIDC (Pune)',
+    'Rabale MIDC (Navi Mumbai)',
+    'Taloja MIDC (Navi Mumbai)',
+    'Tarapur MIDC (Palghar)',
+    'Butibori MIDC (Nagpur)',
+    'Other MIDC Zone...'
+  ];
   const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
 
   const expOptions = Array.from({ length: 11 }, (_, i) => i);
@@ -385,7 +453,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       skills: skills.split(',').map(s => s.trim()).filter(Boolean),
       // Industrial specific
       trade: trade === 'Other' ? customTrade : trade,
-      midcZone,
+      midcZone: isMidcLocation ? midcZone : '',
+      googleMapsUrl: googleMapsUrl || undefined,
+      latitude: latitude || undefined,
+      longitude: longitude || undefined,
       shiftDetails,
       overtime,
       accommodation,
@@ -602,15 +673,34 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">MIDC Zone</label>
-                  <select
-                    className="form-select"
-                    value={midcZone}
-                    onChange={(e) => setMidcZone(e.target.value)}
-                  >
-                    <option value="">Select MIDC Zone</option>
-                    {midcList.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <input
+                      type="checkbox"
+                      id="isMidcCheckbox"
+                      checked={isMidcLocation}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsMidcLocation(checked);
+                        if (!checked) setMidcZone('');
+                      }}
+                      style={{ width: '16px', height: '16px', accentColor: '#344BFD', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="isMidcCheckbox" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>
+                      Location belongs to an MIDC Industrial Zone (Optional)
+                    </label>
+                  </div>
+                  {isMidcLocation ? (
+                    <select
+                      className="form-select"
+                      value={midcZone}
+                      onChange={(e) => setMidcZone(e.target.value)}
+                    >
+                      <option value="">Select MIDC Zone in Chhatrapati Sambhajinagar / Maharashtra...</option>
+                      {midcList.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Check the box above if factory/plant is inside an MIDC zone.</p>
+                  )}
                 </div>
               </div>
 
@@ -773,11 +863,55 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Pune, Mumbai"
+                    placeholder="e.g. Chhatrapati Sambhajinagar, Pune, Mumbai"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     required
                   />
+                </div>
+              </div>
+
+              {/* Google Maps Location Link Input Section */}
+              <div className="form-row" style={{ marginTop: '12px', marginBottom: '20px' }}>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label" style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#344BFD" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Google Maps Location Link (For Interactive Job Map)
+                  </label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="Paste Google Maps link e.g. https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
+                    value={googleMapsUrl}
+                    onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
+                    style={{
+                      borderColor: latitude && longitude ? '#10b981' : isParsingMapUrl ? '#344BFD' : undefined,
+                      boxShadow: latitude && longitude ? '0 0 0 2px rgba(16, 185, 129, 0.15)' : undefined
+                    }}
+                  />
+                  <p style={{ marginTop: '6px', fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    📍 To locate job in the map view add the link
+                  </p>
+                  {mapUrlStatusMsg && (
+                    <div style={{
+                      marginTop: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: mapUrlStatusMsg.startsWith('✅') ? '#047857' : mapUrlStatusMsg.startsWith('⌛') ? '#1d4ed8' : '#b45309',
+                      background: mapUrlStatusMsg.startsWith('✅') ? '#ecfdf5' : mapUrlStatusMsg.startsWith('⌛') ? '#eff6ff' : '#fffbeb',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${mapUrlStatusMsg.startsWith('✅') ? '#a7f3d0' : mapUrlStatusMsg.startsWith('⌛') ? '#bfdbfe' : '#fde68a'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      {mapUrlStatusMsg}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -12,6 +12,7 @@ const actionLimiter = rateLimiter('job_action', 15, 60);
 router.get('/map', JobController.getMapJobs);
 router.get('/nearby', JobController.getNearbyJobs);
 router.post('/geocode', JobController.triggerGeocoding);
+router.post('/resolve-map-url', JobController.resolveMapUrl);
 router.get('/admin/map-analytics', requireAuth, JobController.getAdminMapAnalytics);
 
 // Public Routes

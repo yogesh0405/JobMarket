@@ -461,6 +461,13 @@
 .custom-marker-wrapper {
   background: transparent !important;
   border: none !important;
+  outline: none !important;
+}
+
+.custom-marker-wrapper:focus,
+.leaflet-interactive:focus,
+.leaflet-marker-icon:focus {
+  outline: none !important;
 }
 
 .custom-map-marker {

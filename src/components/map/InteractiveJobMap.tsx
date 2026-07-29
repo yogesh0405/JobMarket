@@ -130,26 +130,43 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
     };
   }, []);
 
+  const onSelectJobRef = useRef(onSelectJob);
+  const onSaveJobRef = useRef(onSaveJob);
+
+  useEffect(() => {
+    onSelectJobRef.current = onSelectJob;
+    onSaveJobRef.current = onSaveJob;
+  }, [onSelectJob, onSaveJob]);
+
+  const prevActiveJobIdRef = useRef<string | null>(null);
+
   // Update Markers on Map when jobs list changes
   useEffect(() => {
     if (!mapInstanceRef.current || !clusterGroupRef.current) return;
 
     const clusterGroup = clusterGroupRef.current;
-    clusterGroup.clearLayers();
-    markerMapRef.current.clear();
+    
+    // 1. Remove markers that are no longer in the jobs list
+    const currentJobIds = new Set(jobs.map(j => j.id));
+    for (const [id, marker] of markerMapRef.current.entries()) {
+      if (!currentJobIds.has(id)) {
+        clusterGroup.removeLayer(marker);
+        markerMapRef.current.delete(id);
+      }
+    }
 
+    // 2. Add new markers
     jobs.forEach((job) => {
       if (!job.latitude || !job.longitude) return;
+      if (markerMapRef.current.has(job.id)) return; // Already exists
 
       const isSaved = savedJobIds.includes(job.id);
       const isActive = job.id === activeJobId;
 
-      // Custom Marker Pin HTML — validate logo URL using companyLogos utility
       const logoUrl = (job.companyLogo && job.companyLogo.length > 5 && (job.companyLogo.startsWith('http') || job.companyLogo.startsWith('data:image')))
         ? job.companyLogo
         : getCompanyLogo(job.company, job.companyColor);
       const logoHtml = `<img src="${logoUrl}" class="custom-map-marker-icon" alt="${job.company}" onError="this.onerror=null;this.src='${getCompanyLogo(job.company, job.companyColor)}'" />`;
-
 
       const customIcon = L.divIcon({
         className: 'custom-marker-wrapper',
@@ -161,14 +178,13 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
 
       const marker = L.marker([job.latitude, job.longitude], { icon: customIcon });
 
-      // Create Popup Container
       const popupDiv = document.createElement('div');
       const root = createRoot(popupDiv);
       root.render(
         <BrowserRouter>
           <JobPopupCard
             job={job}
-            onSaveJob={onSaveJob}
+            onSaveJob={(id) => onSaveJobRef.current?.(id)}
             isSaved={isSaved}
           />
         </BrowserRouter>
@@ -177,13 +193,44 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
       marker.bindPopup(popupDiv, { maxWidth: 300 });
 
       marker.on('click', () => {
-        onSelectJob(job);
+        onSelectJobRef.current(job);
       });
 
       clusterGroup.addLayer(marker);
       markerMapRef.current.set(job.id, marker);
     });
-  }, [jobs, activeJobId, savedJobIds, onSaveJob, onSelectJob]);
+  }, [jobs, savedJobIds]);
+
+  // Handle active job highlighting without recreating all markers
+  useEffect(() => {
+    const updateIcon = (id: string, isActive: boolean) => {
+      const marker = markerMapRef.current.get(id);
+      const job = jobs.find(j => j.id === id);
+      if (!marker || !job) return;
+
+      const logoUrl = (job.companyLogo && job.companyLogo.length > 5 && (job.companyLogo.startsWith('http') || job.companyLogo.startsWith('data:image')))
+        ? job.companyLogo
+        : getCompanyLogo(job.company, job.companyColor);
+      const logoHtml = `<img src="${logoUrl}" class="custom-map-marker-icon" alt="${job.company}" onError="this.onerror=null;this.src='${getCompanyLogo(job.company, job.companyColor)}'" />`;
+
+      const customIcon = L.divIcon({
+        className: 'custom-marker-wrapper',
+        html: `<div class="custom-map-marker ${isActive ? 'active' : ''}">${logoHtml}</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+      });
+      marker.setIcon(customIcon);
+    };
+
+    if (prevActiveJobIdRef.current && prevActiveJobIdRef.current !== activeJobId) {
+      updateIcon(prevActiveJobIdRef.current, false);
+    }
+    if (activeJobId) {
+      updateIcon(activeJobId, true);
+    }
+    prevActiveJobIdRef.current = activeJobId;
+  }, [activeJobId, jobs]);
 
   // Handle active job selection -> pan map & open popup
   useEffect(() => {

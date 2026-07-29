@@ -43,6 +43,50 @@ export class JobController {
     }
   }
 
+  /**
+   * POST /api/v1/jobs/resolve-map-url
+   * Resolves Google Maps URLs (including shortened links like maps.app.goo.gl) and extracts latitude/longitude coordinates.
+   */
+  static async resolveMapUrl(req: any, res: Response, next: NextFunction) {
+    try {
+      const { url } = req.body;
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL parameter is required' });
+      }
+
+      const inputUrl = url.trim();
+      const { extractCoordinatesFromText } = await import('../../../utils/coordinateExtractor');
+
+      let extracted = extractCoordinatesFromText(inputUrl);
+
+      if (!extracted && (inputUrl.includes('goo.gl') || inputUrl.includes('maps.app') || inputUrl.includes('http'))) {
+        try {
+          const response = await fetch(inputUrl, { method: 'GET', redirect: 'follow' });
+          const finalUrl = response.url;
+          extracted = extractCoordinatesFromText(finalUrl);
+        } catch (fetchErr) {
+          console.warn('Failed to fetch short map URL redirect:', fetchErr);
+        }
+      }
+
+      if (extracted) {
+        return res.status(200).json({
+          success: true,
+          latitude: extracted.latitude,
+          longitude: extracted.longitude,
+          accuracy: extracted.accuracy
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        error: 'Could not extract coordinates from the provided Google Maps link'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // --- MAP & GEOLOCATION CONTROLLER ENDPOINTS ---
 
   /**

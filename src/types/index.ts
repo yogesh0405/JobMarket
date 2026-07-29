@@ -128,6 +128,8 @@ export interface Job {
   walkInDate?: string;
   interviewAddress?: string;
   trade?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Company {

@@ -82,12 +82,32 @@ export const JobPopupCard: React.FC<JobPopupCardProps> = ({ job, onSaveJob, isSa
           </button>
         )}
 
-        <Link
-          to={`/job/${job.id}`}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = `/job/${job.id}`;
+          }}
           className="map-popup-btn map-popup-btn-primary"
+          style={{
+            background: 'linear-gradient(135deg, #344BFD 0%, #6366f1 100%)',
+            color: '#ffffff',
+            fontWeight: '700',
+            fontSize: '12px',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '7px 12px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 6px rgba(52, 75, 253, 0.3)'
+          }}
         >
           View Details
-        </Link>
+        </button>
       </div>
     </div>
   );
