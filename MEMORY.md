@@ -274,15 +274,16 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
 * **2026-07-31 — Job Posting Workflow Refinement & Governance**:
   * *Decision*: Implemented dynamic Trade Type → Job Role selection, dynamic role-based skills, conditional field governance (`acceptResume`, `targetIti`, `isMidcLocation`, `experienceRequired`, `discloseSalary`), mandatory job description & skills validation, and professional vacancy count stepper (`−` / `+` controls with string state to fix input clearing/editing bugs). Applied migration `016_refine_job_posting_workflow_up.sql`.
   * *Reason*: Enterprise-grade usability, conditional workflows, type safety, and error-free job posting experience.
-* **2026-07-31 — Made Responsibilities & Requirements Checkbox-Governed (Unchecked by Default)**:
-  * *Decision*: Replaced raw `textarea` inputs for `Key Operations / Responsibilities` and `Eligible Criteria / Requirements` with optional checkbox toggles (`showResponsibilities`, `showRequirements`) in `JobPostPage.tsx`. Textareas render only when checked.
-  * *Reason*: Streamline job posting form, reducing visual clutter for quick job posting.
+* **2026-07-31 — Permanent Fix for Map Bottom Sheet Positioning & Zero Gap**:
+  * *Decision*: Set `.map-bottom-sheet` to `position: fixed; bottom: 0; background: #ffffff;` in `map.css`. Updated collapsed transform in `JobMapBottomSheet.tsx` to `translateY(calc(100% - 124px))` (60px header + 64px navbar). Added `84px` bottom padding to list.
+  * *Reason*: Completely eliminate map gap below drawer, ensuring solid white coverage down to screen bottom with cards scrolling clear of navbar.
 
 ---
 
 ## 12. Change Log
 
 * **2026-07-31**:
+  * Permanently eliminated map gap under "Jobs Nearby" mobile drawer by anchoring `.map-bottom-sheet` to `bottom: 0` with `#ffffff` background and updating collapsed transform to `translateY(calc(100% - 124px))` in `JobMapBottomSheet.tsx` and `map.css`.
   * Made `Key Operations / Responsibilities` and `Eligible Criteria / Requirements` optional checkbox toggles in `JobPostPage.tsx` (unchecked by default; textareas render only when checked).
   * Replaced all raw emojis across ⓘ popovers, Walk-in Drive headers, and skill suggestion blocks with professional Lucide icons (`FileText`, `Zap`, `Calendar`, `Lightbulb`) in `JobPostPage.tsx` and `JobDetailPage.tsx`.
   * Refined border-radius across Hiring Method cards, icon boxes, walk-in event details box, and tag pills in `jobs.css` and `JobPostPage.tsx` for a crisp, subtle corner aesthetic.

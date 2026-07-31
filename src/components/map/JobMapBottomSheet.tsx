@@ -78,10 +78,10 @@ export const JobMapBottomSheet: React.FC<JobMapBottomSheetProps> = ({
       if (expanded) {
         return `translateY(${Math.max(0, dragY)}px)`;
       } else {
-        return `translateY(calc(100% - 56px + ${Math.min(0, dragY)}px))`;
+        return `translateY(calc(100% - 124px + ${Math.min(0, dragY)}px))`;
       }
     }
-    return expanded ? 'translateY(0)' : 'translateY(calc(100% - 56px))';
+    return expanded ? 'translateY(0)' : 'translateY(calc(100% - 124px))';
   };
 
   return (
