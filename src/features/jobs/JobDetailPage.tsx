@@ -9,7 +9,8 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
-import { Zap, Calendar, FileText } from 'lucide-react';
+import { JobApplyModal } from '../../components/jobs/JobApplyModal';
+import { Zap, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ export const JobDetailPage: React.FC = () => {
   const t = useTranslation(state.language);
   const job = id ? getJobById(id) : undefined;
   const [isApplying, setIsApplying] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   if (!job) {
     return (
@@ -34,8 +36,15 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
-  const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id);
-  const hasApplied = !!(currentUser?.appliedJobs?.includes(job.id) || applicantRecord);
+  const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id || a.id === currentUser?.id);
+  const hasApplied = Boolean(
+    currentUser && (
+      currentUser.appliedJobs?.includes(job.id) ||
+      currentUser.appliedJobsWithStatus?.some((app: any) => app.jobId === job.id) ||
+      applicantRecord
+    )
+  );
+
   const appDetails = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id) || (applicantRecord ? {
     jobId: job.id,
     status: applicantRecord.status || 'applied',
@@ -71,7 +80,7 @@ export const JobDetailPage: React.FC = () => {
     }
   }, [location.hash]);
 
-  const handleApply = async () => {
+  const handleApply = () => {
     if (!currentUser) {
       showToast('Please login to apply', 'warning');
       navigate('/login');
@@ -81,11 +90,21 @@ export const JobDetailPage: React.FC = () => {
       showToast('Only candidates can apply to jobs', 'error');
       return;
     }
+    if (hasApplied) {
+      showToast('You have already applied to this job listing', 'info');
+      return;
+    }
+    setShowApplyModal(true);
+  };
+
+  const handleConfirmApply = async () => {
+    if (!job) return;
     setIsApplying(true);
     try {
       const result = await applyToJob(job.id);
       if (result.success) {
-        showToast('Application submitted successfully! 🎉 Info sent on WhatsApp.', 'success');
+        showToast('Application submitted successfully! 🎉 Profile sent to employer.', 'success');
+        setShowApplyModal(false);
       } else {
         showToast(result.error || 'Failed to apply', 'error');
       }
@@ -205,11 +224,11 @@ export const JobDetailPage: React.FC = () => {
           <div style={{ flex: '1 1 600px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{
               background: '#ffffff',
-              border: '1px solid #CBD5E1',
-              borderRadius: '16px',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '4px',
               padding: 'clamp(18px, 4vw, 28px)',
               position: 'relative',
-              boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.06)'
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04)'
             }}>
               {/* 1. Header: Title full width */}
               <div style={{ marginBottom: '16px' }}>
@@ -224,84 +243,83 @@ export const JobDetailPage: React.FC = () => {
                   {job.title}
                 </h1>
 
-                {/* Action buttons (Save, Share, WhatsApp) - Responsive row */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  flexWrap: 'wrap',
-                  marginBottom: '16px'
-                }}>
-                  <button
-                    onClick={handleSave}
-                    style={{
-                      background: saved ? '#EFF6FF' : '#F8FAFC',
-                      border: saved ? '1px solid #BFDBFE' : '1px solid #CBD5E1',
-                      padding: '8px 14px',
-                      cursor: 'pointer',
-                      color: saved ? '#2563eb' : '#475569',
-                      borderRadius: '8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    </svg>
-                    {saved ? 'Saved' : 'Save'}
-                  </button>
+                {/* Application Status Banner (visible to applied candidates - right under Title) */}
+                {hasApplied && appDetails && (
+                  <div style={{ 
+                    background: '#ffffff', 
+                    border: '1.5px solid #344BFD', 
+                    borderRadius: '4px', 
+                    padding: '16px 18px', 
+                    marginBottom: '16px',
+                    boxShadow: '0 4px 14px rgba(52, 75, 253, 0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>
+                        Application Status:
+                      </span>
+                      <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '13px', padding: '6px 12px', borderRadius: '4px' }}>
+                        {capitalize(appDetails.status)}
+                      </span>
+                    </div>
 
-                  <button
-                    onClick={handleShare}
-                    style={{
-                      background: '#F8FAFC',
-                      border: '1px solid #CBD5E1',
-                      padding: '8px 14px',
-                      cursor: 'pointer',
-                      color: '#475569',
-                      borderRadius: '8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                    Share
-                  </button>
-
-                  <button
-                    onClick={handleWhatsAppShare}
-                    style={{
-                      background: '#E8FBF0',
-                      border: '1px solid #A7F3D0',
-                      padding: '8px 14px',
-                      cursor: 'pointer',
-                      color: '#059669',
-                      borderRadius: '8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.18 1.449 4.825 1.451 5.436.002 9.858-4.42 9.86-9.86.002-2.638-1.016-5.119-2.868-6.973C16.611 1.916 14.135.897 11.5.897c-5.444 0-9.866 4.418-9.87 9.858-.002 1.8.48 3.55 1.396 5.11l-1.002 3.658 3.743-.981c1.517.828 3.09 1.258 4.29 1.272zM17.65 14.39c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.95 1.18-.18.2-.35.23-.65.08-1.1-.55-1.92-.95-2.67-2.25-.19-.34.19-.31.54-1.01.06-.11.03-.21-.02-.31-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34H10.1c-.22 0-.58.08-.88.4-.3.32-1.15 1.13-1.15 2.75 0 1.63 1.19 3.2 1.35 3.42.17.22 2.33 3.56 5.65 5 .79.34 1.4.55 1.88.71.8.25 1.52.21 2.1.13.64-.1 1.78-.73 2.03-1.43.25-.7.25-1.29.17-1.43-.07-.15-.27-.23-.57-.38z"/>
-                    </svg>
-                    WhatsApp
-                  </button>
-                </div>
+                    {(appDetails as any)?.status === 'shortlisted' && (appDetails as any)?.interviewDate && (
+                      <div style={{ 
+                        background: '#f8fafc', 
+                        border: '1px solid #cbd5e1', 
+                        borderRadius: '4px', 
+                        padding: '14px',
+                        fontSize: '13px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#344BFD', fontWeight: '700' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                          </svg>
+                          <span>Interview Scheduled!</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '2px' }}>
+                          <div>
+                            <strong>Date:</strong> {(appDetails as any).interviewDate}
+                          </div>
+                          <div>
+                            <strong>Time:</strong> {(appDetails as any).interviewTime}
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Venue:</strong> {(appDetails as any).venueAddress}
+                        </div>
+                        {(appDetails as any).mapsLink && (
+                          <div style={{ marginTop: '2px' }}>
+                            <a 
+                              href={(appDetails as any).mapsLink} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              style={{ 
+                                color: '#344BFD', 
+                                textDecoration: 'none', 
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              Open in Google Maps
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Company Row & Work Mode Badges */}
                 <div style={{
@@ -310,17 +328,18 @@ export const JobDetailPage: React.FC = () => {
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
                   gap: '10px',
-                  padding: '10px 14px',
-                  background: '#F8FAFC',
-                  borderRadius: '10px',
-                  border: '1px solid #F1F5F9'
+                  padding: '12px 16px',
+                  background: '#ffffff',
+                  borderRadius: '4px',
+                  border: '1.5px solid #cbd5e1',
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <CompanyDefaultLogo 
                       logoUrl={job.companyLogo || (job as any).company_logo} 
                       companyName={job.company} 
                       size={44} 
-                      borderRadius="10px"
+                      borderRadius="4px"
                     />
                     <span style={{
                       fontSize: '15px',
@@ -346,7 +365,7 @@ export const JobDetailPage: React.FC = () => {
                       fontSize: '11.5px',
                       fontWeight: '700',
                       padding: '3px 10px',
-                      borderRadius: '6px'
+                      borderRadius: '4px'
                     }}>
                       {job.workMode || 'Onsite'}
                     </span>
@@ -357,7 +376,7 @@ export const JobDetailPage: React.FC = () => {
                       fontSize: '11.5px',
                       fontWeight: '600',
                       padding: '3px 10px',
-                      borderRadius: '6px'
+                      borderRadius: '4px'
                     }}>
                       {job.jobType}
                     </span>
@@ -368,7 +387,7 @@ export const JobDetailPage: React.FC = () => {
                       fontSize: '11.5px',
                       fontWeight: '700',
                       padding: '3px 10px',
-                      borderRadius: '6px',
+                      borderRadius: '4px',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '5px'
@@ -392,9 +411,10 @@ export const JobDetailPage: React.FC = () => {
                 gap: '10px 16px',
                 marginBottom: '24px',
                 padding: '14px 16px',
-                background: '#FAFAFC',
-                borderRadius: '12px',
-                border: '1px solid #F1F5F9'
+                background: '#ffffff',
+                borderRadius: '4px',
+                border: '1.5px solid #cbd5e1',
+                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
               }}>
                 {/* Location */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '500' }}>
@@ -443,89 +463,91 @@ export const JobDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Application Status Banner (visible to applied candidates) */}
-              {hasApplied && appDetails && (
-                <div style={{ 
-                  background: 'var(--bg-secondary)', 
-                  border: '1.5px dashed var(--primary)', 
-                  borderRadius: '8px', 
-                  padding: '18px', 
-                  marginBottom: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>
-                      Application Status:
-                    </span>
-                    <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                      {capitalize(appDetails.status)}
-                    </span>
-                  </div>
+              {/* Action buttons (Save, Share, WhatsApp) - Moved after Specs grid */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                marginBottom: '24px'
+              }}>
+                <button
+                  onClick={handleSave}
+                  style={{
+                    background: saved ? '#EFF6FF' : '#F8FAFC',
+                    border: saved ? '1px solid #BFDBFE' : '1px solid #CBD5E1',
+                    padding: '8px 14px',
+                    cursor: 'pointer',
+                    color: saved ? '#2563eb' : '#475569',
+                    borderRadius: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  {saved ? 'Saved' : 'Save'}
+                </button>
 
-                  {(appDetails as any)?.status === 'shortlisted' && (appDetails as any)?.interviewDate && (
-                    <div style={{ 
-                      background: 'var(--bg)', 
-                      border: '1px solid var(--border)', 
-                      borderRadius: '6px', 
-                      padding: '14px',
-                      fontSize: '13px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      marginTop: '4px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: '700' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                        </svg>
-                        <span>Interview Scheduled!</span>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '2px' }}>
-                        <div>
-                          <strong>Date:</strong> {(appDetails as any).interviewDate}
-                        </div>
-                        <div>
-                          <strong>Time:</strong> {(appDetails as any).interviewTime}
-                        </div>
-                      </div>
-                      <div>
-                        <strong>Venue:</strong> {(appDetails as any).venueAddress}
-                      </div>
-                      {(appDetails as any).mapsLink && (
-                        <div style={{ marginTop: '2px' }}>
-                          <a 
-                            href={(appDetails as any).mapsLink} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            style={{ 
-                              color: 'var(--primary)', 
-                              textDecoration: 'none', 
-                              fontWeight: '600',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            Open in Google Maps
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                <button
+                  onClick={handleShare}
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #CBD5E1',
+                    padding: '8px 14px',
+                    cursor: 'pointer',
+                    color: '#475569',
+                    borderRadius: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  Share
+                </button>
+
+                <button
+                  onClick={handleWhatsAppShare}
+                  style={{
+                    background: '#E8FBF0',
+                    border: '1px solid #A7F3D0',
+                    padding: '8px 14px',
+                    cursor: 'pointer',
+                    color: '#059669',
+                    borderRadius: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.18 1.449 4.825 1.451 5.436.002 9.858-4.42 9.86-9.86.002-2.638-1.016-5.119-2.868-6.973C16.611 1.916 14.135.897 11.5.897c-5.444 0-9.866 4.418-9.87 9.858-.002 1.8.48 3.55 1.396 5.11l-1.002 3.658 3.743-.981c1.517.828 3.09 1.258 4.29 1.272zM17.65 14.39c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.95 1.18-.18.2-.35.23-.65.08-1.1-.55-1.92-.95-2.67-2.25-.19-.34.19-.31.54-1.01.06-.11.03-.21-.02-.31-.05-.1-.45-1.08-.62-1.48-.16-.39-.33-.34-.45-.34H10.1c-.22 0-.58.08-.88.4-.3.32-1.15 1.13-1.15 2.75 0 1.63 1.19 3.2 1.35 3.42.17.22 2.33 3.56 5.65 5 .79.34 1.4.55 1.88.71.8.25 1.52.21 2.1.13.64-.1 1.78-.73 2.03-1.43.25-.7.25-1.29.17-1.43-.07-.15-.27-.23-.57-.38z"/>
+                  </svg>
+                  WhatsApp
+                </button>
+              </div>
 
               {/* Walk-in Drive Event Details Card */}
               {(job.hiringMethod === 'WALK_IN' || job.isWalkIn) && (
                 <div style={{
                   background: '#FFFBEB',
                   border: '1.5px solid #FCD34D',
-                  borderRadius: '12px',
+                  borderRadius: '4px',
                   padding: '16px',
                   marginBottom: '24px'
                 }}>
@@ -620,9 +642,10 @@ export const JobDetailPage: React.FC = () => {
                         background: '#EEF1FF',
                         color: '#344BFD',
                         fontSize: '12px',
-                        fontWeight: '550',
+                        fontWeight: '600',
                         padding: '6px 12px',
-                        borderRadius: '9999px'
+                        borderRadius: '4px',
+                        border: '1px solid #C7CEFE'
                       }}
                     >
                       {s}
@@ -638,38 +661,38 @@ export const JobDetailPage: React.FC = () => {
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {job.overtime && (
-                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                       Overtime (OT) Pay
                     </span>
                   )}
                   {job.canteen && (
-                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                       Subsidized Canteen
                     </span>
                   )}
                   {job.busFacility && (
-                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                       Bus Transport
                     </span>
                   )}
                   {job.accommodation && (
-                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                    <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                       Free Stay Hostel
                     </span>
                   )}
-                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                     Competitive salary
                   </span>
-                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                     Health insurance
                   </span>
-                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                     Flexible working
                   </span>
-                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                     Professional development budget
                   </span>
-                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '550', padding: '6px 12px', borderRadius: '9999px' }}>
+                  <span style={{ background: '#EEF1FF', color: '#344BFD', fontSize: '12px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', border: '1px solid #C7CEFE' }}>
                     Modern office
                   </span>
                 </div>
@@ -698,12 +721,13 @@ export const JobDetailPage: React.FC = () => {
             {/* CARD 1: Apply for this job */}
             <div id="apply" className="detail-sidebar-apply-card" style={{
               background: '#ffffff',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '0.3rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '4px',
               padding: '24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px'
+              gap: '16px',
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)'
             }}>
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Apply for this job</h3>
               
@@ -726,7 +750,7 @@ export const JobDetailPage: React.FC = () => {
               <div style={{
                 background: '#FFFBEB',
                 border: '1px solid #FDE68A',
-                borderRadius: '0.3rem',
+                borderRadius: '4px',
                 padding: '12px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -756,7 +780,7 @@ export const JobDetailPage: React.FC = () => {
                       color: '#344BFD',
                       border: 'none',
                       padding: '14px',
-                      borderRadius: '0.3rem',
+                      borderRadius: '4px',
                       fontWeight: '700',
                       fontSize: '15px',
                       cursor: 'not-allowed',
@@ -782,7 +806,7 @@ export const JobDetailPage: React.FC = () => {
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appDetails.status === 'shortlisted' ? '8px' : '0' }}>
                         <strong>Status:</strong>
-                        <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '11px', padding: '3px 8px' }}>
+                        <span className={`status-badge status-${appDetails.status}`} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px' }}>
                           {capitalize(appDetails.status)}
                         </span>
                       </div>
@@ -800,11 +824,11 @@ export const JobDetailPage: React.FC = () => {
                   onClick={() => navigate('/dashboard?tab=manage')}
                   style={{
                     width: '100%',
-                    background: 'var(--primary)',
+                    background: '#344BFD',
                     color: '#ffffff',
                     border: 'none',
                     padding: '14px',
-                    borderRadius: '0.3rem',
+                    borderRadius: '4px',
                     fontWeight: '700',
                     fontSize: '15px',
                     cursor: 'pointer',
@@ -830,7 +854,7 @@ export const JobDetailPage: React.FC = () => {
                     color: '#ffffff',
                     border: 'none',
                     padding: '14px',
-                    borderRadius: '0.3rem',
+                    borderRadius: '4px',
                     fontWeight: '700',
                     fontSize: '15px',
                     cursor: isApplying ? 'not-allowed' : 'pointer',
@@ -868,12 +892,13 @@ export const JobDetailPage: React.FC = () => {
             {/* CARD 2: Job Summary */}
             <div style={{
               background: '#ffffff',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '0.3rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '4px',
               padding: '24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px'
+              gap: '16px',
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)'
             }}>
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Job Summary</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -912,12 +937,13 @@ export const JobDetailPage: React.FC = () => {
             {/* CARD 3: Skills Match */}
             <div style={{
               background: '#ffffff',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '0.3rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '4px',
               padding: '24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px'
+              gap: '16px',
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)'
             }}>
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Skills Match</h3>
               
@@ -943,7 +969,8 @@ export const JobDetailPage: React.FC = () => {
                         fontSize: '11px',
                         fontWeight: '600',
                         padding: '4px 10px',
-                        borderRadius: '9999px'
+                        borderRadius: '4px',
+                        border: '1px solid #C7CEFE'
                       }}
                     >
                       {s}
@@ -971,7 +998,7 @@ export const JobDetailPage: React.FC = () => {
                     color: '#344BFD',
                     border: 'none',
                     padding: '14px',
-                    borderRadius: '0.3rem',
+                    borderRadius: '4px',
                     fontWeight: '700',
                     fontSize: '15px',
                     cursor: 'not-allowed',
@@ -1001,7 +1028,7 @@ export const JobDetailPage: React.FC = () => {
                   color: '#ffffff',
                   border: 'none',
                   padding: '14px',
-                  borderRadius: '0.3rem',
+                  borderRadius: '4px',
                   fontWeight: '700',
                   fontSize: '15px',
                   cursor: 'pointer',
@@ -1017,17 +1044,39 @@ export const JobDetailPage: React.FC = () => {
                 </svg>
                 Manage Job
               </button>
-            ) : (
+            ) : hasApplied ? (
               <button
-                onClick={handleApply}
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  borderRadius: '4px',
+                  border: '1.5px solid #bbf7d0',
+                  background: '#dcfce7',
+                  color: '#15803d',
+                  fontWeight: '800',
+                  fontSize: '15px',
+                  cursor: 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>Applied ✓</span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleApply} 
                 disabled={isApplying}
                 style={{
                   width: '100%',
-                  background: isApplying ? '#6366F1' : '#344BFD',
-                  color: '#ffffff',
+                  padding: '12px 24px',
+                  borderRadius: '4px',
                   border: 'none',
-                  padding: '14px',
-                  borderRadius: '0.3rem',
+                  background: '#344BFD',
+                  color: '#ffffff',
                   fontWeight: '700',
                   fontSize: '15px',
                   cursor: isApplying ? 'not-allowed' : 'pointer',
@@ -1057,6 +1106,15 @@ export const JobDetailPage: React.FC = () => {
           </div>
         </div>,
         document.body
+      )}
+      {showApplyModal && currentUser && (
+        <JobApplyModal
+          job={job}
+          user={currentUser}
+          onClose={() => setShowApplyModal(false)}
+          onConfirm={handleConfirmApply}
+          isApplying={isApplying}
+        />
       )}
     </div>
   );

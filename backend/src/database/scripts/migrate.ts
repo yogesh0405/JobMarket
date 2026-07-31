@@ -17,7 +17,9 @@ async function runMigrations() {
     const { rows } = await client.query('SELECT name FROM migrations');
     const executedMigrations = new Set(rows.map((row) => row.name));
 
-    const migrationsDir = path.join(__dirname, '../migrations');
+    const migrationsDir = fs.existsSync(path.join(__dirname, '../migrations')) 
+      ? path.join(__dirname, '../migrations') 
+      : path.join(__dirname, '../../src/database/migrations');
     const files = fs.readdirSync(migrationsDir).sort();
 
     for (const file of files) {

@@ -111,29 +111,25 @@ export const Navbar: React.FC = () => {
                 </div>
                 
                 <div className="sidebar-profile-menu" style={{ marginTop: 'var(--space-4)' }}>
-                  {/* Home */}
-                  <Link to="/" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    {t.home}
-                  </Link>
+                  {/* Home (Candidates / Guests Only) */}
+                  {currentUser.role !== 'employer' && (
+                    <Link to="/" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                      </svg>
+                      {t.home}
+                    </Link>
+                  )}
 
-                  {/* Find Jobs */}
-                  <Link to="/jobs" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    {t.findJobs}
-                  </Link>
-
-                  {/* Job Map */}
-                  <Link to="/jobs/map" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
-                    </svg>
-                    Interactive Job Map
-                  </Link>
+                  {/* Find Jobs (Candidates / Guests Only) */}
+                  {currentUser.role !== 'employer' && (
+                    <Link to="/jobs" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      {t.findJobs}
+                    </Link>
+                  )}
 
                   {/* Dashboard */}
                   <Link to="/dashboard" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
@@ -152,13 +148,15 @@ export const Navbar: React.FC = () => {
                     </Link>
                   )}
 
-                  {/* Saved Jobs for ALL Logged In Users (Employers & Candidates) */}
-                  <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    {t.savedJobs}
-                  </Link>
+                  {/* Saved Jobs (Candidates / Guests Only) */}
+                  {currentUser.role !== 'employer' && (
+                    <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      {t.savedJobs}
+                    </Link>
+                  )}
 
                   {currentUser.role === 'candidate' && (
                     <>
@@ -245,13 +243,6 @@ export const Navbar: React.FC = () => {
                     {t.findJobs}
                   </Link>
 
-                  {/* Job Map */}
-                  <Link to="/jobs/map" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
-                    </svg>
-                    Interactive Job Map
-                  </Link>
 
                   {/* About Us */}
                   <Link to="/about" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
@@ -292,13 +283,12 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* DESKTOP ONLY LINKS */}
-          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
-          <Link to="/jobs" className={`nav-link ${isActive('/jobs') && location.pathname !== '/jobs/map' ? 'active' : ''}`}>{t.findJobs}</Link>
-          <Link to="/jobs/map" className={`nav-link ${isActive('/jobs/map') ? 'active' : ''}`}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              📍 Job Map
-            </span>
-          </Link>
+          {currentUser?.role !== 'employer' && (
+            <>
+              <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
+              <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
+            </>
+          )}
           {(!currentUser || currentUser.role !== 'candidate') && (
             <Link to="/post-job" className={`nav-link ${isActive('/post-job') ? 'active' : ''}`}>{t.postJob}</Link>
           )}

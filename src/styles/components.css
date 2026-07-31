@@ -224,18 +224,17 @@
   cursor: pointer;
 }
 
-/* ---- Cards ---- */
 .card,
 .stat-card,
 .activity-card,
 .filter-card,
 .applicant-card,
 .candidate-card {
-  background: var(--surface);
-  border-radius: 8px !important;
-  border: 1px solid #E2E8F0 !important;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: #ffffff;
+  border-radius: 6px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   overflow: hidden;
 }
 
@@ -243,8 +242,8 @@
 .stat-card:hover,
 .applicant-card:hover,
 .candidate-card:hover {
-  transform: translateY(-5px) !important;
-  box-shadow: 0 16px 32px -4px rgba(52, 75, 253, 0.14), 0 6px 12px -2px rgba(15, 23, 42, 0.06) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 24px -4px rgba(52, 75, 253, 0.16), 0 4px 8px -2px rgba(15, 23, 42, 0.08) !important;
   border-color: #344BFD !important;
 }
 
@@ -538,14 +537,16 @@
   left: 0;
   right: 0;
   height: 64px;
-  background: var(--surface);
-  border-top: 1px solid var(--border-light);
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
   display: none;
   justify-content: space-around;
   align-items: center;
   z-index: 20005;
-  padding: 4px 8px;
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 768px) {
@@ -554,7 +555,7 @@
   }
   
   body {
-    padding-bottom: 64px;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
   .mobile-hide-nav {
@@ -567,22 +568,36 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #64748b;
   font-size: 10px;
-  font-weight: var(--fw-semibold);
+  font-weight: 600;
   text-decoration: none;
   flex: 1;
+  min-width: 0;
   gap: 3px;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.15s ease;
+  padding: 4px 2px;
+}
+
+.mobile-bottom-item span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .mobile-bottom-item.active {
-  color: var(--primary);
+  color: #344BFD;
+  font-weight: 700;
 }
 
 .mobile-bottom-item svg {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
 }
 
 /* Floating Action Button (FAB) for Mobile Bottom Nav */
@@ -595,31 +610,31 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--primary);
+  background: linear-gradient(135deg, #344BFD 0%, #2563eb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
   top: -24px;
-  box-shadow: 0 4px 12px rgba(52, 75, 253, 0.35);
-  border: 4px solid var(--surface);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 6px 16px rgba(52, 75, 253, 0.4);
+  border: 3.5px solid #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mobile-bottom-item.fab-item:hover .fab-circle,
 .mobile-bottom-item.fab-item:focus .fab-circle {
-  transform: translateY(-2px);
-  background: var(--primary-light);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 8px 20px rgba(52, 75, 253, 0.5);
 }
 
 .mobile-bottom-item.fab-item span {
   margin-top: 24px;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: #64748b;
 }
 
 .mobile-bottom-item.fab-item.active span {
-  color: var(--primary);
+  color: #344BFD;
 }
 
 /* ---- User Dropdown ---- */

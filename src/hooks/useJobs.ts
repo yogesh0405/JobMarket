@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useStore } from '../store/useStore';
-import { apiFetch } from '../utils/api';
+import { apiFetch, safeParseJson } from '../utils/api';
 import { Job } from '../types';
 
 export interface JobFilters {
@@ -90,7 +90,7 @@ export const useJobs = () => {
   }, [state.jobs]);
 
   const getJobsByEmployer = useCallback((employerId: string) => {
-    return state.jobs.filter(j => j.employerId === employerId);
+    return state.jobs.filter(j => j.employerId === employerId || (j as any).employer_id === employerId);
   }, [state.jobs]);
 
   const createJob = useCallback(async (jobData: any) => {
@@ -287,14 +287,21 @@ export const useJobs = () => {
   const getAllCandidates = useCallback(async () => {
     try {
       const res = await apiFetch('/api/v1/jobs/workers/all');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to fetch candidates');
-      return json.data;
+      const { ok, data } = await safeParseJson<any>(res);
+      if (ok && Array.isArray(data?.data) && data.data.length > 0) {
+        return data.data;
+      }
+      if (ok && Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+      const candidatesFromStore = state.users.filter(u => u.role === 'candidate' && u.isResumePublic !== false);
+      if (candidatesFromStore.length > 0) return candidatesFromStore;
+      return [];
     } catch (err: any) {
-      console.error(err);
-      throw err;
+      console.error('getAllCandidates error:', err);
+      return state.users.filter(u => u.role === 'candidate' && u.isResumePublic !== false);
     }
-  }, []);
+  }, [state.users]);
 
   return {
     getJobs,

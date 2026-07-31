@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useToast } from '../../../hooks/useToast';
-import { apiFetch } from '../../../utils/api';
+import { apiFetch, safeParseJson } from '../../../utils/api';
 import { useStore } from '../../../store/useStore';
 import { Job } from '../../../types';
 
@@ -44,9 +44,9 @@ export const RoleTabsManagementPage: React.FC = () => {
 
     // 1. Fetch System Settings from PostgreSQL Backend API
     apiFetch('/api/v1/admin/settings')
-      .then(res => res.json())
-      .then(json => {
-        if (json.success && json.data && json.data.role_tabs_config) {
+      .then(res => safeParseJson(res))
+      .then(({ ok, data: json }) => {
+        if (ok && json.success && json.data && json.data.role_tabs_config) {
           try {
             const parsed = JSON.parse(json.data.role_tabs_config);
             if (Array.isArray(parsed) && parsed.length > 0) {

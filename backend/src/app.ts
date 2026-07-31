@@ -13,6 +13,7 @@ import {
   adminAdvertisementRouter,
   notificationRouter,
 } from './modules/advertisements/routes/advertisementRoutes';
+import unifiedNotificationRoutes from './modules/notifications/routes/notificationRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 
 import publicSettingsRouter from './modules/admin/routes/publicSettingsRoutes';
@@ -53,7 +54,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
+const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o: string) => o.trim());
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -83,6 +84,7 @@ app.use('/api/v1/home', homeAdvertisementRouter);
 app.use('/api/v1/employer', employerAdvertisementRouter);
 app.use('/api/v1/admin', adminAdvertisementRouter);
 app.use('/api/v1', publicSettingsRouter);
+app.use('/api/v1', unifiedNotificationRoutes);
 app.use('/api/v1', notificationRouter);
 
 // Global Error Handler

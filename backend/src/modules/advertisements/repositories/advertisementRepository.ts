@@ -1,5 +1,6 @@
 import { pool } from '../../../config/database/pool';
 import { CacheService } from '../../../utils/redisCache';
+import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
 import {
   Advertisement,
   CreateAdvertisementInput,
@@ -505,38 +506,24 @@ export class AdvertisementRepository {
     type: string,
     link?: string
   ): Promise<SystemNotification> {
-    const query = `
-      INSERT INTO notifications (user_id, title, message, type, link)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(query, [userId, title, message, type, link || null]);
-    return rows[0];
+    const rec = await NotificationRepository.createNotification(userId, title, message, type, link);
+    return rec as any;
   }
 
   static async getUserNotifications(userId: string): Promise<SystemNotification[]> {
-    const query = `
-      SELECT * FROM notifications 
-      WHERE user_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT 20;
-    `;
-    const { rows } = await pool.query(query, [userId]);
-    return rows;
+    const rows = await NotificationRepository.getNotificationsForUser(userId);
+    return rows as any[];
   }
 
   static async markNotificationRead(notificationId: string, userId: string): Promise<void> {
-    const query = `UPDATE notifications SET read = TRUE WHERE id = $1 AND user_id = $2;`;
-    await pool.query(query, [notificationId, userId]);
+    await NotificationRepository.markAsRead(notificationId, userId);
   }
 
   static async markAllNotificationsRead(userId: string): Promise<void> {
-    const query = `UPDATE notifications SET read = TRUE WHERE user_id = $1;`;
-    await pool.query(query, [userId]);
+    await NotificationRepository.markAllAsRead(userId);
   }
 
   static async deleteNotification(notificationId: string, userId: string): Promise<void> {
-    const query = `DELETE FROM notifications WHERE id = $1 AND user_id = $2;`;
-    await pool.query(query, [notificationId, userId]);
+    await NotificationRepository.deleteNotification(notificationId, userId);
   }
 }

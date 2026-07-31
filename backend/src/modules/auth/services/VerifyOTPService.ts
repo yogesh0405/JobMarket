@@ -18,7 +18,7 @@ export class VerifyOTPService {
       throw new BadRequestError('OTP has expired or is invalid. Please sign up again.');
     }
 
-    const payload = JSON.parse(payloadStr);
+    const payload = JSON.parse(String(payloadStr));
 
     if (payload.attempts >= 3) {
       await redisClient.del(redisKey);

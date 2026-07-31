@@ -868,47 +868,101 @@ export const ProfilePage: React.FC = () => {
                   const resume = currentUser.resume;
                   if (resume && (resume.name || resume.url)) {
                     return (
-                      <div className="file-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                          <div className="file-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                            </svg>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                        <div className="file-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                            <div className="file-icon">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                              </svg>
+                            </div>
+                            <div className="file-info">
+                              <h4>{resume.name}</h4>
+                              <p>{resume.size}</p>
+                            </div>
                           </div>
-                          <div className="file-info">
-                            <h4>{resume.name}</h4>
-                            <p>{resume.size}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                            <button
+                              onClick={() => setPreviewResume(resume)}
+                              className="btn btn-secondary btn-sm"
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px solid var(--border)' }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                              </svg>
+                              View
+                            </button>
+                            <button
+                              onClick={handleDeleteResume}
+                              className="btn btn-danger btn-sm"
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--danger)', color: '#ffffff', border: 'none' }}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
+                                  <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />
+                                </svg>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                                </svg>
+                              )}
+                              Delete
+                            </button>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                          <button
-                            onClick={() => setPreviewResume(resume)}
-                            className="btn btn-secondary btn-sm"
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px solid var(--border)' }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            View
-                          </button>
-                          <button
-                            onClick={handleDeleteResume}
-                            className="btn btn-danger btn-sm"
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--danger)', color: '#ffffff', border: 'none' }}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
-                                <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />
-                              </svg>
-                            ) : (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-                              </svg>
-                            )}
-                            Delete
-                          </button>
+
+                        {/* Public Resume Visibility Toggle Box */}
+                        <div 
+                          style={{
+                            background: currentUser.isResumePublic !== false ? 'rgba(37, 99, 235, 0.04)' : 'var(--bg-secondary)',
+                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#93c5fd' : 'var(--border)'}`,
+                            borderRadius: 'var(--radius-md)',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px'
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                              <span style={{ fontSize: '15px' }}>{currentUser.isResumePublic !== false ? '👁️' : '🔒'}</span>
+                              <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                Public Resume Visibility
+                              </h4>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                              {currentUser.isResumePublic !== false 
+                                ? 'Employers can view your resume in the public candidate directory.' 
+                                : 'Hidden from public candidate search. Visible only to employers when you apply for their jobs.'}
+                            </p>
+                          </div>
+
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
+                            <input 
+                              type="checkbox"
+                              checked={currentUser.isResumePublic !== false}
+                              onChange={async (e) => {
+                                const checked = e.target.checked;
+                                try {
+                                  const res = await updateUser({ isResumePublic: checked });
+                                  if (res.success) {
+                                    showToast(checked ? 'Resume is now public to employers' : 'Resume is now hidden from public candidate section', 'info');
+                                  } else {
+                                    showToast(res.error || 'Failed to update visibility', 'error');
+                                  }
+                                } catch (err) {
+                                  showToast('Failed to update visibility', 'error');
+                                }
+                              }}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                            />
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: currentUser.isResumePublic !== false ? '#1d4ed8' : 'var(--text-secondary)' }}>
+                              {currentUser.isResumePublic !== false ? 'Public' : 'Private'}
+                            </span>
+                          </label>
                         </div>
                       </div>
                     );

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters long.')
@@ -24,10 +24,10 @@ export const signupSchema = z.object({
       .optional()
       .or(z.literal('')),
     tradeSpecialization: z.string().optional()
-  }).refine((data) => data.password === data.confirmPassword, {
+  }).refine((data: any) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
     path: ["confirmPassword"],
-  }).refine((data) => {
+  }).refine((data: any) => {
     if (data.role === 'candidate') {
       return data.email.endsWith('@gmail.com');
     }

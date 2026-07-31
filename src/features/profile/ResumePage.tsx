@@ -7,7 +7,7 @@ import { uploadResumeFast } from '../../utils/uploadToCloudinary';
 
 export const ResumePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, syncUser, deleteResume } = useAuth();
+  const { currentUser, syncUser, deleteResume, updateUser } = useAuth();
   const { showToast } = useToast();
 
   const [dragOver, setDragOver] = useState(false);
@@ -17,6 +17,27 @@ export const ResumePage: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPublic, setIsPublic] = useState<boolean>(currentUser?.isResumePublic !== false);
+  const [isUpdatingPublic, setIsUpdatingPublic] = useState(false);
+
+  const handleTogglePublic = async (checked: boolean) => {
+    setIsPublic(checked);
+    setIsUpdatingPublic(true);
+    try {
+      const res = await updateUser({ isResumePublic: checked });
+      if (res.success) {
+        showToast(checked ? 'Resume is now public to employers' : 'Resume is now hidden from public candidate section', 'info');
+      } else {
+        setIsPublic(!checked);
+        showToast(res.error || 'Failed to update resume visibility', 'error');
+      }
+    } catch (err) {
+      setIsPublic(!checked);
+      showToast('Failed to update resume visibility', 'error');
+    } finally {
+      setIsUpdatingPublic(false);
+    }
+  };
 
   const handleDeleteResume = async () => {
     if (window.confirm('Are you sure you want to delete your uploaded resume? This action cannot be undone.')) {
@@ -73,7 +94,7 @@ export const ResumePage: React.FC = () => {
               background: '#f8fafc', 
               padding: '16px 20px', 
               borderRadius: '8px', 
-              margin: '20px 0',
+              margin: '20px 0 12px 0',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
@@ -140,6 +161,50 @@ export const ResumePage: React.FC = () => {
                 Delete
               </button>
             </div>
+          </div>
+
+          {/* Public Resume Visibility Toggle Card */}
+          <div 
+            style={{
+              background: isPublic ? 'rgba(37, 99, 235, 0.04)' : '#f8fafc',
+              border: `1.5px solid ${isPublic ? '#93c5fd' : '#cbd5e1'}`,
+              borderRadius: '10px',
+              padding: '14px 18px',
+              margin: '16px 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              transition: 'all 0.2s ease',
+              textAlign: 'left'
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '16px' }}>{isPublic ? '👁️' : '🔒'}</span>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
+                  Public Resume Visibility
+                </h4>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
+                {isPublic 
+                  ? 'Employers can see your profile and resume in the public Candidate Directory.' 
+                  : 'Hidden from public candidate search. Visible only to employers of jobs you apply for.'}
+              </p>
+            </div>
+
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: isUpdatingPublic ? 'wait' : 'pointer', flexShrink: 0 }}>
+              <input 
+                type="checkbox"
+                checked={isPublic}
+                disabled={isUpdatingPublic}
+                onChange={(e) => handleTogglePublic(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: isPublic ? '#1d4ed8' : '#475569' }}>
+                {isPublic ? 'Public' : 'Private'}
+              </span>
+            </label>
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>

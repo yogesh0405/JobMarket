@@ -84,6 +84,7 @@ export interface User {
   preferredShift?: string;
   requiresBus?: boolean;
   requiresAccommodation?: boolean;
+  isResumePublic?: boolean;
 }
 
 export interface Job {

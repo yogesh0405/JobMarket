@@ -235,13 +235,13 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
   return (
     <div className="employer-ads-container" style={{ padding: '1rem 0' }}>
       {/* Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1.3 }}>
             Promotional Banners & Advertisements
           </h2>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Boost your job visibility with Flipkart-style homepage promotional slider banners
+          <p style={{ margin: '3px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            Boost your job visibility with homepage hero slider banners
           </p>
         </div>
         <button
@@ -250,17 +250,19 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
           style={{
             display: 'inline-flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
-            padding: '10px 20px',
+            padding: '9px 18px',
             background: 'var(--primary)',
             color: 'white',
             fontWeight: 'bold',
+            fontSize: '0.85rem',
             borderRadius: '10px',
             border: 'none',
             cursor: 'pointer'
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Create New Banner
@@ -269,48 +271,48 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
       {/* Performance Analytics Stat Cards */}
       {analytics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Banners</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--primary)', marginTop: '4px' }}>{analytics.total_advertisements}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Banners</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)', marginTop: '2px' }}>{analytics.total_advertisements}</div>
           </div>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Active Live</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#16a34a', marginTop: '4px' }}>{analytics.active_advertisements}</div>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Active Live</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#16a34a', marginTop: '2px' }}>{analytics.active_advertisements}</div>
           </div>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Pending Review</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#d97706', marginTop: '4px' }}>{analytics.pending_approval}</div>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Pending Review</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#d97706', marginTop: '2px' }}>{analytics.pending_approval}</div>
           </div>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Views</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>{analytics.total_views.toLocaleString()}</div>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Views</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#2563eb', marginTop: '2px' }}>{analytics.total_views.toLocaleString()}</div>
           </div>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Clicks</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#9333ea', marginTop: '4px' }}>{analytics.total_clicks.toLocaleString()}</div>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Clicks</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#9333ea', marginTop: '2px' }}>{analytics.total_clicks.toLocaleString()}</div>
           </div>
-          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1.25rem', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg Click Rate (CTR)</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0284c7', marginTop: '4px' }}>{analytics.avg_ctr}%</div>
+          <div style={{ background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e2e8f0)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Avg Click Rate</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0284c7', marginTop: '2px' }}>{analytics.avg_ctr}%</div>
           </div>
         </div>
       )}
 
       {/* Advertisements List */}
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading promotional banners...</div>
+        <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading promotional banners...</div>
       ) : advertisements.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--card-bg, #ffffff)', borderRadius: '16px', border: '2px dashed var(--border-color, #e2e8f0)' }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+        <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: 'var(--card-bg, #ffffff)', borderRadius: '14px', border: '2px dashed var(--border-color, #e2e8f0)' }}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
           </svg>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', fontWeight: '700' }}>No Promotional Banners Created Yet</h3>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '450px', margin: '0 auto 1.5rem auto', fontSize: '0.9rem' }}>
+          <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>No Promotional Banners Created Yet</h3>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 1.25rem auto', fontSize: '0.85rem', lineHeight: 1.4 }}>
             Promote your urgent hiring campaigns or walk-in drives right on the homepage hero slider for maximum candidate reach.
           </p>
-          <button onClick={openCreateModal} className="btn btn-primary" style={{ padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold' }}>
+          <button onClick={openCreateModal} className="btn btn-primary" style={{ padding: '9px 18px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.85rem' }}>
             Create Your First Banner
           </button>
         </div>

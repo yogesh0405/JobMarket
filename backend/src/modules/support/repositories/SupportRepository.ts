@@ -1,6 +1,7 @@
 import { pool } from '../../../config/database/pool';
 import { logger } from '../../../utils/logger';
 import { CacheService } from '../../../utils/redisCache';
+import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
 
 export interface SupportTicket {
   id: string;
@@ -260,61 +261,53 @@ export class SupportRepository {
   }
 
   static async createNotification(notification: Omit<InAppNotification, 'id' | 'created_at' | 'is_read'>): Promise<InAppNotification> {
-    const query = `
-      INSERT INTO in_app_notifications (user_id, title, message, link)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const result = await pool.query(query, [notification.user_id, notification.title, notification.message, notification.link]);
-    return result.rows[0];
+    const rec = await NotificationRepository.createNotification(
+      notification.user_id,
+      notification.title,
+      notification.message,
+      'SUPPORT',
+      notification.link
+    );
+    return {
+      id: rec.id,
+      user_id: rec.user_id,
+      title: rec.title,
+      message: rec.message,
+      is_read: rec.read,
+      link: rec.link || null,
+      created_at: rec.created_at
+    };
   }
 
   static async broadcastNotifications(userIds: string[], title: string, message: string, link?: string): Promise<number> {
-    if (userIds.length === 0) return 0;
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const valueRows: string[] = [];
-      const params: any[] = [];
-      let idx = 1;
-
-      for (const userId of userIds) {
-        valueRows.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++})`);
-        params.push(userId, title, message, link || null);
-      }
-
-      const query = `INSERT INTO in_app_notifications (user_id, title, message, link) VALUES ${valueRows.join(', ')}`;
-      const result = await client.query(query, params);
-      await client.query('COMMIT');
-      return result.rowCount ?? userIds.length;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    return NotificationRepository.broadcastNotifications(userIds, title, message, 'BROADCAST', link);
   }
 
   static async findNotificationsByUserId(userId: string): Promise<InAppNotification[]> {
-    const query = `
-      SELECT id, user_id, title, message, is_read, link, created_at FROM in_app_notifications 
-      WHERE user_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT 50;
-    `;
-    const result = await pool.query(query, [userId]);
-    return result.rows;
+    const rows = await NotificationRepository.getNotificationsForUser(userId);
+    return rows.map(rec => ({
+      id: rec.id,
+      user_id: rec.user_id,
+      title: rec.title,
+      message: rec.message,
+      is_read: rec.read,
+      link: rec.link || null,
+      created_at: rec.created_at
+    }));
   }
 
   static async markNotificationAsRead(id: string, userId: string): Promise<InAppNotification | null> {
-    const query = `
-      UPDATE in_app_notifications 
-      SET is_read = TRUE 
-      WHERE id = $1 AND user_id = $2 
-      RETURNING *;
-    `;
-    const result = await pool.query(query, [id, userId]);
-    return result.rows[0] || null;
+    const rec = await NotificationRepository.markAsRead(id, userId);
+    if (!rec) return null;
+    return {
+      id: rec.id,
+      user_id: rec.user_id,
+      title: rec.title,
+      message: rec.message,
+      is_read: rec.read,
+      link: rec.link || null,
+      created_at: rec.created_at
+    };
   }
 
   static async deleteTicket(id: string): Promise<boolean> {

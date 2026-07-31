@@ -5,12 +5,13 @@ import { UserRepository } from '../../auth/repositories/UserRepository';
 import { EmailService } from '../../auth/services/EmailService';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
+import { NotificationService } from '../../notifications/services/NotificationService';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
 import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
 const isEmployerRole = (r?: string) => {
   const norm = (r || '').toLowerCase().trim();
-  return norm === 'employer' || norm === 'admin' || norm === 'recruiter';
+  return norm === 'employer' || norm === 'admin' || norm === 'recruiter' || norm === 'superadmin' || norm === 'super_admin' || norm === 'company';
 };
 
 export class JobController {
@@ -559,20 +560,23 @@ export class JobController {
           ]);
 
           if (candidate && employer) {
-            await SupportRepository.createNotification({
-              user_id: employer.id,
-              title: `New Candidate Application`,
-              message: `${candidate.name} applied for "${job.title}"`,
-              link: `/job/${id}/applicants?applicantId=${candidate.id}`
-            });
-
-            await AdvertisementRepository.createNotification(
+            // Send in-app notification to Employer
+            await NotificationService.sendNotification(
               employer.id,
               `New Candidate Application`,
               `${candidate.name} applied for "${job.title}"`,
               'JOB_APPLICATION',
-              `/job/${id}/applicants?applicantId=${candidate.id}`
-            );
+              `/dashboard?tab=applicants`
+            ).catch(err => console.error('Failed to create employer in-app notification:', err));
+
+            // Send in-app confirmation notification to Candidate
+            await NotificationService.sendNotification(
+              candidate.id,
+              `Application Submitted Successfully`,
+              `Your application for "${job.title}" at ${job.company || 'Employer'} has been received.`,
+              'APPLICATION_CONFIRMATION',
+              `/job/${job.id}`
+            ).catch(err => console.error('Failed to create candidate in-app notification:', err));
 
             const resumeUrl = candidate.resume && (candidate.resume as any).url ? (candidate.resume as any).url : null;
             await EmailService.sendJobApplicationEmail(
@@ -647,20 +651,13 @@ export class JobController {
 
           if (candidate && job) {
             const companyName = employer?.company_name || employer?.name || job.company;
-            await SupportRepository.createNotification({
-              user_id: userId,
-              title: `Application Status Updated: ${status.toUpperCase()}`,
-              message: `Your application for "${job.title}" at ${companyName} is now ${status.toUpperCase()}`,
-              link: `/dashboard?tab=applied`
-            });
-
-            await AdvertisementRepository.createNotification(
+            await NotificationService.sendNotification(
               userId,
-              `Application Status Updated: ${status.toUpperCase()}`,
+              `Application Status: ${status.toUpperCase()}`,
               `Your application for "${job.title}" at ${companyName} is now ${status.toUpperCase()}`,
               'JOB_STATUS',
               `/dashboard?tab=applied`
-            );
+            ).catch(err => console.error('Failed to send status in-app notification:', err));
 
             await EmailService.sendApplicationStatusUpdateEmail(
               candidate.email,
@@ -724,20 +721,13 @@ export class JobController {
       if (candidate && employer) {
         (async () => {
           try {
-            await SupportRepository.createNotification({
-              user_id: userId,
-              title: `Interview Scheduled: ${job.title}`,
-              message: `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime}`,
-              link: `/dashboard?tab=applied`
-            });
-
-            await AdvertisementRepository.createNotification(
+            await NotificationService.sendNotification(
               userId,
               `Interview Scheduled: ${job.title}`,
-              `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime}`,
+              `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime} (${venueAddress})`,
               'JOB_INTERVIEW',
               `/dashboard?tab=applied`
-            );
+            ).catch(err => console.error('Failed to send interview in-app notification:', err));
 
             await EmailService.sendInterviewScheduledEmail(
               candidate.email,

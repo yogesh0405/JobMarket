@@ -68,6 +68,7 @@ export const useAuth = () => {
         preferredShift: apiUser.preferred_shift || '',
         requiresBus: !!apiUser.requires_bus,
         requiresAccommodation: !!apiUser.requires_accommodation,
+        isResumePublic: apiUser.is_resume_public !== false,
         companyName: apiUser.company_name || '',
         gstNumber: apiUser.gst_number || '',
       };
@@ -180,6 +181,7 @@ export const useAuth = () => {
         preferredShift: apiUser.preferred_shift || '',
         requiresBus: !!apiUser.requires_bus,
         requiresAccommodation: !!apiUser.requires_accommodation,
+        isResumePublic: apiUser.is_resume_public !== false,
         companyName: apiUser.company_name || '',
         gstNumber: apiUser.gst_number || '',
       };
@@ -250,6 +252,7 @@ export const useAuth = () => {
             preferredShift: apiUser.preferred_shift || '',
             requiresBus: !!apiUser.requires_bus,
             requiresAccommodation: !!apiUser.requires_accommodation,
+            isResumePublic: apiUser.is_resume_public !== false,
             companyName: apiUser.company_name || '',
             gstNumber: apiUser.gst_number || '',
           };
@@ -273,3 +276,5 @@ export const useAuth = () => {
     syncUser
   };
 };
+
+export default useAuth;

@@ -474,7 +474,7 @@ export class AuthController {
         return res.status(400).json({ error: 'OTP has expired or is invalid. Please request a new OTP.' });
       }
 
-      const payload = JSON.parse(payloadStr);
+      const payload = JSON.parse(String(payloadStr));
 
       if (payload.attempts >= 5) {
         await redisClient.del(redisKey);
@@ -520,7 +520,7 @@ export class AuthController {
         return res.status(400).json({ error: 'OTP verification session expired. Please start over.' });
       }
 
-      const payload = JSON.parse(payloadStr);
+      const payload = JSON.parse(String(payloadStr));
       if (payload.otp !== otpCode.trim()) {
         return res.status(400).json({ error: 'Invalid OTP code' });
       }

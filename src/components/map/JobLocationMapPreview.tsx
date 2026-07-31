@@ -68,7 +68,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
 
       marker.bindPopup(`
         <div style="font-family: inherit; padding: 4px; text-align: center;">
-          <strong style="color: #0f172a; font-size: 13px;">Location Marked</strong>
+          <strong style="color: #0f172a; font-size: 13px;">Location</strong>
           <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">${locationName}</div>
         </div>
       `);
@@ -95,7 +95,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         markerRef.current.setLatLng([latitude, longitude]);
         markerRef.current.getPopup()?.setContent(`
           <div style="font-family: inherit; padding: 4px; text-align: center;">
-            <strong style="color: #0f172a; font-size: 13px;">Location Marked</strong>
+            <strong style="color: #0f172a; font-size: 13px;">Location</strong>
             <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">${locationName}</div>
           </div>
         `);
@@ -157,7 +157,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
           }}>
             <MapPin size={16} />
           </div>
-          <span>Location Marked</span>
+          <span>Location</span>
           <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '500', marginLeft: '2px' }}>(View & Zoom Only)</span>
         </div>
 

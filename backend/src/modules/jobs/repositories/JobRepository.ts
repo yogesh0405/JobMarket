@@ -1,6 +1,7 @@
 import { pool } from '../../../config/database/pool';
 import { GeocodingService } from '../services/geocodingService';
 import { CacheService } from '../../../utils/redisCache';
+import { safeJsonParse } from '../../../utils/jsonUtils';
 
 export interface JobData {
   title: string;
@@ -37,6 +38,7 @@ export interface JobData {
   latitude?: number;
   longitude?: number;
   acceptResume?: boolean;
+  resubmit?: boolean;
   targetIti?: boolean;
   itiTrade?: string | null;
   experienceRequired?: boolean;
@@ -118,12 +120,12 @@ export class JobRepository {
       openings: row.openings,
       filledOpenings: row.filled_openings || 0,
       description: row.description,
-      responsibilities: typeof row.responsibilities === 'string' ? JSON.parse(row.responsibilities) : (row.responsibilities || []),
-      requirements: typeof row.requirements === 'string' ? JSON.parse(row.requirements) : (row.requirements || []),
-      skills: typeof row.skills === 'string' ? JSON.parse(row.skills) : (row.skills || []),
-      perks: typeof row.perks === 'string' ? JSON.parse(row.perks) : (row.perks || []),
+      responsibilities: safeJsonParse(row.responsibilities, []),
+      requirements: safeJsonParse(row.requirements, []),
+      skills: safeJsonParse(row.skills, []),
+      perks: safeJsonParse(row.perks, []),
       featured: row.featured,
-      status: row.status === 'APPROVED' ? 'active' : 'closed',
+      status: row.status === 'APPROVED' ? 'active' : (row.status === 'REJECTED' ? 'rejected' : (row.status === 'CLOSED' ? 'closed' : 'pending')),
       dbStatus: row.status,
       rejectReason: row.reject_reason,
       views: row.views || 0,
@@ -617,6 +619,13 @@ export class JobRepository {
       RETURNING *
     `;
 
+    let targetStatus: string | null = null;
+    if (currentJob.status === 'REJECTED' || jobData.resubmit) {
+      targetStatus = 'PENDING_REVIEW';
+    } else if (jobData.status !== undefined) {
+      targetStatus = jobData.status === 'active' ? 'APPROVED' : (jobData.status === 'pending' ? 'PENDING_REVIEW' : 'CLOSED');
+    }
+
     const values = [
       jobData.title || null,
       jobData.industry || null,
@@ -647,7 +656,7 @@ export class JobRepository {
       jobData.interviewAddress !== undefined ? jobData.interviewAddress : null,
       jobData.companyLogo !== undefined ? jobData.companyLogo : null,
       jobData.filledOpenings !== undefined ? jobData.filledOpenings : null,
-      jobData.status !== undefined ? (jobData.status === 'active' ? 'APPROVED' : 'CLOSED') : null,
+      targetStatus,
       latitude,
       longitude,
       geocodingStatus,
@@ -797,7 +806,11 @@ export class JobRepository {
     const result = await pool.query(query, [jobId]);
     return result.rows.map(row => ({
       ...row,
-      resume: acceptResume ? row.resume : null
+      resume: acceptResume ? safeJsonParse(row.resume, null) : null,
+      experience: safeJsonParse(row.experience, []),
+      education: safeJsonParse(row.education, []),
+      skills: safeJsonParse(row.skills, []),
+      aadhaarVerified: !!row.aadhaarVerified
     }));
   }
 

@@ -6,6 +6,7 @@ import { BadRequestError, NotFoundError } from '../../../errors/AppError';
 import { pool } from '../../../config/database/pool';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { EmailService } from '../../auth/services/EmailService';
+import { NotificationService } from '../../notifications/services/NotificationService';
 import { logger } from '../../../utils/logger';
 
 export class AdminService {
@@ -94,6 +95,16 @@ export class AdminService {
     const updatedJob = await AdminRepository.updateJobStatus(jobId, 'APPROVED');
     await AuditRepository.logAction('JOB_APPROVED', adminId, 'Admin', ip, ua, { jobId, title: job.title });
 
+    if (job.employer_id || job.employerId) {
+      await NotificationService.sendNotification(
+        job.employer_id || job.employerId,
+        'Job Posting Approved 🎉',
+        `Your job opening "${job.title}" has been reviewed and approved. It is now live for candidates!`,
+        'JOB_APPROVAL',
+        '/dashboard?tab=manage'
+      ).catch(err => logger.error('Failed to notify employer on job approval:', err));
+    }
+
     return { success: true, job: updatedJob };
   }
 
@@ -109,6 +120,16 @@ export class AdminService {
 
     const updatedJob = await AdminRepository.updateJobStatus(jobId, 'REJECTED', rejectReason);
     await AuditRepository.logAction('JOB_REJECTED', adminId, 'Admin', ip, ua, { jobId, title: job.title, reason: rejectReason });
+
+    if (job.employer_id || job.employerId) {
+      await NotificationService.sendNotification(
+        job.employer_id || job.employerId,
+        'Job Listing Changes Requested',
+        `Your job opening "${job.title}" requires changes: "${rejectReason}". Please edit and resubmit.`,
+        'JOB_APPROVAL',
+        '/dashboard?tab=manage'
+      ).catch(err => logger.error('Failed to notify employer on job rejection:', err));
+    }
 
     return { success: true, job: updatedJob };
   }
@@ -234,7 +255,7 @@ export class AdminService {
     // 1. Deliver In-App Notifications in Batch
     if (channels.includes('IN_APP')) {
       const userIds = targetUsers.map(u => u.id);
-      inAppDelivered = await SupportRepository.broadcastNotifications(userIds, subject, message, actionLink);
+      inAppDelivered = await NotificationService.broadcast(userIds, subject, message, 'BROADCAST', actionLink);
     }
 
     // 2. Dispatch Email Broadcasts asynchronously via EmailService

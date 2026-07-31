@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
-import { getInitials } from '../../../utils/helpers';
+import { getInitials, safeJsonParse } from '../../../utils/helpers';
 import { ResumePreviewModal } from '../../../components/profile/ResumePreviewModal';
 
 export const WorkerManagementPage: React.FC = () => {
@@ -159,7 +159,7 @@ export const WorkerManagementPage: React.FC = () => {
                           className="btn btn-outline"
                           style={{ padding: '4px 8px', fontSize: '11px', background: 'var(--surface)', border: '1px solid var(--border)' }}
                           onClick={() => {
-                            const resObj = typeof worker.resume === 'string' ? JSON.parse(worker.resume) : worker.resume;
+                            const resObj = safeJsonParse(worker.resume, null);
                             setPreviewResume(resObj);
                             setPreviewUserId(worker.id);
                           }}

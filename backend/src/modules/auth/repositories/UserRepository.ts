@@ -1,5 +1,6 @@
 import { pool } from '../../../config/database/pool';
 import { CacheService } from '../../../utils/redisCache';
+import { safeJsonParse } from '../../../utils/jsonUtils';
 
 export interface User {
   id: string;
@@ -21,6 +22,7 @@ export interface User {
   preferred_shift?: string;
   requires_bus?: boolean;
   requires_accommodation?: boolean;
+  is_resume_public?: boolean;
   resume?: any;
   experience?: any[];
   education?: any[];
@@ -64,13 +66,17 @@ export class UserRepository {
       const query = `
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
                trade_specialization, status, created_at, updated_at, headline, location, skills, 
-               preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url 
+               preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url,
+               COALESCE(is_resume_public, true) as is_resume_public 
         FROM users 
         WHERE id = $1;
       `;
       const result = await pool.query(query, [id]);
       if (result.rows.length === 0) return null;
       const user = result.rows[0] as User;
+      user.resume = safeJsonParse(user.resume, null);
+      user.experience = safeJsonParse(user.experience, []);
+      user.education = safeJsonParse(user.education, []);
 
       // Fetch applied job IDs and status
       try {
@@ -155,6 +161,8 @@ export class UserRepository {
       requiresBus: 'requires_bus',
       requires_accommodation: 'requires_accommodation',
       requiresAccommodation: 'requires_accommodation',
+      is_resume_public: 'is_resume_public',
+      isResumePublic: 'is_resume_public',
       resume: 'resume',
       experience: 'experience',
       education: 'education',
@@ -192,6 +200,7 @@ export class UserRepository {
 
     const result = await client.query(query, values);
     await CacheService.invalidate(`user:profile:${userId}`);
+    await CacheService.invalidate('cache:candidates:all');
     return result.rows[0];
   }
 
@@ -201,9 +210,11 @@ export class UserRepository {
         SELECT id, email, name, phone, role, status, created_at, updated_at,
                headline, location, skills, preferred_shift, requires_bus,
                requires_accommodation, resume, experience, education, profile_picture_url,
-               trade_specialization as "tradeSpecialization"
+               trade_specialization as "tradeSpecialization",
+               aadhaar_verified as "aadhaarVerified",
+               COALESCE(is_resume_public, true) as "isResumePublic"
         FROM users
-        WHERE role = 'candidate'
+        WHERE LOWER(role) = 'candidate' AND COALESCE(is_resume_public, true) = true
         ORDER BY name ASC;
       `;
       const result = await pool.query(query);
@@ -222,11 +233,13 @@ export class UserRepository {
         preferredShift: row.preferred_shift,
         requiresBus: row.requires_bus,
         requiresAccommodation: row.requires_accommodation,
-        resume: typeof row.resume === 'string' ? JSON.parse(row.resume) : row.resume,
-        experience: typeof row.experience === 'string' ? JSON.parse(row.experience) : row.experience,
-        education: typeof row.education === 'string' ? JSON.parse(row.education) : row.education,
+        isResumePublic: row.isResumePublic !== false,
+        resume: safeJsonParse(row.resume, null),
+        experience: safeJsonParse(row.experience, []),
+        education: safeJsonParse(row.education, []),
         profilePictureUrl: row.profile_picture_url,
-        tradeSpecialization: row.tradeSpecialization
+        tradeSpecialization: row.tradeSpecialization,
+        aadhaarVerified: !!row.aadhaarVerified
       }));
     });
   }

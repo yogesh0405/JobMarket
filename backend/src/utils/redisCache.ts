@@ -17,7 +17,12 @@ export class CacheService {
       if (redisClient.isOpen) {
         const cachedData = await redisClient.get(key);
         if (cachedData) {
-          return JSON.parse(cachedData) as T;
+          try {
+            return JSON.parse(String(cachedData)) as T;
+          } catch (jsonErr) {
+            logger.warn(`Redis JSON parse error for key ${key}, clearing key and falling back to DB:`, jsonErr);
+            await redisClient.del(key).catch(() => {});
+          }
         }
       }
     } catch (err) {

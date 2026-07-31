@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { 
+  User, Mail, Phone, MapPin, ShieldCheck, Wrench, Briefcase, 
+  Clock, FileText, X, CheckCircle2, Award, Calendar, Bus, Home, 
+  GraduationCap, DollarSign, UserCheck, Building, Check, Sparkles 
+} from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { ResumePreviewModal } from '../profile/ResumePreviewModal';
 
@@ -24,6 +29,16 @@ const formatNumber = (num?: number) => {
   return num.toLocaleString('en-IN');
 };
 
+const tryParseJson = (data: any) => {
+  if (!data) return null;
+  if (typeof data !== 'string') return data;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
+};
+
 export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
   viewWorker,
   onClose,
@@ -33,7 +48,40 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
   showToast,
   myJobs = []
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'job_details' | 'profile' | 'hiring'>('job_details');
+  const hasJobContext = Boolean(viewWorker?.jobId || viewWorker?.job_id || viewWorker?.job || viewWorker?.status || viewWorker?.jobTitle);
+  
+  const rawSkills = tryParseJson(viewWorker?.skills);
+  const skillsList: string[] = Array.isArray(rawSkills)
+    ? rawSkills
+    : typeof rawSkills === 'string'
+    ? rawSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  const rawExperience = tryParseJson(viewWorker?.experience);
+  const experienceList: any[] = Array.isArray(rawExperience)
+    ? rawExperience
+    : typeof rawExperience === 'object' && rawExperience !== null
+    ? [rawExperience]
+    : typeof rawExperience === 'string' && rawExperience.trim()
+    ? [{ role: rawExperience, company: 'Work Experience', duration: 'As per profile' }]
+    : [];
+
+  const rawEducation = tryParseJson(viewWorker?.qualification || viewWorker?.education);
+  const displayQualification: string = typeof rawEducation === 'string'
+    ? rawEducation
+    : Array.isArray(rawEducation) && rawEducation.length > 0
+    ? (rawEducation[0]?.degree || rawEducation[0]?.title || rawEducation[0]?.qualification || 'ITI / Industrial Vocational Training')
+    : typeof rawEducation === 'object' && rawEducation !== null
+    ? (rawEducation.degree || rawEducation.title || rawEducation.qualification || 'ITI / Industrial Vocational Training')
+    : 'ITI / Industrial Vocational Training';
+
+  const resumeObj = typeof viewWorker?.resume === 'string'
+    ? { url: viewWorker.resume, name: 'Candidate Resume.pdf' }
+    : viewWorker?.resume && typeof viewWorker.resume === 'object'
+    ? viewWorker.resume
+    : null;
+
+  const [activeSubTab, setActiveSubTab] = useState<'job_details' | 'profile' | 'hiring'>(hasJobContext ? 'job_details' : 'profile');
   const [previewResume, setPreviewResume] = useState<any>(null);
   
   // Job resolution state
@@ -105,12 +153,15 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
 
   // Initial subject & message preparation
   useEffect(() => {
+    if (!hasJobContext && activeSubTab !== 'profile') {
+      setActiveSubTab('profile');
+    }
     const jobTitle = jobData?.title || viewWorker?.jobTitle || viewWorker?.tradeSpecialization || 'Position';
     const compName = jobData?.company || 'Recruitment Team';
     setEmailSubject(`Regarding your application for ${jobTitle}`);
     setEmailMessage(`Hi ${viewWorker?.name || 'Candidate'},\n\nWe would like to connect with you regarding your application for the ${jobTitle} role.\n\nBest regards,\n${compName}`);
     setApplicantStatus(viewWorker?.status || 'applied');
-  }, [viewWorker, jobData]);
+  }, [viewWorker, jobData, hasJobContext]);
 
   if (!viewWorker) return null;
 
@@ -206,10 +257,10 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            borderRadius: '16px',
-            boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.25)',
+            borderRadius: '6px',
+            boxShadow: '0 12px 36px rgba(15, 23, 42, 0.16)',
             background: 'var(--surface, #ffffff)',
-            border: '1px solid var(--border)'
+            border: '1.5px solid #cbd5e1'
           }}
         >
           {/* Top Modal Header */}
@@ -227,43 +278,44 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
           >
             <div>
               <h3 className="modal-title" style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                Application & Candidate Details
+                {hasJobContext ? 'Application & Candidate Details' : 'Candidate Profile Details'}
               </h3>
               <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                View complete profile, job specs & take hiring actions
+                {hasJobContext ? 'View complete profile, job specs & take hiring actions' : 'View candidate qualifications, work experience & contact info'}
               </p>
             </div>
             <button
               className="modal-close"
               onClick={onClose}
               style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '50%',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-secondary)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                border: '1px solid #cbd5e1',
+                background: '#f8fafc',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '16px',
-                color: 'var(--text-secondary)'
+                fontSize: '15px',
+                color: '#475569'
               }}
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
 
-          {/* Sticky Tab Bar */}
-          <div
-            style={{
-              background: 'var(--surface)',
-              padding: '8px 16px',
-              borderBottom: '1px solid var(--border)',
-              flexShrink: 0,
-              zIndex: 10
-            }}
-          >
+          {/* Sticky Tab Bar (only shown when viewing specific job application) */}
+          {hasJobContext && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                padding: '8px 16px',
+                borderBottom: '1px solid var(--border)',
+                flexShrink: 0,
+                zIndex: 10
+              }}
+            >
             <div
               style={{
                 display: 'flex',
@@ -367,8 +419,9 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                 </svg>
                 Status & Interview
               </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Modal Body Container */}
           <div
@@ -383,95 +436,104 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
               WebkitOverflowScrolling: 'touch'
             }}
           >
-            {/* Top Candidate Summary Card */}
+            {/* Top Candidate Hero Summary Card */}
             <div
               style={{
-                background: 'var(--bg-secondary, #f8fafc)',
-                padding: '16px',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
+                background: '#ffffff',
+                padding: '18px',
+                borderRadius: '6px',
+                border: '1.5px solid #cbd5e1',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px'
+                gap: '14px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: '1 1 240px' }}>
                   <div
                     style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '50%',
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'var(--gradient-primary, #344BFD)',
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #344BFD 100%)',
+                      color: '#ffffff',
+                      fontSize: '22px',
+                      fontWeight: '800',
                       overflow: 'hidden',
                       flexShrink: 0,
-                      boxShadow: '0 4px 10px rgba(52, 75, 253, 0.2)'
+                      boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)',
+                      border: '1.5px solid #cbd5e1'
                     }}
                   >
                     {viewWorker.profilePictureUrl ? (
                       <img src={viewWorker.profilePictureUrl} alt={viewWorker.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'white' }}>
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
+                      (viewWorker.name || 'C').charAt(0).toUpperCase()
                     )}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: 'var(--text-primary)', lineHeight: '1.2' }}>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a', lineHeight: '1.2' }}>
                         {viewWorker.name || 'Candidate Name'}
                       </h3>
                       {viewWorker.aadhaarVerified && (
-                        <span style={{ fontSize: '11px', padding: '2px 8px', background: '#dcfce7', color: '#15803d', borderRadius: '9999px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                          Verified ✓
+                        <span style={{ fontSize: '11px', padding: '3px 8px', background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '4px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <ShieldCheck size={13} />
+                          <span>Verified</span>
                         </span>
                       )}
                     </div>
                     
-                    <p style={{ margin: '4px 0 0', color: 'var(--primary)', fontWeight: '600', fontSize: '13px' }}>
-                      {displayJobTitle ? (
+                    <p style={{ margin: '4px 0 0', color: '#344BFD', fontWeight: '700', fontSize: '13.5px' }}>
+                      {hasJobContext && displayJobTitle ? (
                         <>Applied for: <strong>{displayJobTitle}</strong></>
                       ) : (
-                        <>Role / Trade: <strong>{viewWorker.tradeSpecialization || viewWorker.headline || 'Talent Pool Candidate'}</strong></>
+                        <>Role / Trade: <strong>{viewWorker.tradeSpecialization || viewWorker.headline || 'Industrial Specialist'}</strong></>
                       )}
                     </p>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span
-                    className={`status-badge status-${applicantStatus}`}
-                    style={{
-                      fontSize: '12px',
-                      padding: '6px 14px',
-                      fontWeight: '700',
-                      borderRadius: '9999px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}
-                  >
-                    {capitalize(applicantStatus)}
-                  </span>
-                </div>
+                {hasJobContext && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      className={`status-badge status-${applicantStatus}`}
+                      style={{
+                        fontSize: '12px',
+                        padding: '6px 14px',
+                        fontWeight: '700',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      {capitalize(applicantStatus)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12.5px', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-light)', paddingTop: '10px', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  ✉ {viewWorker.email || 'Email Not Provided'}
-                </span>
+              {/* Quick Contact Chips Row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#475569', borderTop: '1px solid #e2e8f0', paddingTop: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '6px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>
+                  <Mail size={14} style={{ color: '#2563eb' }} />
+                  <span>{viewWorker.email || 'Email Not Provided'}</span>
+                </div>
                 {viewWorker.phone && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    📞 {viewWorker.phone}
-                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '6px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>
+                    <Phone size={14} style={{ color: '#16a34a' }} />
+                    <span>{viewWorker.phone}</span>
+                  </div>
                 )}
                 {viewWorker.location && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    📍 {viewWorker.location}
-                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '6px 12px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>
+                    <MapPin size={14} style={{ color: '#dc2626' }} />
+                    <span>{viewWorker.location}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -480,9 +542,11 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
             {activeSubTab === 'job_details' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {isLoadingJob ? (
-                  <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px' }}>
-                    <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
-                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>Loading Job Specifications...</p>
+                  <div style={{ padding: '40px 20px', textAlign: 'center', background: '#ffffff', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3.5px solid #cbd5e1', borderTopColor: '#344BFD', animation: 'spin 0.8s linear infinite' }}></div>
+                    </div>
+                    <p style={{ margin: 0, color: '#0f172a', fontSize: '13.5px', fontWeight: '700' }}>Loading Job Specifications...</p>
                   </div>
                 ) : jobData ? (
                   <>
@@ -500,9 +564,24 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                               </span>
                             )}
                           </div>
-                          <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '500' }}>
-                            🏢 {jobData.company || 'Company'} • 📍 {jobData.location || 'Location'} ({jobData.workMode || 'On-site'})
-                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: '13.5px', fontWeight: '500', flexWrap: 'wrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+                                <path d="M9 22v-4h6v4"/>
+                                <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
+                              </svg>
+                              <span>{jobData.company || 'Company'}</span>
+                            </span>
+                            •
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              <span>{jobData.location || 'Location'} ({jobData.workMode || 'On-site'})</span>
+                            </span>
+                          </div>
                         </div>
 
                         <Link
@@ -608,7 +687,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                     )}
 
                     {/* Requirements Block */}
-                    {jobData.requirements && jobData.requirements.length > 0 && (
+                    {Array.isArray(jobData.requirements) && jobData.requirements.length > 0 && (
                       <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                         <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                           Key Requirements
@@ -678,60 +757,109 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
 
             {/* TAB 2: CANDIDATE PROFILE */}
             {activeSubTab === 'profile' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Account Details */}
-                <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
-                    Account Information
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>EMAIL ADDRESS</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px', wordBreak: 'break-all' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Account & Identification Details */}
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <User size={16} />
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '13px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800' }}>
+                      Account & Contact Information
+                    </h4>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Mail size={12} style={{ color: '#2563eb' }} />
+                        <span>EMAIL ADDRESS</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px', wordBreak: 'break-all' }}>
                         {viewWorker.email || 'Not Provided'}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>PHONE NUMBER</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px' }}>
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Phone size={12} style={{ color: '#16a34a' }} />
+                        <span>PHONE NUMBER</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
                         {viewWorker.phone || 'Not Provided'}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>LOCATION</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px' }}>
-                        {viewWorker.location || 'Not Specified'}
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} style={{ color: '#dc2626' }} />
+                        <span>CURRENT LOCATION</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
+                        {viewWorker.location || 'Maharashtra, India'}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>VERIFICATION STATUS</div>
-                      <div style={{ fontSize: '13.5px', color: viewWorker.aadhaarVerified ? '#15803d' : 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
-                        {viewWorker.aadhaarVerified ? 'Aadhaar Verified ✓' : 'Unverified'}
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ShieldCheck size={12} style={{ color: '#15803d' }} />
+                        <span>GOVT VERIFICATION</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: viewWorker.aadhaarVerified ? '#15803d' : '#64748b', fontWeight: '700', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {viewWorker.aadhaarVerified ? (
+                          <>
+                            <CheckCircle2 size={14} style={{ color: '#15803d' }} />
+                            <span>Aadhaar Verified ✓</span>
+                          </>
+                        ) : 'Unverified'}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Professional Headline & Skills */}
-                <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
-                    Trade & Skills
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>SPECIALIZATION / TRADE</div>
-                      <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: '700', marginTop: '2px' }}>
-                        {viewWorker.tradeSpecialization || viewWorker.headline || 'General Worker'}
+                {/* Professional Trade & Skills */}
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Wrench size={16} />
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '13px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800' }}>
+                      Trade & Technical Specialization
+                    </h4>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Wrench size={12} style={{ color: '#344BFD' }} />
+                          <span>PRIMARY TRADE</span>
+                        </div>
+                        <div style={{ fontSize: '14px', color: '#344BFD', fontWeight: '800', marginTop: '3px' }}>
+                          {viewWorker.tradeSpecialization || viewWorker.headline || 'Industrial Specialist'}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Briefcase size={12} style={{ color: '#0284c7' }} />
+                          <span>TOTAL EXPERIENCE</span>
+                        </div>
+                        <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '3px' }}>
+                          {viewWorker.totalExperience ? `${viewWorker.totalExperience} Years` : viewWorker.experienceYears ? `${viewWorker.experienceYears} Years` : '1+ Years Experience'}
+                        </div>
                       </div>
                     </div>
 
-                    {viewWorker.skills && viewWorker.skills.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600', marginBottom: '6px' }}>SKILLS & CERTIFICATIONS</div>
+                    {skillsList.length > 0 && (
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Award size={13} style={{ color: '#1d4ed8' }} />
+                          <span>TECHNICAL SKILLS & CERTIFICATIONS</span>
+                        </div>
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {viewWorker.skills.map((sk: string, idx: number) => (
-                            <span key={idx} style={{ fontSize: '12px', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                              {sk}
+                          {skillsList.map((sk: string, idx: number) => (
+                            <span key={idx} style={{ fontSize: '12px', padding: '4px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '4px', fontWeight: '700', color: '#1d4ed8', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span>✓</span>
+                              <span>{sk}</span>
                             </span>
                           ))}
                         </div>
@@ -740,80 +868,176 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Candidate Preferences */}
-                <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
-                    Job & Shift Preferences
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>PREFERRED SHIFT</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px' }}>
+                {/* Education & Qualifications */}
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <GraduationCap size={16} />
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '13px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800' }}>
+                      Education & Qualifications
+                    </h4>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <GraduationCap size={12} style={{ color: '#7c3aed' }} />
+                        <span>HIGHEST QUALIFICATION</span>
+                      </div>
+                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '3px' }}>
+                        {displayQualification}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Award size={12} style={{ color: '#059669' }} />
+                        <span>TRADE CERTIFICATE</span>
+                      </div>
+                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '3px' }}>
+                        {viewWorker.aadhaarVerified ? 'Government Certified Trade Specialist' : 'Standard Vocational Certificate'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Job & Shift Preferences */}
+                <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Clock size={16} />
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '13px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800' }}>
+                      Work & Shift Preferences
+                    </h4>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} style={{ color: '#d97706' }} />
+                        <span>PREFERRED SHIFT</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
                         {viewWorker.preferredShift || 'Flexible / Any Shift'}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>BUS TRANSPORT</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px' }}>
-                        {viewWorker.requiresBus ? 'Requires Bus Facility' : 'Not Required'}
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <DollarSign size={12} style={{ color: '#059669' }} />
+                        <span>EXPECTED SALARY</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
+                        {viewWorker.expectedSalary ? `₹${formatNumber(viewWorker.expectedSalary)} / month` : 'As per Industry Standards'}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '600' }}>ACCOMMODATION</div>
-                      <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontWeight: '600', marginTop: '2px' }}>
-                        {viewWorker.requiresAccommodation ? 'Requires Housing' : 'Not Required'}
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bus size={12} style={{ color: '#2563eb' }} />
+                        <span>BUS FACILITY</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
+                        {viewWorker.requiresBus ? 'Required' : 'Not Required'}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Home size={12} style={{ color: '#ea580c' }} />
+                        <span>ACCOMMODATION</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
+                        {viewWorker.requiresAccommodation ? 'Required' : 'Not Required'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Experience section */}
-                {viewWorker.experience && viewWorker.experience.length > 0 && (
-                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                    <h4 style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
-                      Work Experience
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {viewWorker.experience.map((exp: any, idx: number) => (
-                        <div key={idx} style={{ padding: '10px 12px', background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>{exp.role || exp.title}</div>
-                          <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            {exp.company} • {exp.duration || `${exp.startDate || ''} - ${exp.endDate || 'Present'}`}
+                {experienceList.length > 0 && (
+                  <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Briefcase size={16} />
+                      </div>
+                      <h4 style={{ margin: 0, fontSize: '13px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800' }}>
+                        Work Experience History
+                      </h4>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {experienceList.map((exp: any, idx: number) => {
+                        if (!exp) return null;
+                        if (typeof exp === 'string') {
+                          return (
+                            <div key={idx} style={{ padding: '12px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                              <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '700' }}>{exp}</div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={idx} style={{ padding: '12px', background: '#f8fafc', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Building size={14} style={{ color: '#344BFD' }} />
+                              <span>{exp.role || exp.title || exp.company || 'Industrial Role'}</span>
+                            </div>
+                            <div style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {exp.company && <span>{exp.company}</span>}
+                              {(exp.duration || exp.years || exp.startDate) && (
+                                <>
+                                  {exp.company && <span>•</span>}
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Calendar size={12} />
+                                    <span>{exp.duration || (exp.years ? `${exp.years} Years` : `${exp.startDate || ''} - ${exp.endDate || 'Present'}`)}</span>
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            {exp.description && (
+                              <p style={{ margin: '6px 0 0', fontSize: '12.5px', color: '#64748b', lineHeight: '1.4' }}>{exp.description}</p>
+                            )}
                           </div>
-                          {exp.description && (
-                            <p style={{ margin: '6px 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>{exp.description}</p>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
                 {/* Resume Card */}
-                {viewWorker.job?.acceptResume !== false && viewWorker.resume && (viewWorker.resume.url || viewWorker.resume.name) && (
-                  <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                {resumeObj && (resumeObj.url || resumeObj.name) && (
+                  <div style={{ background: '#ffffff', padding: '16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '4px', background: '#eff6ff', color: '#344BFD', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText size={22} />
                       </div>
                       <div>
-                        <div style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                          {viewWorker.resume.name || 'Candidate Resume'}
+                        <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                          {resumeObj.name || 'Candidate Resume'}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>PDF Document</div>
+                        <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '600' }}>PDF Resume Attachment</div>
                       </div>
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => setPreviewResume(viewWorker.resume)}
-                      className="btn btn-outline btn-sm"
-                      style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', fontWeight: '600' }}
+                      onClick={() => setPreviewResume(resumeObj)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        border: '1.5px solid #344BFD',
+                        background: '#eff6ff',
+                        color: '#344BFD',
+                        fontWeight: '700',
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.18s ease'
+                      }}
                     >
-                      Preview Resume Document 📄
+                      <FileText size={15} />
+                      <span>Preview Resume Document</span>
                     </button>
                   </div>
                 )}
@@ -975,6 +1199,81 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Modal Action Footer */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderTop: '1.5px solid #cbd5e1',
+              background: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {viewWorker.phone && (
+                <a
+                  href={`tel:${viewWorker.phone}`}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '4px',
+                    background: '#16a34a',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '12.5px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Phone size={14} />
+                  <span>Call Candidate</span>
+                </a>
+              )}
+              {viewWorker.email && (
+                <a
+                  href={`mailto:${viewWorker.email}`}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '4px',
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#1d4ed8',
+                    fontWeight: '700',
+                    fontSize: '12.5px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Mail size={14} />
+                  <span>Email</span>
+                </a>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '4px',
+                border: '1.5px solid #cbd5e1',
+                background: '#f8fafc',
+                color: '#334155',
+                fontWeight: '700',
+                fontSize: '12.5px',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>

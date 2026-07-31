@@ -100,3 +100,21 @@ function clearSession() {
   // Dispatch a custom logout event so hooks/store can capture it and redirect
   window.dispatchEvent(new Event('auth:logout'));
 }
+
+export async function safeParseJson<T = any>(res: Response): Promise<{ ok: boolean; status: number; data: T }> {
+  const text = await res.text();
+  let data: any = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      data = { message: text };
+    }
+  }
+  return {
+    ok: res.ok,
+    status: res.status,
+    data
+  };
+}
+

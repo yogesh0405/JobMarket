@@ -14,11 +14,13 @@ export const formatSalary = (min?: number, max?: number): string => {
   return `Up to ₹${format(max || 0)}`;
 };
 
-export const timeAgo = (dateStr: string): string => {
+export const timeAgo = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Recently';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Recently';
   const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return 'Just now';
+  if (diff <= 0 || diff < 60) return 'Just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
@@ -26,8 +28,11 @@ export const timeAgo = (dateStr: string): string => {
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export const formatDate = (dateStr: string): string => {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+export const formatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Recently';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 'Recently';
+  return d.toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -171,3 +176,16 @@ export const shareContent = async (
     onCopySuccess();
   }
 };
+
+export function safeJsonParse<T = any>(val: any, fallback: T = null as unknown as T): T {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return fallback;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return fallback;
+  }
+}
+

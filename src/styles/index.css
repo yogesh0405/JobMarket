@@ -85,12 +85,12 @@
   --space-24: 6rem;
 
   /* Border Radius */
-  --radius-sm: 0.3rem;
-  --radius-md: 0.3rem;
-  --radius-lg: 0.3rem;
-  --radius-xl: 0.3rem;
-  --radius-2xl: 0.3rem;
-  --radius-full: 0.3rem;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-full: 4px;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);

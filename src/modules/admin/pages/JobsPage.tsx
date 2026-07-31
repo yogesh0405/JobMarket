@@ -3,6 +3,33 @@ import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { CompanyDefaultLogo } from '../../../components/company/CompanyDefaultLogo';
 import { formatNumber } from '../../../utils/helpers';
+import {
+  Eye,
+  EyeOff,
+  Trash2,
+  MapPin,
+  Briefcase,
+  Clock,
+  Users,
+  IndianRupee,
+  Zap,
+  Building2,
+  UserCheck,
+  Mail,
+  Phone,
+  CheckCircle2,
+  XCircle,
+  X,
+  FileText,
+  Layers,
+  GraduationCap,
+  Home,
+  Utensils,
+  Bus,
+  Building,
+  Sparkles,
+  ListChecks
+} from 'lucide-react';
 
 export const JobsPage: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -191,27 +218,17 @@ export const JobsPage: React.FC = () => {
                     <td>{new Date(job.posted_at).toLocaleDateString()}</td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button className="action-btn edit" title="Review Details" onClick={() => handleOpenDetails(job.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
+                        <Eye size={15} />
                       </button>
 
                       {job.status === 'APPROVED' && (
                         <button className="action-btn" title="Unpublish Job" onClick={() => handleUnpublish(job.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: '#d97706' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <line x1="9" y1="9" x2="15" y2="15" />
-                            <line x1="15" y1="9" x2="9" y2="15" />
-                          </svg>
+                          <EyeOff size={15} />
                         </button>
                       )}
 
                       <button className="action-btn delete" title="Delete Job Listing" onClick={() => handleDelete(job.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>
@@ -239,100 +256,213 @@ export const JobsPage: React.FC = () => {
       {/* Details Modal */}
       {detailsModalOpen && selectedJob && (
         <div className="drawer-backdrop" onClick={() => setDetailsModalOpen(false)}>
-          <div className="admin-drawer" style={{ width: '600px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="drawer-header">
-              <h2 className="drawer-title">Job Details</h2>
-              <button className="drawer-close-btn" onClick={() => setDetailsModalOpen(false)}>✕</button>
+          <div className="admin-drawer" style={{ width: '620px', maxWidth: '95vw', background: '#ffffff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header" style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 className="drawer-title" style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Job Details</h2>
+                  <span className={`status-badge ${selectedJob.status === 'APPROVED' ? 'status-active' : selectedJob.status === 'REJECTED' ? 'status-blocked' : selectedJob.status === 'UNPUBLISHED' ? 'status-inactive' : 'status-pending'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {selectedJob.status === 'APPROVED' ? <CheckCircle2 size={12} /> : selectedJob.status === 'REJECTED' ? <XCircle size={12} /> : selectedJob.status === 'UNPUBLISHED' ? <EyeOff size={12} /> : <Clock size={12} />}
+                    {selectedJob.status === 'APPROVED' ? 'Live' : selectedJob.status === 'REJECTED' ? 'Rejected' : selectedJob.status === 'UNPUBLISHED' ? 'Unpublished' : 'Pending Review'}
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>Complete specifications and recruiter information for this listing</p>
+              </div>
+              <button className="drawer-close-btn" style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }} onClick={() => setDetailsModalOpen(false)}>
+                <X size={18} />
+              </button>
             </div>
             
-            <div className="drawer-body">
-              <div className="drawer-section">
-                <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{selectedJob.title}</h3>
-                <p style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
-                  <strong>Company:</strong> {selectedJob.company} <br />
-                  <strong>Employer:</strong> {selectedJob.employer_name} ({selectedJob.employer_email} | {selectedJob.employer_phone})
-                </p>
-              </div>
-
-              <div className="drawer-section">
-                <span className="drawer-section-title">Job Metadata</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 12px', fontSize: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    <strong>Location:</strong>&nbsp;{selectedJob.location}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                    </svg>
-                    <strong>Industry:</strong>&nbsp;{selectedJob.industry}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <strong>Experience:</strong>&nbsp;{selectedJob.min_experience} - {selectedJob.max_experience} Years
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                    </svg>
-                    <strong>Vacancies:</strong>&nbsp;{selectedJob.openings}
+            <div className="drawer-body" style={{ padding: '24px', maxHeight: '72vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Recruiter / Header Card */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                <CompanyDefaultLogo 
+                  logoUrl={selectedJob.company_logo || selectedJob.companyLogo} 
+                  companyName={selectedJob.company && selectedJob.company !== 'na' ? selectedJob.company : selectedJob.title} 
+                  size={52} 
+                  borderRadius="10px"
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: '19px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0', lineHeight: 1.3 }}>{selectedJob.title}</h3>
+                  <div style={{ fontSize: '13px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {selectedJob.company && selectedJob.company !== 'na' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Building2 size={15} style={{ color: '#2563eb', flexShrink: 0 }} />
+                        <span><strong>Company:</strong> {selectedJob.company}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <UserCheck size={15} style={{ color: '#475569', flexShrink: 0 }} />
+                      <span><strong>Employer:</strong> {selectedJob.employer_name || 'Direct Recruiter'}</span>
+                      {selectedJob.employer_email && (
+                        <span style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+                          <Mail size={13} /> {selectedJob.employer_email}
+                        </span>
+                      )}
+                      {selectedJob.employer_phone && (
+                        <span style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+                          <Phone size={13} /> {selectedJob.employer_phone}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="drawer-section">
-                <span className="drawer-section-title">Salary & Perks</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <rect x="2" y="6" width="20" height="12" rx="2" />
-                      <circle cx="12" cy="12" r="2" />
-                      <path d="M6 12h.01M18 12h.01" />
-                    </svg>
-                    <strong>Salary:</strong>&nbsp;₹{formatNumber(selectedJob.salary_min)} - ₹{formatNumber(selectedJob.salary_max)} per month
+              {/* Job Metadata Grid */}
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', color: '#64748b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} style={{ color: '#2563eb' }} />
+                  Job Metadata
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px', fontSize: '13.5px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <MapPin size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Location / Zone</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.location} {selectedJob.midc_zone ? `(${selectedJob.midc_zone})` : ''}</strong>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}>
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
-                    <strong>Overtime Offered:</strong>&nbsp;{selectedJob.overtime ? 'Yes' : 'No'}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Building size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Industry</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.industry || 'General'}</strong>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '22px' }}>
-                    Accomodation: {selectedJob.accommodation ? 'Provided' : 'No'} | Canteen: {selectedJob.canteen ? 'Available' : 'No'} | Bus Service: {selectedJob.bus_facility ? 'Provided' : 'No'}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Layers size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Trade / Role</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.trade || selectedJob.category || 'Standard'}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <GraduationCap size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Experience Required</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.min_experience} - {selectedJob.max_experience} Years</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Clock size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Job Type</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.job_type || 'Full-time'}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Home size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Work Mode</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.work_mode || 'On-site'}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Users size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Vacancies</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.openings} openings</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <UserCheck size={15} style={{ color: '#2563eb' }} />
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Gender Preference</span>
+                      <strong style={{ color: '#0f172a' }}>{selectedJob.gender || 'Any'}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="drawer-section">
-                <span className="drawer-section-title">Job Description</span>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{selectedJob.description}</p>
+              {/* Salary & Perks Highlight Card */}
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', color: '#1e40af', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IndianRupee size={15} style={{ color: '#2563eb' }} />
+                  Salary & Perks
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: '800', color: '#1e3a8a', marginBottom: '12px' }}>
+                  <IndianRupee size={20} style={{ color: '#2563eb' }} />
+                  <span>₹{formatNumber(selectedJob.salary_min)} - ₹{formatNumber(selectedJob.salary_max)} per month</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '12.5px' }}>
+                  <span style={{ padding: '6px 12px', borderRadius: '8px', background: selectedJob.overtime ? '#dbeafe' : '#f1f5f9', color: selectedJob.overtime ? '#1d4ed8' : '#64748b', border: selectedJob.overtime ? '1px solid #bfdbfe' : '1px solid #e2e8f0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Zap size={14} style={{ color: selectedJob.overtime ? '#2563eb' : '#94a3b8' }} /> Overtime: {selectedJob.overtime ? 'Yes' : 'No'}
+                  </span>
+                  <span style={{ padding: '6px 12px', borderRadius: '8px', background: selectedJob.accommodation ? '#dbeafe' : '#f1f5f9', color: selectedJob.accommodation ? '#1d4ed8' : '#64748b', border: selectedJob.accommodation ? '1px solid #bfdbfe' : '1px solid #e2e8f0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Home size={14} style={{ color: selectedJob.accommodation ? '#2563eb' : '#94a3b8' }} /> Accommodation: {selectedJob.accommodation ? 'Provided' : 'No'}
+                  </span>
+                  <span style={{ padding: '6px 12px', borderRadius: '8px', background: selectedJob.canteen ? '#dbeafe' : '#f1f5f9', color: selectedJob.canteen ? '#1d4ed8' : '#64748b', border: selectedJob.canteen ? '1px solid #bfdbfe' : '1px solid #e2e8f0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Utensils size={14} style={{ color: selectedJob.canteen ? '#2563eb' : '#94a3b8' }} /> Canteen: {selectedJob.canteen ? 'Available' : 'No'}
+                  </span>
+                  <span style={{ padding: '6px 12px', borderRadius: '8px', background: selectedJob.bus_facility ? '#dbeafe' : '#f1f5f9', color: selectedJob.bus_facility ? '#1d4ed8' : '#64748b', border: selectedJob.bus_facility ? '1px solid #bfdbfe' : '1px solid #e2e8f0', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Bus size={14} style={{ color: selectedJob.bus_facility ? '#2563eb' : '#94a3b8' }} /> Bus Service: {selectedJob.bus_facility ? 'Provided' : 'No'}
+                  </span>
+                </div>
               </div>
+
+              {/* Job Description */}
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileText size={15} style={{ color: '#2563eb' }} />
+                  Job Description
+                </div>
+                <p style={{ fontSize: '13.5px', lineHeight: '1.6', color: '#334155', margin: 0, whiteSpace: 'pre-line' }}>{selectedJob.description}</p>
+              </div>
+
+              {/* Requirements */}
+              {selectedJob.requirements && selectedJob.requirements.length > 0 && (
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ListChecks size={15} style={{ color: '#2563eb' }} />
+                    Requirements & Qualifications
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13.5px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {selectedJob.requirements.map((req: string, i: number) => <li key={i}>{req}</li>)}
+                  </ul>
+                </div>
+              )}
             </div>
 
-            <div style={{ padding: '20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px' }}>
+            <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '12px' }}>
               {selectedJob.status === 'PENDING_REVIEW' && (
-                <button className="btn btn-primary" style={{ flex: 1, background: 'var(--success)' }} onClick={() => handleApprove(selectedJob.id)} disabled={actionLoading}>
-                  Approve Posting
+                <button className="btn btn-primary" style={{ flex: 1, background: '#16a34a', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleApprove(selectedJob.id)} disabled={actionLoading}>
+                  <CheckCircle2 size={16} /> Approve Posting
                 </button>
               )}
               {selectedJob.status === 'APPROVED' && (
-                <button className="btn btn-warning" style={{ flex: 1, background: '#d97706', color: 'white', border: 'none' }} onClick={() => handleUnpublish(selectedJob.id)} disabled={actionLoading}>
-                  Unpublish Job
+                <button className="btn btn-warning" style={{ flex: 1, background: '#d97706', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleUnpublish(selectedJob.id)} disabled={actionLoading}>
+                  <EyeOff size={16} /> Unpublish Job
                 </button>
               )}
-              <button className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none', padding: '8px 16px' }} onClick={() => handleDelete(selectedJob.id)} disabled={actionLoading}>
-                Delete Job
+              <button className="btn btn-danger" style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleDelete(selectedJob.id)} disabled={actionLoading}>
+                <Trash2 size={16} /> Delete Job
               </button>
-              <button className="btn btn-outline" onClick={() => setDetailsModalOpen(false)}>
-                Close
+              <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => setDetailsModalOpen(false)}>
+                <X size={16} /> Close
               </button>
             </div>
           </div>

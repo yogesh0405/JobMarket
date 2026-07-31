@@ -16,7 +16,7 @@ import {
   Briefcase, 
   MapPin, 
   Clock, 
-  DollarSign, 
+  IndianRupee, 
   CheckCircle2, 
   AlertCircle, 
   Loader2, 
@@ -785,6 +785,34 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         </p>
       </div>
 
+      {/* Admin Rejection / Correction Required Alert Banner */}
+      {isEdit && existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) && (
+        <div style={{
+          background: '#FEF2F2',
+          border: '1.5px solid #FCA5A5',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '14px',
+          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.08)'
+        }}>
+          <AlertCircle size={22} style={{ color: '#DC2626', flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '800', color: '#991B1B' }}>
+              Action Required: Admin Feedback for Listing Correction
+            </h4>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#7F1D1D', lineHeight: 1.5, fontWeight: '500' }}>
+              <strong>Rejection Reason:</strong> "{existingJob.rejectReason || 'Admin requested updates to this job listing.'}"
+            </p>
+            <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#B91C1C', fontWeight: '600' }}>
+              💡 Make the requested corrections below and click "Resubmit Job for Approval" to send back to Admin for review.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* AI Job Builder card */}
       {!isEdit && (
         <div className="ai-builder-card">
@@ -818,24 +846,11 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           </div>
           <div className="form-section-body">
             {/* Logo Upload Row */}
-            <div className="form-row" style={{ marginBottom: '16px' }}>
+            <div className="form-row" style={{ marginBottom: '0' }}>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px', display: 'block' }}>Upload Company / Factory / Organization Logo</label>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <div style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '10px', 
-                    background: '#FFFFFF', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    border: '1.5px solid #E2E8F0',
-                    flexShrink: 0,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}>
+                <div className="logo-upload-card">
+                  <div className="logo-preview-box">
                     <CompanyDefaultLogo
                       logoUrl={companyLogo}
                       companyName={currentUser?.companyName || currentUser?.name || 'Company'}
@@ -848,22 +863,13 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="logo-upload-info">
+                    <div className="logo-upload-actions">
                       <button 
                         type="button" 
-                        className="btn btn-secondary btn-sm" 
+                        className="logo-btn-upload" 
                         onClick={() => logoInputRef.current?.click()}
                         disabled={isUploadingLogo}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 14px',
-                          fontWeight: '600',
-                          fontSize: '13px',
-                          height: '36px'
-                        }}
                       >
                         <Upload size={14} />
                         <span>Upload Logo</span>
@@ -871,19 +877,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       {companyLogo && (
                         <button 
                           type="button" 
-                          className="btn btn-danger btn-sm" 
-                          style={{
-                            background: 'var(--danger)',
-                            color: 'white',
-                            border: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '8px 14px',
-                            fontWeight: '600',
-                            fontSize: '13px',
-                            height: '36px'
-                          }}
+                          className="logo-btn-remove" 
                           onClick={handleDeleteLogo}
                           disabled={isUploadingLogo}
                         >
@@ -892,7 +886,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                         </button>
                       )}
                     </div>
-                    <p style={{ fontSize: '12px', color: '#64748B', margin: 0, fontWeight: '500' }}>Supports PNG, JPG, JPEG. Compressed to WebP format.</p>
+                    <p className="logo-upload-hint">Supports PNG, JPG, JPEG. Compressed to WebP format.</p>
                   </div>
                 </div>
                 <input 
@@ -1150,7 +1144,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         {/* Experience & Salary Requirements */}
         <div className="form-section">
           <div className="form-section-header">
-            <DollarSign size={20} style={{ color: '#344BFD' }} />
+            <IndianRupee size={20} style={{ color: '#344BFD' }} />
             Experience & Salary Preferences
           </div>
           <div className="form-section-body">
@@ -1273,7 +1267,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
                   />
                   <label htmlFor="discloseSalaryToggle" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <DollarSign size={15} style={{ color: '#059669', flexShrink: 0 }} />
+                    <IndianRupee size={15} style={{ color: '#059669', flexShrink: 0 }} />
                     <span>Disclose Salary</span>
                   </label>
                 </div>
@@ -2184,10 +2178,23 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               
               {/* Dynamic Suggested Skill Tags updated based on Trade & Role */}
               {availableSkills.length > 0 && (
-                <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <Lightbulb size={15} style={{ color: '#344BFD', flexShrink: 0 }} /> Click role-suggested skills for <strong>{activeRoleName || activeIndustryName || 'this position'}</strong>:
-                  </span>
+                <div 
+                  className="suggested-skills-container"
+                  style={{ 
+                    marginTop: '12px', 
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)', 
+                    padding: '14px 16px', 
+                    borderRadius: '8px', 
+                    border: '1px solid #dbeafe',
+                    boxShadow: '0 2px 8px rgba(52, 75, 253, 0.04)'
+                  }}
+                >
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', lineHeight: '1.4' }}>
+                    <Lightbulb size={16} style={{ color: '#344BFD', flexShrink: 0, marginTop: '2px' }} /> 
+                    <span>
+                      Click role-suggested skills for <strong style={{ color: '#1e293b', fontWeight: '700' }}>{activeRoleName || activeIndustryName || 'this position'}</strong>:
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {availableSkills.map((sk) => {
                       const isSelected = skills
@@ -2208,22 +2215,27 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             }
                           }}
                           style={{
-                            padding: '5px 12px',
-                            borderRadius: '9999px',
+                            padding: '6px 14px',
+                            borderRadius: '6px',
                             fontSize: '12px',
-                            fontWeight: '700',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             border: isSelected ? '1.5px solid #344BFD' : '1px solid #cbd5e1',
-                            background: isSelected ? '#344BFD' : '#ffffff',
+                            background: isSelected ? 'linear-gradient(135deg, #344BFD 0%, #2563eb 100%)' : '#ffffff',
                             color: isSelected ? '#ffffff' : '#334155',
-                            boxShadow: isSelected ? '0 2px 8px rgba(52, 75, 253, 0.25)' : 'none',
-                            transition: 'all 0.15s ease',
+                            boxShadow: isSelected ? '0 3px 10px rgba(52, 75, 253, 0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px'
+                            gap: '6px',
+                            maxWidth: '100%',
+                            textAlign: 'left',
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                            lineHeight: '1.3'
                           }}
                         >
-                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{isSelected ? '✓' : '+'}</span>
                           <span>{sk}</span>
                         </button>
                       );
@@ -2245,7 +2257,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             gap: '12px',
             width: '100%',
             boxSizing: 'border-box',
-            marginTop: '24px'
+            marginTop: '24px',
+            marginBottom: '36px'
           }}
         >
           <button
@@ -2299,10 +2312,18 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 >
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                 </svg>
-                <span>{isEdit ? 'Updating Job...' : 'Posting Job...'}</span>
+                <span>
+                  {isEdit 
+                    ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmitting Job...' : 'Updating Job...') 
+                    : 'Posting Job...'}
+                </span>
               </>
             ) : (
-              <span>{isEdit ? 'Update Job' : 'Post Job'}</span>
+              <span>
+                {isEdit 
+                  ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmit Job for Approval' : 'Update Job') 
+                  : 'Post Job'}
+              </span>
             )}
           </button>
         </div>

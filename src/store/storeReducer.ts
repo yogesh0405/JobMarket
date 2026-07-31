@@ -106,16 +106,28 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       const { jobId, applicant } = action.payload;
       if (!state.currentUser) return state;
 
+      const appliedJobs = state.currentUser.appliedJobs || [];
+      const updatedAppliedJobs = appliedJobs.includes(jobId) ? appliedJobs : [...appliedJobs, jobId];
+
+      const appliedWithStatus = state.currentUser.appliedJobsWithStatus || [];
+      const updatedAppliedWithStatus = appliedWithStatus.some((a: any) => a.jobId === jobId)
+        ? appliedWithStatus
+        : [...appliedWithStatus, { jobId, status: 'applied', appliedAt: applicant.appliedAt || new Date().toISOString() }];
+
       const updatedUser = {
         ...state.currentUser,
-        appliedJobs: [...(state.currentUser.appliedJobs || []), jobId]
+        appliedJobs: updatedAppliedJobs,
+        appliedJobsWithStatus: updatedAppliedWithStatus
       };
 
       const updatedJobs = state.jobs.map(j => {
         if (j.id === jobId) {
+          const existingApps = j.applicants || [];
+          const hasApp = existingApps.some(app => app.userId === applicant.userId || app.id === applicant.userId);
+          const updatedApplicants = hasApp ? existingApps : [...existingApps, applicant];
           return {
             ...j,
-            applicants: [...(j.applicants || []), applicant]
+            applicants: updatedApplicants
           };
         }
         return j;

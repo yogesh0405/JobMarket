@@ -4,7 +4,7 @@ import { Job } from '../../types';
 import { JobCard } from '../job/JobCard';
 import { getStoredRoleTabSettings, RoleTabSetting } from '../../modules/admin/utils/roleTabSettings';
 
-import { apiFetch } from '../../utils/api';
+import { apiFetch, safeParseJson } from '../../utils/api';
 
 interface JobTabbedSectionProps {
   jobs: Job[];
@@ -32,9 +32,9 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
 
       // Sync from Database API (Public Settings Endpoint)
       apiFetch('/api/v1/settings')
-        .then(res => res.json())
-        .then(json => {
-          if (json.success && json.data && json.data.role_tabs_config) {
+        .then(res => safeParseJson(res))
+        .then(({ ok, data: json }) => {
+          if (ok && json.success && json.data && json.data.role_tabs_config) {
             try {
               const parsed = JSON.parse(json.data.role_tabs_config);
               if (Array.isArray(parsed) && parsed.length > 0) {

@@ -16,7 +16,17 @@ export const JobSearchPage: React.FC = () => {
   const { state } = useStore();
   const t = useTranslation(state.language);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('list');
+
+  const viewParam = searchParams.get('view');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>(
+    viewParam === 'grid' || viewParam === 'map' ? viewParam : 'list'
+  );
+
+  useEffect(() => {
+    if (viewParam === 'grid' || viewParam === 'list') {
+      setViewMode(viewParam);
+    }
+  }, [viewParam]);
 
   const industries = [
     "Manufacturing",

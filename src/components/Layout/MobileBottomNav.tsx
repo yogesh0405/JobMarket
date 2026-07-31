@@ -15,25 +15,38 @@ export const MobileBottomNav: React.FC = () => {
     return location.pathname + location.search === path;
   };
 
+  const isEmployer = currentUser?.role === 'employer';
+
   return (
     <div className="mobile-bottom-nav">
-      {/* Home */}
-      <NavLink to="/" className={({ isActive }) => `mobile-bottom-item ${isActive && location.search === '' ? 'active' : ''}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        <span>{t.home}</span>
-      </NavLink>
-
-      {/* Item 2: Candidates for Employer OR Find Jobs for Candidate/Guest */}
-      {currentUser?.role === 'employer' ? (
+      {/* Item 1: Candidates for Employer OR Home for Candidates/Guests */}
+      {isEmployer ? (
         <NavLink to="/dashboard?tab=candidates" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
           <span>Candidates</span>
+        </NavLink>
+      ) : (
+        <NavLink to="/" className={({ isActive }) => `mobile-bottom-item ${isActive && location.search === '' ? 'active' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>{t.home}</span>
+        </NavLink>
+      )}
+
+      {/* Item 2: Applicants (with professional logo) for Employer OR Find Jobs for Candidate/Guest */}
+      {isEmployer ? (
+        <NavLink to="/dashboard?tab=applicants" className={`mobile-bottom-item ${isTabActive('/dashboard?tab=applicants') ? 'active' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <path d="M9 14l2 2 4-4" />
+          </svg>
+          <span>Applicants</span>
         </NavLink>
       ) : (
         <NavLink to="/jobs" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
@@ -46,11 +59,11 @@ export const MobileBottomNav: React.FC = () => {
       )}
 
       {/* Item 3: Center FAB - Post Job for Employer */}
-      {currentUser?.role === 'employer' && (
+      {isEmployer && (
         <NavLink to="/post-job" className={({ isActive }) => `mobile-bottom-item fab-item ${isActive ? 'active' : ''}`}>
           <div className="fab-circle">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, color: 'white' }}>
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="16" y2="12"/>
             </svg>
           </div>
           <span>{state.language === 'en' ? 'Post' : t.postJob}</span>
@@ -114,7 +127,9 @@ export const MobileBottomNav: React.FC = () => {
               currentUser.name.charAt(0).toUpperCase()
             )}
           </div>
-          <span>{currentUser.name.split(' ')[0]}</span>
+          <span style={{ maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {currentUser.name.split(' ')[0]}
+          </span>
         </NavLink>
       ) : (
         <NavLink to="/signup" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
