@@ -8,6 +8,8 @@ import { formatSalary, timeAgo, formatNumber, capitalize, shareContent } from '.
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
+import { Zap, Calendar, FileText } from 'lucide-react';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -335,8 +337,8 @@ export const JobDetailPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Work Mode & Job Type Badges */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {/* Work Mode & Job Type & Hiring Method Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     <span style={{
                       background: '#EFF6FF',
                       color: '#1D4ED8',
@@ -358,6 +360,26 @@ export const JobDetailPage: React.FC = () => {
                       borderRadius: '6px'
                     }}>
                       {job.jobType}
+                    </span>
+                    <span style={{
+                      background: job.hiringMethod === 'WALK_IN' || job.isWalkIn ? '#FEF3C7' : (job.hiringMethod === 'SCHEDULED_INTERVIEW' ? '#ECFDF5' : '#EFF6FF'),
+                      color: job.hiringMethod === 'WALK_IN' || job.isWalkIn ? '#D97706' : (job.hiringMethod === 'SCHEDULED_INTERVIEW' ? '#059669' : '#1D4ED8'),
+                      border: '1px solid currentColor',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      padding: '3px 10px',
+                      borderRadius: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      {job.hiringMethod === 'WALK_IN' || job.isWalkIn ? (
+                        <><Zap size={13} /> Walk-in Drive</>
+                      ) : job.hiringMethod === 'SCHEDULED_INTERVIEW' ? (
+                        <><Calendar size={13} /> Scheduled Interview</>
+                      ) : (
+                        <><FileText size={13} /> Standard Hiring</>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -389,7 +411,7 @@ export const JobDetailPage: React.FC = () => {
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                   </svg>
-                  <span>{job.minExperience}-{job.maxExperience} Years</span>
+                  <span>{job.experienceRequired === false ? 'No Experience Required' : `${job.minExperience}-${job.maxExperience} Years`}</span>
                 </div>
 
                 {/* Salary */}
@@ -398,7 +420,7 @@ export const JobDetailPage: React.FC = () => {
                     <rect x="2" y="6" width="20" height="12" rx="2" />
                     <circle cx="12" cy="12" r="2" />
                   </svg>
-                  <span>{formatSalary(job.salaryMin, job.salaryMax)}</span>
+                  <span>{job.discloseSalary === false ? 'Salary Not Disclosed' : formatSalary(job.salaryMin, job.salaryMax)}</span>
                 </div>
 
                 {/* Applicants */}
@@ -493,6 +515,51 @@ export const JobDetailPage: React.FC = () => {
                           </a>
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Walk-in Drive Event Details Card */}
+              {(job.hiringMethod === 'WALK_IN' || job.isWalkIn) && (
+                <div style={{
+                  background: '#FFFBEB',
+                  border: '1.5px solid #FCD34D',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <Zap size={18} style={{ color: '#D97706' }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#92400E', margin: 0 }}>
+                      Direct Walk-In Drive Details
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#78350F', margin: '0 0 12px 0' }}>
+                    Candidates can walk in directly to the venue with required documents.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px', color: '#451A03' }}>
+                    {job.walkInDate && (
+                      <div><strong>Date:</strong> {job.walkInDate}</div>
+                    )}
+                    {(job.walkInStartTime || job.walkInTime) && (
+                      <div><strong>Timing:</strong> {job.walkInStartTime && job.walkInEndTime ? `${job.walkInStartTime} to ${job.walkInEndTime}` : job.walkInTime}</div>
+                    )}
+                    {job.walkInContactPerson && (
+                      <div><strong>Contact Person:</strong> {job.walkInContactPerson}</div>
+                    )}
+                    {job.walkInContactNumber && (
+                      <div><strong>Contact No:</strong> <a href={`tel:${job.walkInContactNumber}`} style={{ color: '#D97706', fontWeight: '700', textDecoration: 'none' }}>{job.walkInContactNumber}</a></div>
+                    )}
+                  </div>
+                  {job.interviewAddress && (
+                    <div style={{ marginTop: '10px', fontSize: '13px', color: '#451A03' }}>
+                      <strong>Venue Address:</strong> {job.interviewAddress}
+                    </div>
+                  )}
+                  {job.walkInDocuments && (
+                    <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#92400E', background: '#FEF3C7', padding: '8px 12px', borderRadius: '6px' }}>
+                      <strong>Documents to Carry:</strong> {job.walkInDocuments}
                     </div>
                   )}
                 </div>
@@ -607,6 +674,21 @@ export const JobDetailPage: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Pinmarked Job Location Map Preview */}
+              {job.latitude && job.longitude && (
+                <div style={{ marginTop: '28px', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                    Job Location & Interactive Map
+                  </h3>
+                  <JobLocationMapPreview
+                    latitude={job.latitude}
+                    longitude={job.longitude}
+                    locationName={job.location || job.title}
+                    height="300px"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -777,7 +859,9 @@ export const JobDetailPage: React.FC = () => {
               )}
 
               <span style={{ fontSize: '11px', color: '#94A3B8', textAlign: 'center' }}>
-                By applying, you agree to our Terms and service
+                {job.acceptResume === false 
+                  ? 'Note: Resume upload is not required for this position.' 
+                  : 'By applying, your profile & resume will be submitted.'}
               </span>
             </div>
 
@@ -810,7 +894,7 @@ export const JobDetailPage: React.FC = () => {
                       <polyline points="14 2 14 8 20 8" />
                       <line x1="9" y1="15" x2="15" y2="15" />
                     </svg>
-                    {formatSalary(job.salaryMin, job.salaryMax)}
+                    {job.discloseSalary === false ? 'Salary Not Disclosed' : formatSalary(job.salaryMin, job.salaryMax)}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>

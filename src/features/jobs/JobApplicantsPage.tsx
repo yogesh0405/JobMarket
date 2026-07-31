@@ -216,30 +216,34 @@ export const JobApplicantsPage: React.FC = () => {
                       </svg>
                       View Details
                     </button>
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>·</span>
-                    {a.resume && (a.resume.url || a.resume.name) ? (
-                      <button
-                        onClick={() => setPreviewResume({ ...a.resume, userId: a.userId })}
-                        style={{
-                          color: 'var(--primary)',
-                          fontWeight: '600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          background: 'transparent',
-                          border: 'none',
-                          padding: 0,
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        View Resume ({a.resume.name})
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No resume attached</span>
+                    {job?.acceptResume !== false && (
+                      <>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>·</span>
+                        {a.resume && (a.resume.url || a.resume.name) ? (
+                          <button
+                            onClick={() => setPreviewResume({ ...a.resume, userId: a.userId })}
+                            style={{
+                              color: 'var(--primary)',
+                              fontWeight: '600',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: 0,
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            View Resume ({a.resume.name})
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No resume attached</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -8,10 +8,44 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { Job, JobType, WorkMode } from '../../types';
 import { parseJobPrompt } from '../../utils/aiParser';
-import { AdminApiService } from '../../modules/admin/services/adminApi';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { extractCoordinatesFromMapInput, resolveShortMapUrl } from '../../utils/mapUrlParser';
-
+import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
+import { 
+  Building2, 
+  Briefcase, 
+  MapPin, 
+  Clock, 
+  DollarSign, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2, 
+  FileText, 
+  X, 
+  Plus, 
+  Minus, 
+  ShieldCheck, 
+  Award, 
+  Wrench, 
+  Users, 
+  Upload, 
+  Trash2, 
+  Sparkles,
+  Gift,
+  Info,
+  Calendar,
+  Phone,
+  UserCheck,
+  Zap,
+  Lightbulb
+} from 'lucide-react';
+import { 
+  INDUSTRY_LIST, 
+  INDUSTRY_ROLE_MAPPINGS, 
+  getRolesForIndustry, 
+  getSkillsForRole 
+} from '../../data/industryRoles';
+import { ITI_TRADES_LIST } from '../../data/tradeRoles';
 
 interface JobPostPageProps {
   isEmbedded?: boolean;
@@ -33,47 +67,50 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   // AI Prompt input
   const [aiPrompt, setAiPrompt] = useState('');
 
-  // Live Categories & Skills suggestions state
-  const [availableSkills, setAvailableSkills] = useState<string[]>(['Nursing', 'PLC', 'PYTHON', 'React', 'Shop Floor Safety', 'TIG Welding', 'Welding', 'CNC Operation', 'AutoCAD drafting']);
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    Promise.all([
-      apiFetch('/api/v1/jobs/meta/skills').then(r => r.ok ? r.json() : null).catch(() => null),
-      apiFetch('/api/v1/jobs/meta/categories').then(r => r.ok ? r.json() : null).catch(() => null)
-    ]).then(([sksRes, catsRes]) => {
-      if (!isMounted) return;
-      if (sksRes && sksRes.success && Array.isArray(sksRes.data) && sksRes.data.length > 0) {
-        setAvailableSkills(sksRes.data.map((s: any) => typeof s === 'string' ? s : s.name).filter(Boolean));
-      }
-      if (catsRes && catsRes.success && Array.isArray(catsRes.data) && catsRes.data.length > 0) {
-        setAvailableCategories(catsRes.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean));
-      }
-    }).catch(err => {
-      console.warn('Meta categories/skills fetch notice:', err);
-    });
-    return () => { isMounted = false; };
-  }, []);
-
-  // Form states
+  // Enterprise Governance & Form States
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [title, setTitle] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [openings, setOpenings] = useState(1);
-  const [minExperience, setMinExperience] = useState(0);
-  const [maxExperience, setMaxExperience] = useState(0);
-  const [salaryMin, setSalaryMin] = useState(0);
-  const [salaryMax, setSalaryMax] = useState(0);
 
-  // Custom manual entry states
+  // 1. Resume Acceptance (Default: Enabled)
+  const [acceptResume, setAcceptResume] = useState<boolean>(true);
+
+  // 2. Trade Type -> Dynamic Job Role workflow
+  const [trade, setTrade] = useState<string>('');
+  const [customTrade, setCustomTrade] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
+  const [customTitle, setCustomTitle] = useState<string>('');
+
+  // 3. Industry / Category Selection
+  const [industry, setIndustry] = useState<string>('');
+  const [customIndustry, setCustomIndustry] = useState<string>('');
+  const [customIndustryIcon, setCustomIndustryIcon] = useState<string>('💼');
+
+  // 4. Target ITI Professionals
+  const [targetIti, setTargetIti] = useState<boolean>(false);
+  const [itiTrade, setItiTrade] = useState<string>('');
+  const [customItiTrade, setCustomItiTrade] = useState<string>('');
+
+  // 5. MIDC Location
+  const [isMidcLocation, setIsMidcLocation] = useState<boolean>(false);
+  const [midcZone, setMidcZone] = useState<string>('');
+
+  // 6. Vacancy Count (Stepper Control with string state to fix clearing/editing bugs)
+  const [openingsInput, setOpeningsInput] = useState<string>('1');
+
+  // 7. Experience Requirement (Checkbox controlled)
+  const [experienceRequired, setExperienceRequired] = useState<boolean>(true);
+  const [minExperience, setMinExperience] = useState<number>(0);
+  const [maxExperience, setMaxExperience] = useState<number>(0);
   const [isCustomMinExp, setIsCustomMinExp] = useState(false);
   const [isCustomMaxExp, setIsCustomMaxExp] = useState(false);
-  const [isCustomMinSalary, setIsCustomMinSalary] = useState(false);
-  const [isCustomMaxSalary, setIsCustomMaxSalary] = useState(false);
-
   const [customMinExpVal, setCustomMinExpVal] = useState('');
   const [customMaxExpVal, setCustomMaxExpVal] = useState('');
+
+  // 8. Salary Disclosure (Checkbox controlled)
+  const [discloseSalary, setDiscloseSalary] = useState<boolean>(true);
+  const [salaryMin, setSalaryMin] = useState<number>(0);
+  const [salaryMax, setSalaryMax] = useState<number>(0);
+  const [isCustomMinSalary, setIsCustomMinSalary] = useState(false);
+  const [isCustomMaxSalary, setIsCustomMaxSalary] = useState(false);
   const [customMinSalaryVal, setCustomMinSalaryVal] = useState('');
   const [customMaxSalaryVal, setCustomMaxSalaryVal] = useState('');
 
@@ -129,19 +166,121 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     setSalaryMax(num);
   };
 
+  // General Location & Work Specs
   const [location, setLocation] = useState('');
   const [workType, setWorkType] = useState<JobType>('Full-Time');
   const [workMode, setWorkMode] = useState<WorkMode>('Onsite');
   const [selectedPerks, setSelectedPerks] = useState<string[]>([]);
-  const [customPerkInput, setCustomPerkInput] = useState('');
-  const [description, setDescription] = useState('');
-  const [responsibilities, setResponsibilities] = useState('');
-  const [requirements, setRequirements] = useState('');
-  const [skills, setSkills] = useState('');
   const [companyLogo, setCompanyLogo] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Description, Responsibilities & Skills
+  const [description, setDescription] = useState('');
+  const [responsibilities, setResponsibilities] = useState('');
+  const [requirements, setRequirements] = useState('');
+  const [showResponsibilities, setShowResponsibilities] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [skills, setSkills] = useState('');
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+
+  // Gender & Age Criteria
+  const [genderPreference, setGenderPreference] = useState<string>('No Preference');
+  const [minAgeInput, setMinAgeInput] = useState<string>('18');
+  const [maxAgeInput, setMaxAgeInput] = useState<string>('60');
+
+  // Shift & Facility states
+  const [shiftCategory, setShiftCategory] = useState<'Day Shift' | 'Night Shift' | 'Rotational Shift' | 'Custom Shift'>('Day Shift');
+  const [shiftTimingOption, setShiftTimingOption] = useState('8:00 AM - 5:00 PM (9 hrs)');
+  const [customTimingText, setCustomTimingText] = useState('');
+  const [shiftDetails, setShiftDetails] = useState('');
+  const [overtime, setOvertime] = useState(false);
+  const [accommodation, setAccommodation] = useState(false);
+  const [busFacility, setBusFacility] = useState(false);
+  const [canteen, setCanteen] = useState(false);
+  const [joiningBonus, setJoiningBonus] = useState(false);
+  const [attendanceBonus, setAttendanceBonus] = useState(false);
+  const [transport, setTransport] = useState(false);
+  const [pf, setPf] = useState(false);
+  const [esic, setEsic] = useState(false);
+  const [uniform, setUniform] = useState(false);
+  const [medicalInsurance, setMedicalInsurance] = useState(false);
+  const [bonus, setBonus] = useState(false);
+  const [contractDuration, setContractDuration] = useState('');
+
+  // Application Preferences & Governance
+  const [hiringMethod, setHiringMethod] = useState<'STANDARD' | 'WALK_IN' | 'SCHEDULED_INTERVIEW'>('STANDARD');
+  const [isWalkIn, setIsWalkIn] = useState(false);
+  const [walkInDate, setWalkInDate] = useState('');
+  const [walkInTime, setWalkInTime] = useState('');
+  const [walkInStartTime, setWalkInStartTime] = useState<string>('10:00 AM');
+  const [walkInEndTime, setWalkInEndTime] = useState<string>('05:00 PM');
+  const [interviewAddress, setInterviewAddress] = useState('');
+  const [walkInContactPerson, setWalkInContactPerson] = useState<string>('');
+  const [walkInContactNumber, setWalkInContactNumber] = useState<string>('');
+  const [walkInDocuments, setWalkInDocuments] = useState<string>('Resume, Govt Photo ID (Aadhaar/PAN), 2 Passport Photos');
+  const [activeTooltip, setActiveTooltip] = useState<'STANDARD' | 'WALK_IN' | 'SCHEDULED_INTERVIEW' | null>(null);
+
+  const [acceptFreshers, setAcceptFreshers] = useState(true);
+  const [acceptExperienced, setAcceptExperienced] = useState(true);
+  const [maxApplicantsInput, setMaxApplicantsInput] = useState<string>('0');
+  const [applicationDeadline, setApplicationDeadline] = useState<string>('');
+
+  // Map states
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isParsingMapUrl, setIsParsingMapUrl] = useState(false);
+  const [mapUrlStatusMsg, setMapUrlStatusMsg] = useState('');
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
+  // Load Categories on mount
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch('/api/v1/jobs/meta/categories')
+      .then(r => r.ok ? r.json() : null)
+      .then(catsRes => {
+        if (!isMounted) return;
+        if (catsRes && catsRes.success && Array.isArray(catsRes.data) && catsRes.data.length > 0) {
+          setAvailableCategories(catsRes.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean));
+        }
+      })
+      .catch(() => null);
+    return () => { isMounted = false; };
+  }, []);
+
+  const [currentRoleOptions, setCurrentRoleOptions] = useState<string[]>([]);
+
+  // Dynamic Industry & Role active names
+  const activeIndustryName = industry === 'Other' ? customIndustry : industry;
+  const activeRoleName = title === 'Other' ? customTitle : title;
+
+  // Handle Industry Change -> Update Roles dropdown & Sync trade
+  const handleIndustryChange = (newIndustry: string) => {
+    setIndustry(newIndustry);
+    setTrade(newIndustry); // Maintain DB trade consistency
+    if (newIndustry !== 'Other') setCustomIndustry('');
+    
+    const rolesForInd = getRolesForIndustry(newIndustry);
+    setCurrentRoleOptions(rolesForInd);
+    
+    if (title && title !== 'Other' && !rolesForInd.includes(title)) {
+      setTitle('');
+      setCustomTitle('');
+    }
+  };
+
+  // Dynamic Skill Suggestions Effect
+  useEffect(() => {
+    if (activeRoleName || activeIndustryName) {
+      const dynamicSkills = getSkillsForRole(activeRoleName, activeIndustryName);
+      setAvailableSkills(dynamicSkills);
+    } else {
+      setAvailableSkills(['Quality Inspection', 'Shop Floor Operation', 'Safety Protocols', 'Punctuality']);
+    }
+  }, [activeRoleName, activeIndustryName]);
+
+  // Handle Logo Upload
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -186,22 +325,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
-  // Industrial fields
-  const [customIndustry, setCustomIndustry] = useState('');
-  const [customIndustryIcon, setCustomIndustryIcon] = useState('💼');
-  const [trade, setTrade] = useState('');
-  const [customTrade, setCustomTrade] = useState('');
-  const [isMidcLocation, setIsMidcLocation] = useState(false);
-  const [midcZone, setMidcZone] = useState('');
-  const [shiftDetails, setShiftDetails] = useState('');
-
-  // Map & Location Link states
-  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [isParsingMapUrl, setIsParsingMapUrl] = useState(false);
-  const [mapUrlStatusMsg, setMapUrlStatusMsg] = useState('');
-
+  // Google Maps Handler
   const handleGoogleMapsUrlChange = async (inputUrl: string) => {
     setGoogleMapsUrl(inputUrl);
     if (!inputUrl.trim()) {
@@ -211,61 +335,32 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       return;
     }
 
-    // 1. Synchronous client-side extraction for standard Google Maps URL / lat,lng formats
     const coords = extractCoordinatesFromMapInput(inputUrl);
     if (coords) {
       setLatitude(coords.latitude);
       setLongitude(coords.longitude);
-      setMapUrlStatusMsg(`✅ Pinpoint coordinates detected: ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)} (Job will be displayed on Map)`);
+      setMapUrlStatusMsg('SUCCESS:Job location marked on map');
       return;
     }
 
-    // 2. If short URL or redirect link, resolve via backend
     if (inputUrl.includes('http')) {
       setIsParsingMapUrl(true);
-      setMapUrlStatusMsg('⌛ Resolving Google Maps link & extracting coordinates...');
+      setMapUrlStatusMsg('LOADING:Loading location from map link...');
       const resolved = await resolveShortMapUrl(inputUrl);
       setIsParsingMapUrl(false);
       if (resolved) {
         setLatitude(resolved.latitude);
         setLongitude(resolved.longitude);
-        setMapUrlStatusMsg(`✅ Pinpoint coordinates extracted: ${resolved.latitude.toFixed(4)}, ${resolved.longitude.toFixed(4)} (Job will be displayed on Map)`);
+        setMapUrlStatusMsg('SUCCESS:Job location marked on map');
       } else {
-        setMapUrlStatusMsg('⚠️ Unable to extract pinpoint coordinates from this link. Default city location will be used.');
+        setMapUrlStatusMsg('WARN:Location could not be loaded from map link. City location will be used.');
       }
     } else {
-      setMapUrlStatusMsg('⚠️ Invalid Google Maps link format.');
+      setMapUrlStatusMsg('WARN:Invalid Google Maps link format.');
     }
   };
 
-  // Shift Type & Timing Selection states
-  const [shiftCategory, setShiftCategory] = useState<'Day Shift' | 'Night Shift' | 'Rotational Shift' | 'Custom Shift'>('Day Shift');
-  const [shiftTimingOption, setShiftTimingOption] = useState('8:00 AM - 5:00 PM (9 hrs)');
-  const [customTimingText, setCustomTimingText] = useState('');
-
-  const dayShiftTimings = [
-    '8:00 AM - 5:00 PM (9 hrs)',
-    '9:00 AM - 6:00 PM (9 hrs)',
-    '7:00 AM - 4:00 PM (9 hrs)',
-    '8:30 AM - 5:30 PM (9 hrs)',
-    '8:00 AM - 4:00 PM (8 hrs)',
-    'custom'
-  ];
-
-  const nightShiftTimings = [
-    '8:00 PM - 5:00 AM (9 hrs)',
-    '9:00 PM - 6:00 AM (9 hrs)',
-    '10:00 PM - 6:00 AM (8 hrs)',
-    '7:00 PM - 4:00 AM (9 hrs)',
-    'custom'
-  ];
-
-  const rotationalShiftTimings = [
-    '8 hr Rotational (3 Shifts: Morning, Evening, Night)',
-    '12 hr Rotational (2 Shifts: Day & Night)',
-    'custom'
-  ];
-
+  // Shift Timing Effect
   useEffect(() => {
     if (shiftCategory === 'Custom Shift') {
       setShiftDetails(customTimingText ? `Custom Shift (${customTimingText})` : 'Custom Shift');
@@ -276,16 +371,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     }
   }, [shiftCategory, shiftTimingOption, customTimingText]);
 
-  const [overtime, setOvertime] = useState(false);
-  const [accommodation, setAccommodation] = useState(false);
-  const [busFacility, setBusFacility] = useState(false);
-  const [canteen, setCanteen] = useState(false);
-  const [joiningBonus, setJoiningBonus] = useState(false);
-  const [attendanceBonus, setAttendanceBonus] = useState(false);
-  const [contractDuration, setContractDuration] = useState('');
-  const [walkInDate, setWalkInDate] = useState('');
-  const [interviewAddress, setInterviewAddress] = useState('');
-
+  // Employer Auth Check
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token && !currentUser) {
@@ -302,40 +388,59 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     }
   }, [currentUser, navigate, showToast]);
 
+  // Load Existing Job for Edit Mode
   useEffect(() => {
     if (isEdit && existingJob) {
-      setTitle(existingJob.title);
-      setIndustry(existingJob.industry);
-      setOpenings(existingJob.openings);
-      setMinExperience(existingJob.minExperience);
-      setMaxExperience(existingJob.maxExperience);
-      setSalaryMin(existingJob.salaryMin);
-      setSalaryMax(existingJob.salaryMax);
-      setLocation(existingJob.location);
-      setWorkType(existingJob.jobType);
-      setWorkMode(existingJob.workMode);
+      setAcceptResume(existingJob.acceptResume !== false);
+      const ind = existingJob.industry || existingJob.trade || '';
+      setIndustry(ind);
+      setTrade(ind);
+      
+      const rolesForInd = getRolesForIndustry(ind);
+      setCurrentRoleOptions(rolesForInd);
+
+      if (existingJob.title && !rolesForInd.includes(existingJob.title)) {
+        setTitle('Other');
+        setCustomTitle(existingJob.title);
+      } else {
+        setTitle(existingJob.title || '');
+      }
+
+      setOpeningsInput(String(existingJob.openings || 1));
+      
+      setExperienceRequired(existingJob.experienceRequired !== false);
+      setMinExperience(existingJob.minExperience || 0);
+      setMaxExperience(existingJob.maxExperience || 0);
+
+      setDiscloseSalary(existingJob.discloseSalary !== false);
+      setSalaryMin(existingJob.salaryMin || 0);
+      setSalaryMax(existingJob.salaryMax || 0);
+
+      setLocation(existingJob.location || '');
+      setWorkType(existingJob.jobType || 'Full-Time');
+      setWorkMode(existingJob.workMode || 'Onsite');
       setSelectedPerks(existingJob.perks || []);
-      setDescription(existingJob.description);
-      setResponsibilities(existingJob.responsibilities ? existingJob.responsibilities.join('\n') : '');
-      setRequirements(existingJob.requirements ? existingJob.requirements.join('\n') : '');
+      setDescription(existingJob.description || '');
+      const respsStr = existingJob.responsibilities ? existingJob.responsibilities.join('\n') : '';
+      const reqsStr = existingJob.requirements ? existingJob.requirements.join('\n') : '';
+      setResponsibilities(respsStr);
+      setShowResponsibilities(respsStr.trim().length > 0);
+      setRequirements(reqsStr);
+      setShowRequirements(reqsStr.trim().length > 0);
       setSkills(existingJob.skills ? existingJob.skills.join(', ') : '');
 
-      const isCustom = existingJob.trade && !tradesList.includes(existingJob.trade);
-      if (isCustom) {
-        setTrade('Other');
-        setCustomTrade(existingJob.trade || '');
-      } else {
-        setTrade(existingJob.trade || '');
-        setCustomTrade('');
-      }
+      setTargetIti(!!existingJob.targetIti);
+      setItiTrade(existingJob.itiTrade || '');
       setMidcZone(existingJob.midcZone || '');
       setIsMidcLocation(!!existingJob.midcZone);
+
       setGoogleMapsUrl((existingJob as any).googleMapsUrl || (existingJob as any).google_maps_url || '');
       setLatitude(existingJob.latitude || null);
       setLongitude(existingJob.longitude || null);
       if (existingJob.latitude && existingJob.longitude) {
         setMapUrlStatusMsg(`✅ Pinpoint coordinates saved: ${existingJob.latitude.toFixed(4)}, ${existingJob.longitude.toFixed(4)}`);
       }
+
       setShiftDetails(existingJob.shiftDetails || '');
       setOvertime(!!existingJob.overtime);
       setAccommodation(!!existingJob.accommodation);
@@ -343,13 +448,39 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setCanteen(!!existingJob.canteen);
       setJoiningBonus(!!existingJob.joiningBonus);
       setAttendanceBonus(!!existingJob.attendanceBonus);
+      setTransport(!!existingJob.transport);
+      setPf(!!existingJob.pf);
+      setEsic(!!existingJob.esic);
+      setUniform(!!existingJob.uniform);
+      setMedicalInsurance(!!existingJob.medicalInsurance);
+      setBonus(!!existingJob.joiningBonus || !!existingJob.attendanceBonus);
       setContractDuration(existingJob.contractDuration || '');
+
+      setGenderPreference(existingJob.genderPreference || existingJob.gender || 'No Preference');
+      setMinAgeInput(String(existingJob.minAge || 18));
+      setMaxAgeInput(String(existingJob.maxAge || 60));
+
+      const hm = existingJob.hiringMethod || (existingJob.isWalkIn || existingJob.walkInDate ? 'WALK_IN' : 'STANDARD');
+      setHiringMethod(hm as any);
+      setIsWalkIn(hm === 'WALK_IN');
       setWalkInDate(existingJob.walkInDate || '');
+      setWalkInTime(existingJob.walkInTime || '');
+      setWalkInStartTime(existingJob.walkInStartTime || '10:00 AM');
+      setWalkInEndTime(existingJob.walkInEndTime || '05:00 PM');
       setInterviewAddress(existingJob.interviewAddress || '');
+      setWalkInContactPerson(existingJob.walkInContactPerson || '');
+      setWalkInContactNumber(existingJob.walkInContactNumber || '');
+      setWalkInDocuments(existingJob.walkInDocuments || 'Resume, Govt Photo ID (Aadhaar/PAN), 2 Passport Photos');
+      setAcceptFreshers(existingJob.acceptFreshers !== false);
+      setAcceptExperienced(existingJob.acceptExperienced !== false);
+      setMaxApplicantsInput(String(existingJob.maxApplicants || 0));
+      setApplicationDeadline(existingJob.applicationDeadline || '');
+
       setCompanyLogo(existingJob.companyLogo || '');
     }
   }, [isEdit, existingJob]);
 
+  // AI Prompt Build Handler
   const handleAiBuild = () => {
     if (!aiPrompt.trim()) {
       showToast('Please type a prompt first', 'error');
@@ -357,18 +488,27 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     }
     const parsed = parseJobPrompt(aiPrompt);
 
-    if (parsed.title) setTitle(parsed.title);
-    if (parsed.trade) {
-      if (parsed.trade && !tradesList.includes(parsed.trade)) {
-        setTrade('Other');
-        setCustomTrade(parsed.trade);
-      } else {
-        setTrade(parsed.trade);
+    if (parsed.industry || parsed.trade) {
+      const targetInd = parsed.industry || parsed.trade || '';
+      setIndustry(targetInd);
+      setTrade(targetInd);
+      const roles = getRolesForIndustry(targetInd);
+      if (parsed.title && roles.includes(parsed.title)) {
+        setTitle(parsed.title);
+      } else if (parsed.title) {
+        setTitle('Other');
+        setCustomTitle(parsed.title);
       }
+    } else if (parsed.title) {
+      setTitle(parsed.title);
     }
+
     if (parsed.industry) setIndustry(parsed.industry);
-    if (parsed.openings) setOpenings(parsed.openings);
-    if (parsed.midcZone) setMidcZone(parsed.midcZone);
+    if (parsed.openings) setOpeningsInput(String(parsed.openings));
+    if (parsed.midcZone) {
+      setIsMidcLocation(true);
+      setMidcZone(parsed.midcZone);
+    }
     if (parsed.location) setLocation(parsed.location);
     if (parsed.shiftDetails) setShiftDetails(parsed.shiftDetails);
     
@@ -379,17 +519,20 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     setJoiningBonus(!!parsed.joiningBonus);
     setAttendanceBonus(!!parsed.attendanceBonus);
 
-    if (parsed.salaryMin) setSalaryMin(parsed.salaryMin);
-    if (parsed.salaryMax) setSalaryMax(parsed.salaryMax);
-    if (parsed.minExperience !== undefined) setMinExperience(parsed.minExperience);
-    if (parsed.maxExperience !== undefined) setMaxExperience(parsed.maxExperience);
+    if (parsed.salaryMin || parsed.salaryMax) {
+      setDiscloseSalary(true);
+      if (parsed.salaryMin) setSalaryMin(parsed.salaryMin);
+      if (parsed.salaryMax) setSalaryMax(parsed.salaryMax);
+    }
+    if (parsed.minExperience !== undefined || parsed.maxExperience !== undefined) {
+      setExperienceRequired(true);
+      if (parsed.minExperience !== undefined) setMinExperience(parsed.minExperience);
+      if (parsed.maxExperience !== undefined) setMaxExperience(parsed.maxExperience);
+    }
     if (parsed.description) setDescription(parsed.description);
 
     showToast('Form prefilled by AI! 🤖', 'success');
   };
-
-  const industriesList = ['IT & Software', 'Marketing', 'Finance', 'Healthcare', 'Education',
-    'Design & Creative', 'Logistics', 'Construction', 'Automotive', 'FMCG', 'Agriculture', 'HR & Admin', 'Manufacturing', 'Mechanical & Assembly', 'Electricals'];
 
   const midcList = [
     'Waluj MIDC (Chhatrapati Sambhajinagar)',
@@ -408,7 +551,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     'Butibori MIDC (Nagpur)',
     'Other MIDC Zone...'
   ];
-  const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
 
   const expOptions = Array.from({ length: 11 }, (_, i) => i);
   
@@ -423,37 +565,159 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     { value: 600000, label: '₹50,000 / mo (~₹6 LPA)' }
   ];
 
+  // Stepper handlers for Vacancy Count
+  const handleOpeningsIncrement = () => {
+    const curr = parseInt(openingsInput) || 1;
+    setOpeningsInput(String(curr + 1));
+  };
+
+  const handleOpeningsDecrement = () => {
+    const curr = parseInt(openingsInput) || 1;
+    setOpeningsInput(String(Math.max(1, curr - 1)));
+  };
+
+  const preventNegativeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+    }
+  };
+
+  // Form Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !industry || (industry === 'Other' && !customIndustry.trim()) || !location || !description) {
-      showToast('Please fill in all required fields', 'error');
+
+    const finalIndustry = industry === 'Other' ? customIndustry.trim() : industry.trim();
+    const finalTitle = title === 'Other' ? customTitle.trim() : title.trim();
+    const finalTrade = finalIndustry; // Automatically sync trade with industry
+    const finalItiTrade = targetIti ? (itiTrade === 'Other' ? customItiTrade.trim() : itiTrade.trim()) : '';
+    const parsedOpenings = Math.max(1, parseInt(openingsInput) || 1);
+    const parsedSkills = skills.split(',').map(s => s.trim()).filter(Boolean);
+
+    // Validation Requirements
+    if (!finalIndustry) {
+      showToast('Please select Industry Type / Sector first', 'error');
+      return;
+    }
+    if (!finalTitle) {
+      showToast('Please select or specify a Job Role', 'error');
+      return;
+    }
+    if (!location.trim()) {
+      showToast('Please specify City Location', 'error');
+      return;
+    }
+    if (!description.trim() || description.trim().length < 5) {
+      showToast('Job Description is mandatory. Please provide a detailed description.', 'error');
+      return;
+    }
+    if (parsedSkills.length === 0) {
+      showToast('Skills section is mandatory. Please add at least 1 skill tag.', 'error');
+      return;
+    }
+    if (!applicationDeadline) {
+      showToast('Application Deadline date is mandatory. Please select a valid deadline date.', 'error');
       return;
     }
 
-    let finalIndustry = industry;
-    if (industry === 'Other') {
-      finalIndustry = customIndustry.trim();
+    // Age Validations: FROM must be <= TO, no negative numbers, min age >= 18
+    const parsedMinAge = parseInt(minAgeInput) || 18;
+    const parsedMaxAge = parseInt(maxAgeInput) || 60;
+    if (parsedMinAge < 0 || parsedMaxAge < 0) {
+      showToast('Age criteria cannot be a negative number', 'error');
+      return;
+    }
+    if (parsedMinAge < 18) {
+      showToast('Minimum Age must be at least 18 years', 'error');
+      return;
+    }
+    if (parsedMinAge > parsedMaxAge) {
+      showToast('Minimum Age (From) must be less than or equal to Maximum Age (To)', 'error');
+      return;
+    }
+
+    // Salary Validations: FROM must be <= TO, no negative numbers
+    const parsedMinSalary = discloseSalary ? (Number(salaryMin) || 0) : 0;
+    const parsedMaxSalary = discloseSalary ? (Number(salaryMax) || 0) : 0;
+    if (parsedMinSalary < 0 || parsedMaxSalary < 0) {
+      showToast('Salary amounts cannot be negative numbers', 'error');
+      return;
+    }
+    if (discloseSalary && parsedMinSalary > 0 && parsedMaxSalary > 0 && parsedMinSalary > parsedMaxSalary) {
+      showToast('Minimum Salary (From) must be less than or equal to Maximum Salary (To)', 'error');
+      return;
+    }
+
+    // Experience Validations: FROM must be <= TO, no negative numbers
+    const parsedMinExp = experienceRequired ? (Number(minExperience) || 0) : 0;
+    const parsedMaxExp = experienceRequired ? (Number(maxExperience) || 0) : 0;
+    if (parsedMinExp < 0 || parsedMaxExp < 0) {
+      showToast('Experience years cannot be a negative number', 'error');
+      return;
+    }
+    if (experienceRequired && parsedMinExp > parsedMaxExp) {
+      showToast('Minimum Experience (From) must be less than or equal to Maximum Experience (To)', 'error');
+      return;
+    }
+
+    // Vacancy and Applicant Cap Validation
+    if (parsedOpenings < 1) {
+      showToast('Vacancy count must be at least 1', 'error');
+      return;
+    }
+    const parsedMaxApplicants = parseInt(maxApplicantsInput) || 0;
+    if (parsedMaxApplicants < 0) {
+      showToast('Maximum Applicants Limit cannot be negative', 'error');
+      return;
+    }
+
+    // Hiring Method Walk-in Drive Mandatory Validation
+    if (hiringMethod === 'WALK_IN') {
+      if (!walkInDate) {
+        showToast('Please select a Walk-in Drive Date', 'error');
+        return;
+      }
+      if (!walkInStartTime || !walkInEndTime) {
+        showToast('Please specify Walk-in Drive Start Time and End Time', 'error');
+        return;
+      }
+      if (!interviewAddress.trim()) {
+        showToast('Please enter the Interview Venue Address for Walk-in Drive', 'error');
+        return;
+      }
+      if (!walkInContactPerson.trim()) {
+        showToast('Please enter the Contact Person Name for Walk-in Drive', 'error');
+        return;
+      }
+      if (!walkInContactNumber.trim()) {
+        showToast('Please enter the Contact Mobile Number for Walk-in Drive', 'error');
+        return;
+      }
     }
 
     const jobData = {
-      title,
+      acceptResume,
+      title: finalTitle,
+      trade: finalTrade,
       industry: finalIndustry,
-      location,
-      description,
-      openings: Number(openings) || 1,
-      minExperience: Number(minExperience) || 0,
-      maxExperience: Number(maxExperience) || 0,
-      salaryMin: Number(salaryMin) || 0,
-      salaryMax: Number(salaryMax) || 0,
+      location: location.trim(),
+      description: description.trim(),
+      openings: parsedOpenings,
+      targetIti,
+      itiTrade: finalItiTrade,
+      isMidcLocation,
+      midcZone: isMidcLocation ? midcZone : '',
+      experienceRequired,
+      minExperience: experienceRequired ? (Number(minExperience) || 0) : 0,
+      maxExperience: experienceRequired ? (Number(maxExperience) || 0) : 0,
+      discloseSalary,
+      salaryMin: discloseSalary ? (Number(salaryMin) || 0) : 0,
+      salaryMax: discloseSalary ? (Number(salaryMax) || 0) : 0,
       jobType: workType,
       workMode: workMode,
       perks: selectedPerks,
-      responsibilities: responsibilities.split('\n').map(r => r.trim()).filter(Boolean),
-      requirements: requirements.split('\n').map(req => req.trim()).filter(Boolean),
-      skills: skills.split(',').map(s => s.trim()).filter(Boolean),
-      // Industrial specific
-      trade: trade === 'Other' ? customTrade : trade,
-      midcZone: isMidcLocation ? midcZone : '',
+      responsibilities: showResponsibilities ? responsibilities.split('\n').map(r => r.trim()).filter(Boolean) : [],
+      requirements: showRequirements ? requirements.split('\n').map(req => req.trim()).filter(Boolean) : [],
+      skills: parsedSkills,
       googleMapsUrl: googleMapsUrl || undefined,
       latitude: latitude || undefined,
       longitude: longitude || undefined,
@@ -464,9 +728,29 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       canteen,
       joiningBonus,
       attendanceBonus,
+      transport,
+      pf,
+      esic,
+      uniform,
+      medicalInsurance,
       contractDuration: contractDuration || undefined,
-      walkInDate: walkInDate || undefined,
-      interviewAddress: interviewAddress || undefined,
+      genderPreference,
+      minAge: parseInt(minAgeInput) || 18,
+      maxAge: parseInt(maxAgeInput) || 60,
+      hiringMethod,
+      isWalkIn: hiringMethod === 'WALK_IN',
+      walkInDate: hiringMethod === 'WALK_IN' ? (walkInDate || undefined) : undefined,
+      interviewAddress: hiringMethod === 'WALK_IN' ? (interviewAddress.trim() || undefined) : undefined,
+      walkInTime: hiringMethod === 'WALK_IN' ? `${walkInStartTime} - ${walkInEndTime}` : undefined,
+      walkInStartTime: hiringMethod === 'WALK_IN' ? (walkInStartTime || undefined) : undefined,
+      walkInEndTime: hiringMethod === 'WALK_IN' ? (walkInEndTime || undefined) : undefined,
+      walkInContactPerson: hiringMethod === 'WALK_IN' ? (walkInContactPerson.trim() || undefined) : undefined,
+      walkInContactNumber: hiringMethod === 'WALK_IN' ? (walkInContactNumber.trim() || undefined) : undefined,
+      walkInDocuments: hiringMethod === 'WALK_IN' ? (walkInDocuments.trim() || undefined) : undefined,
+      acceptFreshers,
+      acceptExperienced,
+      maxApplicants: parseInt(maxApplicantsInput) || 0,
+      applicationDeadline,
       companyLogo: companyLogo || undefined
     };
 
@@ -495,229 +779,407 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const content = (
     <>
       <div className="post-job-header" style={isEmbedded ? { padding: 0, marginBottom: 'var(--space-6)' } : undefined}>
-        <h2 style={{ fontSize: 'var(--fs-2xl)' }}>{isEdit ? 'Edit Plant Job Listing' : 'Post a New Factory Job'}</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginTop: '4px' }}>Fill out the details or use the AI Job Builder below to generate fields automatically.</p>
+        <h2 style={{ fontSize: 'var(--fs-2xl)' }}>{isEdit ? 'Edit Job Posting' : 'Post a New Industrial & Enterprise Job'}</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginTop: '4px' }}>
+          Select Trade Type to populate relevant Job Roles and dynamic skill suggestions.
+        </p>
       </div>
 
-        {/* AI Job Builder input box */}
-        {!isEdit && (
-          <div className="ai-builder-card">
-            <h3 className="ai-builder-title">
-              🤖 AI Job Builder
-            </h3>
-            <p className="ai-builder-desc">
-              Type requirements in simple English (e.g. *"Need 10 CNC operators at Chakan MIDC, night shift with bus and canteen"*)
-            </p>
-            <div className="ai-builder-row">
-              <input
-                type="text"
-                className="form-input ai-builder-input"
-                placeholder="Type job requirements..."
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-              />
-              <button type="button" className="btn btn-primary" onClick={handleAiBuild}>
-                Generate Form
-              </button>
-            </div>
+      {/* AI Job Builder card */}
+      {!isEdit && (
+        <div className="ai-builder-card">
+          <h3 className="ai-builder-title">
+            🤖 AI Job Builder
+          </h3>
+          <p className="ai-builder-desc">
+            Type requirements in simple words (e.g. *"Need 10 CNC operators at Chakan MIDC, night shift with bus and canteen"*)
+          </p>
+          <div className="ai-builder-row">
+            <input
+              type="text"
+              className="form-input ai-builder-input"
+              placeholder="Type job requirements..."
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+            />
+            <button type="button" className="btn btn-primary" onClick={handleAiBuild}>
+              Generate Form
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        <form className="post-job-form" onSubmit={handleSubmit}>
-          {/* Job Details */}
-          <div className="form-section">
-            <div className="form-section-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-              Plant Job Details
-            </div>
-            <div className="form-section-body">
-              <div className="form-row" style={{ marginBottom: '20px' }}>
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Upload Company / Factory / Hospital Logo</label>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <div style={{ 
-                      width: '64px', 
-                      height: '64px', 
-                      borderRadius: '0.3rem', 
-                      background: '#344BFD', 
-                      color: 'white', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      border: '1.5px solid #E2E8F0',
-                      flexShrink: 0
-                    }}>
-                      <CompanyDefaultLogo
-                        logoUrl={companyLogo}
-                        companyName={currentUser?.companyName || currentUser?.name || 'Company'}
-                        size={48}
-                        borderRadius="8px"
-                      />
-                      {isUploadingLogo && (
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite', color: 'white' }}>
-                            <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                            <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div>
+      <form className="post-job-form" onSubmit={handleSubmit}>
+        {/* Governance & Logo Section */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <ShieldCheck size={20} style={{ color: '#344BFD' }} />
+            Company Logo & Settings
+          </div>
+          <div className="form-section-body">
+            {/* Logo Upload Row */}
+            <div className="form-row" style={{ marginBottom: '16px' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px', display: 'block' }}>Upload Company / Factory / Organization Logo</label>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ 
+                    width: '64px', 
+                    height: '64px', 
+                    borderRadius: '10px', 
+                    background: '#FFFFFF', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    border: '1.5px solid #E2E8F0',
+                    flexShrink: 0,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}>
+                    <CompanyDefaultLogo
+                      logoUrl={companyLogo}
+                      companyName={currentUser?.companyName || currentUser?.name || 'Company'}
+                      size={64}
+                      borderRadius="8px"
+                    />
+                    {isUploadingLogo && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 size={20} style={{ color: 'white', animation: 'spin 1s linear infinite' }} />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button 
                         type="button" 
                         className="btn btn-secondary btn-sm" 
                         onClick={() => logoInputRef.current?.click()}
                         disabled={isUploadingLogo}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          fontWeight: '600',
+                          fontSize: '13px',
+                          height: '36px'
+                        }}
                       >
-                        Upload Logo
+                        <Upload size={14} />
+                        <span>Upload Logo</span>
                       </button>
                       {companyLogo && (
                         <button 
                           type="button" 
                           className="btn btn-danger btn-sm" 
-                          style={{ marginLeft: '8px', background: 'var(--danger)', color: 'white', border: 'none' }}
+                          style={{
+                            background: 'var(--danger)',
+                            color: 'white',
+                            border: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 14px',
+                            fontWeight: '600',
+                            fontSize: '13px',
+                            height: '36px'
+                          }}
                           onClick={handleDeleteLogo}
                           disabled={isUploadingLogo}
                         >
-                          Remove Logo
+                          <Trash2 size={14} />
+                          <span>Remove Logo</span>
                         </button>
                       )}
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>Supports PNG, JPG, JPEG. Compressed to WebP format.</p>
                     </div>
+                    <p style={{ fontSize: '12px', color: '#64748B', margin: 0, fontWeight: '500' }}>Supports PNG, JPG, JPEG. Compressed to WebP format.</p>
                   </div>
-                  <input 
-                    type="file" 
-                    ref={logoInputRef} 
-                    onChange={handleLogoChange} 
-                    accept="image/*" 
-                    style={{ display: 'none' }} 
-                  />
                 </div>
+                <input 
+                  type="file" 
+                  ref={logoInputRef} 
+                  onChange={handleLogoChange} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
               </div>
+            </div>
+          </div>
+        </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Job Title / Role <span className="required">*</span></label>
+        {/* Dynamic Industry & Job Role Section */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <Building2 size={20} style={{ color: '#344BFD' }} />
+            Industry & Role Specifications
+          </div>
+          <div className="form-section-body">
+            {/* Step 1: Select Industry Type / Sector */}
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">
+                  Step 1: Select Industry Type / Sector <span className="required">*</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={industry}
+                  onChange={(e) => handleIndustryChange(e.target.value)}
+                  required
+                  style={{ fontWeight: '600', borderColor: industry ? '#344BFD' : undefined }}
+                >
+                  <option value="">Select Industry / Sector...</option>
+                  {INDUSTRY_LIST.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+                  <option value="Other">+ Other Industry Sector...</option>
+                </select>
+                {industry === 'Other' && (
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. CNC Machine Operator"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    style={{ marginTop: '8px' }}
+                    placeholder="Type custom industry sector (e.g. Renewable Energy & Solar)"
+                    value={customIndustry}
+                    onChange={(e) => {
+                      setCustomIndustry(e.target.value);
+                      setTrade(e.target.value);
+                    }}
                     required
                   />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Select Industry / Category <span className="required">*</span></label>
-                  <select
-                    className="form-select"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
+                )}
+              </div>
+
+              {/* Step 2: Select Job Role */}
+              <div className="form-group">
+                <label className="form-label">
+                  Step 2: Select Job Role <span className="required">*</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    if (e.target.value !== 'Other') setCustomTitle('');
+                  }}
+                  disabled={!industry}
+                  required
+                  style={{
+                    opacity: industry ? 1 : 0.65,
+                    cursor: industry ? 'pointer' : 'not-allowed',
+                    fontWeight: '600'
+                  }}
+                >
+                  <option value="">{industry ? 'Select Role for this Industry...' : '👈 Select Industry Type first'}</option>
+                  {currentRoleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                  <option value="Other">+ Add Custom Job Role...</option>
+                </select>
+                {title === 'Other' && (
+                  <input
+                    type="text"
+                    className="form-input"
+                    style={{ marginTop: '8px' }}
+                    placeholder="Type custom job role (e.g. Senior VMC Programmer)"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
                     required
-                  >
-                    <option value="">Select Category / Industry</option>
-                    {Array.from(new Set([...availableCategories, ...industriesList])).map(i => <option key={i} value={i}>{i}</option>)}
-                    <option value="Other">+ Other / Add Custom Category...</option>
-                  </select>
-                  {industry === 'Other' && (
-                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Type custom category name (e.g. Solar Tech)"
-                        value={customIndustry}
-                        onChange={(e) => setCustomIndustry(e.target.value)}
-                        required
-                        style={{ flex: 1 }}
-                      />
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Emoji"
-                        value={customIndustryIcon}
-                        onChange={(e) => setCustomIndustryIcon(e.target.value)}
-                        style={{ width: '80px', textAlign: 'center' }}
-                      />
-                    </div>
-                  )}
-                </div>
+                  />
+                )}
               </div>
+            </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Select ITI Trade Specialty</label>
-                  <select
-                    className="form-select"
-                    value={trade}
-                    onChange={(e) => setTrade(e.target.value)}
+            <div className="form-row">
+              {/* Vacancy Count Stepper */}
+              <div className="form-group">
+                <label className="form-label">No. of Vacancies <span className="required">*</span></label>
+                <div style={{ display: 'flex', alignItems: 'center', maxWidth: '220px' }}>
+                  <button
+                    type="button"
+                    onClick={handleOpeningsDecrement}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '8px 0 0 8px',
+                      border: '1px solid #cbd5e1',
+                      borderRight: 'none',
+                      background: '#f8fafc',
+                      color: '#1e293b',
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Decrease vacancy count"
                   >
-                    <option value="">Select Trade</option>
-                    {tradesList.map(t => <option key={t} value={t}>{t}</option>)}
-                    <option value="Other">Other</option>
-                  </select>
-                  {trade === 'Other' && (
-                    <input
-                      type="text"
-                      className="form-input"
-                      style={{ marginTop: '8px' }}
-                      placeholder="Type custom trade specialty"
-                      value={customTrade}
-                      onChange={(e) => setCustomTrade(e.target.value)}
-                      required
-                    />
-                  )}
-                </div>
-                <div className="form-group">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <input
-                      type="checkbox"
-                      id="isMidcCheckbox"
-                      checked={isMidcLocation}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setIsMidcLocation(checked);
-                        if (!checked) setMidcZone('');
-                      }}
-                      style={{ width: '16px', height: '16px', accentColor: '#344BFD', cursor: 'pointer' }}
-                    />
-                    <label htmlFor="isMidcCheckbox" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>
-                      Location belongs to an MIDC Industrial Zone (Optional)
-                    </label>
-                  </div>
-                  {isMidcLocation ? (
-                    <select
-                      className="form-select"
-                      value={midcZone}
-                      onChange={(e) => setMidcZone(e.target.value)}
-                    >
-                      <option value="">Select MIDC Zone in Chhatrapati Sambhajinagar / Maharashtra...</option>
-                      {midcList.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Check the box above if factory/plant is inside an MIDC zone.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">No. of Vacancies</label>
+                    <Minus size={16} />
+                  </button>
                   <input
                     type="number"
                     className="form-input"
                     min="1"
-                    value={openings}
-                    onChange={(e) => setOpenings(Math.max(1, Math.abs(parseInt(e.target.value) || 1)))}
+                    value={openingsInput}
+                    onKeyDown={preventNegativeKey}
+                    onChange={(e) => setOpeningsInput(e.target.value)}
+                    onBlur={() => setOpeningsInput(prev => String(Math.max(1, parseInt(prev) || 1)))}
+                    style={{
+                      borderRadius: 0,
+                      textAlign: 'center',
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      height: '42px',
+                      flex: 1
+                    }}
                   />
+                  <button
+                    type="button"
+                    onClick={handleOpeningsIncrement}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '0 8px 8px 0',
+                      border: '1px solid #cbd5e1',
+                      borderLeft: 'none',
+                      background: '#f8fafc',
+                      color: '#1e293b',
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Increase vacancy count"
+                  >
+                    <Plus size={16} />
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Required Experience</label>
-                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px' }}>
+              </div>
+            </div>
+
+            {/* Target ITI Professionals Checkbox & Dropdown */}
+            <div className="form-row" style={{ marginTop: '12px' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="targetItiCheckbox"
+                    checked={targetIti}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setTargetIti(checked);
+                      if (!checked) {
+                        setItiTrade('');
+                        setCustomItiTrade('');
+                      }
+                    }}
+                    style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="targetItiCheckbox" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Award size={15} style={{ color: '#344BFD', flexShrink: 0 }} />
+                    <span>Target ITI Professionals</span>
+                  </label>
+                </div>
+
+                {targetIti && (
+                  <div style={{ marginTop: '8px', transition: 'all 0.2s ease' }}>
+                    <select
+                      className="form-select"
+                      value={itiTrade}
+                      onChange={(e) => setItiTrade(e.target.value)}
+                      required={targetIti}
+                    >
+                      <option value="">Select ITI Specialization Trade...</option>
+                      {ITI_TRADES_LIST.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {itiTrade === 'Other ITI Trade...' && (
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ marginTop: '8px' }}
+                        placeholder="Type custom ITI Trade name"
+                        value={customItiTrade}
+                        onChange={(e) => setCustomItiTrade(e.target.value)}
+                        required
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* MIDC Location Checkbox & Dropdown */}
+            <div className="form-row" style={{ marginTop: '12px' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="isMidcCheckbox"
+                    checked={isMidcLocation}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setIsMidcLocation(checked);
+                      if (!checked) setMidcZone('');
+                    }}
+                    style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="isMidcCheckbox" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Building2 size={15} style={{ color: '#344BFD', flexShrink: 0 }} />
+                    <span>This Job is Located in an MIDC Area</span>
+                  </label>
+                </div>
+
+                {isMidcLocation && (
+                  <div style={{ marginTop: '8px', transition: 'all 0.2s ease' }}>
+                    <select
+                      className="form-select"
+                      value={midcZone}
+                      onChange={(e) => setMidcZone(e.target.value)}
+                      required={isMidcLocation}
+                    >
+                      <option value="">Select MIDC Zone in Maharashtra...</option>
+                      {midcList.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Experience & Salary Requirements */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <DollarSign size={20} style={{ color: '#344BFD' }} />
+            Experience & Salary Preferences
+          </div>
+          <div className="form-section-body">
+            <div className="form-row">
+              {/* Experience Requirement Checkbox & Selector */}
+              <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="expRequiredToggle"
+                    checked={experienceRequired}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setExperienceRequired(checked);
+                      if (!checked) {
+                        setMinExperience(0);
+                        setMaxExperience(0);
+                      }
+                    }}
+                    style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="expRequiredToggle" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Briefcase size={15} style={{ color: '#344BFD', flexShrink: 0 }} />
+                    <span>Experience Required</span>
+                  </label>
+                </div>
+
+                {experienceRequired ? (
+                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
                     {isCustomMinExp ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
                         <input
@@ -727,6 +1189,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                           max="50"
                           placeholder="Min yrs"
                           value={customMinExpVal}
+                          onKeyDown={preventNegativeKey}
                           onChange={(e) => {
                             const val = e.target.value;
                             setCustomMinExpVal(val);
@@ -735,7 +1198,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             if (!isCustomMaxExp && maxExperience < num) setMaxExperience(num);
                           }}
                         />
-                        <button type="button" onClick={() => setIsCustomMinExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                        <button type="button" onClick={() => setIsCustomMinExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>✕ List</button>
                       </div>
                     ) : (
                       <select
@@ -743,9 +1206,9 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                         value={isCustomMinExp ? 'custom' : minExperience}
                         onChange={(e) => handleMinExpSelect(e.target.value)}
                       >
-                        <option value="0">Min Exp (0 yr)</option>
+                        <option value="0">Min Exp (0 yr - Fresher)</option>
                         {expOptions.map(e => <option key={e} value={e}>{e} yr</option>)}
-                        <option value="custom">+ Custom Years (Type below)...</option>
+                        <option value="custom">+ Custom Years...</option>
                       </select>
                     )}
 
@@ -760,6 +1223,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                           max="50"
                           placeholder="Max yrs"
                           value={customMaxExpVal}
+                          onKeyDown={preventNegativeKey}
                           onChange={(e) => {
                             const val = e.target.value;
                             setCustomMaxExpVal(val);
@@ -768,7 +1232,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             if (!isCustomMinExp && num < minExperience) setMinExperience(num);
                           }}
                         />
-                        <button type="button" onClick={() => setIsCustomMaxExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                        <button type="button" onClick={() => setIsCustomMaxExp(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>✕ List</button>
                       </div>
                     ) : (
                       <select
@@ -780,17 +1244,42 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                         {expOptions.filter(e => e >= minExperience).map(e => (
                           <option key={e} value={e}>{e} yr</option>
                         ))}
-                        <option value="custom">+ Custom Years (Type below)...</option>
+                        <option value="custom">+ Custom Years...</option>
                       </select>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontStyle: 'italic', padding: '8px 0' }}>
+                    Fresher welcome — No experience required.
+                  </p>
+                )}
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Monthly Salary Range</label>
-                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px' }}>
+              {/* Salary Disclosure Checkbox & Range Selector */}
+              <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="discloseSalaryToggle"
+                    checked={discloseSalary}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setDiscloseSalary(checked);
+                      if (!checked) {
+                        setSalaryMin(0);
+                        setSalaryMax(0);
+                      }
+                    }}
+                    style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="discloseSalaryToggle" className="form-label" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <DollarSign size={15} style={{ color: '#059669', flexShrink: 0 }} />
+                    <span>Disclose Salary</span>
+                  </label>
+                </div>
+
+                {discloseSalary ? (
+                  <div className="salary-row" style={{ flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
                     {isCustomMinSalary ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: '130px' }}>
                         <input
@@ -799,6 +1288,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                           min="0"
                           placeholder="Min ₹/mo"
                           value={customMinSalaryVal}
+                          onKeyDown={preventNegativeKey}
                           onChange={(e) => {
                             const val = e.target.value;
                             setCustomMinSalaryVal(val);
@@ -808,7 +1298,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             if (!isCustomMaxSalary && salaryMax > 0 && salaryMax < annual) setSalaryMax(annual);
                           }}
                         />
-                        <button type="button" onClick={() => setIsCustomMinSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                        <button type="button" onClick={() => setIsCustomMinSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>✕ List</button>
                       </div>
                     ) : (
                       <select
@@ -818,7 +1308,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       >
                         <option value="0">Min Salary</option>
                         {salaryOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                        <option value="custom">+ Custom Amount (Type below)...</option>
+                        <option value="custom">+ Custom Amount...</option>
                       </select>
                     )}
 
@@ -832,6 +1322,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                           min="0"
                           placeholder="Max ₹/mo"
                           value={customMaxSalaryVal}
+                          onKeyDown={preventNegativeKey}
                           onChange={(e) => {
                             const val = e.target.value;
                             setCustomMaxSalaryVal(val);
@@ -841,7 +1332,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             if (!isCustomMinSalary && annual > 0 && annual < salaryMin) setSalaryMin(annual);
                           }}
                         />
-                        <button type="button" onClick={() => setIsCustomMaxSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>✕ List</button>
+                        <button type="button" onClick={() => setIsCustomMaxSalary(false)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>✕ List</button>
                       </div>
                     ) : (
                       <select
@@ -853,544 +1344,969 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                         {salaryOptions.filter(s => s.value === 0 || s.value >= salaryMin).map(s => (
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
-                        <option value="custom">+ Custom Amount (Type below)...</option>
+                        <option value="custom">+ Custom Amount...</option>
                       </select>
                     )}
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">City Location <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Chhatrapati Sambhajinagar, Pune, Mumbai"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Google Maps Location Link Input Section */}
-              <div className="form-row" style={{ marginTop: '12px', marginBottom: '20px' }}>
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label" style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#344BFD" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    Google Maps Location Link (For Interactive Job Map)
-                  </label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    placeholder="Paste Google Maps link e.g. https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
-                    value={googleMapsUrl}
-                    onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
-                    style={{
-                      borderColor: latitude && longitude ? '#10b981' : isParsingMapUrl ? '#344BFD' : undefined,
-                      boxShadow: latitude && longitude ? '0 0 0 2px rgba(16, 185, 129, 0.15)' : undefined
-                    }}
-                  />
-                  <p style={{ marginTop: '6px', fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    📍 To locate job in the map view add the link
+                ) : (
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontStyle: 'italic', padding: '8px 0' }}>
+                    Salary hidden from job listing — Displayed as "Salary Not Disclosed".
                   </p>
-                  {mapUrlStatusMsg && (
-                    <div style={{
-                      marginTop: '8px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: mapUrlStatusMsg.startsWith('✅') ? '#047857' : mapUrlStatusMsg.startsWith('⌛') ? '#1d4ed8' : '#b45309',
-                      background: mapUrlStatusMsg.startsWith('✅') ? '#ecfdf5' : mapUrlStatusMsg.startsWith('⌛') ? '#eff6ff' : '#fffbeb',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: `1px solid ${mapUrlStatusMsg.startsWith('✅') ? '#a7f3d0' : mapUrlStatusMsg.startsWith('⌛') ? '#bfdbfe' : '#fde68a'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      {mapUrlStatusMsg}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
+            </div>
 
+            {/* Candidate Eligibility & Age Criteria Section */}
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed #E2E8F0' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Users size={16} style={{ color: '#344BFD' }} />
+                <span>Candidate Eligibility & Age Criteria</span>
+              </h4>
               <div className="form-row">
+                {/* Gender Preference */}
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px', display: 'block' }}>
-                    Shift Details & Timing
-                  </label>
-                  
-                  {/* Shift Type Pills */}
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                    {[
-                      {
-                        id: 'Day Shift',
-                        label: 'Day Shift',
-                        icon: (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="5"/>
-                            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                          </svg>
-                        )
-                      },
-                      {
-                        id: 'Night Shift',
-                        label: 'Night Shift',
-                        icon: (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                          </svg>
-                        )
-                      },
-                      {
-                        id: 'Rotational Shift',
-                        label: 'Rotational',
-                        icon: (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                          </svg>
-                        )
-                      },
-                      {
-                        id: 'Custom Shift',
-                        label: 'Custom',
-                        icon: (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                          </svg>
-                        )
-                      }
-                    ].map(cat => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setShiftCategory(cat.id as any);
-                          if (cat.id === 'Day Shift') setShiftTimingOption('8:00 AM - 5:00 PM (9 hrs)');
-                          else if (cat.id === 'Night Shift') setShiftTimingOption('8:00 PM - 5:00 AM (9 hrs)');
-                          else if (cat.id === 'Rotational Shift') setShiftTimingOption('8 hr Rotational (3 Shifts: Morning, Evening, Night)');
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: shiftCategory === cat.id ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                          background: shiftCategory === cat.id ? '#eff6ff' : '#ffffff',
-                          color: shiftCategory === cat.id ? '#1d4ed8' : '#334155',
-                          fontWeight: shiftCategory === cat.id ? '800' : '600',
-                          fontSize: '12.5px',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        {cat.icon}
-                        <span>{cat.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <label className="form-label" style={{ fontWeight: '600' }}>Gender Preference</label>
+                  <select
+                    className="form-select"
+                    value={genderPreference}
+                    onChange={(e) => setGenderPreference(e.target.value)}
+                  >
+                    <option value="No Preference">No Preference (Any Gender)</option>
+                    <option value="Male Candidates Only">Male Candidates Only</option>
+                    <option value="Female Candidates Only">Female Candidates Only</option>
+                  </select>
+                </div>
 
-                  {/* Shift Timing Selection */}
-                  {shiftCategory !== 'Custom Shift' ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select
-                        className="form-select"
-                        value={shiftTimingOption}
-                        onChange={(e) => setShiftTimingOption(e.target.value)}
-                        style={{ flex: 1, minWidth: '160px' }}
-                      >
-                        <option value="">Select Shift Timing...</option>
-                        {shiftCategory === 'Day Shift' && dayShiftTimings.map(t => (
-                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
-                        ))}
-                        {shiftCategory === 'Night Shift' && nightShiftTimings.map(t => (
-                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
-                        ))}
-                        {shiftCategory === 'Rotational Shift' && rotationalShiftTimings.map(t => (
-                          <option key={t} value={t}>{t === 'custom' ? '+ Custom Timing (Type below)...' : t}</option>
-                        ))}
-                      </select>
-
-                      {shiftTimingOption === 'custom' && (
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. 8:30 AM to 5:30 PM + 2 hrs OT"
-                          value={customTimingText}
-                          onChange={(e) => setCustomTimingText(e.target.value)}
-                          style={{ flex: 1, minWidth: '180px' }}
-                        />
-                      )}
-                    </div>
-                  ) : (
+                {/* Age Criteria */}
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: '600' }}>Age Criteria (Years)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
-                      type="text"
+                      type="number"
                       className="form-input"
-                      placeholder="e.g. Flexible 9 hours between 7 AM to 9 PM"
-                      value={customTimingText}
-                      onChange={(e) => setCustomTimingText(e.target.value)}
+                      min="18"
+                      max="60"
+                      placeholder="Min Age (18)"
+                      value={minAgeInput}
+                      onKeyDown={preventNegativeKey}
+                      onChange={(e) => setMinAgeInput(e.target.value)}
+                      style={{ flex: 1 }}
                     />
-                  )}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Contract Duration (If applicable)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. 6 Months, 1 Year"
-                    value={contractDuration}
-                    onChange={(e) => setContractDuration(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Job Work Type</label>
-                  <div className="work-toggle-group">
-                    {['Full-Time', 'Part-Time', 'Contract', 'Freelance'].map(wt => (
-                      <div
-                        key={wt}
-                        className={`work-toggle ${workType === wt ? 'selected' : ''}`}
-                        onClick={() => setWorkType(wt as JobType)}
-                      >
-                        {wt}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Job Work Mode</label>
-                  <div className="work-toggle-group">
-                    {['Onsite', 'Remote', 'Hybrid'].map(wm => (
-                      <div
-                        key={wm}
-                        className={`work-toggle ${workMode === wm ? 'selected' : ''}`}
-                        onClick={() => setWorkMode(wm as WorkMode)}
-                      >
-                        {wm}
-                      </div>
-                    ))}
+                    <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '600' }}>to</span>
+                    <input
+                      type="number"
+                      className="form-input"
+                      min="18"
+                      max="65"
+                      placeholder="Max Age (60)"
+                      value={maxAgeInput}
+                      onKeyDown={preventNegativeKey}
+                      onChange={(e) => setMaxAgeInput(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Factory Plant Facilities */}
-          <div className="form-section">
-            <div className="form-section-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              Factory Plant Facilities & Benefits
-            </div>
-            <div className="form-section-body">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
-                <label className={`facility-checkbox-card ${overtime ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={overtime} onChange={(e) => setOvertime(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: overtime ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.otPay}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Double rate shift calculation</p>
-                  </div>
-                </label>
-                <label className={`facility-checkbox-card ${accommodation ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={accommodation} onChange={(e) => setAccommodation(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: accommodation ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.accommodation}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Company-managed hostels</p>
-                  </div>
-                </label>
-                <label className={`facility-checkbox-card ${busFacility ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={busFacility} onChange={(e) => setBusFacility(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: busFacility ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                    <path d="M8 21h8" />
-                    <path d="M12 17v4" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.busFacility}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Standard transport routes</p>
-                  </div>
-                </label>
-                <label className={`facility-checkbox-card ${canteen ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={canteen} onChange={(e) => setCanteen(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: canteen ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.canteen}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Subsidized plant meals</p>
-                  </div>
-                </label>
-                <label className={`facility-checkbox-card ${joiningBonus ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={joiningBonus} onChange={(e) => setJoiningBonus(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: joiningBonus ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <polyline points="20 12 20 22 4 22 4 12" />
-                    <rect x="2" y="7" width="20" height="5" />
-                    <line x1="12" y1="22" x2="12" y2="7" />
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.joiningBonus}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>On joining first month</p>
-                  </div>
-                </label>
-                <label className={`facility-checkbox-card ${attendanceBonus ? 'selected' : ''}`}>
-                  <input type="checkbox" checked={attendanceBonus} onChange={(e) => setAttendanceBonus(e.target.checked)} style={{ display: 'none' }} />
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: attendanceBonus ? 'var(--primary)' : 'var(--text-secondary)' }}>
-                    <circle cx="12" cy="8" r="7" />
-                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-                  </svg>
-                  <div className="facility-info">
-                    <h4 style={{ fontSize: '14px', fontWeight: '700' }}>{t.attendanceBonus}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Regular monthly payouts</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Walk-in Interview Details */}
-          <div className="form-section">
-            <div className="form-section-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              Walk-In Interview Drive Details (Optional)
-            </div>
-            <div className="form-section-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Walk-In Drive Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={walkInDate}
-                    onChange={(e) => setWalkInDate(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Walk-In Interview Address</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter factory gate details or office details"
-                    value={interviewAddress}
-                    onChange={(e) => setInterviewAddress(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Description & Requirements */}
-          <div className="form-section">
-            <div className="form-section-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
-              Job Operations, Description & Skills
-            </div>
-            <div className="form-section-body">
-              <div className="form-group">
-                <label className="form-label">Job Description <span className="required">*</span></label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Describe the plant operations and what tasks the candidate needs to perform..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  style={{ minHeight: 140 }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Key Operations / Responsibilities (one per line)</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Enter each responsibility on a new line..."
-                  value={responsibilities}
-                  onChange={(e) => setResponsibilities(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Eligible Criteria / Requirements (one per line)</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Enter each requirement on a new line..."
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Skills Needed (comma separated)</label>
+            <div className="form-row">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">City Location <span className="required">*</span></label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. TIG Welding, CNC Operation, Micrometer reading"
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
+                  placeholder="e.g. Chhatrapati Sambhajinagar, Pune, Mumbai"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
                 />
+              </div>
+            </div>
+
+            {/* Google Maps Location Link Input */}
+            <div className="form-row" style={{ marginTop: '12px', marginBottom: '12px' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label" style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={18} style={{ color: '#344BFD' }} />
+                  <span>Google Maps Location Link (For Interactive Map View)</span>
+                </label>
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="Paste Google Maps link e.g. https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
+                  value={googleMapsUrl}
+                  onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
+                  style={{
+                    borderColor: latitude && longitude ? '#10b981' : isParsingMapUrl ? '#344BFD' : undefined,
+                    boxShadow: latitude && longitude ? '0 0 0 2px rgba(16, 185, 129, 0.15)' : undefined
+                  }}
+                />
+                {mapUrlStatusMsg && !mapUrlStatusMsg.startsWith('SUCCESS:') && (
+                  <div style={{
+                    marginTop: '8px',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    color: mapUrlStatusMsg.startsWith('LOADING:') ? '#1D4ED8' : '#B45309',
+                    background: mapUrlStatusMsg.startsWith('LOADING:') ? '#EFF6FF' : '#FFFBEB',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${mapUrlStatusMsg.startsWith('LOADING:') ? '#BFDBFE' : '#FDE68A'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {mapUrlStatusMsg.startsWith('LOADING:') && <Loader2 size={16} style={{ color: '#344BFD', animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
+                    {mapUrlStatusMsg.startsWith('WARN:') && <AlertCircle size={16} style={{ color: '#D97706', flexShrink: 0 }} />}
+                    <span>{mapUrlStatusMsg.replace(/^(SUCCESS:|LOADING:|WARN:)/, '')}</span>
+                  </div>
+                )}
+
+                {latitude !== null && longitude !== null && (
+                  <JobLocationMapPreview
+                    latitude={latitude}
+                    longitude={longitude}
+                    locationName={location || title || 'Job Location'}
+                    height="280px"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px', display: 'block' }}>
+                  Shift Details & Timing
+                </label>
                 
-                {/* Live Suggested Skill Tags */}
-                {availableSkills.length > 0 && (
-                  <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                      💡 Click suggested skill tags to add automatically:
-                    </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {availableSkills.map((sk) => {
-                        const isSelected = skills
-                          .split(',')
-                          .map(s => s.trim().toLowerCase())
-                          .includes(sk.toLowerCase());
-                        
-                        return (
-                          <button
-                            key={sk}
-                            type="button"
-                            onClick={() => {
-                              const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
-                              if (isSelected) {
-                                setSkills(currentList.filter(s => s.toLowerCase() !== sk.toLowerCase()).join(', '));
-                              } else {
-                                setSkills([...currentList, sk].join(', '));
-                              }
-                            }}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: '9999px',
-                              fontSize: '12px',
-                              fontWeight: '700',
-                              cursor: 'pointer',
-                              border: isSelected ? '1.5px solid #344BFD' : '1px solid #cbd5e1',
-                              background: isSelected ? '#344BFD' : '#ffffff',
-                              color: isSelected ? '#ffffff' : '#334155',
-                              boxShadow: isSelected ? '0 2px 8px rgba(52, 75, 253, 0.25)' : 'none',
-                              transition: 'all 0.15s ease',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <span>{isSelected ? '✓' : '+'}</span>
-                            <span>{sk}</span>
-                          </button>
-                        );
-                      })}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  {[
+                    { id: 'Day Shift', label: 'Day Shift' },
+                    { id: 'Night Shift', label: 'Night Shift' },
+                    { id: 'Rotational Shift', label: 'Rotational' },
+                    { id: 'Custom Shift', label: 'Custom' }
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setShiftCategory(cat.id as any);
+                        if (cat.id === 'Day Shift') setShiftTimingOption('8:00 AM - 5:00 PM (9 hrs)');
+                        else if (cat.id === 'Night Shift') setShiftTimingOption('8:00 PM - 5:00 AM (9 hrs)');
+                        else if (cat.id === 'Rotational Shift') setShiftTimingOption('8 hr Rotational (3 Shifts: Morning, Evening, Night)');
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: shiftCategory === cat.id ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                        background: shiftCategory === cat.id ? '#eff6ff' : '#ffffff',
+                        color: shiftCategory === cat.id ? '#1d4ed8' : '#334155',
+                        fontWeight: shiftCategory === cat.id ? '800' : '600',
+                        fontSize: '12.5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {shiftCategory !== 'Custom Shift' ? (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      className="form-select"
+                      value={shiftTimingOption}
+                      onChange={(e) => setShiftTimingOption(e.target.value)}
+                      style={{ flex: 1, minWidth: '160px' }}
+                    >
+                      <option value="8:00 AM - 5:00 PM (9 hrs)">8:00 AM - 5:00 PM (9 hrs)</option>
+                      <option value="9:00 AM - 6:00 PM (9 hrs)">9:00 AM - 6:00 PM (9 hrs)</option>
+                      <option value="8:00 PM - 5:00 AM (9 hrs)">8:00 PM - 5:00 AM (9 hrs)</option>
+                      <option value="8 hr Rotational (3 Shifts: Morning, Evening, Night)">8 hr Rotational (3 Shifts)</option>
+                      <option value="12 hr Rotational (2 Shifts: Day & Night)">12 hr Rotational (2 Shifts)</option>
+                      <option value="custom">+ Custom Timing...</option>
+                    </select>
+
+                    {shiftTimingOption === 'custom' && (
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. 8:30 AM to 5:30 PM"
+                        value={customTimingText}
+                        onChange={(e) => setCustomTimingText(e.target.value)}
+                        style={{ flex: 1, minWidth: '180px' }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Flexible 9 hours between 7 AM to 9 PM"
+                    value={customTimingText}
+                    onChange={(e) => setCustomTimingText(e.target.value)}
+                  />
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Contract Duration (If applicable)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. 6 Months, 1 Year"
+                  value={contractDuration}
+                  onChange={(e) => setContractDuration(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Job Work Type</label>
+                <div className="work-toggle-group">
+                  {['Full-Time', 'Part-Time', 'Contract', 'Freelance'].map(wt => (
+                    <div
+                      key={wt}
+                      className={`work-toggle ${workType === wt ? 'selected' : ''}`}
+                      onClick={() => setWorkType(wt as JobType)}
+                    >
+                      {wt}
                     </div>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Job Work Mode</label>
+                <div className="work-toggle-group">
+                  {['Onsite', 'Remote', 'Hybrid'].map(wm => (
+                    <div
+                      key={wm}
+                      className={`work-toggle ${workMode === wm ? 'selected' : ''}`}
+                      onClick={() => setWorkMode(wm as WorkMode)}
+                    >
+                      {wm}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Plant & Workplace Facilities (10 Facilities) */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <Gift size={20} style={{ color: '#344BFD' }} />
+            Plant & Workplace Facilities (Perks & Benefits)
+          </div>
+          <div className="form-section-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '12px' }}>
+              {/* 1. Transport */}
+              <label className={`facility-checkbox-card ${transport ? 'selected' : ''}`}>
+                <input type="checkbox" checked={transport} onChange={(e) => setTransport(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Company Transport</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Cab / Pickup facility</p>
+                </div>
+              </label>
+
+              {/* 2. Bus Facility */}
+              <label className={`facility-checkbox-card ${busFacility ? 'selected' : ''}`}>
+                <input type="checkbox" checked={busFacility} onChange={(e) => setBusFacility(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Bus Facility</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Transport routes available</p>
+                </div>
+              </label>
+
+              {/* 3. Canteen */}
+              <label className={`facility-checkbox-card ${canteen ? 'selected' : ''}`}>
+                <input type="checkbox" checked={canteen} onChange={(e) => setCanteen(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Canteen</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Subsidized meals / tea</p>
+                </div>
+              </label>
+
+              {/* 4. Accommodation */}
+              <label className={`facility-checkbox-card ${accommodation ? 'selected' : ''}`}>
+                <input type="checkbox" checked={accommodation} onChange={(e) => setAccommodation(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Accommodation</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Hostel / Room facility</p>
+                </div>
+              </label>
+
+              {/* 5. PF */}
+              <label className={`facility-checkbox-card ${pf ? 'selected' : ''}`}>
+                <input type="checkbox" checked={pf} onChange={(e) => setPf(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>PF (Provident Fund)</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>EPFO retirement savings</p>
+                </div>
+              </label>
+
+              {/* 6. ESIC */}
+              <label className={`facility-checkbox-card ${esic ? 'selected' : ''}`}>
+                <input type="checkbox" checked={esic} onChange={(e) => setEsic(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>ESIC Insurance</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>State health coverage</p>
+                </div>
+              </label>
+
+              {/* 7. Uniform */}
+              <label className={`facility-checkbox-card ${uniform ? 'selected' : ''}`}>
+                <input type="checkbox" checked={uniform} onChange={(e) => setUniform(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Free Uniform & Shoes</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Safety gear provided</p>
+                </div>
+              </label>
+
+              {/* 8. Overtime */}
+              <label className={`facility-checkbox-card ${overtime ? 'selected' : ''}`}>
+                <input type="checkbox" checked={overtime} onChange={(e) => setOvertime(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Overtime Pay</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Double OT rate pay</p>
+                </div>
+              </label>
+
+              {/* 9. Medical Insurance */}
+              <label className={`facility-checkbox-card ${medicalInsurance ? 'selected' : ''}`}>
+                <input type="checkbox" checked={medicalInsurance} onChange={(e) => setMedicalInsurance(e.target.checked)} style={{ display: 'none' }} />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Medical Insurance</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Mediclaim cover</p>
+                </div>
+              </label>
+
+              {/* 10. Bonus */}
+              <label className={`facility-checkbox-card ${bonus || joiningBonus || attendanceBonus ? 'selected' : ''}`}>
+                <input 
+                  type="checkbox" 
+                  checked={bonus || joiningBonus || attendanceBonus} 
+                  onChange={(e) => {
+                    const chk = e.target.checked;
+                    setBonus(chk);
+                    setJoiningBonus(chk);
+                    setAttendanceBonus(chk);
+                  }} 
+                  style={{ display: 'none' }} 
+                />
+                <div className="facility-info">
+                  <h4 style={{ fontSize: '14px', fontWeight: '700' }}>Performance Bonus</h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Joining & attendance payouts</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Application Preferences & Governance */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <ShieldCheck size={20} style={{ color: '#344BFD' }} />
+            Application Preferences & Governance
+          </div>
+          <div className="form-section-body">
+            {/* Hiring Method Title & Subtitle */}
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Hiring Method</h3>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
+                Choose how candidates will proceed after submitting their application.
+              </p>
+            </div>
+
+            {/* 3 Hiring Method Cards */}
+            <div className="hiring-methods-grid">
+              {/* Card 1: Standard Hiring */}
+              <div 
+                className={`hiring-method-card ${hiringMethod === 'STANDARD' ? 'selected' : ''}`}
+                onClick={() => setHiringMethod('STANDARD')}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setHiringMethod('STANDARD'); }}
+                role="radio"
+                aria-checked={hiringMethod === 'STANDARD'}
+              >
+                <div className="hiring-card-header">
+                  <div className="hiring-card-icon-box">
+                    <FileText size={20} className="hiring-card-icon" />
+                  </div>
+                  <div className="hiring-card-info">
+                    <h4 className="hiring-card-title">Standard Hiring (Default)</h4>
+                    <span className="hiring-card-subtitle">Review & schedule</span>
+                  </div>
+                  <div className="hiring-card-action">
+                    <div 
+                      className="info-icon-btn" 
+                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'STANDARD' ? null : 'STANDARD'); }}
+                      onMouseEnter={() => setActiveTooltip('STANDARD')}
+                      onMouseLeave={() => setActiveTooltip(null)}
+                      title="Click or hover for hiring method details"
+                      aria-label="Information about Standard Hiring"
+                    >
+                      <Info size={16} />
+                    </div>
+                    {hiringMethod === 'STANDARD' && (
+                      <div className="hiring-check-indicator">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="hiring-card-desc">
+                  Employer reviews applications first and manually schedules interviews for shortlisted candidates.
+                </p>
+
+                {/* Information Tooltip Popover */}
+                {activeTooltip === 'STANDARD' && (
+                  <div className="hiring-tooltip-popover" onClick={(e) => e.stopPropagation()}>
+                    <div className="tooltip-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileText size={15} style={{ color: '#60A5FA' }} />
+                      <span>Standard Hiring Workflow</span>
+                    </div>
+                    <p className="tooltip-body">
+                      Candidates submit applications normally. Employers review applications, shortlist suitable candidates, and schedule interviews manually. Recommended for most hiring scenarios.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Card 2: Walk-in Drive */}
+              <div 
+                className={`hiring-method-card ${hiringMethod === 'WALK_IN' ? 'selected' : ''}`}
+                onClick={() => setHiringMethod('WALK_IN')}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setHiringMethod('WALK_IN'); }}
+                role="radio"
+                aria-checked={hiringMethod === 'WALK_IN'}
+              >
+                <div className="hiring-card-header">
+                  <div className="hiring-card-icon-box walkin-icon-box">
+                    <MapPin size={20} className="hiring-card-icon" />
+                  </div>
+                  <div className="hiring-card-info">
+                    <h4 className="hiring-card-title">Walk-in Drive</h4>
+                    <span className="hiring-card-subtitle">Direct on-site venue</span>
+                  </div>
+                  <div className="hiring-card-action">
+                    <div 
+                      className="info-icon-btn" 
+                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'WALK_IN' ? null : 'WALK_IN'); }}
+                      onMouseEnter={() => setActiveTooltip('WALK_IN')}
+                      onMouseLeave={() => setActiveTooltip(null)}
+                      title="Click or hover for hiring method details"
+                      aria-label="Information about Walk-in Drive"
+                    >
+                      <Info size={16} />
+                    </div>
+                    {hiringMethod === 'WALK_IN' && (
+                      <div className="hiring-check-indicator">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="hiring-card-desc">
+                  Candidates receive walk-in venue details immediately after applying and can attend the interview directly.
+                </p>
+                <div className="hiring-tags-row">
+                  <span className="hiring-tag">Manufacturing</span>
+                  <span className="hiring-tag">MIDC</span>
+                  <span className="hiring-tag">Warehouse</span>
+                  <span className="hiring-tag">ITI</span>
+                  <span className="hiring-tag">Bulk Hiring</span>
+                </div>
+
+                {/* Information Tooltip Popover */}
+                {activeTooltip === 'WALK_IN' && (
+                  <div className="hiring-tooltip-popover" onClick={(e) => e.stopPropagation()}>
+                    <div className="tooltip-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Zap size={15} style={{ color: '#FBBF24' }} />
+                      <span>Walk-in Drive Workflow</span>
+                    </div>
+                    <p className="tooltip-body">
+                      Candidates receive the walk-in venue, date, and timing immediately after applying. Suitable for mass hiring and on-site recruitment events.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Card 3: Scheduled Interview */}
+              <div 
+                className={`hiring-method-card ${hiringMethod === 'SCHEDULED_INTERVIEW' ? 'selected' : ''}`}
+                onClick={() => setHiringMethod('SCHEDULED_INTERVIEW')}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setHiringMethod('SCHEDULED_INTERVIEW'); }}
+                role="radio"
+                aria-checked={hiringMethod === 'SCHEDULED_INTERVIEW'}
+              >
+                <div className="hiring-card-header">
+                  <div className="hiring-card-icon-box scheduled-icon-box">
+                    <Calendar size={20} className="hiring-card-icon" />
+                  </div>
+                  <div className="hiring-card-info">
+                    <h4 className="hiring-card-title">Scheduled Interview</h4>
+                    <span className="hiring-card-subtitle">Structured 1-on-1 slots</span>
+                  </div>
+                  <div className="hiring-card-action">
+                    <div 
+                      className="info-icon-btn" 
+                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'SCHEDULED_INTERVIEW' ? null : 'SCHEDULED_INTERVIEW'); }}
+                      onMouseEnter={() => setActiveTooltip('SCHEDULED_INTERVIEW')}
+                      onMouseLeave={() => setActiveTooltip(null)}
+                      title="Click or hover for hiring method details"
+                      aria-label="Information about Scheduled Interview"
+                    >
+                      <Info size={16} />
+                    </div>
+                    {hiringMethod === 'SCHEDULED_INTERVIEW' && (
+                      <div className="hiring-check-indicator">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="hiring-card-desc">
+                  Employer reviews applications, shortlists candidates, and schedules interviews individually.
+                </p>
+                <div className="hiring-tags-row">
+                  <span className="hiring-tag">Corporate</span>
+                  <span className="hiring-tag">IT</span>
+                  <span className="hiring-tag">Healthcare</span>
+                  <span className="hiring-tag">Engineering</span>
+                </div>
+
+                {/* Information Tooltip Popover */}
+                {activeTooltip === 'SCHEDULED_INTERVIEW' && (
+                  <div className="hiring-tooltip-popover" onClick={(e) => e.stopPropagation()}>
+                    <div className="tooltip-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={15} style={{ color: '#34D399' }} />
+                      <span>Scheduled Interview Workflow</span>
+                    </div>
+                    <p className="tooltip-body">
+                      Candidates apply normally. Employers review applications and schedule interviews individually for shortlisted candidates. Ideal for structured hiring processes.
+                    </p>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div
-            className="post-job-actions"
+            {/* Conditional Walk-In Configuration Fields (Rendered only when hiringMethod === 'WALK_IN') */}
+            {hiringMethod === 'WALK_IN' && (
+              <div className="walkin-configuration-container">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', borderBottom: '1px solid #FCD34D', paddingBottom: '10px' }}>
+                  <Clock size={18} style={{ color: '#D97706' }} />
+                  <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                    Walk-In Drive Event Details <span className="required">*</span>
+                  </h4>
+                </div>
+
+                <div className="walkin-fields-grid">
+                  {/* Walk-in Date */}
+                  <div>
+                    <label className="form-label" style={{ fontWeight: '700' }}>
+                      Walk-In Drive Date <span className="required">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={walkInDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setWalkInDate(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Start Time & End Time */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label className="form-label" style={{ fontWeight: '700' }}>
+                        Start Time <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. 10:00 AM"
+                        value={walkInStartTime}
+                        onChange={(e) => setWalkInStartTime(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label className="form-label" style={{ fontWeight: '700' }}>
+                        End Time <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. 05:00 PM"
+                        value={walkInEndTime}
+                        onChange={(e) => setWalkInEndTime(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contact Person Name */}
+                  <div>
+                    <label className="form-label" style={{ fontWeight: '700' }}>
+                      Contact Person Name <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. Rahul Sharma (HR Manager)"
+                      value={walkInContactPerson}
+                      onChange={(e) => setWalkInContactPerson(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Contact Mobile Number */}
+                  <div>
+                    <label className="form-label" style={{ fontWeight: '700' }}>
+                      Contact Mobile Number <span className="required">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="e.g. +91 9876543210"
+                      value={walkInContactNumber}
+                      onChange={(e) => setWalkInContactNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Interview Venue Address */}
+                  <div className="full-width-field">
+                    <label className="form-label" style={{ fontWeight: '700' }}>
+                      Interview Venue Address <span className="required">*</span>
+                    </label>
+                    <textarea
+                      className="form-textarea"
+                      placeholder="Enter full factory gate, campus, or office venue address for candidates..."
+                      value={interviewAddress}
+                      onChange={(e) => setInterviewAddress(e.target.value)}
+                      required
+                      style={{ minHeight: '70px' }}
+                    />
+                  </div>
+
+                  {/* Documents to Carry (Optional) */}
+                  <div className="full-width-field">
+                    <label className="form-label" style={{ fontWeight: '700' }}>
+                      Documents to Carry (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. Resume, Govt Photo ID (Aadhaar/PAN), ITI Marksheet, 2 Passport Photos"
+                      value={walkInDocuments}
+                      onChange={(e) => setWalkInDocuments(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Resume Acceptance Toggle */}
+            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
+              <div className="pref-setting-header">
+                <div>
+                  <label htmlFor="acceptResumeToggle" className="pref-setting-title">
+                    <FileText size={16} style={{ color: '#344BFD', flexShrink: 0 }} />
+                    <span>Accept Applicant Resume</span>
+                  </label>
+                  <span className="pref-setting-desc">
+                    When enabled, candidates submit their resume and employers can view it.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  id="acceptResumeToggle"
+                  className="pref-setting-checkbox"
+                  checked={acceptResume}
+                  onChange={(e) => setAcceptResume(e.target.checked)}
+                />
+              </div>
+            </div>
+
+            {/* 3. Maximum Applicants Cap */}
+            <div className="form-row">
+              <div className="form-group full-width-field" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label" style={{ fontWeight: '700' }}>Maximum Applicants Limit</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  min="0"
+                  placeholder="e.g. 100 (Type 0 for unlimited)"
+                  value={maxApplicantsInput}
+                  onKeyDown={preventNegativeKey}
+                  onChange={(e) => setMaxApplicantsInput(e.target.value)}
+                />
+                <span style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', display: 'block' }}>
+                  Type 0 for unlimited applicants or specify maximum applications allowed.
+                </span>
+              </div>
+            </div>
+
+            {/* 5. Mandatory Application Deadline & Auto Close Job Banner */}
+            <div className="form-row" style={{ marginTop: '12px' }}>
+              <div className="form-group full-width-field" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label" style={{ fontWeight: '700', color: '#0F172A' }}>
+                  Application Deadline Date <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={applicationDeadline}
+                  onChange={(e) => setApplicationDeadline(e.target.value)}
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  style={{ borderColor: applicationDeadline ? '#10B981' : undefined }}
+                />
+                <div className="auto-close-banner" style={{ marginTop: '8px', background: '#EFF6FF', padding: '10px 14px', borderRadius: '6px', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#1E40AF', fontWeight: '600' }}>
+                  <AlertCircle size={16} style={{ color: '#344BFD', flexShrink: 0 }} />
+                  <span>⚡ Auto Close Job: The job posting will automatically switch to Closed/Expired after this deadline.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Description & Dynamic Skills */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <FileText size={20} style={{ color: '#344BFD' }} />
+            Job Operations, Description & Dynamic Skills
+          </div>
+          <div className="form-section-body">
+            {/* 7. Mandatory Job Description */}
+            <div className="form-group">
+              <label className="form-label">Job Description <span className="required">*</span></label>
+              <textarea
+                className="form-textarea"
+                placeholder="Describe the job duties, shift operations, plant environment, and expectations..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                style={{ minHeight: 140 }}
+              />
+            </div>
+
+            {/* 9. Optional Responsibilities (Checkbox Governed - Unchecked by Default) */}
+            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
+              <div className="pref-setting-header">
+                <div>
+                  <label htmlFor="showResponsibilitiesToggle" className="pref-setting-title">
+                    <CheckCircle2 size={16} style={{ color: showResponsibilities ? '#344BFD' : '#64748B', flexShrink: 0 }} />
+                    <span>Add Key Operations / Responsibilities</span>
+                  </label>
+                  <span className="pref-setting-desc">
+                    Check if you want to specify detailed line-by-line key responsibilities.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  id="showResponsibilitiesToggle"
+                  className="pref-setting-checkbox"
+                  checked={showResponsibilities}
+                  onChange={(e) => setShowResponsibilities(e.target.checked)}
+                />
+              </div>
+
+              {showResponsibilities && (
+                <div style={{ marginTop: '12px' }}>
+                  <label className="form-label" style={{ fontWeight: '700' }}>
+                    Key Operations / Responsibilities (one per line)
+                  </label>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Enter each key responsibility on a new line..."
+                    value={responsibilities}
+                    onChange={(e) => setResponsibilities(e.target.value)}
+                    style={{ minHeight: '100px' }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 10. Optional Requirements (Checkbox Governed - Unchecked by Default) */}
+            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
+              <div className="pref-setting-header">
+                <div>
+                  <label htmlFor="showRequirementsToggle" className="pref-setting-title">
+                    <CheckCircle2 size={16} style={{ color: showRequirements ? '#344BFD' : '#64748B', flexShrink: 0 }} />
+                    <span>Add Eligible Criteria / Requirements</span>
+                  </label>
+                  <span className="pref-setting-desc">
+                    Check if you want to specify detailed candidate eligibility criteria or requirements.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  id="showRequirementsToggle"
+                  className="pref-setting-checkbox"
+                  checked={showRequirements}
+                  onChange={(e) => setShowRequirements(e.target.checked)}
+                />
+              </div>
+
+              {showRequirements && (
+                <div style={{ marginTop: '12px' }}>
+                  <label className="form-label" style={{ fontWeight: '700' }}>
+                    Eligible Criteria / Requirements (one per line)
+                  </label>
+                  <textarea
+                    className="form-textarea"
+                    placeholder="Enter each requirement on a new line..."
+                    value={requirements}
+                    onChange={(e) => setRequirements(e.target.value)}
+                    style={{ minHeight: '100px' }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 8. Mandatory Skills & Dynamic Role Suggestions */}
+            <div className="form-group">
+              <label className="form-label">Skills Needed (comma separated) <span className="required">*</span></label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Micrometer Reading, CNC Operation, Shop Floor Safety"
+                value={skills}
+                onChange={(e) => setSkills(e.target.value)}
+                required
+              />
+              
+              {/* Dynamic Suggested Skill Tags updated based on Trade & Role */}
+              {availableSkills.length > 0 && (
+                <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <Lightbulb size={15} style={{ color: '#344BFD', flexShrink: 0 }} /> Click role-suggested skills for <strong>{activeRoleName || activeIndustryName || 'this position'}</strong>:
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {availableSkills.map((sk) => {
+                      const isSelected = skills
+                        .split(',')
+                        .map(s => s.trim().toLowerCase())
+                        .includes(sk.toLowerCase());
+                      
+                      return (
+                        <button
+                          key={sk}
+                          type="button"
+                          onClick={() => {
+                            const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
+                            if (isSelected) {
+                              setSkills(currentList.filter(s => s.toLowerCase() !== sk.toLowerCase()).join(', '));
+                            } else {
+                              setSkills([...currentList, sk].join(', '));
+                            }
+                          }}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '9999px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            border: isSelected ? '1.5px solid #344BFD' : '1px solid #cbd5e1',
+                            background: isSelected ? '#344BFD' : '#ffffff',
+                            color: isSelected ? '#ffffff' : '#334155',
+                            boxShadow: isSelected ? '0 2px 8px rgba(52, 75, 253, 0.25)' : 'none',
+                            transition: 'all 0.15s ease',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <span>{isSelected ? '✓' : '+'}</span>
+                          <span>{sk}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div
+          className="post-job-actions"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '12px',
+            width: '100%',
+            boxSizing: 'border-box',
+            marginTop: '24px'
+          }}
+        >
+          <button
+            type="button"
+            disabled={isSubmitting}
+            className="btn btn-secondary btn-lg"
+            onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}
             style={{
-              display: 'flex',
-              flexDirection: 'row',
+              flex: 1,
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '12px',
-              width: '100%',
-              boxSizing: 'border-box',
-              marginTop: '24px'
+              justifyContent: 'center',
+              height: '46px',
+              borderRadius: '8px',
+              fontWeight: '700'
             }}
           >
-            <button
-              type="button"
-              disabled={isSubmitting}
-              className="btn btn-secondary btn-lg"
-              onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}
-              style={{
-                flex: 1,
-                width: '100%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '46px',
-                borderRadius: '8px',
-                fontWeight: '700',
-                boxSizing: 'border-box'
-              }}
-            >
-              Cancel
-            </button>
-            
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn btn-primary btn-lg"
-              style={{
-                flex: 1,
-                width: '100%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                height: '46px',
-                borderRadius: '8px',
-                background: '#344BFD',
-                color: '#ffffff',
-                fontWeight: '700',
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.85 : 1,
-                boxSizing: 'border-box'
-              }}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ animation: 'spin 0.8s linear infinite' }}
-                  >
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  <span>{isEdit ? 'Updating Job...' : 'Posting Job for Approval...'}</span>
-                </>
-              ) : (
-                <span>{isEdit ? 'Update Job' : 'Post Job'}</span>
-              )}
-            </button>
-          </div>
-        </form>
+            Cancel
+          </button>
+          
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn btn-primary btn-lg"
+            style={{
+              flex: 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              height: '46px',
+              borderRadius: '8px',
+              background: '#344BFD',
+              color: '#ffffff',
+              fontWeight: '700',
+              fontSize: '14px',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              opacity: isSubmitting ? 0.85 : 1
+            }}
+          >
+            {isSubmitting ? (
+              <>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  style={{ animation: 'spin 0.8s linear infinite' }}
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                <span>{isEdit ? 'Updating Job...' : 'Posting Job...'}</span>
+              </>
+            ) : (
+              <span>{isEdit ? 'Update Job' : 'Post Job'}</span>
+            )}
+          </button>
+        </div>
+      </form>
     </>
   );
 
@@ -1406,4 +2322,5 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     </div>
   );
 };
+
 export default JobPostPage;

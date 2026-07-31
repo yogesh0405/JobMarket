@@ -1,4 +1,5 @@
 import { pool } from '../../../config/database/pool';
+import { CacheService } from '../../../utils/redisCache';
 import {
   Advertisement,
   CreateAdvertisementInput,
@@ -347,147 +348,151 @@ export class AdvertisementRepository {
    * Get Analytics for Employer
    */
   static async getEmployerAnalytics(employerId: string): Promise<AdvertisementAnalytics> {
-    const summaryQuery = `
-      SELECT 
-        COUNT(*)::int as total_advertisements,
-        COUNT(CASE WHEN status IN ('APPROVED', 'PUBLISHED') AND is_active = TRUE AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date THEN 1 END)::int as active_advertisements,
-        COUNT(CASE WHEN status = 'PENDING_APPROVAL' THEN 1 END)::int as pending_approval,
-        COUNT(CASE WHEN status = 'REJECTED' THEN 1 END)::int as rejected_advertisements
-      FROM advertisements
-      WHERE owner_id = $1;
-    `;
-    const summaryRes = await pool.query(summaryQuery, [employerId]);
-    const summary = summaryRes.rows[0];
+    return CacheService.getOrSet(`cache:ads:employer_analytics:${employerId}`, 180, async () => {
+      const summaryQuery = `
+        SELECT 
+          COUNT(*)::int as total_advertisements,
+          COUNT(CASE WHEN status IN ('APPROVED', 'PUBLISHED') AND is_active = TRUE AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date THEN 1 END)::int as active_advertisements,
+          COUNT(CASE WHEN status = 'PENDING_APPROVAL' THEN 1 END)::int as pending_approval,
+          COUNT(CASE WHEN status = 'REJECTED' THEN 1 END)::int as rejected_advertisements
+        FROM advertisements
+        WHERE owner_id = $1;
+      `;
+      const summaryRes = await pool.query(summaryQuery, [employerId]);
+      const summary = summaryRes.rows[0];
 
-    const metricsQuery = `
-      SELECT 
-        COALESCE(COUNT(DISTINCT v.id), 0)::int as total_views,
-        COALESCE(COUNT(DISTINCT c.id), 0)::int as total_clicks
-      FROM advertisements a
-      LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
-      LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
-      WHERE a.owner_id = $1;
-    `;
-    const metricsRes = await pool.query(metricsQuery, [employerId]);
-    const metrics = metricsRes.rows[0];
+      const metricsQuery = `
+        SELECT 
+          COALESCE(COUNT(DISTINCT v.id), 0)::int as total_views,
+          COALESCE(COUNT(DISTINCT c.id), 0)::int as total_clicks
+        FROM advertisements a
+        LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
+        LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
+        WHERE a.owner_id = $1;
+      `;
+      const metricsRes = await pool.query(metricsQuery, [employerId]);
+      const metrics = metricsRes.rows[0];
 
-    const views = parseInt(metrics.total_views || '0', 10);
-    const clicks = parseInt(metrics.total_clicks || '0', 10);
-    const avgCtr = views > 0 ? parseFloat(((clicks / views) * 100).toFixed(2)) : 0;
+      const views = parseInt(metrics.total_views || '0', 10);
+      const clicks = parseInt(metrics.total_clicks || '0', 10);
+      const avgCtr = views > 0 ? parseFloat(((clicks / views) * 100).toFixed(2)) : 0;
 
-    const topQuery = `
-      SELECT 
-        a.id,
-        a.title,
-        a.banner_image,
-        a.advertisement_type,
-        COUNT(DISTINCT c.id)::int as clicks_count,
-        COUNT(DISTINCT v.id)::int as views_count
-      FROM advertisements a
-      LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
-      LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
-      WHERE a.owner_id = $1
-      GROUP BY a.id
-      ORDER BY clicks_count DESC, views_count DESC
-      LIMIT 5;
-    `;
-    const topRes = await pool.query(topQuery, [employerId]);
-    const topClicked = topRes.rows.map((row) => {
-      const v = row.views_count || 0;
-      const cl = row.clicks_count || 0;
+      const topQuery = `
+        SELECT 
+          a.id,
+          a.title,
+          a.banner_image,
+          a.advertisement_type,
+          COUNT(DISTINCT c.id)::int as clicks_count,
+          COUNT(DISTINCT v.id)::int as views_count
+        FROM advertisements a
+        LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
+        LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
+        WHERE a.owner_id = $1
+        GROUP BY a.id
+        ORDER BY clicks_count DESC, views_count DESC
+        LIMIT 5;
+      `;
+      const topRes = await pool.query(topQuery, [employerId]);
+      const topClicked = topRes.rows.map((row) => {
+        const v = row.views_count || 0;
+        const cl = row.clicks_count || 0;
+        return {
+          id: row.id,
+          title: row.title,
+          banner_image: row.banner_image,
+          advertisement_type: row.advertisement_type,
+          clicks_count: cl,
+          views_count: v,
+          ctr: v > 0 ? parseFloat(((cl / v) * 100).toFixed(2)) : 0,
+        };
+      });
+
       return {
-        id: row.id,
-        title: row.title,
-        banner_image: row.banner_image,
-        advertisement_type: row.advertisement_type,
-        clicks_count: cl,
-        views_count: v,
-        ctr: v > 0 ? parseFloat(((cl / v) * 100).toFixed(2)) : 0,
+        total_advertisements: summary.total_advertisements || 0,
+        active_advertisements: summary.active_advertisements || 0,
+        pending_approval: summary.pending_approval || 0,
+        rejected_advertisements: summary.rejected_advertisements || 0,
+        total_views: views,
+        total_clicks: clicks,
+        avg_ctr: avgCtr,
+        top_clicked: topClicked,
       };
     });
-
-    return {
-      total_advertisements: summary.total_advertisements || 0,
-      active_advertisements: summary.active_advertisements || 0,
-      pending_approval: summary.pending_approval || 0,
-      rejected_advertisements: summary.rejected_advertisements || 0,
-      total_views: views,
-      total_clicks: clicks,
-      avg_ctr: avgCtr,
-      top_clicked: topClicked,
-    };
   }
 
   /**
    * Get System-Wide Analytics for Admin
    */
   static async getAdminAnalytics(): Promise<AdvertisementAnalytics> {
-    const summaryQuery = `
-      SELECT 
-        COUNT(*)::int as total_advertisements,
-        COUNT(CASE WHEN status IN ('APPROVED', 'PUBLISHED') AND is_active = TRUE AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date THEN 1 END)::int as active_advertisements,
-        COUNT(CASE WHEN status = 'PENDING_APPROVAL' THEN 1 END)::int as pending_approval,
-        COUNT(CASE WHEN status = 'REJECTED' THEN 1 END)::int as rejected_advertisements
-      FROM advertisements;
-    `;
-    const summaryRes = await pool.query(summaryQuery);
-    const summary = summaryRes.rows[0];
+    return CacheService.getOrSet('cache:ads:admin_analytics', 180, async () => {
+      const summaryQuery = `
+        SELECT 
+          COUNT(*)::int as total_advertisements,
+          COUNT(CASE WHEN status IN ('APPROVED', 'PUBLISHED') AND is_active = TRUE AND CURRENT_TIMESTAMP BETWEEN start_date AND end_date THEN 1 END)::int as active_advertisements,
+          COUNT(CASE WHEN status = 'PENDING_APPROVAL' THEN 1 END)::int as pending_approval,
+          COUNT(CASE WHEN status = 'REJECTED' THEN 1 END)::int as rejected_advertisements
+        FROM advertisements;
+      `;
+      const summaryRes = await pool.query(summaryQuery);
+      const summary = summaryRes.rows[0];
 
-    const metricsQuery = `
-      SELECT 
-        COALESCE(COUNT(DISTINCT v.id), 0)::int as total_views,
-        COALESCE(COUNT(DISTINCT c.id), 0)::int as total_clicks
-      FROM advertisements a
-      LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
-      LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id;
-    `;
-    const metricsRes = await pool.query(metricsQuery);
-    const metrics = metricsRes.rows[0];
+      const metricsQuery = `
+        SELECT 
+          COALESCE(COUNT(DISTINCT v.id), 0)::int as total_views,
+          COALESCE(COUNT(DISTINCT c.id), 0)::int as total_clicks
+        FROM advertisements a
+        LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
+        LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id;
+      `;
+      const metricsRes = await pool.query(metricsQuery);
+      const metrics = metricsRes.rows[0];
 
-    const views = parseInt(metrics.total_views || '0', 10);
-    const clicks = parseInt(metrics.total_clicks || '0', 10);
-    const avgCtr = views > 0 ? parseFloat(((clicks / views) * 100).toFixed(2)) : 0;
+      const views = parseInt(metrics.total_views || '0', 10);
+      const clicks = parseInt(metrics.total_clicks || '0', 10);
+      const avgCtr = views > 0 ? parseFloat(((clicks / views) * 100).toFixed(2)) : 0;
 
-    const topQuery = `
-      SELECT 
-        a.id,
-        a.title,
-        a.banner_image,
-        a.advertisement_type,
-        COUNT(DISTINCT c.id)::int as clicks_count,
-        COUNT(DISTINCT v.id)::int as views_count
-      FROM advertisements a
-      LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
-      LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
-      GROUP BY a.id
-      ORDER BY clicks_count DESC, views_count DESC
-      LIMIT 5;
-    `;
-    const topRes = await pool.query(topQuery);
-    const topClicked = topRes.rows.map((row) => {
-      const v = row.views_count || 0;
-      const cl = row.clicks_count || 0;
+      const topQuery = `
+        SELECT 
+          a.id,
+          a.title,
+          a.banner_image,
+          a.advertisement_type,
+          COUNT(DISTINCT c.id)::int as clicks_count,
+          COUNT(DISTINCT v.id)::int as views_count
+        FROM advertisements a
+        LEFT JOIN advertisement_clicks c ON a.id = c.advertisement_id
+        LEFT JOIN advertisement_views v ON a.id = v.advertisement_id
+        GROUP BY a.id
+        ORDER BY clicks_count DESC, views_count DESC
+        LIMIT 5;
+      `;
+      const topRes = await pool.query(topQuery);
+      const topClicked = topRes.rows.map((row) => {
+        const v = row.views_count || 0;
+        const cl = row.clicks_count || 0;
+        return {
+          id: row.id,
+          title: row.title,
+          banner_image: row.banner_image,
+          advertisement_type: row.advertisement_type,
+          clicks_count: cl,
+          views_count: v,
+          ctr: v > 0 ? parseFloat(((cl / v) * 100).toFixed(2)) : 0,
+        };
+      });
+
       return {
-        id: row.id,
-        title: row.title,
-        banner_image: row.banner_image,
-        advertisement_type: row.advertisement_type,
-        clicks_count: cl,
-        views_count: v,
-        ctr: v > 0 ? parseFloat(((cl / v) * 100).toFixed(2)) : 0,
+        total_advertisements: summary.total_advertisements || 0,
+        active_advertisements: summary.active_advertisements || 0,
+        pending_approval: summary.pending_approval || 0,
+        rejected_advertisements: summary.rejected_advertisements || 0,
+        total_views: views,
+        total_clicks: clicks,
+        avg_ctr: avgCtr,
+        top_clicked: topClicked,
       };
     });
-
-    return {
-      total_advertisements: summary.total_advertisements || 0,
-      active_advertisements: summary.active_advertisements || 0,
-      pending_approval: summary.pending_approval || 0,
-      rejected_advertisements: summary.rejected_advertisements || 0,
-      total_views: views,
-      total_clicks: clicks,
-      avg_ctr: avgCtr,
-      top_clicked: topClicked,
-    };
   }
 
   /**

@@ -1,4 +1,5 @@
 import { pool } from '../../../config/database/pool';
+import { CacheService } from '../../../utils/redisCache';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -10,125 +11,129 @@ export interface PaginatedResult<T> {
 export class AdminRepository {
   // 1. Dashboard Statistics
   static async getStats(): Promise<any> {
-    const usersCountQuery = `
-      SELECT 
-        COUNT(*) as total_users,
-        COUNT(CASE WHEN role = 'candidate' THEN 1 END) as total_workers,
-        COUNT(CASE WHEN role = 'employer' THEN 1 END) as total_employers,
-        COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins
-      FROM users;
-    `;
+    return CacheService.getOrSet('cache:admin:stats', 60, async () => {
+      const usersCountQuery = `
+        SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN role = 'candidate' THEN 1 END) as total_workers,
+          COUNT(CASE WHEN role = 'employer' THEN 1 END) as total_employers,
+          COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins
+        FROM users;
+      `;
 
-    const jobsCountQuery = `
-      SELECT 
-        COUNT(*) as total_jobs,
-        COUNT(CASE WHEN status = 'PENDING_REVIEW' THEN 1 END) as pending_jobs,
-        COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_jobs,
-        COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_jobs
-      FROM jobs;
-    `;
+      const jobsCountQuery = `
+        SELECT 
+          COUNT(*) as total_jobs,
+          COUNT(CASE WHEN status = 'PENDING_REVIEW' THEN 1 END) as pending_jobs,
+          COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_jobs,
+          COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_jobs
+        FROM jobs;
+      `;
 
-    const appStatsQuery = `
-      SELECT
-        COUNT(CASE WHEN applied_at >= CURRENT_DATE THEN 1 END) as applications_today,
-        COUNT(CASE WHEN applied_at >= DATE_TRUNC('month', CURRENT_DATE) THEN 1 END) as applications_this_month
-      FROM job_applications;
-    `;
+      const appStatsQuery = `
+        SELECT
+          COUNT(CASE WHEN applied_at >= CURRENT_DATE THEN 1 END) as applications_today,
+          COUNT(CASE WHEN applied_at >= DATE_TRUNC('month', CURRENT_DATE) THEN 1 END) as applications_this_month
+        FROM job_applications;
+      `;
 
-    const registrationsQuery = `
-      SELECT COUNT(*) as new_registrations 
-      FROM users 
-      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days';
-    `;
+      const registrationsQuery = `
+        SELECT COUNT(*) as new_registrations 
+        FROM users 
+        WHERE created_at >= CURRENT_DATE - INTERVAL '7 days';
+      `;
 
-    const onlineUsersQuery = `
-      SELECT COUNT(DISTINCT user_id) as online_users 
-      FROM sessions 
-      WHERE last_used_at >= CURRENT_TIMESTAMP - INTERVAL '15 minutes' AND revoked = FALSE;
-    `;
+      const onlineUsersQuery = `
+        SELECT COUNT(DISTINCT user_id) as online_users 
+        FROM sessions 
+        WHERE last_used_at >= CURRENT_TIMESTAMP - INTERVAL '15 minutes' AND revoked = FALSE;
+      `;
 
-    const companyCountQuery = `
-      SELECT COUNT(DISTINCT company_name) as total_companies 
-      FROM users 
-      WHERE role = 'employer' AND company_name IS NOT NULL;
-    `;
+      const companyCountQuery = `
+        SELECT COUNT(DISTINCT company_name) as total_companies 
+        FROM users 
+        WHERE role = 'employer' AND company_name IS NOT NULL;
+      `;
 
-    const [uRes, jRes, aRes, rRes, oRes, cRes] = await Promise.all([
-      pool.query(usersCountQuery),
-      pool.query(jobsCountQuery),
-      pool.query(appStatsQuery),
-      pool.query(registrationsQuery),
-      pool.query(onlineUsersQuery),
-      pool.query(companyCountQuery)
-    ]);
+      const [uRes, jRes, aRes, rRes, oRes, cRes] = await Promise.all([
+        pool.query(usersCountQuery),
+        pool.query(jobsCountQuery),
+        pool.query(appStatsQuery),
+        pool.query(registrationsQuery),
+        pool.query(onlineUsersQuery),
+        pool.query(companyCountQuery)
+      ]);
 
-    const stats = {
-      ...uRes.rows[0],
-      ...jRes.rows[0],
-      ...aRes.rows[0],
-      ...rRes.rows[0],
-      ...oRes.rows[0],
-      ...cRes.rows[0]
-    };
+      const stats = {
+        ...uRes.rows[0],
+        ...jRes.rows[0],
+        ...aRes.rows[0],
+        ...rRes.rows[0],
+        ...oRes.rows[0],
+        ...cRes.rows[0]
+      };
 
-    // Format all numeric fields to integers
-    Object.keys(stats).forEach(key => {
-      stats[key] = parseInt(stats[key] || '0', 10);
+      // Format all numeric fields to integers
+      Object.keys(stats).forEach(key => {
+        stats[key] = parseInt(stats[key] || '0', 10);
+      });
+
+      return stats;
     });
-
-    return stats;
   }
 
   // Analytics Chart Data
   static async getChartsData(): Promise<any> {
-    const dailyRegistrationsQuery = `
-      SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
-      FROM users
-      WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
-      GROUP BY date ORDER BY date ASC;
-    `;
+    return CacheService.getOrSet('cache:admin:charts', 300, async () => {
+      const dailyRegistrationsQuery = `
+        SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+        FROM users
+        WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
+        GROUP BY date ORDER BY date ASC;
+      `;
 
-    const dailyJobsQuery = `
-      SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
-      FROM jobs
-      WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
-      GROUP BY date ORDER BY date ASC;
-    `;
+      const dailyJobsQuery = `
+        SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+        FROM jobs
+        WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
+        GROUP BY date ORDER BY date ASC;
+      `;
 
-    const dailyApplicationsQuery = `
-      SELECT DATE_TRUNC('day', applied_at) as date, COUNT(*) as count
-      FROM job_applications
-      WHERE applied_at >= CURRENT_DATE - INTERVAL '14 days'
-      GROUP BY date ORDER BY date ASC;
-    `;
+      const dailyApplicationsQuery = `
+        SELECT DATE_TRUNC('day', applied_at) as date, COUNT(*) as count
+        FROM job_applications
+        WHERE applied_at >= CURRENT_DATE - INTERVAL '14 days'
+        GROUP BY date ORDER BY date ASC;
+      `;
 
-    const topCategoriesQuery = `
-      SELECT COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') as category, COUNT(*)::int as count
-      FROM jobs j
-      GROUP BY COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') ORDER BY count DESC LIMIT 5;
-    `;
+      const topCategoriesQuery = `
+        SELECT COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') as category, COUNT(*)::int as count
+        FROM jobs j
+        GROUP BY COALESCE(NULLIF(j.trade, ''), NULLIF(j.industry, ''), 'General') ORDER BY count DESC LIMIT 5;
+      `;
 
-    const topLocationsQuery = `
-      SELECT COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') as location, COUNT(*)::int as count
-      FROM jobs j
-      GROUP BY COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') ORDER BY count DESC LIMIT 5;
-    `;
+      const topLocationsQuery = `
+        SELECT COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') as location, COUNT(*)::int as count
+        FROM jobs j
+        GROUP BY COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') ORDER BY count DESC LIMIT 5;
+      `;
 
-    const [regRes, jobRes, appRes, catRes, locRes] = await Promise.all([
-      pool.query(dailyRegistrationsQuery),
-      pool.query(dailyJobsQuery),
-      pool.query(dailyApplicationsQuery),
-      pool.query(topCategoriesQuery),
-      pool.query(topLocationsQuery)
-    ]);
+      const [regRes, jobRes, appRes, catRes, locRes] = await Promise.all([
+        pool.query(dailyRegistrationsQuery),
+        pool.query(dailyJobsQuery),
+        pool.query(dailyApplicationsQuery),
+        pool.query(topCategoriesQuery),
+        pool.query(topLocationsQuery)
+      ]);
 
-    return {
-      dailyRegistrations: regRes.rows,
-      dailyJobs: jobRes.rows,
-      dailyApplications: appRes.rows,
-      topCategories: catRes.rows,
-      topLocations: locRes.rows
-    };
+      return {
+        dailyRegistrations: regRes.rows,
+        dailyJobs: jobRes.rows,
+        dailyApplications: appRes.rows,
+        topCategories: catRes.rows,
+        topLocations: locRes.rows
+      };
+    });
   }
 
   // 2. User Management
@@ -176,7 +181,6 @@ export class AdminRepository {
 
     const whereClause = queryParts.length > 0 ? `WHERE ${queryParts.join(' AND ')}` : '';
 
-    // Validate sorting field to avoid SQL injection
     const allowedSortFields = ['name', 'email', 'role', 'status', 'created_at'];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
     const validSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
@@ -204,7 +208,7 @@ export class AdminRepository {
   }
 
   static async getUserDetails(userId: string): Promise<any> {
-    const userQuery = 'SELECT * FROM users WHERE id = $1;';
+    const userQuery = 'SELECT id, email, name, phone, role, status, company_name, gst_number, aadhaar_verified, trade_specialization, headline, location, skills, preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url, created_at, updated_at FROM users WHERE id = $1;';
     const userRes = await pool.query(userQuery, [userId]);
     const user = userRes.rows[0];
 
@@ -278,7 +282,10 @@ export class AdminRepository {
     const total = parseInt(countRes.rows[0].count, 10);
 
     const dataQuery = `
-      SELECT *, (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count
+      SELECT id, employer_id, company, company_logo, company_color, title, industry, location,
+             job_type, work_mode, min_experience, max_experience, salary_min, salary_max,
+             openings, filled_openings, featured, status, posted_at, overtime, trade, midc_zone,
+             (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count
       FROM jobs
       ${whereClause}
       ORDER BY ${validSortBy} ${validSortOrder}
@@ -330,14 +337,18 @@ export class AdminRepository {
       RETURNING *;
     `;
     const result = await pool.query(query, [status, rejectReason || null, jobId]);
+    await CacheService.invalidatePattern('cache:jobs:*');
+    await CacheService.invalidate('cache:admin:stats');
     return result.rows[0];
   }
 
   // 4. Categories CRUD
   static async getCategories(): Promise<any[]> {
-    const query = 'SELECT * FROM categories ORDER BY name ASC;';
-    const result = await pool.query(query);
-    return result.rows;
+    return CacheService.getOrSet('cache:categories:all', 600, async () => {
+      const query = 'SELECT * FROM categories ORDER BY name ASC;';
+      const result = await pool.query(query);
+      return result.rows;
+    });
   }
 
   static async createCategory(name: string, icon: string, status: string = 'ACTIVE'): Promise<any> {
@@ -348,53 +359,63 @@ export class AdminRepository {
       RETURNING *;
     `;
     const result = await pool.query(query, [name, icon, status]);
+    await CacheService.invalidate('cache:categories:all');
     return result.rows[0];
   }
 
   static async updateCategory(id: string, name: string, icon: string, status: string): Promise<any> {
     const query = 'UPDATE categories SET name = $1, icon = $2, status = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *;';
     const result = await pool.query(query, [name, icon, status, id]);
+    await CacheService.invalidate('cache:categories:all');
     return result.rows[0];
   }
 
   static async deleteCategory(id: string): Promise<void> {
     const query = 'DELETE FROM categories WHERE id = $1;';
     await pool.query(query, [id]);
+    await CacheService.invalidate('cache:categories:all');
   }
 
   // 5. Skills CRUD
   static async getSkills(): Promise<any[]> {
-    const query = 'SELECT * FROM skills ORDER BY name ASC;';
-    const result = await pool.query(query);
-    return result.rows;
+    return CacheService.getOrSet('cache:skills:all', 600, async () => {
+      const query = 'SELECT * FROM skills ORDER BY name ASC;';
+      const result = await pool.query(query);
+      return result.rows;
+    });
   }
 
   static async createSkill(name: string): Promise<any> {
     const query = 'INSERT INTO skills (name) VALUES ($1) RETURNING *;';
     const result = await pool.query(query, [name]);
+    await CacheService.invalidate('cache:skills:all');
     return result.rows[0];
   }
 
   static async updateSkill(id: string, name: string, status: string): Promise<any> {
     const query = 'UPDATE skills SET name = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *;';
     const result = await pool.query(query, [name, status, id]);
+    await CacheService.invalidate('cache:skills:all');
     return result.rows[0];
   }
 
   static async deleteSkill(id: string): Promise<void> {
     const query = 'DELETE FROM skills WHERE id = $1;';
     await pool.query(query, [id]);
+    await CacheService.invalidate('cache:skills:all');
   }
 
   // 6. System Settings
   static async getSettings(): Promise<any> {
-    const query = 'SELECT key, value FROM system_settings;';
-    const result = await pool.query(query);
-    const settings: Record<string, string> = {};
-    result.rows.forEach(row => {
-      settings[row.key] = row.value;
+    return CacheService.getOrSet('cache:system:settings', 600, async () => {
+      const query = 'SELECT key, value FROM system_settings;';
+      const result = await pool.query(query);
+      const settings: Record<string, string> = {};
+      result.rows.forEach(row => {
+        settings[row.key] = row.value;
+      });
+      return settings;
     });
-    return settings;
   }
 
   static async updateSetting(key: string, value: string): Promise<void> {
@@ -405,6 +426,7 @@ export class AdminRepository {
       SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP;
     `;
     await pool.query(query, [key, value]);
+    await CacheService.invalidate('cache:system:settings');
   }
 
   // 7. User Reports

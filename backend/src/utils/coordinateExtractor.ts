@@ -65,10 +65,8 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
 
   const text = input.trim();
 
-  // 1. Google Maps / OSM URL Regex patterns
-  // Example: @18.5204303,73.8567437,15z
-  const gmapsAtPattern = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-  const matchAt = text.match(gmapsAtPattern);
+  // 1. Google Maps @lat,lng format e.g. @18.5204303,73.8567437,15z
+  const matchAt = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (matchAt) {
     const lat = parseFloat(matchAt[1]);
     const lng = parseFloat(matchAt[2]);
@@ -77,9 +75,18 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
     }
   }
 
-  // Example: q=18.5204,73.8567 or ll=18.5204,73.8567 or query=18.5204,73.8567
-  const paramPattern = /[?&](?:q|ll|query|center|destination)=(-?\d+\.\d+),(-?\d+\.\d+)/i;
-  const matchParam = text.match(paramPattern);
+  // 2. Maps path: search/lat,+lng or dir/lat,lng or place/lat,lng (e.g. /search/18.458266,+73.846720)
+  const pathMatch = text.match(/(?:search|dir|place|maps)\/[^\/]*?(-?\d{1,2}\.\d+)\s*[,;\s]\s*\+?(-?\d{1,3}\.\d+)/i);
+  if (pathMatch) {
+    const lat = parseFloat(pathMatch[1]);
+    const lng = parseFloat(pathMatch[2]);
+    if (isValidCoordinate(lat, lng)) {
+      return { latitude: lat, longitude: lng, accuracy: 'EXACT', source: 'DIRECT_URL' };
+    }
+  }
+
+  // 3. Query param q=lat,lng or ll=lat,lng or query=lat,lng or center=lat,lng or destination=lat,lng
+  const matchParam = text.match(/[?&](?:q|ll|query|center|destination|near)=(-?\d{1,2}\.\d+)(?:%2C|%20|[\s,+])\+?(-?\d{1,3}\.\d+)/i);
   if (matchParam) {
     const lat = parseFloat(matchParam[1]);
     const lng = parseFloat(matchParam[2]);
@@ -88,9 +95,26 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
     }
   }
 
-  // Example: OpenStreetMap #map=16/18.5204/73.8567 or ?mlat=18.5204&mlon=73.8567
-  const osmHashPattern = /#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/i;
-  const matchOsmHash = text.match(osmHashPattern);
+  // 4. Data params !3d19.8762!4d75.3433 or !2d75.3433!3d19.8762
+  const data3d4d = text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (data3d4d) {
+    const lat = parseFloat(data3d4d[1]);
+    const lng = parseFloat(data3d4d[2]);
+    if (isValidCoordinate(lat, lng)) {
+      return { latitude: lat, longitude: lng, accuracy: 'EXACT', source: 'DIRECT_URL' };
+    }
+  }
+  const data2d3d = text.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
+  if (data2d3d) {
+    const lng = parseFloat(data2d3d[1]);
+    const lat = parseFloat(data2d3d[2]);
+    if (isValidCoordinate(lat, lng)) {
+      return { latitude: lat, longitude: lng, accuracy: 'EXACT', source: 'DIRECT_URL' };
+    }
+  }
+
+  // 5. OpenStreetMap #map=16/18.5204/73.8567 or ?mlat=18.5204&mlon=73.8567
+  const matchOsmHash = text.match(/#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/i);
   if (matchOsmHash) {
     const lat = parseFloat(matchOsmHash[1]);
     const lng = parseFloat(matchOsmHash[2]);
@@ -99,8 +123,7 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
     }
   }
 
-  const osmMlatPattern = /[?&]mlat=(-?\d+\.\d+).*?[?&]mlon=(-?\d+\.\d+)/i;
-  const matchOsmMlat = text.match(osmMlatPattern);
+  const matchOsmMlat = text.match(/[?&]mlat=(-?\d+\.\d+).*?[?&]mlon=(-?\d+\.\d+)/i);
   if (matchOsmMlat) {
     const lat = parseFloat(matchOsmMlat[1]);
     const lng = parseFloat(matchOsmMlat[2]);
@@ -109,18 +132,17 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
     }
   }
 
-  // 2. Direct Raw Coordinate string e.g. "18.520430, 73.856743" or "Lat: 18.52, Lng: 73.85"
-  const rawCoordPattern = /(?:lat(?:itude)?[:\s]*)?(-?\d{1,2}\.\d+)\s*[,;\s]\s*(?:lng|long(?:itude)?[:\s]*)?(-?\d{1,3}\.\d+)/i;
-  const matchRaw = text.match(rawCoordPattern);
-  if (matchRaw) {
-    const lat = parseFloat(matchRaw[1]);
-    const lng = parseFloat(matchRaw[2]);
+  // 6. Direct Raw Coordinate string e.g. "18.520430, 73.856743" or "18.5204, 73.8567"
+  const looseMatch = text.match(/(-?\d{1,2}\.\d{3,15})\s*[,;\s]\s*\+?(-?\d{1,3}\.\d{3,15})/);
+  if (looseMatch) {
+    const lat = parseFloat(looseMatch[1]);
+    const lng = parseFloat(looseMatch[2]);
     if (isValidCoordinate(lat, lng)) {
       return { latitude: lat, longitude: lng, accuracy: 'EXACT', source: 'COORDINATE_TEXT' };
     }
   }
 
-  // 3. Known locality / city lookup matching
+  // 7. Known locality / city lookup matching
   const lowerText = text.toLowerCase();
   for (const [key, value] of Object.entries(KNOWN_LOCATIONS)) {
     if (lowerText.includes(key)) {

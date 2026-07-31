@@ -790,7 +790,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                 )}
 
                 {/* Resume Card */}
-                {viewWorker.resume && (viewWorker.resume.url || viewWorker.resume.name) && (
+                {viewWorker.job?.acceptResume !== false && viewWorker.resume && (viewWorker.resume.url || viewWorker.resume.name) && (
                   <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

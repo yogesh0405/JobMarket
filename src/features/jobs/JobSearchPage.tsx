@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { LayoutGrid, List, Map, MapPin } from 'lucide-react';
 import { useJobs, JobFilters } from '../../hooks/useJobs';
 import { JobCard } from '../../components/job/JobCard';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { formatNumber, getCompanyColor } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
@@ -14,7 +16,7 @@ export const JobSearchPage: React.FC = () => {
   const { state } = useStore();
   const t = useTranslation(state.language);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('list');
 
   const industries = [
     "Manufacturing",
@@ -840,46 +842,72 @@ export const JobSearchPage: React.FC = () => {
         <div className="jobs-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', margin: 0 }}>{t.findJobs}</h1>
           {/* View Toggler */}
-          <div style={{ display: 'flex', background: '#F1F5F9', padding: '4px', borderRadius: '0.3rem', border: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'inline-flex', background: '#F1F5F9', padding: '3px', borderRadius: '0.4rem', border: '1px solid #E2E8F0', gap: '3px' }}>
             <button
-              className="btn btn-sm"
+              type="button"
               style={{
-                background: viewMode === 'list' ? '#ffffff' : 'transparent',
-                color: viewMode === 'list' ? '#344BFD' : '#64748B',
-                boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                padding: '6px 12px',
+                background: viewMode === 'grid' ? '#ffffff' : 'transparent',
+                color: viewMode === 'grid' ? '#344BFD' : '#64748B',
+                boxShadow: viewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                padding: '6px 14px',
                 borderRadius: '0.3rem',
                 border: 'none',
                 fontWeight: '600',
-                cursor: 'pointer'
-              }}
-              onClick={() => setViewMode('list')}
-            >
-              List View
-            </button>
-            <button
-              className="btn btn-sm"
-              style={{
-                background: viewMode === 'map' ? '#ffffff' : 'transparent',
-                color: viewMode === 'map' ? '#344BFD' : '#64748B',
-                boxShadow: viewMode === 'map' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                padding: '6px 12px',
-                borderRadius: '0.3rem',
-                border: 'none',
-                fontWeight: '600',
+                fontSize: '13px',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                transition: 'all 0.18s ease'
+              }}
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid size={15} strokeWidth={2.2} />
+              <span>Grid</span>
+            </button>
+            <button
+              type="button"
+              style={{
+                background: viewMode === 'list' ? '#ffffff' : 'transparent',
+                color: viewMode === 'list' ? '#344BFD' : '#64748B',
+                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                padding: '6px 14px',
+                borderRadius: '0.3rem',
+                border: 'none',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.18s ease'
+              }}
+              onClick={() => setViewMode('list')}
+            >
+              <List size={15} strokeWidth={2.2} />
+              <span>List</span>
+            </button>
+            <button
+              type="button"
+              style={{
+                background: viewMode === 'map' ? '#ffffff' : 'transparent',
+                color: viewMode === 'map' ? '#344BFD' : '#64748B',
+                boxShadow: viewMode === 'map' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                padding: '6px 14px',
+                borderRadius: '0.3rem',
+                border: 'none',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.18s ease'
               }}
               onClick={() => navigate('/jobs/map')}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                <line x1="8" y1="2" x2="8" y2="18" />
-                <line x1="16" y1="6" x2="16" y2="22" />
-              </svg>
-              <span>Map View</span>
+              <Map size={15} strokeWidth={2.2} />
+              <span>Map</span>
             </button>
           </div>
         </div>
@@ -953,14 +981,18 @@ export const JobSearchPage: React.FC = () => {
 
 
         {/* Main Layout Grid */}
-        <div className="jobs-layout">
+        <div className={`jobs-layout ${viewMode === 'list' ? 'list-view-layout' : ''}`}>
           
-          {/* LEFT COLUMN: Collapsible Accordion Filters Sidebar */}
-          {mobileFiltersOpen ? createPortal(renderSidebar(), document.body) : renderSidebar()}
+          {/* LEFT COLUMN: Filters Sidebar (Modal overlay when open) */}
+          {viewMode === 'grid' ? (
+            mobileFiltersOpen ? createPortal(renderSidebar(), document.body) : renderSidebar()
+          ) : (
+            mobileFiltersOpen && createPortal(renderSidebar(), document.body)
+          )}
 
-          {/* RIGHT COLUMN: Jobs Listing / Map View Content */}
-          <div className="jobs-content">
-            {viewMode === 'list' ? (
+          {/* MAIN COLUMN: Jobs Listing / Map View Content */}
+          <div className="jobs-content" style={{ width: '100%' }}>
+            {viewMode !== 'map' ? (
               <>
                 <div className="jobs-toolbar">
                   <div className="toolbar-search-container" style={{ position: 'relative', flex: 1, margin: '0 12px 0 0' }}>
@@ -1027,17 +1059,57 @@ export const JobSearchPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="jobs-list">
-                  {pagedJobs.length > 0 ? (
-                    pagedJobs.map(job => <JobCard key={job.id} job={job} />)
-                  ) : (
-                    <div className="empty-state">
-                      <h3>No industrial jobs found</h3>
-                      <p>Adjust your filters or clear them to start over.</p>
-                      <button className="btn btn-primary mt-4" onClick={clearAllFilters}>Clear Filters</button>
-                    </div>
-                  )}
-                </div>
+                {viewMode === 'grid' ? (
+                  /* Grid View (Existing Job Cards) */
+                  <div className="jobs-list">
+                    {pagedJobs.length > 0 ? (
+                      pagedJobs.map(job => <JobCard key={job.id} job={job} />)
+                    ) : (
+                      <div className="empty-state">
+                        <h3>No industrial jobs found</h3>
+                        <p>Adjust your filters or clear them to start over.</p>
+                        <button className="btn btn-primary mt-4" onClick={clearAllFilters}>Clear Filters</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Compact List View (100% Match with Reference Image 1) */
+                  <div className="job-compact-list-container">
+                    {pagedJobs.length > 0 ? (
+                      pagedJobs.map(job => (
+                        <div
+                          key={job.id}
+                          className="job-compact-card"
+                          onClick={() => navigate(`/job/${job.id}`)}
+                        >
+                          <CompanyDefaultLogo
+                            logoUrl={job.companyLogo || (job as any).company_logo}
+                            companyName={job.company}
+                            size={40}
+                            borderRadius="10px"
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h4 className="job-compact-card-title">
+                              {job.title}
+                            </h4>
+                            <div className="job-compact-card-location">
+                              <MapPin size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {job.location}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        <h3>No industrial jobs found</h3>
+                        <p>Adjust your filters or clear them to start over.</p>
+                        <button className="btn btn-primary mt-4" onClick={clearAllFilters}>Clear Filters</button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {visibleCount < allFilteredJobs.length && (
                   <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)', fontWeight: '600' }}>

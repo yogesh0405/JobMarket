@@ -1,5 +1,6 @@
 import { pool } from '../../../config/database/pool';
 import { logger } from '../../../utils/logger';
+import { CacheService } from '../../../utils/redisCache';
 
 export interface SupportTicket {
   id: string;
@@ -273,16 +274,19 @@ export class SupportRepository {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      let inserted = 0;
+      const valueRows: string[] = [];
+      const params: any[] = [];
+      let idx = 1;
+
       for (const userId of userIds) {
-        await client.query(
-          `INSERT INTO in_app_notifications (user_id, title, message, link) VALUES ($1, $2, $3, $4)`,
-          [userId, title, message, link || null]
-        );
-        inserted++;
+        valueRows.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++})`);
+        params.push(userId, title, message, link || null);
       }
+
+      const query = `INSERT INTO in_app_notifications (user_id, title, message, link) VALUES ${valueRows.join(', ')}`;
+      const result = await client.query(query, params);
       await client.query('COMMIT');
-      return inserted;
+      return result.rowCount ?? userIds.length;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -293,7 +297,7 @@ export class SupportRepository {
 
   static async findNotificationsByUserId(userId: string): Promise<InAppNotification[]> {
     const query = `
-      SELECT * FROM in_app_notifications 
+      SELECT id, user_id, title, message, is_read, link, created_at FROM in_app_notifications 
       WHERE user_id = $1 
       ORDER BY created_at DESC 
       LIMIT 50;
@@ -316,64 +320,67 @@ export class SupportRepository {
   static async deleteTicket(id: string): Promise<boolean> {
     const query = `DELETE FROM support_tickets WHERE id = $1;`;
     const result = await pool.query(query, [id]);
+    await CacheService.invalidate('cache:support:analytics');
     return (result.rowCount ?? 0) > 0;
   }
 
   static async getAnalytics(client: any = pool): Promise<any> {
-    const totalQuery = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
-        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
-        COUNT(CASE WHEN status = 'waiting_for_user' THEN 1 END) as waiting_for_user,
-        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
-        COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed,
-        COUNT(CASE WHEN created_at >= CURRENT_DATE THEN 1 END) as today
-      FROM support_tickets;
-    `;
-    
-    const weeklyQuery = `
-      SELECT COUNT(*) as weekly_count FROM support_tickets WHERE created_at >= NOW() - INTERVAL '7 days';
-    `;
+    return CacheService.getOrSet('cache:support:analytics', 180, async () => {
+      const totalQuery = `
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+          COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+          COUNT(CASE WHEN status = 'waiting_for_user' THEN 1 END) as waiting_for_user,
+          COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
+          COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed,
+          COUNT(CASE WHEN created_at >= CURRENT_DATE THEN 1 END) as today
+        FROM support_tickets;
+      `;
+      
+      const weeklyQuery = `
+        SELECT COUNT(*) as weekly_count FROM support_tickets WHERE created_at >= NOW() - INTERVAL '7 days';
+      `;
 
-    const monthlyQuery = `
-      SELECT COUNT(*) as monthly_count FROM support_tickets WHERE created_at >= NOW() - INTERVAL '30 days';
-    `;
+      const monthlyQuery = `
+        SELECT COUNT(*) as monthly_count FROM support_tickets WHERE created_at >= NOW() - INTERVAL '30 days';
+      `;
 
-    const categoriesQuery = `
-      SELECT category, COUNT(*) as count 
-      FROM support_tickets 
-      GROUP BY category 
-      ORDER BY count DESC;
-    `;
+      const categoriesQuery = `
+        SELECT category, COUNT(*) as count 
+        FROM support_tickets 
+        GROUP BY category 
+        ORDER BY count DESC;
+      `;
 
-    const totalResult = await client.query(totalQuery);
-    const weeklyResult = await client.query(weeklyQuery);
-    const monthlyResult = await client.query(monthlyQuery);
-    const categoriesResult = await client.query(categoriesQuery);
+      const totalResult = await client.query(totalQuery);
+      const weeklyResult = await client.query(weeklyQuery);
+      const monthlyResult = await client.query(monthlyQuery);
+      const categoriesResult = await client.query(categoriesQuery);
 
-    const stats = totalResult.rows[0];
-    const weekly = weeklyResult.rows[0]?.weekly_count || 0;
-    const monthly = monthlyResult.rows[0]?.monthly_count || 0;
-    const categories = categoriesResult.rows;
+      const stats = totalResult.rows[0];
+      const weekly = weeklyResult.rows[0]?.weekly_count || 0;
+      const monthly = monthlyResult.rows[0]?.monthly_count || 0;
+      const categories = categoriesResult.rows;
 
-    // Calculate resolution rate
-    const totalTickets = parseInt(stats.total, 10);
-    const resolvedClosedTickets = parseInt(stats.resolved, 10) + parseInt(stats.closed, 10);
-    const resolutionRate = totalTickets > 0 ? ((resolvedClosedTickets / totalTickets) * 100).toFixed(1) : '100';
+      // Calculate resolution rate
+      const totalTickets = parseInt(stats.total, 10);
+      const resolvedClosedTickets = parseInt(stats.resolved, 10) + parseInt(stats.closed, 10);
+      const resolutionRate = totalTickets > 0 ? ((resolvedClosedTickets / totalTickets) * 100).toFixed(1) : '100';
 
-    return {
-      total: totalTickets,
-      open: parseInt(stats.open, 10),
-      in_progress: parseInt(stats.in_progress, 10),
-      waiting_for_user: parseInt(stats.waiting_for_user, 10),
-      resolved: parseInt(stats.resolved, 10),
-      closed: parseInt(stats.closed, 10),
-      today: parseInt(stats.today, 10),
-      weekly: parseInt(weekly, 10),
-      monthly: parseInt(monthly, 10),
-      resolutionRate: parseFloat(resolutionRate),
-      categories
-    };
+      return {
+        total: totalTickets,
+        open: parseInt(stats.open, 10),
+        in_progress: parseInt(stats.in_progress, 10),
+        waiting_for_user: parseInt(stats.waiting_for_user, 10),
+        resolved: parseInt(stats.resolved, 10),
+        closed: parseInt(stats.closed, 10),
+        today: parseInt(stats.today, 10),
+        weekly: parseInt(weekly, 10),
+        monthly: parseInt(monthly, 10),
+        resolutionRate: parseFloat(resolutionRate),
+        categories
+      };
+    });
   }
 }

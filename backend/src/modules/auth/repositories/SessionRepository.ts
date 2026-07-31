@@ -1,4 +1,5 @@
 import { pool } from '../../../config/database/pool';
+import { CacheService } from '../../../utils/redisCache';
 
 export interface Session {
   id: string;
@@ -39,12 +40,15 @@ export class SessionRepository {
   }
 
   static async findActiveSession(sessionId: string): Promise<Session | null> {
-    const query = `
-      SELECT * FROM sessions 
-      WHERE id = $1 AND revoked = FALSE AND expires_at > CURRENT_TIMESTAMP
-    `;
-    const result = await pool.query(query, [sessionId]);
-    return result.rows[0] || null;
+    return CacheService.getOrSet(`session:active:${sessionId}`, 300, async () => {
+      const query = `
+        SELECT id, user_id, refresh_token_hash, ip_address, user_agent, device_name, expires_at, revoked, created_at, last_used_at 
+        FROM sessions 
+        WHERE id = $1 AND revoked = FALSE AND expires_at > CURRENT_TIMESTAMP;
+      `;
+      const result = await pool.query(query, [sessionId]);
+      return result.rows[0] || null;
+    });
   }
 
   static async findActiveUserSessions(userId: string): Promise<Session[]> {
@@ -61,11 +65,13 @@ export class SessionRepository {
   static async updateLastUsed(sessionId: string, client: any = pool): Promise<void> {
     const query = 'UPDATE sessions SET last_used_at = CURRENT_TIMESTAMP WHERE id = $1';
     await client.query(query, [sessionId]);
+    await CacheService.invalidate(`session:active:${sessionId}`);
   }
 
   static async revokeSession(sessionId: string, client: any = pool): Promise<void> {
     const query = 'UPDATE sessions SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP WHERE id = $1';
     await client.query(query, [sessionId]);
+    await CacheService.invalidate(`session:active:${sessionId}`);
   }
 
   static async revokeAllUserSessions(userId: string, currentSessionId?: string, client: any = pool): Promise<void> {
@@ -78,5 +84,6 @@ export class SessionRepository {
     }
 
     await client.query(query, params);
+    await CacheService.invalidatePattern('session:active:*');
   }
 }

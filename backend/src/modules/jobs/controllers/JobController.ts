@@ -57,15 +57,40 @@ export class JobController {
       const inputUrl = url.trim();
       const { extractCoordinatesFromText } = await import('../../../utils/coordinateExtractor');
 
-      let extracted = extractCoordinatesFromText(inputUrl);
+      let currentUrl = inputUrl;
+      let extracted = extractCoordinatesFromText(currentUrl);
 
+      // Multi-hop redirect resolution for short links like maps.app.goo.gl, goo.gl/maps
       if (!extracted && (inputUrl.includes('goo.gl') || inputUrl.includes('maps.app') || inputUrl.includes('http'))) {
-        try {
-          const response = await fetch(inputUrl, { method: 'GET', redirect: 'follow' });
-          const finalUrl = response.url;
-          extracted = extractCoordinatesFromText(finalUrl);
-        } catch (fetchErr) {
-          console.warn('Failed to fetch short map URL redirect:', fetchErr);
+        const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        
+        for (let hop = 0; hop < 5; hop++) {
+          extracted = extractCoordinatesFromText(currentUrl);
+          if (extracted) break;
+
+          try {
+            // GET request with manual redirect to capture HTTP 301/302 Location header directly
+            const response = await fetch(currentUrl, {
+              method: 'GET',
+              redirect: 'manual'
+            });
+
+            const loc = response.headers.get('location');
+            if (loc) {
+              currentUrl = loc.startsWith('http') ? loc : new URL(loc, currentUrl).href;
+              extracted = extractCoordinatesFromText(currentUrl);
+              if (extracted) break;
+            } else {
+              // If 200 OK without location header, inspect HTML text content
+              const htmlText = await response.text();
+              extracted = extractCoordinatesFromText(htmlText);
+              if (extracted) break;
+              break;
+            }
+          } catch (fetchErr) {
+            console.warn(`Redirect hop ${hop} failed for ${currentUrl}:`, fetchErr);
+            break;
+          }
         }
       }
 
@@ -238,6 +263,128 @@ export class JobController {
       const companyName = user.company_name || user.name;
       const jobData = { ...req.body };
 
+      // Mandatory Field Validations
+      if (!jobData.title || typeof jobData.title !== 'string' || !jobData.title.trim()) {
+        res.status(400).json({ success: false, message: 'Job title / role is required' });
+        return;
+      }
+      if (!jobData.description || typeof jobData.description !== 'string' || jobData.description.trim().length < 5) {
+        res.status(400).json({ success: false, message: 'A meaningful job description is required' });
+        return;
+      }
+      const openingsVal = Number(jobData.openings);
+      if (isNaN(openingsVal) || openingsVal < 1) {
+        res.status(400).json({ success: false, message: 'Vacancy count must be at least 1' });
+        return;
+      }
+      const validSkills = Array.isArray(jobData.skills) 
+        ? jobData.skills.filter((s: any) => typeof s === 'string' && s.trim()) 
+        : (typeof jobData.skills === 'string' ? jobData.skills.split(',').filter(Boolean) : []);
+      if (validSkills.length === 0) {
+        res.status(400).json({ success: false, message: 'At least one skill is required' });
+        return;
+      }
+      jobData.skills = validSkills;
+
+      if (!jobData.applicationDeadline) {
+        res.status(400).json({ success: false, message: 'Application Deadline date is mandatory' });
+        return;
+      }
+
+      // Numeric Range & Non-Negative Validations
+      const minAge = Number(jobData.minAge);
+      const maxAge = Number(jobData.maxAge);
+      if (!isNaN(minAge) && !isNaN(maxAge)) {
+        if (minAge < 0 || maxAge < 0) {
+          res.status(400).json({ success: false, message: 'Age values cannot be negative' });
+          return;
+        }
+        if (minAge > maxAge) {
+          res.status(400).json({ success: false, message: 'Minimum Age cannot be greater than Maximum Age' });
+          return;
+        }
+      }
+
+      const salaryMin = Number(jobData.salaryMin);
+      const salaryMax = Number(jobData.salaryMax);
+      if (!isNaN(salaryMin) && !isNaN(salaryMax)) {
+        if (salaryMin < 0 || salaryMax < 0) {
+          res.status(400).json({ success: false, message: 'Salary amounts cannot be negative' });
+          return;
+        }
+        if (jobData.discloseSalary !== false && salaryMin > 0 && salaryMax > 0 && salaryMin > salaryMax) {
+          res.status(400).json({ success: false, message: 'Minimum Salary cannot be greater than Maximum Salary' });
+          return;
+        }
+      }
+
+      const minExp = Number(jobData.minExperience);
+      const maxExp = Number(jobData.maxExperience);
+      if (!isNaN(minExp) && !isNaN(maxExp)) {
+        if (minExp < 0 || maxExp < 0) {
+          res.status(400).json({ success: false, message: 'Experience values cannot be negative' });
+          return;
+        }
+        if (jobData.experienceRequired !== false && minExp > maxExp) {
+          res.status(400).json({ success: false, message: 'Minimum Experience cannot be greater than Maximum Experience' });
+          return;
+        }
+      }
+
+      const maxApp = Number(jobData.maxApplicants);
+      if (!isNaN(maxApp) && maxApp < 0) {
+        res.status(400).json({ success: false, message: 'Maximum Applicants Limit cannot be negative' });
+        return;
+      }
+
+      // Hiring Method Validation & Sanitization
+      const hiringMethod = jobData.hiringMethod || 'STANDARD';
+      jobData.hiringMethod = hiringMethod;
+
+      if (hiringMethod === 'WALK_IN') {
+        jobData.isWalkIn = true;
+        if (!jobData.walkInDate || !jobData.interviewAddress || !jobData.walkInStartTime || !jobData.walkInEndTime || !jobData.walkInContactPerson || !jobData.walkInContactNumber) {
+          res.status(400).json({ 
+            success: false, 
+            message: 'Please fill in all mandatory Walk-in Drive details (Date, Start Time, End Time, Venue Address, Contact Person, and Contact Number)' 
+          });
+          return;
+        }
+      } else {
+        jobData.isWalkIn = false;
+        jobData.walkInDate = null;
+        jobData.interviewAddress = null;
+        jobData.walkInTime = null;
+        jobData.walkInStartTime = null;
+        jobData.walkInEndTime = null;
+        jobData.walkInContactPerson = null;
+        jobData.walkInContactNumber = null;
+        jobData.walkInDocuments = null;
+      }
+
+      // Ensure industry and trade synchronization for database consistency
+      if (!jobData.trade && jobData.industry) {
+        jobData.trade = jobData.industry;
+      } else if (!jobData.industry && jobData.trade) {
+        jobData.industry = jobData.trade;
+      }
+
+      // Sanitize Conditional Workflows
+      if (!jobData.isMidcLocation) {
+        jobData.midcZone = null;
+      }
+      if (!jobData.targetIti) {
+        jobData.itiTrade = null;
+      }
+      if (jobData.experienceRequired === false) {
+        jobData.minExperience = 0;
+        jobData.maxExperience = 0;
+      }
+      if (jobData.discloseSalary === false) {
+        jobData.salaryMin = 0;
+        jobData.salaryMax = 0;
+      }
+
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
         const timestamp = Date.now();
         const publicId = `job_logo_${employerId}_${timestamp}`;
@@ -275,6 +422,54 @@ export class JobController {
       }
 
       const jobData = { ...req.body };
+
+      if (jobData.title !== undefined && (!jobData.title || typeof jobData.title !== 'string' || !jobData.title.trim())) {
+        res.status(400).json({ success: false, message: 'Job title / role cannot be empty' });
+        return;
+      }
+      if (jobData.description !== undefined && (!jobData.description || typeof jobData.description !== 'string' || jobData.description.trim().length < 5)) {
+        res.status(400).json({ success: false, message: 'A meaningful job description is required' });
+        return;
+      }
+      if (jobData.openings !== undefined) {
+        const openingsVal = Number(jobData.openings);
+        if (isNaN(openingsVal) || openingsVal < 1) {
+          res.status(400).json({ success: false, message: 'Vacancy count must be at least 1' });
+          return;
+        }
+      }
+      if (jobData.skills !== undefined) {
+        const validSkills = Array.isArray(jobData.skills) 
+          ? jobData.skills.filter((s: any) => typeof s === 'string' && s.trim()) 
+          : (typeof jobData.skills === 'string' ? jobData.skills.split(',').filter(Boolean) : []);
+        if (validSkills.length === 0) {
+          res.status(400).json({ success: false, message: 'At least one skill is required' });
+          return;
+        }
+        jobData.skills = validSkills;
+      }
+
+      // Ensure industry and trade synchronization for database consistency
+      if (!jobData.trade && jobData.industry) {
+        jobData.trade = jobData.industry;
+      } else if (!jobData.industry && jobData.trade) {
+        jobData.industry = jobData.trade;
+      }
+
+      if (jobData.isMidcLocation === false) {
+        jobData.midcZone = null;
+      }
+      if (jobData.targetIti === false) {
+        jobData.itiTrade = null;
+      }
+      if (jobData.experienceRequired === false) {
+        jobData.minExperience = 0;
+        jobData.maxExperience = 0;
+      }
+      if (jobData.discloseSalary === false) {
+        jobData.salaryMin = 0;
+        jobData.salaryMax = 0;
+      }
 
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
         if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {

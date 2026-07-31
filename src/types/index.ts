@@ -4,6 +4,8 @@ export type WorkMode = 'Remote' | 'Onsite' | 'Hybrid';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'rejected';
 export type JobStatus = 'active' | 'closed' | 'pending' | 'rejected';
 
+export type HiringMethod = 'STANDARD' | 'WALK_IN' | 'SCHEDULED_INTERVIEW';
+
 export interface Experience {
   title: string;
   company: string;
@@ -130,6 +132,30 @@ export interface Job {
   trade?: string;
   latitude?: number;
   longitude?: number;
+  // Refined Workflow & Governance Fields
+  acceptResume?: boolean;
+  targetIti?: boolean;
+  itiTrade?: string;
+  experienceRequired?: boolean;
+  discloseSalary?: boolean;
+  genderPreference?: string;
+  isWalkIn?: boolean;
+  walkInTime?: string;
+  acceptFreshers?: boolean;
+  acceptExperienced?: boolean;
+  maxApplicants?: number;
+  applicationDeadline?: string;
+  pf?: boolean;
+  esic?: boolean;
+  uniform?: boolean;
+  medicalInsurance?: boolean;
+  transport?: boolean;
+  hiringMethod?: HiringMethod;
+  walkInStartTime?: string;
+  walkInEndTime?: string;
+  walkInContactPerson?: string;
+  walkInContactNumber?: string;
+  walkInDocuments?: string;
 }
 
 export interface Company {

@@ -1136,3 +1136,412 @@
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
 }
+
+/* ---- Compact List View Card (Reference Image 100% Match) ---- */
+.job-compact-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.job-compact-card {
+  background: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.job-compact-card:hover {
+  border-color: #344BFD;
+  box-shadow: 0 4px 16px rgba(52, 75, 253, 0.1);
+  transform: translateY(-1px);
+}
+
+.job-compact-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 3px 0;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-compact-card-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Single column full-width layout for List View */
+.jobs-layout.list-view-layout {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.jobs-layout.list-view-layout .jobs-content {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.list-view-layout .mobile-filter-toggle {
+  display: flex !important;
+  margin-bottom: 0 !important;
+  height: 38px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background: #ffffff;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 0.3rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.list-view-layout .jobs-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 16px !important;
+}
+
+.list-view-layout .jobs-count,
+.list-view-layout .jobs-sort {
+  display: none !important;
+}
+
+/* ============================================
+   Application Preferences — Mobile Alignment & Responsiveness
+   ============================================ */
+
+.pref-setting-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.pref-setting-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pref-setting-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pref-setting-desc {
+  font-size: 12px;
+  color: #64748B;
+  margin-top: 2px;
+  display: block;
+}
+
+.pref-setting-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #344BFD;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.walkin-fields-grid {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #CBD5E1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.walkin-fields-grid .full-width-field {
+  grid-column: 1 / -1;
+}
+
+.eligibility-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.eligibility-checkbox-card {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.eligibility-checkbox-card:hover {
+  border-color: #BFDBFE;
+  background: #F0F9FF;
+}
+
+.eligibility-checkbox-card.selected {
+  border-color: #344BFD;
+  background: #EFF6FF;
+  color: #1E40AF;
+}
+
+@media (max-width: 640px) {
+  .walkin-fields-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .walkin-fields-grid .full-width-field {
+    grid-column: 1 !important;
+  }
+
+  .eligibility-checkbox-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .eligibility-checkbox-card {
+    width: 100%;
+    min-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .pref-setting-header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .auto-close-banner {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+}
+
+/* ============================================
+   Hiring Method Cards & Tooltips
+   ============================================ */
+
+.hiring-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 840px) {
+  .hiring-methods-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hiring-method-card {
+  position: relative;
+  background: #FFFFFF;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hiring-method-card:hover {
+  border-color: #BFDBFE;
+  box-shadow: 0 4px 12px rgba(52, 75, 253, 0.08);
+}
+
+.hiring-method-card:focus-visible {
+  outline: none;
+  border-color: #344BFD;
+  box-shadow: 0 0 0 3px rgba(52, 75, 253, 0.25);
+}
+
+.hiring-method-card.selected {
+  border-color: #344BFD;
+  background: #EFF6FF;
+  box-shadow: 0 4px 16px rgba(52, 75, 253, 0.12);
+}
+
+.hiring-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hiring-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #EFF6FF;
+  color: #344BFD;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.walkin-icon-box {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.scheduled-icon-box {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.hiring-card-info {
+  flex: 1;
+}
+
+.hiring-card-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.hiring-card-subtitle {
+  font-size: 11.5px;
+  color: #64748B;
+  display: block;
+  margin-top: 2px;
+}
+
+.hiring-card-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #F1F5F9;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.info-icon-btn:hover {
+  background: #344BFD;
+  color: #FFFFFF;
+}
+
+.hiring-check-indicator {
+  color: #344BFD;
+  display: flex;
+  align-items: center;
+}
+
+.hiring-card-desc {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+.hiring-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.hiring-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #CBD5E1;
+  color: #334155;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+/* Tooltip Popover Overlay */
+.hiring-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 12px 14px;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.tooltip-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #60A5FA;
+  margin-bottom: 4px;
+}
+
+.tooltip-body {
+  font-size: 12px;
+  color: #E2E8F0;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.walkin-configuration-container {
+  background: #FFFBEB;
+  border: 1.5px solid #FCD34D;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+
+
+
+

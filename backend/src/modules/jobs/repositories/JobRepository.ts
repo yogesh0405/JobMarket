@@ -1,5 +1,6 @@
 import { pool } from '../../../config/database/pool';
 import { GeocodingService } from '../services/geocodingService';
+import { CacheService } from '../../../utils/redisCache';
 
 export interface JobData {
   title: string;
@@ -35,6 +36,31 @@ export interface JobData {
   status?: string;
   latitude?: number;
   longitude?: number;
+  acceptResume?: boolean;
+  targetIti?: boolean;
+  itiTrade?: string | null;
+  experienceRequired?: boolean;
+  discloseSalary?: boolean;
+  genderPreference?: string;
+  minAge?: number;
+  maxAge?: number;
+  isWalkIn?: boolean;
+  walkInTime?: string;
+  acceptFreshers?: boolean;
+  acceptExperienced?: boolean;
+  maxApplicants?: number;
+  applicationDeadline?: string;
+  pf?: boolean;
+  esic?: boolean;
+  uniform?: boolean;
+  medicalInsurance?: boolean;
+  transport?: boolean;
+  hiringMethod?: string;
+  walkInStartTime?: string;
+  walkInEndTime?: string;
+  walkInContactPerson?: string;
+  walkInContactNumber?: string;
+  walkInDocuments?: string;
 }
 
 export interface MapBoundsParams {
@@ -91,9 +117,6 @@ export class JobRepository {
       salaryMax: row.salary_max,
       openings: row.openings,
       filledOpenings: row.filled_openings || 0,
-      minAge: row.min_age,
-      maxAge: row.max_age,
-      gender: row.gender,
       description: row.description,
       responsibilities: typeof row.responsibilities === 'string' ? JSON.parse(row.responsibilities) : (row.responsibilities || []),
       requirements: typeof row.requirements === 'string' ? JSON.parse(row.requirements) : (row.requirements || []),
@@ -117,25 +140,56 @@ export class JobRepository {
       walkInDate: row.walk_in_date,
       interviewAddress: row.interview_address,
       trade: row.trade,
+      genderPreference: row.gender_preference || row.gender || 'No Preference',
+      minAge: row.min_age !== null && row.min_age !== undefined ? parseInt(row.min_age) : 18,
+      maxAge: row.max_age !== null && row.max_age !== undefined ? parseInt(row.max_age) : 60,
+      isWalkIn: !!row.is_walk_in,
+      walkInTime: row.walk_in_time,
+      acceptFreshers: row.accept_freshers !== false,
+      acceptExperienced: row.accept_experienced !== false,
+      maxApplicants: row.max_applicants !== null && row.max_applicants !== undefined ? parseInt(row.max_applicants) : 0,
+      applicationDeadline: row.application_deadline ? new Date(row.application_deadline).toISOString().split('T')[0] : null,
+      pf: !!row.pf,
+      esic: !!row.esic,
+      uniform: !!row.uniform,
+      medicalInsurance: !!row.medical_insurance,
+      transport: !!row.transport,
+      hiringMethod: row.hiring_method || (row.is_walk_in ? 'WALK_IN' : 'STANDARD'),
+      walkInStartTime: row.walk_in_start_time || null,
+      walkInEndTime: row.walk_in_end_time || null,
+      walkInContactPerson: row.walk_in_contact_person || null,
+      walkInContactNumber: row.walk_in_contact_number || null,
+      walkInDocuments: row.walk_in_documents || null,
       applicants: row.applicants || []
     };
   }
 
   static async getJobs(): Promise<any[]> {
-    const query = `
-      SELECT * FROM jobs 
-      WHERE status = 'APPROVED'
-      ORDER BY posted_at DESC
-    `;
-    const result = await pool.query(query);
-    return result.rows.map((row) => this.mapDbJobToApi(row));
+    return CacheService.getOrSet('cache:jobs:active', 120, async () => {
+      const query = `
+        SELECT id, employer_id, company, company_logo, company_color, title, industry, location,
+               latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy,
+               job_type, work_mode, min_experience, max_experience, salary_min, salary_max,
+               openings, filled_openings, min_age, max_age, gender, description, responsibilities,
+               requirements, skills, perks, featured, status, reject_reason, views, posted_at,
+               midc_zone, shift_details, overtime, accommodation, bus_facility, canteen,
+               joining_bonus, attendance_bonus, contract_duration, walk_in_date, interview_address, trade
+        FROM jobs 
+        WHERE status = 'APPROVED'
+        ORDER BY posted_at DESC
+      `;
+      const result = await pool.query(query);
+      return result.rows.map((row) => this.mapDbJobToApi(row));
+    });
   }
 
   static async getJobById(id: string): Promise<any | null> {
-    const query = 'SELECT * FROM jobs WHERE id = $1';
-    const result = await pool.query(query, [id]);
-    if (result.rows.length === 0) return null;
-    return this.mapDbJobToApi(result.rows[0]);
+    return CacheService.getOrSet(`cache:job:${id}`, 180, async () => {
+      const query = 'SELECT * FROM jobs WHERE id = $1';
+      const result = await pool.query(query, [id]);
+      if (result.rows.length === 0) return null;
+      return this.mapDbJobToApi(result.rows[0]);
+    });
   }
 
   static async getJobsByEmployer(employerId: string): Promise<any[]> {
@@ -373,14 +427,23 @@ export class JobRepository {
         openings, description, responsibilities, requirements, skills, perks, 
         trade, midc_zone, shift_details, overtime, accommodation, bus_facility, 
         canteen, joining_bonus, attendance_bonus, contract_duration, walk_in_date, 
-        interview_address, latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy, status
+        interview_address, latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy,
+        accept_resume, target_iti, iti_trade, experience_required, disclose_salary,
+        gender_preference, min_age, max_age, is_walk_in, walk_in_time, accept_freshers,
+        accept_experienced, max_applicants, application_deadline, pf, esic, uniform,
+        medical_insurance, transport, hiring_method, walk_in_start_time, walk_in_end_time,
+        walk_in_contact_person, walk_in_contact_number, walk_in_documents, status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, 
         $8, $9, $10, $11, $12, $13, 
         $14, $15, $16, $17, $18, $19, 
         $20, $21, $22, $23, $24, $25, 
         $26, $27, $28, $29, $30, 
-        $31, $32, $33, $34, CURRENT_TIMESTAMP, $35, 'PENDING_REVIEW'
+        $31, $32, $33, $34, CURRENT_TIMESTAMP, $35,
+        $36, $37, $38, $39, $40,
+        $41, $42, $43, $44, $45, $46,
+        $47, $48, $49, $50, $51, $52,
+        $53, $54, $55, $56, $57, $58, $59, $60, 'PENDING_REVIEW'
       ) RETURNING *
     `;
 
@@ -419,7 +482,32 @@ export class JobRepository {
       latitude,
       longitude,
       geocodingStatus,
-      locationAccuracy
+      locationAccuracy,
+      jobData.acceptResume !== false,
+      !!jobData.targetIti,
+      jobData.targetIti ? (jobData.itiTrade || null) : null,
+      jobData.experienceRequired !== false,
+      jobData.discloseSalary !== false,
+      jobData.genderPreference || 'No Preference',
+      jobData.minAge !== undefined ? jobData.minAge : 18,
+      jobData.maxAge !== undefined ? jobData.maxAge : 60,
+      !!jobData.isWalkIn,
+      jobData.walkInTime || null,
+      jobData.acceptFreshers !== false,
+      jobData.acceptExperienced !== false,
+      jobData.maxApplicants !== undefined ? jobData.maxApplicants : 0,
+      jobData.applicationDeadline || null,
+      !!jobData.pf,
+      !!jobData.esic,
+      !!jobData.uniform,
+      !!jobData.medicalInsurance,
+      !!jobData.transport,
+      jobData.hiringMethod || 'STANDARD',
+      jobData.walkInStartTime || null,
+      jobData.walkInEndTime || null,
+      jobData.walkInContactPerson || null,
+      jobData.walkInContactNumber || null,
+      jobData.walkInDocuments || null
     ];
 
     if (jobData.industry) {
@@ -436,6 +524,8 @@ export class JobRepository {
     }
 
     const result = await pool.query(query, values);
+    await CacheService.invalidatePattern('cache:jobs:*');
+    await CacheService.invalidate('cache:admin:stats');
     return this.mapDbJobToApi(result.rows[0]);
   }
 
@@ -516,9 +606,14 @@ export class JobRepository {
         longitude = $32,
         geocoding_status = $33,
         location_accuracy = $34,
+        accept_resume = COALESCE($35, accept_resume),
+        target_iti = COALESCE($36, target_iti),
+        iti_trade = COALESCE($37, iti_trade),
+        experience_required = COALESCE($38, experience_required),
+        disclose_salary = COALESCE($39, disclose_salary),
         last_geocoded_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $35 AND employer_id = $36
+      WHERE id = $40 AND employer_id = $41
       RETURNING *
     `;
 
@@ -557,6 +652,11 @@ export class JobRepository {
       longitude,
       geocodingStatus,
       locationAccuracy,
+      jobData.acceptResume !== undefined ? jobData.acceptResume : null,
+      jobData.targetIti !== undefined ? jobData.targetIti : null,
+      jobData.itiTrade !== undefined ? jobData.itiTrade : null,
+      jobData.experienceRequired !== undefined ? jobData.experienceRequired : null,
+      jobData.discloseSalary !== undefined ? jobData.discloseSalary : null,
       jobId,
       employerId
     ];
@@ -661,11 +761,12 @@ export class JobRepository {
   }
 
   static async getApplicantsForJob(jobId: string, employerId: string): Promise<any[]> {
-    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND employer_id = $2';
+    const checkQuery = 'SELECT id, accept_resume FROM jobs WHERE id = $1 AND employer_id = $2';
     const checkResult = await pool.query(checkQuery, [jobId, employerId]);
     if (checkResult.rows.length === 0) {
       throw new Error('Unauthorized or job not found');
     }
+    const acceptResume = checkResult.rows[0].accept_resume !== false;
 
     const query = `
       SELECT 
@@ -694,7 +795,10 @@ export class JobRepository {
       ORDER BY ja.applied_at DESC
     `;
     const result = await pool.query(query, [jobId]);
-    return result.rows;
+    return result.rows.map(row => ({
+      ...row,
+      resume: acceptResume ? row.resume : null
+    }));
   }
 
   static async updateApplicantStatus(jobId: string, userId: string, employerId: string, status: string): Promise<any> {

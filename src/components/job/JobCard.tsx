@@ -35,6 +35,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
   };
 
   const renderSalary = () => {
+    if (job.discloseSalary === false) return 'Not disclosed';
     if (!job.salaryMin && !job.salaryMax) return 'Not disclosed';
     if (job.salaryMin >= 100000) {
       const minLacs = (job.salaryMin / 100000).toFixed(0);
@@ -145,7 +146,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
             </svg>
-            <span>{job.minExperience}–{job.maxExperience} Yrs</span>
+            <span>{job.experienceRequired === false ? 'Fresher' : `${job.minExperience}–${job.maxExperience} Yrs`}</span>
           </div>
           <span style={{ color: '#CBD5E1' }}>|</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>

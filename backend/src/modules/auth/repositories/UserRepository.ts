@@ -1,4 +1,5 @@
 import { pool } from '../../../config/database/pool';
+import { CacheService } from '../../../utils/redisCache';
 
 export interface User {
   id: string;
@@ -40,7 +41,7 @@ export class UserRepository {
         company_name, gst_number, aadhaar_verified, trade_specialization, status
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *;
+      RETURNING id, email, name, phone, role, company_name, gst_number, aadhaar_verified, trade_specialization, status, created_at, updated_at;
     `;
 
     const values = [
@@ -59,61 +60,75 @@ export class UserRepository {
   }
 
   static async findById(id: string): Promise<User | null> {
-    const query = 'SELECT * FROM users WHERE id = $1;';
-    const result = await pool.query(query, [id]);
-    if (result.rows.length === 0) return null;
-    const user = result.rows[0] as User;
+    return CacheService.getOrSet(`user:profile:${id}`, 900, async () => {
+      const query = `
+        SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
+               trade_specialization, status, created_at, updated_at, headline, location, skills, 
+               preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url 
+        FROM users 
+        WHERE id = $1;
+      `;
+      const result = await pool.query(query, [id]);
+      if (result.rows.length === 0) return null;
+      const user = result.rows[0] as User;
 
-    // Fetch applied job IDs
-    try {
-      const appsQuery = 'SELECT job_id, status, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id = $1;';
-      const appsResult = await pool.query(appsQuery, [id]);
-      user.appliedJobs = appsResult.rows.map(row => row.job_id);
-      (user as any).appliedJobsWithStatus = appsResult.rows.map(row => ({
-        jobId: row.job_id,
-        status: row.status,
-        interviewDate: row.interview_date,
-        interviewTime: row.interview_time,
-        venueAddress: row.venue_address,
-        mapsLink: row.maps_link
-      }));
-    } catch (err) {
-      console.error('Failed to fetch applied jobs for user:', err);
-      user.appliedJobs = [];
-      (user as any).appliedJobsWithStatus = [];
-    }
+      // Fetch applied job IDs and status
+      try {
+        const appsQuery = 'SELECT job_id, status, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id = $1;';
+        const appsResult = await pool.query(appsQuery, [id]);
+        user.appliedJobs = appsResult.rows.map(row => row.job_id);
+        (user as any).appliedJobsWithStatus = appsResult.rows.map(row => ({
+          jobId: row.job_id,
+          status: row.status,
+          interviewDate: row.interview_date,
+          interviewTime: row.interview_time,
+          venueAddress: row.venue_address,
+          mapsLink: row.maps_link
+        }));
+      } catch (err) {
+        console.error('Failed to fetch applied jobs for user:', err);
+        user.appliedJobs = [];
+        (user as any).appliedJobsWithStatus = [];
+      }
 
-    // Fetch saved job IDs
-    try {
-      const savedQuery = 'SELECT job_id FROM saved_jobs WHERE user_id = $1 ORDER BY created_at DESC;';
-      const savedResult = await pool.query(savedQuery, [id]);
-      (user as any).savedJobs = savedResult.rows.map(row => row.job_id);
-    } catch (err) {
-      console.error('Failed to fetch saved jobs for user:', err);
-      (user as any).savedJobs = [];
-    }
+      // Fetch saved job IDs
+      try {
+        const savedQuery = 'SELECT job_id FROM saved_jobs WHERE user_id = $1 ORDER BY created_at DESC;';
+        const savedResult = await pool.query(savedQuery, [id]);
+        (user as any).savedJobs = savedResult.rows.map(row => row.job_id);
+      } catch (err) {
+        console.error('Failed to fetch saved jobs for user:', err);
+        (user as any).savedJobs = [];
+      }
 
-    return user;
+      return user;
+    });
   }
 
   static async toggleSaveJob(userId: string, jobId: string): Promise<{ isSaved: boolean }> {
     const checkQuery = 'SELECT id FROM saved_jobs WHERE user_id = $1 AND job_id = $2;';
     const checkResult = await pool.query(checkQuery, [userId, jobId]);
 
+    let res: { isSaved: boolean };
     if (checkResult.rows.length > 0) {
       // Remove saved job
       await pool.query('DELETE FROM saved_jobs WHERE user_id = $1 AND job_id = $2;', [userId, jobId]);
-      return { isSaved: false };
+      res = { isSaved: false };
     } else {
       // Add saved job
       await pool.query('INSERT INTO saved_jobs (user_id, job_id) VALUES ($1, $2);', [userId, jobId]);
-      return { isSaved: true };
+      res = { isSaved: true };
     }
+
+    // Invalidate user profile cache
+    await CacheService.invalidate(`user:profile:${userId}`);
+    return res;
   }
 
   static async updateStatus(id: string, status: string, client: any = pool): Promise<void> {
     const query = 'UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2;';
     await client.query(query, [status, id]);
+    await CacheService.invalidate(`user:profile:${id}`);
   }
 
   static async updateProfile(userId: string, profileData: Partial<User>, client: any = pool): Promise<User> {
@@ -176,40 +191,43 @@ export class UserRepository {
     values.push(userId);
 
     const result = await client.query(query, values);
+    await CacheService.invalidate(`user:profile:${userId}`);
     return result.rows[0];
   }
 
   static async getAllCandidates(): Promise<any[]> {
-    const query = `
-      SELECT id, email, name, phone, role, status, created_at, updated_at,
-             headline, location, skills, preferred_shift, requires_bus,
-             requires_accommodation, resume, experience, education, profile_picture_url,
-             trade_specialization as "tradeSpecialization"
-      FROM users
-      WHERE role = 'candidate'
-      ORDER BY name ASC;
-    `;
-    const result = await pool.query(query);
-    return result.rows.map(row => ({
-      id: row.id,
-      email: row.email,
-      name: row.name,
-      phone: row.phone,
-      role: row.role,
-      status: row.status,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      headline: row.headline,
-      location: row.location,
-      skills: row.skills,
-      preferredShift: row.preferred_shift,
-      requiresBus: row.requires_bus,
-      requiresAccommodation: row.requires_accommodation,
-      resume: typeof row.resume === 'string' ? JSON.parse(row.resume) : row.resume,
-      experience: typeof row.experience === 'string' ? JSON.parse(row.experience) : row.experience,
-      education: typeof row.education === 'string' ? JSON.parse(row.education) : row.education,
-      profilePictureUrl: row.profile_picture_url,
-      tradeSpecialization: row.tradeSpecialization
-    }));
+    return CacheService.getOrSet('cache:candidates:all', 300, async () => {
+      const query = `
+        SELECT id, email, name, phone, role, status, created_at, updated_at,
+               headline, location, skills, preferred_shift, requires_bus,
+               requires_accommodation, resume, experience, education, profile_picture_url,
+               trade_specialization as "tradeSpecialization"
+        FROM users
+        WHERE role = 'candidate'
+        ORDER BY name ASC;
+      `;
+      const result = await pool.query(query);
+      return result.rows.map(row => ({
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        phone: row.phone,
+        role: row.role,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        headline: row.headline,
+        location: row.location,
+        skills: row.skills,
+        preferredShift: row.preferred_shift,
+        requiresBus: row.requires_bus,
+        requiresAccommodation: row.requires_accommodation,
+        resume: typeof row.resume === 'string' ? JSON.parse(row.resume) : row.resume,
+        experience: typeof row.experience === 'string' ? JSON.parse(row.experience) : row.experience,
+        education: typeof row.education === 'string' ? JSON.parse(row.education) : row.education,
+        profilePictureUrl: row.profile_picture_url,
+        tradeSpecialization: row.tradeSpecialization
+      }));
+    });
   }
 }
