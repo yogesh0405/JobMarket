@@ -1,4 +1,4 @@
-export type UserRole = 'candidate' | 'employer' | 'admin';
+export type UserRole = 'candidate' | 'employer' | 'admin' | 'recruiter';
 export type JobType = 'Full-Time' | 'Part-Time' | 'Contract' | 'Freelance';
 export type WorkMode = 'Remote' | 'Onsite' | 'Hybrid';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'rejected';
@@ -115,6 +115,8 @@ export interface Job {
   featured?: boolean;
   status: JobStatus;
   dbStatus?: string;
+  rejectReason?: string;
+  reject_reason?: string;
   applicants?: Applicant[];
   views?: number;
   postedAt: string;

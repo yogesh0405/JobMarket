@@ -20,6 +20,7 @@ import { AboutPage } from '../static/AboutPage';
 import { ContactPage } from '../static/ContactPage';
 import { SavedJobsPage } from './SavedJobsPage';
 import { EmployerAdvertisements } from './EmployerAdvertisements';
+import { SecuritySettings } from '../../components/profile/SecuritySettings';
 import {
   Briefcase,
   Users,
@@ -1696,7 +1697,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         {j.companyLogo || (j as any).company_logo ? (
                           <img src={j.companyLogo || (j as any).company_logo} alt={j.company || j.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <CompanyDefaultLogo name={j.company || currentUser?.companyName || 'Company'} logoUrl={null} size={36} />
+                          <CompanyDefaultLogo companyName={j.company || currentUser?.companyName || 'Company'} logoUrl={null} size={36} />
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1866,7 +1867,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                                 {job.companyLogo || (job as any).company_logo ? (
                                   <img src={job.companyLogo || (job as any).company_logo} alt={job.company || job.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <CompanyDefaultLogo name={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={38} />
+                                  <CompanyDefaultLogo companyName={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={38} />
                                 )}
                               </div>
                               <div>
@@ -1952,7 +1953,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         {job.companyLogo || (job as any).company_logo ? (
                           <img src={job.companyLogo || (job as any).company_logo} alt={job.company || job.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <CompanyDefaultLogo name={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={44} />
+                          <CompanyDefaultLogo companyName={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={44} />
                         )}
                       </div>
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { getCompanyLogo } from '../../utils/companyLogos';
 
 interface CompanyDefaultLogoProps {
-  logoUrl?: string;
+  logoUrl?: string | null;
   companyName?: string;
   size?: number;
   borderRadius?: string;
