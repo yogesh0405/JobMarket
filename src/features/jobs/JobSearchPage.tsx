@@ -19,11 +19,11 @@ export const JobSearchPage: React.FC = () => {
 
   const viewParam = searchParams.get('view');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>(
-    viewParam === 'grid' || viewParam === 'map' ? viewParam : 'list'
+    viewParam === 'list' || viewParam === 'map' ? viewParam : 'grid'
   );
 
   useEffect(() => {
-    if (viewParam === 'grid' || viewParam === 'list') {
+    if (viewParam === 'grid' || viewParam === 'list' || viewParam === 'map') {
       setViewMode(viewParam);
     }
   }, [viewParam]);
