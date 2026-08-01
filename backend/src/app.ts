@@ -73,6 +73,17 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// Health Check Endpoints
+app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    timestamp: new Date().toISOString(),
+    environment: env.NODE_ENV,
+    uptime: Math.floor(process.uptime()),
+    message: 'JobMarket Backend API is healthy 🚀'
+  });
+});
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
