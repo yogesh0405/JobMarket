@@ -241,7 +241,7 @@ export const useJobs = () => {
     } catch (err) {
       console.error('Error fetching candidate applied jobs:', err);
     }
-  }, [dispatch, state.jobs]);
+  }, [dispatch]);
 
   const fetchCandidateSavedJobs = useCallback(async () => {
     try {
@@ -267,39 +267,26 @@ export const useJobs = () => {
     } catch (err) {
       console.error('Error fetching candidate saved jobs:', err);
     }
-  }, [dispatch, state.currentUser, state.jobs]);
+  }, [dispatch]);
 
-  const toggleSaveJob = useCallback(async (jobId: string) => {
+  const toggleSaveJob = useCallback((jobId: string): boolean => {
     const user = state.currentUser;
     if (!user) return false;
 
     const isCurrentlySaved = (user.savedJobs || []).includes(jobId);
     const willBeSaved = !isCurrentlySaved;
 
-    // Optimistically update React store state immediately
+    // 1. Optimistically update React store state immediately (0ms delay)
     dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
 
-    // Sync with PostgreSQL database
-    try {
-      const res = await apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' });
-      const json = await res.json();
-      if (res.ok && json.success && json.data && typeof json.data.isSaved === 'boolean') {
-        const serverIsSaved = json.data.isSaved;
-        const currentSavedList = state.currentUser?.savedJobs || [];
-        if (serverIsSaved && !currentSavedList.includes(jobId)) {
-          dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
-        } else if (!serverIsSaved && currentSavedList.includes(jobId)) {
-          dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
-        }
-        return serverIsSaved;
-      }
-    } catch (err) {
+    // 2. Sync with PostgreSQL database asynchronously in background
+    apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' }).catch((err) => {
       console.error('Failed to sync saved job with database:', err);
-      // Rollback on error
+      // Revert optimistic update only on network error
       dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
-      return isCurrentlySaved;
-    }
+    });
 
+    // 3. Return new state boolean instantly (0ms)
     return willBeSaved;
   }, [state.currentUser, dispatch]);
 

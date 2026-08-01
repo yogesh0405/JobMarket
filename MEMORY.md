@@ -275,15 +275,16 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
 * **2026-07-31 — Job Posting Workflow Refinement & Governance**:
   * *Decision*: Implemented dynamic Trade Type → Job Role selection, dynamic role-based skills, conditional field governance (`acceptResume`, `targetIti`, `isMidcLocation`, `experienceRequired`, `discloseSalary`), mandatory job description & skills validation, and professional vacancy count stepper (`−` / `+` controls with string state to fix input clearing/editing bugs). Applied migration `016_refine_job_posting_workflow_up.sql`.
   * *Reason*: Enterprise-grade usability, conditional workflows, type safety, and error-free job posting experience.
-* **2026-08-01 — Defaulted Find Jobs Page to Grid View Layout**:
-  * *Decision*: Changed default `viewMode` state from `'list'` to `'grid'` in `JobSearchPage.tsx`.
-  * *Reason*: Ensure Find Jobs section immediately displays the multi-column Grid View layout on load.
+* **2026-08-01 — Fixed Save & Unsave Job Workflow with Instant Optimistic UI**:
+  * *Decision*: Fixed `Array.isArray(incomingUser.savedJobs)` check in `storeReducer.ts` to prevent empty arrays `[]` from restoring stale saved jobs. Added `GET /api/v1/jobs/saved/my-saved` backend endpoint and `fetchCandidateSavedJobs()` in `useJobs.ts`. Refactored `toggleSaveJob` for instant 0ms optimistic UI updates across `JobCard`, `JobDetailPage`, `SavedJobsPage`, and `DashboardPage`.
+  * *Reason*: Provide smooth, instant 0ms save/unsave feedback without page reloads or restored unsaved jobs.
 
 ---
 
 ## 12. Change Log
 
 * **2026-08-01**:
+  * Fixed Save & Unsave Job workflow: eliminated stale state restorations in `storeReducer.ts`, added `GET /api/v1/jobs/saved/my-saved` backend endpoint, added `fetchCandidateSavedJobs()`, and enabled instant 0ms optimistic save/unsave feedback without page reloads.
   * Defaulted Find Jobs section (`JobSearchPage.tsx`) to multi-column **Grid View** layout by default on page load.
   * Fixed job application workflow: immediate status update to "Applied ✓", instant applicant count increment, Walk-In Entry Pass modal for walk-in drives, and backend sync for Candidate Applied Jobs dashboard (`GET /api/v1/jobs/applied/my-applications`).
   * Fixed all 14 Vercel TypeScript build errors by tracking `SecuritySettings.tsx`, updating `types/index.ts`, and fixing `CompanyDefaultLogo` prop names in `DashboardPage.tsx`. Committed locally.

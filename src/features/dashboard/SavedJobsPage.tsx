@@ -14,7 +14,7 @@ export const SavedJobsPage: React.FC = () => {
     if (fetchCandidateSavedJobs) {
       fetchCandidateSavedJobs();
     }
-  }, [fetchCandidateSavedJobs]);
+  }, []);
 
   const savedJobs = getSavedJobs();
 
