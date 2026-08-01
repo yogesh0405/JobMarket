@@ -367,7 +367,14 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
     - Styled search input (`height: 38px`, `border-radius: 4px`), category pills (`padding: 5px 12px`, `border-radius: 4px`, active `#344BFD`), and accordion FAQs (`13.5px` text, `ChevronDown` icon).
     - Styled `Submit Support Ticket` button as full-width solid primary button (`width: 100%`, `height: 40px`, `background: #344BFD`, crisp `4px` border-radius, `Send` icon, and animated loading spinner).
     - Refactored support contact info cards to compact flex rows with `36px` icon badges.
+  * Redesigned and overhauled **Applied Jobs** tab (`DashboardPage.tsx` `case 'applied'`):
+    - Removed soft/round 12px+ corners in favor of crisp, industrial `6px` / `4px` border-radius elements (`border: 1.5px solid #cbd5e1`).
+    - Added **3D Distinguished Card Elevation**: `boxShadow: 0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)` for strong visual contrast against the dashboard background.
+    - Integrated professional Lucide SVG icons (`Briefcase`, `MapPin`, `IndianRupee`, `Building2`, `Calendar`, `Clock`, `ArrowRight`, `ClipboardList`).
+    - Formatted status badges with crisp `4px` radiuses (`APPLIED`, `UNDER REVIEW`, `SHORTLISTED`, `HIRED`, `REJECTED`).
+    - Overhauled interview notification card with a solid `#f0fdf4` 3D subpanel, `#15803d` badges, and direct Google Maps navigation button.
   * Verified end-to-end production build (`npm run build`) with 0 compilation errors.
+  * Committed and pushed to `https://github.com/yogesh0405/JobMarket.git` (`main` branch).
 
 ---
 *End of MEMORY.md — Keep updated on every architectural or schema change.*

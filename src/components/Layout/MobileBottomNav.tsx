@@ -105,7 +105,10 @@ export const MobileBottomNav: React.FC = () => {
 
       {/* Profile / Signup */}
       {currentUser ? (
-        <NavLink to={currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className={`mobile-bottom-item ${isTabActive('/dashboard') || isTabActive('/dashboard?tab=overview') ? 'active' : ''}`}>
+        <NavLink 
+          to={currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile'} 
+          className={`mobile-bottom-item ${isTabActive('/dashboard?tab=profile') || location.pathname === '/profile' ? 'active' : ''}`}
+        >
           <div className="mobile-bottom-avatar" style={{
             width: '22px',
             height: '22px',
