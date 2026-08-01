@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { apiFetch } from '../../utils/api';
-import { getInitials, formatNumber, formatSalary, capitalize, timeAgo, shareContent } from '../../utils/helpers';
+import { getInitials, formatNumber, formatSalary, capitalize, timeAgo, shareContent, safeJsonParse } from '../../utils/helpers';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
 import { CandidateDetailsModal } from '../../components/candidate/CandidateDetailsModal';
 import { useToast } from '../../hooks/useToast';
@@ -107,7 +107,7 @@ export const DashboardPage: React.FC = () => {
       if (fetchCandidateAppliedJobs) fetchCandidateAppliedJobs();
       if (fetchCandidateSavedJobs) fetchCandidateSavedJobs();
     }
-  }, [currentUser?.id, currentUser?.role]);
+  }, [currentUser?.id, currentUser?.role, tab]);
 
   if (!currentUser || isLoading) {
     return (
@@ -126,6 +126,10 @@ export const DashboardPage: React.FC = () => {
 
   if (tab === 'saved') {
     return <SavedJobsPage />;
+  }
+
+  if (tab === 'profile') {
+    return <ProfilePage />;
   }
 
   const setTab = (newTab: string) => {
@@ -1355,7 +1359,7 @@ interface EmployerProps {
 
 const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsByEmployer, deleteJob, updateApplicantStatus, showToast, navigate, setTab, t }) => {
   const myJobs = getJobsByEmployer(currentUser.id);
-  const activeJobs = myJobs.filter(j => j.status === 'active');
+  const activeJobs = myJobs.filter(j => j.status === 'active' || (j as any).dbStatus === 'APPROVED');
   const rejectedJobs = myJobs.filter(j => ((j.dbStatus || j.status || '') as string).toUpperCase() === 'REJECTED' || j.status === 'rejected' || !!j.rejectReason);
   const totalApplicants = myJobs.reduce((sum, j) => sum + (j.applicants?.length || 0), 0);
   const totalViews = myJobs.reduce((sum, j) => sum + (j.views || 0), 0);
@@ -1558,11 +1562,17 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const getRecentApplicants = () => {
     const applicantsList: any[] = [];
     myJobs.forEach(job => {
-      (job.applicants || []).forEach(a => {
-        applicantsList.push({ ...a, jobTitle: job.title, jobId: job.id, job });
+      const rawApps = job.applicants;
+      const apps = Array.isArray(rawApps)
+        ? rawApps
+        : (typeof rawApps === 'string' ? safeJsonParse(rawApps, []) : []);
+      apps.forEach((a: any) => {
+        if (a && typeof a === 'object') {
+          applicantsList.push({ ...a, jobTitle: job.title, jobId: job.id, job });
+        }
       });
     });
-    applicantsList.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+    applicantsList.sort((a, b) => new Date(b.appliedAt || 0).getTime() - new Date(a.appliedAt || 0).getTime());
     return applicantsList;
   };
 
@@ -2224,9 +2234,9 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                   onChange={(e) => setAppJobFilter(e.target.value)}
                   style={{ width: '100%', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  <option value="all">All Job Postings ({myJobs.length})</option>
-                  {myJobs.map(job => (
-                    <option key={job.id} value={job.id}>{job.title} ({job.applicants?.length || 0})</option>
+                  <option value="all">All Active Job Postings ({activeJobs.length})</option>
+                  {activeJobs.map(job => (
+                    <option key={job.id} value={job.id}>{job.title} ({(job.applicants || []).length})</option>
                   ))}
                 </select>
               </div>
@@ -2394,6 +2404,12 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         return (
           <JobPostPage isEmbedded={true} onComplete={() => setTab('manage')} />
         );
+
+      case 'profile':
+        return <ProfilePage />;
+
+      case 'security':
+        return <SecuritySettings />;
 
       default:
         return null;

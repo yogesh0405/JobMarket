@@ -59,7 +59,7 @@ export const App: React.FC = () => {
       .catch((err: any) => {
         console.error('Error fetching database jobs:', err);
       });
-  }, [syncUser, dispatch]);
+  }, []);
 
   return (
     <Routes>

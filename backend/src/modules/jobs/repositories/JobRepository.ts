@@ -162,7 +162,7 @@ export class JobRepository {
       walkInContactPerson: row.walk_in_contact_person || null,
       walkInContactNumber: row.walk_in_contact_number || null,
       walkInDocuments: row.walk_in_documents || null,
-      applicants: row.applicants || []
+      applicants: typeof row.applicants === 'string' ? safeJsonParse(row.applicants, []) : (Array.isArray(row.applicants) ? row.applicants : [])
     };
   }
 

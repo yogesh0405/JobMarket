@@ -263,7 +263,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Failed to sync user:', error);
     }
-  }, [dispatch, state.currentUser]);
+  }, [dispatch]);
 
   return {
     currentUser: state.currentUser,

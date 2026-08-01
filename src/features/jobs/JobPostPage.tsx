@@ -2254,6 +2254,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: '12px',
             width: '100%',
             boxSizing: 'border-box',
@@ -2267,13 +2268,21 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             className="btn btn-secondary btn-lg"
             onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}
             style={{
-              flex: 1,
+              flex: '1 1 50%',
+              minWidth: 0,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               height: '46px',
+              padding: '0 16px',
               borderRadius: '8px',
-              fontWeight: '700'
+              fontWeight: '700',
+              fontSize: '14px',
+              boxSizing: 'border-box',
+              border: '1.5px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#334155',
+              cursor: 'pointer'
             }}
           >
             Cancel
@@ -2284,19 +2293,24 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             disabled={isSubmitting}
             className="btn btn-primary btn-lg"
             style={{
-              flex: 1,
+              flex: '1 1 50%',
+              minWidth: 0,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
               height: '46px',
+              padding: '0 16px',
               borderRadius: '8px',
               background: '#344BFD',
               color: '#ffffff',
               fontWeight: '700',
               fontSize: '14px',
+              border: 'none',
+              boxSizing: 'border-box',
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.85 : 1
+              opacity: isSubmitting ? 0.85 : 1,
+              whiteSpace: 'nowrap'
             }}
           >
             {isSubmitting ? (
@@ -2314,14 +2328,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 </svg>
                 <span>
                   {isEdit 
-                    ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmitting Job...' : 'Updating Job...') 
-                    : 'Posting Job...'}
+                    ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmitting...' : 'Updating...') 
+                    : 'Posting...'}
                 </span>
               </>
             ) : (
               <span>
                 {isEdit 
-                  ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmit Job for Approval' : 'Update Job') 
+                  ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmit' : 'Update Job') 
                   : 'Post Job'}
               </span>
             )}

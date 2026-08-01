@@ -16,11 +16,20 @@ export type StoreAction =
 
 export const storeReducer = (state: StoreState, action: StoreAction): StoreState => {
   switch (action.type) {
-    case 'SET_JOBS':
+    case 'SET_JOBS': {
+      const incoming = action.payload || [];
+      const jobsMap = new Map(state.jobs.map(j => [j.id, j]));
+      incoming.forEach(j => {
+        if (j && j.id) {
+          const prev = jobsMap.get(j.id);
+          jobsMap.set(j.id, prev ? { ...prev, ...j } : j);
+        }
+      });
       return {
         ...state,
-        jobs: action.payload
+        jobs: Array.from(jobsMap.values())
       };
+    }
 
     case 'SET_LANGUAGE':
       return {

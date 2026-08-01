@@ -424,6 +424,8 @@ export const ProfilePage: React.FC = () => {
   };
 
   const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [headline, setHeadline] = useState('');
   const [location, setLocation] = useState('');
   const [phone, setPhone] = useState('');
@@ -456,6 +458,8 @@ export const ProfilePage: React.FC = () => {
 
   const openEditModal = () => {
     setName(currentUser.name);
+    setCompanyName(currentUser.companyName || '');
+    setGstNumber(currentUser.gstNumber || '');
     setHeadline(currentUser.headline || '');
     setLocation(currentUser.location || '');
     setPhone(currentUser.phone || '');
@@ -482,13 +486,17 @@ export const ProfilePage: React.FC = () => {
       showToast('Name is required', 'error');
       return;
     }
+    if (currentUser.role === 'employer' && !companyName.trim()) {
+      showToast('Company name is required', 'error');
+      return;
+    }
     if (phone && phone.length !== 10) {
       showToast('Phone number must be exactly 10 digits', 'error');
       return;
     }
 
     const finalTrade = tradeSpecialization === 'Other' ? customTradeEdit.trim() : tradeSpecialization;
-    if (tradeSpecialization === 'Other' && !finalTrade) {
+    if (currentUser.role === 'candidate' && tradeSpecialization === 'Other' && !finalTrade) {
       showToast('Please specify your specialty', 'error');
       return;
     }
@@ -502,6 +510,8 @@ export const ProfilePage: React.FC = () => {
     try {
       const result = await updateUser({
         name,
+        companyName,
+        gstNumber,
         headline,
         location,
         phone,
@@ -513,7 +523,7 @@ export const ProfilePage: React.FC = () => {
       });
 
       if (result.success) {
-        showToast('Changes saved', 'success');
+        showToast('Profile updated successfully', 'success');
         setEditModalOpen(false);
       } else {
         showToast(result.error || 'Failed to update profile.', 'error');
@@ -535,7 +545,7 @@ export const ProfilePage: React.FC = () => {
     <div className="profile-page">
       <div className="container">
         {/* Profile Header Card */}
-        <div className="profile-header-card" style={{ marginBottom: 'var(--space-6)' }}>
+        <div className="profile-header-card">
           <div className="profile-top">
             <div 
               className="profile-avatar-large"
@@ -610,19 +620,19 @@ export const ProfilePage: React.FC = () => {
             
             <div className="profile-info">
               <h1 style={{ color: 'white', fontSize: 'var(--fs-2xl)', fontWeight: 'var(--fw-bold)', marginBottom: '4px' }}>
-                {currentUser.name}
+                {currentUser.companyName || currentUser.name}
               </h1>
-              <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 'var(--fs-sm)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <p className="profile-subtitle" style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 'var(--fs-sm)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
                   {currentUser.role}
                 </span>
                 {currentUser.role === 'employer' 
-                  ? (currentUser.companyName || 'Employer Profile') 
+                  ? (currentUser.name ? `Recruiter: ${currentUser.name}` : 'Employer Account') 
                   : (currentUser.headline || 'ITI Industrial Worker')}
               </p>
               
               {currentUser.location && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '8px' }}>
+                <div className="profile-location-wrap" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', marginTop: '6px' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                     <circle cx="12" cy="10" r="3"/>
@@ -631,33 +641,58 @@ export const ProfilePage: React.FC = () => {
                 </div>
               )}
 
-              {currentUser.profilePictureUrl && (
+              <div className="profile-actions-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
                 <button 
-                  onClick={handleDeletePhoto}
+                  onClick={triggerFileInput}
                   disabled={isUploading}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'rgba(255, 255, 255, 0.65)',
+                    background: 'rgba(255, 255, 255, 0.22)',
+                    border: '1px solid rgba(255, 255, 255, 0.4)',
+                    color: '#ffffff',
                     fontSize: '12px',
-                    marginTop: '10px',
+                    fontWeight: '700',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
                     cursor: 'pointer',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: 0,
-                    transition: 'color 0.2s'
+                    gap: '6px',
+                    backdropFilter: 'blur(4px)'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.color = '#ff8f8f'}
-                  onMouseOut={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)'}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
                   </svg>
-                  Remove photo
+                  <span>{currentUser.profilePictureUrl ? 'Change Photo / Logo' : 'Upload Photo / Logo'}</span>
                 </button>
-              )}
+
+                {currentUser.profilePictureUrl && (
+                  <button 
+                    onClick={handleDeletePhoto}
+                    disabled={isUploading}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.25)',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Remove</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <input 
@@ -737,6 +772,58 @@ export const ProfilePage: React.FC = () => {
                 <div>
                   <span className="text-sm text-secondary">Requires Hostel accommodation</span>
                   <p className="font-medium">{currentUser.requiresAccommodation ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Company & Business Information section for Employers */}
+        {currentUser.role === 'employer' && (
+          <div className="profile-section">
+            <div className="profile-section-header">
+              <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
+                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                Company & Business Information
+              </h2>
+              <button 
+                onClick={openEditModal}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit Details
+              </button>
+            </div>
+            <div className="profile-section-body">
+              <div className="profile-details-grid">
+                <div>
+                  <span className="text-sm text-secondary">Company Name</span>
+                  <p className="font-medium" style={{ fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>{currentUser.companyName || 'Not provided'}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-secondary">GST Registration Number</span>
+                  <p className="font-medium">{currentUser.gstNumber || 'Not provided'}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-secondary">Recruiter / Contact Person</span>
+                  <p className="font-medium">{currentUser.name}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-secondary">Contact Phone</span>
+                  <p className="font-medium">{currentUser.phone || 'Not provided'}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-secondary">Official Email</span>
+                  <p className="font-medium">{currentUser.email}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-secondary">Factory / MIDC Location</span>
+                  <p className="font-medium">{currentUser.location || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -995,15 +1082,52 @@ export const ProfilePage: React.FC = () => {
             </div>
             <div className="modal-body">
               <form id="edit-profile-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
+                {currentUser.role === 'employer' ? (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Company Name <span style={{ color: '#dc2626' }}>*</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        required
+                        value={companyName}
+                        placeholder="e.g. InsightForge Precision Industries"
+                        onChange={(e) => setCompanyName(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">GST / Tax Registration Number</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={gstNumber}
+                        placeholder="e.g. 27AAAAA0000A1Z5"
+                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Recruiter / Contact Person Name <span style={{ color: '#dc2626' }}>*</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        required
+                        value={name}
+                        placeholder="e.g. Yogesh Dandawalkar"
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Headline</label>
                   <input
