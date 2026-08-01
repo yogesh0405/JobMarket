@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
+import { useToast } from '../../hooks/useToast';
 import { JobCard } from '../../components/job/JobCard';
 
 export const SavedJobsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { getSavedJobs, fetchCandidateSavedJobs } = useJobs();
+  const { getSavedJobs, fetchCandidateSavedJobs, toggleSaveJob } = useJobs();
+  const { showToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [removedJobIds, setRemovedJobIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (fetchCandidateSavedJobs) {
@@ -16,7 +20,15 @@ export const SavedJobsPage: React.FC = () => {
     }
   }, []);
 
-  const savedJobs = getSavedJobs();
+  const savedJobs = getSavedJobs().filter(j => !removedJobIds.includes(j.id));
+
+  const handleUnsave = (jobId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    // 0ms instant DOM removal
+    setRemovedJobIds(prev => [...prev, jobId]);
+    toggleSaveJob(jobId);
+    showToast('Job removed from saved', 'info');
+  };
 
   // Filter saved jobs based on search query and selected industry
   const filteredJobs = savedJobs.filter((job) => {
@@ -184,7 +196,35 @@ export const SavedJobsPage: React.FC = () => {
             {filteredJobs.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {filteredJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                  <div key={job.id} style={{ position: 'relative' }}>
+                    <JobCard job={job} />
+                    <button
+                      type="button"
+                      onClick={(e) => handleUnsave(job.id, e)}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '40px',
+                        background: '#FEF2F2',
+                        border: '1px solid #FCA5A5',
+                        color: '#DC2626',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        zIndex: 10,
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Remove from saved jobs"
+                    >
+                      <Trash2 size={13} />
+                      Remove
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (

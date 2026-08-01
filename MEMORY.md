@@ -275,15 +275,16 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
 * **2026-07-31 — Job Posting Workflow Refinement & Governance**:
   * *Decision*: Implemented dynamic Trade Type → Job Role selection, dynamic role-based skills, conditional field governance (`acceptResume`, `targetIti`, `isMidcLocation`, `experienceRequired`, `discloseSalary`), mandatory job description & skills validation, and professional vacancy count stepper (`−` / `+` controls with string state to fix input clearing/editing bugs). Applied migration `016_refine_job_posting_workflow_up.sql`.
   * *Reason*: Enterprise-grade usability, conditional workflows, type safety, and error-free job posting experience.
-* **2026-08-01 — Fixed Save & Unsave Job Workflow with Instant Optimistic UI**:
-  * *Decision*: Fixed `Array.isArray(incomingUser.savedJobs)` check in `storeReducer.ts` to prevent empty arrays `[]` from restoring stale saved jobs. Added `GET /api/v1/jobs/saved/my-saved` backend endpoint and `fetchCandidateSavedJobs()` in `useJobs.ts`. Refactored `toggleSaveJob` for instant 0ms optimistic UI updates across `JobCard`, `JobDetailPage`, `SavedJobsPage`, and `DashboardPage`.
-  * *Reason*: Provide smooth, instant 0ms save/unsave feedback without page reloads or restored unsaved jobs.
+* **2026-08-01 — Fixed Page Blinking & Made Save/Unsave 100% Synchronous (0ms)**:
+  * *Decision*: Stabilized `fetchCandidateSavedJobs` dependency array to `[dispatch]` in `useJobs.ts` and set `[]` in `SavedJobsPage.tsx`. Refactored `toggleSaveJob` and `handleSave` to run synchronously (0ms) with background fire-and-forget API calls.
+  * *Reason*: Eliminate page blinking/flickering loops and provide instant 0ms save/unsave UI response without waiting for network roundtrips.
 
 ---
 
 ## 12. Change Log
 
 * **2026-08-01**:
+  * Fixed page blinking and made Save/Unsave job workflow 100% synchronous (0ms): stabilized `fetchCandidateSavedJobs` dependency array to `[dispatch]`, set `useEffect` to `[]` in `SavedJobsPage.tsx`, and removed `await` network blocking from `toggleSaveJob` and `handleSave`.
   * Fixed Save & Unsave Job workflow: eliminated stale state restorations in `storeReducer.ts`, added `GET /api/v1/jobs/saved/my-saved` backend endpoint, added `fetchCandidateSavedJobs()`, and enabled instant 0ms optimistic save/unsave feedback without page reloads.
   * Defaulted Find Jobs section (`JobSearchPage.tsx`) to multi-column **Grid View** layout by default on page load.
   * Fixed job application workflow: immediate status update to "Applied ✓", instant applicant count increment, Walk-In Entry Pass modal for walk-in drives, and backend sync for Candidate Applied Jobs dashboard (`GET /api/v1/jobs/applied/my-applications`).

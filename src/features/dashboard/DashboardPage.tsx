@@ -40,7 +40,8 @@ import {
   Award,
   Layers,
   ArrowRight,
-  ClipboardList
+  ClipboardList,
+  Trash2
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -731,6 +732,16 @@ interface CandidateProps {
 const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getAppliedJobs, getSavedJobs, setTab, t }) => {
   const appliedJobs = getAppliedJobs();
   const savedJobs = getSavedJobs();
+  const { toggleSaveJob } = useJobs();
+  const { showToast } = useToast();
+  const [removedSavedJobIds, setRemovedSavedJobIds] = useState<string[]>([]);
+
+  const handleDashboardUnsave = (jobId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setRemovedSavedJobIds(prev => [...prev, jobId]);
+    toggleSaveJob(jobId);
+    showToast('Job removed from saved', 'info');
+  };
 
   switch (tab) {
     case 'overview':
@@ -1023,12 +1034,48 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
       );
 
     case 'saved':
+      const visibleSavedJobs = savedJobs.filter(j => !removedSavedJobIds.includes(j.id));
       return (
         <>
-          <h2 style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>Saved Jobs</h2>
-          {savedJobs.length > 0 ? (
-            <div className="jobs-list">
-              {savedJobs.map(job => <JobCard key={job.id} job={job} />)}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
+            <h2 style={{ fontSize: 'var(--fs-2xl)', margin: 0 }}>Saved Jobs</h2>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#2563eb', background: '#eff6ff', padding: '4px 12px', borderRadius: '9999px', border: '1px solid #bfdbfe' }}>
+              {visibleSavedJobs.length} {visibleSavedJobs.length === 1 ? 'Job' : 'Jobs'}
+            </span>
+          </div>
+          {visibleSavedJobs.length > 0 ? (
+            <div className="jobs-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {visibleSavedJobs.map(job => (
+                <div key={job.id} style={{ position: 'relative' }}>
+                  <JobCard job={job} />
+                  <button
+                    type="button"
+                    onClick={(e) => handleDashboardUnsave(job.id, e)}
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '40px',
+                      background: '#FEF2F2',
+                      border: '1px solid #FCA5A5',
+                      color: '#DC2626',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      zIndex: 10,
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Remove from saved jobs"
+                  >
+                    <Trash2 size={13} />
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="empty-state">
