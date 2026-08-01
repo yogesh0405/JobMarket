@@ -72,27 +72,29 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
       onClick={() => navigate(`/job/${job.id}`)}
       style={{
         background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '10px',
+        border: '1.5px solid #cbd5e1',
+        borderRadius: '6px',
         padding: '0',
         cursor: 'pointer',
-        transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)',
         boxSizing: 'border-box',
         width: '100%',
         overflow: 'hidden'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#93C5FD';
-        e.currentTarget.style.boxShadow = '0 4px 14px rgba(37,99,235,0.10)';
+        e.currentTarget.style.borderColor = '#344BFD';
+        e.currentTarget.style.boxShadow = '0 10px 24px rgba(52, 75, 253, 0.16), 0 4px 8px rgba(15, 23, 42, 0.08)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#E2E8F0';
-        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+        e.currentTarget.style.borderColor = '#cbd5e1';
+        e.currentTarget.style.boxShadow = '0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)';
+        e.currentTarget.style.transform = 'none';
       }}
     >
       {/* ── TOP HIGHLIGHT BOX ── */}
@@ -245,7 +247,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
             logoUrl={job.companyLogo || (job as any).company_logo}
             companyName={job.company}
             size={38}
-            borderRadius="8px"
+            borderRadius="4px"
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>

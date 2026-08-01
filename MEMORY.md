@@ -373,8 +373,17 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
     - Integrated professional Lucide SVG icons (`Briefcase`, `MapPin`, `IndianRupee`, `Building2`, `Calendar`, `Clock`, `ArrowRight`, `ClipboardList`).
     - Formatted status badges with crisp `4px` radiuses (`APPLIED`, `UNDER REVIEW`, `SHORTLISTED`, `HIRED`, `REJECTED`).
     - Overhauled interview notification card with a solid `#f0fdf4` 3D subpanel, `#15803d` badges, and direct Google Maps navigation button.
+  * Audited and enhanced **Profile Editing Workflows** (`ProfilePage.tsx`):
+    - **About Section Edit Workflow**: Updated `AboutModal` to allow editing `Full Name`, `Headline / Specialty Subtitle`, `Location / City`, and 10-digit `Phone Number`. Updated display grid to cleanly render all 7 profile attributes.
+    - **Industrial Job Preferences Edit Workflow**: Verified `PrefModal` for candidate trade specialization (with custom trade input), shift preferences, bus transport, and hostel stay options.
+    - **Company & Business Information Edit Workflow**: Verified `EditModal` for employer company name, GST registration number, recruiter name, headline, location, and phone.
+    - **Work Experience & Education Edit Workflows**: Verified experience and education item addition (Title, Company, Duration, Description / Degree, Institution, Year) and item deletion workflows with database API sync.
+    - **Skills & Photo Upload Workflows**: Verified skill tag addition/deletion and WebP avatar canvas conversion & Cloudinary/DB upload.
   * Verified end-to-end production build (`npm run build`) with 0 compilation errors.
-  * Committed and pushed to `https://github.com/yogesh0405/JobMarket.git` (`main` branch).
+  * Preserved local-only changes (no `git push` performed per directive).
+
+> [!IMPORTANT]
+> **Git Policy Directive**: `"from noed ont push th code"` — Strict user directive: **NEVER run `git push`**. Keep all builds, code edits, and commits strictly local on the machine.
 
 ---
 *End of MEMORY.md — Keep updated on every architectural or schema change.*

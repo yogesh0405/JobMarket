@@ -330,11 +330,15 @@ export const ProfilePage: React.FC = () => {
 
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [tempName, setTempName] = useState('');
+  const [tempHeadline, setTempHeadline] = useState('');
+  const [tempLocation, setTempLocation] = useState('');
   const [tempPhone, setTempPhone] = useState('');
 
   const openAboutModal = () => {
     if (!currentUser) return;
     setTempName(currentUser.name);
+    setTempHeadline(currentUser.headline || '');
+    setTempLocation(currentUser.location || '');
     setTempPhone(currentUser.phone || '');
     setAboutModalOpen(true);
   };
@@ -354,6 +358,8 @@ export const ProfilePage: React.FC = () => {
     try {
       const result = await updateUser({
         name: tempName,
+        headline: tempHeadline,
+        location: tempLocation,
         phone: tempPhone
       });
       if (result.success) {
@@ -726,6 +732,9 @@ export const ProfilePage: React.FC = () => {
           </div>
           <div className="profile-section-body">
             <div className="profile-details-grid">
+              <div><span className="text-sm text-secondary">Full Name</span><p className="font-medium" style={{ color: '#0f172a', fontWeight: '700' }}>{currentUser.name}</p></div>
+              <div><span className="text-sm text-secondary">Headline / Specialty</span><p className="font-medium">{currentUser.headline || 'Not provided'}</p></div>
+              <div><span className="text-sm text-secondary">Location</span><p className="font-medium">{currentUser.location || 'Not provided'}</p></div>
               <div><span className="text-sm text-secondary">Email</span><p className="font-medium">{currentUser.email}</p></div>
               <div><span className="text-sm text-secondary">Phone</span><p className="font-medium">{currentUser.phone || 'Not provided'}</p></div>
               <div><span className="text-sm text-secondary">Role</span><p className="font-medium">{capitalize(currentUser.role)}</p></div>
@@ -1457,6 +1466,26 @@ export const ProfilePage: React.FC = () => {
                     required 
                     value={tempName} 
                     onChange={(e) => setTempName(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Headline / Specialty Subtitle</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. ITI Certified Fitter | Quality Inspector" 
+                    value={tempHeadline} 
+                    onChange={(e) => setTempHeadline(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Location / City</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. Chatarapti Sambhajinagar" 
+                    value={tempLocation} 
+                    onChange={(e) => setTempLocation(e.target.value)} 
                   />
                 </div>
                  <div className="form-group">
