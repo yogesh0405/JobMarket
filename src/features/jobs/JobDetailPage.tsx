@@ -84,7 +84,14 @@ export const JobDetailPage: React.FC = () => {
     if (currentUser.resume) profileStrength += 10;
   }
   if (profileStrength === 0) profileStrength = 75;
-  const saved = isJobSaved(job.id);
+  const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
+  const storeSaved = isJobSaved(job.id);
+  const saved = localSavedOverride !== null ? localSavedOverride : storeSaved;
+
+  useEffect(() => {
+    setLocalSavedOverride(null);
+  }, [storeSaved]);
+
   const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
 
   // Auto-scroll smoothly to #apply anchor when linked via URL hash
@@ -145,6 +152,8 @@ export const JobDetailPage: React.FC = () => {
       navigate('/login');
       return;
     }
+    const nextState = !saved;
+    setLocalSavedOverride(nextState);
     const isNowSaved = toggleSaveJob(job.id);
     showToast(isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved', isNowSaved ? 'success' : 'info');
   };

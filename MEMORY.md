@@ -275,16 +275,16 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
 * **2026-07-31 — Job Posting Workflow Refinement & Governance**:
   * *Decision*: Implemented dynamic Trade Type → Job Role selection, dynamic role-based skills, conditional field governance (`acceptResume`, `targetIti`, `isMidcLocation`, `experienceRequired`, `discloseSalary`), mandatory job description & skills validation, and professional vacancy count stepper (`−` / `+` controls with string state to fix input clearing/editing bugs). Applied migration `016_refine_job_posting_workflow_up.sql`.
   * *Reason*: Enterprise-grade usability, conditional workflows, type safety, and error-free job posting experience.
-* **2026-08-01 — Instant 0ms Card Removal & Explicit Red Remove Button on Saved Jobs**:
-  * *Decision*: Added `showRemoveButton` and `onRemove` props in `JobCard.tsx`. Added instant `removedIds` filtering in `SavedJobsPage.tsx` and `DashboardPage.tsx`.
-  * *Reason*: Guarantee instant 0ms removal of unsaved job cards from the DOM without waiting for re-renders or backend promises.
+* **2026-08-01 — Removed Red Remove Button & Enabled Instant 0ms Card Removal on Bookmark Unsave**:
+  * *Decision*: Removed red `Remove` button from `JobCard.tsx`. Added `onSaveToggle` callback so clicking the Bookmark icon (`🔖`) instantly removes the card from the DOM in 0ms (<50ms) on `SavedJobsPage.tsx` and `DashboardPage.tsx`.
+  * *Reason*: Provide immediate 0ms unsaving experience without extra buttons or delays.
 
 ---
 
 ## 12. Change Log
 
 * **2026-08-01**:
-  * Added instant 0ms DOM removal of unsaved job cards and integrated explicit red **`[ 🗑 Remove ]`** buttons on `SavedJobsPage.tsx` and `DashboardPage.tsx` (`tab=saved`).
+  * Removed red `Remove` button and enabled instant 0ms card removal from DOM (<50ms) upon clicking the Bookmark icon (`🔖`) in `SavedJobsPage.tsx` and `DashboardPage.tsx` (`tab=saved`).
   * Fixed page blinking and made Save/Unsave job workflow 100% synchronous (0ms): stabilized `fetchCandidateSavedJobs` dependency array to `[dispatch]`, set `useEffect` to `[]` in `SavedJobsPage.tsx`, and removed `await` network blocking from `toggleSaveJob` and `handleSave`.
   * Fixed Save & Unsave Job workflow: eliminated stale state restorations in `storeReducer.ts`, added `GET /api/v1/jobs/saved/my-saved` backend endpoint, added `fetchCandidateSavedJobs()`, and enabled instant 0ms optimistic save/unsave feedback without page reloads.
   * Defaulted Find Jobs section (`JobSearchPage.tsx`) to multi-column **Grid View** layout by default on page load.

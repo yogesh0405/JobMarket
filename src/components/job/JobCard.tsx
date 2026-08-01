@@ -22,7 +22,13 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
   const { state } = useStore();
   const t = useTranslation(state.language);
 
-  const saved = isJobSaved(job.id);
+  const [localSavedOverride, setLocalSavedOverride] = React.useState<boolean | null>(null);
+  const storeSaved = isJobSaved(job.id);
+  const saved = localSavedOverride !== null ? localSavedOverride : storeSaved;
+
+  React.useEffect(() => {
+    setLocalSavedOverride(null);
+  }, [storeSaved]);
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -31,6 +37,8 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
       navigate('/login');
       return;
     }
+    const nextState = !saved;
+    setLocalSavedOverride(nextState);
     const isNowSaved = toggleSaveJob(job.id);
     if (onSaveToggle) {
       onSaveToggle(job.id, isNowSaved);
