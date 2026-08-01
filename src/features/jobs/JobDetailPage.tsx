@@ -509,24 +509,25 @@ export const JobDetailPage: React.FC = () => {
                 <button
                   onClick={handleSave}
                   style={{
-                    background: saved ? '#EFF6FF' : '#F8FAFC',
-                    border: saved ? '1px solid #BFDBFE' : '1px solid #CBD5E1',
-                    padding: '8px 14px',
+                    background: saved ? '#2563eb' : '#F8FAFC',
+                    border: saved ? '1px solid #2563eb' : '1px solid #CBD5E1',
+                    padding: '8px 16px',
                     cursor: 'pointer',
-                    color: saved ? '#2563eb' : '#475569',
-                    borderRadius: '4px',
+                    color: saved ? '#ffffff' : '#475569',
+                    borderRadius: '6px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '13px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease'
+                    fontWeight: '700',
+                    transition: 'all 0.15s ease',
+                    boxShadow: saved ? '0 2px 4px rgba(37,99,235,0.25)' : 'none'
                   }}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                   </svg>
-                  {saved ? 'Saved' : 'Save'}
+                  {saved ? 'Saved ✓' : 'Save'}
                 </button>
 
                 <button
