@@ -4,12 +4,14 @@
 
 /* Hero Section */
 .support-hero {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-  padding: 5rem 1.5rem;
+  background: linear-gradient(135deg, #1e293b 0%, #344BFD 100%);
+  padding: 2.5rem 1.25rem;
   text-align: center;
   color: white;
   position: relative;
   overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 20px;
 }
 
 .support-hero::before {
@@ -24,80 +26,75 @@
 }
 
 .support-hero-title {
-  font-size: var(--fs-4xl);
-  margin-bottom: var(--space-4);
+  font-size: 22px;
+  margin-bottom: 8px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .support-hero-subtitle {
-  font-size: var(--fs-lg);
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.6;
-  max-width: 800px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+  max-width: 720px;
   margin: 0 auto;
 }
 
 /* Card overrides for responsiveness */
 .support-card {
-  padding: var(--space-8);
-  margin-bottom: var(--space-12);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-base), transform var(--transition-base);
-}
-
-.support-card:hover {
-  box-shadow: var(--shadow-md);
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
 }
 
 .support-info-card {
-  padding: var(--space-8);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+  padding: 20px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
 }
 
 .support-ticket-form-card {
-  padding: var(--space-8);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
+  padding: 20px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
 }
 
 /* Responsive grid for input forms */
 .support-form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 /* FAQ categories container with horizontal scroll on mobile */
 .support-faq-categories {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: var(--space-6);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 12px;
 }
 
 /* Chevron animation inside FAQs */
 .faq-chevron {
   transition: transform var(--transition-base);
-  color: var(--primary);
+  color: #344BFD;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--primary-50);
+  border-radius: 4px;
+  background: #eef2ff;
 }
 
 .faq-chevron.expanded {
@@ -106,16 +103,16 @@
 
 /* Accordion hover enhancements */
 .faq-item {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  background: #ffffff !important;
   overflow: hidden;
   transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .faq-item:hover {
-  border-color: var(--primary-light);
-  box-shadow: var(--shadow-sm);
+  border-color: #344BFD !important;
+  box-shadow: 0 2px 6px rgba(52, 75, 253, 0.08) !important;
 }
 
 /* Ticket List views: Table (desktop) vs Cards (mobile) */

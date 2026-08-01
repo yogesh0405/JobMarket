@@ -3,6 +3,24 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
+import { 
+  Headphones, 
+  Search, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Clock, 
+  ShieldAlert, 
+  FileText, 
+  Paperclip, 
+  Send, 
+  RefreshCw, 
+  CheckCircle2, 
+  MessageSquare, 
+  ChevronDown, 
+  X,
+  AlertCircle
+} from 'lucide-react';
 
 interface SupportTicket {
   id: string;
@@ -374,187 +392,168 @@ export const ContactPage: React.FC = () => {
   const uniqueCategories = Array.from(new Set(FAQ_DATA.map(f => f.category)));
 
   return (
-    <>
-      {/* Hero Section */}
-      <section className="support-hero">
-        <div className="container" style={{ maxWidth: '800px' }}>
-          <h1 className="support-hero-title">Help & Support</h1>
-          <p className="support-hero-subtitle">
-            Need assistance? Search our Help Center, browse FAQs, or create a support ticket.
-            Our support team is available to help you with your account, job applications, employer services, payments, verification, and technical issues.
-          </p>
+    <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
+      {/* Sleek Banner Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '14px 16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)' }}>
+        <div style={{ width: '42px', height: '42px', borderRadius: '6px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#344BFD', flexShrink: 0 }}>
+          <Headphones size={22} />
         </div>
-      </section>
+        <div>
+          <h2 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#0f172a' }}>Help & Support Center</h2>
+          <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '12px' }}>Search FAQs, create support tickets, or contact our 24/7 customer care team</p>
+        </div>
+      </div>
 
-      {/* Main Support Grid */}
-      <section style={{ padding: 'var(--space-12) 0', background: 'var(--bg)' }}>
-        <div className="container" style={{ maxWidth: '1200px' }}>
+      {/* Main Content Area */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        
+        {/* FAQ Search Section */}
+        <div className="card support-card">
+          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Search size={18} style={{ color: '#344BFD' }} />
+            <span>Search Help Articles</span>
+          </h3>
           
-          {/* FAQ Search Section */}
-          <div className="card support-card">
-            <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Search Help Articles</h2>
-            
-            <div style={{ position: 'relative', width: '100%', maxWidth: '600px', marginBottom: 'var(--space-6)' }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Search FAQs, common issues, jobs, payments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '40px', height: '48px', fontSize: '15px' }}
-              />
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" style={{ position: 'absolute', left: '14px', top: '14px' }}>
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </div>
-
-            {/* Category selection - hide if search active */}
-            {!searchQuery && (
-              <div className="support-faq-categories">
-                {uniqueCategories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => {
-                      setActiveFAQCategory(cat);
-                      setExpandedFAQIndex(null);
-                    }}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '20px',
-                      border: 'none',
-                      background: activeFAQCategory === cat ? 'var(--primary)' : 'var(--bg-secondary)',
-                      color: activeFAQCategory === cat ? '#ffffff' : 'var(--text-secondary)',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* FAQ Listing (Accordion) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {filteredFAQs.length > 0 ? (
-                filteredFAQs.map((faq, idx) => {
-                  const isExpanded = expandedFAQIndex === idx;
-                  return (
-                    <div key={idx} className="faq-item">
-                      <button
-                        onClick={() => setExpandedFAQIndex(isExpanded ? null : idx)}
-                        style={{
-                          width: '100%',
-                          padding: '16px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '15px',
-                          fontWeight: '600',
-                          color: 'var(--text-primary)'
-                        }}
-                      >
-                        <span>{faq.question}</span>
-                        <span className={`faq-chevron ${isExpanded ? 'expanded' : ''}`}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <polyline points="6 9 12 15 18 9"/>
-                          </svg>
-                        </span>
-                      </button>
-                      
-                      {isExpanded && (
-                        <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
-                          {faq.answer}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '24px 0' }}>
-                  No help articles found matching your query.
-                </div>
-              )}
-            </div>
+          <div style={{ position: 'relative', width: '100%', marginBottom: '14px' }}>
+            <input
+              type="text"
+              placeholder="Search FAQs, common issues, jobs, payments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '100%', paddingLeft: '38px', height: '38px', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}
+            />
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '11px', color: '#94a3b8' }} />
           </div>
 
-          {/* Contact Details vs Support Ticket Form Grid */}
-          <div className="support-main-grid">
+          {/* Category selection - hide if search active */}
+          {!searchQuery && (
+            <div className="support-faq-categories">
+              {uniqueCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveFAQCategory(cat);
+                    setExpandedFAQIndex(null);
+                  }}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #cbd5e1',
+                    background: activeFAQCategory === cat ? '#344BFD' : '#ffffff',
+                    color: activeFAQCategory === cat ? '#ffffff' : '#475569',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* FAQ Listing (Accordion) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filteredFAQs.length > 0 ? (
+              filteredFAQs.map((faq, idx) => {
+                const isExpanded = expandedFAQIndex === idx;
+                return (
+                  <div key={idx} className="faq-item">
+                    <button
+                      onClick={() => setExpandedFAQIndex(isExpanded ? null : idx)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '13.5px',
+                        fontWeight: '700',
+                        color: '#0f172a',
+                        gap: '10px'
+                      }}
+                    >
+                      <span>{faq.question}</span>
+                      <span className={`faq-chevron ${isExpanded ? 'expanded' : ''}`} style={{ flexShrink: 0 }}>
+                        <ChevronDown size={14} />
+                      </span>
+                    </button>
+                    
+                    {isExpanded && (
+                      <div style={{ padding: '12px 14px', background: '#f8fafc', borderTop: '1px solid #cbd5e1', color: '#475569', fontSize: '13px', lineHeight: 1.5 }}>
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ textAlign: 'center', color: '#64748b', padding: '16px 0', fontSize: '13px' }}>
+                No help articles found matching your query.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Contact Details & Support Ticket Form Grid */}
+        <div className="support-main-grid">
+          
+          {/* Left Column - Contact Details */}
+          <div className="card support-info-card">
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Mail size={18} style={{ color: '#344BFD' }} />
+              <span>Support Information</span>
+            </h3>
             
-            {/* Left Column - Contact Details */}
-            <div className="card support-info-card">
-              <h2 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)', color: 'var(--text-primary)' }}>Support Information</h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(52, 75, 253, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>Support Email</h3>
-                    <a href="mailto:support@jobmarket.com" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>support@jobmarket.com</a>
-                  </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#eef2ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Mail size={18} />
                 </div>
-
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(230, 126, 34, 0.1)', color: '#e67e22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>Customer Care</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>+91 98765 43210</p>
-                  </div>
+                <div>
+                  <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Support Email</h4>
+                  <a href="mailto:support@jobmarket.com" style={{ color: '#2563eb', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>support@jobmarket.com</a>
                 </div>
+              </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(46, 204, 113, 0.1)', color: '#2ecc71', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>Office Address</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, lineHeight: 1.5 }}>
-                      123 Innovation Drive, Koramangala<br/>Bangalore, Karnataka 560034
-                    </p>
-                  </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#fff7ed', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Phone size={18} />
                 </div>
-
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(155, 89, 182, 0.1)', color: '#9b59b6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>Business Hours</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>Mon–Fri &bull; 9 AM – 6 PM</p>
-                  </div>
+                <div>
+                  <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Customer Care</h4>
+                  <p style={{ color: '#475569', fontSize: '13px', margin: 0, fontWeight: 600 }}>+91 98765 43210</p>
                 </div>
+              </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="12 2 2 22 22 22"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' }}>Response Time</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>Average reply within 24 hours</p>
-                  </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#f0fdf4', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MapPin size={18} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Office Address</h4>
+                  <p style={{ color: '#475569', fontSize: '12.5px', margin: 0, lineHeight: 1.4 }}>
+                    123 Innovation Drive, Koramangala, Bangalore 560034
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Clock size={18} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Business Hours & SLA</h4>
+                  <p style={{ color: '#475569', fontSize: '12.5px', margin: 0 }}>Mon–Fri • 9 AM – 6 PM (Avg reply &lt; 24h)</p>
                 </div>
               </div>
             </div>
+          </div>
 
             {/* Right Column - Support Ticket Form */}
             <div className="card support-ticket-form-card">
@@ -745,19 +744,38 @@ export const ContactPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn btn-primary btn-lg w-full"
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    background: '#344BFD',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '12px',
+                    boxShadow: '0 2px 6px rgba(52, 75, 253, 0.25)',
+                    opacity: isSubmitting ? 0.85 : 1
+                  }}
                 >
                   {isSubmitting ? (
                     <>
-                      <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                        <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4" fill="currentColor"/>
+                      <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 0.8s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)"/>
+                        <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeLinecap="round"/>
                       </svg>
-                      Creating Ticket...
+                      <span>Creating Support Ticket...</span>
                     </>
                   ) : (
-                    'Create Support Ticket'
+                    <>
+                      <Send size={15} />
+                      <span>Submit Support Ticket</span>
+                    </>
                   )}
                 </button>
               </form>
@@ -1202,9 +1220,8 @@ export const ContactPage: React.FC = () => {
             </div>
           )}
 
-        </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 };
 

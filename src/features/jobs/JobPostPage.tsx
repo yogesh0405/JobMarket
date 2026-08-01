@@ -55,7 +55,7 @@ interface JobPostPageProps {
 export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, onComplete }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { createJob, updateJob, getJobById } = useJobs();
+  const { createJob, updateJob, getJobById, fetchJobById } = useJobs();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
@@ -390,10 +390,23 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   // Load Existing Job for Edit Mode
   useEffect(() => {
+    if (isEdit && !existingJob && id) {
+      fetchJobById(id);
+    }
+  }, [isEdit, existingJob, id, fetchJobById]);
+
+  useEffect(() => {
     if (isEdit && existingJob) {
       setAcceptResume(existingJob.acceptResume !== false);
       const ind = existingJob.industry || existingJob.trade || '';
-      setIndustry(ind);
+      
+      const knownIndustries = INDUSTRY_LIST.map(i => typeof i === 'string' ? i : (i as any).name || String(i));
+      if (ind && !knownIndustries.includes(ind)) {
+        setIndustry('Other');
+        setCustomIndustry(ind);
+      } else {
+        setIndustry(ind);
+      }
       setTrade(ind);
       
       const rolesForInd = getRolesForIndustry(ind);
@@ -421,16 +434,27 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setWorkMode(existingJob.workMode || 'Onsite');
       setSelectedPerks(existingJob.perks || []);
       setDescription(existingJob.description || '');
-      const respsStr = existingJob.responsibilities ? existingJob.responsibilities.join('\n') : '';
-      const reqsStr = existingJob.requirements ? existingJob.requirements.join('\n') : '';
+      const respsStr = Array.isArray(existingJob.responsibilities) ? existingJob.responsibilities.join('\n') : (existingJob.responsibilities || '');
+      const reqsStr = Array.isArray(existingJob.requirements) ? existingJob.requirements.join('\n') : (existingJob.requirements || '');
       setResponsibilities(respsStr);
       setShowResponsibilities(respsStr.trim().length > 0);
       setRequirements(reqsStr);
       setShowRequirements(reqsStr.trim().length > 0);
-      setSkills(existingJob.skills ? existingJob.skills.join(', ') : '');
+      setSkills(Array.isArray(existingJob.skills) ? existingJob.skills.join(', ') : (existingJob.skills || ''));
 
       setTargetIti(!!existingJob.targetIti);
-      setItiTrade(existingJob.itiTrade || '');
+      if (existingJob.targetIti && existingJob.itiTrade) {
+        const knownTrades = ITI_TRADES_LIST.map(t => typeof t === 'string' ? t : (t as any).name || String(t));
+        if (!knownTrades.includes(existingJob.itiTrade)) {
+          setItiTrade('Other');
+          setCustomItiTrade(existingJob.itiTrade);
+        } else {
+          setItiTrade(existingJob.itiTrade);
+        }
+      } else {
+        setItiTrade(existingJob.itiTrade || '');
+      }
+
       setMidcZone(existingJob.midcZone || '');
       setIsMidcLocation(!!existingJob.midcZone);
 
@@ -463,7 +487,17 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       const hm = existingJob.hiringMethod || (existingJob.isWalkIn || existingJob.walkInDate ? 'WALK_IN' : 'STANDARD');
       setHiringMethod(hm as any);
       setIsWalkIn(hm === 'WALK_IN');
-      setWalkInDate(existingJob.walkInDate || '');
+      
+      // Date formatting to YYYY-MM-DD for HTML5 date inputs
+      if (existingJob.walkInDate) {
+        const d = new Date(existingJob.walkInDate);
+        if (!isNaN(d.getTime())) {
+          setWalkInDate(d.toISOString().split('T')[0]);
+        } else {
+          setWalkInDate(existingJob.walkInDate);
+        }
+      }
+      
       setWalkInTime(existingJob.walkInTime || '');
       setWalkInStartTime(existingJob.walkInStartTime || '10:00 AM');
       setWalkInEndTime(existingJob.walkInEndTime || '05:00 PM');
@@ -474,7 +508,15 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setAcceptFreshers(existingJob.acceptFreshers !== false);
       setAcceptExperienced(existingJob.acceptExperienced !== false);
       setMaxApplicantsInput(String(existingJob.maxApplicants || 0));
-      setApplicationDeadline(existingJob.applicationDeadline || '');
+      
+      if (existingJob.applicationDeadline) {
+        const d = new Date(existingJob.applicationDeadline);
+        if (!isNaN(d.getTime())) {
+          setApplicationDeadline(d.toISOString().split('T')[0]);
+        } else {
+          setApplicationDeadline(existingJob.applicationDeadline);
+        }
+      }
 
       setCompanyLogo(existingJob.companyLogo || '');
     }

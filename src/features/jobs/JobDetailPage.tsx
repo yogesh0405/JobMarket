@@ -930,40 +930,75 @@ export const JobDetailPage: React.FC = () => {
               background: '#ffffff',
               border: '1.5px solid #cbd5e1',
               borderRadius: '4px',
-              padding: '24px',
+              padding: '20px',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
-              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)'
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)'
             }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Job Summary</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Job Summary</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#64748B' }}>Location</span>
-                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-                    </svg>
+                {/* Location Row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid #f1f5f9'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#eff6ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </div>
+                    <span style={{ color: '#64748B', fontSize: '13px', fontWeight: '500' }}>Location</span>
+                  </div>
+                  <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '13px', textAlign: 'right', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>
                     {job.location}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#64748B' }}>Salary</span>
-                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="9" y1="15" x2="15" y2="15" />
-                    </svg>
+
+                {/* Salary Row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  paddingBottom: '10px',
+                  borderBottom: '1px solid #f1f5f9'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                    </div>
+                    <span style={{ color: '#64748B', fontSize: '13px', fontWeight: '500' }}>Salary</span>
+                  </div>
+                  <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '13px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {job.discloseSalary === false ? 'Salary Not Disclosed' : formatSalary(job.salaryMin, job.salaryMax)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: '#64748B' }}>Application</span>
-                  <span style={{ fontWeight: '600', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-                    </svg>
+
+                {/* Application Row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <span style={{ color: '#64748B', fontSize: '13px', fontWeight: '500' }}>Application</span>
+                  </div>
+                  <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '13px', textAlign: 'right' }}>
                     {realApplicantCount} {realApplicantCount === 1 ? 'Applicant' : 'Applicants'}
                   </span>
                 </div>

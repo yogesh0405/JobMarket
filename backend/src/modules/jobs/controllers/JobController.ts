@@ -450,6 +450,13 @@ export class JobController {
         jobData.skills = validSkills;
       }
 
+      // If job was previously rejected, reset status to PENDING for Admin re-evaluation upon employer edit
+      if (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected') {
+        jobData.status = 'active';
+        jobData.dbStatus = 'PENDING';
+        jobData.rejectReason = null;
+      }
+
       // Ensure industry and trade synchronization for database consistency
       if (!jobData.trade && jobData.industry) {
         jobData.trade = jobData.industry;

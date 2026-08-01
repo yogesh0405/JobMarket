@@ -332,6 +332,41 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
   * Added `96px` bottom padding to `.profile-page` on mobile viewports to prevent section cards (e.g. "Company & Business Information") from getting cut off behind the fixed mobile bottom navigation bar.
   * Refactored `.profile-header-card` and `.profile-section` in `profile.css` to use clean, crisp `border-radius: 6px` (eliminating rounded bubble corners above profile sections).
   * Reduced profile picture/logo avatar size to `56px x 56px` with a sleek `10px` rounded square frame and compact horizontal layout on mobile portrait view.
+  * Updated job dropdown option label to strictly `"All Jobs"` in `DashboardPage.tsx` tab `applicants`.
+  * **Git Policy Directive**: `"from now dont psuh the cide"` — Strict instruction: **NEVER run `git push`**. Keep all commits and edits local only until explicitly requested.
+  * Refactored the **Job Summary** sidebar card in `JobDetailPage.tsx` with left-aligned soft-tinted icon badges (`Location`, `Salary`, `Application`), right-aligned values, and subtle divider lines, eliminating text collision and icon wrapping on mobile portrait screens.
+  * Added animated loading spinners (`animate-spin`) to all action buttons in `CandidateDetailsModal.tsx` (`Send Interview Call Invitation`, `Send Custom Email Notification`, and pipeline status buttons like `Shortlisted`, `Hired/Accepted`, `Rejected`) during API request processing.
+  * Optimized mobile portrait view alignment for `.candidate-modal-backdrop` and `.candidate-modal` in `components.css`, adjusting modal height (`max-height: calc(100vh - 86px)`) and bottom padding to sit comfortably above the mobile bottom navigation bar with zero overlap.
+  * Refactored `CandidateDetailsModal.tsx` card subpanels, tab bar, form inputs, and buttons to use crisp, clean `6px` / `4px` border-radius (eliminating large rounded bubble corners for a professional industrial look).
+  * Configured `.candidate-modal` and `.candidate-modal-backdrop` in `components.css` on mobile screens (`<= 768px`) to span **100% Full Screen Width** (`width: 100%`, `margin: 0`) and occupy the full viewport height up to `64px` from the bottom (`height: calc(100vh - 64px)`), keeping the main bottom navigation bar completely visible and untouched at the bottom.
+  * Refactored `.candidate-modal-backdrop` and `.candidate-modal` in `components.css` on mobile screens (`<= 768px`) to anchor `bottom: 64px` with `height: 100%` and `border-radius: 0`, ensuring the modal footer touches the top boundary of `.mobile-bottom-nav` with zero gap, zero blur line, and 100% full-screen flush alignment.
+  * Redesigned **Job Info** tab in `CandidateDetailsModal.tsx` with a clean, responsive 2-column specs grid (`Salary`, `Vacancies`, `Experience`, `Posted Date`), removed floating dot separators for Company & Location flex row, and applied crisp `6px` / `4px` border-radius card styling.
+  * Removed the `Onsite` (`workMode`) badge badge from the primary Job Details card header in `CandidateDetailsModal.tsx`.
+  * Refactored candidate hero summary card in `CandidateDetailsModal.tsx` for mobile portrait viewports: aligned Candidate Name and `[APPLIED]` status badge in line 1, `[Verified]` badge and applied title in line 2, and compact contact chips (`email`, `phone`, `location`) in line 3 with crisp `4px` border-radius and text truncation.
+  * Redesigned `Send Custom Email Notification` and `Send Interview Call Invitation` submit buttons in `CandidateDetailsModal.tsx`: converted to full-width (`width: 100%`) primary action buttons (`#2563eb` and `#344BFD`) with crisp `4px` border-radius, `40px` height, clean Lucide icons (`Mail` and `Calendar`), and removed trailing emojis (`✉` and `📅`).
+  * Audited and enhanced **Edit Job Posting** workflow (`JobPostPage.tsx` and `JobController.ts`):
+    - Added auto-fetching (`fetchJobById`) when navigating directly to `/jobs/:id/edit` on page refresh or direct URL link.
+    - Standardized date prefilling to `YYYY-MM-DD` ISO format for HTML5 `<input type="date">` fields (`applicationDeadline` and `walkInDate`).
+    - Handled fallback matching for custom industries and ITI trade inputs.
+    - Updated backend `JobController.updateJob` so that editing a rejected job posting (`dbStatus === 'REJECTED'`) automatically resets `dbStatus = 'PENDING'` and `rejectReason = null` for Admin resubmission and re-evaluation.
+  * Redesigned and expanded `/dashboard?tab=security` in `SecuritySettings.tsx`:
+    - Added **Forgot Password Recovery Helper Card**: enables sending password reset link to user's registered email with loading states and toast feedback.
+    - Added **Active Login Sessions Management Panel**: displays current device session, other logged-in mobile/web sessions with IP addresses, location info, last active timestamps, individual session revoking (`Revoke Session`), and a global `Log Out All Other Devices` action.
+    - Added **Two-Factor Authentication (2FA / OTP)** protection toggle.
+  * Refactored `SecuritySettings.tsx` mobile portrait view: converted `Send Password Reset Email`, `Log Out All Other Devices`, and `Enable 2FA Protection` buttons to full-width primary action buttons (`width: 100%`) with crisp `4px` border-radius, clean icons, and text-wrapping handling (`wordBreak: break-all`).
+  * Integrated real backend APIs into `SecuritySettings.tsx`:
+    - `POST /api/v1/auth/change-password`: Verifies current password with bcrypt, hashes new password with bcrypt (cost 12), and updates database.
+    - `POST /api/v1/auth/forgot-password`: Generates 6-digit OTP, stores in Redis, and dispatches reset email.
+    - `GET /api/v1/auth/sessions`: Fetches live active user sessions from PostgreSQL database.
+    - `DELETE /api/v1/auth/sessions/:sessionId`: Revokes target device session.
+    - `POST /api/v1/auth/logout-all`: Logs user out of all other active device sessions.
+  * Removed the `"Protected with bcrypt cost 12"` badge text from the Change Password header card in `SecuritySettings.tsx`.
+  * Redesigned and refactored **Help & Support** section (`ContactPage.tsx` and `support.css`):
+    - Replaced the large hero banner inside dashboard tab with a sleek, crisp header card (`Headphones` icon badge in `#eef2ff`, title `Help & Support Center`, and description).
+    - Standardized card layouts to industrial `6px` border-radius (`border: 1.5px solid #cbd5e1`, `box-shadow: 0 2px 6px rgba(15,23,42,0.04)`).
+    - Styled search input (`height: 38px`, `border-radius: 4px`), category pills (`padding: 5px 12px`, `border-radius: 4px`, active `#344BFD`), and accordion FAQs (`13.5px` text, `ChevronDown` icon).
+    - Styled `Submit Support Ticket` button as full-width solid primary button (`width: 100%`, `height: 40px`, `background: #344BFD`, crisp `4px` border-radius, `Send` icon, and animated loading spinner).
+    - Refactored support contact info cards to compact flex rows with `36px` icon badges.
   * Verified end-to-end production build (`npm run build`) with 0 compilation errors.
 
 ---
