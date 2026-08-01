@@ -19,6 +19,7 @@ router.get('/admin/map-analytics', requireAuth, JobController.getAdminMapAnalyti
 router.get('/', JobController.getJobs);
 router.get('/meta/categories', JobController.getCategories);
 router.get('/meta/skills', JobController.getSkills);
+router.get('/applied/my-applications', requireAuth, JobController.getMyAppliedJobs);
 router.get('/:id', JobController.getJobById);
 
 // Protected Routes

@@ -10,12 +10,12 @@ import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { JobApplyModal } from '../../components/jobs/JobApplyModal';
-import { Zap, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Zap, Calendar, FileText, CheckCircle2, Phone } from 'lucide-react';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getJobById, applyToJob, toggleSaveJob, isJobSaved } = useJobs();
+  const { getJobById, fetchJobById, applyToJob, toggleSaveJob, isJobSaved } = useJobs();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
@@ -23,6 +23,26 @@ export const JobDetailPage: React.FC = () => {
   const job = id ? getJobById(id) : undefined;
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
+  const [isFetchingJob, setIsFetchingJob] = useState(!job);
+
+  useEffect(() => {
+    if (id && fetchJobById) {
+      setIsFetchingJob(true);
+      fetchJobById(id).finally(() => {
+        setIsFetchingJob(false);
+      });
+    }
+  }, [id, fetchJobById]);
+
+  if (isFetchingJob && !job) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '65vh', gap: '16px', padding: '32px' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '4px solid #cbd5e1', borderTopColor: '#344BFD', animation: 'spin 0.8s linear infinite' }}></div>
+        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>Loading Job Details...</div>
+      </div>
+    );
+  }
 
   if (!job) {
     return (
@@ -105,6 +125,12 @@ export const JobDetailPage: React.FC = () => {
       if (result.success) {
         showToast('Application submitted successfully! 🎉 Profile sent to employer.', 'success');
         setShowApplyModal(false);
+        if (id && fetchJobById) {
+          await fetchJobById(id);
+        }
+        if (job.hiringMethod === 'WALK_IN' || job.isWalkIn) {
+          setShowWalkInPassModal(true);
+        }
       } else {
         showToast(result.error || 'Failed to apply', 'error');
       }
@@ -1115,6 +1141,107 @@ export const JobDetailPage: React.FC = () => {
           onConfirm={handleConfirmApply}
           isApplying={isApplying}
         />
+      )}
+      {showWalkInPassModal && (
+        createPortal(
+          <div className="modal-backdrop" onClick={() => setShowWalkInPassModal(false)} style={{ zIndex: 1150 }}>
+            <div
+              className="modal"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: '520px',
+                width: '100%',
+                borderRadius: '6px',
+                background: '#ffffff',
+                border: '2px solid #f59e0b',
+                boxShadow: '0 16px 40px rgba(15, 23, 42, 0.25)',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: '#ffffff', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Zap size={20} />
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800' }}>Direct Walk-In Entry Pass</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowWalkInPassModal(false)}
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#ffffff', width: '28px', height: '28px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#fffbef' }}>
+                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '6px', border: '1px solid #fcd34d' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase' }}>TARGET POSITION</div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>{job.title}</div>
+                  <div style={{ fontSize: '13px', color: '#475569', fontWeight: '600' }}>{job.company} • {job.location}</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {job.walkInDate && (
+                    <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '4px', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '11px', color: '#92400e', fontWeight: '700' }}>EVENT DATE</div>
+                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '2px' }}>{job.walkInDate}</div>
+                    </div>
+                  )}
+                  {(job.walkInStartTime || job.walkInTime) && (
+                    <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '4px', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '11px', color: '#92400e', fontWeight: '700' }}>WALK-IN TIMING</div>
+                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '2px' }}>
+                        {job.walkInStartTime && job.walkInEndTime ? `${job.walkInStartTime} to ${job.walkInEndTime}` : job.walkInTime}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {(job.walkInContactPerson || job.walkInContactNumber) && (
+                  <div style={{ background: '#ffffff', padding: '12px', borderRadius: '6px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#92400e', fontWeight: '700' }}>ON-SITE CONTACT</div>
+                      <div style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '800', marginTop: '2px' }}>
+                        {job.walkInContactPerson || 'HR Manager'}
+                      </div>
+                    </div>
+                    {job.walkInContactNumber && (
+                      <a
+                        href={`tel:${job.walkInContactNumber}`}
+                        style={{ background: '#d97706', color: '#ffffff', padding: '8px 14px', borderRadius: '4px', fontWeight: '800', fontSize: '12.5px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Phone size={14} /> Call Contact
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {(job.interviewAddress || job.location) && (
+                  <div style={{ background: '#ffffff', padding: '12px', borderRadius: '6px', border: '1px solid #fde68a' }}>
+                    <div style={{ fontSize: '11px', color: '#92400e', fontWeight: '700' }}>WALK-IN VENUE ADDRESS</div>
+                    <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '700', marginTop: '3px' }}>
+                      {job.interviewAddress || job.location}
+                    </div>
+                  </div>
+                )}
+
+                {job.walkInDocuments && (
+                  <div style={{ background: '#fef3c7', padding: '10px 12px', borderRadius: '4px', border: '1px solid #fcd34d', fontSize: '12px', color: '#92400e' }}>
+                    <strong>Documents to Carry:</strong> {job.walkInDocuments}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '12px 18px', background: '#ffffff', borderTop: '1px solid #fde68a', textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowWalkInPassModal(false)}
+                  style={{ background: '#344BFD', color: '#ffffff', border: 'none', padding: '9px 20px', borderRadius: '4px', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Got It (Save Pass)
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
       )}
     </div>
   );

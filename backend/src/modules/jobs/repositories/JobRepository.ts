@@ -758,6 +758,35 @@ export class JobRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
+  static async getMyAppliedJobs(userId: string): Promise<any[]> {
+    const query = `
+      SELECT 
+        j.*,
+        ja.status as "applicationStatus",
+        ja.applied_at as "appliedAt",
+        ja.interview_date as "interviewDate",
+        ja.interview_time as "interviewTime",
+        ja.venue_address as "venueAddress",
+        ja.maps_link as "mapsLink",
+        ja.reject_reason as "rejectReason"
+      FROM job_applications ja
+      JOIN jobs j ON ja.job_id = j.id
+      WHERE ja.user_id = $1
+      ORDER BY ja.applied_at DESC
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows.map((row) => ({
+      ...this.mapDbJobToApi(row),
+      applicationStatus: row.applicationStatus,
+      appliedAt: row.appliedAt,
+      interviewDate: row.interviewDate,
+      interviewTime: row.interviewTime,
+      venueAddress: row.venueAddress,
+      mapsLink: row.mapsLink,
+      rejectReason: row.rejectReason
+    }));
+  }
+
   static async applyToJob(jobId: string, userId: string): Promise<any> {
     const query = `
       INSERT INTO job_applications (job_id, user_id, status)

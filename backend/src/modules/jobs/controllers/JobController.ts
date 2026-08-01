@@ -533,6 +533,16 @@ export class JobController {
     }
   }
 
+  static async getMyAppliedJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const data = await JobRepository.getMyAppliedJobs(userId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async applyToJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;

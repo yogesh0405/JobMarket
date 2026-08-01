@@ -89,6 +89,27 @@ export const useJobs = () => {
     return state.jobs.find(j => j.id === id);
   }, [state.jobs]);
 
+  const fetchJobById = useCallback(async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${id}`);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        const existingIndex = state.jobs.findIndex(j => j.id === id);
+        if (existingIndex >= 0) {
+          const updatedJobs = [...state.jobs];
+          updatedJobs[existingIndex] = json.data;
+          dispatch({ type: 'SET_JOBS', payload: updatedJobs });
+        } else {
+          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, json.data] });
+        }
+        return json.data;
+      }
+    } catch (err) {
+      console.error(`Error fetching job ${id}:`, err);
+    }
+    return null;
+  }, [dispatch, state.jobs]);
+
   const getJobsByEmployer = useCallback((employerId: string) => {
     return state.jobs.filter(j => j.employerId === employerId || (j as any).employer_id === employerId);
   }, [state.jobs]);
@@ -205,6 +226,23 @@ export const useJobs = () => {
     }
   }, [dispatch]);
 
+  const fetchCandidateAppliedJobs = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/v1/jobs/applied/my-applications');
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        const currentJobIds = new Set(state.jobs.map(j => j.id));
+        const newJobs = json.data.filter((j: any) => !currentJobIds.has(j.id));
+        if (newJobs.length > 0) {
+          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, ...newJobs] });
+        }
+        return json.data;
+      }
+    } catch (err) {
+      console.error('Error fetching candidate applied jobs:', err);
+    }
+  }, [dispatch, state.jobs]);
+
   const toggleSaveJob = useCallback(async (jobId: string) => {
     const user = state.currentUser;
     if (!user) return false;
@@ -229,8 +267,14 @@ export const useJobs = () => {
 
   const getAppliedJobs = useCallback(() => {
     const user = state.currentUser;
-    if (!user || !user.appliedJobs) return [];
-    return user.appliedJobs.map(id => getJobById(id)).filter(Boolean) as Job[];
+    if (!user) return [];
+    const appliedIds = user.appliedJobs || [];
+    const appliedWithStatus = user.appliedJobsWithStatus || [];
+    const allAppliedIds = Array.from(new Set([
+      ...appliedIds,
+      ...appliedWithStatus.map((a: any) => a.jobId)
+    ]));
+    return allAppliedIds.map(id => getJobById(id)).filter(Boolean) as Job[];
   }, [state.currentUser, getJobById]);
 
   const getSavedJobs = useCallback(() => {
@@ -306,6 +350,7 @@ export const useJobs = () => {
   return {
     getJobs,
     getJobById,
+    fetchJobById,
     getJobsByEmployer,
     createJob,
     updateJob,
@@ -317,6 +362,7 @@ export const useJobs = () => {
     getAppliedJobs,
     getSavedJobs,
     fetchEmployerJobs,
+    fetchCandidateAppliedJobs,
     scheduleInterview,
     sendCustomEmail,
     getAllCandidates
