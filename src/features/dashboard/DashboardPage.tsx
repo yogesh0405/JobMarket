@@ -2234,7 +2234,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                   onChange={(e) => setAppJobFilter(e.target.value)}
                   style={{ width: '100%', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  <option value="all">All Active Job Postings ({activeJobs.length})</option>
+                  <option value="all">All Jobs ({activeJobs.length})</option>
                   {activeJobs.map(job => (
                     <option key={job.id} value={job.id}>{job.title} ({(job.applicants || []).length})</option>
                   ))}
