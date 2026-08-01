@@ -1,33 +1,18 @@
 # Logs
-logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependencies
+node_modules/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Production build output
+dist/
+App/dist/
+backend/dist/
+
+# macOS / OS metadata
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 
-# Environments
+# Environment variables
 .env
 .env.*
 backend/.env
-backend/.env.*
-
-# Test cases folder
-test-cases/
