@@ -47,7 +47,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser, updateUser, syncUser } = useAuth();
-  const { getAppliedJobs, getSavedJobs, getJobsByEmployer, deleteJob, updateApplicantStatus, fetchEmployerJobs, fetchCandidateAppliedJobs } = useJobs();
+  const { getAppliedJobs, getSavedJobs, getJobsByEmployer, deleteJob, updateApplicantStatus, fetchEmployerJobs, fetchCandidateAppliedJobs, fetchCandidateSavedJobs } = useJobs();
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
@@ -84,8 +84,9 @@ export const DashboardPage: React.FC = () => {
     const loadDashboardData = async () => {
       try {
         await syncUser();
-        if (currentUser?.role === 'candidate' && fetchCandidateAppliedJobs) {
-          await fetchCandidateAppliedJobs();
+        if (currentUser?.role === 'candidate') {
+          if (fetchCandidateAppliedJobs) await fetchCandidateAppliedJobs();
+          if (fetchCandidateSavedJobs) await fetchCandidateSavedJobs();
         } else if (fetchEmployerJobs) {
           await fetchEmployerJobs();
         }
@@ -102,8 +103,9 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (currentUser && (currentUser.role === 'employer' || currentUser.role === 'admin' || currentUser.role === 'recruiter') && fetchEmployerJobs) {
       fetchEmployerJobs();
-    } else if (currentUser && currentUser.role === 'candidate' && fetchCandidateAppliedJobs) {
-      fetchCandidateAppliedJobs();
+    } else if (currentUser && currentUser.role === 'candidate') {
+      if (fetchCandidateAppliedJobs) fetchCandidateAppliedJobs();
+      if (fetchCandidateSavedJobs) fetchCandidateSavedJobs();
     }
   }, [currentUser?.id, currentUser?.role]);
 

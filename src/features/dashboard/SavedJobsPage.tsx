@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { JobCard } from '../../components/job/JobCard';
 
 export const SavedJobsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { getSavedJobs } = useJobs();
+  const { getSavedJobs, fetchCandidateSavedJobs } = useJobs();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+
+  useEffect(() => {
+    if (fetchCandidateSavedJobs) {
+      fetchCandidateSavedJobs();
+    }
+  }, [fetchCandidateSavedJobs]);
 
   const savedJobs = getSavedJobs();
 

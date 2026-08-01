@@ -11,7 +11,16 @@ export default defineConfig({
         target: 'http://127.0.0.1:5002',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res) => {
+            if (res && 'writeHead' in res && !res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Backend service unreachable on port 5002' }));
+            }
+          });
+        },
       }
     }
   }
 })
+

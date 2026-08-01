@@ -145,8 +145,8 @@ export const JobDetailPage: React.FC = () => {
       navigate('/login');
       return;
     }
-    const currentlySaved = await toggleSaveJob(job.id);
-    showToast(currentlySaved ? 'Job saved!' : 'Removed from saved', currentlySaved ? 'success' : 'info');
+    const isNowSaved = await toggleSaveJob(job.id);
+    showToast(isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved', isNowSaved ? 'success' : 'info');
   };
 
   const handleShare = () => {

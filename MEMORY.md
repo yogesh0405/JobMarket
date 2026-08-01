@@ -275,16 +275,18 @@ PostgreSQL database using `uuid-ossp` for primary key generation.
 * **2026-07-31 — Job Posting Workflow Refinement & Governance**:
   * *Decision*: Implemented dynamic Trade Type → Job Role selection, dynamic role-based skills, conditional field governance (`acceptResume`, `targetIti`, `isMidcLocation`, `experienceRequired`, `discloseSalary`), mandatory job description & skills validation, and professional vacancy count stepper (`−` / `+` controls with string state to fix input clearing/editing bugs). Applied migration `016_refine_job_posting_workflow_up.sql`.
   * *Reason*: Enterprise-grade usability, conditional workflows, type safety, and error-free job posting experience.
-* **2026-08-01 — Resolved Vercel Build Errors**:
-  * *Decision*: Added untracked `SecuritySettings.tsx`, staged `types/index.ts` (with `rejectReason` & `'recruiter'`), and corrected `CompanyDefaultLogo` prop calls in `DashboardPage.tsx`. Pushed commit `55fede4`.
-  * *Reason*: Fix Vercel CI/CD deployment build failure.
+* **2026-08-01 — Defaulted Find Jobs Page to Grid View Layout**:
+  * *Decision*: Changed default `viewMode` state from `'list'` to `'grid'` in `JobSearchPage.tsx`.
+  * *Reason*: Ensure Find Jobs section immediately displays the multi-column Grid View layout on load.
 
 ---
 
 ## 12. Change Log
 
 * **2026-08-01**:
-  * Fixed all 14 Vercel TypeScript build errors by tracking `SecuritySettings.tsx`, updating `types/index.ts`, and fixing `CompanyDefaultLogo` prop names in `DashboardPage.tsx`. Pushed to `origin/main`.
+  * Defaulted Find Jobs section (`JobSearchPage.tsx`) to multi-column **Grid View** layout by default on page load.
+  * Fixed job application workflow: immediate status update to "Applied ✓", instant applicant count increment, Walk-In Entry Pass modal for walk-in drives, and backend sync for Candidate Applied Jobs dashboard (`GET /api/v1/jobs/applied/my-applications`).
+  * Fixed all 14 Vercel TypeScript build errors by tracking `SecuritySettings.tsx`, updating `types/index.ts`, and fixing `CompanyDefaultLogo` prop names in `DashboardPage.tsx`. Committed locally.
   * Permanently eliminated map gap under "Jobs Nearby" mobile drawer by anchoring `.map-bottom-sheet` to `bottom: 0` with `#ffffff` background and updating collapsed transform to `translateY(calc(100% - 124px))` in `JobMapBottomSheet.tsx` and `map.css`.
   * Made `Key Operations / Responsibilities` and `Eligible Criteria / Requirements` optional checkbox toggles in `JobPostPage.tsx` (unchecked by default; textareas render only when checked).
   * Replaced all raw emojis across ⓘ popovers, Walk-in Drive headers, and skill suggestion blocks with professional Lucide icons (`FileText`, `Zap`, `Calendar`, `Lightbulb`) in `JobPostPage.tsx` and `JobDetailPage.tsx`.

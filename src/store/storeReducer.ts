@@ -32,7 +32,7 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       const incomingUser = action.payload;
       const existingUser = state.currentUser?.id === incomingUser.id ? state.currentUser : state.users.find(u => u.id === incomingUser.id);
 
-      const mergedSavedJobs = (incomingUser.savedJobs && incomingUser.savedJobs.length > 0)
+      const mergedSavedJobs = Array.isArray(incomingUser.savedJobs)
         ? incomingUser.savedJobs
         : (existingUser?.savedJobs || []);
 

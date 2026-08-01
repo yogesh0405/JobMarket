@@ -787,6 +787,19 @@ export class JobRepository {
     }));
   }
 
+  static async getMySavedJobs(userId: string): Promise<any[]> {
+    const query = `
+      SELECT 
+        j.*
+      FROM saved_jobs sj
+      JOIN jobs j ON sj.job_id = j.id
+      WHERE sj.user_id = $1
+      ORDER BY sj.created_at DESC
+    `;
+    const result = await pool.query(query, [userId]);
+    return result.rows.map((row) => this.mapDbJobToApi(row));
+  }
+
   static async applyToJob(jobId: string, userId: string): Promise<any> {
     const query = `
       INSERT INTO job_applications (job_id, user_id, status)

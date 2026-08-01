@@ -243,21 +243,64 @@ export const useJobs = () => {
     }
   }, [dispatch, state.jobs]);
 
+  const fetchCandidateSavedJobs = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/v1/jobs/saved/my-saved');
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        const savedIds = json.data.map((j: any) => j.id);
+        
+        if (state.currentUser) {
+          dispatch({
+            type: 'UPDATE_USER',
+            payload: { id: state.currentUser.id, savedJobs: savedIds }
+          });
+        }
+
+        const currentJobIds = new Set(state.jobs.map(j => j.id));
+        const newJobs = json.data.filter((j: any) => !currentJobIds.has(j.id));
+        if (newJobs.length > 0) {
+          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, ...newJobs] });
+        }
+        return json.data;
+      }
+    } catch (err) {
+      console.error('Error fetching candidate saved jobs:', err);
+    }
+  }, [dispatch, state.currentUser, state.jobs]);
+
   const toggleSaveJob = useCallback(async (jobId: string) => {
     const user = state.currentUser;
     if (!user) return false;
 
-    const currentlySaved = !(user.savedJobs || []).includes(jobId);
+    const isCurrentlySaved = (user.savedJobs || []).includes(jobId);
+    const willBeSaved = !isCurrentlySaved;
+
+    // Optimistically update React store state immediately
     dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
 
     // Sync with PostgreSQL database
     try {
-      await apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' });
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' });
+      const json = await res.json();
+      if (res.ok && json.success && json.data && typeof json.data.isSaved === 'boolean') {
+        const serverIsSaved = json.data.isSaved;
+        const currentSavedList = state.currentUser?.savedJobs || [];
+        if (serverIsSaved && !currentSavedList.includes(jobId)) {
+          dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
+        } else if (!serverIsSaved && currentSavedList.includes(jobId)) {
+          dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
+        }
+        return serverIsSaved;
+      }
     } catch (err) {
       console.error('Failed to sync saved job with database:', err);
+      // Rollback on error
+      dispatch({ type: 'TOGGLE_SAVE_JOB', payload: { jobId } });
+      return isCurrentlySaved;
     }
 
-    return currentlySaved;
+    return willBeSaved;
   }, [state.currentUser, dispatch]);
 
   const isJobSaved = useCallback((jobId: string) => {
@@ -363,6 +406,7 @@ export const useJobs = () => {
     getSavedJobs,
     fetchEmployerJobs,
     fetchCandidateAppliedJobs,
+    fetchCandidateSavedJobs,
     scheduleInterview,
     sendCustomEmail,
     getAllCandidates

@@ -9,7 +9,7 @@ interface RefreshResponse {
 
 let activeRefreshPromise: Promise<string | null> | null = null;
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5002' : '')).replace(/\/$/, '');
 
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = (options.headers as Record<string, string>) || {};
