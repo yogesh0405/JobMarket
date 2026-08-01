@@ -730,8 +730,9 @@ interface CandidateProps {
 }
 
 const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getAppliedJobs, getSavedJobs, toggleSaveJob, setTab, t }) => {
+  const [removedSavedIds, setRemovedSavedIds] = useState<string[]>([]);
   const appliedJobs = getAppliedJobs();
-  const savedJobs = getSavedJobs();
+  const savedJobs = getSavedJobs().filter(j => !removedSavedIds.includes(j.id));
 
   switch (tab) {
     case 'overview':
@@ -1033,8 +1034,11 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                 <JobCard
                   key={job.id}
                   job={job}
-                  showRemoveButton={true}
-                  onRemove={(jobId) => toggleSaveJob(jobId)}
+                  onSaveToggle={(jobId, isSaved) => {
+                    if (!isSaved) {
+                      setRemovedSavedIds(prev => [...prev, jobId]);
+                    }
+                  }}
                 />
               ))}
             </div>

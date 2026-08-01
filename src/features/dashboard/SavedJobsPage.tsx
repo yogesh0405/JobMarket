@@ -19,13 +19,11 @@ export const SavedJobsPage: React.FC = () => {
     }
   }, []);
 
-  const handleRemoveSavedJob = (jobId: string) => {
-    // 1. Instantly hide from DOM in 0ms!
-    setRemovedIds(prev => [...prev, jobId]);
-    // 2. Dispatch store update & background API sync
-    toggleSaveJob(jobId);
-    // 3. Instant toast
-    showToast('Job removed from saved bookmarks', 'info');
+  const handleSaveToggle = (jobId: string, isSaved: boolean) => {
+    if (!isSaved) {
+      // Instantly hide card from DOM in 0ms (<50ms)!
+      setRemovedIds(prev => [...prev, jobId]);
+    }
   };
 
   const savedJobs = getSavedJobs().filter(job => !removedIds.includes(job.id));
@@ -199,8 +197,7 @@ export const SavedJobsPage: React.FC = () => {
                   <JobCard
                     key={job.id}
                     job={job}
-                    showRemoveButton={true}
-                    onRemove={(jobId) => handleRemoveSavedJob(jobId)}
+                    onSaveToggle={handleSaveToggle}
                   />
                 ))}
               </div>
