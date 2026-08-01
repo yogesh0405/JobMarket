@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
 import { useToast } from '../../hooks/useToast';
 import { JobCard } from '../../components/job/JobCard';
@@ -12,7 +11,7 @@ export const SavedJobsPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
-  const [removedJobIds, setRemovedJobIds] = useState<string[]>([]);
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (fetchCandidateSavedJobs) {
@@ -20,15 +19,16 @@ export const SavedJobsPage: React.FC = () => {
     }
   }, []);
 
-  const savedJobs = getSavedJobs().filter(j => !removedJobIds.includes(j.id));
-
-  const handleUnsave = (jobId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    // 0ms instant DOM removal
-    setRemovedJobIds(prev => [...prev, jobId]);
+  const handleRemoveSavedJob = (jobId: string) => {
+    // 1. Instantly hide from DOM in 0ms!
+    setRemovedIds(prev => [...prev, jobId]);
+    // 2. Dispatch store update & background API sync
     toggleSaveJob(jobId);
-    showToast('Job removed from saved', 'info');
+    // 3. Instant toast
+    showToast('Job removed from saved bookmarks', 'info');
   };
+
+  const savedJobs = getSavedJobs().filter(job => !removedIds.includes(job.id));
 
   // Filter saved jobs based on search query and selected industry
   const filteredJobs = savedJobs.filter((job) => {
@@ -196,35 +196,12 @@ export const SavedJobsPage: React.FC = () => {
             {filteredJobs.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {filteredJobs.map((job) => (
-                  <div key={job.id} style={{ position: 'relative' }}>
-                    <JobCard job={job} />
-                    <button
-                      type="button"
-                      onClick={(e) => handleUnsave(job.id, e)}
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '40px',
-                        background: '#FEF2F2',
-                        border: '1px solid #FCA5A5',
-                        color: '#DC2626',
-                        borderRadius: '6px',
-                        padding: '4px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        zIndex: 10,
-                        transition: 'all 0.15s ease'
-                      }}
-                      title="Remove from saved jobs"
-                    >
-                      <Trash2 size={13} />
-                      Remove
-                    </button>
-                  </div>
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    showRemoveButton={true}
+                    onRemove={(jobId) => handleRemoveSavedJob(jobId)}
+                  />
                 ))}
               </div>
             ) : (

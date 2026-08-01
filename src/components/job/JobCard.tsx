@@ -11,9 +11,11 @@ import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
 
 interface JobCardProps {
   job: Job;
+  showRemoveButton?: boolean;
+  onRemove?: (jobId: string) => void;
 }
 
-export const JobCard: React.FC<JobCardProps> = ({ job }) => {
+export const JobCard: React.FC<JobCardProps> = ({ job, showRemoveButton, onRemove }) => {
   const navigate = useNavigate();
   const { toggleSaveJob, isJobSaved } = useJobs();
   const { currentUser } = useAuth();
@@ -109,25 +111,69 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
           }}>
             {job.title}
           </h3>
-          <button
-            onClick={handleSave}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: '0 0 0 4px',
-              cursor: 'pointer',
-              color: saved ? '#2563eb' : '#CBD5E1',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              marginTop: '1px'
-            }}
-            title={saved ? 'Unsave job' : 'Save job'}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            {showRemoveButton && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onRemove) {
+                    onRemove(job.id);
+                  } else {
+                    handleSave(e);
+                  }
+                }}
+                style={{
+                  background: '#FFF1F2',
+                  border: '1px solid #FECDD3',
+                  color: '#E11D48',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Remove from saved jobs"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#FFE4E6';
+                  e.currentTarget.style.borderColor = '#FDA4AF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#FFF1F2';
+                  e.currentTarget.style.borderColor = '#FECDD3';
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Remove
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '0 0 0 4px',
+                cursor: 'pointer',
+                color: saved ? '#2563eb' : '#CBD5E1',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '1px'
+              }}
+              title={saved ? 'Unsave job' : 'Save job'}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Location */}
