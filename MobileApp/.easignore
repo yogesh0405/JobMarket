@@ -1,0 +1,8 @@
+# Ignore build artifacts and local development directories
+node_modules/
+.expo/
+android/
+ios/
+web-build/
+dist/
+*.log
