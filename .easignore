@@ -1,0 +1,17 @@
+# Ignore backend and other directories to target only MobileApp
+backend/
+App/
+
+# Ignore node modules and local development/build folders
+node_modules/
+MobileApp/node_modules/
+.git/
+.expo/
+MobileApp/.expo/
+MobileApp/android/
+MobileApp/ios/
+MobileApp/web-build/
+MobileApp/dist/
+scratch/
+build_output.log
+version.log

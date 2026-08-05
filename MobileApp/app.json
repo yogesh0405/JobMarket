@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "MobileApp",
+    "slug": "csn-jobmarket",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.jobmarket.mobileapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "autolinkingModuleResolution": false,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "673d9a6f-addd-4116-86cf-b54b9c2c2cbe"
+      }
+    }
+  }
+}
