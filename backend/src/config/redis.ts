@@ -5,13 +5,10 @@ export const redisClient = createClient({
   url: env.REDIS_URL,
   socket: {
     reconnectStrategy: (retries) => {
-      // Stop retrying after 2 attempts if Redis is not running locally to prevent console spam
-      if (retries >= 2) {
-        return false;
-      }
-      return 500;
+      // Reconnect gracefully with exponential backoff up to 3s
+      return Math.min(retries * 500, 3000);
     },
-    connectTimeout: 2000,
+    connectTimeout: 5000,
   },
 });
 

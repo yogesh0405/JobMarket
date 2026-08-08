@@ -44,8 +44,14 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   try {
     response = await fetch(targetUrl, options);
   } catch (netErr: any) {
-    console.error(`API fetch network error [${options.method || 'GET'} ${targetUrl}]:`, netErr);
-    throw new Error('Network error: Unable to connect to backend server. Please check network connection.');
+    // Retry once after 1.5s for transient deployment restarts
+    try {
+      await new Promise((res) => setTimeout(res, 1500));
+      response = await fetch(targetUrl, options);
+    } catch (retryErr: any) {
+      console.error(`API fetch network error [${options.method || 'GET'} ${targetUrl}]:`, retryErr);
+      throw new Error('Network error: Unable to connect to backend server. Please check network connection.');
+    }
   }
 
   // If token is invalid or expired (401 Unauthorized), try to refresh it

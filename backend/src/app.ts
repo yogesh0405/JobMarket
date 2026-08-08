@@ -57,15 +57,12 @@ const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o: string) => o.trim(
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed for this origin'));
-    }
+    // Allow requests from all origins (localhost, onrender.com, vercel, mobile app) without CORS blocking
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-refresh-token', 'X-Requested-With', 'Accept', 'Origin'],
 }));
 
 // Body parsing
