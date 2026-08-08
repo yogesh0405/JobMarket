@@ -251,15 +251,18 @@ export class AuthController {
   static async uploadResume(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const { name, size, type, url, base64 } = req.body;
+      const { name, fileName, size, type, url, base64, file } = req.body;
+
+      const base64Data = base64 || file;
+      const fileTitle = fileName || name || 'Resume_BioData.jpg';
 
       let finalUrl = url;
-      if (!finalUrl && base64 && base64.startsWith('data:')) {
+      if (!finalUrl && base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {
         const publicId = `resume_${userId}_${Date.now()}`;
-        const isPdf = (type && type.includes('pdf')) || (name && name.toLowerCase().endsWith('.pdf'));
+        const isPdf = (type && type.includes('pdf')) || (fileTitle && fileTitle.toLowerCase().endsWith('.pdf'));
         finalUrl = isPdf
-          ? await CloudinaryUtil.uploadFile(base64, 'resumes', publicId)
-          : await CloudinaryUtil.uploadImage(base64, 'resumes', publicId);
+          ? await CloudinaryUtil.uploadFile(base64Data, 'resumes', publicId)
+          : await CloudinaryUtil.uploadImage(base64Data, 'resumes', publicId);
       }
 
       if (!finalUrl) {
@@ -279,9 +282,9 @@ export class AuthController {
       }
 
       const resumeData = {
-        name: name || 'Resume',
+        name: fileTitle,
         size: size || '1.0 MB',
-        type: type || 'application/pdf',
+        type: type || (fileTitle.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
         uploadedAt: new Date().toISOString(),
         url: finalUrl
       };
@@ -289,6 +292,7 @@ export class AuthController {
       const updatedUser = await UserRepository.updateProfile(userId, { resume: resumeData });
       res.status(200).json({
         success: true,
+        url: finalUrl,
         data: sanitizeUserForResponse(updatedUser)
       });
     } catch (error) {
@@ -434,7 +438,17 @@ export class AuthController {
         };
       });
 
-      res.status(200).json({ success: true, data: sessions });
+      // Deduplicate by IP address so each IP device is counted only once
+      const uniqueSessionsMap = new Map<string, any>();
+      for (const sess of sessions) {
+        const key = (sess.ipAddress || '').toString().split(' ')[0].toLowerCase();
+        if (!uniqueSessionsMap.has(key) || sess.isCurrent) {
+          uniqueSessionsMap.set(key, sess);
+        }
+      }
+      const uniqueSessions = Array.from(uniqueSessionsMap.values());
+
+      res.status(200).json({ success: true, data: uniqueSessions });
     } catch (error) {
       next(error);
     }

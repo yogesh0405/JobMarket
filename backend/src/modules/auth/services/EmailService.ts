@@ -389,6 +389,7 @@ export class EmailService {
       if (!response.ok) {
         const errorData = await response.json();
         logger.error(`Brevo Email API Error: ${JSON.stringify(errorData)}`);
+        logger.info(`[FALLBACK OTP LOG] Target: ${toEmail} | OTP Code: ${otpCode}`);
         return false;
       }
 

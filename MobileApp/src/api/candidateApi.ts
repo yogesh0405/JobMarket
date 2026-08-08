@@ -21,12 +21,20 @@ export const candidateApi = {
 
   // Fetch candidate's applied jobs with status and interview schedule details
   getAppliedJobs: async (): Promise<ApiResponse<AppliedJobDetails[] | Job[]>> => {
-    return apiFetch('/api/v1/jobs/applied/me');
+    try {
+      return await apiFetch('/api/v1/jobs/applied/my-applications');
+    } catch {
+      return await apiFetch('/api/v1/jobs/applied/me');
+    }
   },
 
   // Fetch candidate's saved / bookmarked jobs
   getSavedJobs: async (): Promise<ApiResponse<Job[]>> => {
-    return apiFetch('/api/v1/jobs/saved/me');
+    try {
+      return await apiFetch('/api/v1/jobs/saved/my-saved');
+    } catch {
+      return await apiFetch('/api/v1/jobs/saved/me');
+    }
   },
 
   // Bookmark / Un-bookmark a job
@@ -74,7 +82,7 @@ export const candidateApi = {
   uploadResume: async (base64Data: string, fileName: string): Promise<ApiResponse<{ url: string }>> => {
     return apiFetch('/api/v1/auth/resume', {
       method: 'POST',
-      body: JSON.stringify({ file: base64Data, fileName }),
+      body: JSON.stringify({ base64: base64Data, file: base64Data, name: fileName, fileName }),
     });
   },
 
@@ -91,5 +99,10 @@ export const candidateApi = {
       method: 'PATCH',
       body: JSON.stringify({ isPublic }),
     });
+  },
+
+  // Fetch platform settings (role_tabs_config, etc.)
+  getSettings: async (): Promise<ApiResponse<any>> => {
+    return apiFetch('/api/v1/settings');
   },
 };

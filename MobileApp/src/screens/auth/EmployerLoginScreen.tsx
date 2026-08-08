@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Mail, Lock, Building2, UserCheck } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { Mail, Lock, Building2, UserCheck, ShieldCheck, KeyRound, X } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/common/Input';
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { login } = useAuth();
+  const { login, verify2FALogin } = useAuth();
   const { showToast } = useToast();
 
   const [role, setRole] = useState<'employer' | 'candidate'>('employer');
@@ -23,6 +23,13 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // 2FA Modal State
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [twoFactorOtp, setTwoFactorOtp] = useState('');
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     setError(null);
@@ -52,14 +59,39 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await login({ email, password, role });
-      showToast(role === 'candidate' ? '🎉 Welcome to Employee Portal!' : '🎉 Welcome back to Employer Portal!', 'success');
+      const loginRes = await login({ email, password, role });
+      if (loginRes && loginRes.require2FA) {
+        setMfaToken(loginRes.mfaToken);
+        setShow2FAModal(true);
+        showToast('🛡️ 2FA Required: Enter the 6-digit code sent to your email.', 'info');
+      } else {
+        showToast(role === 'candidate' ? '🎉 Welcome to Employee Portal!' : '🎉 Welcome back to Employer Portal!', 'success');
+      }
     } catch (err: any) {
       const errorMsg = err.message || 'Invalid email or password. Please check your credentials.';
       setError(errorMsg);
       showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerify2FACode = async () => {
+    if (!twoFactorOtp.trim() || twoFactorOtp.trim().length !== 6) {
+      setTwoFactorError('Please enter the complete 6-digit OTP code.');
+      return;
+    }
+
+    setTwoFactorError(null);
+    setTwoFactorLoading(true);
+    try {
+      await verify2FALogin(mfaToken, twoFactorOtp.trim());
+      setShow2FAModal(false);
+      showToast('🎉 2FA Verification Successful! Welcome back.', 'success');
+    } catch (err: any) {
+      setTwoFactorError(err.message || 'Invalid 6-digit 2FA security code.');
+    } finally {
+      setTwoFactorLoading(false);
     }
   };
 
@@ -171,11 +203,96 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* 2FA Verification Modal Overlay */}
+      <Modal visible={show2FAModal} transparent animationType="fade" onRequestClose={() => setShow2FAModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalIconBox}>
+                <ShieldCheck size={22} color="#2563EB" />
+              </View>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShow2FAModal(false)}>
+                <X size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalTitleText}>2FA Verification Required</Text>
+            <Text style={styles.modalSubText}>
+              Two-Factor Authentication is active for this account. Enter the 6-digit OTP security code sent to <Text style={{ fontWeight: '800', color: '#0F172A' }}>{email}</Text>.
+            </Text>
+
+            {twoFactorError ? <ErrorBanner message={twoFactorError} style={{ marginBottom: 12 }} /> : null}
+
+            <Input
+              label="6-Digit OTP Security Code"
+              placeholder="e.g. 123456"
+              keyboardType="number-pad"
+              maxLength={6}
+              value={twoFactorOtp}
+              onChangeText={setTwoFactorOtp}
+              leftIcon={<KeyRound size={18} color="#64748B" />}
+            />
+
+            <Button
+              title="Verify 2FA Code & Sign In"
+              loading={twoFactorLoading}
+              onPress={handleVerify2FACode}
+              style={{ marginTop: 12 }}
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  modalIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseBtn: {
+    padding: 6,
+  },
+  modalTitleText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  modalSubText: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

@@ -72,7 +72,7 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
               }
             };
 
-            if (route.name === 'CandidateSearchFABTab') {
+            if (route.name === 'CandidateJobsTab' || route.name === 'CandidateSearchFABTab') {
               return (
                 <View key={route.key} style={styles.centerFabSlot}>
                   <TouchableOpacity
@@ -147,7 +147,7 @@ export const CandidateTabNavigator: React.FC = () => {
     >
       <Tab.Screen name="CandidateHomeTab" component={CandidateHomeScreen} />
       <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
-      <Tab.Screen name="CandidateSearchFABTab" component={CandidateJobsStackNavigator} />
+      <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
       <Tab.Screen name="CandidateSavedTab" component={CandidateSavedJobsScreen} />
       <Tab.Screen name="CandidateDashboardTab" component={CandidateDashboardScreen} />
     </Tab.Navigator>

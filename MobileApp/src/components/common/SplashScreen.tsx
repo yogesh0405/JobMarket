@@ -1,17 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
   Dimensions,
-  Image,
   Easing,
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Briefcase, Building2 } from 'lucide-react-native';
-import { COLORS } from '../../constants/theme';
+import { Briefcase, ShieldCheck } from 'lucide-react-native';
+import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -26,286 +25,272 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 }) => {
   // Animation Values
   const rootOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0.9)).current;
+  const logoScale = useRef(new Animated.Value(0.1)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoFloat = useRef(new Animated.Value(0)).current;
-  const glowScale = useRef(new Animated.Value(0.85)).current;
-  const glowOpacity = useRef(new Animated.Value(0.2)).current;
-  
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(20)).current;
-  
-  const loadingWidth = useRef(new Animated.Value(0.1)).current;
-  const loadingOpacity = useRef(new Animated.Value(0.4)).current;
-  
-  const bgShape1TranslateY = useRef(new Animated.Value(0)).current;
-  const bgShape2TranslateY = useRef(new Animated.Value(0)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
 
-  const [imageLoaded, setImageLoaded] = useState(false);
+  // Dual Pulsing Concentric Energy Rings
+  const ring1Scale = useRef(new Animated.Value(0.4)).current;
+  const ring1Opacity = useRef(new Animated.Value(0.8)).current;
+  const ring2Scale = useRef(new Animated.Value(0.2)).current;
+  const ring2Opacity = useRef(new Animated.Value(0.6)).current;
+
+  // Text & Subtitle Slide
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(24)).current;
+  const badgeScale = useRef(new Animated.Value(0)).current;
+
+  // Loading Bar
+  const loadingWidth = useRef(new Animated.Value(0.05)).current;
+  const loadingOpacity = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
-    // 1. Entrance Animations (Logo and Glow)
+    // 1. Elastic 3D Spring Pop & Entrance for Logo
     Animated.parallel([
       Animated.timing(logoOpacity, {
         toValue: 1,
-        duration: 800,
+        duration: 500,
         useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.5)),
       }),
-      Animated.timing(logoScale, {
+      Animated.spring(logoScale, {
         toValue: 1,
-        duration: 800,
+        friction: 5,
+        tension: 80,
         useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.5)),
       }),
     ]).start();
 
-    // 2. Delayed Text Entrance (after 300ms)
-    Animated.sequence([
-      Animated.delay(300),
+    // 2. Continuous Orbit & Radial Pulse Rings Loop
+    const ringAnimation = Animated.loop(
       Animated.parallel([
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(textTranslateY, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-          easing: Easing.out(Easing.quad),
-        }),
-      ]),
-    ]).start();
+        // Ring 1 Pulse
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(ring1Scale, {
+              toValue: 1.8,
+              duration: 2000,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(ring1Opacity, {
+              toValue: 0,
+              duration: 2000,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(ring1Scale, {
+              toValue: 0.4,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+            Animated.timing(ring1Opacity, {
+              toValue: 0.8,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        // Ring 2 Pulse (Staggered Offset)
+        Animated.sequence([
+          Animated.delay(400),
+          Animated.parallel([
+            Animated.timing(ring2Scale, {
+              toValue: 2.2,
+              duration: 2000,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(ring2Opacity, {
+              toValue: 0,
+              duration: 2000,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(ring2Scale, {
+              toValue: 0.2,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+            Animated.timing(ring2Opacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ])
+    );
+    ringAnimation.start();
 
-    // 3. Continuous Logo Floating Loop
+    // 3. Gentle Floating & Micro Tilt Loop
     const floatAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(logoFloat, {
-          toValue: -8,
-          duration: 1800,
-          useNativeDriver: true,
-          easing: Easing.inOut(Easing.quad),
-        }),
-        Animated.timing(logoFloat, {
-          toValue: 8,
-          duration: 1800,
-          useNativeDriver: true,
-          easing: Easing.inOut(Easing.quad),
-        }),
+        Animated.parallel([
+          Animated.timing(logoFloat, {
+            toValue: -10,
+            duration: 1600,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          Animated.timing(logoRotate, {
+            toValue: 1,
+            duration: 1600,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(logoFloat, {
+            toValue: 10,
+            duration: 1600,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.quad),
+          }),
+          Animated.timing(logoRotate, {
+            toValue: -1,
+            duration: 1600,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.quad),
+          }),
+        ]),
       ])
     );
     floatAnimation.start();
 
-    // 4. Continuous Background Glow Pulse Loop
-    const glowAnimation = Animated.loop(
+    // 4. Staggered Text & Badge Reveal
+    Animated.sequence([
+      Animated.delay(350),
       Animated.parallel([
-        Animated.sequence([
-          Animated.timing(glowScale, {
-            toValue: 1.15,
-            duration: 1500,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(glowScale, {
-            toValue: 0.85,
-            duration: 1500,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(glowOpacity, {
-            toValue: 0.55,
-            duration: 1500,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(glowOpacity, {
-            toValue: 0.2,
-            duration: 1500,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ]),
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 550,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textTranslateY, {
+          toValue: 0,
+          duration: 550,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(1.2)),
+        }),
+      ]),
+      Animated.spring(badgeScale, {
+        toValue: 1,
+        friction: 6,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 5. Loading Progress Track Animation
+    const loadingLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingWidth, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: true,
+          easing: Easing.inOut(Easing.quad),
+        }),
+        Animated.timing(loadingWidth, {
+          toValue: 0.05,
+          duration: 1400,
+          useNativeDriver: true,
+          easing: Easing.inOut(Easing.quad),
+        }),
       ])
     );
-    glowAnimation.start();
+    loadingLoop.start();
 
-    // 5. Continuous Loading Breathing Loop
-    const loadingAnimation = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(loadingWidth, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(loadingWidth, {
-            toValue: 0.1,
-            duration: 1200,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(loadingOpacity, {
-            toValue: 0.9,
-            duration: 1200,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(loadingOpacity, {
-            toValue: 0.4,
-            duration: 1200,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ]),
-      ])
-    );
-    loadingAnimation.start();
-
-    // 6. Background Shapes Gentle Float Loop
-    const shapesAnimation = Animated.parallel([
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bgShape1TranslateY, {
-            toValue: -15,
-            duration: 4000,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(bgShape1TranslateY, {
-            toValue: 15,
-            duration: 4000,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ])
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bgShape2TranslateY, {
-            toValue: 20,
-            duration: 5000,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          Animated.timing(bgShape2TranslateY, {
-            toValue: -20,
-            duration: 5000,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ])
-      ),
-    ]);
-    shapesAnimation.start();
-
-    // 7. Timer to initiate exit transition after 3000ms (3 seconds)
-    const splashTimer = setTimeout(() => {
-      isMinDurationElapsed.current = true;
-      checkAndExit();
-    }, 3000);
+    // 6. Dismiss Splash sequence
+    let timer: any;
+    if (!isLoadingAuth) {
+      timer = setTimeout(() => {
+        Animated.timing(rootOpacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.quad),
+        }).start(() => {
+          onFinish();
+        });
+      }, 4000);
+    }
 
     return () => {
-      clearTimeout(splashTimer);
+      if (timer) clearTimeout(timer);
+      ringAnimation.stop();
+      floatAnimation.stop();
+      loadingLoop.stop();
     };
-  }, []);
+  }, [isLoadingAuth, onFinish]);
 
-  // Monitor loadingAuth changes.
-  useEffect(() => {
-    if (!isLoadingAuth && isMinDurationElapsed.current) {
-      checkAndExit();
-    }
-  }, [isLoadingAuth]);
-
-  // Check if minimum 3s duration has elapsed AND Auth initialization is complete
-  const isMinDurationElapsed = useRef(false);
-  
-  const checkAndExit = () => {
-    if (isMinDurationElapsed.current && !isLoadingAuth) {
-      Animated.timing(rootOpacity, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-        easing: Easing.inOut(Easing.quad),
-      }).start(() => {
-        onFinish();
-      });
-    }
-  };
+  const spinRotation = logoRotate.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-3deg', '3deg'],
+  });
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
-      
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#F8FAFC', '#F1F7FF', '#E8F2FF']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" translucent />
 
-      {/* Floating BG Geometry 1 */}
-      <Animated.View
-        style={[
-          styles.bgShape,
-          styles.bgShape1,
-          { transform: [{ translateY: bgShape1TranslateY }] },
-        ]}
-      />
+      {/* Decorative Ambient Background Gradients */}
+      <View style={styles.bgWrapper} pointerEvents="none">
+        <LinearGradient
+          colors={['#EFF6FF', '#DBEAFE', '#F8FAFC']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.bgCircle, styles.bgCircle1]} />
+        <View style={[styles.bgCircle, styles.bgCircle2]} />
+      </View>
 
-      {/* Floating BG Geometry 2 */}
-      <Animated.View
-        style={[
-          styles.bgShape,
-          styles.bgShape2,
-          { transform: [{ translateY: bgShape2TranslateY }] },
-        ]}
-      />
-
-      {/* Center Branding Content */}
+      {/* Center Branding Animation Suite */}
       <View style={styles.centerContent}>
-        {/* Glow Pulse behind Logo */}
+        {/* Pulsing Concentric Energy Ring 1 */}
         <Animated.View
           style={[
-            styles.glowPulse,
+            styles.pulseRing,
+            styles.pulseRing1,
             {
-              transform: [{ scale: glowScale }],
-              opacity: glowOpacity,
+              transform: [{ scale: ring1Scale }],
+              opacity: ring1Opacity,
             },
           ]}
         />
 
-        {/* Logo Container */}
+        {/* Pulsing Concentric Energy Ring 2 */}
         <Animated.View
           style={[
-            styles.logoContainer,
+            styles.pulseRing,
+            styles.pulseRing2,
             {
-              transform: [{ scale: logoScale }, { translateY: logoFloat }],
+              transform: [{ scale: ring2Scale }],
+              opacity: ring2Opacity,
+            },
+          ]}
+        />
+
+        {/* 3D Animated Logo Emblem */}
+        <Animated.View
+          style={[
+            styles.logoWrapper,
+            {
+              transform: [
+                { scale: logoScale },
+                { translateY: logoFloat },
+                { rotate: spinRotation },
+              ],
               opacity: logoOpacity,
             },
           ]}
         >
-          {/* Logo fallback or image */}
-          {!imageLoaded && (
-            <View style={styles.logoFallback}>
-              <Building2 size={42} color="#FFFFFF" strokeWidth={2.2} />
-            </View>
-          )}
-          
-          <Image
-            source={require('../../../assets/icon.png')}
-            style={[styles.logoImage, imageLoaded && styles.logoImageVisible]}
-            onLoad={() => setImageLoaded(true)}
-          />
+          <JobMarketLogoSvg size={118} />
         </Animated.View>
 
-        {/* App Title & Subtitle */}
+        {/* App Title & Subtitle with Badge */}
         <Animated.View
           style={[
             styles.textContainer,
@@ -315,15 +300,21 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             },
           ]}
         >
-          <Text style={styles.appTitle}>CSN JobMarket</Text>
+          <Text style={styles.appTitle}>JobMarket</Text>
+
           <View style={styles.subtitleContainer}>
-            <Briefcase size={13} color="#64748B" style={styles.subtitleIcon} />
+            <Briefcase size={13} color="#2563EB" style={styles.subtitleIcon} />
             <Text style={styles.appSubtitle}>Industrial & Factory Jobs</Text>
           </View>
+
+          <Animated.View style={[styles.verifiedPill, { transform: [{ scale: badgeScale }] }]}>
+            <ShieldCheck size={12} color="#059669" />
+            <Text style={styles.verifiedPillText}>VERIFIED RECRUITMENT PLATFORM</Text>
+          </Animated.View>
         </Animated.View>
       </View>
 
-      {/* Loading Indicator at bottom */}
+      {/* Footer Progress Indicator */}
       <View style={styles.footerContainer}>
         <View style={styles.loadingTrack}>
           <Animated.View
@@ -336,7 +327,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             ]}
           />
         </View>
-        <Text style={styles.footerText}>Secure Industrial Hiring Platform</Text>
+        <Text style={styles.footerText}>Direct Employer & Candidate Matching</Text>
       </View>
     </Animated.View>
   );
@@ -350,6 +341,28 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     backgroundColor: '#F8FAFC',
   },
+  bgWrapper: {
+    ...StyleSheet.absoluteFill,
+  },
+  bgCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.5,
+  },
+  bgCircle1: {
+    width: 320,
+    height: 320,
+    top: -80,
+    left: -100,
+    backgroundColor: '#BFDBFE',
+  },
+  bgCircle2: {
+    width: 260,
+    height: 260,
+    bottom: 60,
+    right: -80,
+    backgroundColor: '#93C5FD',
+  },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
@@ -357,56 +370,41 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
-  glowPulse: {
+  pulseRing: {
     position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: '#3B82F6',
-    filter: 'blur(30px)',
-    opacity: 0.3,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 2,
   },
-  logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 10 },
+  pulseRing1: {
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+  },
+  pulseRing2: {
+    borderColor: '#0284C7',
+    backgroundColor: 'rgba(2, 132, 199, 0.06)',
+  },
+  logoWrapper: {
+    width: 118,
+    height: 118,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#032B69',
+    shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.35,
-    shadowRadius: 15,
-    elevation: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  logoFallback: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-    opacity: 0,
-  },
-  logoImageVisible: {
-    opacity: 1,
+    shadowRadius: 20,
+    elevation: 16,
   },
   textContainer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 28,
   },
   appTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   subtitleContainer: {
     flexDirection: 'row',
@@ -414,26 +412,44 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   subtitleIcon: {
-    marginRight: 5,
+    marginRight: 6,
   },
   appSubtitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 0.5,
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#475569',
+    letterSpacing: 0.4,
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 14,
+  },
+  verifiedPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#047857',
+    letterSpacing: 0.6,
   },
   footerContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingBottom: 48,
+    paddingBottom: 44,
   },
   loadingTrack: {
-    width: 140,
+    width: 160,
     height: 4,
     backgroundColor: '#E2E8F0',
     borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   loadingFill: {
     width: '100%',
@@ -443,27 +459,9 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#94A3B8',
+    fontWeight: '700',
+    color: '#64748B',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-  },
-  bgShape: {
-    position: 'absolute',
-    backgroundColor: '#DBEAFE',
-    opacity: 0.45,
-    borderRadius: 9999,
-  },
-  bgShape1: {
-    width: 280,
-    height: 280,
-    top: -50,
-    left: -80,
-  },
-  bgShape2: {
-    width: 220,
-    height: 220,
-    bottom: 80,
-    right: -60,
   },
 });

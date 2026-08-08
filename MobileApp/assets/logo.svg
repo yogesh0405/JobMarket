@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <defs>
+    <linearGradient id="shieldNavyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D3B75" />
+      <stop offset="100%" stop-color="#07254C" />
+    </linearGradient>
+
+    <linearGradient id="swooshCyanBlueGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00B4D8" />
+      <stop offset="45%" stop-color="#0096C7" />
+      <stop offset="100%" stop-color="#0353A4" />
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- 1. Dark Blue Shield Frame (Transparent Interior) -->
+    <path
+      d="M 250 50 C 330 80 400 90 400 90 V 230 C 400 350 330 410 250 450 C 170 410 100 350 100 230 V 90 C 100 90 170 80 250 50 Z"
+      fill="none"
+      stroke="url(#shieldNavyGrad)"
+      stroke-width="28"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- 2. Three People Silhouettes (Short, Medium, Tall) -->
+    <!-- Left Person -->
+    <circle cx="185" cy="220" r="16" fill="#0D3B75" />
+    <rect x="171" y="242" width="28" height="48" rx="14" fill="#0D3B75" />
+
+    <!-- Middle Person -->
+    <circle cx="240" cy="185" r="18" fill="#0D3B75" />
+    <rect x="224" y="210" width="32" height="80" rx="16" fill="#0D3B75" />
+
+    <!-- Right Person -->
+    <circle cx="298" cy="150" r="20" fill="#0D3B75" />
+    <rect x="280" y="178" width="36" height="112" rx="18" fill="#0D3B75" />
+
+    <!-- 3. Smooth Dynamic Cyan-Blue Swoosh & Shooting Arrow -->
+    <path
+      d="M 70 255 C 120 255 170 300 230 360 C 290 300 370 190 425 145 L 398 165 L 426 144 L 406 172 C 370 210 290 320 230 360 C 170 320 130 275 70 255 Z"
+      fill="url(#swooshCyanBlueGrad)"
+    />
+  </g>
+</svg>

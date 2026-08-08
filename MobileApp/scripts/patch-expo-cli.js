@@ -367,11 +367,11 @@ if (fs.existsSync(expoMetroConfigPath2)) {
       "function getReactNativeHostPath(projectRoot, platform) {\n  /* patched fast helpers */ return path_1.default.join(projectRoot, 'node_modules/react-native');"
     );
     content = content.replace(
-      "function getExpoOptional(projectRoot, subModule = 'package.json') {",
+      /function getExpoOptional\(projectRoot, subModule = 'package\.json'\) \{[\s\S]*?\}\n\}/,
       "function getExpoOptional(projectRoot, subModule = 'package.json') {\n    const pth = path_1.default.join(projectRoot, 'node_modules/expo', subModule);\n    return require('fs').existsSync(pth) ? pth : null;\n}"
     );
     content = content.replace(
-      "function getExpoMetroRuntimeOptional(projectRoot) {",
+      /function getExpoMetroRuntimeOptional\(projectRoot\) \{[\s\S]*?return null;\n\}/,
       "function getExpoMetroRuntimeOptional(projectRoot) {\n    const pth = path_1.default.join(projectRoot, 'node_modules/@expo/metro-runtime');\n    return require('fs').existsSync(pth) ? pth : null;\n}"
     );
     fs.writeFileSync(expoMetroConfigPath2, content, 'utf8');
@@ -386,7 +386,7 @@ if (fs.existsSync(resolveMetroUserConfigPath)) {
   if (!content.includes("directMetroConfig")) {
     content = content.replace(
       "async function resolveMetroUserConfig(params) {",
-      "async function resolveMetroUserConfig(params) {\n    let configPath = null;\n    const directMetroConfig = node_path_1.default.join(params.projectRoot, 'metro.config.js');\n    if (node_fs_1.default.existsSync(directMetroConfig)) {\n        configPath = directMetroConfig;\n    } else"
+      "async function resolveMetroUserConfig(params) {\n    const directMetroConfig = node_path_1.default.join(params.projectRoot, 'metro.config.js');\n    if (node_fs_1.default.existsSync(directMetroConfig)) {\n        return loadConfigFile(directMetroConfig);\n    }"
     );
     fs.writeFileSync(resolveMetroUserConfigPath, content, 'utf8');
     console.log('[patch-expo-cli] Patched resolveMetroUserConfig.js (fast config check)');

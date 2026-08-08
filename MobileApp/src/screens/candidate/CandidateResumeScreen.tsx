@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
+import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 
@@ -40,8 +41,17 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
   const [deleting, setDeleting] = useState(false);
   const [isPublic, setIsPublic] = useState(user?.isResumePublic !== false);
 
-  const resumeUrl = user?.resume_url || user?.resumeUrl;
-  const resumeName = user?.resumeName || 'Candidate_BioData_Resume.jpg';
+  const [showPdfModal, setShowPdfModal] = useState(false);
+
+  const rawResume = user?.resume;
+  let parsedObj: any = null;
+  if (typeof rawResume === 'object' && rawResume !== null) {
+    parsedObj = rawResume;
+  } else if (typeof rawResume === 'string') {
+    try { parsedObj = JSON.parse(rawResume); } catch (_) {}
+  }
+  const resumeUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
+  const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_BioData_Resume.jpg';
 
   const handlePickDocument = async () => {
     try {
@@ -60,9 +70,10 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
       if (!result.canceled && result.assets && result.assets[0]?.base64) {
         const file = result.assets[0];
         setUploading(true);
+        const fileName = file.fileName || 'Resume_BioData.jpg';
         const base64Data = `data:image/jpeg;base64,${file.base64}`;
 
-        const res = await candidateApi.uploadResume(base64Data, 'Resume_BioData.jpg');
+        const res = await candidateApi.uploadResume(base64Data, fileName);
         setUploading(false);
 
         if (res.success) {
@@ -120,7 +131,9 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleViewResume = () => {
     if (resumeUrl) {
-      Linking.openURL(resumeUrl).catch(() => showToast('Unable to preview URL', 'error'));
+      setShowPdfModal(true);
+    } else {
+      showToast('No uploaded resume document found', 'warning');
     }
   };
 
@@ -244,6 +257,15 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Resume Document Viewer Modal */}
+      <ResumePdfViewerModal
+        visible={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        candidateName={user?.name || 'Candidate'}
+        candidateRole={user?.tradeSpecialization || user?.trade_specialization || 'Industrial Workforce'}
+        pdfUrl={resumeUrl}
+      />
     </View>
   );
 };

@@ -1,18 +1,20 @@
 {
   "expo": {
-    "name": "MobileApp",
+    "name": "JobMarket",
     "slug": "csn-jobmarket",
+    "scheme": "jobmarket",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jobmarket.mobileapp"
     },
     "android": {
       "package": "com.jobmarket.mobileapp",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

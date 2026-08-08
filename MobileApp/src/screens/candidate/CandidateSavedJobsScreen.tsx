@@ -25,52 +25,7 @@ import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
 
-const SAVED_FALLBACK_JOBS: Job[] = [
-  {
-    id: 'fallback-job-1',
-    employer_id: 'emp-1',
-    company: 'Skyline Manufacturing',
-    title: 'TIG Welder (GTAW)',
-    industry: 'Welding & Metal Fabrication',
-    location: 'Pune MIDC',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 0,
-    max_experience: 2,
-    salary_min: 200000,
-    salary_max: 250000,
-    openings: 5,
-    description: 'Looking for skilled TIG Welder for stainless steel pipe fabrication in Pune MIDC.',
-    responsibilities: ['Execute TIG welding as per drawing', 'Inspect weld joints for quality'],
-    requirements: ['ITI Welder certificate', '0-2 years experience'],
-    skills: ['TIG Welding', 'GTAW', 'Blueprint Reading'],
-    status: 'APPROVED',
-    posted_at: '7h ago',
-    shift_details: 'Day Shift (8:00 AM - 5:00 PM)',
-  },
-  {
-    id: 'fallback-job-2',
-    employer_id: 'emp-2',
-    company: 'Siemens Industrial Automation',
-    title: 'Control Panel Wireman',
-    industry: 'Electricals & Electronics',
-    location: 'Chakan MIDC, Pune',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 0,
-    max_experience: 3,
-    salary_min: 180000,
-    salary_max: 300000,
-    openings: 8,
-    description: 'Control panel wiring and testing for PLC automation systems.',
-    responsibilities: ['Wire control panels as per schematic', 'Test circuit continuity'],
-    requirements: ['ITI Electrician or Wireman', '0-3 years experience'],
-    skills: ['Control Wiring', 'Panel Assembly', 'Circuit Testing'],
-    status: 'APPROVED',
-    posted_at: '12h ago',
-    shift_details: 'Day Shift (8:30 AM - 5:30 PM)',
-  },
-];
+
 
 interface Props {
   navigation: any;
@@ -78,7 +33,7 @@ interface Props {
 
 export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
-  const [savedJobs, setSavedJobs] = useState<Job[]>(SAVED_FALLBACK_JOBS);
+  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -96,14 +51,10 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
         jobsList = res.jobs;
       }
 
-      if (jobsList && jobsList.length > 0) {
-        setSavedJobs(jobsList);
-      } else {
-        setSavedJobs(SAVED_FALLBACK_JOBS);
-      }
+      setSavedJobs(jobsList || []);
     } catch (e) {
-      console.log('Error loading saved jobs:', e);
-      setSavedJobs(SAVED_FALLBACK_JOBS);
+      console.log('Error loading saved jobs from database:', e);
+      setSavedJobs([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,13 +80,32 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Saved & Bookmarked Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {loading && !refreshing ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <SkeletonLoader width="100%" height={140} style={{ borderRadius: 8, marginBottom: 12 }} />
-          <SkeletonLoader width="100%" height={140} style={{ borderRadius: 8, marginBottom: 12 }} />
-          <SkeletonLoader width="100%" height={140} style={{ borderRadius: 8 }} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {[1, 2, 3].map((key) => (
+            <View key={key} style={styles.savedCard3D}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <SkeletonLoader width={40} height={40} style={{ borderRadius: 8 }} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 4 }} />
+                </View>
+                <SkeletonLoader width={28} height={28} style={{ borderRadius: 14 }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                <SkeletonLoader width={85} height={22} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={110} height={22} style={{ borderRadius: 4 }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <SkeletonLoader width={90} height={12} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={120} height={24} style={{ borderRadius: 6 }} />
+              </View>
+            </View>
+          ))}
         </ScrollView>
       ) : (
         <ScrollView
@@ -339,13 +309,16 @@ const styles = StyleSheet.create({
   },
   savedCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 14,
     gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   cardTopRow: {
     flexDirection: 'row',

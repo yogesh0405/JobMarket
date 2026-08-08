@@ -209,11 +209,11 @@ export class CloudinaryUtil {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json() as any;
-
-      if (!response.ok || (data.result !== 'ok' && data.result !== 'not_found')) {
+      const data = (await response.json()) as any;
+      const resResult = (data?.result || '').toLowerCase().trim();
+      if (!response.ok || (resResult !== 'ok' && resResult !== 'not_found' && resResult !== 'not found')) {
         logger.error('Cloudinary API delete file error details:', data);
-        throw new Error(data.error?.message || `Cloudinary delete status: ${data.result}`);
+        throw new Error(data?.error?.message || `Cloudinary delete status: ${data?.result}`);
       }
 
       logger.info(`Successfully deleted file from Cloudinary (publicId: ${publicId}). Result: ${data.result}`);

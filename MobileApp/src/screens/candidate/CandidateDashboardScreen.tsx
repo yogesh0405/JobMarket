@@ -130,7 +130,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Employee Workspace" showBack={false} />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {loading && !refreshing ? (
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -464,21 +464,24 @@ const styles = StyleSheet.create({
   statCard: {
     width: '48.8%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   statIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -487,25 +490,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statNumber: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     color: '#0F172A',
-    lineHeight: 20,
   },
   statLabel: {
-    fontSize: 10.5,
-    fontWeight: '700',
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 0,
+    fontWeight: '600',
   },
   card3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   cardHeaderRow: {
     flexDirection: 'row',

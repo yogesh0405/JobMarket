@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Linking,
+  Image,
 } from 'react-native';
 import {
   Briefcase,
@@ -107,13 +108,42 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="My Applied Jobs & Interviews" showBack={false} />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {loading && !refreshing ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8, marginBottom: 12 }} />
-          <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8, marginBottom: 12 }} />
-          <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Summary bar skeleton */}
+          <View style={styles.summaryBar}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <SkeletonLoader width="60%" height={16} style={{ borderRadius: 4 }} />
+              <SkeletonLoader width="85%" height={12} style={{ borderRadius: 4 }} />
+            </View>
+            <SkeletonLoader width={70} height={24} style={{ borderRadius: 12 }} />
+          </View>
+
+          {/* 3 Realistic Applied card skeletons */}
+          {[1, 2, 3].map((key) => (
+            <View key={key} style={styles.appliedCard3D}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <SkeletonLoader width={40} height={40} style={{ borderRadius: 8 }} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 4 }} />
+                </View>
+                <SkeletonLoader width={75} height={22} style={{ borderRadius: 11 }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                <SkeletonLoader width={95} height={22} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={120} height={22} style={{ borderRadius: 4 }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <SkeletonLoader width={100} height={12} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={125} height={24} style={{ borderRadius: 6 }} />
+              </View>
+            </View>
+          ))}
         </ScrollView>
       ) : (
         <ScrollView
@@ -153,13 +183,22 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               const job = item.job || item;
               const status = (item.status || 'applied').toLowerCase();
               const isShortlisted = status === 'shortlisted' || status === 'accepted';
+              const logoUrl = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo;
 
               return (
                 <View key={item.jobId || job.id} style={styles.appliedCard3D}>
                   {/* Card Top Row */}
                   <View style={styles.cardHeaderRow}>
                     <View style={styles.companyIconSquare}>
-                      <Building2 size={20} color="#2563EB" />
+                      {logoUrl ? (
+                        <Image
+                          source={{ uri: logoUrl }}
+                          style={styles.companyLogoImg}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Building2 size={20} color="#2563EB" />
+                      )}
                     </View>
 
                     <View style={{ flex: 1 }}>
@@ -343,13 +382,16 @@ const styles = StyleSheet.create({
   },
   appliedCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 14,
     gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -365,6 +407,12 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  companyLogoImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
   },
   jobTitle: {
     fontSize: 15,

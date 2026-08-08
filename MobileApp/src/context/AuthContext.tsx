@@ -14,7 +14,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: any) => Promise<void>;
+  login: (credentials: any) => Promise<any>;
+  verify2FALogin: (mfaToken: string, otpCode: string) => Promise<void>;
   signup: (payload: any) => Promise<{ email: string }>;
   verifyOTP: (email: string, otpCode: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -76,8 +77,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await authApi.login(credentials);
       if (res.success && res.data) {
+        if (res.data.require2FA) {
+          return {
+            require2FA: true,
+            mfaToken: res.data.mfaToken,
+            email: res.data.email,
+            message: res.data.message,
+          };
+        }
+
         const { accessToken, refreshToken, sessionId, user: userData } = res.data;
-        
+
         if (!accessToken || !refreshToken) {
           throw new Error('Invalid authentication tokens from server');
         }
@@ -88,8 +98,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Set user state to trigger navigation to Dashboard
         setUser(userData);
+        return { success: true };
       } else {
         throw new Error(res.message || res.error || 'Login failed. Please check credentials.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verify2FALogin = async (mfaToken: string, otpCode: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.verify2FALogin(mfaToken, otpCode);
+      if (res.success && res.data) {
+        const { accessToken, refreshToken, sessionId, user: userData } = res.data;
+        if (!accessToken || !refreshToken) {
+          throw new Error('Invalid authentication tokens from server');
+        }
+
+        await saveTokens({ accessToken, refreshToken }, sessionId);
+        await saveStoredUser(userData);
+        setUser(userData);
+      } else {
+        throw new Error(res.message || '2FA OTP Verification failed');
       }
     } finally {
       setIsLoading(false);
@@ -161,6 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isAuthenticated: !!user,
         login,
+        verify2FALogin,
         signup,
         verifyOTP,
         logout,

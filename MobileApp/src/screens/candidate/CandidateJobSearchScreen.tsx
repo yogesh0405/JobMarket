@@ -8,7 +8,9 @@ import {
   TextInput,
   RefreshControl,
   Image,
+  ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   Search,
   MapPin,
@@ -25,13 +27,18 @@ import {
   Menu,
   MoreVertical,
   Star,
+  GraduationCap,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
+import { getCompanyLogoUrl } from '../../utils/companyLogos';
+import { Header } from '../../components/common/Header';
 import { Job } from '../../types';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
 import { CandidateSideDrawer } from '../../components/common/CandidateSideDrawer';
+import { InteractiveJobMapView } from '../../components/map/InteractiveJobMapView';
+import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
 
 const CATEGORIES = [
   'All Jobs',
@@ -183,16 +190,145 @@ interface Props {
   navigation: any;
 }
 
-export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation }) => {
+const getInitialsColors = (title: string): [string, string] => {
+  const palette: Array<[string, string]> = [
+    ['#0284C7', '#0369A1'],
+    ['#9A3412', '#7C2D12'],
+    ['#854D0E', '#713F12'],
+    ['#B91C1C', '#991B1B'],
+    ['#A16207', '#854D0E'],
+    ['#BE185D', '#9D174D'],
+    ['#C2410C', '#9A3412'],
+    ['#9D174D', '#831843'],
+    ['#1D4ED8', '#1E3A8A'],
+  ];
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % palette.length;
+  return palette[index];
+};
+
+const getJobInitials = (title: string) => {
+  if (!title) return 'JM';
+  const clean = title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+};
+
+const formatTimeAgo = (dateInput?: string | number | Date | null): string => {
+  if (!dateInput) return 'Recently';
+
+  let date: Date;
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else if (typeof dateInput === 'number') {
+    date = new Date(dateInput);
+  } else {
+    const str = String(dateInput).trim();
+    if (/^\d+[mhdws]\s+ago$/i.test(str) || str.toLowerCase() === 'just now') {
+      return str;
+    }
+    date = new Date(str);
+  }
+
+  if (isNaN(date.getTime())) {
+    return 'Recently';
+  }
+
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return 'Just now';
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays}d ago`;
+  }
+
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) {
+    return `${diffInWeeks}w ago`;
+  }
+
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) {
+    return `${diffInMonths}mo ago`;
+  }
+
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears}y ago`;
+};
+
+interface Props {
+  navigation: any;
+  route?: any;
+}
+
+export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showToast } = useToast();
-  const [jobs, setJobs] = useState<Job[]>(FALLBACK_JOBS);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(route?.params?.keyword || '');
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('list');
+  const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(15);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterOptions>({
+    industry: route?.params?.industry || 'All Industries',
+    jobType: 'All Types',
+    workMode: 'All Modes',
+    minExperience: 'All Experience',
+    salaryMin: 0,
+    midcZone: route?.params?.location || 'All MIDC Zones',
+    busFacility: false,
+    canteen: false,
+    accommodation: false,
+    overtime: false,
+  });
+
+  React.useEffect(() => {
+    if (route?.params) {
+      if (route.params.keyword !== undefined) setSearchQuery(route.params.keyword);
+      if (route.params.industry) {
+        setActiveFilters((prev) => ({ ...prev, industry: route.params.industry }));
+      }
+      if (route.params.location) {
+        setActiveFilters((prev) => ({ ...prev, midcZone: route.params.location }));
+      }
+      if (route.params.education) {
+        setSearchQuery(route.params.education);
+      }
+    }
+  }, [route?.params]);
+
+  // Real-time duration ticker (updates every 30s)
+  const [, setTick] = useState(0);
+  React.useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadJobsData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
@@ -213,19 +349,19 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation }) => {
         realJobs = rawData.jobs;
       }
 
-      if (realJobs && realJobs.length > 0) {
-        console.log(`Successfully loaded ${realJobs.length} REAL DATABASE JOBS from backend!`);
+      if (realJobs.length > 0) {
         setJobs(realJobs);
       } else {
         setJobs(FALLBACK_JOBS);
       }
 
-      const savedData: any = savedRes;
-      if (savedData && Array.isArray(savedData)) {
-        setSavedJobIds(savedData.map((j: any) => j.id));
-      } else if (savedData && savedData.success && Array.isArray(savedData.data)) {
-        setSavedJobIds(savedData.data.map((j: any) => j.id));
-      }
+      const rawSaved: any = savedRes;
+      let savedList: any[] = [];
+      if (Array.isArray(rawSaved)) savedList = rawSaved;
+      else if (rawSaved && rawSaved.data && Array.isArray(rawSaved.data)) savedList = rawSaved.data;
+
+      const savedIds = savedList.map((j: any) => j.id || j.jobId || j.job_id).filter(Boolean);
+      setSavedJobIds(savedIds);
     } catch (e) {
       console.log('Error fetching candidate jobs from backend, using fallback:', e);
       setJobs(FALLBACK_JOBS);
@@ -237,7 +373,11 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      loadJobsData(false);
+      setLoading(true);
+      const timer = setTimeout(() => {
+        loadJobsData(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }, [loadJobsData])
   );
 
@@ -277,256 +417,383 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation }) => {
       (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
       (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
 
-    return queryMatch && catMatch;
+    if (!queryMatch || !catMatch) return false;
+
+    // Filter Side Drawer options
+    if (activeFilters.industry !== 'All Industries') {
+      const indKey = activeFilters.industry.toLowerCase();
+      const jobInd = (job.industry || '').toLowerCase();
+      const jobTitle = (job.title || '').toLowerCase();
+      if (!jobInd.includes(indKey) && !jobTitle.includes(indKey)) return false;
+    }
+
+    if (activeFilters.midcZone !== 'All MIDC Zones') {
+      const zoneKey = activeFilters.midcZone.toLowerCase();
+      const jobLoc = (job.location || '').toLowerCase();
+      if (!jobLoc.includes(zoneKey)) return false;
+    }
+
+    if (activeFilters.jobType !== 'All Types') {
+      const typeKey = activeFilters.jobType.toLowerCase();
+      const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
+      if (!jType.includes(typeKey)) return false;
+    }
+
+    if (activeFilters.workMode !== 'All Modes') {
+      const modeKey = activeFilters.workMode.toLowerCase();
+      const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
+      if (!jMode.includes(modeKey)) return false;
+    }
+
+    if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility)) return false;
+    if (activeFilters.canteen && !(job.canteen || (job as any).canteen)) return false;
+    if (activeFilters.accommodation && !(job.accommodation || (job as any).accommodation)) return false;
+    if (activeFilters.overtime && !(job.overtime || (job as any).overtime)) return false;
+
+    return true;
   });
 
+  const handleScroll = useCallback(
+    (event: any) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 250;
+
+      if (isCloseToBottom && !loading && !loadingMore && visibleCount < filteredJobs.length) {
+        setLoadingMore(true);
+        setTimeout(() => {
+          setVisibleCount((prev) => Math.min(prev + 15, filteredJobs.length));
+          setLoadingMore(false);
+        }, 200);
+      }
+    },
+    [loading, loadingMore, visibleCount, filteredJobs.length]
+  );
+
   return (
-    <View style= { styles.container } >
-    {/* Web Identical Top Header Bar */ }
-    <View style = { styles.topHeaderBar } >
-      <View style={ styles.brandRow }>
-        <View style={ styles.brandLogoSquare }>
-          <Text style={ styles.brandLogoText }> JM </Text>
-            </View>
-            <View >
-            <Text style={ styles.brandTitleText }> JobMarket </Text>
-              <Text style = { styles.brandSubtitleText } > Industrial & Factory Jobs </Text>
-                </View>
-                </View>
+    <View style={styles.container}>
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-                <View style = { styles.headerIconsRow } >
-                  <TouchableOpacity style={ styles.bellBtn }>
-                    <Bell size={ 20 } color = "#0F172A" />
-                      <View style={ styles.bellBadge }>
-                        <Text style={ styles.bellBadgeText }> 1 </Text>
-                          </View>
-                          </TouchableOpacity>
-                          <TouchableOpacity style = { styles.menuBtn } onPress = {() => setDrawerOpen(true)}>
-                            <MoreVertical size={ 24 } color = "#0F172A" />
-                              </TouchableOpacity>
-                              </View>
-                              </View>
+      {/* Find Jobs Title & View Segmented Controls */}
+      <View style={[styles.titleViewRow, { paddingHorizontal: 16 }]}>
+        <Text style={styles.screenTitleText}>Find Jobs</Text>
 
-                              <CandidateSideDrawer
-visible = { drawerOpen }
-onClose = {() => setDrawerOpen(false)}
-navigation = { navigation }
-  />
+        <View style={styles.viewSegmentBox}>
+          <TouchableOpacity
+            style={[styles.segmentBtn, viewMode === 'grid' && styles.segmentBtnActive]}
+            onPress={() => setViewMode('grid')}
+          >
+            <LayoutGrid size={15} color={viewMode === 'grid' ? '#2563EB' : '#64748B'} />
+            <Text style={[styles.segmentBtnText, viewMode === 'grid' && styles.segmentBtnTextActive]}>Grid</Text>
+          </TouchableOpacity>
 
-  {/* Main Scroll Content */ }
-  <ScrollView
-contentContainerStyle = { styles.scrollContent }
-showsVerticalScrollIndicator = { false}
-refreshControl = {<RefreshControl refreshing = { refreshing } onRefresh = { onRefresh } colors = { ['#2563EB']} />}
-      >
-  {/* Find Jobs Title & View Segmented Controls */ }
-  <View style = { styles.titleViewRow } >
-    <Text style={ styles.screenTitleText }> Find Jobs </Text>
+          <TouchableOpacity
+            style={[styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}
+            onPress={() => setViewMode('list')}
+          >
+            <List size={15} color={viewMode === 'list' ? '#2563EB' : '#64748B'} />
+            <Text style={[styles.segmentBtnText, viewMode === 'list' && styles.segmentBtnTextActive]}>List</Text>
+          </TouchableOpacity>
 
-      <View style = { styles.viewSegmentBox } >
-        <TouchableOpacity
-              style={ [styles.segmentBtn, viewMode === 'grid' && styles.segmentBtnActive] }
-onPress = {() => setViewMode('grid')}
-            >
-  <LayoutGrid size={ 15 } color = { viewMode === 'grid' ? '#2563EB' : '#64748B'} />
-    <Text style = { [styles.segmentBtnText, viewMode === 'grid' && styles.segmentBtnTextActive]} > Grid </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-style = { [styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}
-onPress = {() => setViewMode('list')}
-            >
-  <List size={ 15 } color = { viewMode === 'list' ? '#2563EB' : '#64748B'} />
-    <Text style = { [styles.segmentBtnText, viewMode === 'list' && styles.segmentBtnTextActive]} > List </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-style = { [styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}
-onPress = {() => setViewMode('map')}
-            >
-  <Map size={ 15 } color = { viewMode === 'map' ? '#2563EB' : '#64748B'} />
-    <Text style = { [styles.segmentBtnText, viewMode === 'map' && styles.segmentBtnTextActive]} > Map </Text>
-      </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}
+            onPress={() => setViewMode('map')}
+          >
+            <Map size={15} color={viewMode === 'map' ? '#2563EB' : '#64748B'} />
+            <Text style={[styles.segmentBtnText, viewMode === 'map' && styles.segmentBtnTextActive]}>Map</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-{/* Category Horizontal Filter Card */ }
-<View style={ styles.categoryCardContainer }>
-  <ScrollView horizontal showsHorizontalScrollIndicator = { false} contentContainerStyle = { styles.categoryPillsRow } >
-  {
-    CATEGORIES.map((cat) => {
-      const isActive = selectedCategory === cat;
-      return (
-        <TouchableOpacity
-                  key= { cat }
-      activeOpacity = { 0.85}
-      style = { [styles.categoryPill, isActive && styles.categoryPillActive]}
-      onPress = {() => setSelectedCategory(cat)
-    }
-                >
-      <Text style={ [styles.categoryPillText, isActive && styles.categoryPillTextActive]} > { cat } </Text>
-    </TouchableOpacity>
-    );
-  })}
-</ScrollView>
-  <TouchableOpacity style = { styles.catArrowRightBtn } >
-    <ChevronRight size={ 16 } color = "#64748B" />
-      </TouchableOpacity>
-      </View>
 
-{/* Search Input & Filters Button Row */ }
-<View style={ styles.searchFilterRow }>
-  <View style={ styles.inputSearchBox }>
-    <Search size={ 18 } color = "#94A3B8" />
-      <TextInput
-              style={ styles.inputSearchText }
-placeholder = "Search jobs, skills..."
-placeholderTextColor = "#94A3B8"
-value = { searchQuery }
-onChangeText = { setSearchQuery }
-  />
-  </View>
 
-  <TouchableOpacity style = { styles.filtersBtn } >
-    <SlidersHorizontal size={ 16 } color = "#0F172A" />
-      <Text style={ styles.filtersBtnText }> Filters </Text>
+      {/* Search Input & Filters Button Row */}
+      <View style={[styles.searchFilterRow, { marginHorizontal: 16 }]}>
+        <View style={styles.inputSearchBox}>
+          <Search size={18} color="#94A3B8" />
+          <TextInput
+            style={styles.inputSearchText}
+            placeholder="Search jobs, skills..."
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.filtersBtn} onPress={() => setFilterDrawerOpen(true)} activeOpacity={0.8}>
+          <SlidersHorizontal size={16} color="#0F172A" />
+          <Text style={styles.filtersBtnText}>Filters</Text>
         </TouchableOpacity>
-        </View>
-
-{/* Jobs Stream */ }
-{
-  loading && !refreshing ? (
-    <View style= {{ gap: 12 }
-}>
-  <SkeletonLoader width="100%" height = { 180} style = {{ borderRadius: 8 }} />
-    <SkeletonLoader width = "100%" height = { 180} style = {{ borderRadius: 8 }} />
       </View>
-        ) : filteredJobs.length === 0 ? (
-  <View style= { styles.emptyStateCard } >
-  <Building2 size={ 44 } color = "#94A3B8" />
-    <Text style={ styles.emptyTitle }> No Industrial Vacancies Found </Text>
-      <Text style = { styles.emptyDesc } > Try adjusting your search query or trade category.</Text>
-        <TouchableOpacity
-style = { styles.resetFilterBtn }
-onPress = {() => {
-  setSearchQuery('');
-  setSelectedCategory('All Jobs');
-}}
-            >
-  <Text style={ styles.resetFilterBtnText }> Reset Filters </Text>
-    </TouchableOpacity>
-    </View>
-        ) : (
-  filteredJobs.map((job) => {
-    const isSaved = savedJobIds.includes(job.id);
-    const expText =
-      job.min_experience !== undefined || job.minExperience !== undefined
-        ? `${job.min_experience ?? job.minExperience}-${job.max_experience ?? job.maxExperience} Yrs Exp`
-        : '0-2 Yrs Exp';
-    const salaryText = job.salary_min
-      ? `₹${(job.salary_min / 100000).toFixed(0)}-${(job.salary_max / 100000).toFixed(0)} Lacs / yr`
-      : '₹2-4 Lacs / yr';
 
-    const logoUrl = job.companyLogo || (job as any).company_logo;
-
-    return (
-      <TouchableOpacity
-                key= { job.id }
-    activeOpacity = { 0.88}
-    style = { styles.webJobCard }
-    onPress = {() => navigation.navigate('CandidateJobDetail', { jobId: job.id })
-  }
+      {/* Dynamic View Mode Switching: Map View vs Scrollable Stream */}
+      {viewMode === 'map' ? (
+        <InteractiveJobMapView
+          jobs={filteredJobs}
+          activeJobId={activeSelectedJobId}
+          onSelectJob={(job) => setActiveSelectedJobId(job.id)}
+          navigation={navigation}
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+        >
+          {/* Jobs Stream Skeleton Loading */}
+          {loading && !refreshing ? (
+            <View style={{ marginTop: 4 }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((key) => (
+                viewMode === 'list' ? (
+                  <View key={key} style={styles.compactListCard}>
+                    <SkeletonLoader width={44} height={44} style={{ borderRadius: 6 }} />
+                    <View style={{ flex: 1, gap: 6 }}>
+                      <SkeletonLoader width="65%" height={15} style={{ borderRadius: 4 }} />
+                      <SkeletonLoader width="45%" height={12} style={{ borderRadius: 4 }} />
+                    </View>
+                  </View>
+                ) : (
+                  <View key={key} style={[styles.naukriJobCard, { marginBottom: 12 }]}>
+                    <View style={styles.naukriCardTopSection}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <SkeletonLoader width="70%" height={18} style={{ borderRadius: 4 }} />
+                        <SkeletonLoader width={20} height={20} style={{ borderRadius: 10 }} />
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+                        <SkeletonLoader width="30%" height={14} style={{ borderRadius: 4 }} />
+                        <SkeletonLoader width="30%" height={14} style={{ borderRadius: 4 }} />
+                        <SkeletonLoader width="25%" height={14} style={{ borderRadius: 4 }} />
+                      </View>
+                    </View>
+                    <View style={styles.naukriCardMiddleSection}>
+                      <SkeletonLoader width={65} height={20} style={{ borderRadius: 4 }} />
+                      <SkeletonLoader width={65} height={20} style={{ borderRadius: 4 }} />
+                      <SkeletonLoader width={80} height={20} style={{ borderRadius: 4 }} />
+                    </View>
+                    <View style={styles.naukriCardBottomSection}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <SkeletonLoader width={38} height={38} style={{ borderRadius: 6 }} />
+                        <View style={{ flex: 1, gap: 4 }}>
+                          <SkeletonLoader width="50%" height={13} style={{ borderRadius: 4 }} />
+                          <SkeletonLoader width="35%" height={11} style={{ borderRadius: 4 }} />
+                        </View>
+                      </View>
+                      <SkeletonLoader width={45} height={11} style={{ borderRadius: 4 }} />
+                    </View>
+                  </View>
+                )
+              ))}
+            </View>
+          ) : filteredJobs.length === 0 ? (
+            <View style={styles.emptyStateCard}>
+              <Building2 size={44} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Industrial Vacancies Found</Text>
+              <Text style={styles.emptyDesc}>Try adjusting your search query or trade category.</Text>
+              <TouchableOpacity
+                style={styles.resetFilterBtn}
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All Jobs');
+                }}
               >
-    {/* Header: Company Icon + Job Title Stack + Bookmark */ }
-    <View style = { styles.cardHeaderTopRow } >
-    <View style={ styles.companyIconSquare } >
-  {
-    logoUrl?(
-                      <Image
-                        source = {{ uri: logoUrl }}
-                        style = { styles.companyLogoImg }
-                        resizeMode = "contain"
-    />
-                    ) : (
-  <Building2 size= { 18} color = "#2563EB" />
-                    )}
-</View>
+                <Text style={styles.resetFilterBtnText}>Reset Filters</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {filteredJobs.slice(0, visibleCount).map((job) => {
+                const logoUrl = getCompanyLogoUrl(
+                  job.company,
+                  job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo,
+                  (job as any).companyColor
+                );
 
-  <View style = { styles.titleCompanyStack } >
-    <Text style={ styles.cardJobTitle } numberOfLines = { 1} >
-      { job.title }
-      </Text>
-      <Text style = { styles.companyNameText } numberOfLines = { 1} >
-        { job.company || 'Skyline Manufacturing' }
-        </Text>
-        </View>
+                if (viewMode === 'list') {
+                  const isSelected = activeSelectedJobId === job.id;
 
-        <TouchableOpacity
-style = { styles.bookmarkBtn }
-activeOpacity = { 0.4}
-hitSlop = {{ top: 12, bottom: 12, left: 12, right: 12 }}
-onPress = {(e) => {
-  e.stopPropagation();
-  handleToggleSave(job.id);
-}}
+                  return (
+                    <TouchableOpacity
+                      key={job.id}
+                      activeOpacity={0.88}
+                      style={[styles.compactListCard, isSelected && styles.compactListCardActive]}
+                      onPress={() => {
+                        setActiveSelectedJobId(job.id);
+                        navigation.navigate('CandidateJobDetail', { jobId: job.id });
+                      }}
+                    >
+                      {/* Left Real Database Company Logo */}
+                      <View style={styles.listLogoSquare}>
+                        <Image
+                          source={{ uri: logoUrl }}
+                          style={styles.listLogoImg}
+                          resizeMode="cover"
+                        />
+                      </View>
+
+                      {/* Center Title & Location Stack */}
+                      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                        <Text style={styles.listJobTitle} numberOfLines={1} ellipsizeMode="tail">
+                          {job.title}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                          <MapPin size={13} color="#94A3B8" style={{ flexShrink: 0 }} />
+                          <Text style={styles.listLocationText} numberOfLines={1} ellipsizeMode="tail">
+                            {job.location || 'Chhatrapati Sambhajinagar'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }
+
+                const isSaved = savedJobIds.includes(job.id);
+                const expText =
+                  job.min_experience !== undefined || job.minExperience !== undefined
+                    ? `${job.min_experience ?? job.minExperience}-${job.max_experience ?? job.maxExperience} Yrs Exp`
+                    : '0-2 Yrs Exp';
+
+                return (
+                  <TouchableOpacity
+                    key={job.id}
+                    activeOpacity={0.92}
+                    style={styles.naukriJobCard}
+                    onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
                   >
-  <Bookmark
-                      size={ 18 }
-color = { isSaved? '#2563EB': '#94A3B8' }
-fill = { isSaved? '#2563EB': 'transparent' }
-  />
-  </TouchableOpacity>
-  </View>
+                    {/* Grid Card Top Section */}
+                    <View style={styles.naukriCardTopSection}>
+                      <View style={styles.naukriTitleRow}>
+                        <Text style={styles.naukriJobTitle} numberOfLines={1}>
+                          {job.title}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.naukriBookmarkBtn}
+                          onPress={() => handleToggleSave(job.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Bookmark
+                            size={18}
+                            color={isSaved ? '#2563EB' : '#94A3B8'}
+                            fill={isSaved ? '#2563EB' : 'transparent'}
+                          />
+                        </TouchableOpacity>
+                      </View>
 
-{/* Experience, Address & Salary Unified Row */ }
-<View style={ styles.cardExpSalaryRow }>
-  <View style={ styles.leftExpAddressGroup }>
-    <View style={ styles.metaItemGroup }>
-      <Briefcase size={ 13 } color = "#2563EB" />
-        <Text style={ styles.expText }> { expText } </Text>
-          </View>
+                      <View style={styles.naukriSpecsRow}>
+                        <View style={styles.naukriSpecItem}>
+                          <Briefcase size={13} color="#64748B" />
+                          <Text style={styles.naukriSpecText}>{expText}</Text>
+                        </View>
 
-          <Text style = { styles.verticalDivider } >| </Text>
+                        <Text style={styles.naukriDivider}>|</Text>
 
-            <View style = { styles.metaItemGroup } >
-              <MapPin size={ 13 } color = "#64748B" />
-                <Text style={ styles.cardLocationText } numberOfLines = { 1} >
-                  { job.location || 'Pune MIDC' }
-                  </Text>
-                  </View>
-                  </View>
+                        <View style={styles.naukriSpecItem}>
+                          <Text style={{ fontWeight: '700', color: '#64748B', fontSize: 12 }}>₹</Text>
+                          <Text style={styles.naukriSpecText}>
+                            {(job.salary_min ?? job.salaryMin) && (job.salary_max ?? job.salaryMax)
+                              ? `${((job.salary_min ?? job.salaryMin) / 100000).toFixed(1)}-${((job.salary_max ?? job.salaryMax) / 100000).toFixed(1)} Lacs PA`
+                              : '3.5-5.5 Lacs PA'}
+                          </Text>
+                        </View>
 
-                  <Text style = { styles.salaryText } > { salaryText } </Text>
+                        <Text style={styles.naukriDivider}>|</Text>
+
+                        <View style={styles.naukriSpecItem}>
+                          <MapPin size={13} color="#64748B" />
+                          <Text style={styles.naukriSpecText} numberOfLines={1}>
+                            {job.location || 'Chhatrapati Sambhajinagar'}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
 
-{/* Tags Badge Row - All in One Single Row */ }
-<View style={ styles.tagsBadgeRow }>
-  <View style={ styles.onsiteBadge }>
-    <Text style={ styles.onsiteBadgeText } numberOfLines = { 1} > { job.work_mode || job.workMode || 'Onsite' } </Text>
-      </View>
-      <View style = { styles.fullTimeBadge } >
-        <Text style={ styles.fullTimeBadgeText } numberOfLines = { 1} > { job.job_type || job.jobType || 'Full-Time' } </Text>
-          </View>
-          <View style = { styles.shiftBadge } >
-            <Clock size={ 11 } color = "#7C3AED" />
-              <Text style={ styles.shiftBadgeText } numberOfLines = { 1} > { job.shift_details || 'Day Shift (8:00 AM - 5:00 PM)' } </Text>
-                </View>
-                </View>
+                    {/* Grid Card Middle Chips Section */}
+                    <View style={styles.naukriCardMiddleSection}>
+                      <View style={styles.naukriBadgeJobType}>
+                        <Text style={styles.naukriBadgeJobTypeText}>{job.job_type || (job as any).jobType || 'Full-time'}</Text>
+                      </View>
 
-{/* Footer Divider */ }
-<View style={ styles.cardDivider } />
+                      <View style={styles.naukriBadgeWorkMode}>
+                        <Text style={styles.naukriBadgeWorkModeText}>{job.work_mode || (job as any).workMode || 'On-site'}</Text>
+                      </View>
 
-{/* Company & Posted Time Footer */ }
-<View style={ styles.companyFooterRow }>
-  <Text style={ styles.postedByText }> Posted by { job.company || 'Skyline' } </Text>
-    <Text style = { styles.timeAgoText } > { job.posted_at || '7h ago' } </Text>
-      </View>
-      </TouchableOpacity>
-            );
+                      {(job.openings || (job as any).vacancies) ? (
+                        <View style={styles.naukriBadgeShift}>
+                          <Text style={styles.naukriBadgeShiftText}>
+                            {job.openings || (job as any).vacancies} Vacancies
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {/* Grid Card Bottom Company & Duration Footer Section */}
+                    <View style={styles.naukriCardBottomSection}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <View style={styles.naukriLogoSquare}>
+                          {logoUrl ? (
+                            <Image
+                              source={{ uri: logoUrl }}
+                              style={styles.naukriLogoImg}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <Building2 size={20} color="#2563EB" />
+                          )}
+                        </View>
+
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.naukriCompanyName} numberOfLines={1}>
+                            {job.company || 'Industrial Company'}
+                          </Text>
+                          <Text style={styles.naukriPostedByText} numberOfLines={1}>
+                            Posted by {job.company || 'Recruiter'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.naukriTimeAgoText}>
+                        {formatTimeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || (job as any).createdAt)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {/* Infinite Scroll Bottom Spinner */}
+              {loadingMore && (
+                <View style={styles.infiniteScrollContainer}>
+                  <ActivityIndicator size="small" color="#2563EB" />
+                  <Text style={styles.infiniteScrollText}>Loading more vacancies...</Text>
+                </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Filter Side Drawer Modal */}
+      <JobFilterSideDrawer
+        visible={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        currentFilters={activeFilters}
+        onApplyFilters={(newFilters) => setActiveFilters(newFilters)}
+        onResetFilters={() =>
+          setActiveFilters({
+            industry: 'All Industries',
+            jobType: 'All Types',
+            workMode: 'All Modes',
+            minExperience: 'All Experience',
+            salaryMin: 0,
+            midcZone: 'All MIDC Zones',
+            busFacility: false,
+            canteen: false,
+            accommodation: false,
+            overtime: false,
           })
-        )}
-</ScrollView>
-  </View>
+        }
+        totalMatchingJobsCount={filteredJobs.length}
+      />
+    </View>
   );
 };
 
@@ -776,30 +1043,35 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  webJobCard: {
+  compactListCard: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#BFDBFE',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     borderRadius: 8,
-    padding: 10,
-    gap: 6,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  cardHeaderTopRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  companyIconSquare: {
-    width: 36,
-    height: 36,
+  compactListCardActive: {
+    borderColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  listLogoSquare: {
+    width: 44,
+    height: 44,
     borderRadius: 6,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -808,15 +1080,236 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  companyLogoImg: {
-    width: 32,
-    height: 32,
+  listLogoImg: {
+    width: '100%',
+    height: '100%',
     borderRadius: 5,
+  },
+  listJobTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  listLocationText: {
+    fontSize: 12.5,
+    color: '#64748B',
+    fontWeight: '600',
+    flex: 1,
+  },
+  naukriJobCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    marginVertical: 6,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  naukriCardTopSection: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 6,
+  },
+  naukriTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  naukriJobTitle: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  naukriBookmarkBtn: {
+    padding: 2,
+  },
+  naukriSpecsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 2,
+  },
+  naukriSpecItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  naukriSpecText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  naukriSpecTextBold: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  naukriDivider: {
+    color: '#CBD5E1',
+    fontSize: 12,
+  },
+  naukriCardMiddleSection: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  naukriBadgeWorkMode: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  naukriBadgeWorkModeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  naukriBadgeJobType: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  naukriBadgeJobTypeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  naukriBadgeEdu: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  naukriBadgeEduText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  naukriBadgeShift: {
+    backgroundColor: '#F8F4FF',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  naukriBadgeShiftText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6D28D9',
+  },
+  naukriCardBottomSection: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  naukriLogoSquare: {
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  naukriLogoImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+  },
+  naukriCompanyName: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  naukriPostedByText: {
+    fontSize: 11,
+    color: '#0284C7',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  naukriTimeAgoText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  webJobCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
+  },
+  cardHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  companyIconSquare: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  companyLogoImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
   },
   titleCompanyStack: {
     flex: 1,
     justifyContent: 'center',
-    gap: 1,
+    gap: 2,
+    marginLeft: 4,
   },
   cardJobTitle: {
     fontSize: 14.5,
@@ -991,8 +1484,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   resetFilterBtnText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#2563EB',
+  },
+  infiniteScrollContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  infiniteScrollText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#64748B',
   },
 });

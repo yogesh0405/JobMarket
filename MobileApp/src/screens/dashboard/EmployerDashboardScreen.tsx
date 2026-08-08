@@ -33,7 +33,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { jobsApi } from '../../api/jobsApi';
 import { Job } from '../../types';
 import { Badge } from '../../components/common/Badge';
-import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
+import { Skeleton, JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { WebHeader } from '../../components/common/WebHeader';
@@ -118,6 +118,79 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   })) : [
     { name: 'No Active Trades', pct: 0 },
   ];
+
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.container}>
+        <WebHeader showSearch={false} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Minimal Hero Header Skeleton */}
+          <View style={styles.minimalHeroCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Skeleton width={44} height={44} style={{ borderRadius: 10 }} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Skeleton width="55%" height={16} style={{ borderRadius: 4 }} />
+                <Skeleton width="40%" height={12} style={{ borderRadius: 4 }} />
+              </View>
+            </View>
+          </View>
+
+          {/* 4 Metric Cards Grid Skeleton */}
+          <View style={styles.metricsGrid}>
+            {[1, 2, 3, 4].map((k) => (
+              <View key={k} style={styles.metricCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Skeleton width="55%" height={12} style={{ borderRadius: 4 }} />
+                  <Skeleton width={24} height={24} style={{ borderRadius: 6 }} />
+                </View>
+                <Skeleton width="40%" height={24} style={{ borderRadius: 4 }} />
+              </View>
+            ))}
+          </View>
+
+          {/* Analytics Funnel Card Skeleton */}
+          <View style={styles.analyticsCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Skeleton width="45%" height={16} style={{ borderRadius: 4 }} />
+              <Skeleton width={70} height={20} style={{ borderRadius: 10 }} />
+            </View>
+            {[1, 2, 3, 4].map((k) => (
+              <View key={k} style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Skeleton width="45%" height={12} style={{ borderRadius: 4 }} />
+                  <Skeleton width="25%" height={12} style={{ borderRadius: 4 }} />
+                </View>
+                <Skeleton width="100%" height={8} style={{ borderRadius: 4 }} />
+              </View>
+            ))}
+          </View>
+
+          {/* Locations & Trades 2-Col Skeleton */}
+          <View style={styles.analyticsTwoColRow}>
+            <View style={styles.subAnalyticsCard}>
+              <Skeleton width="60%" height={14} style={{ borderRadius: 4, marginBottom: 12 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4, marginBottom: 8 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4, marginBottom: 8 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4 }} />
+            </View>
+            <View style={styles.subAnalyticsCard}>
+              <Skeleton width="60%" height={14} style={{ borderRadius: 4, marginBottom: 12 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4, marginBottom: 8 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4, marginBottom: 8 }} />
+              <Skeleton width="100%" height={8} style={{ borderRadius: 4 }} />
+            </View>
+          </View>
+
+          {/* Recent Jobs Header & Cards Skeleton */}
+          <View style={{ marginVertical: 12 }}>
+            <Skeleton width="40%" height={16} style={{ borderRadius: 4, marginBottom: 12 }} />
+            <JobCardSkeleton />
+            <JobCardSkeleton />
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

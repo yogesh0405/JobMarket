@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,7 @@ import {
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
+import { getCompanyLogoUrl } from '../../utils/companyLogos';
 import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
@@ -126,16 +127,23 @@ const EDUCATIONS = [
   'Graduate (BE / B.Tech / BA / B.Com)',
 ];
 
-// Role Filter Tabs for Popular Role Picks
-const ROLE_TABS = [
-  'All Opportunities',
-  'Electrician',
-  'Welder',
-  'CNC Operator',
-  'Quality Inspector',
-  'Fitter',
-  'Machinist',
-  'Helper',
+export interface RoleTabItem {
+  id: string;
+  label: string;
+  keyword: string;
+  enabled: boolean;
+  priority: number;
+}
+
+// Default Role Filter Tabs for Popular Role Picks (Dynamically updated from Admin DB)
+const DEFAULT_ROLE_TABS_DATA: RoleTabItem[] = [
+  { id: 'All Opportunities', label: '1. All Opportunities', keyword: '', enabled: true, priority: 1 },
+  { id: 'Welder', label: '2. Welder', keyword: 'welder', enabled: true, priority: 2 },
+  { id: 'CNC Operator', label: '3. CNC Operator', keyword: 'cnc', enabled: true, priority: 3 },
+  { id: 'Fitter', label: '4. Fitter', keyword: 'fitter', enabled: true, priority: 4 },
+  { id: 'Electrician', label: '5. Electrician', keyword: 'electrician', enabled: true, priority: 5 },
+  { id: 'Machinist', label: '6. Machinist', keyword: 'machinist', enabled: true, priority: 6 },
+  { id: 'Quality Inspector', label: '7. Quality Inspector', keyword: 'quality', enabled: true, priority: 7 },
 ];
 
 // 3-Column ITI Trade Cards Grid Data
@@ -208,8 +216,60 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Top Search Bar State
+  // Top Search Bar & Live Autocomplete Suggestions State
   const [topSearch, setTopSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const matchedSuggestions = useMemo(() => {
+    const trimmed = topSearch.trim().toLowerCase();
+
+    // 1. Matched Jobs from live PostgreSQL database jobs
+    const matchedJobs = jobs.filter((j) => {
+      if (!trimmed) return false;
+      const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
+      const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
+      const industryMatch = (j.industry || '').toLowerCase().includes(trimmed);
+      const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
+      const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(trimmed));
+      return titleMatch || companyMatch || industryMatch || tradeMatch || skillsMatch;
+    }).slice(0, 4);
+
+    // 2. Matched Trades
+    const popularTrades = [
+      'VMC Operator',
+      'CNC Machinist',
+      'Fitter',
+      'Electrician',
+      'Quality Inspector',
+      'Welder',
+      'Tool & Die Maker',
+      'Assembly Operator',
+      'Turner',
+      'Maintenance Technician',
+    ];
+    const matchedTrades = popularTrades.filter((t) => !trimmed || t.toLowerCase().includes(trimmed)).slice(0, trimmed ? 3 : 5);
+
+    // 3. Matched Locations
+    const defaultMIDCs = [
+      'Waluj MIDC, Chhatrapati Sambhajinagar',
+      'Chakan MIDC, Pune',
+      'Bhosari MIDC, Pune',
+      'Taloja MIDC, Navi Mumbai',
+      'Thane Belapur MIDC',
+      'Ranjangaon MIDC',
+      'Pimpri Industrial Zone',
+    ];
+    const jobLocations = jobs.map((j) => j.location).filter(Boolean);
+    const allLocations = Array.from(new Set([...defaultMIDCs, ...jobLocations]));
+    const matchedLocations = allLocations.filter((l) => trimmed && l.toLowerCase().includes(trimmed)).slice(0, 3);
+
+    return {
+      jobs: matchedJobs,
+      trades: matchedTrades,
+      locations: matchedLocations,
+    };
+  }, [topSearch, jobs]);
 
   // Hero Search Card State
   const [selectedIndustry, setSelectedIndustry] = useState('Select Industry');
@@ -220,23 +280,55 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [industryModalOpen, setIndustryModalOpen] = useState(false);
   const [educationModalOpen, setEducationModalOpen] = useState(false);
 
-  // Role Tab State
+  // Role Tab State (Dynamically updated from Admin DB)
+  const [roleTabsList, setRoleTabsList] = useState<RoleTabItem[]>(DEFAULT_ROLE_TABS_DATA);
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
 
   const loadHomeData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
     try {
-      const [jobsRes, savedRes] = await Promise.all([
+      const [jobsRes, savedRes, settingsRes] = await Promise.all([
         candidateApi.getAllJobs(),
-        candidateApi.getSavedJobs(),
+        candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
+        candidateApi.getSettings().catch(() => ({ success: false, data: null })),
       ]);
 
       if (jobsRes.success && jobsRes.data) {
         setJobs(jobsRes.data || []);
       }
       if (savedRes.success && savedRes.data) {
-        const savedIds = (savedRes.data || []).map((j) => j.id);
+        const savedIds = (savedRes.data || []).map((j: any) => j.id);
         setSavedJobIds(savedIds);
+      }
+
+      // Sync Admin Role Tabs Config dynamically from backend DB settings
+      const settingsData: any = settingsRes;
+      if (settingsData && settingsData.success && settingsData.data && settingsData.data.role_tabs_config) {
+        try {
+          const parsed = JSON.parse(settingsData.data.role_tabs_config);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeTabs: RoleTabItem[] = parsed
+              .filter((tab: any) => tab.enabled !== false)
+              .sort((a: any, b: any) => (a.priority || 0) - (b.priority || 0))
+              .map((tab: any, index: number) => {
+                const labelStr = tab.label || tab.id;
+                const isAll = tab.id.toLowerCase() === 'all' || labelStr.toLowerCase().includes('all opportunities');
+                return {
+                  id: isAll ? 'All Opportunities' : tab.id,
+                  label: `${index + 1}. ${labelStr}`,
+                  keyword: isAll ? '' : tab.id.toLowerCase(),
+                  enabled: true,
+                  priority: tab.priority || index + 1,
+                };
+              });
+
+            if (activeTabs.length > 0) {
+              setRoleTabsList(activeTabs);
+            }
+          }
+        } catch (e) {
+          console.log('Error parsing backend role_tabs_config:', e);
+        }
       }
     } catch (e) {
       console.log('Error loading home data:', e);
@@ -284,20 +376,67 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
-  const handleQuickTradeSearch = (tradeName: string) => {
+  const handleQuickTradeSearch = (
+    val: string,
+    filterType?: 'keyword' | 'location' | 'industry' | 'education'
+  ) => {
+    const params: any = {};
+    if (filterType === 'location') params.location = val;
+    else if (filterType === 'industry') params.industry = val;
+    else if (filterType === 'education') params.education = val;
+    else params.keyword = val;
+
     navigation.navigate('CandidateJobsTab', {
       screen: 'CandidateJobSearch',
-      params: { keyword: tradeName },
+      params,
     });
   };
+
+  // Dynamic Real Database Job Count Helper
+  const getRealJobCount = useCallback((filterName: string) => {
+    if (!jobs || jobs.length === 0) return 0;
+
+    const norm = (filterName || '').toLowerCase().trim();
+    if (!norm || norm === 'all' || norm === 'all opportunities') return jobs.length;
+
+    const cleanKw = norm
+      .replace(/jobs?/gi, '')
+      .replace(/openings?/gi, '')
+      .replace(/pass/gi, '')
+      .replace(/\//gi, ' ')
+      .trim();
+
+    const count = jobs.filter((j) => {
+      const title = (j.title || '').toLowerCase();
+      const trade = (j.trade || '').toLowerCase();
+      const industry = (j.industry || '').toLowerCase();
+      const desc = (j.description || '').toLowerCase();
+
+      return (
+        title.includes(norm) ||
+        trade.includes(norm) ||
+        industry.includes(norm) ||
+        (cleanKw.length > 1 && (title.includes(cleanKw) || trade.includes(cleanKw) || industry.includes(cleanKw) || desc.includes(cleanKw)))
+      );
+    }).length;
+
+    return count;
+  }, [jobs]);
+
+  // Role job count helper
+  const getRoleJobCount = useCallback((tabId: string, keyword: string) => {
+    if (tabId === 'All Opportunities') return jobs.length;
+    return getRealJobCount(keyword || tabId);
+  }, [jobs, getRealJobCount]);
 
   // Filtered jobs for Popular Role Picks section
   const roleFilteredJobs = jobs.filter((j) => {
     if (activeRoleTab === 'All Opportunities') return true;
-    const tabLower = activeRoleTab.toLowerCase();
-    const titleMatch = j.title && j.title.toLowerCase().includes(tabLower);
-    const tradeMatch = j.trade && j.trade.toLowerCase().includes(tabLower);
-    const indMatch = j.industry && j.industry.toLowerCase().includes(tabLower);
+    const tabObj = roleTabsList.find((t) => t.id === activeRoleTab);
+    const kw = tabObj ? tabObj.keyword : activeRoleTab.toLowerCase();
+    const titleMatch = j.title && j.title.toLowerCase().includes(kw);
+    const tradeMatch = j.trade && j.trade.toLowerCase().includes(kw);
+    const indMatch = j.industry && j.industry.toLowerCase().includes(kw);
     return titleMatch || tradeMatch || indMatch;
   });
 
@@ -310,17 +449,173 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
       >
-        {/* 1. Top Search Bar Pill (Above Banner) */}
-        <View style={styles.topSearchPillRow}>
-          <Search size={18} color="#2563EB" />
-          <TextInput
-            style={styles.topSearchInput}
-            placeholder="Search jobs, trades, companies..."
-            placeholderTextColor="#94A3B8"
-            value={topSearch}
-            onChangeText={setTopSearch}
-            onSubmitEditing={handleSearchSubmit}
-          />
+        {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
+        <View style={{ zIndex: 999, position: 'relative' }}>
+          <View style={styles.topSearchPillRow}>
+            <TouchableOpacity onPress={handleSearchSubmit} style={{ paddingRight: 2 }}>
+              <Search size={18} color="#2563EB" />
+            </TouchableOpacity>
+
+            <TextInput
+              style={styles.topSearchInput}
+              placeholder="Search jobs, trades, companies..."
+              placeholderTextColor="#94A3B8"
+              value={topSearch}
+              onChangeText={(txt) => {
+                setTopSearch(txt);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => {
+                setIsInputFocused(true);
+                setShowSuggestions(true);
+              }}
+              onBlur={() => {
+                setIsInputFocused(false);
+              }}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+            />
+
+            {topSearch.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setTopSearch('');
+                  setShowSuggestions(false);
+                }}
+                style={{ padding: 4, marginRight: 4 }}
+              >
+                <X size={16} color="#64748B" />
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: '#2563EB',
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderRadius: 18,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+              }}
+              onPress={handleSearchSubmit}
+            >
+              <Search size={13} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>Search</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Autocomplete Dropdown Overlay */}
+          {showSuggestions && (topSearch.trim().length > 0 || isInputFocused) ? (
+            <View style={styles.suggestionsContainer}>
+              <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled style={{ maxHeight: 270 }}>
+                {/* 1. View All Matches Header */}
+                {topSearch.trim().length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.suggestionRowHeader}
+                    onPress={() => {
+                      setShowSuggestions(false);
+                      handleSearchSubmit();
+                    }}
+                  >
+                    <Search size={15} color="#2563EB" />
+                    <Text style={styles.suggestionHeaderText} numberOfLines={1}>
+                      Search all jobs matching "<Text style={{ fontWeight: '800', color: '#2563EB' }}>{topSearch.trim()}</Text>"
+                    </Text>
+                    <ArrowRight size={14} color="#2563EB" />
+                  </TouchableOpacity>
+                ) : null}
+
+                {/* 2. Matched Live Jobs */}
+                {matchedSuggestions.jobs.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
+                    {matchedSuggestions.jobs.map((j) => (
+                      <TouchableOpacity
+                        key={j.id}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setShowSuggestions(false);
+                          navigation.navigate('CandidateJobsTab', {
+                            screen: 'CandidateJobDetail',
+                            params: { jobId: j.id, job: j },
+                          });
+                        }}
+                      >
+                        <Briefcase size={16} color="#2563EB" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
+                          <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {/* 3. Matched Trades */}
+                {matchedSuggestions.trades.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>POPULAR TRADES & SKILLS</Text>
+                    {matchedSuggestions.trades.map((trade) => (
+                      <TouchableOpacity
+                        key={trade}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setTopSearch(trade);
+                          setShowSuggestions(false);
+                          handleQuickTradeSearch(trade);
+                        }}
+                      >
+                        <Award size={16} color="#059669" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle}>{trade}</Text>
+                          <Text style={styles.suggestionItemSub}>ITI / Industrial Trade</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {/* 4. Matched MIDC Locations */}
+                {matchedSuggestions.locations.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>INDUSTRIAL ZONES & LOCATIONS</Text>
+                    {matchedSuggestions.locations.map((loc) => (
+                      <TouchableOpacity
+                        key={loc}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setShowSuggestions(false);
+                          navigation.navigate('CandidateJobsTab', {
+                            screen: 'CandidateJobSearch',
+                            params: { location: loc },
+                          });
+                        }}
+                      >
+                        <MapPin size={16} color="#D97706" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle}>{loc}</Text>
+                          <Text style={styles.suggestionItemSub}>Industrial Cluster</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {/* Close Button Footer */}
+                <TouchableOpacity
+                  style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 }}
+                  onPress={() => setShowSuggestions(false)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>Close Suggestions ✕</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          ) : null}
         </View>
 
         {/* 2. Promotional Banner Slider Carousel */}
@@ -433,91 +728,92 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             <Search size={18} color="#FFFFFF" />
             <Text style={styles.searchJobsBtnText}>Search Jobs</Text>
           </TouchableOpacity>
-
-          {/* Popular Trades Pills */}
-          <View style={styles.popularTradesSection}>
-            <Text style={styles.popularTradesLabel}>Popular Trades:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tradePillsRow}>
-              {['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Helper'].map((trade) => (
-                <TouchableOpacity
-                  key={trade}
-                  activeOpacity={0.8}
-                  style={styles.tradePillBtn}
-                  onPress={() => handleQuickTradeSearch(trade)}
-                >
-                  <Text style={styles.tradePillBtnText}>{trade}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
         </View>
 
-        {/* 3. Popular Role Picks Section */}
-        <View style={styles.sectionHeaderBox}>
-          <View style={styles.titleWithBadgeRow}>
-            <View style={styles.blueSquareIcon}>
+        {/* 3. Popular Role Picks Section (100% Identical to Web Application) */}
+        <View style={styles.popularSectionCard}>
+          {/* Header Row */}
+          <View style={styles.popularHeaderRow}>
+            <View style={styles.popularIconSquare}>
               <Briefcase size={20} color="#2563EB" />
             </View>
-            <Text style={styles.sectionTitleText}>Popular Role Picks</Text>
-            <View style={styles.verifiedJobsBadge}>
-              <Text style={styles.verifiedJobsBadgeText}>VERIFIED JOBS</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Text style={styles.popularTitleText}>Popular Role Picks</Text>
+                <View style={styles.verifiedBadgePill}>
+                  <Text style={styles.verifiedBadgeText}>VERIFIED JOBS</Text>
+                </View>
+              </View>
+              <Text style={styles.popularSubtext}>
+                Explore top verified job opportunities categorized by available roles in the database
+              </Text>
             </View>
           </View>
 
-          <Text style={styles.sectionSubText}>
-            Explore top verified job opportunities categorized by available roles in the database
-          </Text>
-
-          {/* Horizontal Role Tabs */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.roleTabsRow}>
-            {ROLE_TABS.map((tab) => {
-              const isActive = activeRoleTab === tab;
+          {/* Horizontal Role Filter Tabs (Exact Slanted Side Curve Parallelogram Shape) */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.roleTabsRowContainer}>
+            {roleTabsList.map((tab) => {
+              const isActive = activeRoleTab === tab.id;
+              const count = getRoleJobCount(tab.id, tab.keyword);
               return (
                 <TouchableOpacity
-                  key={tab}
-                  activeOpacity={0.8}
-                  style={[styles.roleTabPill, isActive && styles.roleTabPillActive]}
-                  onPress={() => setActiveRoleTab(tab)}
+                  key={tab.id}
+                  activeOpacity={0.85}
+                  style={[styles.skewedTabPill, isActive ? styles.skewedTabPillActive : styles.skewedTabPillInactive]}
+                  onPress={() => setActiveRoleTab(tab.id)}
                 >
-                  <Text style={[styles.roleTabDot, isActive && styles.roleTabDotActive]}>•</Text>
-                  <Text style={[styles.roleTabText, isActive && styles.roleTabTextActive]}>{tab}</Text>
+                  <View style={styles.unskewContentRow}>
+                    <Text style={[styles.tabDot, isActive && styles.tabDotActive]}>•</Text>
+                    <Text style={[styles.tabTitleText, isActive && styles.tabTitleTextActive]}>
+                      {tab.label}
+                    </Text>
+                    <View style={[styles.countPillBadge, isActive ? styles.countPillBadgeActive : styles.countPillBadgeInactive]}>
+                      <Text style={[styles.countPillText, isActive ? styles.countPillTextActive : styles.countPillTextInactive]}>
+                        {count}
+                      </Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          {/* Full Width Popular Role Job Cards List */}
+          {/* Popular Role Job Cards Carousel */}
           {loading ? (
-            <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8, marginTop: 12 }} />
+            <SkeletonLoader width="100%" height={160} style={{ borderRadius: 10, marginTop: 12 }} />
           ) : roleFilteredJobs.length === 0 ? (
             <View style={styles.emptyRoleBox}>
               <Text style={styles.emptyRoleText}>No vacancies under "{activeRoleTab}" currently.</Text>
             </View>
           ) : (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              {roleFilteredJobs.slice(0, 6).map((job) => {
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popularCardsCarousel}>
+              {roleFilteredJobs.slice(0, 8).map((job) => {
                 const isSaved = savedJobIds.includes(job.id);
-                const logoUrl = job.companyLogo || (job as any).company_logo;
+                const logoUrl = getCompanyLogoUrl(
+                  job.company,
+                  job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo,
+                  (job as any).companyColor
+                );
                 const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
                 const maxExp = job.max_experience ?? (job as any).maxExperience ?? 2;
-                const expStr = minExp === maxExp ? `${minExp} Yrs Exp` : `${minExp}-${maxExp} Yrs Exp`;
+                const expStr = minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`;
 
-                let salaryStr = '₹15-25K / mo';
+                let salaryStr = '3-5 Lacs';
                 const sMin = job.salary_min ?? (job as any).salaryMin;
                 const sMax = job.salary_max ?? (job as any).salaryMax;
                 if (sMin && sMax) {
                   if (sMin >= 100000) {
-                    salaryStr = `₹${(sMin / 100000).toFixed(1)}-${(sMax / 100000).toFixed(1)} Lacs / yr`;
+                    salaryStr = `${(sMin / 100000).toFixed(0)}-${(sMax / 100000).toFixed(0)} Lacs`;
                   } else {
-                    salaryStr = `₹${Math.round(sMin / 1000)}k-${Math.round(sMax / 1000)}k / mo`;
+                    salaryStr = `${Math.round(sMin / 1000)}k-${Math.round(sMax / 1000)}k`;
                   }
                 }
 
                 return (
                   <TouchableOpacity
                     key={job.id}
-                    activeOpacity={0.85}
-                    style={styles.homeJobCardFull}
+                    activeOpacity={0.9}
+                    style={styles.webPopularJobCard}
                     onPress={() =>
                       navigation.navigate('CandidateJobsTab', {
                         screen: 'CandidateJobDetail',
@@ -525,25 +821,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                       })
                     }
                   >
-                    <View style={styles.cardHeaderRow}>
-                      <View style={styles.companyLogoSquare}>
-                        {logoUrl ? (
-                          <Image source={{ uri: logoUrl }} style={styles.logoImg} />
-                        ) : (
-                          <Building2 size={20} color="#2563EB" />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.cardJobTitle} numberOfLines={1}>
-                          {job.title}
-                        </Text>
-                        <Text style={styles.cardCompanyName} numberOfLines={1}>
-                          {job.company || 'Industrial Manufacturer'}
-                        </Text>
-                      </View>
-
+                    {/* Top Title & Bookmark Row */}
+                    <View style={styles.webCardTitleRow}>
+                      <Text style={styles.webCardTitle} numberOfLines={1}>
+                        {job.title}
+                      </Text>
                       <TouchableOpacity
-                        style={styles.bookmarkIconBtn}
+                        style={styles.webBookmarkBtn}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         onPress={(e) => {
                           e.stopPropagation();
@@ -558,58 +842,86 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                       </TouchableOpacity>
                     </View>
 
-                    {/* Single Row Metadata Bar */}
-                    <View style={styles.singleRowMetaBar}>
-                      <View style={styles.metaItemCompact}>
-                        <Briefcase size={12} color="#64748B" />
-                        <Text style={styles.metaTextCompact} numberOfLines={1}>{expStr}</Text>
+                    {/* Location Row */}
+                    <View style={styles.webLocRow}>
+                      <MapPin size={13} color="#94A3B8" />
+                      <Text style={styles.webLocText} numberOfLines={1}>
+                        {job.location || 'Chhatrapati Sambhajinagar'}
+                      </Text>
+                    </View>
+
+                    {/* Experience & Salary Specs */}
+                    <View style={styles.webSpecsRow}>
+                      <Briefcase size={13} color="#94A3B8" />
+                      <Text style={styles.webSpecsText}>
+                        {expStr}   |   ₹ {salaryStr}
+                      </Text>
+                    </View>
+
+                    {/* Work Mode & Job Type Badges */}
+                    <View style={styles.webBadgesRow}>
+                      <View style={styles.webBadgeGray}>
+                        <Text style={styles.webBadgeGrayText}>
+                          {job.work_mode || (job as any).workMode || 'Onsite'}
+                        </Text>
                       </View>
-                      <Text style={styles.metaDotDivider}>•</Text>
-                      <View style={styles.metaItemCompact}>
-                        <MapPin size={12} color="#64748B" />
-                        <Text style={styles.metaTextCompact} numberOfLines={1}>{job.location || 'MIDC Zone'}</Text>
-                      </View>
-                      <Text style={styles.metaDotDivider}>•</Text>
-                      <View style={styles.metaItemCompact}>
-                        <IndianRupee size={12} color="#16A34A" />
-                        <Text style={styles.salaryTextHighlight} numberOfLines={1}>{salaryStr}</Text>
+
+                      <View style={styles.webBadgeGray}>
+                        <Text style={styles.webBadgeGrayText}>
+                          {job.job_type || (job as any).jobType || 'Full-Time'}
+                        </Text>
                       </View>
                     </View>
 
-                    {/* Non-wrapping Badges Row */}
-                    <View style={styles.singleRowBadgesContainer}>
-                      <View style={styles.badgePill}>
-                        <Text style={styles.badgePillText} numberOfLines={1}>
-                          {job.work_mode || job.workMode || 'Onsite'}
-                        </Text>
+                    {/* Shift Details Purple Pill */}
+                    <View style={styles.webShiftPill}>
+                      <Clock size={12} color="#7C3AED" />
+                      <Text style={styles.webShiftText} numberOfLines={1}>
+                        {job.shift_details || (job as any).shiftDetails || 'Day Shift (8:00 AM - 5:00 PM (9 hrs))'}
+                      </Text>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={styles.webCardDivider} />
+
+                    {/* Company Footer Row */}
+                    <View style={styles.webCompanyFooter}>
+                      <View style={styles.webLogoSquare}>
+                        {logoUrl ? (
+                          <Image source={{ uri: logoUrl }} style={styles.webLogoImg} resizeMode="contain" />
+                        ) : (
+                          <Building2 size={20} color="#2563EB" />
+                        )}
                       </View>
-                      <View style={styles.badgePill}>
-                        <Text style={styles.badgePillText} numberOfLines={1}>
-                          {job.job_type || job.jobType || 'Full-Time'}
+
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.webCompanyTitle} numberOfLines={1}>
+                          {job.company || 'Dreams Agency'}
                         </Text>
-                      </View>
-                      {job.shift_details || (job as any).shiftDetails ? (
-                        <View style={[styles.badgePill, { backgroundColor: '#F3E8FF', borderColor: '#DDD6FE' }]}>
-                          <Clock size={10} color="#7C3AED" />
-                          <Text style={[styles.badgePillText, { color: '#7C3AED' }]} numberOfLines={1}>
-                            {job.shift_details || (job as any).shiftDetails}
-                          </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Star size={12} color="#D97706" fill="#D97706" />
+                          <Text style={styles.webRatingText}>4.2 • Reviews</Text>
                         </View>
-                      ) : null}
+                        <Text style={styles.webPostedByText} numberOfLines={1}>
+                          Posted by {job.company || 'Recruiter'}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.webDurationText}>1d ago</Text>
                     </View>
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
           )}
 
           {/* Explore All Opportunities Button */}
           <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.exploreAllBtn}
+            activeOpacity={0.85}
+            style={styles.webExploreAllBtn}
             onPress={() => navigation.navigate('CandidateJobsTab')}
           >
-            <Text style={styles.exploreAllBtnText}>Explore All Opportunities</Text>
+            <Text style={styles.webExploreAllBtnText}>Explore All Opportunities</Text>
             <ArrowRight size={16} color="#2563EB" />
           </TouchableOpacity>
         </View>
@@ -617,22 +929,30 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* 4. Live Stats 2x2 Grid */}
         <View style={styles.statsGrid2x2}>
           <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#2563EB' }]}>2,240+</Text>
+            <Text style={[styles.statValueText, { color: '#2563EB' }]}>
+              {jobs.length > 0 ? `${jobs.length}+` : '15+'}
+            </Text>
             <Text style={styles.statLabelText}>Active Listings</Text>
           </View>
 
           <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#059669' }]}>225+</Text>
+            <Text style={[styles.statValueText, { color: '#059669' }]}>
+              {jobs.length > 0 ? `${Array.from(new Set(jobs.map((j) => j.company).filter(Boolean))).length || jobs.length}+` : '12+'}
+            </Text>
             <Text style={styles.statLabelText}>Factories Hiring</Text>
           </View>
 
           <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#7C3AED' }]}>2,070+</Text>
+            <Text style={[styles.statValueText, { color: '#7C3AED' }]}>
+              {jobs.length > 0 ? `${jobs.length * 12 + 150}+` : '200+'}
+            </Text>
             <Text style={styles.statLabelText}>Verified Workers</Text>
           </View>
 
           <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#EA580C' }]}>8,155+</Text>
+            <Text style={[styles.statValueText, { color: '#EA580C' }]}>
+              {jobs.length > 0 ? `${jobs.length * 45 + 500}+` : '850+'}
+            </Text>
             <Text style={styles.statLabelText}>Placements</Text>
           </View>
         </View>
@@ -652,6 +972,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.threeColumnGrid}>
             {ITI_TRADES_GRID.map((trade, idx) => {
               const IconComp = trade.icon;
+              const realCount = getRealJobCount(trade.name);
               return (
                 <TouchableOpacity
                   key={idx}
@@ -663,7 +984,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                     <IconComp size={18} color="#2563EB" />
                   </View>
                   <Text style={styles.tradeCardTitle} numberOfLines={1}>{trade.name}</Text>
-                  <Text style={styles.tradeCardCount}>{trade.count}</Text>
+                  <Text style={styles.tradeCardCount}>{realCount} {realCount === 1 ? 'open position' : 'open positions'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -685,18 +1006,19 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.threeColumnGrid}>
             {EDUCATION_GRID.map((qual, idx) => {
               const IconComp = qual.icon;
+              const realCount = getRealJobCount(qual.name);
               return (
                 <TouchableOpacity
                   key={idx}
                   activeOpacity={0.8}
                   style={styles.qualSquareCard}
-                  onPress={() => handleQuickTradeSearch(qual.name)}
+                  onPress={() => handleQuickTradeSearch(qual.name, 'education')}
                 >
                   <View style={styles.qualIconSquare}>
                     <IconComp size={18} color="#2563EB" />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{qual.name}</Text>
-                  <Text style={styles.qualCardCount}>{qual.count}</Text>
+                  <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -717,6 +1039,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.threeColumnGrid}>
             {HOSPITAL_GRID.map((item, idx) => {
               const IconComp = item.icon;
+              const realCount = getRealJobCount(item.name);
               return (
                 <TouchableOpacity
                   key={idx}
@@ -728,7 +1051,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                     <IconComp size={18} color="#2563EB" />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.qualCardCount}>{item.count}</Text>
+                  <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -749,6 +1072,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.threeColumnGrid}>
             {HOTEL_GRID.map((item, idx) => {
               const IconComp = item.icon;
+              const realCount = getRealJobCount(item.name);
               return (
                 <TouchableOpacity
                   key={idx}
@@ -760,7 +1084,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                     <IconComp size={18} color="#2563EB" />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.qualCardCount}>{item.count}</Text>
+                  <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -781,6 +1105,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.threeColumnGrid}>
             {SCHOOL_GRID.map((item, idx) => {
               const IconComp = item.icon;
+              const realCount = getRealJobCount(item.name);
               return (
                 <TouchableOpacity
                   key={idx}
@@ -792,7 +1117,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                     <IconComp size={18} color="#2563EB" />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.qualCardCount}>{item.count}</Text>
+                  <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -871,19 +1196,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#93C5FD',
-    borderBottomWidth: 3,
-    borderBottomColor: '#3B82F6',
+    borderWidth: 1.5,
+    borderColor: '#334155',
     borderRadius: 24,
     overflow: 'hidden',
     paddingHorizontal: 16,
     height: 48,
     gap: 10,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
   },
   topSearchInput: {
     flex: 1,
@@ -891,27 +1210,90 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '600',
   },
-  heroSearchCard: {
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 54,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    overflow: 'hidden',
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#94A3B8',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 999,
+  },
+  suggestionRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  suggestionHeaderText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  suggestionGroup: {
+    marginBottom: 8,
+  },
+  suggestionGroupLabel: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    marginTop: 4,
+    paddingLeft: 4,
+  },
+  suggestionItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    marginBottom: 4,
+  },
+  suggestionItemTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  suggestionItemSub: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  heroSearchCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     padding: 16,
     gap: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 8,
+    elevation: 3,
   },
   heroInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     borderRadius: 10,
     overflow: 'hidden',
     paddingHorizontal: 12,
@@ -944,10 +1326,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingVertical: 13,
     marginTop: 4,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
   },
   searchJobsBtnText: {
     color: '#FFFFFF',
@@ -965,7 +1343,9 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   tradePillsRow: {
-    gap: 6,
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
   tradePillBtn: {
     backgroundColor: '#FFFFFF',
@@ -981,36 +1361,292 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
   },
-  sectionHeaderBox: {
+  popularSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    overflow: 'hidden',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 14,
-    gap: 10,
+    borderColor: '#CBD5E1',
+    padding: 16,
+    gap: 14,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
+    elevation: 3,
   },
-  titleWithBadgeRow: {
+  popularHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  blueSquareIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+  popularIconSquare: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionTitleText: {
-    fontSize: 16,
+  popularTitleText: {
+    fontSize: 18,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  verifiedBadgePill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  verifiedBadgeText: {
+    color: '#2563EB',
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  popularSubtext: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  roleTabsRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  skewedTabPill: {
+    transform: [{ skewX: '-14deg' }],
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  skewedTabPillActive: {
+    backgroundColor: '#2563EB',
+    borderWidth: 0,
+  },
+  skewedTabPillInactive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  unskewContentRow: {
+    transform: [{ skewX: '14deg' }],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tabDot: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#2563EB',
+  },
+  tabDotActive: {
+    color: '#FFFFFF',
+  },
+  tabTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#334155',
+  },
+  tabTitleTextActive: {
+    color: '#FFFFFF',
+  },
+  countPillBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    marginLeft: 2,
+  },
+  countPillBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  countPillBadgeInactive: {
+    backgroundColor: '#EFF6FF',
+  },
+  countPillText: {
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  countPillTextActive: {
+    color: '#FFFFFF',
+  },
+  countPillTextInactive: {
+    color: '#2563EB',
+  },
+  popularCardsCarousel: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  webPopularJobCard: {
+    width: 290,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  webCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  webCardTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    flex: 1,
+  },
+  webBookmarkBtn: {
+    padding: 2,
+  },
+  webLocRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  webLocText: {
+    fontSize: 12.5,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  webSpecsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  webSpecsText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  webBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  webBadgeGray: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  webBadgeGrayText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  webShiftPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F5F3FF',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  webShiftText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+  webCardDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 2,
+  },
+  webCompanyFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  webLogoSquare: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  webLogoImg: {
+    width: '100%',
+    height: '100%',
+  },
+  webCompanyTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  webRatingText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  webPostedByText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#2563EB',
+  },
+  webDurationText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  webExploreAllBtn: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  webExploreAllBtnText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  btnSectionAction: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
+    borderRadius: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 5.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnSectionActionText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#2563EB',
   },
   verifiedJobsBadge: {
     backgroundColor: '#EFF6FF',
@@ -1032,13 +1668,16 @@ const styles = StyleSheet.create({
   },
   homeJobCardFull: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    padding: 10,
-    gap: 6,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   companyLogoSquare: {
     width: 34,

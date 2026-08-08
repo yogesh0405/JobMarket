@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -48,6 +49,37 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   // Active Sessions State
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  // 2FA Authorization State
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(
+    !!(user?.is_two_factor_enabled || (user as any)?.isTwoFactorEnabled || (user as any)?.two_factor_enabled)
+  );
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+
+  const handleToggle2FA = async (value: boolean) => {
+    setTwoFactorLoading(true);
+    try {
+      const res = await authApi.toggle2FA(value);
+      if (res.success) {
+        setTwoFactorEnabled(value);
+        if (user) {
+          user.is_two_factor_enabled = value;
+          (user as any).isTwoFactorEnabled = value;
+        }
+        Alert.alert(
+          value ? '🛡️ 2FA Protection Enabled' : '2FA Protection Disabled',
+          value
+            ? 'Two-Factor Authentication is now active for your account. You will be required to verify a 6-digit OTP code on every login.'
+            : 'Two-Factor Authentication has been turned off.'
+        );
+      } else {
+        Alert.alert('Error', res.message || 'Failed to update 2FA setting.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to update 2FA setting.');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
 
   // Change Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -123,6 +155,25 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     fetchSessions();
   }, []);
 
+  const deduplicateSessionsByIP = (sessionsList: any[]) => {
+    const seenIPs = new Set<string>();
+    const uniqueSessions: any[] = [];
+
+    for (const sess of sessionsList) {
+      const rawIp = (sess.ip_address || sess.ipAddress || sess.ip || '').toString().trim().toLowerCase().split(' ')[0];
+      if (rawIp) {
+        if (!seenIPs.has(rawIp)) {
+          seenIPs.add(rawIp);
+          uniqueSessions.push(sess);
+        }
+      } else {
+        uniqueSessions.push(sess);
+      }
+    }
+
+    return uniqueSessions;
+  };
+
   const fetchSessions = async () => {
     try {
       setSessionsLoading(true);
@@ -137,7 +188,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         // Backend fallback handling
       }
 
-      setSessions([activeCurrentSession, ...apiSessions]);
+      const combined = [activeCurrentSession, ...apiSessions];
+      const uniqueByIp = deduplicateSessionsByIP(combined);
+      setSessions(uniqueByIp);
     } catch (e) {
       console.warn('Failed to fetch user sessions:', e);
     } finally {
@@ -582,6 +635,42 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* SECTION 4: TWO-FACTOR AUTHENTICATION (2FA) */}
+        <View style={[styles.card, { marginTop: 18 }]}>
+          <View style={styles.cardHeaderBox}>
+            <View style={styles.cardHeaderLeftGroup}>
+              <View style={[styles.sectionIconBox, { backgroundColor: twoFactorEnabled ? '#F0FDF4' : '#FFFBEB' }]}>
+                <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle} numberOfLines={1}>
+                  Two-Factor Authentication (2FA)
+                </Text>
+                <Text style={styles.sectionSubtitle} numberOfLines={1}>
+                  Require 6-digit OTP code on every login
+                </Text>
+              </View>
+            </View>
+
+            <Switch
+              value={twoFactorEnabled}
+              onValueChange={handleToggle2FA}
+              disabled={twoFactorLoading}
+              trackColor={{ false: '#CBD5E1', true: '#2563EB' }}
+              thumbColor={twoFactorEnabled ? '#FFFFFF' : '#F1F5F9'}
+            />
+          </View>
+
+          <View style={[styles.twoFactorBanner, { backgroundColor: twoFactorEnabled ? '#F0FDF4' : '#FFFBEB', borderColor: twoFactorEnabled ? '#BBF7D0' : '#FDE68A' }]}>
+            <ShieldAlert size={16} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
+            <Text style={[styles.twoFactorBannerText, { color: twoFactorEnabled ? '#15803D' : '#B45309' }]}>
+              {twoFactorEnabled
+                ? '🔒 Status: ACTIVE. Your account requires 6-digit OTP authorization before signing in on any device.'
+                : '⚠️ Status: INACTIVE. Turn on 2FA to prevent unauthorized logins even if someone knows your password.'}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
       {/* EMAIL OTP RESET PASSWORD MODAL SHEET */}
@@ -797,6 +886,21 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: COLORS.slate500,
     marginTop: 1,
+  },
+  twoFactorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  twoFactorBannerText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    flex: 1,
+    lineHeight: 17,
   },
   logoutOthersBtn: {
     height: 30,

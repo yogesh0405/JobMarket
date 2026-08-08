@@ -9,6 +9,9 @@ import {
   ScrollView,
   Animated,
   Easing,
+  Image,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -34,6 +37,7 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NotificationModal } from './NotificationModal';
+import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 interface HeaderProps {
@@ -157,10 +161,19 @@ export const Header: React.FC<HeaderProps> = ({
             </TouchableOpacity>
           ) : null}
 
-          {/* Title & Subtitle */}
+          {/* Title & Subtitle with Brand Logo */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={1}>{title}</Text>
-            {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+            <View style={styles.brandHeaderLeft}>
+              {!isBackAvailable ? (
+                <View style={{ marginRight: 6 }}>
+                  <JobMarketLogoSvg size={36} />
+                </View>
+              ) : null}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+              </View>
+            </View>
           </View>
 
           {/* Right Header Actions */}
@@ -502,6 +515,30 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flex: 1,
+  },
+  brandHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerLogoBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  headerLogoText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 15,
+    letterSpacing: -0.5,
   },
   title: {
     ...TYPOGRAPHY.h2,

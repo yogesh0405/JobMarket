@@ -38,10 +38,14 @@ export interface User {
   preferredShift?: string;
   requiresBus?: boolean;
   requires_bus?: boolean;
+  is_two_factor_enabled?: boolean;
+  isTwoFactorEnabled?: boolean;
+  two_factor_enabled?: boolean;
   requiresAccommodation?: boolean;
   requires_accommodation?: boolean;
-  resume_url?: string;
+  resume?: any;
   resumeUrl?: string;
+  resume_url?: string;
   resumeName?: string;
   isResumePublic?: boolean;
   skills?: string[];

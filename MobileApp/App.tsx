@@ -2,12 +2,22 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
 import { useAuth } from './src/hooks/useAuth';
+
+// Deep Linking Configuration for Shared Job URLs
+const linking: LinkingOptions<any> = {
+  prefixes: ['jobmarket://', 'https://jobmarket-ongn.onrender.com'],
+  config: {
+    screens: {
+      CandidateJobDetail: 'job/:jobId',
+    },
+  },
+};
 
 function MainAppContent() {
   const [showSplash, setShowSplash] = useState(true);
@@ -15,7 +25,7 @@ function MainAppContent() {
 
   return (
     <View style={{ flex: 1 }}>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>

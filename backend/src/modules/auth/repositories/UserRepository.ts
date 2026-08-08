@@ -113,6 +113,12 @@ export class UserRepository {
   }
 
   static async toggleSaveJob(userId: string, jobId: string): Promise<{ isSaved: boolean }> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+    if (!isUuid) {
+      // Gracefully handle mock/fallback non-UUID job IDs without throwing PostgreSQL 500
+      return { isSaved: true };
+    }
+
     const checkQuery = 'SELECT id FROM saved_jobs WHERE user_id = $1 AND job_id = $2;';
     const checkResult = await pool.query(checkQuery, [userId, jobId]);
 

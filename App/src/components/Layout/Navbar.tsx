@@ -77,7 +77,7 @@ export const Navbar: React.FC = () => {
       <div className="navbar-inner">
         <div className="navbar-header-row">
           <Link to="/" className="navbar-brand">
-            <div className="navbar-logo" style={{ background: 'var(--gradient-accent)' }}>JM</div>
+            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '32px', height: '32px', objectFit: 'contain', marginRight: '6px' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.brand}</span>
               <span style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '-2px', fontWeight: 'bold' }}>{t.tagline}</span>

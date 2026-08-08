@@ -59,6 +59,20 @@ export const authApi = {
     });
   },
 
+  toggle2FA: async (enabled?: boolean): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/auth/2fa/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
+    });
+  },
+
+  verify2FALogin: async (mfaToken: string, otpCode: string): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/auth/2fa/verify-login', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, otpCode }),
+    });
+  },
+
   logoutAllOtherSessions: async (): Promise<ApiResponse> => {
     return apiFetch('/api/v1/auth/logout-all', {
       method: 'POST',

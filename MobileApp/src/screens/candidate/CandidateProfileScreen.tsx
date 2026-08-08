@@ -30,6 +30,8 @@ import {
   Home,
   Save,
   X,
+  UploadCloud,
+  ExternalLink,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,6 +39,8 @@ import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
+import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 
@@ -51,6 +55,7 @@ const TRADES = [
   'Assembly Operator',
   'Turner',
   'Maintenance Technician',
+  'Other',
 ];
 
 const SHIFTS = ['Day Shift', 'Night Shift', 'Rotational Shift'];
@@ -63,12 +68,18 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { user, updateUserProfile, refreshUser } = useAuth();
   const { showToast } = useToast();
 
+  const initialTrade = user?.tradeSpecialization || user?.trade_specialization || 'VMC Operator';
+  const initialIsOther = !TRADES.filter((t) => t !== 'Other').includes(initialTrade);
+
   const [name, setName] = useState(user?.name || '');
   const [headline, setHeadline] = useState(user?.headline || '');
   const [location, setLocation] = useState(user?.location || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [bio, setBio] = useState(user?.bio || '');
-  const [tradeSpecialization, setTradeSpecialization] = useState(user?.tradeSpecialization || user?.trade_specialization || 'VMC Operator');
+  const [tradeSpecialization, setTradeSpecialization] = useState(initialIsOther ? 'Other' : initialTrade);
+  const [customTrade, setCustomTrade] = useState(initialIsOther ? initialTrade : '');
+  const [isOtherSelected, setIsOtherSelected] = useState(initialIsOther);
+
   const [preferredShift, setPreferredShift] = useState(user?.preferredShift || user?.preferred_shift || 'Day Shift');
   const [requiresBus, setRequiresBus] = useState(!!(user?.requiresBus || user?.requires_bus));
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
@@ -99,7 +110,18 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
       setLocation(user.location || '');
       setPhone(user.phone || '');
       setBio(user.bio || '');
-      setTradeSpecialization(user.tradeSpecialization || user.trade_specialization || 'VMC Operator');
+
+      const userTrade = user.tradeSpecialization || user.trade_specialization || 'VMC Operator';
+      if (TRADES.filter((t) => t !== 'Other').includes(userTrade)) {
+        setTradeSpecialization(userTrade);
+        setIsOtherSelected(false);
+        setCustomTrade('');
+      } else {
+        setTradeSpecialization('Other');
+        setIsOtherSelected(true);
+        setCustomTrade(userTrade);
+      }
+
       setPreferredShift(user.preferredShift || user.preferred_shift || 'Day Shift');
       setRequiresBus(!!(user.requiresBus || user.requires_bus));
       setRequiresAccommodation(!!(user.requiresAccommodation || user.requires_accommodation));
@@ -144,16 +166,30 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleSelectTrade = (trade: string) => {
+    if (trade === 'Other') {
+      setTradeSpecialization('Other');
+      setIsOtherSelected(true);
+    } else {
+      setTradeSpecialization(trade);
+      setIsOtherSelected(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
+      const finalTrade = (isOtherSelected || tradeSpecialization === 'Other')
+        ? (customTrade.trim() || 'Other')
+        : tradeSpecialization;
+
       const payload: any = {
         name,
         headline,
         location,
         phone,
         bio,
-        tradeSpecialization,
+        tradeSpecialization: finalTrade,
         preferredShift,
         requiresBus,
         requiresAccommodation,
@@ -231,7 +267,175 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
     setEducation(education.filter((_, i) => i !== idx));
   };
 
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      refreshUser()
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    }, 400);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [deletingResume, setDeletingResume] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+
+  const rawResume = user?.resume;
+  let parsedObj: any = null;
+  if (typeof rawResume === 'object' && rawResume !== null) {
+    parsedObj = rawResume;
+  } else if (typeof rawResume === 'string') {
+    try { parsedObj = JSON.parse(rawResume); } catch (_) {}
+  }
   const profilePhotoUrl = user?.profile_picture_url || user?.profilePictureUrl;
+  const resumeUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
+  const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_BioData_Resume.jpg';
+
+  const handlePickResume = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showToast('Permission needed to access photo library', 'warning');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]?.base64) {
+        const file = result.assets[0];
+        setUploadingResume(true);
+        const fileName = file.fileName || 'Resume_BioData.jpg';
+        const base64Data = `data:image/jpeg;base64,${file.base64}`;
+
+        const res = await candidateApi.uploadResume(base64Data, fileName);
+        setUploadingResume(false);
+
+        if (res.success) {
+          await refreshUser();
+          showToast('Resume document uploaded successfully', 'success');
+        } else {
+          showToast(res.message || 'Failed to upload resume document', 'error');
+        }
+      }
+    } catch (e: any) {
+      setUploadingResume(false);
+      showToast(e.message || 'Error selecting resume file', 'error');
+    }
+  };
+
+  const handleDeleteResumeDoc = async () => {
+    Alert.alert('Delete Resume Document', 'Are you sure you want to delete your uploaded resume?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Resume',
+        style: 'destructive',
+        onPress: async () => {
+          setDeletingResume(true);
+          try {
+            const res = await candidateApi.deleteResume();
+            setDeletingResume(false);
+            if (res.success) {
+              await refreshUser();
+              showToast('Resume deleted successfully', 'info');
+            } else {
+              showToast(res.message || 'Failed to delete resume', 'error');
+            }
+          } catch (e: any) {
+            setDeletingResume(false);
+            showToast(e.message || 'Error deleting resume', 'error');
+          }
+        },
+      },
+    ]);
+  };
+
+  const calculateCompleteness = () => {
+    let score = 0;
+    if (name?.trim()) score += 10;
+    if (headline?.trim()) score += 10;
+    if (location?.trim()) score += 10;
+    if (phone?.trim()) score += 10;
+    if (bio?.trim()) score += 10;
+    if (tradeSpecialization?.trim()) score += 10;
+    if (profilePhotoUrl || resumeUrl) score += 10;
+    if (skills && skills.length > 0) score += 10;
+    if (experience && experience.length > 0) score += 10;
+    if (education && education.length > 0) score += 10;
+    return score;
+  };
+
+  const completenessScore = calculateCompleteness();
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Header
+          title="Profile"
+          showBack={true}
+          onBack={() => {
+            if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
+              navigation.goBack();
+            } else if (navigation) {
+              navigation.navigate('CandidateMain');
+            }
+          }}
+        />
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Avatar Header Skeleton */}
+          <View style={styles.card3D}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <SkeletonLoader width={76} height={76} style={{ borderRadius: 38 }} />
+              <View style={{ flex: 1, gap: 8 }}>
+                <SkeletonLoader width="65%" height={20} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width="45%" height={14} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={160} height={22} style={{ borderRadius: 12 }} />
+              </View>
+            </View>
+          </View>
+
+          {/* Personal Details Form Skeleton */}
+          <View style={styles.card3D}>
+            <SkeletonLoader width="45%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+          </View>
+
+          {/* Industrial Preferences Skeleton */}
+          <View style={styles.card3D}>
+            <SkeletonLoader width="50%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
+          </View>
+
+          {/* Skills & Experience Skeleton */}
+          <View style={styles.card3D}>
+            <SkeletonLoader width="35%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <SkeletonLoader width={80} height={32} style={{ borderRadius: 16 }} />
+              <SkeletonLoader width={95} height={32} style={{ borderRadius: 16 }} />
+              <SkeletonLoader width={85} height={32} style={{ borderRadius: 16 }} />
+              <SkeletonLoader width={105} height={32} style={{ borderRadius: 16 }} />
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -276,6 +480,94 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Profile Completeness Card with Progress Bar */}
+        <View style={styles.card3D}>
+          <View style={styles.completenessHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Award size={18} color="#2563EB" />
+              <Text style={styles.completenessTitle}>Profile Completeness</Text>
+            </View>
+            <Text style={[styles.completenessPctText, { color: completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#D97706' : '#2563EB' }]}>
+              {completenessScore}% Completed
+            </Text>
+          </View>
+
+          <View style={styles.progressBgBar}>
+            <View
+              style={[
+                styles.progressFillBar,
+                {
+                  width: `${completenessScore}%`,
+                  backgroundColor: completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#F59E0B' : '#2563EB',
+                },
+              ]}
+            />
+          </View>
+
+          <Text style={styles.completenessHintText}>
+            {completenessScore === 100
+              ? '🎉 Great job! Your candidate profile is 100% complete and stands out to recruiters.'
+              : `Complete remaining profile details to boost candidate visibility by ${100 - completenessScore}%.`}
+          </Text>
+        </View>
+
+        {/* Resume CV Document Upload & View Card */}
+        <View style={styles.card3D}>
+          <Text style={styles.sectionTitle}>Resume & Bio-Data Document</Text>
+          <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 12 }}>
+            Upload your PDF or Image resume document to auto-attach it to all job applications.
+          </Text>
+
+          {resumeUrl ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' }}>
+              <FileText size={24} color="#2563EB" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+                  {resumeName}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700' }}>
+                  ✓ Document Attached & Live in Database
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={{ padding: 8, backgroundColor: '#EFF6FF', borderRadius: 6, borderWidth: 1, borderColor: '#BFDBFE' }}
+                onPress={() => setShowPdfModal(true)}
+              >
+                <ExternalLink size={16} color="#2563EB" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ padding: 8, backgroundColor: '#FEF2F2', borderRadius: 6, borderWidth: 1, borderColor: '#FCA5A5' }}
+                onPress={handleDeleteResumeDoc}
+                disabled={deletingResume}
+              >
+                {deletingResume ? (
+                  <ActivityIndicator size="small" color="#DC2626" />
+                ) : (
+                  <Trash2 size={16} color="#DC2626" />
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563EB', paddingVertical: 12, borderRadius: 8 }}
+              onPress={handlePickResume}
+              disabled={uploadingResume}
+            >
+              {uploadingResume ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <UploadCloud size={18} color="#FFFFFF" />
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Upload Resume PDF / Image</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Personal Info Form Card */}
@@ -338,19 +630,29 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.inputLabel}>Select Trade Specialization *</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, marginBottom: 12 }}>
             {TRADES.map((trade) => {
-              const isActive = tradeSpecialization === trade;
+              const isActive = (trade === 'Other' && isOtherSelected) || (!isOtherSelected && tradeSpecialization === trade);
               return (
                 <TouchableOpacity
                   key={trade}
                   activeOpacity={0.8}
                   style={[styles.tradePill, isActive && styles.tradePillActive]}
-                  onPress={() => setTradeSpecialization(trade)}
+                  onPress={() => handleSelectTrade(trade)}
                 >
                   <Text style={[styles.tradePillText, isActive && styles.tradePillTextActive]}>{trade}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+
+          {(isOtherSelected || tradeSpecialization === 'Other') ? (
+            <Input
+              label="Custom Trade Specialization *"
+              placeholder="e.g. Laser Cutting Operator / PLC Automation Programmer"
+              value={customTrade}
+              onChangeText={setCustomTrade}
+              leftIcon={<Award size={18} color="#64748B" />}
+            />
+          ) : null}
 
           <Text style={styles.inputLabel}>Preferred Shift *</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
@@ -523,6 +825,15 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Resume Document Preview Modal */}
+      <ResumePdfViewerModal
+        visible={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        candidateName={name || user?.name || 'Candidate'}
+        candidateRole={tradeSpecialization || 'Industrial Workforce'}
+        pdfUrl={resumeUrl}
+      />
     </View>
   );
 };
@@ -530,12 +841,43 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 95,
     gap: 16,
+  },
+  completenessHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  completenessTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  completenessPctText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  progressBgBar: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFillBar: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  completenessHintText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
   },
   card3D: {
     backgroundColor: '#FFFFFF',
