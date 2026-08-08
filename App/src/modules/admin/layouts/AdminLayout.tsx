@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
+import { apiFetch } from '../../../utils/api';
 import '../styles/admin.css';
 
 export const AdminLayout: React.FC = () => {
@@ -10,6 +11,8 @@ export const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [pendingBannerCount, setPendingBannerCount] = useState<number>(0);
+  const [pendingJobCount, setPendingJobCount] = useState<number>(0);
 
   // Enforce ADMIN role check on mount and update
   useEffect(() => {
@@ -20,6 +23,54 @@ export const AdminLayout: React.FC = () => {
       }
     }
   }, [currentUser, showToast]);
+
+  // Fetch real-time pending moderation metrics for sidebar badge indicators
+  const fetchPendingCounts = async () => {
+    try {
+      const [adsRes, dashRes] = await Promise.all([
+        apiFetch('/api/v1/admin/advertisements/analytics').catch(() => null),
+        apiFetch('/api/v1/admin/dashboard').catch(() => null),
+      ]);
+
+      if (adsRes && adsRes.ok) {
+        const json = await adsRes.json();
+        if (json.success && json.data) {
+          setPendingBannerCount(json.data.pending_approval || 0);
+        }
+      }
+
+      if (dashRes && dashRes.ok) {
+        const json = await dashRes.json();
+        if (json.success && json.data && json.data.stats) {
+          setPendingJobCount(json.data.stats.pending_jobs || 0);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync admin badge counts', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    fetchPendingCounts();
+
+    const handleUpdate = () => fetchPendingCounts();
+    window.addEventListener('notifications-updated', handleUpdate);
+    window.addEventListener('banner-count-updated', handleUpdate);
+
+    // Live background polling every 20s
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPendingCounts();
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('notifications-updated', handleUpdate);
+      window.removeEventListener('banner-count-updated', handleUpdate);
+      clearInterval(pollInterval);
+    };
+  }, [currentUser?.id]);
 
   const token = localStorage.getItem('accessToken');
   if (!token) {
@@ -232,15 +283,48 @@ export const AdminLayout: React.FC = () => {
               <div className="sidebar-group-title">{group.group}</div>
               {group.items.map(item => {
                 const isActive = location.pathname === item.path || (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path));
+                let badgeCount = 0;
+                if (item.path === '/admin/advertisements') badgeCount = pendingBannerCount;
+                if (item.path === '/admin/job-approvals') badgeCount = pendingJobCount;
+
                 return (
                   <button
                     key={item.label}
                     className={`sidebar-menu-item ${isActive ? 'active' : ''}`}
                     onClick={() => navigate(item.path)}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? `${item.label}${badgeCount > 0 ? ` (${badgeCount} pending)` : ''}` : undefined}
+                    style={{ position: 'relative' }}
                   >
                     {item.icon}
                     <span>{item.label}</span>
+
+                    {badgeCount > 0 && (
+                      <span
+                        className="sidebar-badge-count"
+                        style={{
+                          marginLeft: 'auto',
+                          background: '#ef4444',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          padding: '2px 7px',
+                          borderRadius: '999px',
+                          lineHeight: '1',
+                          boxShadow: '0 2px 6px rgba(239, 68, 68, 0.45)',
+                          flexShrink: 0,
+                          ...(collapsed ? {
+                            position: 'absolute',
+                            top: '4px',
+                            right: '6px',
+                            marginLeft: 0,
+                            fontSize: '9px',
+                            padding: '1px 5px',
+                          } : {})
+                        }}
+                      >
+                        {badgeCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}

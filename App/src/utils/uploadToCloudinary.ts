@@ -77,10 +77,14 @@ export async function uploadResumeFast(
   const processedBlob = await compressImageIfNecessary(file);
   const sizeInMB = (processedBlob.size / (1024 * 1024)).toFixed(2) + ' MB';
 
-  // Step 2: Request upload signature from backend (super fast ~50ms)
+  // Step 2: Determine resource type (raw for PDF/DOC, image for images)
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx');
+  const resourceType = isPdf ? 'raw' : 'image';
+
+  // Request upload signature from backend (super fast ~50ms)
   let sigResponse;
   try {
-    sigResponse = await apiFetch('/api/v1/auth/resume/signature');
+    sigResponse = await apiFetch(`/api/v1/auth/resume/signature?resourceType=${resourceType}`);
   } catch (err) {
     console.warn('Could not fetch resume signature:', err);
   }
@@ -99,7 +103,7 @@ export async function uploadResumeFast(
       if (folder) formData.append('folder', folder);
       if (publicId) formData.append('public_id', publicId);
 
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
       try {
         const cloudinaryUrl = await new Promise<string>((resolve, reject) => {
@@ -138,7 +142,7 @@ export async function uploadResumeFast(
           body: JSON.stringify({
             name: file.name,
             size: sizeInMB,
-            type: file.type || 'image/jpeg',
+            type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
             url: cloudinaryUrl
           })
         });
@@ -148,7 +152,7 @@ export async function uploadResumeFast(
             url: cloudinaryUrl,
             name: file.name,
             size: sizeInMB,
-            type: file.type || 'image/jpeg'
+            type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')
           };
         }
       } catch (directErr) {

@@ -1,0 +1,1 @@
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS education_requirement VARCHAR(255) DEFAULT '10th Pass';

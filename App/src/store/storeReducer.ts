@@ -41,13 +41,23 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       const incomingUser = action.payload;
       const existingUser = state.currentUser?.id === incomingUser.id ? state.currentUser : state.users.find(u => u.id === incomingUser.id);
 
-      const mergedSavedJobs = Array.isArray(incomingUser.savedJobs)
+      const mergedSavedJobs = Array.isArray(incomingUser.savedJobs) && incomingUser.savedJobs.length > 0
         ? incomingUser.savedJobs
         : (existingUser?.savedJobs || []);
 
+      const mergedAppliedJobs = Array.isArray(incomingUser.appliedJobs) && incomingUser.appliedJobs.length > 0
+        ? incomingUser.appliedJobs
+        : (existingUser?.appliedJobs || []);
+
+      const mergedAppliedJobsWithStatus = Array.isArray(incomingUser.appliedJobsWithStatus) && incomingUser.appliedJobsWithStatus.length > 0
+        ? incomingUser.appliedJobsWithStatus
+        : (existingUser?.appliedJobsWithStatus || []);
+
       const userWithSavedJobs = {
         ...incomingUser,
-        savedJobs: mergedSavedJobs
+        savedJobs: mergedSavedJobs,
+        appliedJobs: mergedAppliedJobs,
+        appliedJobsWithStatus: mergedAppliedJobsWithStatus
       };
 
       const updatedUsers = state.users.map(u => u.id === userWithSavedJobs.id ? userWithSavedJobs : u);

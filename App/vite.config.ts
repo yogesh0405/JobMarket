@@ -8,14 +8,14 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5002',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {
           proxy.on('error', (_err, _req, res) => {
             if (res && 'writeHead' in res && !res.headersSent) {
               res.writeHead(502, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Backend service unreachable on port 5002' }));
+              res.end(JSON.stringify({ error: 'Backend service unreachable on port 5000' }));
             }
           });
         },

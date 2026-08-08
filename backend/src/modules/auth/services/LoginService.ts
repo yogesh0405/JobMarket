@@ -6,6 +6,7 @@ import { AuditRepository } from '../repositories/AuditRepository';
 import { generateTokens } from '../../../utils/jwt';
 import { BadRequestError, UnauthorizedError, ForbiddenError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
+import { sanitizeUserForResponse } from '../controllers/AuthController';
 
 export class LoginService {
   static async execute(email: string, passwordPlain: string, role?: string, ipAddress?: string, userAgent?: string) {
@@ -61,16 +62,13 @@ export class LoginService {
 
       await client.query('COMMIT');
 
+      const fullUser = await UserRepository.findById(user.id);
+
       return {
         accessToken,
         refreshToken,
         sessionId: session.id,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
+        user: sanitizeUserForResponse(fullUser || user)
       };
     } catch (error) {
       await client.query('ROLLBACK');

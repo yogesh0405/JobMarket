@@ -160,6 +160,7 @@ export const AdminAdvertisementPage: React.FC = () => {
       const json = await res.json();
       if (res.ok && json.success) {
         showToast('Advertisement banner deleted', 'info');
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
         if (previewAd?.id === id) setPreviewAd(null);
         loadData();
       } else {
@@ -224,6 +225,7 @@ export const AdminAdvertisementPage: React.FC = () => {
       const json = await res.json();
       if (res.ok && json.success) {
         showToast('Admin announcement banner published live!', 'success');
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
         setCreateModalOpen(false);
         loadData();
       } else {

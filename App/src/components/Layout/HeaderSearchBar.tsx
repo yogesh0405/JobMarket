@@ -156,7 +156,7 @@ export const HeaderSearchBar: React.FC = () => {
     setQuery('');
     
     if (item.type === 'job' && item.id) {
-      navigate(`/jobs/${item.id}`);
+      navigate(`/job/${item.id}`);
     } else if (item.type === 'trade') {
       navigate(`/jobs?keyword=${encodeURIComponent(item.label)}`);
     } else if (item.type === 'location') {

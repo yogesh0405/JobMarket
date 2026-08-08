@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
 import { HomePage } from './features/home/HomePage';
 import { LoginPage } from './features/auth/LoginPage';
@@ -12,6 +12,7 @@ import { JobPostPage } from './features/jobs/JobPostPage';
 import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
+import { PublicProfilePage } from './features/profile/PublicProfilePage';
 import { ResumePage } from './features/profile/ResumePage';
 import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
@@ -38,8 +39,19 @@ import { RoleTabsManagementPage } from './modules/admin/pages/RoleTabsManagement
 import { AdminMapAnalyticsPage } from './modules/admin/pages/AdminMapAnalyticsPage';
 
 export const App: React.FC = () => {
+  const navigate = useNavigate();
   const { syncUser } = useAuth();
   const { dispatch } = useStore();
+
+  useEffect(() => {
+    // Intercept legacy or external hash URLs (e.g. /#/job/:id) and cleanly route to path
+    if (window.location.hash && window.location.hash.startsWith('#/')) {
+      const cleanPath = window.location.hash.replace(/^#/, '');
+      if (cleanPath) {
+        navigate(cleanPath, { replace: true });
+      }
+    }
+  }, [navigate]);
 
   useEffect(() => {
     syncUser();
@@ -100,6 +112,8 @@ export const App: React.FC = () => {
         <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
+        <Route path="/profile/:id" element={<PublicProfilePage />} />
+        <Route path="/p/:id" element={<PublicProfilePage />} />
         <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />

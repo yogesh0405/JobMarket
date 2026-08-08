@@ -35,7 +35,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ toasts, showToast, removeToast }}>
       {children}
-      <div className="toast-container">
+      <div className="toast-container" style={{ position: 'fixed', zIndex: 999999, top: '20px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }} role="region" aria-live="polite" aria-label="Notifications">
         {toasts.map(toast => {
           const icons = {
             success: '<polyline points="22 4 12 14.01 9 11.01"/>',
@@ -45,7 +45,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           };
           
           return (
-            <div key={toast.id} className={`toast toast-${toast.type}`}>
+            <div key={toast.id} className={`toast toast-${toast.type}`} style={{ pointerEvents: 'auto', zIndex: 999999 }} role="status" aria-live="polite">
               <div className="toast-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   {toast.type === 'success' ? (

@@ -9,7 +9,13 @@ interface RefreshResponse {
 
 let activeRefreshPromise: Promise<string | null> | null = null;
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5002' : '')).replace(/\/$/, '');
+export const getApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  }
+  // Use relative pathing in development so Vite dev server proxies all /api requests to http://127.0.0.1:5000
+  return '';
+};
 
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = (options.headers as Record<string, string>) || {};
@@ -19,6 +25,11 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  const sessionId = localStorage.getItem('sessionId');
+  if (sessionId) {
+    headers['x-session-id'] = sessionId;
+  }
+
   // Set content-type to application/json by default unless it's FormData (for file uploads)
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
@@ -26,8 +37,16 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   
   options.headers = headers;
 
-  const targetUrl = url.startsWith('/') && API_BASE_URL ? `${API_BASE_URL}${url}` : url;
-  let response = await fetch(targetUrl, options);
+  const baseUrl = getApiBaseUrl();
+  const targetUrl = url.startsWith('/') && baseUrl ? `${baseUrl}${url}` : url;
+  
+  let response: Response;
+  try {
+    response = await fetch(targetUrl, options);
+  } catch (netErr: any) {
+    console.error(`API fetch network error [${options.method || 'GET'} ${targetUrl}]:`, netErr);
+    throw new Error('Network error: Unable to connect to backend server. Please check network connection.');
+  }
 
   // If token is invalid or expired (401 Unauthorized), try to refresh it
   if (response.status === 401) {
@@ -45,7 +64,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
         if (!activeRefreshPromise) {
           activeRefreshPromise = (async () => {
             try {
-              const refreshUrl = `${API_BASE_URL}/api/v1/auth/refresh`;
+              const refreshUrl = `${baseUrl}/api/v1/auth/refresh`;
               const refreshResponse = await fetch(refreshUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

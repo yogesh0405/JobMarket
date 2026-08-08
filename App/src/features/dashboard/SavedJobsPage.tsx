@@ -6,7 +6,7 @@ import { JobCard } from '../../components/job/JobCard';
 
 export const SavedJobsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { getSavedJobs, fetchCandidateSavedJobs, toggleSaveJob } = useJobs();
+  const { getSavedJobs, fetchCandidateSavedJobs } = useJobs();
   const { showToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,7 +21,7 @@ export const SavedJobsPage: React.FC = () => {
 
   const handleSaveToggle = (jobId: string, isSaved: boolean) => {
     if (!isSaved) {
-      // Instantly hide card from DOM in 0ms (<50ms)!
+      // Instantly hide card from DOM
       setRemovedIds(prev => [...prev, jobId]);
     }
   };
@@ -48,97 +48,125 @@ export const SavedJobsPage: React.FC = () => {
   );
 
   return (
-    <div className="saved-jobs-page-wrapper" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '16px 0 100px 0' }}>
-      <div className="container">
-        {/* Header Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/dashboard')}
+    <div className="saved-jobs-page-wrapper" style={{ background: '#F8FAFC', minHeight: '100vh', padding: '16px 0 100px 0' }}>
+      <div className="container" style={{ maxWidth: '960px' }}>
+        
+        {/* Modern Back Button */}
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{
+            background: '#ffffff',
+            border: '1.5px solid #E2E8F0',
+            color: '#344BFD',
+            fontWeight: '700',
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginBottom: '16px',
+            padding: '6px 14px',
+            borderRadius: '6px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Back to Dashboard
+        </button>
+
+        {/* Hero Header Section */}
+        <div style={{
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+          borderRadius: '12px',
+          padding: '24px 28px',
+          marginBottom: '20px',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#ffffff', margin: 0, letterSpacing: '-0.3px' }}>
+                Saved Jobs
+              </h1>
+              <span
+                style={{
+                  background: '#2563EB',
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.4)'
+                }}
+              >
+                {savedJobs.length} {savedJobs.length === 1 ? 'Job' : 'Jobs'}
+              </span>
+            </div>
+            <p style={{ fontSize: '13.5px', color: '#94A3B8', margin: '6px 0 0 0', fontWeight: '500' }}>
+              Your bookmarked factory & technical jobs for quick access and application
+            </p>
+          </div>
+
+          <Link
+            to="/jobs"
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#344BFD',
-              fontWeight: '600',
-              fontSize: '14px',
-              cursor: 'pointer',
+              background: '#ffffff',
+              color: '#1E293B',
+              fontWeight: '700',
+              fontSize: '13px',
+              padding: '9px 18px',
+              borderRadius: '8px',
+              textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              marginBottom: '16px',
-              padding: 0
+              gap: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            Back to Dashboard
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                  Saved Jobs
-                </h1>
-                <span
-                  style={{
-                    background: '#eff6ff',
-                    color: '#2563eb',
-                    fontWeight: '700',
-                    fontSize: '13px',
-                    padding: '4px 12px',
-                    borderRadius: '9999px',
-                    border: '1px solid #bfdbfe'
-                  }}
-                >
-                  {savedJobs.length} {savedJobs.length === 1 ? 'Job' : 'Jobs'}
-                </span>
-              </div>
-              <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0 0' }}>
-                Your bookmarked factory & technical jobs for quick access and application
-              </p>
-            </div>
-
-            <Link
-              to="/jobs"
-              className="btn btn-outline-primary btn-sm"
-              style={{ borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              Browse More Vacancies
-            </Link>
-          </div>
+            Browse More Vacancies
+          </Link>
         </div>
 
         {savedJobs.length > 0 ? (
           <>
-            {/* Filter & Search Bar for Saved Jobs */}
+            {/* Search & Filter Bar */}
             <div
               style={{
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '14px 18px',
-                marginBottom: '24px',
+                border: '1.5px solid #E2E8F0',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                marginBottom: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '16px',
+                gap: '12px',
                 flexWrap: 'wrap',
                 boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)'
               }}
             >
-              <div style={{ flex: '1', minWidth: '240px', position: 'relative' }}>
+              <div style={{ flex: '1', minWidth: '220px', position: 'relative' }}>
                 <svg
-                  width="16"
-                  height="16"
+                  width="15"
+                  height="15"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#94a3b8"
-                  strokeWidth="2"
+                  stroke="#94A3B8"
+                  strokeWidth="2.2"
                   style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
                 >
                   <circle cx="11" cy="11" r="8" />
@@ -146,35 +174,37 @@ export const SavedJobsPage: React.FC = () => {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Filter saved jobs by title, company, or city..."
+                  placeholder="Search saved jobs by title, company, or city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 12px 9px 36px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '14px',
+                    padding: '8px 12px 8px 36px',
+                    borderRadius: '6px',
+                    border: '1.5px solid #CBD5E1',
+                    fontSize: '13.5px',
                     outline: 'none',
-                    background: '#f8fafc',
-                    color: '#0f172a'
+                    background: '#F8FAFC',
+                    color: '#0F172A',
+                    fontWeight: '500'
                   }}
                 />
               </div>
 
               {savedIndustries.length > 1 && (
-                <div style={{ minWidth: '180px' }}>
+                <div style={{ minWidth: '170px' }}>
                   <select
                     value={selectedIndustry}
                     onChange={(e) => setSelectedIndustry(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '14px',
-                      background: '#f8fafc',
-                      color: '#0f172a',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1.5px solid #CBD5E1',
+                      fontSize: '13px',
+                      background: '#F8FAFC',
+                      color: '#0F172A',
+                      fontWeight: '600',
                       outline: 'none',
                       cursor: 'pointer'
                     }}
@@ -190,9 +220,9 @@ export const SavedJobsPage: React.FC = () => {
               )}
             </div>
 
-            {/* Jobs List */}
+            {/* Jobs Grid / List */}
             {filteredJobs.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
                 {filteredJobs.map((job) => (
                   <JobCard
                     key={job.id}
@@ -205,14 +235,14 @@ export const SavedJobsPage: React.FC = () => {
               <div
                 style={{
                   background: '#ffffff',
-                  border: '1px dashed #cbd5e1',
-                  borderRadius: '16px',
+                  border: '1.5px dashed #CBD5E1',
+                  borderRadius: '12px',
                   padding: '40px 24px',
                   textAlign: 'center',
-                  color: '#64748b'
+                  color: '#64748B'
                 }}
               >
-                <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>
+                <p style={{ margin: 0, fontSize: '14.5px', fontWeight: '600', color: '#1E293B' }}>
                   No saved jobs match &quot;{searchQuery}&quot;
                 </p>
                 <button
@@ -223,14 +253,14 @@ export const SavedJobsPage: React.FC = () => {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#2563eb',
-                    fontWeight: '600',
+                    color: '#2563EB',
+                    fontWeight: '700',
                     fontSize: '13px',
                     cursor: 'pointer',
                     marginTop: '8px'
                   }}
                 >
-                  Clear filters
+                  Clear search filters
                 </button>
               </div>
             )}
@@ -240,46 +270,51 @@ export const SavedJobsPage: React.FC = () => {
           <div
             style={{
               background: '#ffffff',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: '20px',
-              padding: '60px 24px',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '12px',
+              padding: '56px 24px',
               textAlign: 'center',
-              maxWidth: '540px',
-              margin: '20px auto',
-              boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)'
+              maxWidth: '520px',
+              margin: '24px auto',
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)'
             }}
           >
             <div
               style={{
-                width: '64px',
-                height: '64px',
+                width: '60px',
+                height: '60px',
                 borderRadius: '50%',
-                background: '#eff6ff',
-                color: '#2563eb',
+                background: '#EFF6FF',
+                color: '#2563EB',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '16px'
+                marginBottom: '16px',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)'
               }}
             >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 8px 0' }}>
+            <h3 style={{ fontSize: '19px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
               No Saved Jobs Yet
             </h3>
-            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 24px 0', lineHeight: '1.6' }}>
+            <p style={{ fontSize: '13.5px', color: '#64748B', margin: '0 0 24px 0', lineHeight: '1.6', fontWeight: '500' }}>
               Bookmark vacancies while browsing to compare requirements, shift details, and apply whenever you are ready.
             </p>
             <Link
               to="/jobs"
-              className="btn btn-primary"
               style={{
-                padding: '12px 28px',
-                borderRadius: '12px',
-                fontWeight: '600',
-                fontSize: '15px'
+                display: 'inline-block',
+                background: '#2563EB',
+                color: '#ffffff',
+                padding: '11px 26px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '14px',
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
               }}
             >
               Explore Vacancies →

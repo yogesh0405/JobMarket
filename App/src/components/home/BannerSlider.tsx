@@ -8,7 +8,7 @@ interface BannerSliderProps {
   autoPlayInterval?: number;
 }
 
-// Industry-grade default active promotional banners ensuring 100% visibility on all mobile devices
+// Default active promotional banners ensuring 100% initial rendering
 const DEFAULT_PROMOTIONAL_BANNERS: Advertisement[] = [
   {
     id: 'db-default-1',
@@ -88,37 +88,93 @@ const DEFAULT_PROMOTIONAL_BANNERS: Advertisement[] = [
   }
 ];
 
-export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5000 }) => {
+export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4500 }) => {
   const navigate = useNavigate();
-  // Always initialize with active promotional banners so carousel is 100% visible on all smartphones
   const [advertisements, setAdvertisements] = useState<Advertisement[]>(DEFAULT_PROMOTIONAL_BANNERS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Touch Swipe State
+  // Touch Swipe & Interaction State
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const isTouchDevice = useRef(false);
   const trackedAdIds = useRef<Set<string>>(new Set());
 
-  // Fetch Published Active Advertisements strictly from Database API & check master banner toggle
+  // Helper to filter out inactive / expired / unapproved / future banners
+  const filterValidNonExpiredBanners = useCallback((ads: Advertisement[]): Advertisement[] => {
+    const now = Date.now();
+    return ads.filter(ad => {
+      // 1. Is active check
+      if (ad.is_active === false) return false;
+
+      // 2. Status / Approval status check
+      const status = (ad.status || ad.approval_status || '').toUpperCase();
+      if (status !== 'APPROVED' && status !== 'PUBLISHED') return false;
+
+      // 3. Expiration check: end_date (Remove immediately when time is over)
+      if (ad.end_date) {
+        const endTime = new Date(ad.end_date).getTime();
+        if (!isNaN(endTime) && endTime <= now) {
+          return false; // EXPIRED! Automatically remove banner
+        }
+      }
+
+      // 4. Start date check (do not show banners before start_date)
+      if (ad.start_date) {
+        const startTime = new Date(ad.start_date).getTime();
+        if (!isNaN(startTime) && startTime > now + 3600000) {
+          return false; // Future banner
+        }
+      }
+
+      return true;
+    });
+  }, []);
+
+  // Fetch Published Active Advertisements strictly from Database API
   useEffect(() => {
     let isMounted = true;
-    Promise.all([
-      apiFetch('/api/v1/home/advertisements').catch(() => null),
-      apiFetch('/api/v1/admin/settings').catch(() => null)
-    ])
-      .then(async ([adRes, settingsRes]) => {
+    apiFetch('/api/v1/home/advertisements')
+      .then(async (adRes) => {
+        if (!isMounted) return;
         if (adRes && adRes.ok) {
           const json = await adRes.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            setAdvertisements(json.data);
+          if (json.success && Array.isArray(json.data)) {
+            const activeDbBanners = filterValidNonExpiredBanners(json.data);
+            if (activeDbBanners.length > 0) {
+              setAdvertisements(activeDbBanners);
+            }
           }
         }
       })
       .catch((err) => {
         console.error('Failed to load DB advertisements:', err);
       });
-  }, []);
+
+    return () => { isMounted = false; };
+  }, [filterValidNonExpiredBanners]);
+
+  // Periodic Live Expiration Sweep (Checks every 10 seconds and automatically removes expired banners)
+  useEffect(() => {
+    const sweepTimer = setInterval(() => {
+      setAdvertisements(prev => {
+        const valid = filterValidNonExpiredBanners(prev);
+        if (valid.length !== prev.length) {
+          return valid;
+        }
+        return prev;
+      });
+    }, 10000);
+
+    return () => clearInterval(sweepTimer);
+  }, [filterValidNonExpiredBanners]);
+
+  // Safety bound check for current index when banners expire/shrink
+  useEffect(() => {
+    if (currentIndex >= advertisements.length && advertisements.length > 0) {
+      setCurrentIndex(advertisements.length - 1);
+    }
+  }, [advertisements.length, currentIndex]);
 
   // Record View / Impression for current slide (deduplicated per session)
   useEffect(() => {
@@ -133,16 +189,16 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
 
   // Next & Prev Slide Callbacks
   const nextSlide = useCallback(() => {
-    if (advertisements.length === 0) return;
+    if (advertisements.length <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % advertisements.length);
   }, [advertisements.length]);
 
   const prevSlide = useCallback(() => {
-    if (advertisements.length === 0) return;
+    if (advertisements.length <= 1) return;
     setCurrentIndex((prev) => (prev - 1 + advertisements.length) % advertisements.length);
   }, [advertisements.length]);
 
-  // Auto-play Timer
+  // Auto-play Timer (Works seamlessly on both Desktop & Mobile)
   useEffect(() => {
     if (isHovered || advertisements.length <= 1) return;
     const timer = setInterval(() => {
@@ -158,9 +214,23 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
     if (e.key === 'ArrowLeft') prevSlide();
   };
 
-  // Touch Swipe Handlers
+  // Mouse Hover Handlers (Desktop)
+  const handleMouseEnter = () => {
+    if (!isTouchDevice.current) {
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    isTouchDevice.current = false;
+  };
+
+  // Touch Swipe Handlers (Mobile device auto-play continuity)
   const handleTouchStart = (e: React.TouchEvent) => {
+    isTouchDevice.current = true;
     touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -168,16 +238,23 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const minSwipeDistance = 50;
-    if (distance > minSwipeDistance) {
-      nextSlide(); // Swiped left -> Next slide
-    } else if (distance < -minSwipeDistance) {
-      prevSlide(); // Swiped right -> Prev slide
+    if (touchStartX.current !== null && touchEndX.current !== null) {
+      const distance = touchStartX.current - touchEndX.current;
+      const minSwipeDistance = 35;
+      if (distance > minSwipeDistance) {
+        nextSlide(); // Swiped left -> Next slide
+      } else if (distance < -minSwipeDistance) {
+        prevSlide(); // Swiped right -> Prev slide
+      }
     }
     touchStartX.current = null;
     touchEndX.current = null;
+    
+    // Crucial: Resume auto-play timer on mobile devices after touch interaction finishes
+    setTimeout(() => {
+      setIsHovered(false);
+      isTouchDevice.current = false;
+    }, 400);
   };
 
   // Handle Banner Click Action
@@ -231,8 +308,8 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
         className="banner-slider-wrapper"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -296,37 +373,32 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 5
           })}
         </div>
 
-        {/* Previous Button */}
-        {advertisements.length > 1 && (
-          <button
-            className="banner-nav-btn banner-nav-prev"
-            onClick={(e) => {
-              e.stopPropagation();
-              prevSlide();
-            }}
-            aria-label="Previous slide"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        )}
+        {/* Navigation Arrow Buttons (Always visible for all banners) */}
+        <button
+          className="banner-nav-btn banner-nav-prev"
+          onClick={(e) => {
+            e.stopPropagation();
+            prevSlide();
+          }}
+          aria-label="Previous slide"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
-        {/* Next Button */}
-        {advertisements.length > 1 && (
-          <button
-            className="banner-nav-btn banner-nav-next"
-            onClick={(e) => {
-              e.stopPropagation();
-              nextSlide();
-            }}
-            aria-label="Next slide"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        )}
+        <button
+          className="banner-nav-btn banner-nav-next"
+          onClick={(e) => {
+            e.stopPropagation();
+            nextSlide();
+          }}
+          aria-label="Next slide"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
 
         {/* Pagination Dots */}
         {advertisements.length > 1 && (

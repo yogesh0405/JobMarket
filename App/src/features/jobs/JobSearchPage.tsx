@@ -3,19 +3,23 @@ import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LayoutGrid, List, Map, MapPin } from 'lucide-react';
 import { useJobs, JobFilters } from '../../hooks/useJobs';
+import { useAuth } from '../../hooks/useAuth';
 import { JobCard } from '../../components/job/JobCard';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { formatNumber, getCompanyColor } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import { MobileSearchOverlay } from '../../components/search/MobileSearchOverlay';
 
 export const JobSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { getJobs } = useJobs();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { state } = useStore();
   const t = useTranslation(state.language);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
   const viewParam = searchParams.get('view');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>(
@@ -47,18 +51,24 @@ export const JobSearchPage: React.FC = () => {
     "12th Pass",
     "ITI",
     "Diploma",
-    "Graduate"
+    "Graduate",
+    "Post Graduate / Master's",
+    "Doctorate / PhD",
+    "Others"
   ];
 
   // Lock background scroll on mobile filters drawer open
   useEffect(() => {
     if (mobileFiltersOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [mobileFiltersOpen]);
 
@@ -83,6 +93,8 @@ export const JobSearchPage: React.FC = () => {
   const roleCategoryFilter = searchParams.get('roleCategory') || '';
   const stipendFilter = searchParams.get('stipend') === 'true';
   const durationFilter = searchParams.get('duration') || '';
+  const durationMaxParam = searchParams.get('durationMax');
+  const durationMoreFilter = searchParams.get('durationMore') === 'true';
   const topCompaniesFilter = searchParams.get('topCompanies') || '';
   const freshnessFilter = searchParams.get('freshness') || '';
 
@@ -250,21 +262,45 @@ export const JobSearchPage: React.FC = () => {
     );
   }
 
-  // Duration filter matching
-  if (durationFilter) {
-    const durs = durationFilter.split(',');
+  // Duration filter matching (0 to 5 Range Slider + More than 5 Years option)
+  const durationMaxVal = durationMaxParam !== null ? parseInt(durationMaxParam, 10) : null;
+
+  if (durationMaxVal !== null || durationMoreFilter || durationFilter) {
     allFilteredJobs = allFilteredJobs.filter(j => {
-      return durs.some(dur => {
-        const d = dur.toLowerCase();
-        const durationStr = (j.contractDuration || '').toLowerCase();
-        if (d.includes('1-3')) {
-          return durationStr.includes('1') || durationStr.includes('2') || durationStr.includes('3');
+      let matches = false;
+
+      const minExp = j.minExperience ?? 0;
+      const maxExp = j.maxExperience ?? j.minExperience ?? 0;
+      const contractStr = (j.contractDuration || '').toLowerCase();
+
+      // 1. Slider match (0 to 5 Years)
+      if (durationMaxVal !== null) {
+        if (minExp <= durationMaxVal) {
+          matches = true;
         }
-        if (d.includes('6')) {
-          return durationStr.includes('6') || durationStr.includes('12') || durationStr.includes('year') || !j.contractDuration;
+      }
+
+      // 2. More than 5 Years option match
+      if (durationMoreFilter) {
+        if (minExp >= 5 || maxExp > 5 || contractStr.includes('permanent') || contractStr.includes('6') || contractStr.includes('year')) {
+          matches = true;
         }
-        return false;
-      });
+      }
+
+      // 3. Legacy duration string options (1-3 Months, 6 Months+)
+      if (durationFilter) {
+        const durs = durationFilter.split(',');
+        if (durs.some(dur => {
+          const d = dur.toLowerCase();
+          if (d.includes('1-3')) return contractStr.includes('1') || contractStr.includes('2') || contractStr.includes('3');
+          if (d.includes('6')) return contractStr.includes('6') || contractStr.includes('12') || contractStr.includes('year') || !j.contractDuration;
+          return false;
+        })) {
+          matches = true;
+        }
+      }
+
+      return matches;
     });
   }
 
@@ -299,6 +335,10 @@ export const JobSearchPage: React.FC = () => {
   if (educationFilter) {
     const eds = educationFilter.toLowerCase().split(',');
     allFilteredJobs = allFilteredJobs.filter(j => {
+      const jobEdu = (j.educationRequirement || (j as any).education_requirement || (typeof (j as any).education === 'string' ? (j as any).education : '')).toLowerCase();
+      if (jobEdu) {
+        if (eds.some(ed => jobEdu.includes(ed) || ed.includes(jobEdu))) return true;
+      }
       return eds.some(ed => {
         const title = j.title.toLowerCase();
         const desc = j.description.toLowerCase();
@@ -310,8 +350,11 @@ export const JobSearchPage: React.FC = () => {
         if (ed.includes('12th')) {
           return title.includes('12th') || desc.includes('12th') || reqs.includes('12th') || desc.includes('hsc') || reqs.includes('hsc');
         }
-        if (ed.includes('iti') || ed.includes('diploma')) {
-          return title.includes('iti') || desc.includes('iti') || reqs.includes('iti') || title.includes('diploma') || desc.includes('diploma') || reqs.includes('diploma');
+        if (ed.includes('iti')) {
+          return title.includes('iti') || desc.includes('iti') || reqs.includes('iti');
+        }
+        if (ed.includes('diploma')) {
+          return title.includes('diploma') || desc.includes('diploma') || reqs.includes('diploma');
         }
         if (ed.includes('graduate')) {
           return title.includes('graduate') || desc.includes('graduate') || reqs.includes('graduate') || title.includes('degree') || desc.includes('degree') || reqs.includes('degree') || title.includes('b.e') || title.includes('b.tech') || reqs.includes('b.tech') || reqs.includes('b.e');
@@ -434,47 +477,144 @@ export const JobSearchPage: React.FC = () => {
     setSearchParams(new URLSearchParams());
   };
 
-  // Top Category Pills configuration
+  // Top Category Pills configuration with relevant professional SVG icons
   const topCategories = [
-    { label: 'All Jobs', value: '' },
-    { label: 'HR Jobs', value: 'HR' },
-    { label: 'Marketing Jobs', value: 'Marketing' },
-    { label: 'Remote Jobs', value: 'Remote' },
-    { label: 'Data Science Jobs', value: 'Data Science' },
-    { label: 'Engineering Jobs', value: 'Engineer' },
-    { label: 'Foreign MNCs Jobs', value: 'MNC' },
-    { label: 'Banking & Finance Jobs', value: 'Finance' }
+    {
+      label: 'All Jobs',
+      value: '',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      )
+    },
+    {
+      label: 'HR Jobs',
+      value: 'HR',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Marketing Jobs',
+      value: 'Marketing',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+          <polyline points="17 6 23 6 23 12"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Remote Jobs',
+      value: 'Remote',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Data Science Jobs',
+      value: 'Data Science',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Engineering Jobs',
+      value: 'Engineer',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+          <rect x="9" y="9" width="6" height="6"/>
+          <line x1="9" y1="1" x2="9" y2="4"/>
+          <line x1="15" y1="1" x2="15" y2="4"/>
+          <line x1="9" y1="20" x2="9" y2="23"/>
+          <line x1="15" y1="20" x2="15" y2="23"/>
+          <line x1="20" y1="9" x2="23" y2="9"/>
+          <line x1="20" y1="15" x2="23" y2="15"/>
+          <line x1="1" y1="9" x2="4" y2="9"/>
+          <line x1="1" y1="15" x2="4" y2="15"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Foreign MNCs Jobs',
+      value: 'MNC',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      )
+    },
+    {
+      label: 'Banking & Finance Jobs',
+      value: 'Finance',
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      )
+    }
   ];
 
   const renderSidebar = () => {
     return (
-              <aside className={`jobs-sidebar ${mobileFiltersOpen ? 'open' : ''}`} style={{ background: '#ffffff', border: '1.5px solid #E2E8F0', borderRadius: '0.3rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid #E2E8F0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {/* Close Button for Mobile Drawer */}
-                    <button
-                      className="mobile-filter-close"
-                      onClick={() => setMobileFiltersOpen(false)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: '4px',
-                        cursor: 'pointer',
-                        color: '#64748B',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', margin: 0 }}>All Filters</h3>
-                  </div>
-                  <span style={{ fontSize: '13px', color: '#344BFD', fontWeight: '600', cursor: 'pointer' }} onClick={clearAllFilters}>
-                    Clear All
-                  </span>
-                </div>
+      <>
+        {mobileFiltersOpen && (
+          <div
+            className="mobile-filter-backdrop"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+        )}
+        <aside
+          className={`jobs-sidebar ${mobileFiltersOpen ? 'open' : ''}`}
+          style={{ background: '#ffffff', border: '1.5px solid #CBD5E1', borderRadius: '0px' }}
+        >
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid #E2E8F0', position: 'sticky', top: 0, background: '#ffffff', zIndex: 5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Close Button for Mobile Drawer */}
+                <button
+                  className="mobile-filter-close"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    color: '#64748B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', margin: 0 }}>All Filters</h3>
+              </div>
+              <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: '700', cursor: 'pointer' }} onClick={clearAllFilters}>
+                Clear All
+              </span>
+            </div>
     
                 {/* Keyword Search Input */}
                 <div style={{ padding: '16px', borderBottom: '1px solid #E2E8F0' }}>
@@ -681,24 +821,110 @@ export const JobSearchPage: React.FC = () => {
                   )}
                 </div>
     
-                {/* 9. Duration Collapsible */}
+                {/* 9. Duration Collapsible (Range Slider 0-5 + More than 5 Option) */}
                 <div style={{ borderBottom: '1px solid #E2E8F0', padding: '16px' }}>
                   <div onClick={() => toggleSection('duration')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: '700', fontSize: '14px', color: '#0F172A' }}>
-                    <span>Duration</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>Duration</span>
+                    </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" style={{ transform: openSections.duration ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </div>
+                  
                   {openSections.duration && (
-                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#475569', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={(searchParams.get('duration') || '').split(',').includes('1-3 Months')} onChange={() => toggleMultiSelectFilter('duration', '1-3 Months')} />
-                        1-3 Months
+                    <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* Current Selected Value Header Badge */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748B' }}>Selected Range:</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#2563EB' }}>
+                          {durationMaxParam !== null && durationMoreFilter
+                            ? `0 - 5+ Years`
+                            : durationMaxParam !== null
+                            ? `0 - ${durationMaxParam} ${Number(durationMaxParam) === 1 ? 'Year' : 'Years'}`
+                            : durationMoreFilter
+                            ? `> 5 Years (5+ Yrs)`
+                            : `All Durations`}
+                        </span>
+                      </div>
+
+                      {/* Slider Control Container */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                          <span>0 Yrs</span>
+                          <span>Max: {durationMaxParam !== null ? `${durationMaxParam} Yrs` : 'Any'}</span>
+                          <span>5 Yrs</span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min="0"
+                          max="5"
+                          step="1"
+                          value={durationMaxParam !== null ? durationMaxParam : '5'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateFiltersInParams({ durationMax: val });
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '6px',
+                            borderRadius: '3px',
+                            background: `linear-gradient(to right, #2563eb 0%, #2563eb ${(Number(durationMaxParam !== null ? durationMaxParam : 5) / 5) * 100}%, #e2e8f0 ${(Number(durationMaxParam !== null ? durationMaxParam : 5) / 5) * 100}%, #e2e8f0 100%)`,
+                            appearance: 'none',
+                            outline: 'none',
+                            cursor: 'pointer'
+                          }}
+                        />
+
+                        {/* Slider Tick Marks */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px', fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>
+                          <span>0</span>
+                          <span>1</span>
+                          <span>2</span>
+                          <span>3</span>
+                          <span>4</span>
+                          <span>5</span>
+                        </div>
+                      </div>
+
+
+
+                      {/* More than 5 Years Checkbox Option */}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', color: '#0F172A', fontWeight: '600', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={durationMoreFilter}
+                          onChange={(e) => {
+                            updateFiltersInParams({ durationMore: e.target.checked ? 'true' : null });
+                          }}
+                          style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                        />
+                        <span>More than 5 Years (5+ Years)</span>
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#475569', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={(searchParams.get('duration') || '').split(',').includes('6 Months+')} onChange={() => toggleMultiSelectFilter('duration', '6 Months+')} />
-                        6 Months+
-                      </label>
+
+                      {/* Clear Duration Filter button if active */}
+                      {(durationMaxParam !== null || durationMoreFilter || durationFilter) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateFiltersInParams({ durationMax: null, durationMore: null, duration: null });
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#EF4444',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            padding: '0',
+                            marginTop: '2px'
+                          }}
+                        >
+                          ✕ Reset Duration Filter
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -816,31 +1042,33 @@ export const JobSearchPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-    
-                {/* Sticky Bottom Actions inside Mobile Drawer */}
-                <div className="mobile-filter-footer">
-                  <button
-                    onClick={() => setMobileFiltersOpen(false)}
-                    style={{
-                      width: '100%',
-                      background: '#344BFD',
-                      color: '#ffffff',
-                      border: 'none',
-                      padding: '14px',
-                      borderRadius: '0.3rem',
-                      fontWeight: '700',
-                      fontSize: '15px',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(52, 75, 253, 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    Apply Filters ({allFilteredJobs.length} Jobs)
-                  </button>
-                </div>
-              </aside>
+              </div>
+
+              {/* Sticky Bottom Actions inside Mobile Side Drawer */}
+              <div className="mobile-filter-footer">
+                <button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  style={{
+                    width: '100%',
+                    background: '#2563EB',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '13px',
+                    borderRadius: '0px',
+                    fontWeight: '700',
+                    fontSize: '14.5px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  Apply Filters ({allFilteredJobs.length} Jobs)
+                </button>
+              </div>
+            </aside>
+      </>
     );
   };
 
@@ -922,26 +1150,95 @@ export const JobSearchPage: React.FC = () => {
           </div>
         </div>
 
-        {/* TOP Category Filter Slider (Pastel peach horizontal bar) */}
+        {/* SEARCH BAR & FILTERS ROW */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'nowrap' }}>
+          <div
+            className="toolbar-search-container"
+            style={{ position: 'relative', flex: 1, cursor: 'pointer' }}
+            onClick={() => setSearchOverlayOpen(true)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#94A3B8"
+              strokeWidth="2.5"
+              style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+            >
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Search jobs, skills..."
+              value={searchParams.get('keyword') || ''}
+              readOnly
+              onClick={() => setSearchOverlayOpen(true)}
+              onFocus={() => setSearchOverlayOpen(true)}
+              style={{
+                borderRadius: '0px',
+                border: '1.5px solid #CBD5E1',
+                padding: '10px 14px 10px 38px',
+                width: '100%',
+                fontSize: '14px',
+                fontWeight: '500',
+                outline: 'none',
+                background: '#ffffff',
+                cursor: 'pointer',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <button
+            className="mobile-filter-toggle"
+            onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+            style={{
+              background: '#ffffff',
+              border: '1.5px solid #CBD5E1',
+              padding: '9px 16px',
+              borderRadius: '0px',
+              fontWeight: '700',
+              fontSize: '13.5px',
+              color: '#0F172A',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              height: '42px',
+              boxSizing: 'border-box'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+              <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+            </svg>
+            <span className="filter-text">Filters</span>
+          </button>
+        </div>
+
+        {/* TOP Category Filter Slider (Clean Sharp White Bar) */}
         <div style={{
-          background: '#FFF5F0',
-          padding: '12px 16px',
-          borderRadius: '0.3rem',
-          marginBottom: '24px',
+          background: '#ffffff',
+          padding: '8px 12px',
+          borderRadius: '0px',
+          marginBottom: '10px',
           display: 'flex',
           alignItems: 'center',
           position: 'relative',
-          overflow: 'hidden',
-          border: '1px solid #FFE4D6'
+          border: '1.5px solid #CBD5E1'
         }}>
           <div style={{
             display: 'flex',
-            gap: '12px',
+            gap: '8px',
             overflowX: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             width: '100%',
-            paddingRight: '40px'
+            paddingRight: '36px'
           }}>
             {topCategories.map(cat => {
               const active = (searchParams.get('keyword') || '') === cat.value;
@@ -950,37 +1247,41 @@ export const JobSearchPage: React.FC = () => {
                   key={cat.label}
                   onClick={() => updateFiltersInParams({ keyword: cat.value || null })}
                   style={{
-                    background: active ? '#344BFD' : '#ffffff',
+                    background: active ? '#2563EB' : '#F8FAFC',
                     color: active ? '#ffffff' : '#0F172A',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '0.3rem',
-                    padding: '8px 16px',
+                    border: active ? '1.5px solid #2563EB' : '1.5px solid #CBD5E1',
+                    borderRadius: '0px',
+                    padding: '7px 14px',
                     fontSize: '13px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                 >
-                  {cat.label}
+                  {cat.icon}
+                  <span>{cat.label}</span>
                 </button>
               );
             })}
           </div>
-          {/* Scroll arrow badge */}
+          {/* Scroll arrow indicator */}
           <button style={{
             position: 'absolute',
             right: '8px',
             background: '#ffffff',
-            border: '1px solid #E2E8F0',
-            borderRadius: '50%',
-            width: '32px',
-            height: '32px',
+            border: '1.5px solid #CBD5E1',
+            borderRadius: '0px',
+            width: '28px',
+            height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5">
               <polyline points="9 18 15 12 9 6" />
@@ -1005,53 +1306,6 @@ export const JobSearchPage: React.FC = () => {
             {viewMode !== 'map' ? (
               <>
                 <div className="jobs-toolbar">
-                  <div className="toolbar-search-container" style={{ position: 'relative', flex: 1, margin: '0 12px 0 0' }}>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#94A3B8"
-                      strokeWidth="2.5"
-                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-                    >
-                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Search jobs, skills..."
-                      value={searchParams.get('keyword') || ''}
-                      style={{
-                        borderRadius: '0.3rem',
-                        border: '1.5px solid #E2E8F0',
-                        padding: '8px 12px 8px 36px',
-                        width: '100%',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        outline: 'none',
-                        background: '#ffffff',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onChange={(e) => updateFiltersInParams({ keyword: e.target.value })}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#344BFD';
-                        e.target.style.boxShadow = '0 0 0 3px rgba(52, 75, 253, 0.1)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#E2E8F0';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    />
-                  </div>
-                  <button className="mobile-filter-toggle" onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-                      <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-                      <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-                    </svg>
-                    <span className="filter-text">Filters</span>
-                  </button>
                   <span className="jobs-count">
                     Showing <strong>{pagedJobs.length}</strong> of <strong>{allFilteredJobs.length}</strong> factory jobs
                   </span>
@@ -1099,9 +1353,16 @@ export const JobSearchPage: React.FC = () => {
                             borderRadius="10px"
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <h4 className="job-compact-card-title">
-                              {job.title}
-                            </h4>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              <h4 className="job-compact-card-title">
+                                {job.title}
+                              </h4>
+                              {Boolean(currentUser && (currentUser.appliedJobs?.includes(job.id) || currentUser.appliedJobsWithStatus?.some((a: any) => a.jobId === job.id))) && (
+                                <span style={{ fontSize: '11px', fontWeight: '800', background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                                  Applied ✓
+                                </span>
+                              )}
+                            </div>
                             <div className="job-compact-card-location">
                               <MapPin size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1236,6 +1497,18 @@ export const JobSearchPage: React.FC = () => {
 
         </div>
       </div>
+      {/* Play Store Style Fullscreen / Overlay Instant Search View */}
+      <MobileSearchOverlay
+        isOpen={searchOverlayOpen}
+        onClose={() => setSearchOverlayOpen(false)}
+        initialQuery={searchParams.get('keyword') || ''}
+        onSelectSearch={(queryStr, locationStr) => {
+          updateFiltersInParams({
+            keyword: queryStr || null,
+            location: locationStr || searchParams.get('location') || null
+          });
+        }}
+      />
     </div>
   );
 };

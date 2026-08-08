@@ -56,7 +56,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       const json = await res.json();
 
       if (res.ok) {
-        showToast(`Verification OTP sent to ${targetEmail}`, 'success');
+        showToast('otp sent to registered email', 'success');
         setStep(2);
         setResendTimer(60);
       } else {

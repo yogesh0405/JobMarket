@@ -64,7 +64,7 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const isSearchAllowed = (location.pathname === '/' || location.pathname === '/jobs' || location.pathname.startsWith('/jobs')) && location.pathname !== '/jobs/map';
+  const isSearchAllowed = location.pathname === '/';
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch({ type: 'SET_LANGUAGE', payload: e.target.value as Language });

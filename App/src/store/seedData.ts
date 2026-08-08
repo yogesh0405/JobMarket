@@ -56,22 +56,19 @@ export const initialQualifications: Category[] = [
 export const initialHospitalCategories: Category[] = [
   { name: 'Staff Nurse', icon: 'heart-pulse', count: 450 },
   { name: 'Ward Boy / Assistant', icon: 'user', count: 380 },
-  { name: 'Lab Assistant', icon: 'microscope', count: 190 },
-  { name: 'Hospital Receptionist', icon: 'phone', count: 120 }
+  { name: 'Lab Assistant', icon: 'microscope', count: 190 }
 ];
 
 export const initialHotelCategories: Category[] = [
   { name: 'Commi 1 Chef / Cook', icon: 'chef-hat', count: 320 },
   { name: 'Hotel Waiter', icon: 'utensils', count: 280 },
-  { name: 'Housekeeping Associate', icon: 'sparkles', count: 210 },
-  { name: 'Front Desk Executive', icon: 'bell-ring', count: 160 }
+  { name: 'Housekeeping Associate', icon: 'sparkles', count: 210 }
 ];
 
 export const initialSchoolCategories: Category[] = [
   { name: 'Primary Teacher', icon: 'book-open', count: 290 },
   { name: 'High School Teacher', icon: 'book-open', count: 240 },
-  { name: 'Librarian Assistant', icon: 'book-text', count: 110 },
-  { name: 'Peon / Office Boy', icon: 'box', count: 90 }
+  { name: 'Librarian Assistant', icon: 'book-text', count: 110 }
 ];
 
 const pickShift = () => {

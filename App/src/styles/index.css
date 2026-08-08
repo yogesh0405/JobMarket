@@ -26,7 +26,7 @@
   --danger: #EF4444;
   --danger-light: #FEE2E2;
 
-  --bg: #e2e8f0;
+  --bg: #F8FAFC;
   --bg-secondary: #ffffff;
   --bg-dark: #0F172A;
   --surface: #FFFFFF;
@@ -118,7 +118,7 @@
   --z-fixed: 300;
   --z-modal-backdrop: 400;
   --z-modal: 500;
-  --z-toast: 600;
+  --z-toast: 999999;
 
   /* Layout */
   --container-max: 1280px;

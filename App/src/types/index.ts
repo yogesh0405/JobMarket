@@ -142,6 +142,7 @@ export interface Job {
   experienceRequired?: boolean;
   discloseSalary?: boolean;
   genderPreference?: string;
+  educationRequirement?: string;
   isWalkIn?: boolean;
   walkInTime?: string;
   acceptFreshers?: boolean;

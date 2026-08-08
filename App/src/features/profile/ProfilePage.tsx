@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
-import { getInitials, formatDate, capitalize } from '../../utils/helpers';
+import { getInitials, formatDate, capitalize, shareContent } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
@@ -16,6 +16,18 @@ export const ProfilePage: React.FC = () => {
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
+
+  const handleShare = () => {
+    if (!currentUser) return;
+    const profileId = currentUser.id;
+    const shareUrl = `${window.location.origin}/profile/${profileId}`;
+    shareContent(
+      currentUser.name || 'User Profile',
+      `Check out my profile on JobMarket`,
+      shareUrl,
+      () => showToast('Public profile link copied to clipboard! Anyone on any device can open this link to view your profile. 📋', 'success')
+    );
+  };
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [previewResume, setPreviewResume] = useState<Resume | null>(null);
@@ -224,7 +236,12 @@ export const ProfilePage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const currentExp = currentUser.experience || [];
+      let currentExp: any[] = currentUser.experience || [];
+      if (typeof currentExp === 'string') {
+        try { currentExp = JSON.parse(currentExp); } catch (_) { currentExp = []; }
+      }
+      if (!Array.isArray(currentExp)) currentExp = [];
+
       const newExpItem = {
         title: expTitle,
         company: expCompany,
@@ -243,8 +260,8 @@ export const ProfilePage: React.FC = () => {
       } else {
         showToast(result.error || 'Failed to add experience', 'error');
       }
-    } catch (err) {
-      showToast('An error occurred', 'error');
+    } catch (err: any) {
+      showToast(err?.message || 'An error occurred while saving experience', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -256,7 +273,12 @@ export const ProfilePage: React.FC = () => {
     
     setIsSaving(true);
     try {
-      const currentExp = currentUser.experience || [];
+      let currentExp: any[] = currentUser.experience || [];
+      if (typeof currentExp === 'string') {
+        try { currentExp = JSON.parse(currentExp); } catch (_) { currentExp = []; }
+      }
+      if (!Array.isArray(currentExp)) currentExp = [];
+
       const updatedExp = currentExp.filter((_, i) => i !== indexToDelete);
       
       const result = await updateUser({ experience: updatedExp } as any);
@@ -265,8 +287,8 @@ export const ProfilePage: React.FC = () => {
       } else {
         showToast(result.error || 'Failed to delete experience', 'error');
       }
-    } catch (err) {
-      showToast('An error occurred', 'error');
+    } catch (err: any) {
+      showToast(err?.message || 'An error occurred while deleting experience', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -282,7 +304,12 @@ export const ProfilePage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const currentEdu = currentUser.education || [];
+      let currentEdu: any[] = currentUser.education || [];
+      if (typeof currentEdu === 'string') {
+        try { currentEdu = JSON.parse(currentEdu); } catch (_) { currentEdu = []; }
+      }
+      if (!Array.isArray(currentEdu)) currentEdu = [];
+
       const newEduItem = {
         degree: eduDegree,
         institution: eduInstitution,
@@ -299,8 +326,8 @@ export const ProfilePage: React.FC = () => {
       } else {
         showToast(result.error || 'Failed to add education', 'error');
       }
-    } catch (err) {
-      showToast('An error occurred', 'error');
+    } catch (err: any) {
+      showToast(err?.message || 'An error occurred while saving education', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -312,7 +339,12 @@ export const ProfilePage: React.FC = () => {
     
     setIsSaving(true);
     try {
-      const currentEdu = currentUser.education || [];
+      let currentEdu: any[] = currentUser.education || [];
+      if (typeof currentEdu === 'string') {
+        try { currentEdu = JSON.parse(currentEdu); } catch (_) { currentEdu = []; }
+      }
+      if (!Array.isArray(currentEdu)) currentEdu = [];
+
       const updatedEdu = currentEdu.filter((_, i) => i !== indexToDelete);
       
       const result = await updateUser({ education: updatedEdu } as any);
@@ -321,8 +353,8 @@ export const ProfilePage: React.FC = () => {
       } else {
         showToast(result.error || 'Failed to delete education', 'error');
       }
-    } catch (err) {
-      showToast('An error occurred', 'error');
+    } catch (err: any) {
+      showToast(err?.message || 'An error occurred while deleting education', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -622,6 +654,32 @@ export const ProfilePage: React.FC = () => {
                   </svg>
                 </div>
               )}
+              {/* Camera upload badge */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  right: '2px',
+                  background: 'rgba(37, 99, 235, 0.9)',
+                  color: '#ffffff',
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1.5px solid #ffffff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                  zIndex: 2,
+                  pointerEvents: 'none'
+                }}
+                title="Change Photo"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
             </div>
             
             <div className="profile-info">
@@ -646,60 +704,34 @@ export const ProfilePage: React.FC = () => {
                   {currentUser.location}
                 </div>
               )}
-
-              <div className="profile-actions-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={triggerFileInput}
-                  disabled={isUploading}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.22)',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    color: '#ffffff',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    backdropFilter: 'blur(4px)'
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                    <circle cx="12" cy="13" r="4"/>
-                  </svg>
-                  <span>{currentUser.profilePictureUrl ? 'Change Photo / Logo' : 'Upload Photo / Logo'}</span>
-                </button>
-
-                {currentUser.profilePictureUrl && (
-                  <button 
-                    onClick={handleDeletePhoto}
-                    disabled={isUploading}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.25)',
-                      border: '1px solid rgba(239, 68, 68, 0.45)',
-                      color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                    <span>Remove</span>
-                  </button>
-                )}
-              </div>
             </div>
+
+            <button
+              onClick={handleShare}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(4px)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginLeft: 'auto',
+                alignSelf: 'center'
+              }}
+              title="Share Public Profile Link"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>Share Profile</span>
+            </button>
           </div>
           <input 
             type="file" 
@@ -709,6 +741,200 @@ export const ProfilePage: React.FC = () => {
             style={{ display: 'none' }} 
           />
         </div>
+
+        {/* Profile Completeness Status Card */}
+        {(() => {
+          const isCand = currentUser.role === 'candidate' || !currentUser.role;
+          
+          // 1. Basic Info & Photo (20% Max)
+          const photoOk = !!currentUser.profilePictureUrl;
+          const locOk = !!currentUser.location;
+          let basicPct = 10; // Name + Email default
+          if (photoOk) basicPct += 5;
+          if (locOk) basicPct += 5;
+
+          // 2. Preferences / Company (20% Max)
+          const tradeOk = !!currentUser.tradeSpecialization;
+          const shiftOk = !!currentUser.preferredShift;
+          let prefPct = 0;
+          if (isCand) {
+            if (tradeOk) prefPct += 10;
+            if (shiftOk) prefPct += 10;
+          } else {
+            const compOk = !!currentUser.companyName;
+            const gstOk = !!currentUser.gstNumber;
+            if (compOk) prefPct += 10;
+            if (gstOk) prefPct += 10;
+          }
+
+          // 3. Skills (20% Max - Minimum 5 skills required for full 20%, 4% per skill)
+          const skillsArr = Array.isArray(currentUser.skills) ? currentUser.skills : [];
+          const skillsCount = skillsArr.length;
+          const skillsPct = Math.min(20, skillsCount * 4);
+
+          // 4. Experience (20% Max)
+          const expArr = Array.isArray(currentUser.experience) ? currentUser.experience : [];
+          const expPct = expArr.length >= 1 ? 20 : 0;
+
+          // 5. Resume (20% Max)
+          const resumeOk = !!(currentUser.resume && (currentUser.resume.url || currentUser.resume.name));
+          const resumePct = resumeOk ? 20 : 0;
+
+          const totalPct = Math.min(100, basicPct + prefPct + skillsPct + expPct + resumePct);
+
+          return (
+            <div 
+              className="profile-section profile-completeness-card" 
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: 'var(--radius-lg, 16px)',
+                border: '1px solid var(--border, #cbd5e1)',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                      Profile Completeness Status
+                    </h3>
+                    <span 
+                      style={{
+                        background: totalPct === 100 ? '#dcfce7' : (totalPct >= 60 ? '#eff6ff' : '#fef3c7'),
+                        color: totalPct === 100 ? '#15803d' : (totalPct >= 60 ? '#1d4ed8' : '#b45309'),
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11.5px',
+                        fontWeight: '800'
+                      }}
+                    >
+                      {totalPct === 100 ? 'All-Star Profile ⭐' : (totalPct >= 60 ? 'Intermediate Profile' : 'Basic Profile')}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                    Complete all 5 sections (including minimum 5 skills) for 100% completeness and 5x recruiter priority.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#2563eb', lineHeight: 1 }}>
+                      {totalPct}%
+                    </div>
+                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b' }}>Completed</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real Progress Bar */}
+              <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
+                <div 
+                  style={{
+                    width: `${totalPct}%`,
+                    height: '100%',
+                    background: totalPct === 100 ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)' : 'linear-gradient(90deg, #2563eb 0%, #3b82f6 100%)',
+                    borderRadius: '10px',
+                    transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                ></div>
+              </div>
+
+              {/* Section Breakdown Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
+                
+                {/* 1. Basic Info & Photo */}
+                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Basic Info & Photo</div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: basicPct === 20 ? '#16a34a' : '#0f172a' }}>
+                      {basicPct} / 20%
+                    </div>
+                  </div>
+                  {basicPct === 20 ? (
+                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
+                  ) : (
+                    <button onClick={triggerFileInput} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      Add Photo
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. Job Preferences / Company */}
+                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>{isCand ? 'Trade & Preferences' : 'Company Details'}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: prefPct === 20 ? '#16a34a' : '#0f172a' }}>
+                      {prefPct} / 20%
+                    </div>
+                  </div>
+                  {prefPct === 20 ? (
+                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
+                  ) : (
+                    <button onClick={openPrefModal} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      Edit
+                    </button>
+                  )}
+                </div>
+
+                {/* 3. Skills (Requires Min 5 Skills) */}
+                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>
+                      Skills ({skillsCount}/5 min)
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: skillsPct === 20 ? '#16a34a' : '#0f172a' }}>
+                      {skillsPct} / 20%
+                    </div>
+                  </div>
+                  {skillsPct === 20 ? (
+                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
+                  ) : (
+                    <button onClick={() => setSkillsModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      {skillsCount === 0 ? 'Add 5 Skills' : `Add ${5 - skillsCount} More`}
+                    </button>
+                  )}
+                </div>
+
+                {/* 4. Experience */}
+                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Work Experience</div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: expPct === 20 ? '#16a34a' : '#0f172a' }}>
+                      {expPct} / 20%
+                    </div>
+                  </div>
+                  {expPct === 20 ? (
+                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
+                  ) : (
+                    <button onClick={() => setExpModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      Add Work
+                    </button>
+                  )}
+                </div>
+
+                {/* 5. Resume */}
+                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Resume / CV Document</div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: resumePct === 20 ? '#16a34a' : '#0f172a' }}>
+                      {resumePct} / 20%
+                    </div>
+                  </div>
+                  {resumePct === 20 ? (
+                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
+                  ) : (
+                    <button onClick={() => navigate('/resume')} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      Upload
+                    </button>
+                  )}
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
 
         {/* About */}
         <div className="profile-section">

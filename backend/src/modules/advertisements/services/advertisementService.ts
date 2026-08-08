@@ -1,4 +1,5 @@
 import { redisClient } from '../../../config/redis';
+import { CacheService } from '../../../utils/redisCache';
 import { AdvertisementRepository } from '../repositories/advertisementRepository';
 import { UserRepository } from '../../auth/repositories/UserRepository';
 import { EmailService } from '../../auth/services/EmailService';
@@ -15,13 +16,15 @@ const CACHE_TTL_SECONDS = 600; // 10 minutes
 
 export class AdvertisementService {
   /**
-   * Clear Homepage Advertisement Cache from Redis
+   * Clear Homepage Advertisement Cache and Analytics Cache from Redis
    */
   public static async invalidateCache(): Promise<void> {
     try {
       if (redisClient.isOpen) {
         await redisClient.del(REDIS_CACHE_KEY);
       }
+      await CacheService.invalidate(['cache:ads:admin_analytics', 'cache:admin:stats']);
+      await CacheService.invalidatePattern('cache:ads:*');
     } catch (err) {
       console.error('Failed to invalidate Redis cache:', err);
     }

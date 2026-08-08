@@ -63,6 +63,7 @@ export interface JobData {
   walkInContactPerson?: string;
   walkInContactNumber?: string;
   walkInDocuments?: string;
+  educationRequirement?: string;
 }
 
 export interface MapBoundsParams {
@@ -162,6 +163,7 @@ export class JobRepository {
       walkInContactPerson: row.walk_in_contact_person || null,
       walkInContactNumber: row.walk_in_contact_number || null,
       walkInDocuments: row.walk_in_documents || null,
+      educationRequirement: row.education_requirement || (typeof row.education === 'string' ? row.education : '10th Pass'),
       applicants: typeof row.applicants === 'string' ? safeJsonParse(row.applicants, []) : (Array.isArray(row.applicants) ? row.applicants : [])
     };
   }
@@ -175,7 +177,8 @@ export class JobRepository {
                openings, filled_openings, min_age, max_age, gender, description, responsibilities,
                requirements, skills, perks, featured, status, reject_reason, views, posted_at,
                midc_zone, shift_details, overtime, accommodation, bus_facility, canteen,
-               joining_bonus, attendance_bonus, contract_duration, walk_in_date, interview_address, trade
+               joining_bonus, attendance_bonus, contract_duration, walk_in_date, interview_address, trade,
+               education_requirement
         FROM jobs 
         WHERE status = 'APPROVED'
         ORDER BY posted_at DESC
@@ -434,7 +437,7 @@ export class JobRepository {
         gender_preference, min_age, max_age, is_walk_in, walk_in_time, accept_freshers,
         accept_experienced, max_applicants, application_deadline, pf, esic, uniform,
         medical_insurance, transport, hiring_method, walk_in_start_time, walk_in_end_time,
-        walk_in_contact_person, walk_in_contact_number, walk_in_documents, status
+        walk_in_contact_person, walk_in_contact_number, walk_in_documents, education_requirement, status
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, 
         $8, $9, $10, $11, $12, $13, 
@@ -445,7 +448,7 @@ export class JobRepository {
         $36, $37, $38, $39, $40,
         $41, $42, $43, $44, $45, $46,
         $47, $48, $49, $50, $51, $52,
-        $53, $54, $55, $56, $57, $58, $59, $60, 'PENDING_REVIEW'
+        $53, $54, $55, $56, $57, $58, $59, $60, $61, 'PENDING_REVIEW'
       ) RETURNING *
     `;
 
@@ -509,7 +512,8 @@ export class JobRepository {
       jobData.walkInEndTime || null,
       jobData.walkInContactPerson || null,
       jobData.walkInContactNumber || null,
-      jobData.walkInDocuments || null
+      jobData.walkInDocuments || null,
+      jobData.educationRequirement || '10th Pass'
     ];
 
     if (jobData.industry) {
@@ -613,9 +617,10 @@ export class JobRepository {
         iti_trade = COALESCE($37, iti_trade),
         experience_required = COALESCE($38, experience_required),
         disclose_salary = COALESCE($39, disclose_salary),
+        education_requirement = COALESCE($40, education_requirement),
         last_geocoded_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $40 AND employer_id = $41
+      WHERE id = $41 AND employer_id = $42
       RETURNING *
     `;
 
@@ -666,6 +671,7 @@ export class JobRepository {
       jobData.itiTrade !== undefined ? jobData.itiTrade : null,
       jobData.experienceRequired !== undefined ? jobData.experienceRequired : null,
       jobData.discloseSalary !== undefined ? jobData.discloseSalary : null,
+      jobData.educationRequirement || null,
       jobId,
       employerId
     ];
@@ -792,7 +798,7 @@ export class JobRepository {
       SELECT 
         j.*
       FROM saved_jobs sj
-      JOIN jobs j ON sj.job_id = j.id
+      JOIN jobs j ON sj.job_id::text = j.id::text
       WHERE sj.user_id = $1
       ORDER BY sj.created_at DESC
     `;

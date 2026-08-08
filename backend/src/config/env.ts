@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true });
 const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.string().default('postgresql://neondb_owner:npg_2LENyTJDu7AQ@ep-still-glade-aznr0ikn-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'),
+  DATABASE_URL: z.string().default('postgresql://neondb_owner:npg_2LENyTJDu7AQ@ep-still-glade-aznr0ikn-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=verify-full'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_ACCESS_SECRET: z.string().default('super_secret_access_key_change_me_in_prod'),
   JWT_REFRESH_SECRET: z.string().default('super_secret_refresh_key_change_me_in_prod'),

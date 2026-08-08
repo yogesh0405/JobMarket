@@ -11,8 +11,13 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  // Catch idle pool client errors gracefully
-  if (err.message && (err.message.includes('timeout') || err.message.includes('EHOSTUNREACH') || err.message.includes('ENOTFOUND'))) {
+  // Catch serverless Neon idle pool client disconnects gracefully
+  if (err.message && (
+    err.message.includes('timeout') ||
+    err.message.includes('EHOSTUNREACH') ||
+    err.message.includes('ENOTFOUND') ||
+    err.message.includes('Connection terminated unexpectedly')
+  )) {
     return;
   }
   console.error('Unexpected error on idle pg client:', err.message || err);
@@ -20,7 +25,10 @@ pool.on('error', (err) => {
 
 pool.on('connect', (client) => {
   client.on('error', (err) => {
-    console.error('Database client connection error:', err);
+    if (err.message && err.message.includes('Connection terminated unexpectedly')) {
+      return;
+    }
+    console.error('Database client connection error:', err.message || err);
   });
 });
 
@@ -28,6 +36,7 @@ export const checkDatabaseConnection = async () => {
   try {
     const client = await pool.connect();
     console.log('✅ Database connected successfully');
+    await client.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS education_requirement VARCHAR(255) DEFAULT '10th Pass';`).catch(() => {});
     client.release();
   } catch (err) {
     console.error('❌ Database connection error', err);

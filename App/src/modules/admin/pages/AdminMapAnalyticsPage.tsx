@@ -32,7 +32,7 @@ export const AdminMapAnalyticsPage: React.FC = () => {
     try {
       setIsGeocoding(true);
       showToast('Triggering batch geocoding for pending jobs...', 'info');
-      const res = await apiFetch('/api/jobs/geocode', { method: 'POST' });
+      const res = await apiFetch('/api/v1/jobs/geocode', { method: 'POST' });
       if (res.ok) {
         const json = await res.json();
         showToast(

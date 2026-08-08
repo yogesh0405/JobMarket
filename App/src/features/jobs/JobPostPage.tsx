@@ -7,7 +7,6 @@ import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { Job, JobType, WorkMode } from '../../types';
-import { parseJobPrompt } from '../../utils/aiParser';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { extractCoordinatesFromMapInput, resolveShortMapUrl } from '../../utils/mapUrlParser';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
@@ -63,9 +62,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   const isEdit = !!id;
   const existingJob = id ? getJobById(id) : undefined;
-
-  // AI Prompt input
-  const [aiPrompt, setAiPrompt] = useState('');
 
   // Enterprise Governance & Form States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -188,6 +184,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [genderPreference, setGenderPreference] = useState<string>('No Preference');
   const [minAgeInput, setMinAgeInput] = useState<string>('18');
   const [maxAgeInput, setMaxAgeInput] = useState<string>('60');
+
+  // Education Requirement state
+  const [educationRequirement, setEducationRequirement] = useState<string>('10th Pass');
+  const [customEducation, setCustomEducation] = useState<string>('');
 
   // Shift & Facility states
   const [shiftCategory, setShiftCategory] = useState<'Day Shift' | 'Night Shift' | 'Rotational Shift' | 'Custom Shift'>('Day Shift');
@@ -484,6 +484,20 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setMinAgeInput(String(existingJob.minAge || 18));
       setMaxAgeInput(String(existingJob.maxAge || 60));
 
+      const edu = existingJob.educationRequirement || (existingJob as any).education_requirement;
+      const standardEdus = ['10th Pass', '12th Pass', 'ITI', 'Diploma', 'Graduate', "Post Graduate / Master's", 'Doctorate / PhD'];
+      if (edu) {
+        if (standardEdus.includes(edu)) {
+          setEducationRequirement(edu);
+          setCustomEducation('');
+        } else {
+          setEducationRequirement('Others');
+          setCustomEducation(edu);
+        }
+      } else {
+        setEducationRequirement('10th Pass');
+      }
+
       const hm = existingJob.hiringMethod || (existingJob.isWalkIn || existingJob.walkInDate ? 'WALK_IN' : 'STANDARD');
       setHiringMethod(hm as any);
       setIsWalkIn(hm === 'WALK_IN');
@@ -521,60 +535,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setCompanyLogo(existingJob.companyLogo || '');
     }
   }, [isEdit, existingJob]);
-
-  // AI Prompt Build Handler
-  const handleAiBuild = () => {
-    if (!aiPrompt.trim()) {
-      showToast('Please type a prompt first', 'error');
-      return;
-    }
-    const parsed = parseJobPrompt(aiPrompt);
-
-    if (parsed.industry || parsed.trade) {
-      const targetInd = parsed.industry || parsed.trade || '';
-      setIndustry(targetInd);
-      setTrade(targetInd);
-      const roles = getRolesForIndustry(targetInd);
-      if (parsed.title && roles.includes(parsed.title)) {
-        setTitle(parsed.title);
-      } else if (parsed.title) {
-        setTitle('Other');
-        setCustomTitle(parsed.title);
-      }
-    } else if (parsed.title) {
-      setTitle(parsed.title);
-    }
-
-    if (parsed.industry) setIndustry(parsed.industry);
-    if (parsed.openings) setOpeningsInput(String(parsed.openings));
-    if (parsed.midcZone) {
-      setIsMidcLocation(true);
-      setMidcZone(parsed.midcZone);
-    }
-    if (parsed.location) setLocation(parsed.location);
-    if (parsed.shiftDetails) setShiftDetails(parsed.shiftDetails);
-    
-    setOvertime(!!parsed.overtime);
-    setAccommodation(!!parsed.accommodation);
-    setBusFacility(!!parsed.busFacility);
-    setCanteen(!!parsed.canteen);
-    setJoiningBonus(!!parsed.joiningBonus);
-    setAttendanceBonus(!!parsed.attendanceBonus);
-
-    if (parsed.salaryMin || parsed.salaryMax) {
-      setDiscloseSalary(true);
-      if (parsed.salaryMin) setSalaryMin(parsed.salaryMin);
-      if (parsed.salaryMax) setSalaryMax(parsed.salaryMax);
-    }
-    if (parsed.minExperience !== undefined || parsed.maxExperience !== undefined) {
-      setExperienceRequired(true);
-      if (parsed.minExperience !== undefined) setMinExperience(parsed.minExperience);
-      if (parsed.maxExperience !== undefined) setMaxExperience(parsed.maxExperience);
-    }
-    if (parsed.description) setDescription(parsed.description);
-
-    showToast('Form prefilled by AI! 🤖', 'success');
-  };
 
   const midcList = [
     'Waluj MIDC (Chhatrapati Sambhajinagar)',
@@ -632,6 +592,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     const finalTitle = title === 'Other' ? customTitle.trim() : title.trim();
     const finalTrade = finalIndustry; // Automatically sync trade with industry
     const finalItiTrade = targetIti ? (itiTrade === 'Other' ? customItiTrade.trim() : itiTrade.trim()) : '';
+    const finalEducation = educationRequirement === 'Others' ? customEducation.trim() : educationRequirement.trim();
     const parsedOpenings = Math.max(1, parseInt(openingsInput) || 1);
     const parsedSkills = skills.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -642,6 +603,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     }
     if (!finalTitle) {
       showToast('Please select or specify a Job Role', 'error');
+      return;
+    }
+    if (!finalEducation) {
+      showToast('Education Requirement is mandatory. Please select or specify Education Qualification.', 'error');
       return;
     }
     if (!location.trim()) {
@@ -777,6 +742,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       medicalInsurance,
       contractDuration: contractDuration || undefined,
       genderPreference,
+      educationRequirement: finalEducation,
       minAge: parseInt(minAgeInput) || 18,
       maxAge: parseInt(maxAgeInput) || 60,
       hiringMethod,
@@ -851,30 +817,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#B91C1C', fontWeight: '600' }}>
               💡 Make the requested corrections below and click "Resubmit Job for Approval" to send back to Admin for review.
             </span>
-          </div>
-        </div>
-      )}
-
-      {/* AI Job Builder card */}
-      {!isEdit && (
-        <div className="ai-builder-card">
-          <h3 className="ai-builder-title">
-            🤖 AI Job Builder
-          </h3>
-          <p className="ai-builder-desc">
-            Type requirements in simple words (e.g. *"Need 10 CNC operators at Chakan MIDC, night shift with bus and canteen"*)
-          </p>
-          <div className="ai-builder-row">
-            <input
-              type="text"
-              className="form-input ai-builder-input"
-              placeholder="Type job requirements..."
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-            />
-            <button type="button" className="btn btn-primary" onClick={handleAiBuild}>
-              Generate Form
-            </button>
           </div>
         </div>
       )}
@@ -1441,6 +1383,48 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       style={{ flex: 1 }}
                     />
                   </div>
+                </div>
+
+                {/* Mandatory Education Requirement */}
+                <div className="form-group" style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Award size={16} style={{ color: '#344BFD' }} />
+                    <span>Education Qualification Requirement <span style={{ color: '#EF4444' }}>*</span></span>
+                  </label>
+                  <select
+                    className="form-select"
+                    value={educationRequirement}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEducationRequirement(val);
+                      if (val !== 'Others') setCustomEducation('');
+                    }}
+                    required
+                    style={{ fontWeight: '600', color: '#0F172A' }}
+                  >
+                    <option value="10th Pass">10th Pass</option>
+                    <option value="12th Pass">12th Pass</option>
+                    <option value="ITI">ITI (Industrial Training Institute)</option>
+                    <option value="Diploma">Diploma (Polytechnic / Technical)</option>
+                    <option value="Graduate">Graduate (B.A / B.Com / B.Sc / B.E / B.Tech / BBA / BCA etc.)</option>
+                    <option value="Post Graduate / Master's">Post Graduate / Master's (M.A / M.Com / M.Sc / M.Tech / MBA / MCA etc.)</option>
+                    <option value="Doctorate / PhD">Doctorate / PhD</option>
+                    <option value="Others">Others (Specify Custom Qualification)</option>
+                  </select>
+
+                  {educationRequirement === 'Others' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Enter custom education qualification (e.g. B.Tech Mechanical, CA, 8th Pass)"
+                        value={customEducation}
+                        onChange={(e) => setCustomEducation(e.target.value)}
+                        required
+                        style={{ fontWeight: '600' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

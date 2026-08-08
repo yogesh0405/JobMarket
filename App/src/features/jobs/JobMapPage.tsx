@@ -38,7 +38,7 @@ export const JobMapPage: React.FC = () => {
           ...(searchQuery && { search: searchQuery }),
           ...(workMode !== 'All' && { workMode })
         });
-        url = `/api/jobs/nearby?${params.toString()}`;
+        url = `/api/v1/jobs/nearby?${params.toString()}`;
       } else {
         // Viewport Bounding Box Search API
         const params = new URLSearchParams({
@@ -52,23 +52,30 @@ export const JobMapPage: React.FC = () => {
           ...(workMode !== 'All' && { workMode }),
           ...(jobType !== 'All' && { jobType })
         });
-        url = `/api/jobs/map?${params.toString()}`;
+        url = `/api/v1/jobs/map?${params.toString()}`;
       }
 
       const res = await apiFetch(url);
       if (res.ok) {
         const json = await res.json();
         const rawJobs = Array.isArray(json) ? json : (json.data || []);
-        setJobs(rawJobs);
-      } else {
-        throw new Error('Failed to fetch map jobs');
+        if (rawJobs && rawJobs.length > 0) {
+          setJobs(rawJobs);
+          return;
+        }
       }
+      
+      // Fallback: If API returns empty or non-200, load jobs with coordinates from store
+      const storeJobs = (state.jobs || []).filter((j: any) => j && j.latitude && j.longitude);
+      setJobs(storeJobs);
     } catch (error) {
       console.error('Error fetching map jobs:', error);
+      const storeJobs = (state.jobs || []).filter((j: any) => j && j.latitude && j.longitude);
+      setJobs(storeJobs);
     } finally {
       setIsLoading(false);
     }
-  }, [mapBounds, radius, userCoordinates, searchQuery, workMode, jobType]);
+  }, [mapBounds, radius, userCoordinates, searchQuery, workMode, jobType, state.jobs]);
 
   useEffect(() => {
     fetchJobs();
@@ -106,7 +113,7 @@ export const JobMapPage: React.FC = () => {
 
   const handleSaveJob = async (jobId: string) => {
     try {
-      const res = await apiFetch(`/api/jobs/${jobId}/save`, { method: 'POST' });
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/save`, { method: 'POST' });
       if (res.ok) {
         const json = await res.json();
         showToast(json.message || 'Job save status updated', 'success');

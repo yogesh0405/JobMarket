@@ -41,7 +41,7 @@ router.delete('/resume', requireAuth, AuthController.deleteResume);
 router.post('/change-password', requireAuth, AuthController.changePassword);
 router.get('/sessions', requireAuth, AuthController.getSessions);
 router.delete('/sessions/:sessionId', requireAuth, AuthController.revokeSession);
-// Candidate profile view tracking
-router.post('/users/:id/view', requireAuth, AuthController.recordProfileView);
+// Public Profile (No Auth required for shared link)
+router.get('/public-profile/:id', AuthController.getPublicProfile);
 
 export default router;

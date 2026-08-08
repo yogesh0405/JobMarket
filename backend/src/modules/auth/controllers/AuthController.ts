@@ -17,16 +17,54 @@ import { CloudinaryUtil } from '../../../utils/cloudinary';
 export function sanitizeUserForResponse(user: any) {
   if (!user) return user;
   const { password_hash, ...safeUser } = user;
+  
   if (safeUser.resume) {
-    if (typeof safeUser.resume !== 'object' || Object.keys(safeUser.resume).length === 0) {
+    if (typeof safeUser.resume === 'string') {
+      try { safeUser.resume = JSON.parse(safeUser.resume); } catch (_) {}
+    }
+    if (typeof safeUser.resume !== 'object' || !safeUser.resume || Object.keys(safeUser.resume).length === 0) {
       safeUser.resume = null;
     } else {
-      const { url, ...resumeWithoutUrl } = safeUser.resume;
-      safeUser.resume = Object.keys(resumeWithoutUrl).length > 0 && (resumeWithoutUrl.name || resumeWithoutUrl.size) ? resumeWithoutUrl : null;
+      const resumeObj = safeUser.resume;
+      safeUser.resume = (resumeObj.url || resumeObj.name || resumeObj.size) ? resumeObj : null;
     }
   } else {
     safeUser.resume = null;
   }
+
+  if (safeUser.experience) {
+    if (typeof safeUser.experience === 'string') {
+      try { safeUser.experience = JSON.parse(safeUser.experience); } catch (_) { safeUser.experience = []; }
+    }
+    if (!Array.isArray(safeUser.experience)) {
+      safeUser.experience = [];
+    }
+  } else {
+    safeUser.experience = [];
+  }
+
+  if (safeUser.education) {
+    if (typeof safeUser.education === 'string') {
+      try { safeUser.education = JSON.parse(safeUser.education); } catch (_) { safeUser.education = []; }
+    }
+    if (!Array.isArray(safeUser.education)) {
+      safeUser.education = [];
+    }
+  } else {
+    safeUser.education = [];
+  }
+
+  if (safeUser.skills) {
+    if (typeof safeUser.skills === 'string') {
+      try { safeUser.skills = JSON.parse(safeUser.skills); } catch (_) { safeUser.skills = safeUser.skills.split(',').map((s: string) => s.trim()).filter(Boolean); }
+    }
+    if (!Array.isArray(safeUser.skills)) {
+      safeUser.skills = [];
+    }
+  } else {
+    safeUser.skills = [];
+  }
+
   return safeUser;
 }
 
@@ -199,9 +237,10 @@ export class AuthController {
   static async getResumeSignature(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
+      const resourceType = (req.query.resourceType as string) || 'auto';
       const publicId = `resume_${userId}_${Date.now()}`;
       const sigData = CloudinaryUtil.getUploadSignature('resumes', publicId);
-      res.status(200).json({ success: true, data: sigData });
+      res.status(200).json({ success: true, data: { ...sigData, resourceType } });
     } catch (error) {
       next(error);
     }
@@ -215,7 +254,10 @@ export class AuthController {
       let finalUrl = url;
       if (!finalUrl && base64 && base64.startsWith('data:')) {
         const publicId = `resume_${userId}_${Date.now()}`;
-        finalUrl = await CloudinaryUtil.uploadFile(base64, 'resumes', publicId);
+        const isPdf = (type && type.includes('pdf')) || (name && name.toLowerCase().endsWith('.pdf'));
+        finalUrl = isPdf
+          ? await CloudinaryUtil.uploadFile(base64, 'resumes', publicId)
+          : await CloudinaryUtil.uploadImage(base64, 'resumes', publicId);
       }
 
       if (!finalUrl) {
@@ -330,32 +372,61 @@ export class AuthController {
   static async getSessions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
+      const currentSessionId = req.sessionId || (req.headers['x-session-id'] as string);
       const rawSessions = await SessionRepository.findActiveUserSessions(userId);
 
       const sessions = rawSessions.map(s => {
         const ua = s.user_agent || '';
-        let browser = 'Unknown Browser';
-        let os = 'Unknown OS';
+        let browser = 'Chrome';
+        let os = 'macOS';
         let deviceType = 'Desktop';
 
-        if (/chrome/i.test(ua)) browser = 'Chrome';
-        else if (/firefox/i.test(ua)) browser = 'Firefox';
+        // 1. Detect Browser
+        if (/edg|edge/i.test(ua)) browser = 'Edge';
+        else if (/opera|opr/i.test(ua)) browser = 'Opera';
+        else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+        else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
         else if (/safari/i.test(ua)) browser = 'Safari';
-        else if (/edge/i.test(ua)) browser = 'Edge';
 
-        if (/android/i.test(ua)) { os = 'Android'; deviceType = 'Mobile'; }
-        else if (/iphone|ipad|ipod/i.test(ua)) { os = 'iOS'; deviceType = 'Mobile'; }
-        else if (/macintosh|mac os x/i.test(ua)) { os = 'macOS'; }
-        else if (/windows/i.test(ua)) { os = 'Windows'; }
-        else if (/linux/i.test(ua)) { os = 'Linux'; }
+        // 2. Detect OS & Device Type
+        if (/android/i.test(ua)) {
+          os = 'Android';
+          deviceType = 'Mobile';
+        } else if (/ipad/i.test(ua)) {
+          os = 'iPadOS';
+          deviceType = 'Tablet';
+        } else if (/iphone|ipod/i.test(ua)) {
+          os = 'iOS';
+          deviceType = 'Mobile';
+        } else if (/macintosh|mac os x/i.test(ua)) {
+          os = 'macOS';
+          deviceType = 'Desktop';
+        } else if (/windows/i.test(ua)) {
+          os = 'Windows';
+          deviceType = 'Desktop';
+        } else if (/linux/i.test(ua)) {
+          os = 'Linux';
+          deviceType = 'Desktop';
+        }
+
+        let cleanIp = s.ip_address || '127.0.0.1';
+        if (cleanIp === '::1' || cleanIp === '::ffff:127.0.0.1') {
+          cleanIp = '127.0.0.1 (Current IP)';
+        }
+
+        const deviceName = `${os} (${browser})`;
+        const location = 'Maharashtra, India';
+        const isCurrent = currentSessionId ? s.id === currentSessionId : false;
 
         return {
           id: s.id,
-          ipAddress: s.ip_address || '127.0.0.1',
-          deviceName: s.device_name || `${os} (${browser})`,
+          ipAddress: cleanIp,
+          deviceName,
           browser,
           os,
           deviceType,
+          location,
+          isCurrent,
           createdAt: s.created_at,
           lastUsedAt: s.last_used_at,
         };
@@ -543,6 +614,29 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Password reset successfully. You can now log in with your new password.'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 7. Get Public User Profile (No Auth Required)
+  static async getPublicProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      if (!id) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const user = await UserRepository.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+
+      const safeUser = sanitizeUserForResponse(user);
+      res.status(200).json({
+        success: true,
+        user: safeUser
       });
     } catch (error) {
       next(error);

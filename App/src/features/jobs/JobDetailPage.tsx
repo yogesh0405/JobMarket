@@ -71,7 +71,7 @@ export const JobDetailPage: React.FC = () => {
     appliedAt: applicantRecord.appliedAt
   } : null);
 
-  const realApplicantCount = (job.applicants && job.applicants.length > 0) ? job.applicants.length : (job.views || 0);
+  const realApplicantCount = Array.isArray(job.applicants) ? job.applicants.length : 0;
 
   // Dynamic Profile Strength Calculation based on completed user profile fields
   let profileStrength = 0;
@@ -93,6 +93,15 @@ export const JobDetailPage: React.FC = () => {
   }, [storeSaved]);
 
   const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
+
+  // Reset scroll position to top whenever job detail loads unless linked to #apply anchor
+  useEffect(() => {
+    if (!location.hash || location.hash !== '#apply') {
+      window.scrollTo(0, 0);
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+  }, [id, location.hash]);
 
   // Auto-scroll smoothly to #apply anchor when linked via URL hash
   useEffect(() => {
@@ -159,17 +168,17 @@ export const JobDetailPage: React.FC = () => {
   };
 
   const handleShare = () => {
-    const targetUrl = `${window.location.protocol}//${window.location.host}/#/job/${job.id}`;
+    const targetUrl = `${window.location.protocol}//${window.location.host}/job/${job.id}`;
     shareContent(
       job.title,
       `Check out this job: ${job.title} at ${job.company}`,
       targetUrl,
-      () => showToast('Job link copied to clipboard!', 'success')
+      () => showToast('Job link copied to clipboard! 📋', 'success')
     );
   };
 
   const handleWhatsAppShare = () => {
-    const shareUrl = encodeURIComponent(window.location.origin + '/#/job/' + job.id);
+    const shareUrl = encodeURIComponent(window.location.origin + '/job/' + job.id);
     const shareText = encodeURIComponent(`Check out this job on JobMarket:\n*${job.title}* at *${job.company}*\nLocation: ${job.location}\nSalary: ₹${formatNumber(job.salaryMin)} - ₹${formatNumber(job.salaryMax)}/month\n\nApply here:`);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`;
     window.open(whatsappUrl, '_blank');
@@ -467,6 +476,15 @@ export const JobDetailPage: React.FC = () => {
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                   </svg>
                   <span>{job.experienceRequired === false ? 'No Experience Required' : `${job.minExperience}-${job.maxExperience} Years`}</span>
+                </div>
+
+                {/* Education Requirement */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontSize: '13px', fontWeight: '500' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" style={{ flexShrink: 0 }}>
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                  </svg>
+                  <span>{job.educationRequirement || (job as any).education_requirement || (typeof (job as any).education === 'string' ? (job as any).education : '10th Pass')}</span>
                 </div>
 
                 {/* Salary */}
@@ -1001,52 +1019,6 @@ export const JobDetailPage: React.FC = () => {
                   <span style={{ fontWeight: '700', color: '#0F172A', fontSize: '13px', textAlign: 'right' }}>
                     {realApplicantCount} {realApplicantCount === 1 ? 'Applicant' : 'Applicants'}
                   </span>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: Skills Match */}
-            <div style={{
-              background: '#ffffff',
-              border: '1.5px solid #cbd5e1',
-              borderRadius: '4px',
-              padding: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)'
-            }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', margin: 0 }}>Skills Match</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', color: '#475569' }}>
-                  <span>Overall Match</span>
-                  <span>{matchScore}%</span>
-                </div>
-                <div style={{ background: '#E2E8F0', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ background: '#344BFD', width: `${matchScore}%`, height: '100%' }}></div>
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#475569', margin: '0 0 8px 0' }}>Matching Skills</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {(job.skills || []).map(s => (
-                    <span
-                      key={s}
-                      style={{
-                        background: '#EEF1FF',
-                        color: '#344BFD',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        padding: '4px 10px',
-                        borderRadius: '4px',
-                        border: '1px solid #C7CEFE'
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>

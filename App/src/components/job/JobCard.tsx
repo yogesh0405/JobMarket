@@ -66,6 +66,20 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
 
   const { bg: wmBg, color: wmColor, border: wmBorder } = workModeColor();
 
+  const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id || a.id === currentUser?.id);
+  const hasApplied = Boolean(
+    currentUser && (
+      currentUser.appliedJobs?.includes(job.id) ||
+      currentUser.appliedJobsWithStatus?.some((app: any) => app.jobId === job.id) ||
+      applicantRecord
+    )
+  );
+
+  const appDetails = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id) || (applicantRecord ? {
+    jobId: job.id,
+    status: applicantRecord.status || 'applied',
+  } : null);
+
   return (
     <div
       className="job-card-naukri-style"
@@ -90,16 +104,18 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
         e.currentTarget.style.borderColor = '#344BFD';
         e.currentTarget.style.boxShadow = '0 10px 24px rgba(52, 75, 253, 0.16), 0 4px 8px rgba(15, 23, 42, 0.08)';
         e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.zIndex = '10';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = '#cbd5e1';
         e.currentTarget.style.boxShadow = '0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)';
         e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.zIndex = '1';
       }}
     >
       {/* ── TOP HIGHLIGHT BOX ── */}
       <div style={{
-        background: '#F8FAFC',
+        background: '#FFFFFF',
         padding: '12px 14px 10px',
         display: 'flex',
         flexDirection: 'column',
@@ -144,26 +160,41 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
           </button>
         </div>
 
-        {/* Location */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748B', fontSize: '12px', fontWeight: '500' }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" style={{ flexShrink: 0 }}>
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.location}</span>
-        </div>
-
-        {/* Experience + Salary */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', color: '#475569', fontSize: '12px', fontWeight: '500' }}>
+        {/* Address (Location) + Experience + Salary in ONE ROW */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          color: '#475569',
+          fontSize: '12px',
+          fontWeight: '500',
+          marginTop: '2px'
+        }}>
+          {/* Location / Address */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" style={{ flexShrink: 0 }}>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{job.location}</span>
+          </div>
+
+          <span style={{ color: '#CBD5E1', flexShrink: 0 }}>|</span>
+
+          {/* Experience */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" style={{ flexShrink: 0 }}>
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
             </svg>
             <span>{job.experienceRequired === false ? 'Fresher' : `${job.minExperience}–${job.maxExperience} Yrs`}</span>
           </div>
-          <span style={{ color: '#CBD5E1' }}>|</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+
+          <span style={{ color: '#CBD5E1', flexShrink: 0 }}>|</span>
+
+          {/* Salary */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
             <span style={{ fontWeight: '600', color: '#64748B' }}>₹</span>
             <span>{renderSalary()}</span>
           </div>
@@ -190,9 +221,28 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
           color: wmColor,
           border: `1px solid ${wmBorder}`,
           whiteSpace: 'nowrap',
-          flexShrink: 0
+          flexShrink: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px'
         }}>
-          {job.workMode || 'On-site'}
+          {(job.workMode || '').toLowerCase().includes('remote') ? (
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          ) : (job.workMode || '').toLowerCase().includes('hybrid') ? (
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          ) : (
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+              <path d="M6 12h12"/><path d="M6 7h12"/><path d="M6 17h12"/>
+            </svg>
+          )}
+          <span>{job.workMode || 'On-site'}</span>
         </span>
 
         {/* Job Type badge */}
@@ -205,10 +255,41 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
           color: '#475569',
           border: '1px solid #E2E8F0',
           whiteSpace: 'nowrap',
-          flexShrink: 0
+          flexShrink: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px'
         }}>
-          {job.jobType || 'Full-time'}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+          <span>{job.jobType || 'Full-time'}</span>
         </span>
+
+        {/* Education badge */}
+        {(job.educationRequirement || (job as any).education_requirement) && (
+          <span style={{
+            fontSize: '11px',
+            fontWeight: '600',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            background: '#F0FDF4',
+            color: '#166534',
+            border: '1px solid #BBF7D0',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
+            </svg>
+            <span>{job.educationRequirement || (job as any).education_requirement}</span>
+          </span>
+        )}
 
         {/* Shift Details */}
         {(job as any).shiftDetails && (
@@ -229,6 +310,27 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
             {(job as any).shiftDetails}
+          </span>
+        )}
+
+        {/* Real-time Application Status Badge */}
+        {hasApplied && (
+          <span style={{
+            fontSize: '11px',
+            fontWeight: '800',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            background: appDetails?.status === 'accepted' ? '#DCFCE7' : appDetails?.status === 'shortlisted' ? '#FAF5FF' : '#EFF6FF',
+            color: appDetails?.status === 'accepted' ? '#15803D' : appDetails?.status === 'shortlisted' ? '#9333EA' : '#2563EB',
+            border: appDetails?.status === 'accepted' ? '1px solid #BBF7D0' : appDetails?.status === 'shortlisted' ? '1px solid #E9D5FF' : '1px solid #BFDBFE',
+            whiteSpace: 'nowrap',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            marginLeft: 'auto'
+          }}>
+            <span>✓</span>
+            <span>{appDetails?.status ? (appDetails.status.charAt(0).toUpperCase() + appDetails.status.slice(1)) : 'Applied'}</span>
           </span>
         )}
       </div>
@@ -260,11 +362,6 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
               textOverflow: 'ellipsis'
             }}>
               {job.company}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#64748B' }}>
-              <span style={{ color: '#EAB308', fontWeight: '700' }}>★ 4.2</span>
-              <span style={{ color: '#CBD5E1' }}>•</span>
-              <span>Reviews</span>
             </div>
             <div style={{ fontSize: '11px', color: '#0284C7', fontWeight: '600' }}>
               Posted by {job.company}

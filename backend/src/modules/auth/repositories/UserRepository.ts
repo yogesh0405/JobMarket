@@ -173,10 +173,12 @@ export class UserRepository {
     for (const [key, value] of Object.entries(profileData)) {
       const dbColumn = fieldMap[key];
       if (dbColumn && value !== undefined) {
-        fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}`);
         if (dbColumn === 'resume' || dbColumn === 'experience' || dbColumn === 'education') {
-          values.push(value ? JSON.stringify(value) : null);
+          fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}::jsonb`);
+          const jsonVal = typeof value === 'string' ? value : JSON.stringify(value);
+          values.push(value ? jsonVal : null);
         } else {
+          fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}`);
           values.push(value);
         }
       }

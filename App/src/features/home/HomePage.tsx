@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useJobs } from '../../hooks/useJobs';
+import { useAuth } from '../../hooks/useAuth';
 import { JobCard } from '../../components/job/JobCard';
 import { formatNumber } from '../../utils/helpers';
 import { useTranslation } from '../../utils/translations';
@@ -13,6 +14,7 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useStore();
   const { getJobs } = useJobs();
+  const { currentUser } = useAuth();
   const t = useTranslation(state.language);
 
   const [keyword, setKeyword] = useState('');
@@ -433,7 +435,7 @@ export const HomePage: React.FC = () => {
           </div>
           
           <div className="qualifications-grid">
-            {initialHospitalCategories.map((q, i) => (
+            {initialHospitalCategories.slice(0, 3).map((q, i) => (
               <div
                 key={q.name}
                 className={`qualification-card color-index-${i % 6}`}
@@ -466,7 +468,7 @@ export const HomePage: React.FC = () => {
           </div>
           
           <div className="qualifications-grid">
-            {initialHotelCategories.map((q, i) => (
+            {initialHotelCategories.slice(0, 3).map((q, i) => (
               <div
                 key={q.name}
                 className={`qualification-card color-index-${(i + 2) % 6}`}
@@ -499,7 +501,7 @@ export const HomePage: React.FC = () => {
           </div>
           
           <div className="qualifications-grid">
-            {initialSchoolCategories.map((q, i) => (
+            {initialSchoolCategories.slice(0, 3).map((q, i) => (
               <div
                 key={q.name}
                 className={`qualification-card color-index-${(i + 4) % 6}`}
@@ -642,22 +644,25 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <hr className="section-divider" />
-
-      {/* CTA */}
-      <section className="cta-section reveal">
-        <div className="container">
-          <div className="cta-card">
-            <div className="cta-glow-effect"></div>
-            <h2>{t.ctaHeader}</h2>
-            <p>{t.ctaSub}</p>
-            <div className="cta-buttons">
-              <Link to="/signup?role=candidate" className="btn btn-primary btn-lg btn-pill btn-white">{t.signup}</Link>
-              <Link to="/signup?role=employer" className="btn btn-secondary btn-lg btn-pill btn-outline-white">{t.postJob}</Link>
+      {/* CTA (Shown only before user login/signup) */}
+      {!currentUser && (
+        <>
+          <hr className="section-divider" />
+          <section className="cta-section reveal">
+            <div className="container">
+              <div className="cta-card">
+                <div className="cta-glow-effect"></div>
+                <h2>{t.ctaHeader}</h2>
+                <p>{t.ctaSub}</p>
+                <div className="cta-buttons">
+                  <Link to="/signup?role=candidate" className="btn btn-primary btn-lg btn-pill btn-white">{t.signup}</Link>
+                  <Link to="/signup?role=employer" className="btn btn-secondary btn-lg btn-pill btn-outline-white">{t.postJob}</Link>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </>
+      )}
     </div>
   );
 };

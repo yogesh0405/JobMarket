@@ -129,14 +129,6 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
-  if (tab === 'saved') {
-    return <SavedJobsPage />;
-  }
-
-  if (tab === 'profile') {
-    return <ProfilePage />;
-  }
-
   const setTab = (newTab: string) => {
     setSearchParams({ tab: newTab });
   };
@@ -156,8 +148,15 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.origin + '/#/profile/' + currentUser.id);
-    showToast('Profile link copied to clipboard!', 'success');
+    if (!currentUser) return;
+    const profileId = currentUser.id;
+    const shareUrl = `${window.location.origin}/profile/${profileId}`;
+    shareContent(
+      currentUser.name || 'User Profile',
+      `Check out my profile on JobMarket`,
+      shareUrl,
+      () => showToast('Public profile link copied to clipboard! Anyone on any device can open this link to view your profile. 📋', 'success')
+    );
   };
 
   const convertToWebP = (file: File): Promise<string> => {
@@ -2059,6 +2058,24 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                                 </svg>
                               </button>
+                              <button 
+                                className="table-action-btn" 
+                                title="Share Job Link" 
+                                onClick={() => {
+                                  const jobUrl = `${window.location.origin}/job/${job.id}`;
+                                  shareContent(
+                                    job.title,
+                                    `Check out this job: ${job.title} at ${job.company || 'JobMarket'}`,
+                                    jobUrl,
+                                    () => showToast('Job link copied to clipboard! 📋', 'success')
+                                  );
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                              </button>
                               <button className="table-action-btn danger" title="Delete" onClick={() => handleDelete(job.id)}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                   <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
@@ -2146,7 +2163,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         <span>View Applicants ({job.applicants?.length || 0})</span>
                       </button>
 
-                      {/* Tier 2: Secondary Action Toolbar (3 items aligned in 1 row) */}
+                      {/* Tier 2: Secondary Action Toolbar (4 items aligned in 1 row) */}
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <button 
                           onClick={() => setManageVacanciesJob(job)} 
@@ -2154,6 +2171,25 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                           <span>Openings</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const jobUrl = `${window.location.origin}/job/${job.id}`;
+                            shareContent(
+                              job.title,
+                              `Check out this job: ${job.title} at ${job.company || 'JobMarket'}`,
+                              jobUrl,
+                              () => showToast('Job link copied to clipboard! 📋', 'success')
+                            );
+                          }} 
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                          title="Share Job Link"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                          </svg>
+                          <span>Share</span>
                         </button>
                         <button 
                           onClick={() => navigate(`/edit-job/${job.id}`)} 

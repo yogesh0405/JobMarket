@@ -104,6 +104,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
   // Applicant status local state
   const [applicantStatus, setApplicantStatus] = useState<string>(viewWorker?.status || 'applied');
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [scheduleSuccessMsg, setScheduleSuccessMsg] = useState<string>('');
 
   // Resolve target jobId and jobData
   useEffect(() => {
@@ -207,6 +208,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
           mapsLink
         });
       }
+      setScheduleSuccessMsg('Interview scheduled & invitation sent successfully to candidate!');
       if (showToast) showToast('Interview scheduled & invitation sent!', 'success');
     } catch (err: any) {
       if (showToast) showToast(err.message || 'Failed to schedule interview', 'error');
@@ -1097,6 +1099,25 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                   <h4 style={{ margin: '0 0 12px', fontSize: '12px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                     Schedule In-Person / Online Interview
                   </h4>
+
+                  {scheduleSuccessMsg && (
+                    <div style={{
+                      background: '#ECFDF5',
+                      color: '#065F46',
+                      border: '1.5px solid #A7F3D0',
+                      padding: '10px 14px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      marginBottom: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <CheckCircle2 size={16} style={{ color: '#059669', flexShrink: 0 }} />
+                      <span>{scheduleSuccessMsg}</span>
+                    </div>
+                  )}
 
                   <form onSubmit={handleScheduleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
