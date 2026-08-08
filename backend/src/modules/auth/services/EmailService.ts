@@ -161,6 +161,75 @@ export class EmailService {
   }
 
   /**
+   * Send Two-Factor Authentication (2FA) Login Verification OTP Email
+   */
+  static async send2FAOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const currentYear = new Date().getFullYear();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2FA Login Code - CSN JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <span style="color:#1e3a8a;font-size:22px;font-weight:800;">CSN JobMarket 2FA Protection</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;padding:40px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+              <h2 style="margin:0 0 12px;color:#0f172a;font-size:22px;">Two-Factor Authentication Code</h2>
+              <p style="color:#64748b;font-size:15px;line-height:1.6;margin-bottom:24px;">
+                Hi <strong>${toName}</strong>, someone is attempting to log into your account. Enter the 6-digit security code below to authorize your login:
+              </p>
+              <div style="background:#f0fdf4;border:2px dashed #16a34a;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+                <span style="font-size:32px;font-weight:900;letter-spacing:8px;color:#15803d;">${otpCode}</span>
+              </div>
+              <p style="color:#94a3b8;font-size:13px;">This security code expires in 10 minutes. If you did not request this login, please change your password immediately.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      if (!env.BREVO_API_KEY) {
+        logger.info(`[EmailService] Simulated 2FA Login OTP for ${toEmail}: ${otpCode}`);
+        return true;
+      }
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'api-key': env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'CSN JobMarket Security', email: process.env.SENDER_EMAIL || 'yogeshdand04@gmail.com' },
+          to: [{ email: toEmail, name: toName }],
+          subject: `${otpCode} is your 2FA Login Code - CSN JobMarket`,
+          htmlContent
+        })
+      });
+      return res.ok;
+    } catch (err) {
+      logger.error('Failed to send 2FA Login OTP email via Brevo', err);
+      return false;
+    }
+  }
+
+  /**
    * Send a production-quality OTP email via Brevo Transactional API
    */
   static async sendOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {
@@ -816,7 +885,8 @@ export class EmailService {
   ): Promise<boolean> {
     const url = 'https://api.brevo.com/v3/smtp/email';
     const currentYear = new Date().getFullYear();
-    const supportLink = `http://localhost:5174/#/contact`;
+    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const supportLink = `${frontendUrl}/contact`;
 
     let title = '';
     let intro = '';
@@ -1049,7 +1119,7 @@ export class EmailService {
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;text-align:center;">
                       <tr>
                         <td align="center">
-                          <a href="http://localhost:5174/#/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
+                          <a href="${env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
                             ${isApproved ? '📊 View Banner Analytics' : '✏️ Edit & Resubmit Banner'}
                           </a>
                         </td>
@@ -1206,7 +1276,7 @@ export class EmailService {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center">
-                          <a href="http://localhost:5173/#/dashboard?tab=applied" target="_blank" style="background-color:#2563eb;color:#ffffff;display:inline-block;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
+                          <a href="${env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tab=applied" target="_blank" style="background-color:#2563eb;color:#ffffff;display:inline-block;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
                             View Applied Jobs Dashboard ↗
                           </a>
                         </td>

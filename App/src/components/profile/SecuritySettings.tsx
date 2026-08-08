@@ -8,14 +8,17 @@ import {
   Lock, 
   Smartphone, 
   Laptop, 
-  Globe, 
   LogOut, 
   CheckCircle2, 
   Send, 
   ShieldAlert,
-  HelpCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  RefreshCw,
+  Clock,
+  MapPin,
+  History,
+  Check
 } from 'lucide-react';
 
 interface SessionItem {
@@ -61,20 +64,32 @@ export const SecuritySettings: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { showToast } = useToast();
   
-  // Password form states
+  // Tab state for Password section: 'none' | 'change' | 'otp_reset'
+  const [passwordMode, setPasswordMode] = useState<'none' | 'change' | 'otp_reset'>('none');
+
+  // Direct Password Change state
   const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changeNewPassword, setChangeNewPassword] = useState('');
+  const [changeConfirmPassword, setChangeConfirmPassword] = useState('');
   const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [showChangeNewPass, setShowChangeNewPass] = useState(false);
+  const [showChangeConfirmPass, setShowChangeConfirmPass] = useState(false);
+  const [isSubmittingChangePass, setIsSubmittingChangePass] = useState(false);
 
-  // Forgot password states
-  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
-  const [resetEmailSent, setResetEmailSent] = useState(false);
+  // OTP Reset Password state
+  const [otpStep, setOtpStep] = useState<'request' | 'verify'>('request');
+  const [otpCode, setOtpCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [showResetNewPass, setShowResetNewPass] = useState(false);
+  const [showResetConfirmPass, setShowResetConfirmPass] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isResettingPass, setIsResettingPass] = useState(false);
+  
+  // Resend Timer state (60 seconds)
+  const [resendTimer, setResendTimer] = useState(0);
 
-  // Sessions state
+  // Active Sessions state
   const clientInfo = getClientPlatformInfo();
   const [sessions, setSessions] = useState<SessionItem[]>([
     {
@@ -92,8 +107,37 @@ export const SecuritySettings: React.FC = () => {
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
 
   // 2FA state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(
+    Boolean((currentUser as any)?.is_two_factor_enabled || (currentUser as any)?.isTwoFactorEnabled)
+  );
   const [isToggling2FA, setIsToggling2FA] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setTwoFactorEnabled(Boolean((currentUser as any)?.is_two_factor_enabled || (currentUser as any)?.isTwoFactorEnabled));
+    }
+  }, [currentUser]);
+
+  // 6. Toggle 2FA API Handler
+  const handleToggle2FA = async () => {
+    const nextState = !twoFactorEnabled;
+    setIsToggling2FA(true);
+    try {
+      const res = await apiFetch('/api/v1/auth/2fa/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ enabled: nextState })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || json.message || 'Failed to update 2FA setting');
+
+      setTwoFactorEnabled(nextState);
+      showToast(nextState ? '2FA protection enabled for your account!' : '2FA protection disabled.', nextState ? 'success' : 'info');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update 2FA setting', 'error');
+    } finally {
+      setIsToggling2FA(false);
+    }
+  };
 
   // Fetch real active sessions from backend
   useEffect(() => {
@@ -137,69 +181,131 @@ export const SecuritySettings: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  // 1. Password Change Handler
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  // Resend countdown timer effect
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // 1. Direct Password Change Handler
+  const handleDirectPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!currentPassword || !changeNewPassword || !changeConfirmPassword) {
       showToast('Please fill in all password fields.', 'error');
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (changeNewPassword !== changeConfirmPassword) {
       showToast('New passwords do not match.', 'error');
       return;
     }
-    if (newPassword.length < 6) {
+    if (changeNewPassword.length < 6) {
       showToast('New password must be at least 6 characters.', 'error');
       return;
     }
 
-    setIsSubmittingPassword(true);
+    setIsSubmittingChangePass(true);
     try {
       const res = await apiFetch('/api/v1/auth/change-password', {
         method: 'POST',
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify({ currentPassword, newPassword: changeNewPassword })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to update password');
 
       showToast('Password changed successfully!', 'success');
       setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setChangeNewPassword('');
+      setChangeConfirmPassword('');
+      setPasswordMode('none');
     } catch (err: any) {
       showToast(err.message || 'Failed to update password. Please check current password.', 'error');
     } finally {
-      setIsSubmittingPassword(false);
+      setIsSubmittingChangePass(false);
     }
   };
 
-  // 2. Forgot Password Reset Handler
-  const handleSendResetEmail = async () => {
+  // 2. Send Reset OTP Handler
+  const handleSendResetOtp = async (isResend = false) => {
     const userEmail = currentUser?.email;
     if (!userEmail) {
       showToast('User email not found. Please log in again.', 'error');
       return;
     }
 
-    setIsSendingResetEmail(true);
+    setIsSendingOtp(true);
     try {
       const res = await apiFetch('/api/v1/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email: userEmail })
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || json.message || 'Failed to send reset email');
+      if (!res.ok) throw new Error(json.error || json.message || 'Failed to send OTP code');
 
-      setResetEmailSent(true);
-      showToast('otp sent to registered email', 'success');
+      showToast(isResend ? 'OTP resent successfully to registered email' : 'OTP sent to registered email', 'success');
+      setOtpStep('verify');
+      setResendTimer(60); // 60 seconds countdown
     } catch (err: any) {
-      showToast(err.message || 'Failed to send password reset email', 'error');
+      showToast(err.message || 'Failed to send OTP code.', 'error');
     } finally {
-      setIsSendingResetEmail(false);
+      setIsSendingOtp(false);
     }
   };
 
-  // 3. Terminate All Other Sessions
+  // 3. Confirm Reset Password with OTP Handler
+  const handleResetPasswordWithOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const userEmail = currentUser?.email;
+    if (!userEmail) {
+      showToast('User email not found.', 'error');
+      return;
+    }
+    if (!otpCode || otpCode.trim().length < 4) {
+      showToast('Please enter the valid OTP code received on your email.', 'error');
+      return;
+    }
+    if (!resetNewPassword || !resetConfirmPassword) {
+      showToast('Please enter and confirm your new password.', 'error');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      showToast('New passwords do not match.', 'error');
+      return;
+    }
+    if (resetNewPassword.length < 6) {
+      showToast('Password must be at least 6 characters long.', 'error');
+      return;
+    }
+
+    setIsResettingPass(true);
+    try {
+      const res = await apiFetch('/api/v1/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: userEmail,
+          otpCode: otpCode.trim(),
+          newPassword: resetNewPassword
+        })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || json.message || 'Failed to reset password');
+
+      showToast('Password reset successfully! You can now use your new password.', 'success');
+      setOtpCode('');
+      setResetNewPassword('');
+      setResetConfirmPassword('');
+      setOtpStep('request');
+      setPasswordMode('none');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to reset password. Please verify your OTP code.', 'error');
+    } finally {
+      setIsResettingPass(false);
+    }
+  };
+
+  // 4. Terminate All Other Sessions
   const handleTerminateOtherSessions = async () => {
     setIsTerminatingSessions(true);
     try {
@@ -218,7 +324,7 @@ export const SecuritySettings: React.FC = () => {
     }
   };
 
-  // 4. Revoke Specific Session (Real-Time Logout Workflow)
+  // 5. Revoke Specific Session
   const handleRevokeSession = async (sessionId: string) => {
     const currentSessionId = localStorage.getItem('sessionId');
     const targetSession = sessions.find(s => s.id === sessionId);
@@ -248,78 +354,530 @@ export const SecuritySettings: React.FC = () => {
     }
   };
 
-  // 5. Toggle 2FA
-  const handleToggle2FA = () => {
-    setIsToggling2FA(true);
-    setTimeout(() => {
-      const nextState = !twoFactorEnabled;
-      setTwoFactorEnabled(nextState);
-      setIsToggling2FA(false);
-      showToast(nextState ? '2FA protection enabled for your account!' : '2FA protection disabled.', nextState ? 'success' : 'info');
-    }, 400);
-  };
+
 
   return (
-    <div className="security-settings" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="security-settings-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '100%', overflowX: 'hidden' }}>
       
-      {/* SECTION HEADER */}
-      <div style={{
-        background: '#ffffff',
-        border: '1.5px solid #cbd5e1',
-        borderRadius: '6px',
-        padding: '20px 24px',
-        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      {/* Industry-Grade Ultra-Responsive Style Overrides */}
+      <style>{`
+        .sec-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+          box-sizing: border-box;
+          width: 100%;
+        }
+
+        .sec-session-card {
+          border-radius: 12px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          box-sizing: border-box;
+          width: 100%;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sec-session-card.is-current {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          border: 1.5px solid #344BFD;
+          box-shadow: 0 4px 14px rgba(52, 75, 253, 0.08);
+        }
+
+        .sec-session-card.is-other {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        }
+
+        .sec-session-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          width: 100%;
+        }
+
+        .sec-device-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .sec-meta-pills {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .sec-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          color: #334155;
+          font-size: 12px;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 6px;
+          line-height: 1.3;
+        }
+
+        .sec-badge-current {
+          background: #344BFD;
+          color: #ffffff;
+          font-size: 10.5px;
+          font-weight: 700;
+          padding: 3px 9px;
+          border-radius: 12px;
+          letter-spacing: 0.4px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(52, 75, 253, 0.25);
+        }
+
+        .sec-btn-revoke {
+          width: 100%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+          padding: 10px 16px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        @media (min-width: 640px) {
+          .sec-btn-revoke {
+            width: auto;
+          }
+          .sec-session-card-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+          }
+        }
+        .sec-btn-revoke:hover {
+          background: #fee2e2;
+        }
+
+        .sec-btn-forget {
+          width: 100%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: #eff6ff;
+          color: #2563eb;
+          border: 1.5px solid #bfdbfe;
+          padding: 12px 18px;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 13.5px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .sec-btn-forget:hover {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .sec-input {
+          width: 100%;
+          padding: 11px 13px;
+          border-radius: 8px;
+          border: 1.5px solid #cbd5e1;
+          font-size: 13.5px;
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color 0.2s;
+        }
+        .sec-input:focus {
+          border-color: #344BFD;
+        }
+      `}</style>
+
+      {/* PAGE TITLE BAR */}
+      <div className="sec-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '6px',
+            width: '42px',
+            height: '42px',
+            borderRadius: '10px',
             background: '#eff6ff',
             border: '1px solid #bfdbfe',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#344BFD'
+            color: '#344BFD',
+            flexShrink: 0
           }}>
-            <Shield size={24} />
+            <Shield size={22} />
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>Security & Device Governance</h2>
-            <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '13px' }}>Manage password, active device sessions, and 2FA protection</p>
+            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>Security & Session Management</h2>
+            <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '12.5px' }}>Device sessions, password authentication & activity governance</p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: '4px', color: '#16a34a', fontSize: '12.5px', fontWeight: '700' }}>
-          <CheckCircle2 size={16} />
-          <span>Account Protected</span>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '5px 10px', borderRadius: '12px', color: '#16a34a', fontSize: '12px', fontWeight: '700' }}>
+          <CheckCircle2 size={15} />
+          <span>Active Protection</span>
         </div>
       </div>
 
-      {/* SECTION 1: ACTIVE DEVICE SESSIONS */}
-      <div style={{
-        background: '#ffffff',
-        border: '1.5px solid #cbd5e1',
-        borderRadius: '6px',
-        padding: '24px',
-        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+
+
+      {/* SECTION 2A: CHANGE PASSWORD SECTION (WITH CURRENT PASSWORD) */}
+      <div className="sec-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Key size={18} style={{ color: '#344BFD' }} />
+            <span>Change Password</span>
+          </h3>
+          <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+            Update your account password using your current password.
+          </p>
+        </div>
+
+        <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Laptop size={18} style={{ color: '#344BFD' }} />
-              <span>Active Device Sessions ({sessions.length})</span>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+              Current Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showCurrentPass ? 'text' : 'password'}
+                className="sec-input"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPass(!showCurrentPass)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+              New Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showChangeNewPass ? 'text' : 'password'}
+                className="sec-input"
+                value={changeNewPassword}
+                onChange={(e) => setChangeNewPassword(e.target.value)}
+                placeholder="Enter new password (min. 6 chars)"
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowChangeNewPass(!showChangeNewPass)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                {showChangeNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
+              Confirm New Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showChangeConfirmPass ? 'text' : 'password'}
+                className="sec-input"
+                value={changeConfirmPassword}
+                onChange={(e) => setChangeConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowChangeConfirmPass(!showChangeConfirmPass)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                {showChangeConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={isSubmittingChangePass}
+              style={{
+                padding: '11px 18px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#344BFD',
+                color: '#ffffff',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: isSubmittingChangePass ? 'not-allowed' : 'pointer',
+                width: '100%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Lock size={15} />
+              <span>{isSubmittingChangePass ? 'Updating...' : 'Update Password'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* SECTION 2B: FORGOT PASSWORD SECTION (OTP RESET WORKFLOW) */}
+      <div className="sec-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Send size={18} style={{ color: '#2563eb' }} />
+            <span>Forget Password</span>
+          </h3>
+          <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+            Send an OTP code to your registered email to reset your password.
+          </p>
+        </div>
+
+        {/* Main User Requested Button Name: Forget pasword ? Reset.. */}
+        <button
+          type="button"
+          className="sec-btn-forget"
+          onClick={() => setPasswordMode(passwordMode === 'otp_reset' ? 'none' : 'otp_reset')}
+        >
+          <Send size={16} />
+          <span>Forget pasword ? Reset..</span>
+        </button>
+
+        {/* FORGET PASSWORD RESET WORKFLOW */}
+        {passwordMode === 'otp_reset' && (
+          <div style={{
+            background: '#f8fafc',
+            border: '1.5px solid #bfdbfe',
+            borderRadius: '10px',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            marginTop: '4px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldAlert size={18} style={{ flexShrink: 0 }} />
+                <span>OTP Password Reset Workflow</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#475569', background: '#ffffff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', wordBreak: 'break-all' }}>
+                Registered Email: <strong style={{ color: '#0f172a' }}>{currentUser?.email || 'N/A'}</strong>
+              </div>
+            </div>
+
+            {/* STEP 1: REQUEST OTP */}
+            {otpStep === 'request' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#475569' }}>
+                  Click below to send a 6-digit OTP verification code to <strong>{currentUser?.email}</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleSendResetOtp(false)}
+                  disabled={isSendingOtp}
+                  style={{
+                    padding: '11px 18px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#344BFD',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: isSendingOtp ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    width: '100%'
+                  }}
+                >
+                  <Send size={15} />
+                  <span>{isSendingOtp ? 'Sending OTP Code...' : 'Send OTP to Registered Email'}</span>
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: VERIFY OTP & SET NEW PASSWORD */}
+            {otpStep === 'verify' && (
+              <form onSubmit={handleResetPasswordWithOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '6px', color: '#166534', fontSize: '12px', fontWeight: '600' }}>
+                  ✓ OTP code sent to {currentUser?.email}. Please check your inbox.
+                </div>
+
+                {/* OTP Code Input */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '4px' }}>
+                    Enter 6-Digit OTP Code
+                  </label>
+                  <input
+                    type="text"
+                    className="sec-input"
+                    placeholder="e.g. 582910"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
+
+                {/* Reset New Password */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '4px' }}>
+                    New Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showResetNewPass ? 'text' : 'password'}
+                      className="sec-input"
+                      placeholder="Enter new password (min. 6 chars)"
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetNewPass(!showResetNewPass)}
+                      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                      {showResetNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset Confirm Password */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '4px' }}>
+                    Confirm New Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showResetConfirmPass ? 'text' : 'password'}
+                      className="sec-input"
+                      placeholder="Re-enter new password"
+                      value={resetConfirmPassword}
+                      onChange={(e) => setResetConfirmPassword(e.target.value)}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetConfirmPass(!showResetConfirmPass)}
+                      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                      {showResetConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Row: Reset Button & Resend Option */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="submit"
+                    disabled={isResettingPass}
+                    style={{
+                      padding: '11px 18px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#344BFD',
+                      color: '#ffffff',
+                      fontWeight: '700',
+                      fontSize: '13.5px',
+                      cursor: isResettingPass ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      width: '100%'
+                    }}
+                  >
+                    <Lock size={15} />
+                    <span>{isResettingPass ? 'Resetting Password...' : 'Reset Password'}</span>
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSendResetOtp(true)}
+                      disabled={resendTimer > 0 || isSendingOtp}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: resendTimer > 0 ? '#94a3b8' : '#2563eb',
+                        fontSize: '12.5px',
+                        fontWeight: '700',
+                        cursor: resendTimer > 0 || isSendingOtp ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <RefreshCw size={13} className={isSendingOtp ? 'animate-spin' : ''} />
+                      <span>
+                        {resendTimer > 0 
+                          ? `Resend OTP in ${resendTimer}s` 
+                          : isSendingOtp 
+                            ? 'Sending OTP...' 
+                            : 'Resend OTP Code'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setOtpStep('request'); setPasswordMode('none'); }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 3: LAST SECTION — LOGIN SESSIONS HISTORY & SECURITY LOG */}
+      <div className="sec-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <History size={18} style={{ color: '#344BFD' }} />
+              <span>Login Sessions History & Security Log</span>
             </h3>
-            <p style={{ margin: '3px 0 0', fontSize: '12.5px', color: '#64748b' }}>
-              Devices logged into your account across India. Real-time platform & location detection.
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+              Audit log of active & past logins across browsers and mobile platforms.
             </p>
           </div>
 
@@ -332,9 +890,9 @@ export const SecuritySettings: React.FC = () => {
                 color: '#dc2626',
                 border: '1px solid #fca5a5',
                 padding: '8px 14px',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 fontWeight: '700',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 cursor: isTerminatingSessions ? 'not-allowed' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -347,311 +905,128 @@ export const SecuritySettings: React.FC = () => {
           )}
         </div>
 
-        {/* Sessions List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {sessions.map((sess) => (
+        {/* Responsive Activity Log List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {sessions.map((sess, idx) => (
             <div
-              key={sess.id}
+              key={sess.id || idx}
               style={{
-                background: sess.isCurrent ? '#f8fafc' : '#ffffff',
+                background: '#ffffff',
                 border: sess.isCurrent ? '1.5px solid #344BFD' : '1px solid #e2e8f0',
-                borderRadius: '6px',
-                padding: '16px',
+                borderRadius: '10px',
+                padding: '14px 16px',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px'
+                flexDirection: 'column',
+                gap: '10px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02)'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '6px',
-                  background: sess.type === 'mobile' ? '#f0fdf4' : '#eff6ff',
-                  border: sess.type === 'mobile' ? '1px solid #bbf7d0' : '1px solid #bfdbfe',
-                  color: sess.type === 'mobile' ? '#16a34a' : '#344BFD',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  {sess.type === 'mobile' ? <Smartphone size={20} /> : <Laptop size={20} />}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: sess.isCurrent ? '#eff6ff' : '#f8fafc',
+                    color: sess.isCurrent ? '#344BFD' : '#64748b',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {sess.type === 'mobile' ? <Smartphone size={18} /> : <Laptop size={18} />}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{sess.device}</span>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>{sess.browser}</div>
+                  </div>
                 </div>
 
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                      {sess.device}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {sess.isCurrent ? (
+                    <span style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '12px' }}>
+                      ● Current Active Device
                     </span>
-                    {sess.isCurrent && (
-                      <span style={{
-                        background: '#344BFD',
-                        color: '#ffffff',
-                        fontSize: '11px',
-                        fontWeight: '800',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        letterSpacing: '0.5px'
-                      }}>
-                        THIS DEVICE (ACTIVE NOW)
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <Globe size={12} style={{ color: '#2563eb' }} />
-                      <span>{sess.location}</span>
-                    </span>
-                    <span>•</span>
-                    <span>IP: {sess.ip}</span>
-                    <span>•</span>
-                    <span>Last active: {sess.lastActive}</span>
-                  </div>
+                  ) : (
+                    <button
+                      onClick={() => handleRevokeSession(sess.id)}
+                      disabled={revokingSessionId === sess.id}
+                      style={{
+                        background: '#fef2f2',
+                        color: '#dc2626',
+                        border: '1px solid #fca5a5',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontWeight: '700',
+                        fontSize: '12px',
+                        cursor: revokingSessionId === sess.id ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      <LogOut size={13} />
+                      <span>{revokingSessionId === sess.id ? 'Logging out...' : 'Logout Device'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <button
-                onClick={() => handleRevokeSession(sess.id)}
-                disabled={revokingSessionId === sess.id}
-                style={{
-                  background: sess.isCurrent ? '#fef2f2' : '#ffffff',
-                  color: '#dc2626',
-                  border: '1px solid #fca5a5',
-                  padding: '7px 14px',
-                  borderRadius: '4px',
-                  fontWeight: '700',
-                  fontSize: '12px',
-                  cursor: revokingSessionId === sess.id ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <LogOut size={13} />
-                <span>{revokingSessionId === sess.id ? 'Revoking...' : sess.isCurrent ? 'Revoke Current Session' : 'Revoke Session'}</span>
-              </button>
+              {/* Bottom Details Pills */}
+              <div className="sec-meta-pills" style={{ marginTop: '0' }}>
+                <span className="sec-pill">
+                  <MapPin size={12} style={{ color: '#2563eb' }} />
+                  <span>{sess.location}</span>
+                </span>
+                <span className="sec-pill">
+                  <Clock size={12} style={{ color: '#16a34a' }} />
+                  <span>Last active: {sess.lastActive}</span>
+                </span>
+              </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* SECTION 2: CHANGE PASSWORD */}
-      <div style={{
-        background: '#ffffff',
-        border: '1.5px solid #cbd5e1',
-        borderRadius: '6px',
-        padding: '24px',
-        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '18px'
-      }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Key size={18} style={{ color: '#344BFD' }} />
-            <span>Change Account Password</span>
-          </h3>
-          <p style={{ margin: '3px 0 0', fontSize: '12.5px', color: '#64748b' }}>
-            Choose a strong password with at least 6 characters to keep your account safe.
-          </p>
+        {/* 2FA Toggle Banner */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '10px',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          marginTop: '4px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ShieldAlert size={20} style={{ color: twoFactorEnabled ? '#16a34a' : '#344BFD', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>Two-Factor Authentication (2FA)</div>
+              <div style={{ fontSize: '11.5px', color: '#64748b' }}>Require OTP code verification during account login</div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleToggle2FA}
+            disabled={isToggling2FA}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: twoFactorEnabled ? '1.5px solid #bbf7d0' : '1.5px solid #cbd5e1',
+              background: twoFactorEnabled ? '#f0fdf4' : '#ffffff',
+              color: twoFactorEnabled ? '#16a34a' : '#0f172a',
+              fontWeight: '700',
+              fontSize: '12px',
+              cursor: isToggling2FA ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isToggling2FA ? 'Updating...' : twoFactorEnabled ? '2FA Enabled ✓' : 'Enable 2FA'}
+          </button>
         </div>
-
-        <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px' }}>
-          {/* Current Password */}
-          <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '5px' }}>
-              Current Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showCurrentPass ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-                style={{
-                  width: '100%',
-                  padding: '10px 40px 10px 12px',
-                  borderRadius: '4px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPass(!showCurrentPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* New Password */}
-          <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '5px' }}>
-              New Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showNewPass ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min. 6 chars)"
-                style={{
-                  width: '100%',
-                  padding: '10px 40px 10px 12px',
-                  borderRadius: '4px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPass(!showNewPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '5px' }}>
-              Confirm New Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showConfirmPass ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter new password"
-                style={{
-                  width: '100%',
-                  padding: '10px 40px 10px 12px',
-                  borderRadius: '4px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPass(!showConfirmPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
-            <button
-              type="submit"
-              disabled={isSubmittingPassword}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '4px',
-                border: 'none',
-                background: '#344BFD',
-                color: '#ffffff',
-                fontWeight: '700',
-                fontSize: '13.5px',
-                cursor: isSubmittingPassword ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <Lock size={15} />
-              <span>{isSubmittingPassword ? 'Updating Password...' : 'Update Password'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSendResetEmail}
-              disabled={isSendingResetEmail}
-              style={{
-                padding: '9px 16px',
-                borderRadius: '4px',
-                border: '1.5px solid #cbd5e1',
-                background: '#f8fafc',
-                color: '#334155',
-                fontWeight: '600',
-                fontSize: '12.5px',
-                cursor: isSendingResetEmail ? 'not-allowed' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <Send size={13} />
-              <span>{isSendingResetEmail ? 'Sending Link...' : 'Send Password Reset Email'}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* SECTION 3: TWO-FACTOR AUTHENTICATION (2FA) */}
-      <div style={{
-        background: '#ffffff',
-        border: '1.5px solid #cbd5e1',
-        borderRadius: '6px',
-        padding: '24px',
-        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '6px',
-            background: twoFactorEnabled ? '#f0fdf4' : '#eff6ff',
-            border: twoFactorEnabled ? '1px solid #bbf7d0' : '1px solid #bfdbfe',
-            color: twoFactorEnabled ? '#16a34a' : '#344BFD',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <ShieldAlert size={20} />
-          </div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: '800', color: '#0f172a' }}>Two-Factor Authentication (2FA)</h3>
-            <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748b' }}>
-              Add an extra layer of security by requiring an OTP code sent via SMS/Email during login.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleToggle2FA}
-          disabled={isToggling2FA}
-          style={{
-            padding: '9px 18px',
-            borderRadius: '4px',
-            border: twoFactorEnabled ? '1.5px solid #bbf7d0' : '1.5px solid #cbd5e1',
-            background: twoFactorEnabled ? '#f0fdf4' : '#ffffff',
-            color: twoFactorEnabled ? '#16a34a' : '#0f172a',
-            fontWeight: '700',
-            fontSize: '13px',
-            cursor: isToggling2FA ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isToggling2FA ? 'Updating...' : twoFactorEnabled ? '2FA Enabled ✓' : 'Enable 2FA Protection'}
-        </button>
       </div>
 
     </div>

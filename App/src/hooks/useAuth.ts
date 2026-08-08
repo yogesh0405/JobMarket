@@ -36,6 +36,16 @@ export const useAuth = () => {
         return { success: false, error: errorMessage };
       }
 
+      if (data.data && data.data.require2FA) {
+        return {
+          success: true,
+          require2FA: true,
+          mfaToken: data.data.mfaToken,
+          email: data.data.email,
+          message: data.data.message
+        };
+      }
+
       const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;
 
       // Persist tokens for subsequent authenticated requests
@@ -77,6 +87,64 @@ export const useAuth = () => {
       return { success: true, user };
     } catch (error) {
       return { success: false, error: 'Network error. Please try again later.' };
+    }
+  }, [dispatch]);
+
+  const verify2FALogin = useCallback(async (mfaToken: string, otpCode: string) => {
+    try {
+      const response = await apiFetch('/api/v1/auth/2fa/verify-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mfaToken, otpCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        let errorMessage = data.error || data.message || '2FA Verification failed';
+        return { success: false, error: errorMessage };
+      }
+
+      const { accessToken, refreshToken, sessionId, user: apiUser } = data.data || data;
+
+      // Persist tokens
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      if (sessionId) {
+        localStorage.setItem('sessionId', sessionId);
+      }
+
+      const user: User = {
+        id: apiUser.id,
+        name: apiUser.name,
+        email: apiUser.email,
+        role: apiUser.role as UserRole,
+        phone: apiUser.phone || '',
+        profilePictureUrl: apiUser.profile_picture_url || '',
+        createdAt: apiUser.created_at || new Date().toISOString(),
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+        resume: apiUser.resume || null,
+        experience: apiUser.experience || [],
+        education: apiUser.education || [],
+        skills: apiUser.skills || [],
+        savedJobs: apiUser.savedJobs || apiUser.saved_jobs || [],
+        appliedJobs: apiUser.appliedJobs || apiUser.applied_jobs || [],
+        appliedJobsWithStatus: apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || [],
+        headline: apiUser.headline || '',
+        location: apiUser.location || '',
+        tradeSpecialization: apiUser.trade_specialization || '',
+        preferredShift: apiUser.preferred_shift || '',
+        requiresBus: !!apiUser.requires_bus,
+        requiresAccommodation: !!apiUser.requires_accommodation,
+        isResumePublic: apiUser.is_resume_public !== false,
+        companyName: apiUser.company_name || '',
+        gstNumber: apiUser.gst_number || '',
+      };
+
+      dispatch({ type: 'LOGIN', payload: user });
+      return { success: true, user };
+    } catch (error) {
+      return { success: false, error: 'Network error during 2FA verification. Please try again.' };
     }
   }, [dispatch]);
 
@@ -268,6 +336,7 @@ export const useAuth = () => {
   return {
     currentUser: state.currentUser,
     login,
+    verify2FALogin,
     signup,
     verifyOtp,
     logout,

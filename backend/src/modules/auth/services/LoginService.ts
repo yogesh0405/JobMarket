@@ -7,6 +7,8 @@ import { generateTokens } from '../../../utils/jwt';
 import { BadRequestError, UnauthorizedError, ForbiddenError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
 import { sanitizeUserForResponse } from '../controllers/AuthController';
+import { OtpStore } from '../../../utils/redisCache';
+import { EmailService } from './EmailService';
 
 export class LoginService {
   static async execute(email: string, passwordPlain: string, role?: string, ipAddress?: string, userAgent?: string) {
@@ -30,6 +32,31 @@ export class LoginService {
       // Typically we'd log failed attempts to Redis here
       await AuditRepository.logAction('LOGIN_FAILED', user.id, 'Auth', ipAddress, userAgent);
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    // 2FA Verification Check
+    if (user.is_two_factor_enabled) {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const mfaToken = `mfa_${user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const redisKey = `2fa:OTP:${mfaToken}`;
+
+      await OtpStore.setEx(redisKey, 600, JSON.stringify({
+        userId: user.id,
+        email: user.email,
+        otp: otpCode,
+        attempts: 0
+      }));
+
+      console.log('\n=========================================\n🛡️ 2FA LOGIN VERIFICATION CODE FOR', user.email, ':', otpCode, '\n=========================================\n');
+
+      await EmailService.send2FAOTP(user.email, otpCode, user.name);
+
+      return {
+        require2FA: true,
+        mfaToken,
+        email: user.email,
+        message: 'Two-Factor Authentication (2FA) is enabled for your account. Please enter the 6-digit code sent to your email.'
+      };
     }
 
     const client = await pool.connect();

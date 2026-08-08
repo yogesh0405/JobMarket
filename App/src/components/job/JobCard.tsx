@@ -12,9 +12,10 @@ import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
 interface JobCardProps {
   job: Job;
   onSaveToggle?: (jobId: string, isSaved: boolean) => void;
+  variant?: 'default' | 'carousel';
 }
 
-export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
+export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = 'default' }) => {
   const navigate = useNavigate();
   const { toggleSaveJob, isJobSaved } = useJobs();
   const { currentUser } = useAuth();
@@ -209,7 +210,10 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
         gap: '5px',
         flexWrap: 'wrap',
         rowGap: '5px',
-        borderBottom: '1px solid #F1F5F9'
+        borderBottom: '1px solid #F1F5F9',
+        flex: variant === 'carousel' ? '1' : undefined,
+        alignContent: variant === 'carousel' ? 'flex-start' : undefined,
+        overflow: variant === 'carousel' ? 'hidden' : undefined
       }}>
         {/* Work Mode badge */}
         <span style={{
@@ -314,7 +318,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
         )}
 
         {/* Real-time Application Status Badge */}
-        {hasApplied && (
+        {hasApplied && variant !== 'carousel' && (
           <span style={{
             fontSize: '11px',
             fontWeight: '800',
@@ -341,7 +345,8 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle }) => {
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        gap: '8px'
+        gap: '8px',
+        marginTop: variant === 'carousel' ? 'auto' : undefined
       }}>
         {/* Logo + Company info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>

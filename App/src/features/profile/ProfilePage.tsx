@@ -30,10 +30,13 @@ export const ProfilePage: React.FC = () => {
   };
 
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [previewResume, setPreviewResume] = useState<Resume | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const convertToWebP = (file: File, quality = 0.85): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -112,8 +115,52 @@ export const ProfilePage: React.FC = () => {
       showToast(err.message || 'Failed to upload photo', 'error');
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePdfFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showToast('Please select a valid PDF document file', 'error');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('PDF file size must be less than 10 MB', 'error');
+      return;
+    }
+
+    setIsUploadingResume(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const base64 = evt.target?.result as string;
+        const sizeFormatted = `${(file.size / 1024).toFixed(1)} KB`;
+        const result = await updateUser({
+          resume: {
+            name: file.name,
+            size: sizeFormatted,
+            url: base64
+          }
+        } as any);
+
+        if (result.success) {
+          showToast('Resume PDF uploaded successfully! 📄', 'success');
+          setResumeModalOpen(false);
+        } else {
+          showToast(result.error || 'Failed to upload resume PDF', 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to upload resume document', 'error');
+    } finally {
+      setIsUploadingResume(false);
+      if (pdfInputRef.current) {
+        pdfInputRef.current.value = '';
       }
     }
   };
@@ -582,22 +629,13 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="profile-page">
       <div className="container">
-        {/* Profile Header Card */}
+        {/* Profile Header Hero Card */}
         <div className="profile-header-card">
           <div className="profile-top">
             <div 
               className="profile-avatar-large"
-              style={{ 
-                position: 'relative', 
-                overflow: 'hidden', 
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '3px solid rgba(255, 255, 255, 0.3)'
-              }}
               onClick={triggerFileInput}
+              title="Click to change profile picture"
             >
               {currentUser.profilePictureUrl ? (
                 <img 
@@ -610,25 +648,8 @@ export const ProfilePage: React.FC = () => {
               )}
               
               {/* Hover upload overlay */}
-              <div 
-                className="avatar-upload-overlay"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0, 0, 0, 0.65)',
-                  color: 'white',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  opacity: 0,
-                  transition: 'opacity 0.2s ease',
-                  pointerEvents: 'none'
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: 2 }}>
+              <div className="avatar-upload-overlay">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ marginBottom: 2 }}>
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                   <circle cx="12" cy="13" r="4"/>
                 </svg>
@@ -641,41 +662,42 @@ export const ProfilePage: React.FC = () => {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0, 0, 0, 0.7)',
+                    background: 'rgba(0, 0, 0, 0.75)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    zIndex: 4
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                  <svg className="animate-spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
                     <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
                     <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
                   </svg>
                 </div>
               )}
+              
               {/* Camera upload badge */}
               <div 
                 style={{
                   position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  background: 'rgba(37, 99, 235, 0.9)',
+                  bottom: '4px',
+                  right: '4px',
+                  background: '#2563eb',
                   color: '#ffffff',
-                  width: '20px',
-                  height: '20px',
+                  width: '24px',
+                  height: '24px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: '1.5px solid #ffffff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                  zIndex: 2,
+                  border: '2px solid #ffffff',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  zIndex: 3,
                   pointerEvents: 'none'
                 }}
-                title="Change Photo"
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                   <circle cx="12" cy="13" r="4"/>
                 </svg>
@@ -683,55 +705,82 @@ export const ProfilePage: React.FC = () => {
             </div>
             
             <div className="profile-info">
-              <h1 style={{ color: 'white', fontSize: 'var(--fs-2xl)', fontWeight: 'var(--fw-bold)', marginBottom: '4px' }}>
-                {currentUser.companyName || currentUser.name}
-              </h1>
-              <p className="profile-subtitle" style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 'var(--fs-sm)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                  {currentUser.role}
+              <div className="profile-info-title-row">
+                <h1>{currentUser.companyName || currentUser.name}</h1>
+                <span className="role-badge-pill">
+                  {currentUser.role === 'employer' ? 'Verified Employer' : 'Industrial Candidate'}
                 </span>
+              </div>
+
+              <p className="profile-subtitle">
                 {currentUser.role === 'employer' 
-                  ? (currentUser.name ? `Recruiter: ${currentUser.name}` : 'Employer Account') 
-                  : (currentUser.headline || 'ITI Industrial Worker')}
+                  ? (currentUser.name ? `Recruiter: ${currentUser.name}` : 'Industrial Employer Account') 
+                  : (currentUser.headline || 'ITI Industrial Worker / Apprentice')}
               </p>
               
-              {currentUser.location && (
-                <div className="profile-location-wrap" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)', marginTop: '6px' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
+              <div className="profile-meta-bar">
+                {currentUser.location && (
+                  <div className="profile-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>{currentUser.location}</span>
+                  </div>
+                )}
+                {currentUser.phone && (
+                  <div className="profile-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    <span>+91 {currentUser.phone}</span>
+                  </div>
+                )}
+                <div className="profile-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
-                  {currentUser.location}
+                  <span>Member since {formatDate(currentUser.createdAt)}</span>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <button
-              onClick={handleShare}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(4px)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginLeft: 'auto',
-                alignSelf: 'center'
-              }}
-              title="Share Public Profile Link"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-              <span>Share Profile</span>
-            </button>
+              {/* Hero Action Buttons */}
+              <div className="profile-hero-actions">
+                <button onClick={openEditModal} className="glass-action-btn primary-glass">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  <span>Edit Profile</span>
+                </button>
+
+                <button onClick={handleShare} className="glass-action-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  <span>Share Profile</span>
+                </button>
+
+                <Link to={`/profile/${currentUser.id}`} className="glass-action-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span>View Public Page</span>
+                </Link>
+
+                <Link to="/dashboard?tab=security" className="glass-action-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  <span>Security & 2FA</span>
+                </Link>
+              </div>
+            </div>
           </div>
           <input 
             type="file" 
@@ -746,14 +795,12 @@ export const ProfilePage: React.FC = () => {
         {(() => {
           const isCand = currentUser.role === 'candidate' || !currentUser.role;
           
-          // 1. Basic Info & Photo (20% Max)
           const photoOk = !!currentUser.profilePictureUrl;
           const locOk = !!currentUser.location;
-          let basicPct = 10; // Name + Email default
+          let basicPct = 10;
           if (photoOk) basicPct += 5;
           if (locOk) basicPct += 5;
 
-          // 2. Preferences / Company (20% Max)
           const tradeOk = !!currentUser.tradeSpecialization;
           const shiftOk = !!currentUser.preferredShift;
           let prefPct = 0;
@@ -767,16 +814,13 @@ export const ProfilePage: React.FC = () => {
             if (gstOk) prefPct += 10;
           }
 
-          // 3. Skills (20% Max - Minimum 5 skills required for full 20%, 4% per skill)
           const skillsArr = Array.isArray(currentUser.skills) ? currentUser.skills : [];
           const skillsCount = skillsArr.length;
           const skillsPct = Math.min(20, skillsCount * 4);
 
-          // 4. Experience (20% Max)
           const expArr = Array.isArray(currentUser.experience) ? currentUser.experience : [];
           const expPct = expArr.length >= 1 ? 20 : 0;
 
-          // 5. Resume (20% Max)
           const resumeOk = !!(currentUser.resume && (currentUser.resume.url || currentUser.resume.name));
           const resumePct = resumeOk ? 20 : 0;
 
@@ -786,41 +830,42 @@ export const ProfilePage: React.FC = () => {
             <div 
               className="profile-section profile-completeness-card" 
               style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                borderRadius: 'var(--radius-lg, 16px)',
-                border: '1px solid var(--border, #cbd5e1)',
+                background: '#ffffff',
+                borderRadius: '18px',
+                border: '1px solid #e2e8f0',
                 padding: '24px',
                 marginBottom: '24px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                      Profile Completeness Status
+                      Profile Strength & Recruiter Visibility
                     </h3>
                     <span 
                       style={{
                         background: totalPct === 100 ? '#dcfce7' : (totalPct >= 60 ? '#eff6ff' : '#fef3c7'),
                         color: totalPct === 100 ? '#15803d' : (totalPct >= 60 ? '#1d4ed8' : '#b45309'),
-                        padding: '3px 10px',
-                        borderRadius: '20px',
+                        padding: '4px 12px',
+                        borderRadius: '999px',
                         fontSize: '11.5px',
-                        fontWeight: '800'
+                        fontWeight: '800',
+                        border: `1px solid ${totalPct === 100 ? '#bbf7d0' : (totalPct >= 60 ? '#bfdbfe' : '#fde68a')}`
                       }}
                     >
-                      {totalPct === 100 ? 'All-Star Profile ⭐' : (totalPct >= 60 ? 'Intermediate Profile' : 'Basic Profile')}
+                      {totalPct === 100 ? 'All-Star Profile ⭐' : (totalPct >= 60 ? 'Intermediate Strength' : 'Basic Profile')}
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                    Complete all 5 sections (including minimum 5 skills) for 100% completeness and 5x recruiter priority.
+                    Complete all 5 profile sections for 100% profile strength and 5x priority ranking in employer candidate searches.
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#2563eb', lineHeight: 1 }}>
+                    <div style={{ fontSize: '34px', fontWeight: '900', color: '#2563eb', lineHeight: 1 }}>
                       {totalPct}%
                     </div>
                     <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b' }}>Completed</span>
@@ -828,8 +873,8 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Real Progress Bar */}
-              <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
+              {/* Animated Progress Bar */}
+              <div style={{ width: '100%', height: '10px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
                 <div 
                   style={{
                     width: `${totalPct}%`,
@@ -838,16 +883,16 @@ export const ProfilePage: React.FC = () => {
                     borderRadius: '10px',
                     transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
-                ></div>
+                />
               </div>
 
               {/* Section Breakdown Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
                 
                 {/* 1. Basic Info & Photo */}
-                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Basic Info & Photo</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Basic Info & Photo</div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: basicPct === 20 ? '#16a34a' : '#0f172a' }}>
                       {basicPct} / 20%
                     </div>
@@ -855,16 +900,16 @@ export const ProfilePage: React.FC = () => {
                   {basicPct === 20 ? (
                     <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
                   ) : (
-                    <button onClick={triggerFileInput} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    <button onClick={triggerFileInput} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
                       Add Photo
                     </button>
                   )}
                 </div>
 
                 {/* 2. Job Preferences / Company */}
-                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>{isCand ? 'Trade & Preferences' : 'Company Details'}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>{isCand ? 'Trade & Preferences' : 'Company Details'}</div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: prefPct === 20 ? '#16a34a' : '#0f172a' }}>
                       {prefPct} / 20%
                     </div>
@@ -872,16 +917,16 @@ export const ProfilePage: React.FC = () => {
                   {prefPct === 20 ? (
                     <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
                   ) : (
-                    <button onClick={openPrefModal} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    <button onClick={openPrefModal} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
                       Edit
                     </button>
                   )}
                 </div>
 
-                {/* 3. Skills (Requires Min 5 Skills) */}
-                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {/* 3. Skills */}
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>
                       Skills ({skillsCount}/5 min)
                     </div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: skillsPct === 20 ? '#16a34a' : '#0f172a' }}>
@@ -891,16 +936,16 @@ export const ProfilePage: React.FC = () => {
                   {skillsPct === 20 ? (
                     <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
                   ) : (
-                    <button onClick={() => setSkillsModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      {skillsCount === 0 ? 'Add 5 Skills' : `Add ${5 - skillsCount} More`}
+                    <button onClick={() => setSkillsModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                      {skillsCount === 0 ? 'Add Skills' : `Add ${5 - skillsCount} More`}
                     </button>
                   )}
                 </div>
 
                 {/* 4. Experience */}
-                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Work Experience</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Work Experience</div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: expPct === 20 ? '#16a34a' : '#0f172a' }}>
                       {expPct} / 20%
                     </div>
@@ -908,16 +953,16 @@ export const ProfilePage: React.FC = () => {
                   {expPct === 20 ? (
                     <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
                   ) : (
-                    <button onClick={() => setExpModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    <button onClick={() => setExpModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
                       Add Work
                     </button>
                   )}
                 </div>
 
                 {/* 5. Resume */}
-                <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>Resume / CV Document</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Resume / CV</div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: resumePct === 20 ? '#16a34a' : '#0f172a' }}>
                       {resumePct} / 20%
                     </div>
@@ -925,7 +970,7 @@ export const ProfilePage: React.FC = () => {
                   {resumePct === 20 ? (
                     <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
                   ) : (
-                    <button onClick={() => navigate('/resume')} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    <button onClick={() => navigate('/resume')} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
                       Upload
                     </button>
                   )}
@@ -936,301 +981,395 @@ export const ProfilePage: React.FC = () => {
           );
         })()}
 
-        {/* About */}
+        {/* SECTION 1: ABOUT ME & PERSONAL INFORMATION */}
         <div className="profile-section">
           <div className="profile-section-header">
-            <h2>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-              About
-            </h2>
+            <div className="profile-section-title-wrap">
+              <div className="icon-box-head icon-box-blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <h2>Personal Info & Contact</h2>
+            </div>
+            
             <button 
               onClick={openAboutModal}
-              className="btn btn-secondary btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              className="btn-section-action"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              Edit
+              <span>Edit Details</span>
             </button>
           </div>
+          
           <div className="profile-section-body">
             <div className="profile-details-grid">
-              <div><span className="text-sm text-secondary">Full Name</span><p className="font-medium" style={{ color: '#0f172a', fontWeight: '700' }}>{currentUser.name}</p></div>
-              <div><span className="text-sm text-secondary">Headline / Specialty</span><p className="font-medium">{currentUser.headline || 'Not provided'}</p></div>
-              <div><span className="text-sm text-secondary">Location</span><p className="font-medium">{currentUser.location || 'Not provided'}</p></div>
-              <div><span className="text-sm text-secondary">Email</span><p className="font-medium">{currentUser.email}</p></div>
-              <div><span className="text-sm text-secondary">Phone</span><p className="font-medium">{currentUser.phone || 'Not provided'}</p></div>
-              <div><span className="text-sm text-secondary">Role</span><p className="font-medium">{capitalize(currentUser.role)}</p></div>
-              <div><span className="text-sm text-secondary">Joined</span><p className="font-medium">{formatDate(currentUser.createdAt)}</p></div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Full Name</span>
+                <p className="profile-detail-value">{currentUser.name}</p>
+              </div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Headline / Specialty Title</span>
+                <p className="profile-detail-value">{currentUser.headline || 'Not provided'}</p>
+              </div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Location / City</span>
+                <p className="profile-detail-value">{currentUser.location || 'Not provided'}</p>
+              </div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Registered Email</span>
+                <p className="profile-detail-value">{currentUser.email}</p>
+              </div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Mobile Phone</span>
+                <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
+              </div>
+              <div className="profile-detail-tile">
+                <span className="profile-detail-label">Account Role</span>
+                <p className="profile-detail-value" style={{ textTransform: 'capitalize' }}>{currentUser.role}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Industrial Profile section for candidates */}
+        {/* SECTION 2: INDUSTRIAL PREFERENCES (Candidate) OR COMPANY DETAILS (Employer) */}
         {currentUser.role === 'candidate' && (
           <div className="profile-section">
             <div className="profile-section-header">
-              <h2>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-                Industrial Job Preferences
-              </h2>
+              <div className="profile-section-title-wrap">
+                <div className="icon-box-head icon-box-emerald">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                </div>
+                <h2>Job & Shift Preferences</h2>
+              </div>
+
               <button 
                 onClick={openPrefModal}
-                className="btn btn-secondary btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                className="btn-section-action"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                Edit
+                <span>Edit Preferences</span>
               </button>
             </div>
+            
             <div className="profile-section-body">
               <div className="profile-details-grid">
-                <div>
-                  <span className="text-sm text-secondary">Trade Specialization</span>
-                  <p className="font-medium">{currentUser.tradeSpecialization || 'Not specified'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Trade Specialization</span>
+                  <p className="profile-detail-value" style={{ color: '#059669' }}>{currentUser.tradeSpecialization || 'Not specified'}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">Preferred Shift</span>
-                  <p className="font-medium">{currentUser.preferredShift || 'Any Shift'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Preferred Shift</span>
+                  <p className="profile-detail-value">{currentUser.preferredShift || 'Any Shift'}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">Requires Bus facility</span>
-                  <p className="font-medium">{currentUser.requiresBus ? 'Yes' : 'No'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Bus Transport Required</span>
+                  <p className="profile-detail-value">{currentUser.requiresBus ? 'Yes (Bus Facility Required)' : 'No (Self Transport)'}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">Requires Hostel accommodation</span>
-                  <p className="font-medium">{currentUser.requiresAccommodation ? 'Yes' : 'No'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Hostel Accommodation Required</span>
+                  <p className="profile-detail-value">{currentUser.requiresAccommodation ? 'Yes (Hostel Stay Required)' : 'No (Local Stay)'}</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Company & Business Information section for Employers */}
         {currentUser.role === 'employer' && (
           <div className="profile-section">
             <div className="profile-section-header">
-              <h2>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-                Company & Business Information
-              </h2>
+              <div className="profile-section-title-wrap">
+                <div className="icon-box-head icon-box-emerald">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                </div>
+                <h2>Company Details</h2>
+              </div>
+
               <button 
                 onClick={openEditModal}
-                className="btn btn-secondary btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                className="btn-section-action"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                Edit Details
+                <span>Edit Details</span>
               </button>
             </div>
+
             <div className="profile-section-body">
               <div className="profile-details-grid">
-                <div>
-                  <span className="text-sm text-secondary">Company Name</span>
-                  <p className="font-medium" style={{ fontSize: '15px', color: '#0f172a', fontWeight: '700' }}>{currentUser.companyName || 'Not provided'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Company Name</span>
+                  <p className="profile-detail-value" style={{ fontSize: '15.5px', color: '#0f172a' }}>{currentUser.companyName || 'Not provided'}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">GST Registration Number</span>
-                  <p className="font-medium">{currentUser.gstNumber || 'Not provided'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">GST Tax Number</span>
+                  <p className="profile-detail-value">{currentUser.gstNumber || 'Not provided'}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">Recruiter / Contact Person</span>
-                  <p className="font-medium">{currentUser.name}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Recruiter / Contact Person</span>
+                  <p className="profile-detail-value">{currentUser.name}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-secondary">Contact Phone</span>
-                  <p className="font-medium">{currentUser.phone || 'Not provided'}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-secondary">Official Email</span>
-                  <p className="font-medium">{currentUser.email}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-secondary">Factory / MIDC Location</span>
-                  <p className="font-medium">{currentUser.location || 'Not provided'}</p>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Official Contact Phone</span>
+                  <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Experience */}
+        {/* SECTION 3: WORK EXPERIENCE TIMELINE */}
         {currentUser.role === 'candidate' && (
           <>
             <div className="profile-section">
               <div className="profile-section-header">
-                <h2>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                  Work Experience
-                </h2>
+                <div className="profile-section-title-wrap">
+                  <div className="icon-box-head icon-box-amber">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M20 7h-3V4a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM9 4h6v3H9V4z"/>
+                    </svg>
+                  </div>
+                  <h2>Work Experience</h2>
+                </div>
+
                 <button 
                   onClick={() => setExpModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  className="btn-section-action"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
                   </svg>
-                  Add / Edit
+                  <span>Add / Manage</span>
                 </button>
               </div>
+
               <div className="profile-section-body">
                 {currentUser.experience && currentUser.experience.length > 0 ? (
-                  currentUser.experience.map((exp: any, index: number) => (
-                    <div key={index} className="experience-item">
-                      <div className="exp-dot"></div>
-                      <div className="exp-content">
-                        <h4>{exp.title}</h4>
-                        <div className="exp-company">{exp.company}</div>
-                        <div className="exp-duration">{exp.duration}</div>
-                        {exp.description && <p className="exp-description">{exp.description}</p>}
+                  <div className="timeline-list">
+                    {currentUser.experience.map((exp: any, index: number) => (
+                      <div key={index} className="timeline-item">
+                        <div className="timeline-dot-col">
+                          <div className="timeline-dot" />
+                          <div className="timeline-line" />
+                        </div>
+                        <div className="timeline-card">
+                          <div className="timeline-title-row">
+                            <div>
+                              <h4 className="timeline-title">{exp.title}</h4>
+                              <div className="timeline-subtitle">{exp.company}</div>
+                            </div>
+                            <span className="timeline-date-pill">{exp.duration}</span>
+                          </div>
+                          {exp.description && <p className="timeline-description">{exp.description}</p>}
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: 'var(--text-secondary)' }}>No experience details added.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Education */}
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <h2>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/>
-                  </svg>
-                  Education
-                </h2>
-                <button 
-                  onClick={() => setEduModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  Add / Edit
-                </button>
-              </div>
-              <div className="profile-section-body">
-                {currentUser.education && currentUser.education.length > 0 ? (
-                  currentUser.education.map((edu: any, index: number) => (
-                    <div key={index} className="experience-item">
-                      <div className="exp-dot"></div>
-                      <div className="exp-content">
-                        <h4>{edu.degree}</h4>
-                        <div className="exp-company">{edu.institution}</div>
-                        <div className="exp-duration">{edu.year}</div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: 'var(--text-secondary)' }}>No education details added.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <h2>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                  </svg>
-                  Skills
-                </h2>
-                <button 
-                  onClick={() => setSkillsModalOpen(true)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  Add / Edit
-                </button>
-              </div>
-              <div className="profile-section-body">
-                {currentUser.skills && currentUser.skills.length > 0 ? (
-                  <div className="skills-list">
-                    {currentUser.skills.map(s => <span key={s} className="skill-tag">{s}</span>)}
+                    ))}
                   </div>
                 ) : (
-                  <p style={{ color: 'var(--text-secondary)' }}>No skills listed.</p>
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No work experience added yet.</p>
+                    <p style={{ margin: '4px 0 12px 0', fontSize: '12.5px', color: '#64748b' }}>Adding plant or industrial work experience increases recruiter responses by 3x.</p>
+                    <button onClick={() => setExpModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px' }}>
+                      + Add Work Experience
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Resume */}
+            {/* SECTION 4: EDUCATION & CERTIFICATIONS */}
             <div className="profile-section">
               <div className="profile-section-header">
-                <h2>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <div className="profile-section-title-wrap">
+                  <div className="icon-box-head icon-box-purple">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/>
+                    </svg>
+                  </div>
+                  <h2>Education & Trade Certs</h2>
+                </div>
+
+                <button 
+                  onClick={() => setEduModalOpen(true)}
+                  className="btn-section-action"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
                   </svg>
-                  Resume
-                </h2>
+                  <span>Add / Manage</span>
+                </button>
               </div>
+
+              <div className="profile-section-body">
+                {currentUser.education && currentUser.education.length > 0 ? (
+                  <div className="timeline-list">
+                    {currentUser.education.map((edu: any, index: number) => (
+                      <div key={index} className="timeline-item">
+                        <div className="timeline-dot-col">
+                          <div className="timeline-dot" style={{ background: '#9333ea', borderColor: '#f3e8ff', boxShadow: '0 0 0 2px #9333ea' }} />
+                          <div className="timeline-line" />
+                        </div>
+                        <div className="timeline-card">
+                          <div className="timeline-title-row">
+                            <div>
+                              <h4 className="timeline-title">{edu.degree}</h4>
+                              <div className="timeline-subtitle" style={{ color: '#9333ea' }}>{edu.institution}</div>
+                            </div>
+                            <span className="timeline-date-pill" style={{ background: '#f3e8ff', color: '#6b21a8' }}>{edu.year}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No education or trade certificates added.</p>
+                    <button onClick={() => setEduModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px', marginTop: '10px' }}>
+                      + Add Education
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SECTION 5: SKILLS MATRIX */}
+            <div className="profile-section">
+              <div className="profile-section-header">
+                <div className="profile-section-title-wrap">
+                  <div className="icon-box-head icon-box-indigo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  </div>
+                  <h2>Skills & Competencies</h2>
+                </div>
+
+                <button 
+                  onClick={() => setSkillsModalOpen(true)}
+                  className="btn-section-action"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                  <span>Add / Manage</span>
+                </button>
+              </div>
+
+              <div className="profile-section-body">
+                {currentUser.skills && currentUser.skills.length > 0 ? (
+                  <div className="skills-grid">
+                    {currentUser.skills.map(s => (
+                      <span key={s} className="skill-chip">
+                        <span>⚡</span>
+                        <span>{s}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No skills added yet.</p>
+                    <p style={{ margin: '4px 0 12px 0', fontSize: '12.5px', color: '#64748b' }}>Add at least 5 industrial skills (e.g. MIG Welding, CNC Operating, Fitting) for full profile rank.</p>
+                    <button onClick={() => setSkillsModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px' }}>
+                      + Add Industrial Skills
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SECTION 6: RESUME DOCUMENT */}
+            <div className="profile-section">
+              <div className="profile-section-header">
+                <div className="profile-section-title-wrap">
+                  <div className="icon-box-head icon-box-rose">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                  </div>
+                  <h2>Resume / CV Document</h2>
+                </div>
+
+                <button 
+                  onClick={() => setResumeModalOpen(true)}
+                  className="btn-section-action"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  <span>Upload / Manage</span>
+                </button>
+              </div>
+
               <div className="profile-section-body">
                 {(() => {
                   const resume = currentUser.resume;
                   if (resume && (resume.name || resume.url)) {
                     return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                        <div className="file-preview" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                            <div className="file-icon">
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+                        <div 
+                          style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            width: '100%', 
+                            padding: '16px 18px', 
+                            background: '#f8fafc', 
+                            borderRadius: '14px', 
+                            border: '1px solid #e2e8f0',
+                            flexWrap: 'wrap',
+                            gap: '12px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ffe4e6', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #fecdd3' }}>
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                               </svg>
                             </div>
-                            <div className="file-info">
-                              <h4>{resume.name}</h4>
-                              <p>{resume.size}</p>
+                            <div>
+                              <h4 style={{ margin: '0 0 2px 0', fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>{resume.name}</h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Verified PDF Document {resume.size ? `• ${resume.size}` : ''}</p>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <button
                               onClick={() => setPreviewResume(resume)}
                               className="btn btn-secondary btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px solid var(--border)' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '6px 12px' }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                               </svg>
-                              View
+                              <span>View Document</span>
                             </button>
+
                             <button
                               onClick={handleDeleteResume}
                               className="btn btn-danger btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--danger)', color: '#ffffff', border: 'none' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '6px 12px', background: '#ef4444', color: '#ffffff', border: 'none' }}
                               disabled={isDeleting}
                             >
                               {isDeleting ? (
                                 <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
-                                  <path d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" />
+                                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
+                                  <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
                                 </svg>
                               ) : (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                 </svg>
                               )}
-                              Delete
+                              <span>Delete</span>
                             </button>
                           </div>
                         </div>
@@ -1238,10 +1377,10 @@ export const ProfilePage: React.FC = () => {
                         {/* Public Resume Visibility Toggle Box */}
                         <div 
                           style={{
-                            background: currentUser.isResumePublic !== false ? 'rgba(37, 99, 235, 0.04)' : 'var(--bg-secondary)',
-                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#93c5fd' : 'var(--border)'}`,
-                            borderRadius: 'var(--radius-md)',
-                            padding: '12px 16px',
+                            background: currentUser.isResumePublic !== false ? '#eff6ff' : '#f8fafc',
+                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#bfdbfe' : '#e2e8f0'}`,
+                            borderRadius: '14px',
+                            padding: '14px 18px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
@@ -1250,19 +1389,19 @@ export const ProfilePage: React.FC = () => {
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                              <span style={{ fontSize: '15px' }}>{currentUser.isResumePublic !== false ? '👁️' : '🔒'}</span>
-                              <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                Public Resume Visibility
+                              <span style={{ fontSize: '16px' }}>{currentUser.isResumePublic !== false ? '👁️' : '🔒'}</span>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                                Public Resume Search Visibility
                               </h4>
                             </div>
-                            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
                               {currentUser.isResumePublic !== false 
-                                ? 'Employers can view your resume in the public candidate directory.' 
-                                : 'Hidden from public candidate search. Visible only to employers when you apply for their jobs.'}
+                                ? 'Employers can search and view your resume in the public candidate talent directory.' 
+                                : 'Hidden from public search. Visible only to employers when you apply for their jobs.'}
                             </p>
                           </div>
 
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}>
                             <input 
                               type="checkbox"
                               checked={currentUser.isResumePublic !== false}
@@ -1279,9 +1418,9 @@ export const ProfilePage: React.FC = () => {
                                   showToast('Failed to update visibility', 'error');
                                 }
                               }}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#2563eb' }}
                             />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: currentUser.isResumePublic !== false ? '#1d4ed8' : 'var(--text-secondary)' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: currentUser.isResumePublic !== false ? '#1d4ed8' : '#64748b' }}>
                               {currentUser.isResumePublic !== false ? 'Public' : 'Private'}
                             </span>
                           </label>
@@ -1290,10 +1429,13 @@ export const ProfilePage: React.FC = () => {
                     );
                   }
                   return (
-                    <>
-                      <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>No resume uploaded yet.</p>
-                      <Link to="/resume" className="btn btn-primary btn-sm">Upload Resume</Link>
-                    </>
+                    <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+                      <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No resume document uploaded yet.</p>
+                      <p style={{ margin: '4px 0 14px 0', fontSize: '12.5px', color: '#64748b' }}>Upload your PDF resume to let employers review your trade experience instantly.</p>
+                      <button onClick={() => setResumeModalOpen(true)} className="btn btn-primary btn-sm" style={{ borderRadius: '8px', padding: '8px 18px', background: 'var(--gradient-accent)' }}>
+                        + Upload PDF Resume
+                      </button>
+                    </div>
                   );
                 })()}
               </div>
@@ -1305,6 +1447,58 @@ export const ProfilePage: React.FC = () => {
       {/* Resume Preview Modal */}
       {previewResume && (
         <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />
+      )}
+
+      {/* Resume Upload Modal */}
+      {resumeModalOpen && createPortal(
+        <div className="modal-backdrop" onClick={() => setResumeModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Upload Resume PDF</h3>
+              <button className="modal-close" onClick={() => setResumeModalOpen(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px' }}>
+              <div 
+                onClick={() => pdfInputRef.current?.click()}
+                style={{
+                  border: '2px dashed #93c5fd',
+                  borderRadius: '16px',
+                  padding: '36px 20px',
+                  textAlign: 'center',
+                  background: '#eff6ff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', border: '1px solid #bfdbfe' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <h4 style={{ margin: '0 0 4px', fontSize: '15.5px', fontWeight: 800, color: '#0f172a' }}>
+                  {isUploadingResume ? 'Uploading Document...' : 'Select PDF Resume File'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
+                  Supports PDF documents up to 10 MB. Click anywhere to select file.
+                </p>
+                <input 
+                  type="file" 
+                  ref={pdfInputRef} 
+                  accept="application/pdf" 
+                  style={{ display: 'none' }} 
+                  onChange={handlePdfFileChange} 
+                />
+              </div>
+
+              {isUploadingResume && (
+                <div style={{ marginTop: '16px', textAlign: 'center', color: '#2563eb', fontSize: '13px', fontWeight: '700' }}>
+                  ⏳ Uploading and attaching PDF to your profile...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Profile Modal */}

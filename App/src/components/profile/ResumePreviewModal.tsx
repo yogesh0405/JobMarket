@@ -226,19 +226,43 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
           )}
         </div>
         
-        <div className="modal-footer" style={{ padding: '12px 20px', borderTop: '1px solid var(--border, #e2e8f0)', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: '#f8fafc' }}>
+        <div 
+          className="modal-footer" 
+          style={{ 
+            padding: '14px 18px', 
+            borderTop: '1px solid var(--border, #e2e8f0)', 
+            display: 'flex', 
+            alignItems: 'center',
+            justifyContent: 'flex-end', 
+            gap: '8px', 
+            flexWrap: 'wrap',
+            background: '#f8fafc' 
+          }}
+        >
           {objectUrl && (
             <a 
               href={objectUrl} 
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '13px' }}
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '6px', 
+                textDecoration: 'none', 
+                padding: '7px 12px', 
+                borderRadius: '8px', 
+                fontWeight: '700', 
+                fontSize: '12.5px',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box'
+              }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
-              Open Full Document
+              <span>Open Document</span>
             </a>
           )}
           {!loading && objectUrl && (
@@ -247,21 +271,52 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
               onClick={handleDownload}
               disabled={isDownloading}
               className="btn btn-primary btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', background: '#2563eb', color: '#ffffff', border: 'none' }}
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '6px', 
+                padding: '7px 14px', 
+                borderRadius: '8px', 
+                fontWeight: '700', 
+                fontSize: '12.5px', 
+                cursor: 'pointer', 
+                background: '#2563eb', 
+                color: '#ffffff', 
+                border: 'none',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+              }}
             >
               {isDownloading ? (
                 <span>Downloading...</span>
               ) : (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                  <span>Download Resume</span>
+                  <span>Download</span>
                 </>
               )}
             </button>
           )}
-          <button className="btn btn-secondary btn-sm" onClick={onClose} style={{ padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', background: '#e2e8f0', border: 'none', cursor: 'pointer' }}>Close</button>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={onClose} 
+            style={{ 
+              padding: '7px 14px', 
+              borderRadius: '8px', 
+              fontWeight: '700', 
+              fontSize: '12.5px', 
+              background: '#e2e8f0', 
+              color: '#334155',
+              border: 'none', 
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>,

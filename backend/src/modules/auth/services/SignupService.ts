@@ -1,8 +1,8 @@
-import { redisClient } from '../../../config/redis';
 import { UserRepository } from '../repositories/UserRepository';
 import { EmailService } from './EmailService';
 import { ConflictError, BadRequestError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
+import { OtpStore } from '../../../utils/redisCache';
 
 class ServiceUnavailableError extends Error {
   public statusCode = 503;
@@ -34,7 +34,7 @@ export class SignupService {
     // Generate real OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store registration data in Redis (Expires in 10 minutes)
+    // Store registration data in OtpStore (Expires in 10 minutes)
     const redisKey = `registration:OTP:${normalizedEmail}`;
     const payload = {
       userData: {
@@ -54,14 +54,14 @@ export class SignupService {
       userAgent
     };
 
-    await redisClient.setEx(redisKey, 600, JSON.stringify(payload));
+    await OtpStore.setEx(redisKey, 600, JSON.stringify(payload));
 
     // Send OTP via Brevo API
     const emailSent = await EmailService.sendOTP(normalizedEmail, otp, name);
 
     if (!emailSent) {
-      // Clean up Redis so user can retry
-      await redisClient.del(redisKey);
+      // Clean up OtpStore so user can retry
+      await OtpStore.del(redisKey);
       throw new ServiceUnavailableError('Email service is temporarily unavailable. Please try again in a few minutes.');
     }
 

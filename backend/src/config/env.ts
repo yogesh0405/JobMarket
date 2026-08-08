@@ -17,6 +17,7 @@ const envSchema = z.object({
   BREVO_API_KEY: z.string().default('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'),
   CLOUDINARY_URL: z.string().default('cloudinary://111364167496953:u99_zeW9Hrvk32mQa2a0fnX-ApY@gm4yqzhg'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173'),
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
 });
 
 const _env = envSchema.safeParse(process.env);

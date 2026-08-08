@@ -899,32 +899,32 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                     key={job.id} 
                     style={{ 
                       background: '#ffffff', 
-                      border: '1.5px solid #cbd5e1', 
-                      borderRadius: '6px', 
-                      padding: '16px', 
+                      border: '1px solid #e2e8f0', 
+                      borderRadius: '8px', 
+                      padding: '12px 14px', 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      gap: '12px',
-                      boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04)',
+                      gap: '8px',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
                       position: 'relative'
                     }}
                   >
                     {/* Top Row: Job Title + Status Badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '800', color: '#0f172a', lineHeight: 1.3 }}>
+                        <h3 style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: '800', color: '#0f172a', lineHeight: 1.25 }}>
                           {job.title}
                         </h3>
                         
                         {/* Company Pill */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0 6px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', margin: '2px 0 0 0' }}>
                           <CompanyDefaultLogo 
                             logoUrl={job.companyLogo || (job as any).company_logo} 
                             companyName={job.company} 
-                            size={20} 
+                            size={18} 
                             borderRadius="4px"
                           />
-                          <span style={{ fontSize: '13px', color: '#334155', fontWeight: '700' }}>
+                          <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
                             {job.company || 'Industrial Partner'}
                           </span>
                         </div>
@@ -935,11 +935,11 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                         background: badgeBg, 
                         color: badgeColor, 
                         border: `1px solid ${badgeBorder}`, 
-                        fontSize: '11px', 
+                        fontSize: '10.5px', 
                         fontWeight: '800', 
-                        padding: '4px 10px', 
+                        padding: '3px 8px', 
                         borderRadius: '4px',
-                        letterSpacing: '0.5px',
+                        letterSpacing: '0.4px',
                         whiteSpace: 'nowrap',
                         flexShrink: 0
                       }}>
@@ -947,69 +947,62 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                       </span>
                     </div>
 
-                    {/* Metadata Chips: Location & Salary */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', fontSize: '12.5px' }}>
-                      <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', padding: '4px 9px', borderRadius: '4px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                        <MapPin size={13} style={{ color: '#2563eb' }} />
+                    {/* Metadata Chips: Location */}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', fontSize: '11.5px' }}>
+                      <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', padding: '3px 8px', borderRadius: '4px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} style={{ color: '#2563eb' }} />
                         <span>{job.location}</span>
                         <span style={{ color: '#cbd5e1' }}>•</span>
                         <span>{job.workMode || 'On-site'}</span>
                       </span>
-
-                      {job.salaryMax > 0 && (
-                        <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '4px 9px', borderRadius: '4px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <IndianRupee size={12} />
-                          <span>₹{formatSalary(job.salaryMin, job.salaryMax)}</span>
-                        </span>
-                      )}
                     </div>
 
                     {/* Interview Details Card (If Shortlisted) */}
                     {appDetails && appDetails.status === 'shortlisted' && appDetails.interviewDate && (
                       <div style={{ 
                         background: '#f0fdf4', 
-                        border: '1.5px solid #86efac', 
+                        border: '1px solid #86efac', 
                         borderRadius: '6px', 
-                        padding: '14px',
-                        fontSize: '13px',
+                        padding: '10px 12px',
+                        fontSize: '12.5px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px',
-                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.06)'
+                        gap: '8px',
+                        boxShadow: '0 2px 4px rgba(22, 163, 74, 0.04)'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#15803d', fontWeight: '800', fontSize: '13.5px' }}>
-                            <Calendar size={16} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#15803d', fontWeight: '800', fontSize: '12.5px' }}>
+                            <Calendar size={14} />
                             <span>Interview Scheduled</span>
                           </div>
-                          <span style={{ fontSize: '10.5px', color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', border: '1px solid #86efac', textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: '10px', color: '#15803d', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', border: '1px solid #86efac', textTransform: 'uppercase' }}>
                             Action Required
                           </span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', background: '#ffffff', borderRadius: '4px', padding: '10px 12px', border: '1px solid #bbf7d0' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', background: '#ffffff', borderRadius: '4px', padding: '8px 10px', border: '1px solid #bbf7d0' }}>
                           <div>
-                            <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                              <Calendar size={12} style={{ color: '#16a34a' }} />
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
+                              <Calendar size={11} style={{ color: '#16a34a' }} />
                               <span>Date</span>
                             </span>
-                            <strong style={{ color: '#0f172a', fontSize: '13px' }}>{appDetails.interviewDate}</strong>
+                            <strong style={{ color: '#0f172a', fontSize: '12px' }}>{appDetails.interviewDate}</strong>
                           </div>
 
                           <div>
-                            <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                              <Clock size={12} style={{ color: '#16a34a' }} />
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
+                              <Clock size={11} style={{ color: '#16a34a' }} />
                               <span>Time</span>
                             </span>
-                            <strong style={{ color: '#0f172a', fontSize: '13px' }}>{appDetails.interviewTime}</strong>
+                            <strong style={{ color: '#0f172a', fontSize: '12px' }}>{appDetails.interviewTime}</strong>
                           </div>
 
                           <div style={{ gridColumn: '1 / -1' }}>
-                            <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                              <MapPin size={12} style={{ color: '#16a34a' }} />
+                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
+                              <MapPin size={11} style={{ color: '#16a34a' }} />
                               <span>Venue Address</span>
                             </span>
-                            <strong style={{ color: '#0f172a', fontSize: '12.5px', lineHeight: 1.3 }}>{appDetails.venueAddress}</strong>
+                            <strong style={{ color: '#0f172a', fontSize: '12px', lineHeight: 1.25 }}>{appDetails.venueAddress}</strong>
                           </div>
                         </div>
 
@@ -1024,17 +1017,17 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                                 color: '#ffffff', 
                                 textDecoration: 'none', 
                                 fontWeight: '700',
-                                fontSize: '12px',
-                                padding: '7px 12px',
+                                fontSize: '11.5px',
+                                padding: '5px 10px',
                                 borderRadius: '4px',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px',
+                                gap: '5px',
                                 boxShadow: '0 2px 4px rgba(22, 163, 74, 0.2)'
                               }}
                             >
-                              <MapPin size={14} />
-                              <span>Open Directions in Google Maps</span>
+                              <MapPin size={13} />
+                              <span>Open Google Maps</span>
                             </a>
                           </div>
                         )}
@@ -1042,34 +1035,31 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                     )}
 
                     {/* Footer Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '2px', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={13} style={{ color: '#94a3b8' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '2px', flexWrap: 'wrap', gap: '6px' }}>
+                      <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} style={{ color: '#94a3b8' }} />
                         <span>Applied on {new Date(job.postedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </span>
 
                       <Link 
                         to={`/job/${job.id}`} 
                         style={{ 
-                          padding: '6px 14px', 
-                          fontSize: '12.5px', 
+                          padding: '5px 12px', 
+                          fontSize: '11.5px', 
                           fontWeight: '700', 
-                          borderRadius: '4px', 
+                          borderRadius: '6px', 
                           background: '#ffffff', 
                           border: '1px solid #344BFD', 
                           color: '#344BFD', 
                           textDecoration: 'none',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 1px 3px rgba(52, 75, 253, 0.1)',
-                          width: '100%',
-                          justifyContent: 'center',
-                          boxSizing: 'border-box'
+                          gap: '4px',
+                          boxShadow: '0 1px 3px rgba(52, 75, 253, 0.1)'
                         }}
                       >
                         <span>View Job Details</span>
-                        <ArrowRight size={14} />
+                        <ArrowRight size={13} />
                       </Link>
                     </div>
                   </div>

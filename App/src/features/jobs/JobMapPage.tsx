@@ -59,15 +59,17 @@ export const JobMapPage: React.FC = () => {
       if (res.ok) {
         const json = await res.json();
         const rawJobs = Array.isArray(json) ? json : (json.data || []);
-        if (rawJobs && rawJobs.length > 0) {
+        if (Array.isArray(rawJobs)) {
           setJobs(rawJobs);
           return;
         }
       }
-      
-      // Fallback: If API returns empty or non-200, load jobs with coordinates from store
-      const storeJobs = (state.jobs || []).filter((j: any) => j && j.latitude && j.longitude);
-      setJobs(storeJobs);
+
+      // Fallback: Only if API fetch failed and we have no jobs loaded
+      setJobs((prevJobs) => {
+        if (prevJobs.length > 0) return prevJobs;
+        return (state.jobs || []).filter((j: any) => j && j.latitude && j.longitude);
+      });
     } catch (error) {
       console.error('Error fetching map jobs:', error);
       const storeJobs = (state.jobs || []).filter((j: any) => j && j.latitude && j.longitude);

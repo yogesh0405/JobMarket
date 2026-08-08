@@ -37,6 +37,10 @@ router.get('/resume/signature', requireAuth, AuthController.getResumeSignature);
 router.post('/resume', requireAuth, AuthController.uploadResume);
 router.delete('/resume', requireAuth, AuthController.deleteResume);
 
+// 2FA Routes
+router.post('/2fa/verify-login', authLimiter, AuthController.verify2FALogin);
+router.post('/2fa/toggle', requireAuth, AuthController.toggle2FA);
+
 // Security & Sessions (Protected)
 router.post('/change-password', requireAuth, AuthController.changePassword);
 router.get('/sessions', requireAuth, AuthController.getSessions);

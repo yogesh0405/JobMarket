@@ -29,10 +29,3 @@ adminAdvertisementRouter.patch('/advertisements/:id/approve', AdvertisementContr
 adminAdvertisementRouter.patch('/advertisements/:id/reject', AdvertisementController.rejectAdvertisement);
 adminAdvertisementRouter.patch('/advertisements/:id/unpublish', AdvertisementController.unpublish);
 adminAdvertisementRouter.delete('/advertisements/:id', AdvertisementController.deleteAdminAdvertisement);
-
-// 4. Notifications Router
-export const notificationRouter = Router();
-notificationRouter.get('/notifications', requireAuth, AdvertisementController.getUserNotifications);
-notificationRouter.patch('/notifications/read-all', requireAuth, AdvertisementController.markAllNotificationsRead);
-notificationRouter.patch('/notifications/:id/read', requireAuth, AdvertisementController.markNotificationRead);
-notificationRouter.delete('/notifications/:id', requireAuth, AdvertisementController.deleteNotification);

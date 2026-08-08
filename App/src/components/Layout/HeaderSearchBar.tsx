@@ -151,7 +151,11 @@ export const HeaderSearchBar: React.FC = () => {
     setSelectedIndex(-1);
   }, [query]);
 
-  const handleSelect = (item: SuggestionItem) => {
+  const handleSelect = (item: SuggestionItem, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsOpen(false);
     setQuery('');
     
@@ -169,7 +173,7 @@ export const HeaderSearchBar: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedIndex >= 0 && selectedIndex < flatItems.length) {
-      handleSelect(flatItems[selectedIndex]);
+      handleSelect(flatItems[selectedIndex], e);
     } else if (query.trim()) {
       setIsOpen(false);
       navigate(`/jobs?keyword=${encodeURIComponent(query.trim())}`);
@@ -256,7 +260,8 @@ export const HeaderSearchBar: React.FC = () => {
                     <div
                       key={item.label}
                       className={`trade-chip ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleSelect(item)}
+                      onMouseDown={(e) => handleSelect(item, e)}
+                      onClick={(e) => handleSelect(item, e)}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -281,7 +286,8 @@ export const HeaderSearchBar: React.FC = () => {
                       <div
                         key={`job-${item.id}`}
                         className={`suggestion-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelect(item)}
+                        onMouseDown={(e) => handleSelect(item, e)}
+                        onClick={(e) => handleSelect(item, e)}
                       >
                         <div className="item-icon job-icon">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
@@ -315,7 +321,8 @@ export const HeaderSearchBar: React.FC = () => {
                       <div
                         key={`trade-${item.label}`}
                         className={`suggestion-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelect(item)}
+                        onMouseDown={(e) => handleSelect(item, e)}
+                        onClick={(e) => handleSelect(item, e)}
                       >
                         <div className="item-icon trade-icon">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
@@ -343,7 +350,8 @@ export const HeaderSearchBar: React.FC = () => {
                       <div
                         key={`loc-${item.label}`}
                         className={`suggestion-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelect(item)}
+                        onMouseDown={(e) => handleSelect(item, e)}
+                        onClick={(e) => handleSelect(item, e)}
                       >
                         <div className="item-icon location-icon">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
@@ -380,12 +388,19 @@ export const HeaderSearchBar: React.FC = () => {
                   className={`dropdown-footer ${
                     selectedIndex === flatItems.length - 1 ? 'selected' : ''
                   }`}
-                  onClick={() =>
+                  onMouseDown={(e) =>
                     handleSelect({
                       type: 'view_all',
                       label: query,
                       sublabel: 'View all'
-                    })
+                    }, e)
+                  }
+                  onClick={(e) =>
+                    handleSelect({
+                      type: 'view_all',
+                      label: query,
+                      sublabel: 'View all'
+                    }, e)
                   }
                 >
                   <span>

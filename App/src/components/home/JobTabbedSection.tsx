@@ -265,50 +265,60 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
                   style={{
                     flexShrink: 0,
                     position: 'relative',
-                    padding: '8px 18px',
+                    padding: '9px 20px',
                     fontSize: '13px',
-                    fontWeight: isActive ? '800' : '700',
+                    fontWeight: isActive ? '800' : '600',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    transition: 'all 0.15s ease',
-                    border: isActive ? '1.5px solid #344BFD' : '1.5px solid #cbd5e1',
+                    transition: 'all 0.22s ease',
+                    border: isActive ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
                     outline: 'none',
-                    borderRadius: '4px',
-                    background: isActive ? '#344BFD' : '#FFFFFF',
-                    color: isActive ? '#FFFFFF' : '#475569',
+                    transform: 'skewX(-16deg)',
+                    transformOrigin: 'center center',
+                    borderRadius: '10px 6px 10px 6px',
+                    background: isActive 
+                      ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' 
+                      : '#ffffff',
+                    color: isActive ? '#ffffff' : '#334155',
                     boxShadow: isActive 
-                      ? '0 4px 12px rgba(52, 75, 253, 0.25)' 
-                      : '0 2px 4px rgba(15, 23, 42, 0.04)',
-                    zIndex: isActive ? 3 : 1
+                      ? '0 4px 14px rgba(37, 99, 235, 0.35)' 
+                      : '0 2px 4px rgba(15, 23, 42, 0.03)',
+                    margin: '0 4px'
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
                       e.currentTarget.style.background = '#eef2ff';
-                      e.currentTarget.style.borderColor = '#344BFD';
-                      e.currentTarget.style.color = '#344BFD';
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.color = '#2563eb';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = '#FFFFFF';
+                      e.currentTarget.style.background = '#ffffff';
                       e.currentTarget.style.borderColor = '#cbd5e1';
-                      e.currentTarget.style.color = '#475569';
+                      e.currentTarget.style.color = '#334155';
                     }
                   }}
                 >
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', transform: 'skewX(16deg)' }}>
                     <span style={{
-                      width: '6px',
-                      height: '6px',
+                      width: '7px',
+                      height: '7px',
                       borderRadius: '50%',
-                      background: isActive ? '#FFFFFF' : '#344BFD',
+                      background: isActive ? '#ffffff' : '#2563eb',
                       display: 'inline-block'
                     }} />
-                    <span>{cat.label}</span>
+                    <span>{cat.priority}. {cat.label}</span>
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '1px 6px',
+                      borderRadius: '9999px',
+                      fontWeight: '700',
+                      background: isActive ? 'rgba(255, 255, 255, 0.22)' : '#f1f5f9',
+                      color: isActive ? '#ffffff' : '#64748b'
+                    }}>
+                      {cat.count}
+                    </span>
                   </span>
                 </button>
               );
@@ -337,16 +347,17 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
               <div
                 key={job.id}
                 style={{
-                  flex: '0 0 290px',
-                  width: '290px',
-                  minHeight: '240px',
+                  flex: '0 0 285px',
+                  width: '285px',
+                  height: '255px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignSelf: 'stretch',
-                  scrollSnapAlign: 'start'
+                  scrollSnapAlign: 'start',
+                  boxSizing: 'border-box'
                 }}
               >
-                <JobCard job={job} />
+                <JobCard job={job} variant="carousel" />
               </div>
             ))}
 
@@ -354,10 +365,10 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
             <div
               onClick={() => navigate(activeCategory.targetUrl)}
               style={{
-                flex: '0 0 200px',
-                width: '200px',
+                flex: '0 0 190px',
+                width: '190px',
+                height: '255px',
                 alignSelf: 'stretch',
-                minHeight: '260px',
                 scrollSnapAlign: 'start',
                 background: '#FFFFFF',
                 border: '1.5px dashed #344BFD',
@@ -371,7 +382,8 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
                 padding: '24px',
                 textAlign: 'center',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)'
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)',
+                boxSizing: 'border-box'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#eef2ff';

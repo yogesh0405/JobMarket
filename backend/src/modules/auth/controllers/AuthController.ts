@@ -12,6 +12,8 @@ import { UserRepository } from '../repositories/UserRepository';
 import { SessionRepository } from '../repositories/SessionRepository';
 import { pool } from '../../../config/database/pool';
 import { redisClient } from '../../../config/redis';
+import { OtpStore, CacheService } from '../../../utils/redisCache';
+import { Verify2FALoginService } from '../services/Verify2FALoginService';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
 
 export function sanitizeUserForResponse(user: any) {
@@ -512,8 +514,8 @@ export class AuthController {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const redisKey = `reset:OTP:${normalizedEmail}`;
 
-      // Store in Redis with 10-minute expiry
-      await redisClient.setEx(redisKey, 600, JSON.stringify({ otp: otpCode, attempts: 0 }));
+      // Store in OtpStore (Redis with in-memory fallback) with 10-minute expiry
+      await OtpStore.setEx(redisKey, 600, JSON.stringify({ otp: otpCode, attempts: 0 }));
 
       console.log('\n=========================================\n🔑 PASSWORD RESET OTP CODE FOR', normalizedEmail, ':', otpCode, '\n=========================================\n');
 
@@ -540,7 +542,7 @@ export class AuthController {
       const normalizedEmail = email.toLowerCase().trim();
       const redisKey = `reset:OTP:${normalizedEmail}`;
 
-      const payloadStr = await redisClient.get(redisKey);
+      const payloadStr = await OtpStore.get(redisKey);
       if (!payloadStr) {
         return res.status(400).json({ error: 'OTP has expired or is invalid. Please request a new OTP.' });
       }
@@ -548,19 +550,19 @@ export class AuthController {
       const payload = JSON.parse(String(payloadStr));
 
       if (payload.attempts >= 5) {
-        await redisClient.del(redisKey);
+        await OtpStore.del(redisKey);
         return res.status(400).json({ error: 'Maximum OTP attempts reached. Please request a new OTP.' });
       }
 
       if (payload.otp !== otpCode.trim()) {
         payload.attempts += 1;
-        await redisClient.setEx(redisKey, 600, JSON.stringify(payload));
+        await OtpStore.setEx(redisKey, 600, JSON.stringify(payload));
         return res.status(400).json({ error: 'Invalid 6-digit OTP code' });
       }
 
       // Set Verified Key for 15 minutes
       const verifiedKey = `reset:VERIFIED:${normalizedEmail}`;
-      await redisClient.setEx(verifiedKey, 900, 'VERIFIED');
+      await OtpStore.setEx(verifiedKey, 900, 'VERIFIED');
 
       res.status(200).json({
         success: true,
@@ -585,7 +587,7 @@ export class AuthController {
 
       const normalizedEmail = email.toLowerCase().trim();
       const redisKey = `reset:OTP:${normalizedEmail}`;
-      const payloadStr = await redisClient.get(redisKey);
+      const payloadStr = await OtpStore.get(redisKey);
 
       if (!payloadStr) {
         return res.status(400).json({ error: 'OTP verification session expired. Please start over.' });
@@ -607,9 +609,9 @@ export class AuthController {
       // Revoke old active sessions
       await SessionRepository.revokeAllUserSessions(user.id);
 
-      // Clean Redis
-      await redisClient.del(redisKey);
-      await redisClient.del(`reset:VERIFIED:${normalizedEmail}`);
+      // Clean Redis / Memory store
+      await OtpStore.del(redisKey);
+      await OtpStore.del(`reset:VERIFIED:${normalizedEmail}`);
 
       res.status(200).json({
         success: true,
@@ -637,6 +639,50 @@ export class AuthController {
       res.status(200).json({
         success: true,
         user: safeUser
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 8. Verify 2FA Login Code
+  static async verify2FALogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { mfaToken, otpCode } = req.body;
+      const ipAddress = req.ip || req.headers['x-forwarded-for']?.toString();
+      const userAgent = req.headers['user-agent'];
+
+      const result = await Verify2FALoginService.execute(mfaToken, otpCode, ipAddress, userAgent);
+
+      res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 9. Toggle 2FA Setting
+  static async toggle2FA(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.userId;
+      const { enabled } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      await pool.query(
+        'UPDATE users SET is_two_factor_enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [Boolean(enabled), userId]
+      );
+      await CacheService.invalidate(`user:profile:${userId}`);
+
+      res.status(200).json({
+        success: true,
+        isTwoFactorEnabled: Boolean(enabled),
+        message: enabled ? '2FA protection enabled successfully.' : '2FA protection disabled.'
       });
     } catch (error) {
       next(error);

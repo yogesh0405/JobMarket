@@ -346,7 +346,6 @@ export const HomePage: React.FC = () => {
               <span className="hero-tag" onClick={() => quickSearch('Welder')}>Welder</span>
               <span className="hero-tag" onClick={() => quickSearch('CNC Operator')}>CNC Operator</span>
               <span className="hero-tag" onClick={() => quickSearch('Electrician')}>Electrician</span>
-              <span className="hero-tag" onClick={() => quickSearch('Helper')}>Helper</span>
             </div>
           </div>
         </div>

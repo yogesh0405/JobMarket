@@ -11,7 +11,6 @@ import {
   homeAdvertisementRouter,
   employerAdvertisementRouter,
   adminAdvertisementRouter,
-  notificationRouter,
 } from './modules/advertisements/routes/advertisementRoutes';
 import unifiedNotificationRoutes from './modules/notifications/routes/notificationRoutes';
 import { errorHandler } from './middlewares/errorHandler';
@@ -96,7 +95,6 @@ app.use('/api/v1/employer', employerAdvertisementRouter);
 app.use('/api/v1/admin', adminAdvertisementRouter);
 app.use('/api/v1', publicSettingsRouter);
 app.use('/api/v1', unifiedNotificationRoutes);
-app.use('/api/v1', notificationRouter);
 
 // Global Error Handler
 app.use(errorHandler);

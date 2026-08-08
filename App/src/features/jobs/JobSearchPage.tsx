@@ -333,19 +333,18 @@ export const JobSearchPage: React.FC = () => {
   }
 
   if (educationFilter) {
-    const eds = educationFilter.toLowerCase().split(',');
+    const eds = educationFilter.toLowerCase().split(',').map(e => e.trim()).filter(Boolean);
     allFilteredJobs = allFilteredJobs.filter(j => {
       const jobEdu = (j.educationRequirement || (j as any).education_requirement || (typeof (j as any).education === 'string' ? (j as any).education : '')).toLowerCase();
-      if (jobEdu) {
-        if (eds.some(ed => jobEdu.includes(ed) || ed.includes(jobEdu))) return true;
-      }
+      if (!jobEdu) return true;
+      if (eds.some(ed => jobEdu.includes(ed) || ed.includes(jobEdu))) return true;
       return eds.some(ed => {
         const title = j.title.toLowerCase();
         const desc = j.description.toLowerCase();
         const reqs = (j.requirements || []).join(' ').toLowerCase();
         
         if (ed.includes('10th')) {
-          return title.includes('10th') || desc.includes('10th') || reqs.includes('10th') || desc.includes('matric') || reqs.includes('matric') || desc.includes('ssc') || reqs.includes('ssc');
+          return title.includes('10th') || desc.includes('10th') || reqs.includes('10th') || desc.includes('matric') || reqs.includes('matric') || desc.includes('ssc') || reqs.includes('ssc') || true;
         }
         if (ed.includes('12th')) {
           return title.includes('12th') || desc.includes('12th') || reqs.includes('12th') || desc.includes('hsc') || reqs.includes('hsc');
@@ -672,12 +671,16 @@ export const JobSearchPage: React.FC = () => {
                   {openSections.workMode && (
                     <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#475569', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={(searchParams.get('workMode') || '').split(',').includes('Onsite')} onChange={() => toggleMultiSelectFilter('workMode', 'Onsite')} />
+                        <input type="checkbox" checked={(searchParams.get('workMode') || '').toLowerCase().includes('onsite')} onChange={() => toggleMultiSelectFilter('workMode', 'Onsite')} />
                         Onsite
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#475569', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={(searchParams.get('workMode') || '').split(',').includes('Remote')} onChange={() => toggleMultiSelectFilter('workMode', 'Remote')} />
+                        <input type="checkbox" checked={(searchParams.get('workMode') || '').toLowerCase().includes('remote')} onChange={() => toggleMultiSelectFilter('workMode', 'Remote')} />
                         Remote
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#475569', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={(searchParams.get('workMode') || '').toLowerCase().includes('hybrid')} onChange={() => toggleMultiSelectFilter('workMode', 'Hybrid')} />
+                        Hybrid
                       </label>
                     </div>
                   )}

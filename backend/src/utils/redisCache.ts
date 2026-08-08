@@ -76,3 +76,55 @@ export class CacheService {
     }
   }
 }
+
+// In-Memory Fallback Store for OTPs and short-lived tokens when Redis is offline
+const inMemoryOtpStore = new Map<string, { value: string; expiresAt: number }>();
+
+export class OtpStore {
+  static async setEx(key: string, seconds: number, value: string): Promise<void> {
+    try {
+      if (redisClient.isOpen) {
+        await redisClient.setEx(key, seconds, value);
+        return;
+      }
+    } catch (err) {
+      logger.warn(`Redis setEx error for ${key}, using in-memory store:`, err);
+    }
+    inMemoryOtpStore.set(key, {
+      value,
+      expiresAt: Date.now() + seconds * 1000
+    });
+  }
+
+  static async get(key: string): Promise<string | null> {
+    try {
+      if (redisClient.isOpen) {
+        const val = await redisClient.get(key);
+        if (val !== null && val !== undefined) return String(val);
+      }
+    } catch (err) {
+      logger.warn(`Redis get error for ${key}, using in-memory store:`, err);
+    }
+
+    const item = inMemoryOtpStore.get(key);
+    if (!item) return null;
+
+    if (Date.now() > item.expiresAt) {
+      inMemoryOtpStore.delete(key);
+      return null;
+    }
+
+    return item.value;
+  }
+
+  static async del(key: string): Promise<void> {
+    try {
+      if (redisClient.isOpen) {
+        await redisClient.del(key);
+      }
+    } catch (err) {
+      logger.warn(`Redis del error for ${key}, using in-memory store:`, err);
+    }
+    inMemoryOtpStore.delete(key);
+  }
+}

@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { pool } from '../../../config/database/pool';
-import { redisClient } from '../../../config/redis';
+import { OtpStore } from '../../../utils/redisCache';
 import { UserRepository } from '../repositories/UserRepository';
 import { SessionRepository } from '../repositories/SessionRepository';
 import { AuditRepository } from '../repositories/AuditRepository';
@@ -13,7 +13,7 @@ export class VerifyOTPService {
     const normalizedEmail = email.toLowerCase().trim();
     const redisKey = `registration:OTP:${normalizedEmail}`;
 
-    const payloadStr = await redisClient.get(redisKey);
+    const payloadStr = await OtpStore.get(redisKey);
     if (!payloadStr) {
       throw new BadRequestError('OTP has expired or is invalid. Please sign up again.');
     }
@@ -21,13 +21,13 @@ export class VerifyOTPService {
     const payload = JSON.parse(String(payloadStr));
 
     if (payload.attempts >= 3) {
-      await redisClient.del(redisKey);
+      await OtpStore.del(redisKey);
       throw new BadRequestError('Maximum OTP attempts reached. Please sign up again.');
     }
 
     if (payload.otp !== otpCode) {
       payload.attempts += 1;
-      await redisClient.setEx(redisKey, 600, JSON.stringify(payload));
+      await OtpStore.setEx(redisKey, 600, JSON.stringify(payload));
       throw new BadRequestError('Invalid OTP code');
     }
 
@@ -81,8 +81,8 @@ export class VerifyOTPService {
 
       await client.query('COMMIT');
       
-      // Clean up Redis
-      await redisClient.del(redisKey);
+      // Clean up OtpStore
+      await OtpStore.del(redisKey);
 
       return {
         message: 'Account verified and created successfully.',

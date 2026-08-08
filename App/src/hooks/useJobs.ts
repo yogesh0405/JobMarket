@@ -18,53 +18,76 @@ export const useJobs = () => {
   const { state, dispatch } = useStore();
 
   const getJobs = useCallback((filters: JobFilters = {}) => {
-    let jobs = [...state.jobs].filter(j => j.status === 'active');
+    let jobs = [...state.jobs].filter(j => j.status === 'active' || !j.status || (j.status as string) === 'approved');
 
-    if (filters.keyword) {
-      const kw = filters.keyword.toLowerCase();
-      jobs = jobs.filter(j =>
-        j.title.toLowerCase().includes(kw) ||
-        j.company.toLowerCase().includes(kw) ||
-        j.description.toLowerCase().includes(kw) ||
-        (j.location && j.location.toLowerCase().includes(kw)) ||
-        (j.industry && j.industry.toLowerCase().includes(kw)) ||
-        (j.trade && j.trade.toLowerCase().includes(kw)) ||
-        (j.workMode && j.workMode.toLowerCase().includes(kw)) ||
-        (j.jobType && j.jobType.toLowerCase().includes(kw)) ||
-        (j.midcZone && j.midcZone.toLowerCase().includes(kw)) ||
-        (j.skills && j.skills.some(s => s.toLowerCase().includes(kw)))
-      );
+    if (filters.keyword && filters.keyword.trim()) {
+      const kwTokens = filters.keyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      jobs = jobs.filter(j => {
+        const fullJobText = [
+          j.title,
+          j.company,
+          j.description,
+          j.location,
+          j.industry,
+          (j as any).industryType,
+          j.trade,
+          j.workMode,
+          j.jobType,
+          j.midcZone,
+          (j as any).shiftDetails,
+          (j as any).educationRequirement,
+          ...(j.skills || [])
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return kwTokens.every(token => fullJobText.includes(token));
+      });
     }
 
-    if (filters.location) {
-      const locs = filters.location.toLowerCase().split(',');
-      jobs = jobs.filter(j => locs.some(loc => j.location.toLowerCase().includes(loc)));
+    if (filters.location && filters.location.trim()) {
+      const locs = filters.location.toLowerCase().split(',').map(l => l.trim()).filter(Boolean);
+      jobs = jobs.filter(j => {
+        const jLoc = (j.location || '').toLowerCase();
+        return locs.some(loc => jLoc.includes(loc) || loc.includes(jLoc));
+      });
     }
 
-    if (filters.jobType) {
-      const types = filters.jobType.split(',');
-      jobs = jobs.filter(j => types.includes(j.jobType));
+    if (filters.jobType && filters.jobType.trim()) {
+      const types = filters.jobType.split(',').map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      jobs = jobs.filter(j => {
+        const jType = (j.jobType || 'Full-time').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return types.some(t => jType.includes(t) || t.includes(jType));
+      });
     }
 
-    if (filters.workMode) {
-      const modes = filters.workMode.split(',');
-      jobs = jobs.filter(j => modes.includes(j.workMode));
+    if (filters.workMode && filters.workMode.trim()) {
+      const modes = filters.workMode.split(',').map(m => m.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      jobs = jobs.filter(j => {
+        const jMode = (j.workMode || 'On-site').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return modes.some(m => jMode.includes(m) || m.includes(jMode));
+      });
     }
 
     if (filters.experience) {
       const exp = parseInt(filters.experience);
-      jobs = jobs.filter(j => j.minExperience <= exp && j.maxExperience >= exp);
+      if (!isNaN(exp)) {
+        jobs = jobs.filter(j => (j.minExperience ?? 0) <= exp && (j.maxExperience ?? 99) >= exp);
+      }
     }
 
     if (filters.salaryMin) {
       const salMin = parseInt(filters.salaryMin || '0');
-      const monthlySalMin = salMin >= 100000 ? Math.round(salMin / 12) : salMin;
-      jobs = jobs.filter(j => j.salaryMax >= monthlySalMin);
+      if (!isNaN(salMin) && salMin > 0) {
+        const monthlySalMin = salMin >= 100000 ? Math.round(salMin / 12) : salMin;
+        jobs = jobs.filter(j => (j.salaryMax || j.salaryMin || 0) >= monthlySalMin);
+      }
     }
 
-    if (filters.industry) {
-      const industries = filters.industry.toLowerCase().split(',');
-      jobs = jobs.filter(j => industries.includes(j.industry.toLowerCase()));
+    if (filters.industry && filters.industry.trim()) {
+      const industries = filters.industry.toLowerCase().split(',').map(i => i.trim()).filter(Boolean);
+      jobs = jobs.filter(j => {
+        const jInd = (j.industry || (j as any).industryType || j.trade || j.title || '').toLowerCase();
+        return industries.some(ind => jInd.includes(ind) || ind.includes(jInd));
+      });
     }
 
     // Sort

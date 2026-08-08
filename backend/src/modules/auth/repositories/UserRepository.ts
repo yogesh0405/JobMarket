@@ -28,6 +28,7 @@ export interface User {
   education?: any[];
   appliedJobs?: string[];
   profile_picture_url?: string;
+  is_two_factor_enabled?: boolean;
 }
 
 export class UserRepository {
