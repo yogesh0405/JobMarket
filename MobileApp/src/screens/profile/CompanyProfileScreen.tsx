@@ -328,46 +328,52 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </LinearGradient>
 
-          {/* Minimal 3D Tabular Segmented Control Strip */}
+          {/* Minimal 3D Tabular Segmented Control Strip (Horizontally Scrollable & Compact Height) */}
           <View style={styles.tabStripWrapper}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setProfileTab('PROFILE')}
-              style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabStripScrollContent}
             >
-              <View style={[styles.tabIconSquircle, profileTab === 'PROFILE' && styles.tabIconSquircleActive]}>
-                <Building2 size={15} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
-              </View>
-              <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
-                Company Profile
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setProfileTab('PROFILE')}
+                style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
+              >
+                <View style={[styles.tabIconSquircle, profileTab === 'PROFILE' && styles.tabIconSquircleActive]}>
+                  <Building2 size={13} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
+                </View>
+                <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
+                  Company Profile
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setProfileTab('ANALYTICS')}
-              style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
-            >
-              <View style={[styles.tabIconSquircle, profileTab === 'ANALYTICS' && styles.tabIconSquircleActive]}>
-                <BarChart3 size={15} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
-              </View>
-              <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
-                Analytics
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setProfileTab('ANALYTICS')}
+                style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
+              >
+                <View style={[styles.tabIconSquircle, profileTab === 'ANALYTICS' && styles.tabIconSquircleActive]}>
+                  <BarChart3 size={13} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
+                </View>
+                <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
+                  Analytics
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('EmployerBanners')}
-              style={[styles.tabBtn, styles.tabBtnInactive, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-            >
-              <View style={[styles.tabIconSquircle, { backgroundColor: '#DBEAFE' }]}>
-                <Sparkles size={15} color="#2563EB" />
-              </View>
-              <Text style={[styles.tabBtnText, { color: '#2563EB', fontWeight: '800' }]}>
-                Banners ✨
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('EmployerBanners')}
+                style={[styles.tabBtn, styles.tabBtnInactive, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+              >
+                <View style={[styles.tabIconSquircle, { backgroundColor: '#DBEAFE' }]}>
+                  <Sparkles size={13} color="#2563EB" />
+                </View>
+                <Text style={[styles.tabBtnText, { color: '#2563EB', fontWeight: '800' }]}>
+                  Promote Banners ✨
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
 
           {profileTab === 'ANALYTICS' ? (
@@ -931,58 +937,50 @@ const styles = StyleSheet.create({
     color: COLORS.slate500,
   },
 
-  /* Minimal 3D Tabular Menu Strip Styles */
+  /* Minimal 3D Tabular Menu Strip Styles (Horizontal Scroll & Compact Height) */
   tabStripWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#94A3B8',
-    padding: 5,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    marginBottom: 14,
+  },
+  tabStripScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   tabBtn: {
-    flex: 1,
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 10,
+    gap: 5,
     paddingHorizontal: 10,
-    borderRadius: 9,
+    borderRadius: 6,
   },
   tabBtnInactive: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#CBD5E1',
   },
   tabBtnActive: {
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#93C5FD',
-    borderBottomWidth: 3,
+    borderColor: '#60A5FA',
+    borderBottomWidth: 2,
     borderBottomColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 3,
   },
   tabIconSquircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 5,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
@@ -991,13 +989,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
   },
   tabBtnText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#64748B',
   },
   tabBtnTextActive: {
-    color: '#1E40AF',
-    fontWeight: '900',
+    color: '#2563EB',
+    fontWeight: '800',
   },
 
   /* Ultra-Professional Performance Card Styles */
