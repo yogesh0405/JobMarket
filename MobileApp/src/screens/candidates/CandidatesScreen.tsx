@@ -628,14 +628,16 @@ export const CandidatesScreen: React.FC = () => {
             <View style={styles.modalFooterRow}>
               <TouchableOpacity
                 style={styles.modalPrimaryCallBtn}
+                activeOpacity={0.85}
                 onPress={() => {
                   if (selectedCandidate?.phone) {
                     Linking.openURL(`tel:${selectedCandidate.phone}`);
+                  } else {
+                    Alert.alert('Notice', 'Contact phone number not provided.');
                   }
                 }}
               >
-                <Phone size={16} color={COLORS.textWhite} />
-                <Text style={styles.modalPrimaryCallText}>Call Candidate</Text>
+                <Text style={styles.modalPrimaryCallText}>Contact Candidate</Text>
               </TouchableOpacity>
             </View>
           </View>
