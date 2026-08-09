@@ -31,6 +31,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { jobsApi } from '../../api/jobsApi';
+import { apiFetch } from '../../api/client';
 import { Job } from '../../types';
 import { Badge } from '../../components/common/Badge';
 import { Skeleton, JobCardSkeleton } from '../../components/common/SkeletonLoader';
@@ -48,6 +49,16 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [analytics, setAnalytics] = useState({
+    totalJobs: 0,
+    activeJobs: 0,
+    totalApplications: 0,
+    shortlisted: 0,
+    interviewed: 0,
+    hired: 0,
+    rejected: 0,
+    avgResponseTimeHours: 24,
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +67,28 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const fetchDashboardData = useCallback(async () => {
     setError(null);
     try {
-      const res = await jobsApi.getMyJobs();
-      if (res.success && Array.isArray(res.data)) {
-        setJobs(res.data);
+      const [jobsRes, analyticsRes] = await Promise.all([
+        jobsApi.getMyJobs(),
+        apiFetch('/api/v1/jobs/employer/analytics').catch(() => ({ success: false, data: null })),
+      ]);
+
+      if (jobsRes.success && Array.isArray(jobsRes.data)) {
+        setJobs(jobsRes.data);
       } else {
         setJobs([]);
+      }
+
+      if (analyticsRes.success && analyticsRes.data) {
+        setAnalytics({
+          totalJobs: Number(analyticsRes.data.totalJobs || 0),
+          activeJobs: Number(analyticsRes.data.activeJobs || 0),
+          totalApplications: Number(analyticsRes.data.totalApplications || 0),
+          shortlisted: Number(analyticsRes.data.shortlisted || 0),
+          interviewed: Number(analyticsRes.data.interviewed || 0),
+          hired: Number(analyticsRes.data.hired || 0),
+          rejected: Number(analyticsRes.data.rejected || 0),
+          avgResponseTimeHours: Number(analyticsRes.data.avgResponseTimeHours || 24),
+        });
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch employer dashboard data');
@@ -279,60 +307,70 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Analytics Pipeline Card - Calculated from Actual Jobs */}
-        <View style={styles.analyticsCard}>
-          <View style={styles.cardHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <BarChart3 size={16} color={COLORS.primary} />
-              <Text style={styles.cardSectionTitle}>Jobs & Candidate Analytics</Text>
-            </View>
-            <View style={styles.liveMetricsBadge}>
-              <TrendingUp size={10} color="#15803D" />
-              <Text style={styles.liveMetricsText}>Real-Time</Text>
-            </View>
-          </View>
+        {/* Analytics Pipeline Card - 100% Real Database Analytics */}
+        {(() => {
+          const totalApps = analytics.totalApplications || jobs.reduce((acc, j) => acc + (j.applicants_count || 0), 0) || 0;
+          const totalAppsSafe = totalApps || 1;
+          const shortlistedPct = Math.min(100, Math.round((analytics.shortlisted / totalAppsSafe) * 100));
+          const interviewedPct = Math.min(100, Math.round((analytics.interviewed / totalAppsSafe) * 100));
+          const hiredPct = Math.min(100, Math.round((analytics.hired / totalAppsSafe) * 100));
 
-          {/* Dynamic Conversion Pipeline */}
-          <View style={styles.funnelItem}>
-            <View style={styles.funnelLabelRow}>
-              <Text style={styles.funnelTitle}>1. Total Applications Received</Text>
-              <Text style={styles.funnelVal}>{totalApplicants} (100%)</Text>
-            </View>
-            <View style={styles.progressBg}>
-              <View style={[styles.progressFill, { width: '100%', backgroundColor: '#2563EB' }]} />
-            </View>
-          </View>
+          return (
+            <View style={styles.analyticsCard}>
+              <View style={styles.cardHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <BarChart3 size={16} color={COLORS.primary} />
+                  <Text style={styles.cardSectionTitle}>Jobs & Candidate Analytics</Text>
+                </View>
+                <View style={styles.liveMetricsBadge}>
+                  <TrendingUp size={10} color="#15803D" />
+                  <Text style={styles.liveMetricsText}>Real-Time DB</Text>
+                </View>
+              </View>
 
-          <View style={styles.funnelItem}>
-            <View style={styles.funnelLabelRow}>
-              <Text style={styles.funnelTitle}>2. Shortlisted Candidates</Text>
-              <Text style={styles.funnelVal}>{Math.round(totalApplicants * 0.65)} (65%)</Text>
-            </View>
-            <View style={styles.progressBg}>
-              <View style={[styles.progressFill, { width: '65%', backgroundColor: '#0284C7' }]} />
-            </View>
-          </View>
+              {/* Real-Time Conversion Pipeline */}
+              <View style={styles.funnelItem}>
+                <View style={styles.funnelLabelRow}>
+                  <Text style={styles.funnelTitle}>1. Total Applications Received</Text>
+                  <Text style={styles.funnelVal}>{totalApps} (100%)</Text>
+                </View>
+                <View style={styles.progressBg}>
+                  <View style={[styles.progressFill, { width: totalApps > 0 ? '100%' : '0%', backgroundColor: '#2563EB' }]} />
+                </View>
+              </View>
 
-          <View style={styles.funnelItem}>
-            <View style={styles.funnelLabelRow}>
-              <Text style={styles.funnelTitle}>3. Interview Scheduled</Text>
-              <Text style={styles.funnelVal}>{Math.round(totalApplicants * 0.35)} (35%)</Text>
-            </View>
-            <View style={styles.progressBg}>
-              <View style={[styles.progressFill, { width: '35%', backgroundColor: '#D97706' }]} />
-            </View>
-          </View>
+              <View style={styles.funnelItem}>
+                <View style={styles.funnelLabelRow}>
+                  <Text style={styles.funnelTitle}>2. Shortlisted Candidates</Text>
+                  <Text style={styles.funnelVal}>{analytics.shortlisted} ({totalApps > 0 ? shortlistedPct : 0}%)</Text>
+                </View>
+                <View style={styles.progressBg}>
+                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? shortlistedPct : 0}%`, backgroundColor: '#0284C7' }]} />
+                </View>
+              </View>
 
-          <View style={styles.funnelItem}>
-            <View style={styles.funnelLabelRow}>
-              <Text style={styles.funnelTitle}>4. Hired / Offered</Text>
-              <Text style={styles.funnelVal}>{Math.round(totalApplicants * 0.18)} (18%)</Text>
+              <View style={styles.funnelItem}>
+                <View style={styles.funnelLabelRow}>
+                  <Text style={styles.funnelTitle}>3. Interview Scheduled</Text>
+                  <Text style={styles.funnelVal}>{analytics.interviewed} ({totalApps > 0 ? interviewedPct : 0}%)</Text>
+                </View>
+                <View style={styles.progressBg}>
+                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? interviewedPct : 0}%`, backgroundColor: '#D97706' }]} />
+                </View>
+              </View>
+
+              <View style={styles.funnelItem}>
+                <View style={styles.funnelLabelRow}>
+                  <Text style={styles.funnelTitle}>4. Hired / Offered</Text>
+                  <Text style={styles.funnelVal}>{analytics.hired} ({totalApps > 0 ? hiredPct : 0}%)</Text>
+                </View>
+                <View style={styles.progressBg}>
+                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? hiredPct : 0}%`, backgroundColor: '#16A34A' }]} />
+                </View>
+              </View>
             </View>
-            <View style={styles.progressBg}>
-              <View style={[styles.progressFill, { width: '18%', backgroundColor: '#16A34A' }]} />
-            </View>
-          </View>
-        </View>
+          );
+        })()}
 
         {/* Dynamic MIDC Region & Trade Breakdown */}
         <View style={styles.analyticsTwoColRow}>

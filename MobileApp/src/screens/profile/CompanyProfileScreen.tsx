@@ -109,13 +109,13 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   // Live Backend Analytics State
   const [analyticsData, setAnalyticsData] = useState({
-    totalJobs: 12,
-    activeJobs: 10,
-    totalApplications: 148,
-    shortlisted: 42,
-    interviewed: 19,
-    hired: 8,
-    rejected: 5,
+    totalJobs: 0,
+    activeJobs: 0,
+    totalApplications: 0,
+    shortlisted: 0,
+    interviewed: 0,
+    hired: 0,
+    rejected: 0,
     avgResponseTimeHours: 24,
   });
 
