@@ -324,7 +324,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
                 <View style={styles.liveMetricsBadge}>
                   <TrendingUp size={10} color="#15803D" />
-                  <Text style={styles.liveMetricsText}>Real-Time DB</Text>
+                  <Text style={styles.liveMetricsText}>Real-Time</Text>
                 </View>
               </View>
 

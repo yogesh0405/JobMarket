@@ -41,6 +41,7 @@ import {
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
+import { jobsApi } from '../../api/jobsApi';
 import { apiFetch } from '../../api/client';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -121,8 +122,35 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await apiFetch('/api/v1/jobs/employer/analytics');
-      if (res.success && res.data) {
+      const [res, jobsRes] = await Promise.all([
+        apiFetch('/api/v1/jobs/employer/analytics').catch(() => ({ success: false, data: null })),
+        jobsApi.getMyJobs().catch(() => ({ success: false, data: [] })),
+      ]);
+
+      const myJobs: any[] = (jobsRes.success && Array.isArray(jobsRes.data)) ? jobsRes.data : [];
+      const calcTotalJobs = myJobs.length;
+      const calcActiveJobs = myJobs.filter((j: any) => ['APPROVED', 'ACTIVE'].includes((j.status || '').toUpperCase())).length;
+      const calcTotalApps = myJobs.reduce((acc: number, j: any) => {
+        const count = typeof j.applicants_count === 'number' ? j.applicants_count : (Array.isArray(j.applicants) ? j.applicants.length : 0);
+        return acc + count;
+      }, 0);
+
+      const calcShortlisted = myJobs.reduce((acc: number, j: any) => {
+        if (!Array.isArray(j.applicants)) return acc;
+        return acc + j.applicants.filter((a: any) => ['shortlisted', 'accepted', 'approved', 'under_review'].includes((a.status || '').toLowerCase())).length;
+      }, 0);
+
+      const calcInterviewed = myJobs.reduce((acc: number, j: any) => {
+        if (!Array.isArray(j.applicants)) return acc;
+        return acc + j.applicants.filter((a: any) => ['interview', 'interview_scheduled', 'interviewed', 'called', 'applied'].includes((a.status || '').toLowerCase())).length;
+      }, 0);
+
+      const calcHired = myJobs.reduce((acc: number, j: any) => {
+        if (!Array.isArray(j.applicants)) return acc;
+        return acc + j.applicants.filter((a: any) => ['hired', 'joined', 'offered', 'selected'].includes((a.status || '').toLowerCase())).length;
+      }, 0);
+
+      if (res.success && res.data && (Number(res.data.totalJobs) > 0 || Number(res.data.totalApplications) > 0)) {
         setAnalyticsData({
           totalJobs: Number(res.data.totalJobs || 0),
           activeJobs: Number(res.data.activeJobs || 0),
@@ -132,6 +160,17 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
           hired: Number(res.data.hired || 0),
           rejected: Number(res.data.rejected || 0),
           avgResponseTimeHours: Number(res.data.avgResponseTimeHours || 24),
+        });
+      } else {
+        setAnalyticsData({
+          totalJobs: calcTotalJobs,
+          activeJobs: calcActiveJobs,
+          totalApplications: calcTotalApps,
+          shortlisted: calcShortlisted,
+          interviewed: calcInterviewed,
+          hired: calcHired,
+          rejected: 0,
+          avgResponseTimeHours: 24,
         });
       }
     } catch (err) {
@@ -331,7 +370,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                   </View>
                   <View style={styles.liveIndicatorBadge}>
                     <View style={styles.greenPulseDot} />
-                    <Text style={styles.liveBadgeText}>LIVE DB</Text>
+                    <Text style={styles.liveBadgeText}>ANALYTICS</Text>
                   </View>
                 </View>
 

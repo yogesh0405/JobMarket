@@ -918,9 +918,9 @@ export class JobRepository {
     const jobsCountRes = await pool.query(
       `SELECT 
         COUNT(*) as total_jobs,
-        COUNT(*) FILTER (WHERE status = 'approved' AND (is_active IS TRUE OR is_active IS NULL)) as active_jobs
+        COUNT(*) FILTER (WHERE UPPER(status) IN ('APPROVED', 'ACTIVE')) as active_jobs
        FROM jobs 
-       WHERE employer_id = $1 AND (is_deleted IS FALSE OR is_deleted IS NULL)`,
+       WHERE employer_id::text = $1::text`,
       [employerId]
     );
 
@@ -928,12 +928,12 @@ export class JobRepository {
       `SELECT 
         COUNT(*) as total_applications,
         COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('shortlisted', 'accepted', 'approved', 'under_review', 'evaluated')) as shortlisted,
-        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('interview', 'interview_scheduled', 'interviewed', 'called') OR ja.interview_date IS NOT NULL) as interviewed,
+        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('interview', 'interview_scheduled', 'interviewed', 'called', 'applied') OR ja.interview_date IS NOT NULL) as interviewed,
         COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('hired', 'joined', 'offered', 'selected')) as hired,
         COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('rejected', 'declined')) as rejected
        FROM job_applications ja
-       JOIN jobs j ON ja.job_id = j.id
-       WHERE j.employer_id = $1 AND (j.is_deleted IS FALSE OR j.is_deleted IS NULL)`,
+       JOIN jobs j ON ja.job_id::text = j.id::text
+       WHERE j.employer_id::text = $1::text`,
       [employerId]
     );
 
