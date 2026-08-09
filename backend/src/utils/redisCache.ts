@@ -14,7 +14,7 @@ export class CacheService {
     fetchFn: () => Promise<T>
   ): Promise<T> {
     try {
-      if (redisClient.isOpen) {
+      if (redisClient.isOpen && redisClient.isReady) {
         const cachedData = await redisClient.get(key);
         if (cachedData) {
           try {
@@ -34,7 +34,7 @@ export class CacheService {
 
     // Cache the fresh data in Redis if available
     try {
-      if (redisClient.isOpen && freshData !== null && freshData !== undefined) {
+      if (redisClient.isOpen && redisClient.isReady && freshData !== null && freshData !== undefined) {
         await redisClient.setEx(key, ttlSeconds, JSON.stringify(freshData));
       }
     } catch (err) {
@@ -49,7 +49,7 @@ export class CacheService {
    */
   static async invalidate(keys: string | string[]): Promise<void> {
     try {
-      if (!redisClient.isOpen) return;
+      if (!redisClient.isOpen || !redisClient.isReady) return;
 
       const keyList = Array.isArray(keys) ? keys : [keys];
       if (keyList.length > 0) {
@@ -65,7 +65,7 @@ export class CacheService {
    */
   static async invalidatePattern(pattern: string): Promise<void> {
     try {
-      if (!redisClient.isOpen) return;
+      if (!redisClient.isOpen || !redisClient.isReady) return;
 
       const keys = await redisClient.keys(pattern);
       if (keys.length > 0) {
@@ -83,7 +83,7 @@ const inMemoryOtpStore = new Map<string, { value: string; expiresAt: number }>()
 export class OtpStore {
   static async setEx(key: string, seconds: number, value: string): Promise<void> {
     try {
-      if (redisClient.isOpen) {
+      if (redisClient.isOpen && redisClient.isReady) {
         await redisClient.setEx(key, seconds, value);
         return;
       }
@@ -98,7 +98,7 @@ export class OtpStore {
 
   static async get(key: string): Promise<string | null> {
     try {
-      if (redisClient.isOpen) {
+      if (redisClient.isOpen && redisClient.isReady) {
         const val = await redisClient.get(key);
         if (val !== null && val !== undefined) return String(val);
       }
@@ -119,7 +119,7 @@ export class OtpStore {
 
   static async del(key: string): Promise<void> {
     try {
-      if (redisClient.isOpen) {
+      if (redisClient.isOpen && redisClient.isReady) {
         await redisClient.del(key);
       }
     } catch (err) {

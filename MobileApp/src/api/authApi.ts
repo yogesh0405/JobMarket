@@ -4,9 +4,10 @@ import { getAccessToken } from '../utils/secureStorage';
 
 export const authApi = {
   login: async (credentials: any): Promise<ApiResponse> => {
+    const role = credentials?.role || 'candidate';
     return apiFetch('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ role: 'employer', ...credentials }),
+      body: JSON.stringify({ role, ...credentials }),
     });
   },
 
@@ -18,9 +19,10 @@ export const authApi = {
   },
 
   signup: async (payload: any): Promise<ApiResponse> => {
+    const role = payload?.role || 'candidate';
     return apiFetch('/api/v1/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ role: 'employer', ...payload }),
+      body: JSON.stringify({ role, ...payload }),
     });
   },
 

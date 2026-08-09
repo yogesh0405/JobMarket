@@ -180,33 +180,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (googlePayload: any) => {
     setIsLoading(true);
     try {
-      try {
-        const res = await authApi.googleAuth(googlePayload);
-        if (res.success && res.data) {
-          const { user: userData, token, refreshToken, sessionId } = res.data as any;
-          await saveTokens({ accessToken: token, refreshToken }, sessionId);
-          await saveStoredUser(userData);
-          setUser(userData);
-          return;
+      const res = await authApi.googleAuth(googlePayload);
+      if (res.success && res.data) {
+        const { user: userData, token, accessToken, refreshToken, sessionId } = res.data as any;
+        const validToken = token || accessToken;
+        if (!validToken) {
+          throw new Error('Invalid authentication tokens from server');
         }
-      } catch (backendErr) {
-        console.warn('Backend Google Auth notice, activating verified local session:', backendErr);
+        await saveTokens({ accessToken: validToken, refreshToken }, sessionId);
+        await saveStoredUser(userData);
+        setUser(userData);
+        return;
       }
-
-      // Local Fallback Session for Instant Unblocked Google Auth
-      const fallbackUser: User = {
-        id: `google_${Date.now()}`,
-        email: googlePayload.email || 'user.google@jobmarket.org',
-        name: googlePayload.name || 'Google User',
-        role: googlePayload.role || 'candidate',
-        status: 'ACTIVE',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any;
-
-      await saveTokens({ accessToken: `dummy_google_${Date.now()}`, refreshToken: `dummy_refresh_${Date.now()}` }, `session_${Date.now()}`);
-      await saveStoredUser(fallbackUser);
-      setUser(fallbackUser);
+      throw new Error(res.message || res.error || 'Google Sign-In failed on server.');
     } finally {
       setIsLoading(false);
     }

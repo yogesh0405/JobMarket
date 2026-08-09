@@ -254,17 +254,20 @@ export const useJobs = () => {
       const res = await apiFetch('/api/v1/jobs/applied/my-applications');
       const json = await res.json();
       if (res.ok && Array.isArray(json.data)) {
-        const currentJobIds = new Set(state.jobs.map(j => j.id));
-        const newJobs = json.data.filter((j: any) => !currentJobIds.has(j.id));
-        if (newJobs.length > 0) {
-          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, ...newJobs] });
-        }
+        const fetchedMap = new Map(json.data.map((j: any) => [j.id, j]));
+        const updatedJobs = state.jobs.map(j => {
+          const match = fetchedMap.get(j.id);
+          return match ? { ...j, ...(match as any) } : j;
+        });
+        const existingIds = new Set(state.jobs.map(j => j.id));
+        const brandNewJobs = json.data.filter((j: any) => !existingIds.has(j.id));
+        dispatch({ type: 'SET_JOBS', payload: [...updatedJobs, ...brandNewJobs] });
         return json.data;
       }
     } catch (err) {
       console.error('Error fetching candidate applied jobs:', err);
     }
-  }, [dispatch]);
+  }, [dispatch, state.jobs]);
 
   const fetchCandidateSavedJobs = useCallback(async () => {
     try {
@@ -280,17 +283,20 @@ export const useJobs = () => {
           });
         }
 
-        const currentJobIds = new Set(state.jobs.map(j => j.id));
-        const newJobs = json.data.filter((j: any) => !currentJobIds.has(j.id));
-        if (newJobs.length > 0) {
-          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, ...newJobs] });
-        }
+        const fetchedMap = new Map(json.data.map((j: any) => [j.id, j]));
+        const updatedJobs = state.jobs.map(j => {
+          const match = fetchedMap.get(j.id);
+          return match ? { ...j, ...(match as any) } : j;
+        });
+        const existingIds = new Set(state.jobs.map(j => j.id));
+        const brandNewJobs = json.data.filter((j: any) => !existingIds.has(j.id));
+        dispatch({ type: 'SET_JOBS', payload: [...updatedJobs, ...brandNewJobs] });
         return json.data;
       }
     } catch (err) {
       console.error('Error fetching candidate saved jobs:', err);
     }
-  }, [dispatch]);
+  }, [dispatch, state.currentUser, state.jobs]);
 
   const toggleSaveJob = useCallback((jobId: string): boolean => {
     const user = state.currentUser;
