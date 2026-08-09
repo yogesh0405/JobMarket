@@ -51,8 +51,9 @@ import {
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
+import { apiFetch } from '../../api/client';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
-import { Job } from '../../types';
+import { Job, Advertisement } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
@@ -205,17 +206,19 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [promoBanners, setPromoBanners] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePromoIndex, setActivePromoIndex] = useState(0);
 
   // Auto-play promotional banner slider
   useEffect(() => {
+    if (promoBanners.length <= 1) return;
     const timer = setInterval(() => {
-      setActivePromoIndex((prev) => (prev + 1) % PROMO_BANNERS.length);
+      setActivePromoIndex((prev) => (prev + 1) % promoBanners.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [promoBanners.length]);
 
   // Top Search Bar & Live Autocomplete Suggestions State
   const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
@@ -299,10 +302,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const loadHomeData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
     try {
-      const [jobsRes, savedRes, settingsRes] = await Promise.all([
+      const [jobsRes, savedRes, settingsRes, adsRes] = await Promise.all([
         candidateApi.getAllJobs(),
         candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
         candidateApi.getSettings().catch(() => ({ success: false, data: null })),
+        apiFetch('/api/v1/home/advertisements').catch(() => ({ success: false, data: [] })),
       ]);
 
       if (jobsRes.success && jobsRes.data) {
@@ -317,6 +321,23 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       if (savedRes.success && savedRes.data) {
         const savedIds = (savedRes.data || []).map((j: any) => j.id);
         setSavedJobIds(savedIds);
+      }
+
+      if (adsRes && adsRes.success && Array.isArray(adsRes.data)) {
+        const now = Date.now();
+        const activeDbBanners = adsRes.data.filter((ad: Advertisement) => {
+          if (ad.is_active === false) return false;
+          const status = (ad.status || ad.approval_status || '').toUpperCase();
+          if (status !== 'APPROVED' && status !== 'PUBLISHED') return false;
+          if (ad.end_date) {
+            const endTime = new Date(ad.end_date).getTime();
+            if (!isNaN(endTime) && endTime <= now) return false;
+          }
+          return true;
+        });
+        setPromoBanners(activeDbBanners);
+      } else {
+        setPromoBanners([]);
       }
 
       // Sync Admin Role Tabs Config dynamically from backend DB settings
@@ -458,6 +479,20 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     const indMatch = j.industry && j.industry.toLowerCase().includes(kw);
     return titleMatch || tradeMatch || indMatch;
   });
+
+  const handleBannerPress = (banner?: Advertisement) => {
+    if (!banner) return;
+    if (banner.id) {
+      apiFetch(`/api/v1/home/advertisements/${banner.id}/click`, { method: 'POST' }).catch(() => {});
+    }
+    if (banner.linked_job_id) {
+      navigation.navigate('CandidateJobDetail', { jobId: banner.linked_job_id });
+    } else if (banner.redirect_url) {
+      handleQuickTradeSearch(banner.redirect_url);
+    } else {
+      handleQuickTradeSearch('');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -637,54 +672,77 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
-        {/* 2. Promotional Banner Slider Carousel */}
-        <View style={styles.promoSliderCard}>
-          <Image source={{ uri: PROMO_BANNERS[activePromoIndex].image }} style={styles.promoImage} />
+        {/* 2. Promotional Banner Slider Carousel (Only shown when active database banners exist) */}
+        {promoBanners.length > 0 ? (
+          <View style={styles.promoSliderCard}>
+            <Image
+              source={{
+                uri:
+                  promoBanners[activePromoIndex]?.banner_image ||
+                  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
+              }}
+              style={styles.promoImage}
+            />
 
-          {/* Left Arrow Button */}
-          <TouchableOpacity
-            style={styles.bannerArrowLeft}
-            onPress={() => setActivePromoIndex((prev) => (prev - 1 + PROMO_BANNERS.length) % PROMO_BANNERS.length)}
-          >
-            <ChevronLeft size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Right Arrow Button */}
-          <TouchableOpacity
-            style={styles.bannerArrowRight}
-            onPress={() => setActivePromoIndex((prev) => (prev + 1) % PROMO_BANNERS.length)}
-          >
-            <ChevronRight size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <View style={styles.promoOverlay}>
-            <View style={styles.promoBadgeOrange}>
-              <Text style={styles.promoBadgeOrangeText}>WALK-IN DRIVE</Text>
-            </View>
-            <Text style={styles.promoTitle}>{PROMO_BANNERS[activePromoIndex].title}</Text>
-            <Text style={styles.promoDesc} numberOfLines={2}>{PROMO_BANNERS[activePromoIndex].description}</Text>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.promoActionBtnBlue}
-              onPress={() => handleQuickTradeSearch(PROMO_BANNERS[activePromoIndex].tag)}
-            >
-              <Text style={styles.promoActionBtnText}>{PROMO_BANNERS[activePromoIndex].btnText}</Text>
-              <ArrowRight size={14} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Dots pagination */}
-          <View style={styles.dotsRow}>
-            {PROMO_BANNERS.map((_, idx) => (
+            {/* Left Arrow Button */}
+            {promoBanners.length > 1 ? (
               <TouchableOpacity
-                key={idx}
-                onPress={() => setActivePromoIndex(idx)}
-                style={[styles.dot, activePromoIndex === idx && styles.dotActive]}
-              />
-            ))}
+                style={styles.bannerArrowLeft}
+                onPress={() => setActivePromoIndex((prev) => (prev - 1 + promoBanners.length) % promoBanners.length)}
+              >
+                <ChevronLeft size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : null}
+
+            {/* Right Arrow Button */}
+            {promoBanners.length > 1 ? (
+              <TouchableOpacity
+                style={styles.bannerArrowRight}
+                onPress={() => setActivePromoIndex((prev) => (prev + 1) % promoBanners.length)}
+              >
+                <ChevronRight size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : null}
+
+            <View style={styles.promoOverlay}>
+              <View style={styles.promoBadgeOrange}>
+                <Text style={styles.promoBadgeOrangeText}>
+                  {(promoBanners[activePromoIndex]?.advertisement_type || 'PROMOTIONAL').replace('_', ' ')}
+                </Text>
+              </View>
+              <Text style={styles.promoTitle}>{promoBanners[activePromoIndex]?.title}</Text>
+              {promoBanners[activePromoIndex]?.description ? (
+                <Text style={styles.promoDesc} numberOfLines={2}>
+                  {promoBanners[activePromoIndex]?.description}
+                </Text>
+              ) : null}
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.promoActionBtnBlue}
+                onPress={() => handleBannerPress(promoBanners[activePromoIndex])}
+              >
+                <Text style={styles.promoActionBtnText}>
+                  {promoBanners[activePromoIndex]?.button_text || 'Apply Now'}
+                </Text>
+                <ArrowRight size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dots pagination */}
+            {promoBanners.length > 1 ? (
+              <View style={styles.dotsRow}>
+                {promoBanners.map((_, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => setActivePromoIndex(idx)}
+                    style={[styles.dot, activePromoIndex === idx && styles.dotActive]}
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
-        </View>
+        ) : null}
 
         {/* 3. Hero Header Title & Badge Section */}
         <View style={styles.heroTextSection}>

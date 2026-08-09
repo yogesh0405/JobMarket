@@ -90,7 +90,7 @@ const DEFAULT_PROMOTIONAL_BANNERS: Advertisement[] = [
 
 export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4500 }) => {
   const navigate = useNavigate();
-  const [advertisements, setAdvertisements] = useState<Advertisement[]>(DEFAULT_PROMOTIONAL_BANNERS);
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -141,14 +141,17 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
           const json = await adRes.json();
           if (json.success && Array.isArray(json.data)) {
             const activeDbBanners = filterValidNonExpiredBanners(json.data);
-            if (activeDbBanners.length > 0) {
-              setAdvertisements(activeDbBanners);
-            }
+            setAdvertisements(activeDbBanners);
+          } else {
+            setAdvertisements([]);
           }
+        } else {
+          setAdvertisements([]);
         }
       })
       .catch((err) => {
         console.error('Failed to load DB advertisements:', err);
+        if (isMounted) setAdvertisements([]);
       });
 
     return () => { isMounted = false; };
