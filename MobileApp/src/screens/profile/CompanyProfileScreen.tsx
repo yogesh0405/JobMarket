@@ -327,14 +327,16 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </LinearGradient>
 
-          {/* Tabular Menu Strip: Profile vs Dashboard & Analytics */}
+          {/* Minimal 3D Tabular Segmented Control Strip */}
           <View style={styles.tabStripWrapper}>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => setProfileTab('PROFILE')}
-              style={[styles.tabBtn, profileTab === 'PROFILE' && styles.tabBtnActive]}
+              style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
             >
-              <Building2 size={16} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
+              <View style={[styles.tabIconSquircle, profileTab === 'PROFILE' && styles.tabIconSquircleActive]}>
+                <Building2 size={15} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
+              </View>
               <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
                 Company Profile
               </Text>
@@ -343,9 +345,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => setProfileTab('ANALYTICS')}
-              style={[styles.tabBtn, profileTab === 'ANALYTICS' && styles.tabBtnActive]}
+              style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
             >
-              <BarChart3 size={16} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
+              <View style={[styles.tabIconSquircle, profileTab === 'ANALYTICS' && styles.tabIconSquircleActive]}>
+                <BarChart3 size={15} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
+              </View>
               <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
                 Dashboard & Analytics
               </Text>
@@ -913,47 +917,64 @@ const styles = StyleSheet.create({
     color: COLORS.slate500,
   },
 
-  /* Tabular Menu Strip Styles */
+  /* Minimal 3D Tabular Menu Strip Styles */
   tabStripWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    padding: 4,
+    borderBottomColor: '#94A3B8',
+    padding: 5,
     marginBottom: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
     elevation: 3,
-    gap: 4,
+    gap: 6,
   },
   tabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    gap: 7,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+  },
+  tabBtnInactive: {
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
   },
   tabBtnActive: {
     backgroundColor: '#EFF6FF',
+    borderWidth: 1,
     borderColor: '#93C5FD',
-    borderBottomWidth: 2.5,
+    borderBottomWidth: 3,
     borderBottomColor: '#2563EB',
     shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  tabIconSquircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconSquircleActive: {
+    backgroundColor: '#DBEAFE',
   },
   tabBtnText: {
     fontSize: 12.5,
@@ -961,7 +982,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   tabBtnTextActive: {
-    color: '#2563EB',
+    color: '#1E40AF',
     fontWeight: '900',
   },
 
