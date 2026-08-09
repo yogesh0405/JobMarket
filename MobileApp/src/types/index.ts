@@ -158,3 +158,65 @@ export interface ApiResponse<T = any> {
   error?: string;
   errors?: any;
 }
+
+export type AdvertisementType =
+  | 'FEATURED_JOB'
+  | 'URGENT_HIRING'
+  | 'COMPANY_PROMOTION'
+  | 'WALK_IN_DRIVE'
+  | 'GOVERNMENT_JOB'
+  | 'APPRENTICESHIP'
+  | 'INTERNSHIP'
+  | 'HIRING_EVENT'
+  | 'ADMIN_ANNOUNCEMENT'
+  | 'PLATFORM_UPDATE'
+  | 'PROMOTIONAL_BANNER';
+
+export type AdvertisementPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export type AdvertisementStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'PUBLISHED'
+  | 'EXPIRED';
+
+export interface Advertisement {
+  id: string;
+  title: string;
+  description?: string | null;
+  banner_image: string;
+  advertisement_type: AdvertisementType;
+  owner_type: 'EMPLOYER' | 'ADMIN';
+  owner_id?: string | null;
+  linked_job_id?: string | null;
+  redirect_url?: string | null;
+  button_text: string;
+  priority: AdvertisementPriority;
+  status: AdvertisementStatus;
+  approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejection_reason?: string | null;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  target_audience?: string | null;
+  created_at: string;
+  updated_at: string;
+  company_name?: string;
+  job_title?: string;
+  views_count?: number;
+  clicks_count?: number;
+  ctr?: number;
+}
+
+export interface AdvertisementAnalytics {
+  total_advertisements: number;
+  active_advertisements: number;
+  pending_approval: number;
+  rejected_advertisements: number;
+  total_views: number;
+  total_clicks: number;
+  avg_ctr: number;
+}

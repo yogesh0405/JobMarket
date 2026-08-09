@@ -30,6 +30,8 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
+  Sparkles,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -387,6 +389,24 @@ export const Header: React.FC<HeaderProps> = ({
                     </View>
                     <Text style={styles.menuItemTitle}>Post a Job</Text>
                     <ChevronRight size={16} color={COLORS.slate400} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItemRow}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      closeDrawer(() => {
+                        if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('EmployerBanners');
+                        }
+                      });
+                    }}
+                  >
+                    <View style={[styles.iconSquircle, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                      <Sparkles size={17} color="#2563EB" />
+                    </View>
+                    <Text style={[styles.menuItemTitle, { color: '#2563EB', fontWeight: '800' }]}>Promote Banner / Ads</Text>
+                    <ChevronRight size={16} color="#2563EB" />
                   </TouchableOpacity>
                 </>
               )}
