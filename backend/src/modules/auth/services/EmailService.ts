@@ -18,15 +18,15 @@ export class EmailService {
     const senderEmail = process.env.SENDER_EMAIL || 'yogeshdand04@gmail.com';
     const senderName = process.env.SENDER_NAME || 'CSN-JobMarket';
 
-    // 1. Try Nodemailer SMTP if configured in environment
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
-    const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
+    const apiKey = env.BREVO_API_KEY || process.env.BREVO_API_KEY || '';
+    const smtpPass = process.env.SMTP_PASS || (apiKey.startsWith('xsmtpsib-') ? apiKey : '');
+    const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || senderEmail;
 
-    if (smtpHost || smtpUser) {
+    // 1. Try Nodemailer SMTP if SMTP_HOST or xsmtpsib- key is present
+    if (process.env.SMTP_HOST || smtpPass) {
       try {
         const transporter = nodemailer.createTransport({
-          host: smtpHost || 'smtp.gmail.com',
+          host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
           port: Number(process.env.SMTP_PORT) || 587,
           secure: process.env.SMTP_SECURE === 'true',
           auth: {
@@ -49,14 +49,14 @@ export class EmailService {
       }
     }
 
-    // 2. Try Brevo REST API if BREVO_API_KEY is configured
-    if (env.BREVO_API_KEY) {
+    // 2. Try Brevo REST API if API Key (xkeysib-) is configured
+    if (apiKey && apiKey.startsWith('xkeysib-')) {
       try {
         const res = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
             'accept': 'application/json',
-            'api-key': env.BREVO_API_KEY,
+            'api-key': apiKey,
             'content-type': 'application/json',
           },
           body: JSON.stringify({

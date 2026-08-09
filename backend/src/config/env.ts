@@ -14,7 +14,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().default('super_secret_refresh_key_change_me_in_prod'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('1d'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  BREVO_API_KEY: z.string().default('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'),
+  BREVO_API_KEY: z.string().default(''),
   CLOUDINARY_URL: z.string().default('cloudinary://111364167496953:u99_zeW9Hrvk32mQa2a0fnX-ApY@gm4yqzhg'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
