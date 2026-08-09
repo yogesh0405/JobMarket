@@ -201,16 +201,11 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* 3D Hero Banner */}
-        <LinearGradient
-          colors={['#0F172A', '#1E3A8A', '#2563EB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroBanner}
-        >
+        {/* Top White Title Header Card */}
+        <View style={styles.heroBanner}>
           <View style={styles.heroHeaderRow}>
             <View style={styles.heroIconBox}>
-              <Headphones size={20} color="#FFFFFF" />
+              <Headphones size={20} color="#2563EB" />
             </View>
             <Text style={styles.heroTitle}>Help & Support Desk</Text>
           </View>
@@ -221,16 +216,16 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* FAQ Search Bar */}
           <View style={styles.searchBarContainer}>
-            <Search size={18} color={COLORS.slate400} style={styles.searchIcon} />
+            <Search size={18} color="#94A3B8" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search FAQs, topics, platform policies..."
-              placeholderTextColor={COLORS.slate400}
+              placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
-        </LinearGradient>
+        </View>
 
         {/* SECTION 1: FAQ KNOWLEDGE BASE */}
         <View style={styles.card}>
@@ -485,18 +480,19 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl * 2,
   },
   heroBanner: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: SPACING.md + 2,
+    padding: 14,
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: '#1E3A8A',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#172554',
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   heroHeaderRow: {
     flexDirection: 'row',
@@ -507,36 +503,35 @@ const styles = StyleSheet.create({
   heroIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: '#BFDBFE',
   },
   heroTitle: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 18.5,
+    fontSize: 17,
     fontWeight: '900',
-    color: COLORS.textWhite,
+    color: '#0F172A',
     flex: 1,
   },
   heroSubtitle: {
-    ...TYPOGRAPHY.body,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 16,
+    color: '#475569',
+    lineHeight: 17,
+    fontWeight: '500',
     marginBottom: 10,
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 6,
     paddingHorizontal: SPACING.sm + 2,
     height: 38,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: '#CBD5E1',
   },
   searchIcon: {
     marginRight: 6,

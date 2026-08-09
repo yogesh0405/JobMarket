@@ -18,6 +18,7 @@ const authLimiter = rateLimiter('auth', 20, 60); // 20 requests per minute per I
 router.post('/signup', authLimiter, validate(signupSchema), AuthController.signup);
 router.post('/verify-otp', authLimiter, validate(verifyOTPSchema), AuthController.verifyOTP);
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
+router.post('/google', authLimiter, AuthController.googleAuth);
 router.post('/refresh', validate(refreshTokenSchema), AuthController.refresh);
 
 // Forgot Password Workflow (Email OTP)

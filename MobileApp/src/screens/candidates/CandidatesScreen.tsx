@@ -11,8 +11,11 @@ import {
   Linking,
   Modal,
   Alert,
+  TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  ArrowLeft,
   MapPin,
   Briefcase,
   ShieldCheck,
@@ -32,6 +35,7 @@ import { apiFetch } from '../../api/client';
 import { User } from '../../types';
 import { WhatsAppIcon } from '../../components/common/WhatsAppIcon';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
+import { Header } from '../../components/common/Header';
 import { WebHeader } from '../../components/common/WebHeader';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
@@ -167,13 +171,32 @@ const safeString = (val: any, fallback: string = ''): string => {
   return String(val);
 };
 
+const CANDIDATE_SEARCH_SUGGESTIONS = [
+  'Search by Skill (e.g. CNC, VMC, PLC, Hydraulics)...',
+  'Search by Location (e.g. Waluj MIDC, Chakan, Bhosari)...',
+  'Search by Trade (e.g. Wireman, Fitter, Turner, Machinist)...',
+  'Search by Education (e.g. ITI, Diploma, BE Mechanical)...',
+  'Search by Experience (e.g. 5+ Years, Senior)...',
+  'Search Candidate Name or Phone Number...',
+];
+
 export const CandidatesScreen: React.FC = () => {
   const [candidates, setCandidates] = useState<ExtendedCandidate[]>(SAMPLE_CANDIDATES);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Rotating live search suggestion placeholder
+  useEffect(() => {
+    if (searchQuery) return;
+    const interval = setInterval(() => {
+      setSuggestionIndex((prev) => (prev + 1) % CANDIDATE_SEARCH_SUGGESTIONS.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [searchQuery]);
 
   const fetchCandidates = async () => {
     setError(null);
@@ -218,6 +241,8 @@ export const CandidatesScreen: React.FC = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
+    setSearchQuery('');
+    setActiveFilter(null);
     fetchCandidates();
   };
 
@@ -226,14 +251,30 @@ export const CandidatesScreen: React.FC = () => {
   };
 
   const filteredCandidates = candidates.filter((item) => {
-    // 1. Text search filter
+    // 1. Comprehensive multi-field search filter (skill, location, trade, education, experience, phone, name, bio)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       const nameMatch = safeString(item.name).toLowerCase().includes(q);
-      const titleMatch = safeString(item.title).toLowerCase().includes(q);
+      const titleMatch = safeString(item.title || item.trade_specialization || item.headline).toLowerCase().includes(q);
       const locationMatch = safeString(item.location).toLowerCase().includes(q);
+      const educationMatch = safeString(item.education).toLowerCase().includes(q);
+      const experienceMatch = safeString(item.experience).toLowerCase().includes(q);
+      const phoneMatch = safeString(item.phone).toLowerCase().includes(q);
+      const emailMatch = safeString(item.email).toLowerCase().includes(q);
+      const bioMatch = safeString(item.bio).toLowerCase().includes(q);
       const skillMatch = item.skills?.some((s) => safeString(s).toLowerCase().includes(q));
-      if (!nameMatch && !titleMatch && !locationMatch && !skillMatch) {
+
+      if (
+        !nameMatch &&
+        !titleMatch &&
+        !locationMatch &&
+        !educationMatch &&
+        !experienceMatch &&
+        !phoneMatch &&
+        !emailMatch &&
+        !bioMatch &&
+        !skillMatch
+      ) {
         return false;
       }
     }
@@ -242,7 +283,9 @@ export const CandidatesScreen: React.FC = () => {
       const filterLower = activeFilter.toLowerCase();
       const matchesSkill = item.skills?.some((s) => safeString(s).toLowerCase().includes(filterLower));
       const matchesTitle = safeString(item.title).toLowerCase().includes(filterLower);
-      if (!matchesSkill && !matchesTitle) {
+      const matchesLoc = safeString(item.location).toLowerCase().includes(filterLower);
+      const matchesEdu = safeString(item.education).toLowerCase().includes(filterLower);
+      if (!matchesSkill && !matchesTitle && !matchesLoc && !matchesEdu) {
         return false;
       }
     }
@@ -317,8 +360,39 @@ export const CandidatesScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* 100% Web Header with Search Bar */}
-      <WebHeader showSearch={true} onSearchChange={setSearchQuery} />
+      {/* 100% Exact Same Header */}
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+
+      {/* Fully Functional Live Candidate Search Bar */}
+      <View style={styles.searchBarWrapper}>
+        <View style={styles.searchBarContainer}>
+          <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
+            placeholderTextColor="#94A3B8"
+            returnKeyType="search"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+              <X size={16} color="#64748B" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {searchQuery ? (
+          <View style={styles.searchResultsInfoRow}>
+            <Text style={styles.searchResultsCountText}>
+              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'} matching "{searchQuery}"
+            </Text>
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Text style={styles.clearSearchText}>Clear Search</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
 
       {/* Filter Tags Horizontal Strip */}
       <View style={styles.filterStripContainer}>
@@ -365,26 +439,31 @@ export const CandidatesScreen: React.FC = () => {
         />
       )}
 
-      {/* Candidate Full Information Modal */}
+      {/* Candidate Full Information Separate Screen Page */}
       <Modal
         visible={!!selectedCandidate}
         animationType="slide"
-        transparent={true}
+        transparent={false}
         onRequestClose={() => setSelectedCandidate(null)}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContentCard}>
-            {/* Modal Header */}
-            <View style={styles.modalHeaderRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <UserCheck size={20} color={COLORS.primary} />
-                <Text style={styles.modalHeaderTitle}>Candidate Profile</Text>
+        <SafeAreaView style={styles.fullScreenPageContainer} edges={['top', 'bottom']}>
+          <View style={{ flex: 1 }}>
+            {/* Full Screen Header Bar */}
+            <View style={styles.fullPageHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  {selectedCandidate?.name || 'Candidate Profile'}
+                </Text>
+                <Text style={{ fontSize: 11.5, color: '#64748B' }} numberOfLines={1}>
+                  {safeString(selectedCandidate?.title, 'Technical Specialist')}
+                </Text>
               </View>
+
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={() => setSelectedCandidate(null)}
               >
-                <X size={18} color="#64748B" />
+                <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
@@ -560,7 +639,7 @@ export const CandidatesScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* In-App Resume PDF Viewer Modal */}
@@ -581,6 +660,55 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 4,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 42,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#0F172A',
+    paddingVertical: 0,
+  },
+  searchResultsInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  searchResultsCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  clearSearchText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#EF4444',
   },
   filterStripContainer: {
     backgroundColor: COLORS.surface,
@@ -615,7 +743,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: SPACING.md,
     paddingTop: 8,
-    paddingBottom: 95,
+    paddingBottom: 130,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -719,19 +847,54 @@ const styles = StyleSheet.create({
   },
 
   /* Candidate Full Info Modal Styles */
-  modalBackdrop: {
+  fullScreenPageContainer: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    justifyContent: 'flex-end',
-  },
-  modalContentCard: {
     backgroundColor: '#FFFFFF',
+    padding: 12,
+  },
+  fullPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E2E8F0',
+    gap: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '90%',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.lg,
+  },
+  fullPageBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  modalContentCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -861,21 +1024,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   modalSectionBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 10,
     padding: SPACING.md,
     marginBottom: SPACING.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   fullWidthSpecCard: {
     width: '100%',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   twoColRow: {
     flexDirection: 'row',
@@ -886,11 +1063,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 9,
     justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   specHeaderRow: {
     flexDirection: 'row',

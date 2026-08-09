@@ -859,4 +859,14 @@ export class JobController {
       next(error);
     }
   }
+
+  static async getEmployerAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.user!.userId;
+      const analytics = await JobRepository.getEmployerAnalytics(employerId);
+      res.status(200).json({ success: true, data: analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

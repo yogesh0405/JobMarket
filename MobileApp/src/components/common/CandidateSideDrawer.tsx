@@ -19,6 +19,7 @@ import {
   LogOut,
   X,
   ChevronRight,
+  LayoutGrid,
 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { COLORS } from '../../constants/theme';
@@ -90,6 +91,19 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
   };
 
   const menuItems = [
+    {
+      label: 'Dashboard & Analytics',
+      icon: LayoutGrid,
+      action: () => {
+        onClose();
+        setTimeout(() => {
+          navigation.navigate('CandidateMain', {
+            screen: 'CandidateProfileTab',
+            params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
+          });
+        }, 100);
+      },
+    },
     {
       label: 'My Profile',
       icon: UserIcon,

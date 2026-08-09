@@ -35,8 +35,9 @@ import { Job } from '../../types';
 import { Badge } from '../../components/common/Badge';
 import { Skeleton, JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
-import { WebHeader } from '../../components/common/WebHeader';
+import { Header } from '../../components/common/Header';
 
 interface Props {
   navigation: any;
@@ -50,6 +51,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [manageVacanciesJob, setManageVacanciesJob] = useState<Job | null>(null);
 
   const fetchDashboardData = useCallback(async () => {
     setError(null);
@@ -122,7 +124,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   if (loading && !refreshing) {
     return (
       <View style={styles.container}>
-        <WebHeader showSearch={false} />
+        <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Minimal Hero Header Skeleton */}
           <View style={styles.minimalHeroCard}>
@@ -194,8 +196,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Web Header Bar - No Search Bar on Dashboard */}
-      <WebHeader showSearch={false} />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -468,27 +469,55 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                     </Text>
                   </View>
 
-                  <View style={styles.openingsTag}>
-                    <Briefcase size={12} color={COLORS.slate600} />
-                    <Text style={styles.openingsText}>{job.openings || 1} Openings</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={styles.openingsTag}
+                    activeOpacity={0.8}
+                    onPress={() => setManageVacanciesJob(job)}
+                  >
+                    <Briefcase size={12} color={COLORS.primary} />
+                    <Text style={styles.openingsText}>
+                      {job.filledOpenings || (job as any).filled_openings || 0} / {job.openings || 1} Vacancies
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
-                {/* Footer Bar: Applicants Count Button */}
+                {/* Footer Bar: Applicants Count Button + Adjust Vacancies Button */}
                 <View style={styles.cardFooter}>
-                  <View style={styles.applicantBtn}>
+                  <TouchableOpacity
+                    style={styles.applicantBtn}
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('JobApplicants', { jobId: job.id, jobTitle: job.title })}
+                  >
                     <Users size={14} color={COLORS.primary} />
                     <Text style={styles.applicantBtnText}>
-                      {job.applicants_count || 0} Candidates Applied
+                      {job.applicants_count || 0} Candidates
                     </Text>
-                  </View>
-                  <ChevronRight size={16} color={COLORS.slate400} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.adjustVacanciesBtn}
+                    activeOpacity={0.8}
+                    onPress={() => setManageVacanciesJob(job)}
+                  >
+                    <Briefcase size={13} color="#0284C7" />
+                    <Text style={styles.adjustVacanciesBtnText}>Adjust Vacancies</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
+
+      {/* Live Vacancy Adjustment Modal */}
+      <ManageVacanciesModal
+        visible={!!manageVacanciesJob}
+        job={manageVacanciesJob}
+        onClose={() => setManageVacanciesJob(null)}
+        onSuccess={(updatedJob) => {
+          setJobs((prev) => prev.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+        }}
+      />
     </View>
   );
 };
@@ -501,7 +530,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.md,
     paddingTop: 8,
-    paddingBottom: 95,
+    paddingBottom: 130,
   },
   /* Minimal Hero Card */
   minimalHeroCard: {
@@ -585,11 +614,13 @@ const styles = StyleSheet.create({
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    justifyContent: 'space-between',
+    rowGap: 8,
     marginBottom: 8,
   },
   metricCard: {
-    width: '49%',
+    width: '48.5%',
+    minHeight: 76,
     backgroundColor: '#FFFFFF',
     borderRadius: 6,
     borderWidth: 1,
@@ -598,6 +629,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#CBD5E1',
     paddingHorizontal: 10,
     paddingVertical: 8,
+    justifyContent: 'space-between',
   },
   metricHeaderRow: {
     flexDirection: 'row',
@@ -928,5 +960,21 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  adjustVacanciesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+  },
+  adjustVacanciesBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0284C7',
   },
 });

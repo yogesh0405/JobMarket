@@ -10,6 +10,13 @@ export const authApi = {
     });
   },
 
+  googleAuth: async (payload: any): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   signup: async (payload: any): Promise<ApiResponse> => {
     return apiFetch('/api/v1/auth/signup', {
       method: 'POST',

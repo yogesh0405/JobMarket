@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 95,
+    paddingBottom: 130,
     gap: 14,
   },
   summaryBar: {

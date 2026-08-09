@@ -46,6 +46,7 @@ import { SelectDropdown } from '../../components/common/SelectDropdown';
 import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { DatePickerField } from '../../components/common/DatePickerField';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 // Web App Industry & Role Mappings
@@ -778,11 +779,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header
-        title={isEdit ? 'Edit Job Posting' : 'Post a New Industrial & Enterprise Job'}
-        subtitle="Select Trade Type to populate relevant Job Roles and dynamic skill suggestions."
-        onBack={() => navigation.goBack()}
-      />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -1231,12 +1228,12 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
 
             {hiringMethod === 'WALK_IN' ? (
               <View style={{ marginTop: 8, gap: 10 }}>
-                <Input
-                  label="Walk-in Date (YYYY-MM-DD)"
-                  placeholder="e.g. 2026-08-15"
+                <DatePickerField
+                  label="Walk-in Interview Date"
+                  placeholder="Select walk-in date..."
                   value={walkInDate}
-                  onChangeText={setWalkInDate}
-                  leftIcon={<Calendar size={18} color={COLORS.slate400} />}
+                  onChange={setWalkInDate}
+                  minDate={new Date()}
                 />
                 <View style={styles.rowTwo}>
                   <View style={{ flex: 1 }}>
@@ -1266,12 +1263,13 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
 
             <View style={[styles.rowTwo, { marginTop: 12 }]}>
               <View style={{ flex: 1 }}>
-                <Input
-                  label="Application Deadline *"
-                  placeholder="YYYY-MM-DD"
+                <DatePickerField
+                  label="Application Deadline"
+                  required
+                  placeholder="Select deadline date..."
                   value={applicationDeadline}
-                  onChangeText={setApplicationDeadline}
-                  leftIcon={<Calendar size={18} color={COLORS.slate400} />}
+                  onChange={setApplicationDeadline}
+                  minDate={new Date()}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -1402,7 +1400,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.md,
     paddingTop: 10,
-    paddingBottom: 95,
+    paddingBottom: 140,
   },
   aiCard: {
     backgroundColor: '#F8FAFC',

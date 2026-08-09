@@ -57,6 +57,7 @@ import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -217,6 +218,16 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   // Top Search Bar & Live Autocomplete Suggestions State
+  const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [topSearch, setTopSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -283,6 +294,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   // Role Tab State (Dynamically updated from Admin DB)
   const [roleTabsList, setRoleTabsList] = useState<RoleTabItem[]>(DEFAULT_ROLE_TABS_DATA);
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
+  const homeRefreshOffsetRef = React.useRef(0);
 
   const loadHomeData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
@@ -294,7 +306,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       ]);
 
       if (jobsRes.success && jobsRes.data) {
-        setJobs(jobsRes.data || []);
+        const rawJobs = jobsRes.data || [];
+        if (showSkeleton && rawJobs.length > 0) {
+          homeRefreshOffsetRef.current = (homeRefreshOffsetRef.current + 3) % rawJobs.length;
+        }
+        const offset = homeRefreshOffsetRef.current;
+        const rotatedJobs = rawJobs.length > 0 ? [...rawJobs.slice(offset), ...rawJobs.slice(0, offset)] : rawJobs;
+        setJobs(rotatedJobs);
       }
       if (savedRes.success && savedRes.data) {
         const savedIds = (savedRes.data || []).map((j: any) => j.id);
@@ -346,7 +364,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadHomeData(false);
+    setLoading(true);
+    loadHomeData(true);
   };
 
   const handleToggleSave = useCallback((jobId: string) => {
@@ -452,13 +471,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
         <View style={{ zIndex: 999, position: 'relative' }}>
           <View style={styles.topSearchPillRow}>
-            <TouchableOpacity onPress={handleSearchSubmit} style={{ paddingRight: 2 }}>
-              <Search size={18} color="#2563EB" />
+            <TouchableOpacity onPress={handleSearchSubmit} style={styles.searchIconBadge3D} activeOpacity={0.8}>
+              <Search size={16} color="#2563EB" strokeWidth={2.8} />
             </TouchableOpacity>
 
             <TextInput
               style={styles.topSearchInput}
-              placeholder="Search jobs, trades, companies..."
+              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
               placeholderTextColor="#94A3B8"
               value={topSearch}
               onChangeText={(txt) => {
@@ -886,22 +905,17 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
                     {/* Company Footer Row */}
                     <View style={styles.webCompanyFooter}>
-                      <View style={styles.webLogoSquare}>
-                        {logoUrl ? (
-                          <Image source={{ uri: logoUrl }} style={styles.webLogoImg} resizeMode="contain" />
-                        ) : (
-                          <Building2 size={20} color="#2563EB" />
-                        )}
-                      </View>
+                      <CompanyLogoAvatar
+                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                        companyName={job.company}
+                        size={38}
+                        borderRadius={6}
+                      />
 
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={styles.webCompanyTitle} numberOfLines={1}>
-                          {job.company || 'Dreams Agency'}
+                          {job.company || 'Industrial Company'}
                         </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Star size={12} color="#D97706" fill="#D97706" />
-                          <Text style={styles.webRatingText}>4.2 • Reviews</Text>
-                        </View>
                         <Text style={styles.webPostedByText} numberOfLines={1}>
                           Posted by {job.company || 'Recruiter'}
                         </Text>
@@ -1189,26 +1203,46 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 95,
-    gap: 16,
+    paddingBottom: 130,
+    gap: 10,
   },
   topSearchPillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#334155',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
     borderRadius: 24,
-    overflow: 'hidden',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     height: 48,
     gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1.5,
+  },
+  searchIconBadge3D: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   topSearchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 13.5,
     color: '#0F172A',
     fontWeight: '600',
+    textAlignVertical: 'center',
+    paddingVertical: 0,
+    margin: 0,
   },
   suggestionsContainer: {
     position: 'absolute',

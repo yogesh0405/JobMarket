@@ -15,6 +15,7 @@ import { CandidateTabNavigator } from './CandidateTabNavigator';
 import { CandidateProfileScreen } from '../screens/candidate/CandidateProfileScreen';
 import { CandidateResumeScreen } from '../screens/candidate/CandidateResumeScreen';
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
+import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +39,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateProfile" component={CandidateProfileScreen} />
           <Stack.Screen name="CandidateResume" component={CandidateResumeScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+          <Stack.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />

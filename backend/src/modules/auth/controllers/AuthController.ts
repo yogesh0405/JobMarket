@@ -15,6 +15,7 @@ import { redisClient } from '../../../config/redis';
 import { OtpStore, CacheService } from '../../../utils/redisCache';
 import { Verify2FALoginService } from '../services/Verify2FALoginService';
 import { CloudinaryUtil } from '../../../utils/cloudinary';
+import { generateTokens } from '../../../utils/jwt';
 
 export function sanitizeUserForResponse(user: any) {
   if (!user) return user;
@@ -697,6 +698,53 @@ export class AuthController {
         success: true,
         isTwoFactorEnabled: Boolean(enabled),
         message: enabled ? '2FA protection enabled successfully.' : '2FA protection disabled.'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 10. Google 100% Free OAuth Authentication
+  static async googleAuth(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, name, picture, role = 'candidate', googleId } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Google Auth requires valid email address' });
+      }
+
+      let user = await UserRepository.findByEmail(email);
+
+      if (!user) {
+        const dummyPassword = await bcrypt.hash(`google_${googleId || Date.now()}_${Math.random()}`, 12);
+        user = await UserRepository.createUser({
+          email: email.toLowerCase().trim(),
+          name: name || email.split('@')[0],
+          password_hash: dummyPassword,
+          role: role || 'candidate',
+          status: 'ACTIVE',
+          profile_picture_url: picture || null,
+        } as any);
+      }
+
+      const safeUser = sanitizeUserForResponse(user);
+      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      const ip = req.ip || '127.0.0.1';
+      const userAgent = (req.headers['user-agent'] as string) || 'Google OAuth Device';
+      const session = await SessionRepository.createSession(user.id, refreshTokenHash, expiresAt, ip, userAgent);
+
+      res.status(200).json({
+        success: true,
+        message: 'Google Sign-In successful!',
+        data: {
+          user: safeUser,
+          token: accessToken,
+          refreshToken,
+          sessionId: session?.id,
+        },
       });
     } catch (error) {
       next(error);

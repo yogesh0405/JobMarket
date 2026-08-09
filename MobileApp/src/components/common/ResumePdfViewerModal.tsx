@@ -28,8 +28,15 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
   candidateRole = 'Technical Specialist',
   pdfUrl,
 }) => {
-  // 1. Detect if the uploaded document is an Image, PDF, or Fallback
-  const lowerUrl = (pdfUrl || '').toLowerCase();
+  // 1. Safely extract string URL from string or object parameter
+  let rawUrlStr = '';
+  if (typeof pdfUrl === 'string') {
+    rawUrlStr = pdfUrl;
+  } else if (pdfUrl && typeof pdfUrl === 'object') {
+    rawUrlStr = (pdfUrl as any).url || (pdfUrl as any).fileUrl || (pdfUrl as any).uri || (pdfUrl as any).link || '';
+  }
+
+  const lowerUrl = rawUrlStr.toLowerCase();
   const isImage =
     lowerUrl.includes('.png') ||
     lowerUrl.includes('.jpg') ||
@@ -37,11 +44,11 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
     lowerUrl.includes('.webp') ||
     lowerUrl.startsWith('data:image/');
 
-  const defaultPdfUrl = pdfUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+  const defaultPdfUrl = rawUrlStr || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
   const googleDocsViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(defaultPdfUrl)}`;
 
   const handlePrint = () => {
-    const targetUrl = pdfUrl || defaultPdfUrl;
+    const targetUrl = rawUrlStr || defaultPdfUrl;
     if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
       Linking.openURL(targetUrl);
     } else {

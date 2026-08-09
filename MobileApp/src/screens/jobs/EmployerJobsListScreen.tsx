@@ -33,6 +33,7 @@ import { Header } from '../../components/common/Header';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface Props {
@@ -48,17 +49,14 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [manageVacanciesJob, setManageVacanciesJob] = useState<Job | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setError(null);
     try {
       const res = await jobsApi.getMyJobs();
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const enriched = res.data.map((j) => ({
-          ...j,
-          applicants_count: Math.max(j.applicants_count || 0, 2),
-        }));
-        setJobs(enriched);
+      if (res.success && Array.isArray(res.data)) {
+        setJobs(res.data);
       } else {
         setJobs([]);
       }
@@ -133,9 +131,24 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   const renderJobItem = ({ item }: { item: Job }) => {
     const pending = isPendingStatus(item.status);
     const logoUri = item.companyLogo || (item as any).company_logo || user?.companyLogo || user?.company_logo;
-    const actualApplicantCount = Array.isArray((item as any).applicants) 
-      ? (item as any).applicants.length 
-      : ((item as any).applicantsCount ?? (item as any).applicants_count ?? 0);
+
+    const salMin = item.salary_min ?? item.salaryMin ?? (item as any).salary_min ?? (item as any).salaryMin;
+    const salMax = item.salary_max ?? item.salaryMax ?? (item as any).salary_max ?? (item as any).salaryMax;
+
+    let salaryStr = 'Salary Undisclosed';
+    if (salMin && salMax) {
+      salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')} / mo`;
+    } else if (salMin || salMax) {
+      salaryStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')} / mo`;
+    }
+
+    const totalVacancies = item.openings ?? (item as any).openings ?? 1;
+    const filledVacancies = item.filledOpenings ?? (item as any).filled_openings ?? (item as any).filledOpenings ?? 0;
+    const actualApplicantCount = typeof (item as any).applicants_count === 'number'
+      ? (item as any).applicants_count
+      : (typeof (item as any).applicantsCount === 'number'
+          ? (item as any).applicantsCount
+          : (Array.isArray((item as any).applicants) ? (item as any).applicants.length : 0));
 
     return (
       <TouchableOpacity
@@ -196,14 +209,20 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.salaryTag}>
             <Text style={styles.salaryLabel}>SALARY</Text>
             <Text style={styles.salaryText}>
-              ₹{item.salary_min?.toLocaleString()} - ₹{item.salary_max?.toLocaleString()} / mo
+              {salaryStr}
             </Text>
           </View>
 
-          <View style={styles.openingsTag}>
-            <Briefcase size={13} color={COLORS.slate600} />
-            <Text style={styles.openingsText}>{item.openings || 1} Openings</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.openingsTag}
+            activeOpacity={0.8}
+            onPress={() => setManageVacanciesJob(item)}
+          >
+            <Briefcase size={13} color={COLORS.primary} />
+            <Text style={styles.openingsText}>
+              {filledVacancies} / {totalVacancies} Vacancies
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Action Footer Bar */}
@@ -215,11 +234,20 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Users size={15} color={COLORS.primary} />
             <Text style={styles.applicantBtnText}>
-              {actualApplicantCount} {actualApplicantCount === 1 ? 'Candidate Applied' : 'Candidates Applied'}
+              {actualApplicantCount} {actualApplicantCount === 1 ? 'Candidate' : 'Candidates'}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.actionsGroup}>
+            <TouchableOpacity
+              style={styles.adjustVacanciesBtn}
+              activeOpacity={0.8}
+              onPress={() => setManageVacanciesJob(item)}
+            >
+              <Briefcase size={13} color="#0284C7" />
+              <Text style={styles.adjustVacanciesBtnText}>Adjust Vacancies</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.actionIconButton}
               activeOpacity={0.7}
@@ -245,7 +273,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Manage Job Postings" />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {/* Filter Tabs Bar - Industry Grade */}
       <View style={styles.tabsBarWrapper}>
@@ -306,6 +334,16 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         />
       )}
+
+      {/* Live Vacancy Adjustment Modal */}
+      <ManageVacanciesModal
+        visible={!!manageVacanciesJob}
+        job={manageVacanciesJob}
+        onClose={() => setManageVacanciesJob(null)}
+        onSuccess={(updatedJob) => {
+          setJobs((prev) => prev.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+        }}
+      />
     </View>
   );
 };
@@ -391,7 +429,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
-    paddingBottom: 95,
+    paddingBottom: 130,
   },
   jobCard3D: {
     backgroundColor: '#FFFFFF',
@@ -578,6 +616,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+  },
+  adjustVacanciesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  adjustVacanciesBtnText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#0284C7',
   },
   actionIconButton: {
     width: 28,

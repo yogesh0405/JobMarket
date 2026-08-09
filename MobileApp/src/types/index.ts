@@ -52,7 +52,7 @@ export interface User {
   created_at?: string;
 }
 
-export type JobStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED' | 'CLOSED';
+export type JobStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED' | 'CLOSED' | 'active' | 'closed' | 'pending';
 
 export interface Job {
   id: string;
@@ -77,6 +77,8 @@ export interface Job {
   salary_max: number;
   salaryMax?: number;
   openings: number;
+  filledOpenings?: number;
+  filled_openings?: number;
   min_age?: number;
   max_age?: number;
   gender?: 'Any' | 'Male' | 'Female';

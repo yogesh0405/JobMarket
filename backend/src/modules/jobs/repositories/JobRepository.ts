@@ -913,4 +913,47 @@ export class JobRepository {
     ]);
     return result.rows[0];
   }
+
+  static async getEmployerAnalytics(employerId: string): Promise<any> {
+    const jobsCountRes = await pool.query(
+      `SELECT 
+        COUNT(*) as total_jobs,
+        COUNT(*) FILTER (WHERE status = 'approved' AND (is_active IS TRUE OR is_active IS NULL)) as active_jobs
+       FROM jobs 
+       WHERE employer_id = $1 AND (is_deleted IS FALSE OR is_deleted IS NULL)`,
+      [employerId]
+    );
+
+    const funnelRes = await pool.query(
+      `SELECT 
+        COUNT(*) as total_applications,
+        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('shortlisted', 'accepted', 'approved', 'under_review', 'evaluated')) as shortlisted,
+        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('interview', 'interview_scheduled', 'interviewed', 'called') OR ja.interview_date IS NOT NULL) as interviewed,
+        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('hired', 'joined', 'offered', 'selected')) as hired,
+        COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('rejected', 'declined')) as rejected
+       FROM job_applications ja
+       JOIN jobs j ON ja.job_id = j.id
+       WHERE j.employer_id = $1 AND (j.is_deleted IS FALSE OR j.is_deleted IS NULL)`,
+      [employerId]
+    );
+
+    const totalJobs = parseInt(jobsCountRes.rows[0]?.total_jobs || '0', 10);
+    const activeJobs = parseInt(jobsCountRes.rows[0]?.active_jobs || '0', 10);
+    const totalApplications = parseInt(funnelRes.rows[0]?.total_applications || '0', 10);
+    const shortlisted = parseInt(funnelRes.rows[0]?.shortlisted || '0', 10);
+    const interviewed = parseInt(funnelRes.rows[0]?.interviewed || '0', 10);
+    const hired = parseInt(funnelRes.rows[0]?.hired || '0', 10);
+    const rejected = parseInt(funnelRes.rows[0]?.rejected || '0', 10);
+
+    return {
+      totalJobs,
+      activeJobs,
+      totalApplications,
+      shortlisted,
+      interviewed,
+      hired,
+      rejected,
+      avgResponseTimeHours: 24,
+    };
+  }
 }

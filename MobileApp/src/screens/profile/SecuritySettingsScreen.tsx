@@ -377,23 +377,19 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Premium Hero Banner - Perfect Alignment */}
-        <LinearGradient
-          colors={['#0F172A', '#1E3A8A', '#2563EB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroBanner}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        {/* Top White Security Title Card */}
+        <View style={styles.heroBanner}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <View style={styles.heroIconBox}>
-              <ShieldCheck size={20} color="#FFFFFF" />
+              <ShieldCheck size={20} color="#2563EB" />
             </View>
-            <Text style={[styles.heroTitle, { marginBottom: 0 }]}>Security & Active Sessions</Text>
+            <Text style={styles.heroTitle}>Security & Active Sessions</Text>
           </View>
 
           <Text style={styles.heroSubtitle}>
             Manage active logged-in devices, update account credentials, or perform an instant email OTP password reset.
           </Text>
-        </LinearGradient>
+        </View>
 
         {/* SECTION 1: ACTIVE LOGIN SESSIONS */}
         <View style={styles.card}>
@@ -761,18 +757,19 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl * 2,
   },
   heroBanner: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: SPACING.md + 2,
+    padding: 14,
     marginBottom: SPACING.md,
     borderWidth: 1,
-    borderColor: '#1E3A8A',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#172554',
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   heroHeaderRow: {
     flexDirection: 'row',
@@ -783,47 +780,45 @@ const styles = StyleSheet.create({
   heroIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: '#BFDBFE',
   },
   heroShieldBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: SPACING.sm,
     paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: '#BFDBFE',
   },
   heroBadgeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#34D399',
+    backgroundColor: '#16A34A',
   },
   heroBadgeText: {
-    color: COLORS.textWhite,
+    color: '#2563EB',
     fontSize: 11,
     fontWeight: '700',
   },
   heroTitle: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: '900',
-    color: COLORS.textWhite,
-    marginBottom: 2,
+    color: '#0F172A',
   },
   heroSubtitle: {
-    ...TYPOGRAPHY.body,
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 16,
+    color: '#475569',
+    lineHeight: 17,
+    fontWeight: '500',
   },
   card: {
     backgroundColor: COLORS.surface,
@@ -1055,13 +1050,13 @@ const styles = StyleSheet.create({
   otpBannerCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: SPACING.lg,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#94A3B8',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
     gap: SPACING.md,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },

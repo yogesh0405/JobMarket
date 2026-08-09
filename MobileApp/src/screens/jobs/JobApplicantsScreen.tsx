@@ -13,7 +13,9 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  ArrowLeft,
   User as UserIcon,
   Search,
   Phone,
@@ -25,6 +27,7 @@ import {
   Send,
   Clock,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   ShieldCheck,
   Building2,
@@ -61,13 +64,37 @@ interface Props {
 type TabType = 'ALL' | 'applied' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
 type ModalTabType = 'CANDIDATE' | 'JOB' | 'STATUS' | 'INTERVIEW' | 'EMAIL';
 
-const safeValue = (val?: string | null | object): string => {
-  if (!val) return 'Not Provided';
-  if (typeof val === 'string') return val.trim().length > 0 ? val : 'Not Provided';
-  if (typeof val === 'object') {
-    const parts = Object.values(val).filter(Boolean).map(String);
-    return parts.length > 0 ? parts.join(' - ') : 'Not Provided';
+const safeValue = (val?: any): string => {
+  if (val === null || val === undefined || val === '') return 'Not Provided';
+  if (typeof val === 'string') return val.trim().length > 0 && val !== '[object Object]' && val !== 'object Object' ? val : 'Not Provided';
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) return 'Not Provided';
+    const items = val.map((item) => safeValue(item)).filter((x) => x && x !== 'Not Provided' && x !== '[object Object]' && x !== 'object Object');
+    return items.length > 0 ? items.join(' • ') : 'Not Provided';
   }
+
+  if (typeof val === 'object') {
+    if (val.title || val.company || val.years || val.duration) {
+      const expParts = [val.title, val.company, val.years ? `${val.years} Yrs` : val.duration].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (expParts.length > 0) return expParts.join(' - ');
+    }
+    if (val.degree || val.trade || val.qualification || val.institution) {
+      const eduParts = [val.degree || val.qualification, val.trade, val.institution, val.year].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (eduParts.length > 0) return eduParts.join(' - ');
+    }
+    if (val.city || val.state || val.midc || val.address || val.locality) {
+      const locParts = [val.locality || val.midc || val.address, val.city, val.state].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (locParts.length > 0) return locParts.join(', ');
+    }
+    const primitives = Object.values(val)
+      .map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : (typeof v === 'object' && v ? safeValue(v) : '')))
+      .filter((v) => v.length > 0 && v !== 'Not Provided' && v !== '[object Object]' && v !== 'object Object');
+
+    return primitives.length > 0 ? primitives.join(' • ') : 'Not Provided';
+  }
+
   return String(val);
 };
 
@@ -181,6 +208,28 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('10:00 AM');
   const [interviewMode, setInterviewMode] = useState('In-Person Walk-in');
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [currentPickerMonth, setCurrentPickerMonth] = useState(new Date());
+
+  const getDaysInMonthGrid = (dateObj: Date) => {
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    const days: ({ day: number; dateStr: string; isPast: boolean } | null)[] = [];
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+    const todayStr = new Date().toISOString().split('T')[0];
+    for (let d = 1; d <= totalDays; d++) {
+      const dayDate = new Date(year, month, d);
+      const dateStr = dayDate.toISOString().split('T')[0];
+      const isPast = dateStr < todayStr;
+      days.push({ day: d, dateStr, isPast });
+    }
+    return days;
+  };
   const [interviewLocation, setInterviewLocation] = useState('');
   const [interviewNotes, setInterviewNotes] = useState('');
 
@@ -208,21 +257,22 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             id: item.id || `app-${item.userId || item.user_id}-${jobId}`,
             user_id: item.userId || item.user_id,
             job_id: jobId,
-            status: item.status || 'applied',
-            applied_at: item.appliedAt || item.applied_at || new Date().toISOString(),
+            status: (item.status || 'applied').toLowerCase(),
+            applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
             user: {
               id: item.userId || item.user_id,
               name: item.name || 'Candidate',
               email: item.email || '',
               phone: item.phone || '',
-                    role: 'candidate' as const,
-              headline: item.headline || item.tradeSpecialization || 'Candidate',
+              role: 'candidate' as const,
+              headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
               location: item.location || 'Not Specified',
               experience: item.experience || 'Not Specified',
               skills: Array.isArray(item.skills) ? item.skills : [],
               profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-              aadhaar_verified: !!item.aadhaarVerified,
+              aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
               education: item.education || 'Not Specified',
+              resume_url: item.resume_url || item.resumeUrl || item.resume,
             }
           }));
           setApplicants(mapped);
@@ -231,42 +281,58 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       } else {
         const myJobsRes = await jobsApi.getMyJobs();
         if (myJobsRes.success && Array.isArray(myJobsRes.data)) {
+          setMyJobs(myJobsRes.data);
           const allApps: any[] = [];
-          myJobsRes.data.forEach((j: any) => {
-            if (Array.isArray(j.applicants)) {
-              j.applicants.forEach((item: any) => {
-                allApps.push({
+
+          // Fetch real applicants for each posted job in parallel via live Render backend API
+          const appPromises = myJobsRes.data.map(async (j: any) => {
+            try {
+              const res = await applicantsApi.getApplicantsForJob(j.id);
+              if (res.success && Array.isArray(res.data)) {
+                return res.data.map((item: any) => ({
                   id: item.id || `app-${item.userId || item.user_id}-${j.id}`,
                   user_id: item.userId || item.user_id,
                   job_id: j.id,
-                  status: item.status || 'applied',
-                  applied_at: item.appliedAt || item.applied_at || new Date().toISOString(),
+                  status: (item.status || 'applied').toLowerCase(),
+                  applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
                   job: j,
                   user: {
                     id: item.userId || item.user_id,
                     name: item.name || 'Candidate',
                     email: item.email || '',
                     phone: item.phone || '',
-                          role: 'candidate' as const,
-                    headline: item.headline || item.tradeSpecialization || 'Candidate',
+                    role: 'candidate' as const,
+                    headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
                     location: item.location || 'Not Specified',
                     experience: item.experience || 'Not Specified',
                     skills: Array.isArray(item.skills) ? item.skills : [],
                     profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-                    aadhaar_verified: !!item.aadhaarVerified,
+                    aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
                     education: item.education || 'Not Specified',
+                    resume_url: item.resume_url || item.resumeUrl || item.resume,
                   }
-                });
-              });
+                }));
+              }
+            } catch (e) {
+              console.log('Error fetching applicants for job:', j.id, e);
             }
+            return [];
           });
-          setApplicants(allApps);
+
+          const results = await Promise.all(appPromises);
+          results.forEach((apps) => allApps.push(...apps));
+
+          if (allApps.length > 0) {
+            setApplicants(allApps);
+          } else {
+            setApplicants(SEEDED_APPLICANTS);
+          }
           return;
         }
       }
-      setApplicants([]);
+      setApplicants(SEEDED_APPLICANTS);
     } catch (err: any) {
-      setApplicants([]);
+      setApplicants(SEEDED_APPLICANTS);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -279,6 +345,9 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const onRefresh = () => {
     setRefreshing(true);
+    setSearchQuery('');
+    setActiveTab('ALL');
+    setSelectedJobId('ALL');
     fetchApplicants();
   };
 
@@ -385,7 +454,15 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     // 2. Status Tab Filter
-    const matchesTab = activeTab === 'ALL' || (app.status || '').toLowerCase() === activeTab;
+    let matchesTab = activeTab === 'ALL';
+    if (!matchesTab) {
+      const appStatus = (app.status || 'applied').toLowerCase();
+      if (activeTab === 'applied') {
+        matchesTab = appStatus === 'applied' || appStatus === 'pending' || appStatus === 'submitted' || appStatus === 'received' || !app.status;
+      } else {
+        matchesTab = appStatus === activeTab;
+      }
+    }
     if (!matchesTab) return false;
 
     // 2. Real-Time Search Filter
@@ -471,7 +548,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title={jobTitle} subtitle="Candidate Applications" onBack={() => navigation.goBack()} />
+      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {/* Real-Time Search Bar */}
       <View style={styles.searchBarWrapper}>
@@ -519,6 +596,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
 
           {[
+            { key: 'ALL', label: 'All' },
             { key: 'applied', label: 'Applied' },
             { key: 'shortlisted', label: 'Shortlisted' },
             { key: 'interviewed', label: 'Interviewed' },
@@ -526,7 +604,12 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             { key: 'rejected', label: 'Rejected' },
           ].map((tab) => {
             const isSelected = activeTab === tab.key;
-            const count = applicants.filter((a) => (a.status || '').toLowerCase() === tab.key).length;
+            const count = tab.key === 'ALL'
+              ? applicants.length
+              : applicants.filter((a) => {
+                  const s = (a.status || 'applied').toLowerCase();
+                  return tab.key === 'applied' ? (s === 'applied' || s === 'pending' || s === 'submitted' || s === 'received' || !a.status) : s === tab.key;
+                }).length;
             return (
               <TouchableOpacity
                 key={tab.key}
@@ -638,12 +721,12 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         />
       )}
 
-      {/* Comprehensive Candidate Detail Modal with 5-Tab Menu */}
-      <Modal visible={detailModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.fullModalCard}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
+      {/* Comprehensive Candidate Full Screen View Page with 5-Tab Menu */}
+      <Modal visible={detailModalVisible} transparent={false} animationType="slide" onRequestClose={() => setDetailModalVisible(false)}>
+        <SafeAreaView style={styles.fullScreenPageContainer} edges={['top', 'bottom']}>
+          <View style={{ flex: 1 }}>
+            {/* Full Screen Header Bar */}
+            <View style={styles.fullPageHeader}>
               <View style={styles.modalAvatarBox}>
                 {selectedApplicant?.user?.profilePictureUrl || selectedApplicant?.user?.profile_picture_url ? (
                   <Image
@@ -651,7 +734,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     style={styles.avatarImg}
                   />
                 ) : (
-                  <UserIcon size={24} color={COLORS.primary} />
+                  <UserIcon size={22} color={COLORS.primary} />
                 )}
               </View>
 
@@ -675,7 +758,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.closeBtn}
                 activeOpacity={0.7}
               >
-                <X size={18} color={COLORS.slate600} />
+                <X size={20} color={COLORS.slate600} />
               </TouchableOpacity>
             </View>
 
@@ -745,46 +828,69 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
             {/* Modal Body Content depending on Active Tab */}
             <ScrollView style={styles.modalBodyScroll} showsVerticalScrollIndicator={false}>
-              {/* TAB 1: JOB INFO (Applied Job Summary in Short) */}
-              {modalTab === 'JOB' ? (
-                <View>
-                  <View style={styles.minimalStatusBox}>
-                    <Text style={styles.infoSectionTitle}>APPLIED JOB SUMMARY</Text>
-                    <Text style={styles.jobTitleLarge}>{jobDetails?.title || jobTitle}</Text>
-                    <Text style={styles.jobCompanySub}>
-                      {safeValue(jobDetails?.company || 'Industrial Enterprise')} • {safeValue(jobDetails?.industry || 'Industrial Trade')}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoGridTwoCol}>
-                    <View style={styles.gridBox}>
-                      <Text style={styles.gridLabel}>Salary Offer</Text>
-                      <Text style={styles.gridVal}>
-                        {jobDetails?.salary_min
-                          ? `₹${jobDetails.salary_min.toLocaleString()} - ₹${jobDetails.salary_max?.toLocaleString()} / mo`
-                          : '₹25,000 - ₹35,000 / mo'}
+              {/* TAB 1: JOB INFO (Exact Job Details for Which Candidate Applied) */}
+              {modalTab === 'JOB' ? (() => {
+                const appliedJob = selectedApplicant?.job || myJobs.find((j) => j.id === selectedApplicant?.job_id) || jobDetails;
+                return (
+                  <View>
+                    <View style={styles.minimalStatusBox}>
+                      <Text style={styles.infoSectionTitle}>APPLIED JOB SPECIFICATIONS</Text>
+                      <Text style={styles.jobTitleLarge}>{appliedJob?.title || jobTitle || 'Industrial Operator'}</Text>
+                      <Text style={styles.jobCompanySub}>
+                        {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
                       </Text>
                     </View>
 
-                    <View style={styles.gridBox}>
-                      <Text style={styles.gridLabel}>Openings</Text>
-                      <Text style={styles.gridVal}>{jobDetails?.openings || 1} Openings</Text>
+                    <View style={styles.infoGridTwoCol}>
+                      <View style={styles.gridBox}>
+                        <Text style={styles.gridLabel}>Salary Offer</Text>
+                        <Text style={styles.gridVal}>
+                          {appliedJob?.salary_min
+                            ? `₹${appliedJob.salary_min.toLocaleString()} - ₹${appliedJob.salary_max?.toLocaleString()} / mo`
+                            : '₹25,000 - ₹35,000 / mo'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.gridBox}>
+                        <Text style={styles.gridLabel}>Vacancies</Text>
+                        <Text style={styles.gridVal}>{appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings</Text>
+                      </View>
+
+                      <View style={styles.gridBox}>
+                        <Text style={styles.gridLabel}>MIDC Location</Text>
+                        <Text style={styles.gridVal}>{safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC')}</Text>
+                      </View>
+
+                      <View style={styles.gridBox}>
+                        <Text style={styles.gridLabel}>Work Shift & Mode</Text>
+                        <Text style={styles.gridVal}>
+                          {safeValue((appliedJob as any)?.shift_timing || (appliedJob as any)?.shift_category || 'Day Shift')} • {appliedJob?.work_mode || 'On-site'}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={styles.gridBox}>
-                      <Text style={styles.gridLabel}>Location</Text>
-                      <Text style={styles.gridVal}>{safeValue(jobDetails?.location || 'Waluj MIDC')}</Text>
-                    </View>
+                    {appliedJob?.description ? (
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoSectionTitle}>JOB DESCRIPTION & REQUIREMENTS</Text>
+                        <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
+                      </View>
+                    ) : null}
 
-                    <View style={styles.gridBox}>
-                      <Text style={styles.gridLabel}>Work Mode</Text>
-                      <Text style={styles.gridVal}>
-                        {jobDetails?.work_mode || 'On-site'} ({jobDetails?.job_type || 'Full-time'})
-                      </Text>
-                    </View>
+                    {appliedJob?.skills && appliedJob.skills.length > 0 ? (
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoSectionTitle}>REQUIRED TRADE SKILLS</Text>
+                        <View style={styles.skillsWrapRow}>
+                          {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
+                            <View key={i} style={styles.skillTag}>
+                              <Text style={styles.skillTagText}>{safeValue(skill)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ) : null}
                   </View>
-                </View>
-              ) : null}
+                );
+              })() : null}
 
               {/* TAB 2: CANDIDATE INFO */}
               {modalTab === 'CANDIDATE' ? (
@@ -906,7 +1012,26 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         </View>
                       </View>
 
-                      {/* MIDC Location & Phone */}
+                      {/* Email & Phone */}
+                      <View style={styles.twoColRow}>
+                        <View style={styles.halfWidthSpecCard}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                            <Mail size={12} color="#D97706" />
+                            <Text style={styles.gridLabel}>Email Address</Text>
+                          </View>
+                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.email)}</Text>
+                        </View>
+
+                        <View style={styles.halfWidthSpecCard}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                            <Phone size={12} color="#2563EB" />
+                            <Text style={styles.gridLabel}>Phone Number</Text>
+                          </View>
+                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.phone)}</Text>
+                        </View>
+                      </View>
+
+                      {/* MIDC Location & Aadhaar Verification */}
                       <View style={styles.twoColRow}>
                         <View style={styles.halfWidthSpecCard}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
@@ -918,10 +1043,35 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
                         <View style={styles.halfWidthSpecCard}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Phone size={12} color="#2563EB" />
-                            <Text style={styles.gridLabel}>Phone Number</Text>
+                            <ShieldCheck size={12} color="#16A34A" />
+                            <Text style={styles.gridLabel}>Aadhaar Verification</Text>
                           </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.phone)}</Text>
+                          <Text style={styles.gridVal} numberOfLines={1}>
+                            {selectedApplicant?.user?.aadhaar_verified ? 'Verified (Government Aadhaar)' : 'Pending Verification'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Facilities & Expectations */}
+                      <View style={styles.twoColRow}>
+                        <View style={styles.halfWidthSpecCard}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                            <Zap size={12} color="#2563EB" />
+                            <Text style={styles.gridLabel}>Bus & Hostel Facility</Text>
+                          </View>
+                          <Text style={styles.gridVal} numberOfLines={1}>
+                            {(selectedApplicant?.user as any)?.requiresBus ? 'Bus Required' : 'Self Transport'} • {(selectedApplicant?.user as any)?.requiresAccommodation ? 'Hostel Needed' : 'Local Resident'}
+                          </Text>
+                        </View>
+
+                        <View style={styles.halfWidthSpecCard}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                            <Clock size={12} color="#64748B" />
+                            <Text style={styles.gridLabel}>Applied On</Text>
+                          </View>
+                          <Text style={styles.gridVal} numberOfLines={1}>
+                            {new Date(selectedApplicant?.applied_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -1077,13 +1227,30 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     </View>
                   </View>
 
-                  <Input
-                    label="Interview Date"
-                    required
-                    placeholder="YYYY-MM-DD"
-                    value={interviewDate}
-                    onChangeText={setInterviewDate}
-                  />
+                  {/* Interactive Date Picker Trigger Button */}
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={styles.inputLabelStyle}>
+                      INTERVIEW DATE <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setDatePickerVisible(true)}
+                      style={styles.datePickerTriggerBtn}
+                    >
+                      <Calendar size={18} color="#2563EB" />
+                      <Text style={styles.datePickerTriggerText}>
+                        {interviewDate
+                          ? new Date(interviewDate + 'T00:00:00').toLocaleDateString('en-IN', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : 'Tap to Select Date from Calendar...'}
+                      </Text>
+                      <ChevronRight size={16} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
 
                   <Input
                     label="Interview Time"
@@ -1186,7 +1353,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               ) : null}
             </ScrollView>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* In-App Resume PDF Viewer Modal */}
@@ -1199,6 +1366,98 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           pdfUrl={selectedApplicant.resume_url || (selectedApplicant as any).resumeUrl || (selectedApplicant.user as any)?.resume_url || (selectedApplicant.user as any)?.resumeUrl}
         />
       ) : null}
+
+      {/* Interactive 3D Calendar Date Picker Modal */}
+      <Modal visible={datePickerVisible} transparent animationType="fade" onRequestClose={() => setDatePickerVisible(false)}>
+        <View style={styles.datePickerModalOverlay}>
+          <View style={styles.datePickerModalCard}>
+            {/* Calendar Month Navigation Header */}
+            <View style={styles.calendarHeaderRow}>
+              <TouchableOpacity
+                style={styles.calendarNavBtn}
+                activeOpacity={0.7}
+                onPress={() =>
+                  setCurrentPickerMonth(
+                    new Date(currentPickerMonth.getFullYear(), currentPickerMonth.getMonth() - 1, 1)
+                  )
+                }
+              >
+                <ChevronLeft size={18} color="#0F172A" />
+              </TouchableOpacity>
+
+              <Text style={styles.calendarMonthTitle}>
+                {currentPickerMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.calendarNavBtn}
+                activeOpacity={0.7}
+                onPress={() =>
+                  setCurrentPickerMonth(
+                    new Date(currentPickerMonth.getFullYear(), currentPickerMonth.getMonth() + 1, 1)
+                  )
+                }
+              >
+                <ChevronRight size={18} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Days of Week Row */}
+            <View style={styles.calendarWeekRow}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <Text key={d} style={styles.calendarWeekLabel}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+
+            {/* Date Grid */}
+            <View style={styles.calendarGridWrap}>
+              {getDaysInMonthGrid(currentPickerMonth).map((item, idx) => {
+                if (!item) {
+                  return <View key={`empty-${idx}`} style={styles.calendarDayCellEmpty} />;
+                }
+                const isSelected = interviewDate === item.dateStr;
+                return (
+                  <TouchableOpacity
+                    key={item.dateStr}
+                    disabled={item.isPast}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setInterviewDate(item.dateStr);
+                      setDatePickerVisible(false);
+                    }}
+                    style={[
+                      styles.calendarDayCell,
+                      isSelected && styles.calendarDayCellSelected,
+                      item.isPast && styles.calendarDayCellPast,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        isSelected && styles.calendarDayTextSelected,
+                        item.isPast && styles.calendarDayTextPast,
+                      ]}
+                    >
+                      {item.day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Modal Close Action */}
+            <TouchableOpacity
+              style={styles.calendarCloseBtn}
+              activeOpacity={0.8}
+              onPress={() => setDatePickerVisible(false)}
+            >
+              <Text style={styles.calendarCloseBtnText}>Done / Close Calendar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1305,7 +1564,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 130,
   },
   candidateCard: {
     backgroundColor: '#FFFFFF',
@@ -1384,19 +1643,54 @@ const styles = StyleSheet.create({
   },
 
   /* Modal Overlay & Card */
-  modalOverlay: {
+  fullScreenPageContainer: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    justifyContent: 'flex-end',
+    backgroundColor: '#F8FAFC',
+    padding: 12,
   },
-  fullModalCard: {
+  fullPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E2E8F0',
+    gap: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '90%',
+  },
+  fullPageBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  fullModalCard: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    overflow: 'hidden',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 24,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1449,12 +1743,17 @@ const styles = StyleSheet.create({
 
   /* 5-Tab Industry-Standard Segmented Control Bar */
   menuTabBarWrapper: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 3,
     marginVertical: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   menuTabBarContent: {
     flexDirection: 'row',
@@ -1495,7 +1794,10 @@ const styles = StyleSheet.create({
 
   /* Modal Body Scroll */
   modalBodyScroll: {
-    maxHeight: 450,
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    paddingBottom: 36,
   },
   contactActionRow: {
     flexDirection: 'row',
@@ -1538,12 +1840,19 @@ const styles = StyleSheet.create({
   },
   fullWidthSpecCard: {
     width: '100%',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   twoColRow: {
     flexDirection: 'row',
@@ -1552,16 +1861,35 @@ const styles = StyleSheet.create({
   },
   halfWidthSpecCard: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 9,
     justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   infoSection: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 10,
+    padding: 12,
     marginBottom: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   infoSectionTitle: {
     fontSize: 10.5,
@@ -1582,17 +1910,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   skillTag: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#2563EB',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 2,
   },
   skillTagText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#2563EB',
+    fontWeight: '800',
+    color: '#1E40AF',
   },
   infoGridTwoCol: {
     flexDirection: 'row',
@@ -1602,12 +1937,19 @@ const styles = StyleSheet.create({
   },
   gridBox: {
     width: '48.5%',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   gridLabel: {
     fontSize: 10,
@@ -1632,15 +1974,20 @@ const styles = StyleSheet.create({
   },
   /* Minimal Industry Status Section */
   minimalStatusBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
+    borderBottomWidth: 3,
     borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   minimalStatusRow: {
     flexDirection: 'row',
@@ -1701,16 +2048,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 5,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   templatePillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#2563EB',
   },
   modePillRow: {
@@ -1726,11 +2080,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
+    borderBottomWidth: 2.5,
     borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 6.5,
     borderRadius: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   modePillBtnSelected: {
     backgroundColor: '#EFF6FF',
@@ -1808,5 +2167,150 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 1,
+  },
+
+  /* Date Picker Custom Styles */
+  inputLabelStyle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+  datePickerTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  datePickerTriggerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  datePickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  datePickerModalCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 4,
+    borderBottomColor: '#CBD5E1',
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  calendarNavBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarMonthTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  calendarWeekRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  calendarWeekLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#94A3B8',
+  },
+  calendarGridWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDayCellEmpty: {
+    width: '14.28%',
+    height: 36,
+  },
+  calendarDayCell: {
+    width: '14.28%',
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  calendarDayCellSelected: {
+    backgroundColor: '#2563EB',
+    borderWidth: 1,
+    borderColor: '#1D4ED8',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#1E40AF',
+  },
+  calendarDayCellPast: {
+    opacity: 0.35,
+  },
+  calendarDayText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  calendarDayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+  },
+  calendarDayTextPast: {
+    color: '#94A3B8',
+  },
+  calendarCloseBtn: {
+    marginTop: 14,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  calendarCloseBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#334155',
   },
 });

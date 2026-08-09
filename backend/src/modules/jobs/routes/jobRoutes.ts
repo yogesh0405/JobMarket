@@ -26,6 +26,7 @@ router.get('/saved/me', requireAuth, JobController.getMySavedJobs);
 router.get('/:id', JobController.getJobById);
 
 // Protected Routes
+router.get('/employer/analytics', requireAuth, JobController.getEmployerAnalytics);
 router.get('/my-jobs/all', requireAuth, JobController.getMyJobs);
 router.post('/', requireAuth, actionLimiter, JobController.createJob);
 router.put('/:id', requireAuth, actionLimiter, JobController.updateJob);

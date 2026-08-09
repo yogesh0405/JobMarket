@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -39,6 +39,7 @@ import { useToast } from '../../context/ToastContext';
 import { CandidateSideDrawer } from '../../components/common/CandidateSideDrawer';
 import { InteractiveJobMapView } from '../../components/map/InteractiveJobMapView';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 
 const CATEGORIES = [
   'All Jobs',
@@ -283,18 +284,29 @@ interface Props {
 
 export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showToast } = useToast();
+
+  const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState(route?.params?.keyword || '');
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const refreshOffsetRef = React.useRef(0);
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     industry: route?.params?.industry || 'All Industries',
     jobType: 'All Types',
@@ -308,17 +320,34 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     overtime: false,
   });
 
+  const defaultFilters: FilterOptions = {
+    industry: 'All Industries',
+    jobType: 'All Types',
+    workMode: 'All Modes',
+    minExperience: 'All Experience',
+    salaryMin: 0,
+    midcZone: 'All MIDC Zones',
+    busFacility: false,
+    canteen: false,
+    accommodation: false,
+    overtime: false,
+  };
+
+  // Safely consume route search parameters ONCE without infinite render loop
   React.useEffect(() => {
     if (route?.params) {
-      if (route.params.keyword !== undefined) setSearchQuery(route.params.keyword);
-      if (route.params.industry) {
-        setActiveFilters((prev) => ({ ...prev, industry: route.params.industry }));
+      const p = route.params;
+      if (p.keyword !== undefined && p.keyword !== searchQuery) {
+        setSearchQuery(p.keyword);
       }
-      if (route.params.location) {
-        setActiveFilters((prev) => ({ ...prev, midcZone: route.params.location }));
+      if (p.industry) {
+        setActiveFilters((prev) => ({ ...prev, industry: p.industry }));
       }
-      if (route.params.education) {
-        setSearchQuery(route.params.education);
+      if (p.location) {
+        setActiveFilters((prev) => ({ ...prev, midcZone: p.location }));
+      }
+      if (p.education && p.education !== searchQuery) {
+        setSearchQuery(p.education);
       }
     }
   }, [route?.params]);
@@ -381,10 +410,63 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     }, [loadJobsData])
   );
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    loadJobsData(false);
-  };
+    setLoading(true);
+    setSearchQuery('');
+    setSelectedCategory('All Jobs');
+    setActiveFilters(defaultFilters);
+    setVisibleCount(15);
+    if (navigation && typeof navigation.setParams === 'function') {
+      navigation.setParams({
+        keyword: undefined,
+        industry: undefined,
+        location: undefined,
+        education: undefined,
+      });
+    }
+
+    try {
+      const [allRes, savedRes] = await Promise.all([
+        candidateApi.getAllJobs(''),
+        candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
+      ]);
+
+      const rawData: any = allRes;
+      let realJobs: Job[] = [];
+
+      if (Array.isArray(rawData)) {
+        realJobs = rawData;
+      } else if (rawData && Array.isArray(rawData.data)) {
+        realJobs = rawData.data;
+      } else if (rawData && rawData.success && Array.isArray(rawData.jobs)) {
+        realJobs = rawData.jobs;
+      }
+
+      if (realJobs.length > 0) {
+        refreshOffsetRef.current = (refreshOffsetRef.current + 3) % realJobs.length;
+        const offset = refreshOffsetRef.current;
+        const rotatedJobs = [...realJobs.slice(offset), ...realJobs.slice(0, offset)];
+        setJobs(rotatedJobs);
+      } else {
+        setJobs(FALLBACK_JOBS);
+      }
+
+      const rawSaved: any = savedRes;
+      let savedList: any[] = [];
+      if (Array.isArray(rawSaved)) savedList = rawSaved;
+      else if (rawSaved && rawSaved.data && Array.isArray(rawSaved.data)) savedList = rawSaved.data;
+
+      const savedIds = savedList.map((j: any) => j.id || j.jobId || j.job_id).filter(Boolean);
+      setSavedJobIds(savedIds);
+    } catch (e) {
+      console.log('Error refreshing candidate jobs from backend:', e);
+      setJobs(FALLBACK_JOBS);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [navigation]);
 
   const handleToggleSave = useCallback((jobId: string) => {
     setSavedJobIds((prev) => {
@@ -512,7 +594,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           <Search size={18} color="#94A3B8" />
           <TextInput
             style={styles.inputSearchText}
-            placeholder="Search jobs, skills..."
+            placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -542,7 +624,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
         >
           {/* Jobs Stream Skeleton Loading */}
-          {loading && !refreshing ? (
+          {loading ? (
             <View style={{ marginTop: 4 }}>
               {[1, 2, 3, 4, 5, 6, 7, 8].map((key) => (
                 viewMode === 'list' ? (
@@ -622,14 +704,13 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                         navigation.navigate('CandidateJobDetail', { jobId: job.id });
                       }}
                     >
-                      {/* Left Real Database Company Logo */}
-                      <View style={styles.listLogoSquare}>
-                        <Image
-                          source={{ uri: logoUrl }}
-                          style={styles.listLogoImg}
-                          resizeMode="cover"
-                        />
-                      </View>
+                      {/* Left Company Logo Badge */}
+                      <CompanyLogoAvatar
+                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                        companyName={job.company}
+                        size={42}
+                        borderRadius={6}
+                      />
 
                       {/* Center Title & Location Stack */}
                       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -729,17 +810,12 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                     {/* Grid Card Bottom Company & Duration Footer Section */}
                     <View style={styles.naukriCardBottomSection}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-                        <View style={styles.naukriLogoSquare}>
-                          {logoUrl ? (
-                            <Image
-                              source={{ uri: logoUrl }}
-                              style={styles.naukriLogoImg}
-                              resizeMode="contain"
-                            />
-                          ) : (
-                            <Building2 size={20} color="#2563EB" />
-                          )}
-                        </View>
+                        <CompanyLogoAvatar
+                          logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                          companyName={job.company}
+                          size={38}
+                          borderRadius={6}
+                        />
 
                         <View style={{ flex: 1 }}>
                           <Text style={styles.naukriCompanyName} numberOfLines={1}>
@@ -758,6 +834,26 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Load Next Vacancies Pagination Action */}
+              {visibleCount < filteredJobs.length && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.loadMoreNextJobsBtn}
+                  onPress={() => {
+                    setLoadingMore(true);
+                    setTimeout(() => {
+                      setVisibleCount((prev) => Math.min(prev + 15, filteredJobs.length));
+                      setLoadingMore(false);
+                    }, 200);
+                  }}
+                >
+                  <Text style={styles.loadMoreNextJobsBtnText}>
+                    Load Next Vacancies ({visibleCount} of {filteredJobs.length} Shown)
+                  </Text>
+                  <ChevronRight size={16} color="#2563EB" />
+                </TouchableOpacity>
+              )}
 
               {/* Infinite Scroll Bottom Spinner */}
               {loadingMore && (
@@ -871,32 +967,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 95,
-    gap: 16,
+    paddingBottom: 130,
+    gap: 8,
     backgroundColor: '#FFFFFF',
   },
   topSearchPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#3B82F6',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     borderRadius: 24,
     overflow: 'hidden',
     paddingHorizontal: 16,
     height: 48,
     gap: 10,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   topSearchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 13.5,
     color: '#0F172A',
     fontWeight: '600',
+    textAlignVertical: 'center',
+    paddingVertical: 0,
+    margin: 0,
   },
   titleViewRow: {
     width: '100%',
@@ -1004,39 +1104,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 46,
     gap: 8,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1.5,
   },
   inputSearchText: {
     flex: 1,
+    height: '100%',
     fontSize: 13,
     color: '#0F172A',
     fontWeight: '600',
+    textAlignVertical: 'center',
+    paddingVertical: 0,
   },
   filtersBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
     paddingHorizontal: 14,
     height: 46,
     borderRadius: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1.5,
   },
   filtersBtnText: {
     fontSize: 13,
@@ -1050,7 +1157,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    marginBottom: 6,
+    marginBottom: 3,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -1102,7 +1209,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
     borderRadius: 8,
-    marginVertical: 6,
+    marginVertical: 3,
     overflow: 'hidden',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 3 },
@@ -1488,17 +1595,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2563EB',
   },
+  loadMoreNextJobsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#93C5FD',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginVertical: 10,
+  },
+  loadMoreNextJobsBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
   infiniteScrollContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    marginBottom: 24,
   },
   infiniteScrollText: {
-    fontSize: 12.5,
-    fontWeight: '700',
+    fontSize: 12,
     color: '#64748B',
+    fontWeight: '600',
   },
 });

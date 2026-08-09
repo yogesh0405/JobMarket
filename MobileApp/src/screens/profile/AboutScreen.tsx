@@ -36,21 +36,13 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Premium Gradient Hero Card */}
-        <LinearGradient
-          colors={['#1E3A8A', '#344BFD', '#2563EB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
-        >
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>JM</Text>
-          </View>
+        {/* Top White Title Header Card */}
+        <View style={styles.heroCard}>
           <Text style={styles.heroTitle}>About JobMarket</Text>
           <Text style={styles.heroSubtitle}>
             India's most trusted industrial and factory job marketplace, connecting skilled professionals with top manufacturing companies.
           </Text>
-        </LinearGradient>
+        </View>
 
         {/* 4 Statistics Cards Grid */}
         <View style={styles.statsGrid}>
@@ -196,45 +188,53 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl * 2,
   },
   heroCard: {
-    borderRadius: RADIUS.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     padding: SPACING.xl,
     alignItems: 'center',
     textAlign: 'center',
     marginBottom: SPACING.lg,
-    ...SHADOWS.md,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   heroBadge: {
     width: 52,
     height: 52,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.md,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: '#BFDBFE',
   },
   heroBadgeText: {
-    color: COLORS.textWhite,
+    color: '#2563EB',
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: 1,
   },
   heroTitle: {
-    ...TYPOGRAPHY.h1,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
-    color: COLORS.textWhite,
+    color: '#0F172A',
     marginBottom: SPACING.xs,
     textAlign: 'center',
   },
   heroSubtitle: {
-    ...TYPOGRAPHY.body,
-    fontSize: 13.5,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+    color: '#475569',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
     maxWidth: 320,
+    fontWeight: '500',
   },
   statsGrid: {
     flexDirection: 'row',

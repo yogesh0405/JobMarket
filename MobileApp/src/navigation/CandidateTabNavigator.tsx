@@ -5,20 +5,24 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Home, Search, Briefcase, LayoutDashboard, Bookmark, ClipboardCheck } from 'lucide-react-native';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { Home, Search, Bookmark, ClipboardCheck, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CandidateHomeScreen } from '../screens/candidate/CandidateHomeScreen';
-import { CandidateDashboardScreen } from '../screens/candidate/CandidateDashboardScreen';
 import { CandidateJobSearchScreen } from '../screens/candidate/CandidateJobSearchScreen';
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
+import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
 import { CandidateAppliedJobsScreen } from '../screens/candidate/CandidateAppliedJobsScreen';
 import { CandidateSavedJobsScreen } from '../screens/candidate/CandidateSavedJobsScreen';
+import { CandidateProfileScreen } from '../screens/candidate/CandidateProfileScreen';
+import { useAuth } from '../hooks/useAuth';
 
 const Tab = createBottomTabNavigator();
 const JobsStackNav = createNativeStackNavigator();
@@ -27,12 +31,29 @@ const CandidateJobsStackNavigator = () => (
   <JobsStackNav.Navigator screenOptions={{ headerShown: false }}>
     <JobsStackNav.Screen name="CandidateJobSearch" component={CandidateJobSearchScreen} />
     <JobsStackNav.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+    <JobsStackNav.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
   </JobsStackNav.Navigator>
 );
 
 const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) => {
+  const currentRoute = state.routes[state.index];
+  const focusedRouteName = getFocusedRouteNameFromRoute(currentRoute) || currentRoute.name;
+
+  if (
+    focusedRouteName === 'CandidateJobDetail' ||
+    focusedRouteName === 'CandidateApplyConfirm' ||
+    focusedRouteName === 'JobDetail' ||
+    focusedRouteName === 'JobDetails'
+  ) {
+    return null;
+  }
+
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  const avatarUri = user?.profilePictureUrl || (user as any)?.profile_picture_url;
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   const dockWidth = windowWidth;
   const dockHeight = 62 + Math.max(insets.bottom, 6);
@@ -106,10 +127,12 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
             } else if (route.name === 'CandidateSavedTab') {
               IconComponent = Bookmark;
               labelText = 'Saved';
-            } else if (route.name === 'CandidateDashboardTab') {
-              IconComponent = LayoutDashboard;
-              labelText = 'Dashboard';
+            } else if (route.name === 'CandidateProfileTab') {
+              IconComponent = User;
+              labelText = 'Profile';
             }
+
+            const isProfileTab = route.name === 'CandidateProfileTab';
 
             return (
               <TouchableOpacity
@@ -118,13 +141,28 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                 onPress={onPress}
                 style={styles.tabItem}
               >
-                <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                  <IconComponent
-                    size={20}
-                    color={isFocused ? '#FFFFFF' : '#0F172A'}
-                    strokeWidth={isFocused ? 2.5 : 2.2}
-                  />
-                </View>
+                {isProfileTab ? (
+                  <View style={[styles.avatarBox, isFocused && styles.avatarBoxActive]}>
+                    {avatarUri ? (
+                      <Image source={{ uri: avatarUri }} style={styles.avatarImg} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.initialsBg, isFocused && styles.initialsBgActive]}>
+                        <Text style={[styles.initialsText, isFocused && styles.initialsTextActive]}>
+                          {userInitial}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
+                    <IconComponent
+                      size={20}
+                      color={isFocused ? '#FFFFFF' : '#0F172A'}
+                      strokeWidth={isFocused ? 2.5 : 2.2}
+                    />
+                  </View>
+                )}
+
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
                 </Text>
@@ -149,7 +187,7 @@ export const CandidateTabNavigator: React.FC = () => {
       <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
       <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
       <Tab.Screen name="CandidateSavedTab" component={CandidateSavedJobsScreen} />
-      <Tab.Screen name="CandidateDashboardTab" component={CandidateDashboardScreen} />
+      <Tab.Screen name="CandidateProfileTab" component={CandidateProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -210,6 +248,49 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 4,
     elevation: 5,
+  },
+  avatarBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+  },
+  avatarBoxActive: {
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 17,
+  },
+  initialsBg: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialsBgActive: {
+    backgroundColor: '#2563EB',
+  },
+  initialsText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  initialsTextActive: {
+    color: '#FFFFFF',
   },
   tabLabelText: {
     fontSize: 10,

@@ -549,30 +549,6 @@ export const JobDetailPage: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={handleShare}
-                  style={{
-                    background: '#F8FAFC',
-                    border: '1px solid #CBD5E1',
-                    padding: '8px 14px',
-                    cursor: 'pointer',
-                    color: '#475569',
-                    borderRadius: '4px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                  </svg>
-                  Share
-                </button>
-
-                <button
                   onClick={handleWhatsAppShare}
                   style={{
                     background: '#E8FBF0',

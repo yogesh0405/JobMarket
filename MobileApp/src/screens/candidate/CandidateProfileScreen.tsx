@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -32,10 +32,22 @@ import {
   X,
   UploadCloud,
   ExternalLink,
+  LayoutDashboard,
+  Eye,
+  Bookmark,
+  ChevronRight,
+  AlertCircle,
+  Sparkles,
+  Building2,
+  IndianRupee,
+  ArrowRight,
+  Search,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
+import { jobsApi } from '../../api/jobsApi';
+import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -62,9 +74,10 @@ const SHIFTS = ['Day Shift', 'Night Shift', 'Rotational Shift'];
 
 interface Props {
   navigation: any;
+  route?: any;
 }
 
-export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
+export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const { user, updateUserProfile, refreshUser } = useAuth();
   const { showToast } = useToast();
 
@@ -102,6 +115,85 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [eduDegree, setEduDegree] = useState('');
   const [eduInstitution, setEduInstitution] = useState('');
   const [eduYear, setEduYear] = useState('');
+
+  // Tabbed Switcher State: PROFILE vs DASHBOARD
+  const [activeTab, setActiveTab] = useState<'PROFILE' | 'DASHBOARD'>(
+    route?.params?.initialTab === 'DASHBOARD' || route?.params?.tab === 'DASHBOARD' ? 'DASHBOARD' : 'PROFILE'
+  );
+  const [appliedJobs, setAppliedJobs] = useState<any[]>([]);
+  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+
+  useEffect(() => {
+    if (route?.params?.initialTab === 'DASHBOARD' || route?.params?.tab === 'DASHBOARD') {
+      setActiveTab('DASHBOARD');
+    }
+  }, [route?.params]);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoadingDashboard(true);
+      const [appliedRes, savedRes, jobsRes] = await Promise.all([
+        candidateApi.getAppliedJobs(),
+        candidateApi.getSavedJobs(),
+        candidateApi.getAllJobs(),
+      ]);
+      if (appliedRes.success && Array.isArray(appliedRes.data)) {
+        setAppliedJobs(appliedRes.data);
+      }
+      if (savedRes.success && Array.isArray(savedRes.data)) {
+        setSavedJobs(savedRes.data);
+      }
+      if (jobsRes.success && Array.isArray(jobsRes.data)) {
+        setRecommendedJobs(jobsRes.data.slice(0, 5));
+      }
+    } catch (e) {
+      console.log('Error loading dashboard stats:', e);
+    } finally {
+      setLoadingDashboard(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const renderStatusPill = (statusStr?: string) => {
+    const s = (statusStr || '').toUpperCase();
+    let bg = '#EFF6FF';
+    let border = '#BFDBFE';
+    let text = '#2563EB';
+    let label = 'APPLIED';
+
+    if (s.includes('SHORTLIST')) {
+      bg = '#DCFCE7';
+      border = '#86EFAC';
+      text = '#15803D';
+      label = 'SHORTLISTED';
+    } else if (s.includes('INTERVIEW')) {
+      bg = '#FEF3C7';
+      border = '#FDE68A';
+      text = '#B45309';
+      label = 'INTERVIEW SCHEDULED';
+    } else if (s.includes('HIRED') || s.includes('ACCEPTED')) {
+      bg = '#D1FAE5';
+      border = '#6EE7B7';
+      text = '#047857';
+      label = 'HIRED';
+    } else if (s.includes('REJECT')) {
+      bg = '#FEE2E2';
+      border = '#FCA5A5';
+      text = '#DC2626';
+      label = 'REJECTED';
+    }
+
+    return (
+      <View style={[styles.statusPillSmall, { backgroundColor: bg, borderColor: border }]}>
+        <Text style={[styles.statusPillSmallText, { color: text }]}>{label}</Text>
+      </View>
+    );
+  };
 
   useEffect(() => {
     if (user) {
@@ -440,15 +532,9 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header
-        title="Profile"
-        showBack={true}
-        onBack={() => {
-          if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
-            navigation.goBack();
-          } else if (navigation) {
-            navigation.navigate('CandidateMain');
-          }
-        }}
+        title={activeTab === 'DASHBOARD' ? 'Dashboard' : 'Profile & Account'}
+        subtitle="Industrial & Factory Workforce"
+        showBack={false}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -481,6 +567,34 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </View>
+
+        {/* Tabbed Menu Switcher Bar: Profile vs Dashboard */}
+        <View style={styles.tabBarContainer}>
+          <TouchableOpacity
+            style={[styles.tabSegmentBtn, activeTab === 'PROFILE' && styles.tabSegmentBtnActive]}
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('PROFILE')}
+          >
+            <UserIcon size={16} color={activeTab === 'PROFILE' ? '#FFFFFF' : '#475569'} />
+            <Text style={[styles.tabSegmentText, activeTab === 'PROFILE' && styles.tabSegmentTextActive]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabSegmentBtn, activeTab === 'DASHBOARD' && styles.tabSegmentBtnActive]}
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('DASHBOARD')}
+          >
+            <LayoutDashboard size={16} color={activeTab === 'DASHBOARD' ? '#FFFFFF' : '#475569'} />
+            <Text style={[styles.tabSegmentText, activeTab === 'DASHBOARD' && styles.tabSegmentTextActive]}>
+              Dashboard
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === 'PROFILE' ? (
+          <>
 
         {/* Profile Completeness Card with Progress Bar */}
         <View style={styles.card3D}>
@@ -791,7 +905,173 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           size="lg"
           style={{ marginBottom: 30 }}
         />
-      </ScrollView>
+      </>
+    ) : (
+      /* Dashboard Tab View */
+      <View style={{ gap: 14 }}>
+        {/* Stats Grid (4 Compact Perfectly Aligned 3D Cards) */}
+        <View style={styles.statsGrid}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.statCard}
+            onPress={() => navigation.navigate('CandidateAppliedTab')}
+          >
+            <View style={[styles.statIconBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+              <Briefcase size={16} color="#2563EB" />
+            </View>
+            <View style={styles.statTextStack}>
+              <Text style={styles.statNumber}>{appliedJobs.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Jobs Applied</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.statCard}
+            onPress={() => navigation.navigate('CandidateSavedTab')}
+          >
+            <View style={[styles.statIconBox, { backgroundColor: '#F3E8FF', borderColor: '#DDD6FE' }]}>
+              <Bookmark size={16} color="#8B5CF6" />
+            </View>
+            <View style={styles.statTextStack}>
+              <Text style={styles.statNumber}>{savedJobs.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Saved Jobs</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIconBox, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+              <Eye size={16} color="#10B981" />
+            </View>
+            <View style={styles.statTextStack}>
+              <Text style={styles.statNumber}>24</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Profile Views</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.statCard}
+            onPress={() => setActiveTab('PROFILE')}
+          >
+            <View style={[styles.statIconBox, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+              <Award size={16} color="#D97706" />
+            </View>
+            <View style={styles.statTextStack}>
+              <Text style={styles.statNumber}>{skills.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Skills & Trades</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Applications Card */}
+        <View style={styles.card3D}>
+          <View style={styles.cardHeaderRow}>
+            <Briefcase size={18} color="#0F172A" />
+            <Text style={styles.sectionTitle}>Recent Applications</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('CandidateAppliedTab')}
+            >
+              <Text style={styles.viewAllText}>View All ({appliedJobs.length})</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loadingDashboard ? (
+            <ActivityIndicator size="small" color="#2563EB" style={{ marginVertical: 12 }} />
+          ) : appliedJobs.length === 0 ? (
+            <View style={styles.emptyApplicationsBox}>
+              <Building2 size={32} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Job Applications Yet</Text>
+              <Text style={styles.emptyDesc}>
+                Start applying to industrial vacancies across MIDC zones.
+              </Text>
+              <TouchableOpacity
+                style={styles.searchJobsBtn}
+                onPress={() => navigation.navigate('CandidateJobsTab')}
+              >
+                <Search size={14} color="#FFFFFF" />
+                <Text style={styles.searchJobsBtnText}>Explore Vacancies</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.applicationsList}>
+              {appliedJobs.slice(0, 4).map((appItem, idx) => {
+                const job = appItem.job || appItem;
+                return (
+                  <TouchableOpacity
+                    key={appItem.id || idx}
+                    style={styles.applicationItemRow}
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('CandidateJobsTab', { screen: 'CandidateJobDetail', params: { jobId: job.id } })}
+                  >
+                    <View style={styles.companyIconSquare}>
+                      <Building2 size={18} color="#2563EB" />
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.appJobTitle} numberOfLines={1}>
+                        {job.title || 'Technical Role'}
+                      </Text>
+                      <Text style={styles.appCompanyText} numberOfLines={1}>
+                        {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC'}
+                      </Text>
+                    </View>
+
+                    {renderStatusPill(appItem.status)}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {/* Recommended Industrial Jobs Section */}
+        {recommendedJobs.length > 0 ? (
+          <View style={styles.card3D}>
+            <View style={styles.cardHeaderRow}>
+              <Sparkles size={18} color="#2563EB" />
+              <Text style={styles.sectionTitle}>Recommended Industrial Jobs</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('CandidateJobsTab')}
+              >
+                <Text style={styles.viewAllText}>Browse All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+              {recommendedJobs.map((recJob) => (
+                <TouchableOpacity
+                  key={recJob.id}
+                  activeOpacity={0.85}
+                  style={styles.recCardBox}
+                  onPress={() => navigation.navigate('CandidateJobsTab', { screen: 'CandidateJobDetail', params: { jobId: recJob.id } })}
+                >
+                  <Text style={styles.recTitleText} numberOfLines={1}>{recJob.title}</Text>
+                  <Text style={styles.recCompanyText} numberOfLines={1}>{recJob.company}</Text>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <MapPin size={11} color="#64748B" />
+                    <Text style={{ fontSize: 11, color: '#64748B' }}>{recJob.location}</Text>
+                  </View>
+
+                  <View style={styles.recCardFooter}>
+                    <Text style={styles.recSalaryText}>
+                      ₹{(recJob.salary_max || (recJob as any).salaryMax || 25000).toLocaleString()}/mo
+                    </Text>
+                    <View style={styles.arrowIconPill}>
+                      <ArrowRight size={12} color="#2563EB" />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+      </View>
+    )}
+  </ScrollView>
 
       {/* Experience Modal */}
       <Modal visible={expModalOpen} transparent animationType="slide" onRequestClose={() => setExpModalOpen(false)}>
@@ -845,7 +1125,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 95,
+    paddingBottom: 130,
     gap: 16,
   },
   completenessHeaderRow: {
@@ -1150,5 +1430,204 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     color: '#0F172A',
+  },
+  tabBarContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    padding: 3,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    marginVertical: 4,
+  },
+  tabSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 6,
+  },
+  tabSegmentBtnActive: {
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabSegmentText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  tabSegmentTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statCard: {
+    width: '48.8%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statTextStack: {
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 15.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  statLabel: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  emptyApplicationsBox: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptyDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  searchJobsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  searchJobsBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  applicationsList: {
+    gap: 8,
+  },
+  applicationItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 10,
+  },
+  companyIconSquare: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appJobTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  appCompanyText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  statusPillSmall: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  statusPillSmallText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+  },
+  recCardBox: {
+    width: 170,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+  },
+  recTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  recCompanyText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  recCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  recSalaryText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  arrowIconPill: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

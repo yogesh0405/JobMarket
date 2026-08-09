@@ -165,8 +165,8 @@ export const Header: React.FC<HeaderProps> = ({
           <View style={styles.titleContainer}>
             <View style={styles.brandHeaderLeft}>
               {!isBackAvailable ? (
-                <View style={{ marginRight: 6 }}>
-                  <JobMarketLogoSvg size={36} />
+                <View style={{ marginRight: 8 }}>
+                  <JobMarketLogoSvg size={34} />
                 </View>
               ) : null}
               <View style={{ flex: 1 }}>
@@ -318,7 +318,10 @@ export const Header: React.FC<HeaderProps> = ({
                     onPress={() => {
                       closeDrawer(() => {
                         if (navigation && typeof navigation.navigate === 'function') {
-                          navigation.navigate('CandidateMain', { screen: 'CandidateDashboardTab' });
+                          navigation.navigate('CandidateMain', {
+                            screen: 'CandidateProfileTab',
+                            params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
+                          });
                         }
                       });
                     }}
@@ -495,21 +498,34 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
+    paddingBottom: 6,
+    paddingHorizontal: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 40,
+    minHeight: 36,
   },
   backButton: {
     marginRight: SPACING.sm,
-    padding: SPACING.xs,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderBottomWidth: 2,
+    borderBottomColor: '#94A3B8',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -519,7 +535,7 @@ const styles = StyleSheet.create({
   brandHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
   headerLogoBadge: {
     width: 36,
@@ -538,34 +554,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '900',
     fontSize: 15,
-    letterSpacing: -0.5,
   },
   title: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 19,
-    fontWeight: '700',
-    color: COLORS.slate900,
+    fontSize: 17.5,
+    fontWeight: '800',
+    color: '#0F172A',
     letterSpacing: -0.2,
   },
   subtitle: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 12,
-    color: COLORS.slate500,
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: '#64748B',
     marginTop: 1,
   },
   rightSlot: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs + 2,
-    marginLeft: SPACING.sm,
+    gap: 12,
+    marginLeft: 12,
   },
   bellButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: COLORS.slate50,
-    borderWidth: 1,
-    borderColor: COLORS.slate200,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -590,9 +599,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   menuButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

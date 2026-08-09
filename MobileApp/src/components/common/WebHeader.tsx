@@ -38,6 +38,7 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NotificationModal } from './NotificationModal';
+import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface WebHeaderProps {
@@ -190,7 +191,7 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
             ) : null}
 
             <View style={styles.logoBadge}>
-              <Text style={styles.logoText}>JM</Text>
+              <JobMarketLogoSvg size={34} />
             </View>
             <View style={styles.brandTitleBox}>
               <Text style={styles.brandName}>JobMarket</Text>
@@ -495,13 +496,15 @@ const styles = StyleSheet.create({
   logoBadge: {
     width: 40,
     height: 40,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.primary,
+    shadowColor: '#032B69',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -516,18 +519,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandName: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 20,
+    fontSize: 17.5,
     fontWeight: '800',
-    color: COLORS.primary,
-    lineHeight: 24,
-    letterSpacing: -0.3,
+    color: '#0F172A',
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
   brandSubtitle: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    color: COLORS.slate500,
-    fontWeight: '600',
+    fontSize: 13.5,
+    color: '#64748B',
+    fontWeight: '500',
     marginTop: 1,
   },
   rightActions: {

@@ -1,5 +1,6 @@
 import { getAccessToken, getRefreshToken, getSessionId, saveTokens, clearAuthSession } from '../utils/secureStorage';
-// API BASE URL CONFIGURATION WITH AUTOMATIC FALLBACK
+
+// LIVE PRODUCTION RENDER BACKEND API URL
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || 'https://jobmarket-ongn.onrender.com';
 
@@ -25,6 +26,7 @@ const processQueue = (error: any, token: string | null = null) => {
 const isAuthEndpoint = (endpoint: string): boolean => {
   return (
     endpoint.includes('/auth/login') ||
+    endpoint.includes('/auth/google') ||
     endpoint.includes('/auth/signup') ||
     endpoint.includes('/auth/verify-otp') ||
     endpoint.includes('/auth/refresh') ||
@@ -34,9 +36,10 @@ const isAuthEndpoint = (endpoint: string): boolean => {
 };
 
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+  
   const token = await getAccessToken();
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -65,7 +68,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
           throw new Error('Session expired');
         }
 
-        const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+        const refreshRes = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken, sessionId }),
@@ -132,7 +135,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
       if (!response.ok) {
         throw new Error(`Server status ${response.status}: Render backend warming up or temporary error.`);
       }
-      throw new Error('Server returned invalid JSON format.');
+      throw new Error('Server returned non-JSON response.');
     }
   }
 

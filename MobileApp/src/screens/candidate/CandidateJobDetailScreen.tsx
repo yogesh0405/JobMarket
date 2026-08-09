@@ -43,10 +43,12 @@ import {
 import { jobsApi } from '../../api/jobsApi';
 import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 
 interface Props {
@@ -59,6 +61,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const passedJob = route.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const [job, setJob] = useState<Job | null>(passedJob || null);
   const [loading, setLoading] = useState(!passedJob);
@@ -286,17 +289,12 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         <View style={styles.card3D}>
           <View style={styles.bannerTopRow}>
             {/* Left Company Logo */}
-            <View style={styles.companyIconSquare}>
-              {logoUrl ? (
-                <Image
-                  source={{ uri: logoUrl }}
-                  style={styles.companyLogoImg}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Building2 size={24} color="#2563EB" />
-              )}
-            </View>
+            <CompanyLogoAvatar
+              logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+              companyName={job.company}
+              size={46}
+              borderRadius={8}
+            />
 
             {/* Center Title & Company Stack */}
             <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
@@ -468,15 +466,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       </ScrollView>
 
       {/* Bottom Sticky Action Bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.bottomShareBtn}
-          onPress={handleShareJob}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Share2 size={20} color="#2563EB" />
-        </TouchableOpacity>
-
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
         {hasApplied ? (
           <View style={styles.appliedBanner}>
             <CheckCircle2 size={18} color="#15803D" />
@@ -486,283 +476,20 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           <TouchableOpacity
             activeOpacity={0.85}
             style={styles.applyNowBtn}
-            onPress={() => setApplyModalOpen(true)}
+            onPress={() => {
+              if (job) {
+                navigation.navigate('CandidateApplyConfirm', {
+                  job,
+                  onAppliedSuccess: () => setHasApplied(true),
+                });
+              }
+            }}
           >
             <Send size={16} color="#FFFFFF" />
             <Text style={styles.applyNowBtnText}>Apply now</Text>
           </TouchableOpacity>
         )}
       </View>
-
-      {/* Submit Application Confirmation Sheet Modal */}
-      <Modal visible={applyModalOpen} transparent animationType="slide" onRequestClose={() => setApplyModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheetContainer}>
-            <View style={styles.modalHeaderRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-                <View style={styles.headerIconSquare}>
-                  <ShieldCheck size={20} color="#2563EB" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.modalTitle}>Confirm Job Application</Text>
-                  <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600', marginTop: 1 }}>
-                    Review candidate specs before submitting to {job?.company || 'Employer'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setApplyModalOpen(false)}>
-                <X size={20} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {/* Missing Profile Alert Card */}
-              {missingSections.length > 0 && (
-                <View style={styles.incompleteAlertCard}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, flex: 1 }}>
-                    <AlertTriangle size={18} color="#D97706" style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.incompleteAlertTitle}>
-                        Incomplete Profile ({missingSections.length} Missing)
-                      </Text>
-                      <Text style={styles.incompleteAlertDesc}>
-                        Missing: {missingSections.join(', ')}. Complete profile for 5x response rate!
-                      </Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.editProfileSmallBtn}
-                    onPress={() => {
-                      setApplyModalOpen(false);
-                      navigation.navigate('CandidateProfile');
-                    }}
-                  >
-                    <Text style={styles.editProfileSmallBtnText}>Edit Profile</Text>
-                    <ArrowRight size={12} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Target Job Summary Box */}
-              <View style={styles.targetJobSummaryCard}>
-                <Text style={styles.applyingForLabel}>TARGET POSITION:</Text>
-                <Text style={styles.applyingForTitle}>{job?.title}</Text>
-                <Text style={styles.applyingForCompany}>
-                  {job?.company || 'Industrial Manufacturer'} • {job?.location || 'MIDC Zone'}
-                </Text>
-              </View>
-
-              {/* Candidate Profile Application Specs Card */}
-              <View style={styles.candidateBioCard}>
-                <View style={styles.specsHeaderRow}>
-                  <User size={14} color="#2563EB" />
-                  <Text style={styles.bioSectionHeaderTitle}>CANDIDATE APPLICATION SPECS</Text>
-                  <Text style={{ fontSize: 10.5, color: '#64748B', fontWeight: '600', marginLeft: 'auto' }}>
-                    Sent to employer
-                  </Text>
-                </View>
-
-                <View style={styles.specsGrid}>
-                  {/* 1. Full Name */}
-                  <View style={styles.specBox}>
-                    <View style={styles.specBoxLabelRow}>
-                      <User size={11} color="#2563EB" />
-                      <Text style={styles.specBoxLabel}>FULL NAME</Text>
-                    </View>
-                    <Text style={styles.specBoxValue}>{user?.name || '⚠️ Not Provided'}</Text>
-                  </View>
-
-                  {/* 2. Email Address */}
-                  <View style={styles.specBox}>
-                    <View style={styles.specBoxLabelRow}>
-                      <Mail size={11} color="#0284C7" />
-                      <Text style={styles.specBoxLabel}>EMAIL ADDRESS</Text>
-                    </View>
-                    <Text style={styles.specBoxValue}>{user?.email || '⚠️ Not Provided'}</Text>
-                  </View>
-
-                  {/* 3. Phone Number */}
-                  <View style={[styles.specBox, !user?.phone && styles.specBoxMissing]}>
-                    <View style={styles.specBoxLabelRow}>
-                      <Phone size={11} color={user?.phone ? '#16A34A' : '#E11D48'} />
-                      <Text style={[styles.specBoxLabel, !user?.phone && { color: '#E11D48' }]}>PHONE NUMBER</Text>
-                    </View>
-                    <Text style={[styles.specBoxValue, !user?.phone && { color: '#E11D48' }]}>
-                      {user?.phone || '⚠️ Not Provided'}
-                    </Text>
-                  </View>
-
-                  {/* 4. Location */}
-                  <View style={[styles.specBox, !user?.location && styles.specBoxMissing]}>
-                    <View style={styles.specBoxLabelRow}>
-                      <MapPin size={11} color={user?.location ? '#E11D48' : '#E11D48'} />
-                      <Text style={[styles.specBoxLabel, !user?.location && { color: '#E11D48' }]}>LOCATION</Text>
-                    </View>
-                    <Text style={[styles.specBoxValue, !user?.location && { color: '#E11D48' }]}>
-                      {user?.location || '⚠️ Not Provided'}
-                    </Text>
-                  </View>
-
-                  {/* 5. Primary Trade */}
-                  <View style={[styles.specBox, (!user?.tradeSpecialization && !user?.trade_specialization && !user?.headline) && styles.specBoxMissing]}>
-                    <View style={styles.specBoxLabelRow}>
-                      <Wrench size={11} color="#2563EB" />
-                      <Text style={[styles.specBoxLabel, (!user?.tradeSpecialization && !user?.trade_specialization && !user?.headline) && { color: '#E11D48' }]}>PRIMARY TRADE</Text>
-                    </View>
-                    <Text style={[styles.specBoxValue, (!user?.tradeSpecialization && !user?.trade_specialization && !user?.headline) && { color: '#E11D48' }]}>
-                      {user?.tradeSpecialization || user?.trade_specialization || user?.headline || '⚠️ Not Provided'}
-                    </Text>
-                  </View>
-
-                  {/* 6. Preferred Shift */}
-                  <View style={[styles.specBox, (!user?.preferredShift && !user?.preferred_shift) && styles.specBoxMissing]}>
-                    <View style={styles.specBoxLabelRow}>
-                      <Clock size={11} color="#D97706" />
-                      <Text style={[styles.specBoxLabel, (!user?.preferredShift && !user?.preferred_shift) && { color: '#E11D48' }]}>PREFERRED SHIFT</Text>
-                    </View>
-                    <Text style={[styles.specBoxValue, (!user?.preferredShift && !user?.preferred_shift) && { color: '#E11D48' }]}>
-                      {user?.preferredShift || user?.preferred_shift || '⚠️ Not Provided'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 7. Skills & Expertise */}
-                <View style={[styles.specSectionBlock, skillsList.length < 5 && styles.specSectionBlockWarning]}>
-                  <View style={styles.specSectionHeaderRow}>
-                    <View style={styles.specBoxLabelRow}>
-                      <Award size={12} color="#2563EB" />
-                      <Text style={styles.specSectionTitle}>SKILLS & EXPERTISE</Text>
-                    </View>
-                    <View style={[styles.skillsCountBadge, skillsList.length >= 5 ? styles.skillsBadgeSuccess : styles.skillsBadgeWarning]}>
-                      <Text style={[styles.skillsCountBadgeText, skillsList.length >= 5 ? { color: '#15803D' } : { color: '#B45309' }]}>
-                        {skillsList.length}/5 Skills Added
-                      </Text>
-                    </View>
-                  </View>
-                  {skillsList.length > 0 ? (
-                    <View style={styles.skillsChipContainer}>
-                      {skillsList.map((skill, idx) => (
-                        <View key={idx} style={styles.specSkillChip}>
-                          <Text style={styles.specSkillChipText}>{skill}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.missingWarningText}>⚠️ Not Provided — No skills added yet (Minimum 5 required)</Text>
-                  )}
-                </View>
-
-                {/* 8. Work Experience History */}
-                <View style={[styles.specSectionBlock, expList.length === 0 && styles.specSectionBlockMissing]}>
-                  <View style={styles.specBoxLabelRow}>
-                    <Briefcase size={12} color="#0284C7" />
-                    <Text style={styles.specSectionTitle}>WORK EXPERIENCE HISTORY</Text>
-                  </View>
-                  {expList.length > 0 ? (
-                    <View style={{ gap: 6, marginTop: 4 }}>
-                      {expList.map((exp: any, idx: number) => (
-                        <View key={idx} style={styles.expEntryItem}>
-                          <Text style={styles.expEntryTitle}>
-                            {exp.title} {exp.company ? `at ${exp.company}` : ''}
-                          </Text>
-                          <Text style={styles.expEntrySubtitle}>
-                            {exp.duration || exp.years || '1 Year'} {exp.description ? `• ${exp.description}` : ''}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.missingErrorText}>⚠️ Not Provided — No work experience entries added</Text>
-                  )}
-                </View>
-
-                {/* 9. Education History */}
-                <View style={[styles.specSectionBlock, eduList.length === 0 && styles.specSectionBlockMissing]}>
-                  <View style={styles.specBoxLabelRow}>
-                    <GraduationCap size={12} color="#16A34A" />
-                    <Text style={styles.specSectionTitle}>EDUCATION HISTORY</Text>
-                  </View>
-                  {eduList.length > 0 ? (
-                    <View style={{ gap: 6, marginTop: 4 }}>
-                      {eduList.map((edu: any, idx: number) => (
-                        <View key={idx} style={styles.eduEntryItem}>
-                          <Text style={styles.eduEntryTitle}>
-                            {edu.degree} {edu.institution ? `— ${edu.institution}` : ''}
-                          </Text>
-                          <Text style={styles.eduEntrySubtitle}>Passing Year: {edu.year || 'N/A'}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.missingErrorText}>⚠️ Not Provided — No education details added</Text>
-                  )}
-                </View>
-              </View>
-
-              {/* 10. Attached Resume Document Card */}
-              <View style={[styles.resumeInfoBox, !hasResume && styles.resumeInfoBoxMissing]}>
-                <FileText size={20} color={hasResume ? '#2563EB' : '#E11D48'} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.resumeInfoTitle, !hasResume && { color: '#E11D48' }]}>
-                    {hasResume ? (user?.resumeName || 'Candidate Resume Attachment') : '⚠️ Not Provided — No Resume Uploaded'}
-                  </Text>
-                  <Text style={styles.resumeInfoDesc} numberOfLines={1}>
-                    {hasResume ? 'Document attached & sent to employer' : 'Upload your resume in profile before applying'}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.manageResumeBtn}
-                  onPress={() => {
-                    setApplyModalOpen(false);
-                    navigation.navigate('CandidateResume');
-                  }}
-                >
-                  <Text style={styles.manageResumeBtnText}>{hasResume ? 'Attached' : 'Upload'}</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Expected Monthly Salary Input */}
-              <Text style={styles.coverNoteLabel}>Expected Monthly Salary (₹):</Text>
-              <TextInput
-                style={styles.salaryInput}
-                keyboardType="number-pad"
-                placeholder="e.g. 25000"
-                placeholderTextColor="#94A3B8"
-                value={expectedSalary}
-                onChangeText={setExpectedSalary}
-              />
-
-              {/* Cover Note Input */}
-              <Text style={styles.coverNoteLabel}>Note / Message for Employer (Optional):</Text>
-              <TextInput
-                style={styles.coverNoteInput}
-                multiline
-                numberOfLines={3}
-                placeholder="e.g. I have 2 years VMC setting experience and can join immediately..."
-                placeholderTextColor="#94A3B8"
-                value={coverNote}
-                onChangeText={setCoverNote}
-              />
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.confirmSubmitBtn}
-                onPress={handleApplySubmit}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Send size={16} color="#FFFFFF" />
-                    <Text style={styles.confirmSubmitBtnText}>Confirm & Submit Application</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -774,7 +501,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 175,
+    paddingBottom: 120,
     gap: 16,
   },
   card3D: {
@@ -823,15 +550,14 @@ const styles = StyleSheet.create({
   },
   midcText: {
     fontSize: 11.5,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2563EB',
     marginTop: 2,
   },
   topRightActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 1,
+    gap: 6,
   },
   skillsGrid: {
     flexDirection: 'row',
@@ -947,22 +673,23 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 72,
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 8,
+    paddingBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 999,
     elevation: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -3 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 8,
   },
   shareBtnTop: {
     padding: 4,
@@ -1032,9 +759,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    paddingTop: 16,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#CBD5E1',
+    maxHeight: '85%',
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1053,6 +782,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   modalBody: {
+    flex: 1,
     paddingTop: 14,
   },
   targetJobSummaryCard: {
@@ -1376,6 +1106,14 @@ const styles = StyleSheet.create({
     minHeight: 65,
     textAlignVertical: 'top',
   },
+  modalFooter: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
   confirmSubmitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1384,8 +1122,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     paddingVertical: 13,
     borderRadius: 8,
-    marginTop: 12,
-    marginBottom: 40,
   },
   confirmSubmitBtnText: {
     color: '#FFFFFF',

@@ -18,6 +18,8 @@ import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerJobsListScreen } from '../screens/jobs/EmployerJobsListScreen';
 import { EmployerDashboardScreen } from '../screens/dashboard/EmployerDashboardScreen';
+import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
+import { CompanyLogoAvatar } from '../components/common/CompanyLogoAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { COLORS } from '../constants/theme';
 
@@ -115,8 +117,10 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
               labelText = 'Manage Jobs';
             } else if (route.name === 'ProfileTab') {
               IconComponent = Building2;
-              labelText = 'Dashboard';
+              labelText = 'Company';
             }
+
+            const isProfileTab = route.name === 'ProfileTab';
 
             return (
               <TouchableOpacity
@@ -126,11 +130,20 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                 style={styles.tabItem}
               >
                 <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                  <IconComponent
-                    size={20}
-                    color={isFocused ? '#FFFFFF' : '#0F172A'}
-                    strokeWidth={isFocused ? 2.5 : 2.2}
-                  />
+                  {isProfileTab ? (
+                    <CompanyLogoAvatar
+                      logoUrl={(user as any)?.companyLogoUrl || user?.company_logo || user?.profile_picture_url}
+                      companyName={user?.companyName || user?.company_name || user?.name}
+                      size={24}
+                      borderRadius={12}
+                    />
+                  ) : (
+                    <IconComponent
+                      size={20}
+                      color={isFocused ? '#FFFFFF' : '#0F172A'}
+                      strokeWidth={isFocused ? 2.5 : 2.2}
+                    />
+                  )}
                 </View>
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
@@ -156,7 +169,7 @@ export const EmployerTabNavigator: React.FC = () => {
       <Tab.Screen name="ApplicantsTab" component={DefaultApplicantsScreen} />
       <Tab.Screen name="PostTab" component={JobPostScreen} />
       <Tab.Screen name="ManageJobsTab" component={EmployerJobsListScreen} />
-      <Tab.Screen name="ProfileTab" component={EmployerDashboardScreen} />
+      <Tab.Screen name="ProfileTab" component={CompanyProfileScreen} />
     </Tab.Navigator>
   );
 };

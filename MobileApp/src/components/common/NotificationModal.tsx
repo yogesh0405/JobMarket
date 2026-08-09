@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  PanResponder,
   Animated,
+  Dimensions,
 } from 'react-native';
 import {
   Bell,
@@ -20,11 +22,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   HelpCircle,
-  Clock,
-  ExternalLink,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react-native';
 import { AppNotification } from '../../api/notificationApi';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const COLLAPSED_HEIGHT = Math.min(SCREEN_HEIGHT * 0.70, 560);
+const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.94;
 
 interface Props {
   visible: boolean;
@@ -68,6 +74,60 @@ export const NotificationModal: React.FC<Props> = ({
   onNavigateItem,
 }) => {
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const animatedHeight = useRef(new Animated.Value(COLLAPSED_HEIGHT)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setIsExpanded(false);
+      animatedHeight.setValue(COLLAPSED_HEIGHT);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    Animated.spring(animatedHeight, {
+      toValue: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+      useNativeDriver: false,
+      friction: 8,
+      tension: 40,
+    }).start();
+  }, [isExpanded]);
+
+  // Real-time Finger Drag PanResponder
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 3,
+      onPanResponderMove: (_, gestureState) => {
+        const currentBase = isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT;
+        const newHeight = currentBase - gestureState.dy;
+        if (newHeight >= 280 && newHeight <= EXPANDED_HEIGHT + 30) {
+          animatedHeight.setValue(newHeight);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy < -30) {
+          // Dragged finger UP -> Expand fully
+          setIsExpanded(true);
+        } else if (gestureState.dy > 60) {
+          // Dragged finger DOWN -> Collapse or Close
+          if (isExpanded) {
+            setIsExpanded(false);
+          } else {
+            onClose();
+          }
+        } else {
+          // Snap back smoothly
+          Animated.spring(animatedHeight, {
+            toValue: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+            useNativeDriver: false,
+            friction: 8,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const displayedList = notifications.filter((n) => {
     if (filter === 'UNREAD') {
@@ -98,9 +158,11 @@ export const NotificationModal: React.FC<Props> = ({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
 
-        <View style={styles.sheetContainer}>
-          {/* Top Notch Indicator */}
-          <View style={styles.handleBar} />
+        <Animated.View style={[styles.sheetContainer, { height: animatedHeight }]}>
+          {/* Real-Time Touch & Finger Drag Handle Header Bar */}
+          <View {...panResponder.panHandlers} style={styles.handleBarTouchArea}>
+            <View style={styles.handleBar} />
+          </View>
 
           {/* Header Row */}
           <View style={styles.headerRow}>
@@ -114,9 +176,23 @@ export const NotificationModal: React.FC<Props> = ({
               ) : null}
             </View>
 
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <X size={20} color="#64748B" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity
+                style={styles.expandBtn}
+                onPress={() => setIsExpanded((prev) => !prev)}
+                activeOpacity={0.7}
+              >
+                {isExpanded ? (
+                  <ChevronDown size={18} color="#64748B" />
+                ) : (
+                  <ChevronUp size={18} color="#2563EB" />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Filter Bar & Bulk Actions */}
@@ -179,7 +255,7 @@ export const NotificationModal: React.FC<Props> = ({
           ) : (
             <ScrollView
               style={styles.scrollList}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{ paddingBottom: 30 }}
               showsVerticalScrollIndicator={false}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
             >
@@ -225,7 +301,7 @@ export const NotificationModal: React.FC<Props> = ({
               })}
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -244,26 +320,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
-    minHeight: 420,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  handleBarTouchArea: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FAFAFA',
+    marginHorizontal: -16,
+    marginTop: -6,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
   handleBar: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#CBD5E1',
-    alignSelf: 'center',
-    marginBottom: 12,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#94A3B8',
+    marginBottom: 4,
+  },
+  swipeHintText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#64748B',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -290,6 +380,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
+  expandBtn: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
   closeBtn: {
     padding: 6,
     borderRadius: 16,
@@ -305,19 +402,17 @@ const styles = StyleSheet.create({
   },
   filterPills: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   filterPill: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
   },
   filterPillActive: {
     backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
   },
   filterPillText: {
     fontSize: 11.5,
@@ -326,10 +421,12 @@ const styles = StyleSheet.create({
   },
   filterPillTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   bulkActionsRow: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    gap: 12,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -353,9 +450,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyBox: {
-    paddingVertical: 45,
+    paddingVertical: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
   },
   emptyIconCircle: {
     width: 60,
@@ -364,13 +462,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '900',
     color: '#0F172A',
-    marginBottom: 4,
   },
   emptyDesc: {
     fontSize: 12.5,
@@ -379,33 +476,32 @@ const styles = StyleSheet.create({
   },
   scrollList: {
     flex: 1,
-    marginTop: 8,
+    paddingTop: 8,
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderRadius: 10,
     padding: 12,
     marginBottom: 8,
     gap: 10,
   },
   itemCardUnread: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#BFDBFE',
-    borderLeftWidth: 3.5,
-    borderLeftColor: '#2563EB',
+    backgroundColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
   },
   itemIconSquircle: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
   itemContent: {
     flex: 1,
@@ -414,10 +510,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   itemTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#334155',
     flex: 1,
@@ -429,16 +525,15 @@ const styles = StyleSheet.create({
   },
   itemTime: {
     fontSize: 10.5,
-    fontWeight: '600',
     color: '#94A3B8',
+    fontWeight: '600',
   },
   itemMessage: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#475569',
     lineHeight: 16,
   },
   itemDeleteBtn: {
     padding: 4,
-    marginTop: 2,
   },
 });
