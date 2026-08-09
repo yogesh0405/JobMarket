@@ -31,7 +31,9 @@ import {
   Briefcase,
   Calendar,
   Layers,
+  UploadCloud,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Header } from '../../components/common/Header';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
@@ -138,6 +140,30 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
     setEndDate(new Date(banner.end_date).toISOString().slice(0, 10));
 
     setModalVisible(true);
+  };
+
+  const handlePickImage = async () => {
+    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permResult.granted) {
+      Alert.alert('Permission Required', 'Permission to access gallery is required to select a banner image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images',
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const base64Data = asset.base64
+        ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
+        : asset.uri;
+      setBannerImage(base64Data);
+    }
   };
 
   const handleSubmit = async () => {
@@ -506,8 +532,20 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 </>
               ) : null}
 
-              {/* Banner Image URL */}
-              <Text style={styles.inputLabel}>Banner Image URL (JPEG / PNG / WebP)</Text>
+              {/* Banner Image Upload & Picker */}
+              <Text style={styles.inputLabel}>Banner Image *</Text>
+              <TouchableOpacity
+                style={styles.imagePickerBtn}
+                activeOpacity={0.8}
+                onPress={handlePickImage}
+              >
+                <UploadCloud size={20} color="#2563EB" />
+                <Text style={styles.imagePickerBtnText}>
+                  {bannerImage ? 'Change Image from Photos / Gallery' : 'Select Banner Image from Photos'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.inputLabel, { marginTop: 6 }]}>Or Enter Direct Image URL (Optional)</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="https://images.unsplash.com/..."
@@ -940,6 +978,25 @@ const styles = StyleSheet.create({
   typeChipActive: {
     backgroundColor: '#EFF6FF',
     borderColor: '#2563EB',
+  },
+  imagePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#93C5FD',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+  },
+  imagePickerBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#2563EB',
   },
   typeChipText: {
     fontSize: 11.5,

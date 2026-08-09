@@ -38,6 +38,7 @@ import {
   PieChart,
   Zap,
   Calendar,
+  Sparkles,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
@@ -351,7 +352,20 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <BarChart3 size={15} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
               </View>
               <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
-                Dashboard & Analytics
+                Analytics
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('EmployerBanners')}
+              style={[styles.tabBtn, styles.tabBtnInactive, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+            >
+              <View style={[styles.tabIconSquircle, { backgroundColor: '#DBEAFE' }]}>
+                <Sparkles size={15} color="#2563EB" />
+              </View>
+              <Text style={[styles.tabBtnText, { color: '#2563EB', fontWeight: '800' }]}>
+                Banners ✨
               </Text>
             </TouchableOpacity>
           </View>
