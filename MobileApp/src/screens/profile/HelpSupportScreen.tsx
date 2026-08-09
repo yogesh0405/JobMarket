@@ -25,6 +25,7 @@ import {
   FileText,
   ShieldCheck,
   Zap,
+  User,
 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
@@ -201,110 +202,99 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Top White Title Header Card */}
-        <View style={styles.heroBanner}>
-          <View style={styles.heroHeaderRow}>
-            <View style={styles.heroIconBox}>
-              <Headphones size={20} color="#2563EB" />
+        {/* CARD 1: FAQ KNOWLEDGE BASE & SEARCH */}
+        <Text style={styles.groupHeaderLabel}>FAQ KNOWLEDGE BASE</Text>
+        <View style={styles.singleMasterCard}>
+          {/* Hero Banner Header & Search */}
+          <View style={styles.heroHeaderSection}>
+            <View style={styles.heroHeaderRow}>
+              <View style={styles.heroIconBox}>
+                <Headphones size={20} color="#2563EB" />
+              </View>
+              <Text style={styles.heroTitle}>Help & Support Desk</Text>
             </View>
-            <Text style={styles.heroTitle}>Help & Support Desk</Text>
-          </View>
 
-          <Text style={styles.heroSubtitle}>
-            Search our FAQ knowledge base or submit a support ticket to connect directly with our industrial technical team.
-          </Text>
+            <Text style={styles.heroSubtitle}>
+              Search our FAQ knowledge base or submit a support ticket to connect directly with our engineering team.
+            </Text>
 
-          {/* FAQ Search Bar */}
-          <View style={styles.searchBarContainer}>
-            <Search size={18} color="#94A3B8" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search FAQs, topics, platform policies..."
-              placeholderTextColor="#94A3B8"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        </View>
-
-        {/* SECTION 1: FAQ KNOWLEDGE BASE */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleBox}>
-            <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-              <HelpCircle size={20} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-              <Text style={styles.sectionSubtitle}>Quick answers to common questions about JobMarket</Text>
+            {/* FAQ Search Bar */}
+            <View style={styles.searchBarContainer}>
+              <Search size={18} color="#94A3B8" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search FAQs, topics, platform policies..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
             </View>
           </View>
 
-          {/* Category Filter Pills */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
-            {['All', 'Account', 'Job Posting', 'Applications', 'Technical'].map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                onPress={() => setActiveFAQCategory(cat)}
-                style={[styles.categoryPill, activeFAQCategory === cat && styles.categoryPillActive]}
-              >
-                <Text style={[styles.categoryPillText, activeFAQCategory === cat && styles.categoryPillTextActive]}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View style={styles.sectionDivider} />
 
-          {/* Accordion FAQ Items */}
-          <View style={styles.faqList}>
-            {filteredFAQs.length === 0 ? (
-              <Text style={styles.noFaqText}>No matching FAQ articles found for "{searchQuery}".</Text>
-            ) : (
-              filteredFAQs.map((item, idx) => {
-                const isExpanded = expandedFAQIndex === idx;
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    activeOpacity={0.8}
-                    onPress={() => setExpandedFAQIndex(isExpanded ? null : idx)}
-                    style={[styles.faqItemCard, isExpanded && styles.faqItemCardExpanded]}
-                  >
-                    <View style={styles.faqHeaderRow}>
-                      <View style={styles.faqQuestionBox}>
-                        <View style={styles.faqBlueDot} />
-                        <Text style={styles.faqQuestionText}>{item.question}</Text>
+          {/* SECTION 1: FAQ ACCORDION LIST */}
+          <View>
+            {/* Category Filter Pills */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+              {['All', 'Account', 'Job Posting', 'Applications', 'Technical'].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => setActiveFAQCategory(cat)}
+                  style={[styles.categoryPill, activeFAQCategory === cat && styles.categoryPillActive]}
+                >
+                  <Text style={[styles.categoryPillText, activeFAQCategory === cat && styles.categoryPillTextActive]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Accordion FAQ Items */}
+            <View style={styles.faqList}>
+              {filteredFAQs.length === 0 ? (
+                <Text style={styles.noFaqText}>No matching FAQ articles found for "{searchQuery}".</Text>
+              ) : (
+                filteredFAQs.map((item, idx) => {
+                  const isExpanded = expandedFAQIndex === idx;
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      activeOpacity={0.8}
+                      onPress={() => setExpandedFAQIndex(isExpanded ? null : idx)}
+                      style={[styles.faqItemRow, isExpanded && styles.faqItemRowExpanded]}
+                    >
+                      <View style={styles.faqHeaderRow}>
+                        <View style={styles.faqQuestionBox}>
+                          <View style={styles.faqBlueDot} />
+                          <Text style={styles.faqQuestionText}>{item.question}</Text>
+                        </View>
+                        {isExpanded ? (
+                          <ChevronUp size={18} color="#2563EB" />
+                        ) : (
+                          <ChevronDown size={18} color="#64748B" />
+                        )}
                       </View>
+
                       {isExpanded ? (
-                        <ChevronUp size={18} color={COLORS.primary} />
-                      ) : (
-                        <ChevronDown size={18} color={COLORS.slate500} />
-                      )}
-                    </View>
-
-                    {isExpanded ? (
-                      <View style={styles.faqAnswerContainer}>
-                        <Text style={styles.faqAnswerText}>{item.answer}</Text>
-                      </View>
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              })
-            )}
+                        <View style={styles.faqAnswerContainer}>
+                          <Text style={styles.faqAnswerText}>{item.answer}</Text>
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
           </View>
         </View>
 
-        {/* SECTION 2: SUBMIT SUPPORT TICKET FORM */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleBox}>
-            <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-              <Send size={20} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionTitle}>Submit Support Ticket</Text>
-              <Text style={styles.sectionSubtitle}>Send a direct inquiry to our engineering support team</Text>
-            </View>
-          </View>
+        {/* CARD 2: SUBMIT SUPPORT TICKET FORM */}
+        <Text style={styles.groupHeaderLabel}>SUPPORT TICKET DESK</Text>
+        <View style={styles.singleMasterCard}>
+          <Text style={styles.sectionTitle}>Submit Support Ticket</Text>
 
-          {formError ? <ErrorBanner message={formError} style={{ marginBottom: SPACING.md }} /> : null}
+          {formError ? <ErrorBanner message={formError} style={{ marginVertical: 8 }} /> : null}
 
           {/* Full Name & Email */}
           <Input
@@ -312,6 +302,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             placeholder="Enter your full name"
             value={fullName}
             onChangeText={setFullName}
+            leftIcon={<User size={18} color="#64748B" />}
           />
 
           <Input
@@ -320,7 +311,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
-            leftIcon={<Mail size={18} color={COLORS.slate400} />}
+            leftIcon={<Mail size={18} color="#64748B" />}
           />
 
           <Input
@@ -330,7 +321,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             maxLength={10}
             value={phone}
             onChangeText={setPhone}
-            leftIcon={<Phone size={18} color={COLORS.slate400} />}
+            leftIcon={<Phone size={18} color="#64748B" />}
           />
 
           {/* Category Dropdown Pills */}
@@ -382,14 +373,15 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             placeholder="Brief description of issue or query"
             value={subject}
             onChangeText={setSubject}
+            leftIcon={<FileText size={18} color="#64748B" />}
           />
 
-          <View style={{ marginBottom: SPACING.lg }}>
+          <View style={{ marginBottom: 16 }}>
             <Text style={styles.fieldLabel}>Detailed Description *</Text>
             <TextInput
               style={styles.textArea}
               placeholder="Describe your question, issue, or feedback in detail..."
-              placeholderTextColor={COLORS.slate400}
+              placeholderTextColor="#94A3B8"
               multiline
               numberOfLines={4}
               value={description}
@@ -404,67 +396,6 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             loading={isSubmitting}
           />
         </View>
-
-        {/* SECTION 3: DIRECT CONTACT INFORMATION */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleBox}>
-            <View style={[styles.sectionIconBox, { backgroundColor: '#F0FDF4' }]}>
-              <Phone size={20} color="#15803D" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionTitle}>Direct Technical Support</Text>
-              <Text style={styles.sectionSubtitle}>Connect with our regional office teams in Maharashtra</Text>
-            </View>
-          </View>
-
-          <View style={styles.contactGrid}>
-            {/* Email Contact */}
-            <View style={styles.contactCard}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#EFF6FF' }]}>
-                <Mail size={18} color="#2563EB" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>Email Support Desk</Text>
-                <Text style={styles.contactValue}>support@csnjobmarket.com</Text>
-              </View>
-            </View>
-
-            {/* Phone Contact */}
-            <View style={styles.contactCard}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#ECFEFF' }]}>
-                <Phone size={18} color="#0891B2" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>Toll-Free Helpline</Text>
-                <Text style={styles.contactValue}>+91 1800-266-7000 / +91 98230 12345</Text>
-              </View>
-            </View>
-
-            {/* Office Address */}
-            <View style={styles.contactCard}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#FEF3C7' }]}>
-                <MapPin size={18} color="#B45309" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>Headquarters & Regional Office</Text>
-                <Text style={styles.contactValue}>
-                  Plot No. C-40, MIDC Industrial Area, Chakan, Pune, MH 410501
-                </Text>
-              </View>
-            </View>
-
-            {/* Operating Hours */}
-            <View style={styles.contactCard}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#F0FDF4' }]}>
-                <Clock size={18} color="#15803D" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>Support Operating Hours</Text>
-                <Text style={styles.contactValue}>Monday – Saturday: 9:00 AM – 7:00 PM IST</Text>
-              </View>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -473,37 +404,54 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xxl * 2,
+    padding: 16,
+    paddingBottom: 48,
   },
-  heroBanner: {
+  groupHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    paddingLeft: 4,
+    marginBottom: 8,
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  singleMasterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: SPACING.md,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
+    padding: 20,
+    gap: 18,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+    marginBottom: 20,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 16,
+  },
+  heroHeaderSection: {
+    marginBottom: 0,
   },
   heroHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     marginBottom: 6,
   },
   heroIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -511,239 +459,212 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
   },
   heroTitle: {
-    fontSize: 17,
-    fontWeight: '900',
+    fontSize: 19,
+    fontWeight: '800',
     color: '#0F172A',
     flex: 1,
+    letterSpacing: -0.3,
   },
   heroSubtitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#475569',
-    lineHeight: 17,
+    lineHeight: 18,
     fontWeight: '500',
-    marginBottom: 10,
+    marginBottom: 14,
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
-    paddingHorizontal: SPACING.sm + 2,
-    height: 38,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    paddingHorizontal: 14,
+    height: 46,
     borderWidth: 1,
     borderColor: '#CBD5E1',
   },
   searchIcon: {
-    marginRight: 6,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 12.5,
-    color: COLORS.slate900,
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#CBD5E1',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    fontSize: 13.5,
+    color: '#0F172A',
+    fontWeight: '600',
   },
   cardTitleBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
+    gap: 12,
+    marginBottom: 14,
   },
   sectionIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 6,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
   sectionTitle: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 16.5,
+    fontSize: 16,
     fontWeight: '800',
-    color: COLORS.slate900,
+    color: '#0F172A',
+    letterSpacing: -0.2,
   },
   sectionSubtitle: {
-    ...TYPOGRAPHY.caption,
     fontSize: 12,
-    color: COLORS.slate500,
+    color: '#64748B',
     marginTop: 1,
   },
   categoryRow: {
     flexDirection: 'row',
-    marginBottom: SPACING.md,
+    marginBottom: 14,
   },
   categoryPill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: COLORS.slate100,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 0,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: COLORS.slate200,
-    marginRight: SPACING.xs + 2,
+    borderColor: '#CBD5E1',
+    marginRight: 8,
   },
   categoryPillActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: COLORS.primary,
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
   },
   categoryPillText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.slate600,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
   },
   categoryPillTextActive: {
-    color: COLORS.primary,
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   faqList: {
-    gap: SPACING.sm + 2,
+    gap: 0,
   },
   noFaqText: {
-    ...TYPOGRAPHY.caption,
     fontSize: 13,
-    color: COLORS.slate500,
-    paddingVertical: SPACING.md,
+    color: '#64748B',
+    paddingVertical: 16,
     textAlign: 'center',
   },
-  faqItemCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 6,
-    padding: SPACING.md,
+  faqItemRow: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  faqItemCardExpanded: {
-    borderColor: COLORS.primary,
-    borderBottomColor: COLORS.primary,
-    backgroundColor: '#F8FAFC',
+  faqItemRowExpanded: {
+    backgroundColor: 'transparent',
   },
   faqHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: SPACING.sm,
+    gap: 12,
   },
   faqQuestionBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flex: 1,
   },
   faqBlueDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    borderRadius: 0,
+    backgroundColor: '#2563EB',
   },
   faqQuestionText: {
-    ...TYPOGRAPHY.subtitle,
-    fontSize: 13.5,
+    fontSize: 14.5,
     fontWeight: '700',
-    color: COLORS.slate900,
+    color: '#0F172A',
+    lineHeight: 20,
   },
   faqAnswerContainer: {
-    marginTop: SPACING.sm + 2,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.slate200,
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderLeftWidth: 3,
+    borderLeftColor: '#2563EB',
+    borderRadius: 0,
   },
   faqAnswerText: {
-    ...TYPOGRAPHY.body,
-    fontSize: 12.5,
-    color: COLORS.slate600,
-    lineHeight: 19,
+    fontSize: 13.5,
+    color: '#334155',
+    lineHeight: 20,
   },
   fieldLabel: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORS.slate700,
-    marginBottom: 4,
+    color: '#334155',
+    marginBottom: 6,
+    marginTop: 6,
   },
   priorityRow: {
     flexDirection: 'row',
-    gap: SPACING.xs + 2,
-    marginBottom: SPACING.md,
+    gap: 8,
+    marginBottom: 14,
   },
   priorityBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.slate100,
-    borderWidth: 1,
-    borderColor: COLORS.slate200,
-  },
-  priorityBtnText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.slate600,
-  },
-  textArea: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.slate300,
-    borderRadius: 6,
-    padding: SPACING.md,
-    fontSize: 13.5,
-    color: COLORS.slate900,
-    minHeight: 90,
-  },
-  contactGrid: {
-    gap: SPACING.sm + 2,
-  },
-  contactCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 0,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 6,
-    padding: SPACING.md,
-    gap: SPACING.md,
+  },
+  priorityBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  textArea: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
+    padding: 12,
+    fontSize: 14,
+    color: '#0F172A',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  contactList: {
+    gap: 0,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 14,
   },
   contactIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 6,
+    width: 42,
+    height: 42,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.slate200,
+    borderColor: '#E2E8F0',
   },
   contactLabel: {
-    ...TYPOGRAPHY.caption,
     fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.slate500,
+    fontWeight: '800',
+    color: '#64748B',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   contactValue: {
-    ...TYPOGRAPHY.body,
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.slate900,
-    marginTop: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
   },
 });

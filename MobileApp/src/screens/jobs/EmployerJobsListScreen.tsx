@@ -162,7 +162,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             {logoUri ? (
               <Image source={{ uri: logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
             ) : (
-              <Building2 size={22} color={COLORS.primary} />
+              <Building2 size={22} color="#2563EB" />
             )}
           </View>
 
@@ -175,23 +175,8 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             <Text style={styles.companyNameText} numberOfLines={1}>
-              {item.company}
+              {item.company}{item.industry ? ` • ${item.industry}` : ''}
             </Text>
-
-            <View style={styles.locationIndustryRow}>
-              {item.industry ? (
-                <View style={styles.industryTagPill}>
-                  <Text style={styles.industryTagText}>{item.industry}</Text>
-                </View>
-              ) : null}
-
-              <View style={styles.metaInline}>
-                <MapPin size={12} color={COLORS.slate500} />
-                <Text style={styles.metaInlineText} numberOfLines={1}>
-                  {item.location || 'Location Not Set'}
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
 
@@ -204,50 +189,31 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         ) : null}
 
-        {/* Salary & Openings Bar */}
-        <View style={styles.detailsRow}>
-          <View style={styles.salaryTag}>
-            <Text style={styles.salaryLabel}>SALARY</Text>
-            <Text style={styles.salaryText}>
-              {salaryStr}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.openingsTag}
-            activeOpacity={0.8}
-            onPress={() => setManageVacanciesJob(item)}
-          >
-            <Briefcase size={13} color={COLORS.primary} />
-            <Text style={styles.openingsText}>
-              {filledVacancies} / {totalVacancies} Vacancies
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Action Footer Bar */}
+        {/* Action Footer Bar with Vacancies Option */}
         <View style={styles.cardFooter}>
           <TouchableOpacity
             style={styles.applicantBtn}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title })}
           >
-            <Users size={15} color={COLORS.primary} />
+            <Users size={14} color="#2563EB" />
             <Text style={styles.applicantBtnText}>
               {actualApplicantCount} {actualApplicantCount === 1 ? 'Candidate' : 'Candidates'}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.actionsGroup}>
-            <TouchableOpacity
-              style={styles.adjustVacanciesBtn}
-              activeOpacity={0.8}
-              onPress={() => setManageVacanciesJob(item)}
-            >
-              <Briefcase size={13} color="#0284C7" />
-              <Text style={styles.adjustVacanciesBtnText}>Adjust Vacancies</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.vacanciesPillBtn}
+            activeOpacity={0.8}
+            onPress={() => setManageVacanciesJob(item)}
+          >
+            <Briefcase size={13} color="#0284C7" />
+            <Text style={styles.vacanciesPillText}>
+              {filledVacancies} / {totalVacancies} Vacancies
+            </Text>
+          </TouchableOpacity>
 
+          <View style={styles.actionsGroup}>
             <TouchableOpacity
               style={styles.actionIconButton}
               activeOpacity={0.7}
@@ -255,7 +221,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 navigation.navigate('PostTab', { jobId: item.id });
               }}
             >
-              <Edit3 size={16} color={COLORS.slate600} />
+              <Edit3 size={15} color="#475569" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -263,7 +229,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
               activeOpacity={0.7}
               onPress={() => handleDeleteJob(item.id, item.title)}
             >
-              <Trash2 size={16} color={COLORS.danger} />
+              <Trash2 size={15} color="#EF4444" />
             </TouchableOpacity>
           </View>
         </View>
@@ -275,9 +241,9 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-      {/* Filter Tabs Bar - Industry Grade */}
+      {/* Filter Tabs Bar - Clean Blue Segmented Control */}
       <View style={styles.tabsBarWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScrollContent}>
+        <View style={styles.segmentedTrackContainer}>
           {[
             { key: 'ALL', label: 'All Jobs', count: jobs.length },
             { key: 'APPROVED', label: 'Active', count: approvedCount },
@@ -290,20 +256,15 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 key={tab.key}
                 activeOpacity={0.8}
                 onPress={() => setActiveTab(tab.key as FilterTab)}
-                style={[styles.industryTabPill, isSelected && styles.industryTabPillActive]}
+                style={[styles.segmentedTabBtn, isSelected && styles.segmentedTabBtnActive]}
               >
-                <Text style={[styles.industryTabText, isSelected && styles.industryTabTextActive]}>
-                  {tab.label}
+                <Text style={[styles.segmentedTabText, isSelected && styles.segmentedTabTextActive]}>
+                  {tab.label} ({tab.count})
                 </Text>
-                <View style={[styles.tabCountBadge, isSelected && styles.tabCountBadgeActive]}>
-                  <Text style={[styles.tabCountText, isSelected && styles.tabCountTextActive]}>
-                    {tab.count}
-                  </Text>
-                </View>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
 
       {error ? <ErrorBanner message={error} onRetry={fetchJobs} style={{ marginHorizontal: SPACING.lg }} /> : null}
@@ -358,107 +319,71 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     borderRadius: RADIUS.md,
   },
-  /* Industry Grade Tab Bar Styles */
+  /* Pure White Borderless Tab Bar Styles */
   tabsBarWrapper: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  tabsScrollContent: {
+  segmentedTrackContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
     gap: 6,
   },
-  industryTabPill: {
-    height: 34,
+  segmentedTabBtn: {
+    flex: 1,
+    height: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  industryTabPillActive: {
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  segmentedTabBtnActive: {
+    backgroundColor: '#EFF6FF',
     borderColor: '#2563EB',
     borderWidth: 1.5,
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  industryTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  industryTabTextActive: {
-    color: '#2563EB',
-    fontWeight: '800',
-  },
-  tabCountBadge: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
     borderRadius: 8,
-    minWidth: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  tabCountBadgeActive: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  tabCountText: {
-    fontSize: 10.5,
+  segmentedTabText: {
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#334155',
+    color: '#64748B',
   },
-  tabCountTextActive: {
+  segmentedTabTextActive: {
     color: '#2563EB',
     fontWeight: '800',
   },
   listContent: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
+    paddingTop: 14,
     paddingBottom: 130,
   },
   jobCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: SPACING.sm + 4,
-    paddingVertical: SPACING.sm + 2,
-    marginBottom: SPACING.xs + 6,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   companyLogoBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -483,48 +408,18 @@ const styles = StyleSheet.create({
   },
   jobTitleText: {
     ...TYPOGRAPHY.subtitle,
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '800',
-    color: COLORS.slate900,
+    color: '#0F172A',
+    letterSpacing: -0.2,
     flex: 1,
   },
   companyNameText: {
     ...TYPOGRAPHY.caption,
     fontSize: 11.5,
     fontWeight: '700',
-    color: COLORS.slate600,
+    color: '#64748B',
     marginTop: 1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 3,
-  },
-  tradeBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  tradeBadgeText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  locationPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    flex: 1,
-  },
-  locationText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    color: COLORS.slate500,
   },
   pendingCardNotice: {
     flexDirection: 'row',
@@ -533,10 +428,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderWidth: 1,
     borderColor: '#FDE68A',
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 5,
-    marginTop: 6,
+    borderRadius: 6,
+    marginTop: 8,
   },
   pendingNoticeText: {
     ...TYPOGRAPHY.caption,
@@ -544,83 +439,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#92400E',
   },
-  detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 8,
-    gap: 6,
-  },
-  salaryTag: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 5,
-    flex: 1,
-  },
-  salaryLabel: {
-    fontSize: 8.5,
-    fontWeight: '800',
-    color: COLORS.slate400,
-    letterSpacing: 0.5,
-  },
-  salaryText: {
-    ...TYPOGRAPHY.body,
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  openingsTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 5,
-  },
-  openingsText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.slate700,
-  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 10,
+    marginTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    gap: 6,
+    gap: 8,
   },
   applicantBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
     flex: 1,
   },
   applicantBtnText: {
     ...TYPOGRAPHY.caption,
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#2563EB',
   },
-  actionsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  adjustVacanciesBtn: {
+  vacanciesPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -628,20 +475,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BAE6FD',
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 5,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  adjustVacanciesBtnText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 10.5,
+  vacanciesPillText: {
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#0284C7',
   },
+  actionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   actionIconButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 5,
-    backgroundColor: '#F8FAFC',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
@@ -649,7 +500,7 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     backgroundColor: '#FEF2F2',
-    borderColor: '#FECDD3',
+    borderColor: '#FCA5A5',
   },
   locationIndustryRow: {
     flexDirection: 'row',
@@ -661,7 +512,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#DBEAFE',
   },
@@ -669,7 +520,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     fontSize: 10.5,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: '#2563EB',
   },
   metaInline: {
     flexDirection: 'row',
@@ -679,6 +530,6 @@ const styles = StyleSheet.create({
   metaInlineText: {
     ...TYPOGRAPHY.caption,
     fontSize: 11.5,
-    color: COLORS.slate500,
+    color: '#64748B',
   },
 });

@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import {
   Search,
@@ -548,7 +549,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 backgroundColor: '#2563EB',
                 paddingHorizontal: 14,
                 paddingVertical: 7,
-                borderRadius: 18,
+                borderRadius: 8,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 5,
@@ -807,8 +808,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* 3. Popular Role Picks Section (100% Identical to Web Application) */}
-        <View style={styles.popularSectionCard}>
+        {/* Soft Divider Separator */}
+        <View style={styles.sectionSeparatorDivider} />
+
+        {/* 3. Popular Role Picks Section (Standalone Clean Section) */}
+        <View style={styles.standaloneSection}>
           {/* Header Row */}
           <View style={styles.popularHeaderRow}>
             <View style={styles.popularIconSquare}>
@@ -986,46 +990,45 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
               })}
             </ScrollView>
           )}
-
-          {/* Explore All Opportunities Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.webExploreAllBtn}
-            onPress={() => navigation.navigate('CandidateJobsTab')}
-          >
-            <Text style={styles.webExploreAllBtnText}>Explore All Opportunities</Text>
-            <ArrowRight size={16} color="#2563EB" />
-          </TouchableOpacity>
         </View>
 
-        {/* 4. Live Stats 2x2 Grid */}
+        {/* Soft Divider Separator */}
+        <View style={styles.sectionSeparatorDivider} />
+
+        {/* 4. Live Stats 2x2 Grid (2 Rows x 2 Columns) */}
         <View style={styles.statsGrid2x2}>
-          <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#2563EB' }]}>
-              {jobs.length > 0 ? `${jobs.length}+` : '15+'}
-            </Text>
-            <Text style={styles.statLabelText}>Active Listings</Text>
+          {/* Row 1 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statSquareCard}>
+              <Text style={[styles.statValueText, { color: '#2563EB' }]}>
+                {jobs.length > 0 ? `${jobs.length}+` : '15+'}
+              </Text>
+              <Text style={styles.statLabelText}>Active Listings</Text>
+            </View>
+
+            <View style={styles.statSquareCard}>
+              <Text style={[styles.statValueText, { color: '#059669' }]}>
+                {jobs.length > 0 ? `${Array.from(new Set(jobs.map((j) => j.company).filter(Boolean))).length || jobs.length}+` : '12+'}
+              </Text>
+              <Text style={styles.statLabelText}>Factories Hiring</Text>
+            </View>
           </View>
 
-          <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#059669' }]}>
-              {jobs.length > 0 ? `${Array.from(new Set(jobs.map((j) => j.company).filter(Boolean))).length || jobs.length}+` : '12+'}
-            </Text>
-            <Text style={styles.statLabelText}>Factories Hiring</Text>
-          </View>
+          {/* Row 2 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statSquareCard}>
+              <Text style={[styles.statValueText, { color: '#7C3AED' }]}>
+                {jobs.length > 0 ? `${jobs.length * 12 + 150}+` : '200+'}
+              </Text>
+              <Text style={styles.statLabelText}>Verified Workers</Text>
+            </View>
 
-          <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#7C3AED' }]}>
-              {jobs.length > 0 ? `${jobs.length * 12 + 150}+` : '200+'}
-            </Text>
-            <Text style={styles.statLabelText}>Verified Workers</Text>
-          </View>
-
-          <View style={styles.statSquareCard}>
-            <Text style={[styles.statValueText, { color: '#EA580C' }]}>
-              {jobs.length > 0 ? `${jobs.length * 45 + 500}+` : '850+'}
-            </Text>
-            <Text style={styles.statLabelText}>Placements</Text>
+            <View style={styles.statSquareCard}>
+              <Text style={[styles.statValueText, { color: '#EA580C' }]}>
+                {jobs.length > 0 ? `${jobs.length * 45 + 500}+` : '850+'}
+              </Text>
+              <Text style={styles.statLabelText}>Placements</Text>
+            </View>
           </View>
         </View>
 
@@ -1198,17 +1201,28 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       </ScrollView>
 
       {/* Select Industry Modal Sheet */}
-      <Modal visible={industryModalOpen} transparent animationType="slide" onRequestClose={() => setIndustryModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+      <Modal
+        visible={industryModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIndustryModalOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setIndustryModalOpen(false)}>
+          <Pressable style={[styles.modalSheet, { paddingBottom: 24 }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Industry</Text>
-              <TouchableOpacity onPress={() => setIndustryModalOpen(false)}><X size={20} color="#64748B" /></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setIndustryModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 320 }}>
+            <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
               {INDUSTRIES.map((ind) => (
                 <TouchableOpacity
                   key={ind}
+                  activeOpacity={0.7}
                   style={[styles.pickerItem, selectedIndustry === ind && styles.pickerItemActive]}
                   onPress={() => {
                     setSelectedIndustry(ind);
@@ -1220,22 +1234,33 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Select Education Modal Sheet */}
-      <Modal visible={educationModalOpen} transparent animationType="slide" onRequestClose={() => setEducationModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+      <Modal
+        visible={educationModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEducationModalOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setEducationModalOpen(false)}>
+          <Pressable style={[styles.modalSheet, { paddingBottom: 24 }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Education</Text>
-              <TouchableOpacity onPress={() => setEducationModalOpen(false)}><X size={20} color="#64748B" /></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setEducationModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 320 }}>
+            <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
               {EDUCATIONS.map((ed) => (
                 <TouchableOpacity
                   key={ed}
+                  activeOpacity={0.7}
                   style={[styles.pickerItem, selectedEducation === ed && styles.pickerItemActive]}
                   onPress={() => {
                     setSelectedEducation(ed);
@@ -1247,8 +1272,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -1269,23 +1294,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 24,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
     paddingHorizontal: 12,
     height: 48,
     gap: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1.5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   searchIconBadge3D: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -1308,16 +1331,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingVertical: 8,
     paddingHorizontal: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
     zIndex: 999,
   },
   suggestionRowHeader: {
@@ -1353,7 +1376,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 8,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 6,
     backgroundColor: '#F8FAFC',
     marginBottom: 4,
   },
@@ -1369,26 +1392,24 @@ const styles = StyleSheet.create({
   },
   heroSearchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,
     gap: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   heroInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    overflow: 'hidden',
-    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingHorizontal: 4,
     height: 44,
     gap: 10,
   },
@@ -1414,7 +1435,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#2563EB',
-    borderRadius: 12,
+    borderRadius: 8,
     overflow: 'hidden',
     paddingVertical: 13,
     marginTop: 4,
@@ -1445,7 +1466,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 6,
     overflow: 'hidden',
     color: '#334155',
   },
@@ -1453,18 +1474,23 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
   },
+  sectionSeparatorDivider: {
+    height: 1,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 20,
+  },
   popularSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,
     gap: 14,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   popularHeaderRow: {
     flexDirection: 'row',
@@ -1474,7 +1500,7 @@ const styles = StyleSheet.create({
   popularIconSquare: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -1491,7 +1517,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   verifiedBadgeText: {
     color: '#2563EB',
@@ -1509,32 +1537,26 @@ const styles = StyleSheet.create({
   roleTabsRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    gap: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
   },
   skewedTabPill: {
-    transform: [{ skewX: '-14deg' }],
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
   },
   skewedTabPillActive: {
     backgroundColor: '#2563EB',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: '#2563EB',
   },
   skewedTabPillInactive: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   unskewContentRow: {
-    transform: [{ skewX: '14deg' }],
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1548,7 +1570,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   tabTitleText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#334155',
   },
@@ -1556,8 +1578,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   countPillBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 7,
+    borderRadius: 6,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     marginLeft: 2,
   },
@@ -1587,14 +1609,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 14,
     gap: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   webCardTitleRow: {
     flexDirection: 'row',
@@ -1710,8 +1730,8 @@ const styles = StyleSheet.create({
   },
   webExploreAllBtn: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     borderRadius: 8,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -1727,9 +1747,9 @@ const styles = StyleSheet.create({
   },
   btnSectionAction: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#2563EB',
-    borderRadius: 20,
+    borderRadius: 6,
     paddingHorizontal: 13,
     paddingVertical: 5.5,
     alignItems: 'center',
@@ -1746,7 +1766,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   verifiedJobsBadgeText: {
     fontSize: 9,
@@ -1760,21 +1780,21 @@ const styles = StyleSheet.create({
   },
   homeJobCardFull: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 12,
     gap: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1.5,
+    shadowRadius: 3,
+    elevation: 1,
   },
   companyLogoSquare: {
     width: 34,
     height: 34,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -1795,7 +1815,7 @@ const styles = StyleSheet.create({
   bookmarkIconBtn: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: 8,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -1811,7 +1831,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   metaItemCompact: {
     flexDirection: 'row',
@@ -1849,7 +1869,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     paddingHorizontal: 7,
     paddingVertical: 2.5,
-    borderRadius: 4,
+    borderRadius: 6,
     flexShrink: 1,
   },
   badgePillText: {
@@ -1913,16 +1933,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#BFDBFE',
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     padding: 14,
     gap: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1963,7 +1981,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
   },
   workPillText: {
@@ -1978,7 +1996,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3E8FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
   },
   shiftPillText: {
@@ -1999,7 +2017,7 @@ const styles = StyleSheet.create({
   companyCircleIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -2033,7 +2051,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     paddingVertical: 12,
     borderRadius: 8,
     overflow: 'hidden',
@@ -2045,26 +2063,29 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   statsGrid2x2: {
+    marginVertical: 10,
+    gap: 10,
+  },
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
   },
   statSquareCard: {
     flex: 1,
-    minWidth: '45%',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#94A3B8',
-    borderRadius: 8,
-    overflow: 'hidden',
-    padding: 16,
+    borderRadius: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   statValueText: {
     fontSize: 22,
@@ -2082,7 +2103,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
     alignSelf: 'center',
   },
@@ -2097,7 +2118,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     overflow: 'hidden',
     alignSelf: 'center',
   },
@@ -2107,8 +2128,8 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   standaloneSection: {
-    marginVertical: 4,
-    gap: 8,
+    marginVertical: 14,
+    gap: 12,
   },
   sectionTitleBig: {
     fontSize: 20,
@@ -2130,8 +2151,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#BFDBFE',
     borderRadius: 10,
     overflow: 'hidden',
     paddingVertical: 10,
@@ -2140,9 +2159,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 3,
   },
   tradeIconSquare: {
     width: 36,
@@ -2170,8 +2189,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#BFDBFE',
     borderRadius: 10,
     overflow: 'hidden',
     paddingVertical: 10,
@@ -2180,9 +2197,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 3,
   },
   qualIconSquare: {
     width: 36,
@@ -2211,8 +2228,10 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderTopWidth: 3,
+    borderTopColor: '#2563EB',
     padding: 20,
     gap: 8,
   },
@@ -2251,19 +2270,17 @@ const styles = StyleSheet.create({
   },
   promoSliderCard: {
     height: 185,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#0F172A',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#94A3B8',
     marginBottom: 4,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
   },
   promoImage: {
     width: '100%',
@@ -2280,7 +2297,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37, 99, 235, 0.95)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   promoBadgeText: {
@@ -2306,7 +2323,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 6,
+    borderRadius: 8,
     alignSelf: 'flex-start',
     marginTop: 4,
   },
@@ -2338,7 +2355,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     alignSelf: 'center',
   },
   hospitalBadgeText: {
@@ -2352,7 +2369,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     alignSelf: 'center',
   },
   hotelBadgeText: {
@@ -2366,7 +2383,7 @@ const styles = StyleSheet.create({
     borderColor: '#93C5FD',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     alignSelf: 'center',
   },
   schoolBadgeText: {
@@ -2382,7 +2399,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2394,7 +2411,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2402,7 +2419,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   promoBadgeOrangeText: {
@@ -2437,7 +2454,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   heroPillBadgeText: {
     fontSize: 11,

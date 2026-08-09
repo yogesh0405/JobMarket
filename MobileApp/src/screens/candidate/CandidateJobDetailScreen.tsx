@@ -293,7 +293,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
               companyName={job.company}
               size={46}
-              borderRadius={8}
+              borderRadius={0}
             />
 
             {/* Center Title & Company Stack */}
@@ -361,15 +361,17 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             ) : null}
           </View>
 
-          {/* Salary Box */}
-          <View style={styles.salaryBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <IndianRupee size={16} color="#16A34A" />
-              <Text style={styles.salaryTitle}>Offered Salary Package</Text>
+          <View style={styles.divider} />
+
+          {/* Salary Section (Clean row layout without card-in-card) */}
+          <View style={styles.salaryRowSection}>
+            <Text style={styles.salaryTitle}>Offered Salary Package</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <IndianRupee size={16} color="#15803D" />
+              <Text style={styles.salaryValue}>
+                ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000} / year
+              </Text>
             </View>
-            <Text style={styles.salaryValue}>
-              ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000} / year
-            </Text>
           </View>
         </View>
 
@@ -506,13 +508,16 @@ const styles = StyleSheet.create({
   },
   card3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    padding: 16,
-    gap: 12,
+    padding: 14,
+    gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   bannerTopRow: {
     flexDirection: 'row',
@@ -522,7 +527,7 @@ const styles = StyleSheet.create({
   companyIconSquare: {
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -534,7 +539,7 @@ const styles = StyleSheet.create({
   companyLogoImg: {
     width: 40,
     height: 40,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   jobTitle: {
     fontSize: 16.5,
@@ -570,7 +575,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   skillChipText: {
     fontSize: 12,
@@ -601,28 +606,26 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   highlightText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
   },
-  salaryBox: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    borderRadius: 6,
-    padding: 12,
-    gap: 4,
+  salaryRowSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
   },
   salaryTitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#16A34A',
+    color: '#64748B',
   },
   salaryValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
     color: '#15803D',
   },
@@ -664,7 +667,7 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   perkChipText: {
     fontSize: 12,
@@ -685,10 +688,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 999,
-    elevation: 10,
+    elevation: 8,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
   },
   shareBtnTop: {
@@ -700,7 +703,7 @@ const styles = StyleSheet.create({
   bottomShareBtn: {
     width: 44,
     height: 44,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -716,7 +719,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#2563EB',
     paddingVertical: 13,
-    borderRadius: 8,
+    borderRadius: 0,
   },
   applyNowBtnBanner: {
     flexDirection: 'row',
@@ -725,7 +728,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#2563EB',
     paddingVertical: 13,
-    borderRadius: 8,
+    borderRadius: 0,
     width: '100%',
   },
   applyNowBtnText: {
@@ -743,7 +746,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#86EFAC',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 0,
   },
   appliedBannerText: {
     color: '#15803D',

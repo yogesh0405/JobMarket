@@ -292,30 +292,25 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
         >
           {error ? <ErrorBanner message={error} style={{ marginBottom: SPACING.md }} /> : null}
 
-          {/* 3D Header Profile Card */}
-          <LinearGradient
-            colors={['#0F172A', '#1E3A8A', '#2563EB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroBanner}
-          >
+          {/* Compact White Header Profile Card */}
+          <View style={styles.heroBanner}>
             <View style={styles.avatarRow}>
               <TouchableOpacity style={styles.avatarPicker} activeOpacity={0.8} onPress={handlePickLogo}>
                 {logoUri ? (
                   <Image source={{ uri: logoUri }} style={styles.avatarImage} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Building2 size={32} color={COLORS.primary} />
+                    <Building2 size={24} color="#2563EB" />
                   </View>
                 )}
                 <View style={styles.cameraBadge}>
-                  <Camera size={13} color={COLORS.textWhite} />
+                  <Camera size={10} color="#FFFFFF" />
                 </View>
               </TouchableOpacity>
 
               <View style={{ flex: 1 }}>
                 <View style={styles.verifiedBadge}>
-                  <ShieldCheck size={13} color="#34D399" />
+                  <ShieldCheck size={12} color="#2563EB" />
                   <Text style={styles.verifiedText}>Verified Employer</Text>
                 </View>
                 <Text style={styles.companyTitle} numberOfLines={1}>
@@ -326,54 +321,31 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
-          {/* Minimal 3D Tabular Segmented Control Strip (Horizontally Scrollable & Compact Height) */}
+          {/* iOS Standard Segmented Control Bar */}
           <View style={styles.tabStripWrapper}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabStripScrollContent}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setProfileTab('PROFILE')}
+              style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
             >
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setProfileTab('PROFILE')}
-                style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
-              >
-                <View style={[styles.tabIconSquircle, profileTab === 'PROFILE' && styles.tabIconSquircleActive]}>
-                  <Building2 size={13} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
-                </View>
-                <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
-                  Company Profile
-                </Text>
-              </TouchableOpacity>
+              <Building2 size={14} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
+              <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
+                Company Profile
+              </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setProfileTab('ANALYTICS')}
-                style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
-              >
-                <View style={[styles.tabIconSquircle, profileTab === 'ANALYTICS' && styles.tabIconSquircleActive]}>
-                  <BarChart3 size={13} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
-                </View>
-                <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
-                  Analytics
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('EmployerBanners')}
-                style={[styles.tabBtn, styles.tabBtnInactive, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-              >
-                <View style={[styles.tabIconSquircle, { backgroundColor: '#DBEAFE' }]}>
-                  <Sparkles size={13} color="#2563EB" />
-                </View>
-                <Text style={[styles.tabBtnText, { color: '#2563EB', fontWeight: '800' }]}>
-                  Promote Banners ✨
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setProfileTab('ANALYTICS')}
+              style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
+            >
+              <BarChart3 size={14} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
+              <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
+                Analytics
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {profileTab === 'ANALYTICS' ? (
@@ -384,8 +356,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 {/* Header Row with Title & Live Database Badge */}
                 <View style={styles.cardHeaderWithBadge}>
                   <View style={styles.cardTitleBox}>
-                    <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-                      <BarChart3 size={20} color="#2563EB" />
+                    <View style={styles.sectionIconBox}>
+                      <BarChart3 size={18} color="#2563EB" />
                     </View>
                     <View>
                       <Text style={styles.sectionTitle}>Recruitment Performance</Text>
@@ -398,96 +370,99 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                   </View>
                 </View>
 
-                {/* 6 Perfectly Aligned Metric Grid Cells with Vertical & Horizontal Hairlines */}
-                <View style={styles.proGridContainer}>
-                  {/* Row 1: Posted Jobs & Total Applicants */}
-                  <View style={styles.proGridRow}>
-                    <View style={[styles.proGridCell, styles.proGridCellRightBorder]}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#EFF6FF' }]}>
-                          <Briefcase size={16} color="#2563EB" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.totalJobs}</Text>
-                        <View style={styles.proMetaPillBlue}>
-                          <Text style={styles.proMetaPillTextBlue}>{analyticsData.activeJobs} Active</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.proMetricTitle}>Posted Job Vacancies</Text>
+                {/* 6 Razor-Sharp Aligned Metric Rows */}
+                <View style={styles.proRowsContainer}>
+                  {/* Row 1: Posted Vacancies */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
+                      <Briefcase size={16} color="#2563EB" />
                     </View>
-
-                    <View style={styles.proGridCell}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#F0FDF4' }]}>
-                          <Users size={16} color="#16A34A" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.totalApplications}</Text>
-                        <View style={styles.proMetaPillGreen}>
-                          <Text style={styles.proMetaPillTextGreen}>Applicants</Text>
-                        </View>
+                    <Text style={styles.rowMetricTitle}>Posted Job Vacancies</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillBlue}>
+                        <Text style={styles.proMetaPillTextBlue}>{analyticsData.activeJobs} Active</Text>
                       </View>
-                      <Text style={styles.proMetricTitle}>Total Applications Received</Text>
+                      <Text style={styles.rowMetricVal}>{analyticsData.totalJobs}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.proHorizontalDivider} />
+                  <View style={styles.rowDivider} />
 
-                  {/* Row 2: Shortlisted & Interviews */}
-                  <View style={styles.proGridRow}>
-                    <View style={[styles.proGridCell, styles.proGridCellRightBorder]}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#FEF3C7' }]}>
-                          <Award size={16} color="#D97706" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.shortlisted}</Text>
-                        <View style={styles.proMetaPillAmber}>
-                          <Text style={styles.proMetaPillTextAmber}>Qualified</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.proMetricTitle}>Shortlisted Candidates</Text>
+                  {/* Row 2: Total Applications */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#F0FDF4' }]}>
+                      <Users size={16} color="#16A34A" />
                     </View>
-
-                    <View style={styles.proGridCell}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#E0F2FE' }]}>
-                          <Calendar size={16} color="#0284C7" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.interviewed}</Text>
-                        <View style={styles.proMetaPillSky}>
-                          <Text style={styles.proMetaPillTextSky}>Scheduled</Text>
-                        </View>
+                    <Text style={styles.rowMetricTitle}>Total Applications</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillGreen}>
+                        <Text style={styles.proMetaPillTextGreen}>Received</Text>
                       </View>
-                      <Text style={styles.proMetricTitle}>Technical Interviews</Text>
+                      <Text style={styles.rowMetricVal}>{analyticsData.totalApplications}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.proHorizontalDivider} />
+                  <View style={styles.rowDivider} />
 
-                  {/* Row 3: Confirmed Hires & Avg Response */}
-                  <View style={styles.proGridRow}>
-                    <View style={[styles.proGridCell, styles.proGridCellRightBorder]}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#F3E8FF' }]}>
-                          <UserCheck size={16} color="#9333EA" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.hired}</Text>
-                        <View style={styles.proMetaPillPurple}>
-                          <Text style={styles.proMetaPillTextPurple}>Joined</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.proMetricTitle}>Confirmed Hires Offered</Text>
+                  {/* Row 3: Shortlisted */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#FEF3C7' }]}>
+                      <Award size={16} color="#D97706" />
                     </View>
-
-                    <View style={styles.proGridCell}>
-                      <View style={styles.proLogoNumRow}>
-                        <View style={[styles.proMetricIcon, { backgroundColor: '#ECFDF5' }]}>
-                          <Clock size={16} color="#059669" />
-                        </View>
-                        <Text style={styles.proMetricVal}>{analyticsData.avgResponseTimeHours}h</Text>
-                        <View style={styles.proMetaPillEmerald}>
-                          <Text style={styles.proMetaPillTextEmerald}>Fast SLA</Text>
-                        </View>
+                    <Text style={styles.rowMetricTitle}>Shortlisted Candidates</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillAmber}>
+                        <Text style={styles.proMetaPillTextAmber}>Qualified</Text>
                       </View>
-                      <Text style={styles.proMetricTitle}>Avg Response Speed</Text>
+                      <Text style={styles.rowMetricVal}>{analyticsData.shortlisted}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Row 4: Technical Interviews */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#E0F2FE' }]}>
+                      <Calendar size={16} color="#0284C7" />
+                    </View>
+                    <Text style={styles.rowMetricTitle}>Technical Interviews</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillSky}>
+                        <Text style={styles.proMetaPillTextSky}>Scheduled</Text>
+                      </View>
+                      <Text style={styles.rowMetricVal}>{analyticsData.interviewed}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Row 5: Confirmed Hires Offered */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#F3E8FF' }]}>
+                      <UserCheck size={16} color="#9333EA" />
+                    </View>
+                    <Text style={styles.rowMetricTitle}>Confirmed Hires</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillPurple}>
+                        <Text style={styles.proMetaPillTextPurple}>Joined</Text>
+                      </View>
+                      <Text style={styles.rowMetricVal}>{analyticsData.hired}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rowDivider} />
+
+                  {/* Row 6: Response Speed */}
+                  <View style={styles.metricRow}>
+                    <View style={[styles.rowIconBox, { backgroundColor: '#ECFDF5' }]}>
+                      <Clock size={16} color="#059669" />
+                    </View>
+                    <Text style={styles.rowMetricTitle}>Avg Response Speed</Text>
+                    <View style={styles.rowRightBox}>
+                      <View style={styles.proMetaPillEmerald}>
+                        <Text style={styles.proMetaPillTextEmerald}>Fast SLA</Text>
+                      </View>
+                      <Text style={styles.rowMetricVal}>{analyticsData.avgResponseTimeHours}h</Text>
                     </View>
                   </View>
                 </View>
@@ -594,192 +569,127 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
           ) : (
-            <View style={{ gap: 14 }}>
+            <View style={styles.card}>
               {/* SECTION 1: GENERAL ENTERPRISE DETAILS */}
-              <View style={styles.card}>
-            <View style={styles.cardTitleBox}>
-              <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-                <Building2 size={20} color={COLORS.primary} />
+              <View>
+                <View style={styles.cardTitleBox}>
+                  <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
+                    <Building2 size={20} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.sectionTitle}>General Enterprise Details</Text>
+                    <Text style={styles.sectionSubtitle}>Primary company registration & industrial zone info</Text>
+                  </View>
+                </View>
+
+                <Input
+                  label="Company / Enterprise Name *"
+                  placeholder="e.g. Acme Industrial Technologies Pvt Ltd"
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  leftIcon={<Building2 size={18} color={COLORS.slate400} />}
+                />
+
+                <Input
+                  label="GST Registration Number"
+                  placeholder="e.g. 27AAAAA0000A1Z5"
+                  autoCapitalize="characters"
+                  maxLength={15}
+                  value={gstNumber}
+                  onChangeText={setGstNumber}
+                  leftIcon={<FileText size={18} color={COLORS.slate400} />}
+                />
+
+                <SelectDropdown
+                  label="Primary Industry Sector *"
+                  required
+                  placeholder="Select Industry Sector..."
+                  value={industry}
+                  options={INDUSTRY_LIST}
+                  onSelect={(val) => setIndustry(val)}
+                />
+
+                <SelectDropdown
+                  label="MIDC Industrial Zone in Maharashtra"
+                  placeholder="Select MIDC Zone..."
+                  value={midcZone}
+                  options={MIDC_LIST}
+                  onSelect={(val) => setMidcZone(val)}
+                />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sectionTitle}>General Enterprise Details</Text>
-                <Text style={styles.sectionSubtitle}>Primary company registration & industrial zone info</Text>
+
+              <View style={styles.sectionDivider} />
+
+              {/* SECTION 2: CONTACT & PLANT LOCATION */}
+              <View>
+                <View style={styles.cardTitleBox}>
+                  <View style={[styles.sectionIconBox, { backgroundColor: '#F0FDF4' }]}>
+                    <UserCheck size={20} color="#15803D" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.sectionTitle}>Contact & Plant Location</Text>
+                    <Text style={styles.sectionSubtitle}>Recruiter contact person & factory plant details</Text>
+                  </View>
+                </View>
+
+                <Input
+                  label="Primary Recruiter / HR Contact Person"
+                  placeholder="e.g. Rajesh Sharma (HR Head)"
+                  value={contactPerson}
+                  onChangeText={setContactPerson}
+                  leftIcon={<UserCheck size={18} color={COLORS.slate400} />}
+                />
+
+                <Input
+                  label="Contact Phone Number"
+                  placeholder="10-digit mobile number"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phone}
+                  onChangeText={setPhone}
+                  leftIcon={<Phone size={18} color={COLORS.slate400} />}
+                />
+
+                <Input
+                  label="Company Official Website"
+                  placeholder="https://www.company.com"
+                  autoCapitalize="none"
+                  keyboardType="url"
+                  value={website}
+                  onChangeText={setWebsite}
+                  leftIcon={<Globe size={18} color={COLORS.slate400} />}
+                />
+
+                <Input
+                  label="Registered Plant / Office Address"
+                  placeholder="Full factory or office street address..."
+                  multiline
+                  numberOfLines={2}
+                  value={address}
+                  onChangeText={setAddress}
+                  leftIcon={<MapPin size={18} color={COLORS.slate400} />}
+                />
+
+                <Input
+                  label="Company Overview & Products"
+                  placeholder="Brief overview of products, CNC capabilities, shifts, or company history..."
+                  multiline
+                  numberOfLines={3}
+                  value={description}
+                  onChangeText={setDescription}
+                  style={{ minHeight: 70 }}
+                />
+
+                <Button
+                  title="Save Company Profile"
+                  onPress={handleSaveProfile}
+                  loading={loading}
+                  style={{ marginTop: SPACING.xs }}
+                />
               </View>
             </View>
-
-            <Input
-              label="Company / Enterprise Name *"
-              placeholder="e.g. Acme Industrial Technologies Pvt Ltd"
-              value={companyName}
-              onChangeText={setCompanyName}
-              leftIcon={<Building2 size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="GST Registration Number"
-              placeholder="e.g. 27AAAAA0000A1Z5"
-              autoCapitalize="characters"
-              maxLength={15}
-              value={gstNumber}
-              onChangeText={setGstNumber}
-              leftIcon={<FileText size={18} color={COLORS.slate400} />}
-            />
-
-            <SelectDropdown
-              label="Primary Industry Sector *"
-              required
-              placeholder="Select Industry Sector..."
-              value={industry}
-              options={INDUSTRY_LIST}
-              onSelect={(val) => setIndustry(val)}
-            />
-
-            <SelectDropdown
-              label="MIDC Industrial Zone in Maharashtra"
-              placeholder="Select MIDC Zone..."
-              value={midcZone}
-              options={MIDC_LIST}
-              onSelect={(val) => setMidcZone(val)}
-            />
-          </View>
-
-          {/* SECTION 2: CONTACT & PLANT LOCATION */}
-          <View style={styles.card}>
-            <View style={styles.cardTitleBox}>
-              <View style={[styles.sectionIconBox, { backgroundColor: '#F0FDF4' }]}>
-                <UserCheck size={20} color="#15803D" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sectionTitle}>Contact & Plant Location</Text>
-                <Text style={styles.sectionSubtitle}>Recruiter contact person & factory plant details</Text>
-              </View>
-            </View>
-
-            <Input
-              label="Primary Recruiter / HR Contact Person"
-              placeholder="e.g. Rajesh Sharma (HR Head)"
-              value={contactPerson}
-              onChangeText={setContactPerson}
-              leftIcon={<UserCheck size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="Contact Phone Number"
-              placeholder="10-digit mobile number"
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={phone}
-              onChangeText={setPhone}
-              leftIcon={<Phone size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="Company Official Website"
-              placeholder="https://www.company.com"
-              autoCapitalize="none"
-              keyboardType="url"
-              value={website}
-              onChangeText={setWebsite}
-              leftIcon={<Globe size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="Registered Plant / Office Address"
-              placeholder="Full factory or office street address..."
-              multiline
-              numberOfLines={2}
-              value={address}
-              onChangeText={setAddress}
-              leftIcon={<MapPin size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="Company Overview & Products"
-              placeholder="Brief overview of products, CNC capabilities, shifts, or company history..."
-              multiline
-              numberOfLines={3}
-              value={description}
-              onChangeText={setDescription}
-              style={{ minHeight: 70 }}
-            />
-
-            <Button
-              title="Save Company Profile"
-              onPress={handleSaveProfile}
-              loading={loading}
-              style={{ marginTop: SPACING.xs }}
-            />
-          </View>
-
-          {/* SECTION 3: QUICK NAVIGATION & ACCOUNT */}
-          <View style={styles.card}>
-            <Text style={[styles.sectionTitle, { marginBottom: SPACING.md }]}>
-              Account Quick Links
-            </Text>
-
-            <TouchableOpacity
-              style={styles.navRow}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('SecuritySettings')}
-            >
-              <View style={[styles.navIconBox, { backgroundColor: '#EFF6FF' }]}>
-                <Lock size={18} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.navTitle}>Security & Active Sessions</Text>
-                <Text style={styles.navSubtitle}>Manage passwords & signed-in devices</Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.slate400} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navRow}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('HelpSupport')}
-            >
-              <View style={[styles.navIconBox, { backgroundColor: '#ECFEFF' }]}>
-                <HelpCircle size={18} color="#0891B2" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.navTitle}>Help & Support Desk</Text>
-                <Text style={styles.navSubtitle}>FAQ knowledge base & support tickets</Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.slate400} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navRow}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('AboutUs')}
-            >
-              <View style={[styles.navIconBox, { backgroundColor: '#FEF3C7' }]}>
-                <Info size={18} color="#B45309" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.navTitle}>About JobMarket</Text>
-                <Text style={styles.navSubtitle}>Industrial marketplace mission & stats</Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.slate400} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.navRow, { borderBottomWidth: 0 }]}
-              activeOpacity={0.7}
-              onPress={handleLogout}
-            >
-              <View style={[styles.navIconBox, { backgroundColor: '#FEE2E2' }]}>
-                <LogOut size={18} color={COLORS.danger} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.navTitle, { color: COLORS.danger }]}>Logout Account</Text>
-                <Text style={styles.navSubtitle}>Sign out from current mobile session</Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.slate400} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </ScrollView>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -795,47 +705,50 @@ const styles = StyleSheet.create({
     paddingBottom: 130,
   },
   heroBanner: {
-    borderRadius: 8,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#1E3A8A',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#172554',
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    borderColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
+    gap: 12,
   },
   avatarPicker: {
     position: 'relative',
   },
   avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FFFFFF',
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   cameraBadge: {
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: COLORS.primary,
-    padding: 5,
-    borderRadius: 10,
+    backgroundColor: '#2563EB',
+    padding: 3,
+    borderRadius: 9,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
@@ -843,45 +756,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    marginBottom: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#BFDBFE',
   },
   verifiedText: {
-    color: '#34D399',
-    fontSize: 10.5,
+    color: '#2563EB',
+    fontSize: 10,
     fontWeight: '800',
   },
   companyTitle: {
     ...TYPOGRAPHY.h2,
-    fontSize: 18,
-    fontWeight: '900',
-    color: COLORS.textWhite,
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
   },
   emailSubtitle: {
     ...TYPOGRAPHY.caption,
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 16,
   },
   card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#CBD5E1',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardTitleBox: {
     flexDirection: 'row',
@@ -890,23 +808,25 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
   },
   sectionTitle: {
     ...TYPOGRAPHY.h2,
-    fontSize: 16.5,
+    fontSize: 16,
     fontWeight: '800',
     color: COLORS.slate900,
+    letterSpacing: -0.2,
   },
   sectionSubtitle: {
     ...TYPOGRAPHY.caption,
-    fontSize: 12,
+    fontSize: 11.5,
     color: COLORS.slate500,
     marginTop: 1,
   },
@@ -916,12 +836,12 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     paddingVertical: SPACING.md - 2,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.slate100,
+    borderBottomColor: '#F1F5F9',
   },
   navIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -936,60 +856,41 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: COLORS.slate500,
   },
-
-  /* Minimal 3D Tabular Menu Strip Styles (Horizontal Scroll & Compact Height) */
   tabStripWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
-    paddingVertical: 3,
-    paddingHorizontal: 3,
+    padding: 3,
     marginBottom: 14,
-  },
-  tabStripScrollContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   tabBtn: {
-    height: 32,
+    flex: 1,
+    height: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    borderRadius: 6,
+    gap: 6,
+    borderRadius: 8,
   },
   tabBtnInactive: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#CBD5E1',
+    backgroundColor: 'transparent',
   },
   tabBtnActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#60A5FA',
-    borderBottomWidth: 2,
-    borderBottomColor: '#2563EB',
-  },
-  tabIconSquircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIconSquircleActive: {
-    backgroundColor: '#DBEAFE',
+    borderColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   tabBtnText: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -997,8 +898,23 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     fontWeight: '800',
   },
-
-  /* Ultra-Professional Performance Card Styles */
+  tabBtnBanners: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 8,
+  },
+  tabBtnBannersText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
   cardHeaderWithBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1028,58 +944,94 @@ const styles = StyleSheet.create({
     color: '#15803D',
     letterSpacing: 0.4,
   },
-  proGridContainer: {
-    marginTop: 4,
+  proRowsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  proGridRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  proGridCell: {
-    flex: 1,
+    borderColor: '#CBD5E1',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 4,
+    marginTop: 4,
   },
-  proGridCellRightBorder: {
-    borderRightWidth: 1,
-    borderRightColor: '#F1F5F9',
-  },
-  proHorizontalDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  proLogoNumRow: {
+  metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    paddingVertical: 10,
+    gap: 10,
   },
-  proMetricIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 7,
+  rowIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  proMetricVal: {
-    fontSize: 21,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  proMetricTitle: {
-    fontSize: 11.5,
+  rowMetricTitle: {
+    flex: 1,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#475569',
+    color: '#334155',
+  },
+  rowRightBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowMetricVal: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    minWidth: 26,
+    textAlign: 'right',
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
+  tileGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  metricTile: {
+    width: '48.5%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 10,
+  },
+  tileTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tileIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileMetricVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  tileMetricTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
   },
   proMetaPillBlue: {
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextBlue: {
@@ -1091,7 +1043,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextGreen: {
@@ -1103,7 +1055,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextAmber: {
@@ -1115,7 +1067,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F2FE',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextSky: {
@@ -1127,7 +1079,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3E8FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextPurple: {
@@ -1139,7 +1091,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextEmerald: {
@@ -1152,14 +1104,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
     padding: 14,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   funnelRow: {
     flexDirection: 'row',
@@ -1178,14 +1128,14 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   barBg: {
-    height: 8,
+    height: 6,
     backgroundColor: '#F1F5F9',
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   infoSectionTitle: {
     fontSize: 10.5,
@@ -1197,11 +1147,9 @@ const styles = StyleSheet.create({
   actionNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,

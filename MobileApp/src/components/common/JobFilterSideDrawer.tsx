@@ -24,6 +24,10 @@ import {
   ArrowLeft,
   Wrench,
   Clock,
+  Bus,
+  Utensils,
+  Home,
+  Zap,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -113,39 +117,35 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.fullScreenContainer, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 44 : 12) }]}>
-        {/* Full Page Header Bar */}
+        {/* iOS Navigation Header Bar */}
         <View style={styles.headerBar}>
           <TouchableOpacity
             style={styles.backBtn}
             onPress={onClose}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <ArrowLeft size={22} color="#0F172A" />
+            <X size={20} color="#0F172A" />
           </TouchableOpacity>
 
-          <View style={{ flex: 1, marginLeft: 8 }}>
+          <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={styles.headerTitle}>Filter Vacancies</Text>
-            <Text style={styles.headerSubtitle}>Refine by MIDC zone, trade & benefits</Text>
+            <Text style={styles.headerSubtitle}>{totalMatchingJobsCount} Matching Jobs Found</Text>
           </View>
 
           <TouchableOpacity style={styles.resetHeaderBtn} onPress={handleReset}>
-            <RotateCcw size={14} color="#2563EB" />
             <Text style={styles.resetHeaderBtnText}>Reset</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Scrollable Filter Options Body */}
+        {/* Scrollable iOS Settings Group List */}
         <ScrollView
           style={styles.scrollBody}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* 1. Industry / Trade Category */}
-          <View style={styles.filterCard3D}>
-            <View style={styles.sectionTitleRow}>
-              <Building2 size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Industry Sector</Text>
-            </View>
+          {/* SECTION 1: INDUSTRY SECTOR */}
+          <Text style={styles.groupHeaderLabel}>INDUSTRY SECTOR</Text>
+          <View style={styles.singleMasterCard}>
             <View style={styles.pillsWrap}>
               {INDUSTRIES.map((ind) => {
                 const isActive = filters.industry === ind;
@@ -165,12 +165,9 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
             </View>
           </View>
 
-          {/* 2. MIDC Industrial Zone */}
-          <View style={styles.filterCard3D}>
-            <View style={styles.sectionTitleRow}>
-              <MapPin size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>MIDC Industrial Zone</Text>
-            </View>
+          {/* SECTION 2: MIDC INDUSTRIAL ZONE */}
+          <Text style={styles.groupHeaderLabel}>MIDC INDUSTRIAL ZONE</Text>
+          <View style={styles.singleMasterCard}>
             <View style={styles.pillsWrap}>
               {MIDC_ZONES.map((zone) => {
                 const isActive = filters.midcZone === zone;
@@ -190,12 +187,9 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
             </View>
           </View>
 
-          {/* 3. Job Type & Work Mode */}
-          <View style={styles.filterCard3D}>
-            <View style={styles.sectionTitleRow}>
-              <Briefcase size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Employment Type</Text>
-            </View>
+          {/* SECTION 3: EMPLOYMENT TYPE */}
+          <Text style={styles.groupHeaderLabel}>EMPLOYMENT TYPE</Text>
+          <View style={styles.singleMasterCard}>
             <View style={styles.pillsWrap}>
               {JOB_TYPES.map((jt) => {
                 const isActive = filters.jobType === jt;
@@ -213,11 +207,11 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                 );
               })}
             </View>
+          </View>
 
-            <View style={[styles.sectionTitleRow, { marginTop: 12 }]}>
-              <Clock size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Work Mode</Text>
-            </View>
+          {/* SECTION 4: WORK MODE */}
+          <Text style={styles.groupHeaderLabel}>WORK MODE</Text>
+          <View style={styles.singleMasterCard}>
             <View style={styles.pillsWrap}>
               {WORK_MODES.map((wm) => {
                 const isActive = filters.workMode === wm;
@@ -237,12 +231,9 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
             </View>
           </View>
 
-          {/* 4. Experience Level */}
-          <View style={styles.filterCard3D}>
-            <View style={styles.sectionTitleRow}>
-              <Award size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Experience Required</Text>
-            </View>
+          {/* SECTION 5: EXPERIENCE REQUIRED */}
+          <Text style={styles.groupHeaderLabel}>EXPERIENCE REQUIRED</Text>
+          <View style={styles.singleMasterCard}>
             <View style={styles.pillsWrap}>
               {EXPERIENCE_LEVELS.map((exp) => {
                 const isActive = filters.minExperience === exp;
@@ -262,65 +253,72 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
             </View>
           </View>
 
-          {/* 5. Company Facilities & Amenities */}
-          <View style={styles.filterCard3D}>
-            <View style={styles.sectionTitleRow}>
-              <Sparkles size={16} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Factory Perks & Facilities</Text>
-            </View>
-            <View style={{ gap: 8 }}>
-              {/* Bus Facility */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.checkboxRow}
-                onPress={() => setFilters({ ...filters, busFacility: !filters.busFacility })}
-              >
-                <View style={[styles.checkboxBox, filters.busFacility && styles.checkboxBoxActive]}>
-                  {filters.busFacility && <Check size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Bus / Company Transport Facility</Text>
-              </TouchableOpacity>
+          {/* SECTION 6: PERKS & FACILITIES */}
+          <Text style={styles.groupHeaderLabel}>PERKS & FACILITIES</Text>
+          <View style={styles.singleMasterCard}>
+            {/* Bus Facility */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.facilityRow}
+              onPress={() => setFilters({ ...filters, busFacility: !filters.busFacility })}
+            >
+              <View style={[styles.facilityIconBox, { backgroundColor: '#EFF6FF' }]}>
+                <Bus size={18} color="#2563EB" />
+              </View>
+              <Text style={styles.facilityLabel}>Bus / Company Transport Facility</Text>
+              <View style={[styles.checkboxBox, filters.busFacility && styles.checkboxBoxActive]}>
+                {filters.busFacility && <Check size={14} color="#FFFFFF" />}
+              </View>
+            </TouchableOpacity>
 
-              {/* Subsidized Canteen */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.checkboxRow}
-                onPress={() => setFilters({ ...filters, canteen: !filters.canteen })}
-              >
-                <View style={[styles.checkboxBox, filters.canteen && styles.checkboxBoxActive]}>
-                  {filters.canteen && <Check size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Subsidized Canteen / Meals</Text>
-              </TouchableOpacity>
+            {/* Subsidized Canteen */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.facilityRow}
+              onPress={() => setFilters({ ...filters, canteen: !filters.canteen })}
+            >
+              <View style={[styles.facilityIconBox, { backgroundColor: '#FEF3C7' }]}>
+                <Utensils size={18} color="#D97706" />
+              </View>
+              <Text style={styles.facilityLabel}>Subsidized Canteen / Meals</Text>
+              <View style={[styles.checkboxBox, filters.canteen && styles.checkboxBoxActive]}>
+                {filters.canteen && <Check size={14} color="#FFFFFF" />}
+              </View>
+            </TouchableOpacity>
 
-              {/* Hostel / Accommodation */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.checkboxRow}
-                onPress={() => setFilters({ ...filters, accommodation: !filters.accommodation })}
-              >
-                <View style={[styles.checkboxBox, filters.accommodation && styles.checkboxBoxActive]}>
-                  {filters.accommodation && <Check size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Free / Subsidized Hostel Accommodation</Text>
-              </TouchableOpacity>
+            {/* Hostel Accommodation */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.facilityRow}
+              onPress={() => setFilters({ ...filters, accommodation: !filters.accommodation })}
+            >
+              <View style={[styles.facilityIconBox, { backgroundColor: '#F0FDF4' }]}>
+                <Home size={18} color="#16A34A" />
+              </View>
+              <Text style={styles.facilityLabel}>Subsidized Hostel Accommodation</Text>
+              <View style={[styles.checkboxBox, filters.accommodation && styles.checkboxBoxActive]}>
+                {filters.accommodation && <Check size={14} color="#FFFFFF" />}
+              </View>
+            </TouchableOpacity>
 
-              {/* Overtime Pay */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.checkboxRow}
-                onPress={() => setFilters({ ...filters, overtime: !filters.overtime })}
-              >
-                <View style={[styles.checkboxBox, filters.overtime && styles.checkboxBoxActive]}>
-                  {filters.overtime && <Check size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkboxLabel}>Overtime Pay (OT Available)</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Overtime Pay */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.facilityRow, { borderBottomWidth: 0 }]}
+              onPress={() => setFilters({ ...filters, overtime: !filters.overtime })}
+            >
+              <View style={[styles.facilityIconBox, { backgroundColor: '#F3E8FF' }]}>
+                <Clock size={18} color="#7C3AED" />
+              </View>
+              <Text style={styles.facilityLabel}>Overtime Pay (OT Available)</Text>
+              <View style={[styles.checkboxBox, filters.overtime && styles.checkboxBoxActive]}>
+                {filters.overtime && <Check size={14} color="#FFFFFF" />}
+              </View>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
-        {/* Fixed Bottom Full Page Action Bar */}
+        {/* Fixed Bottom Action Bar */}
         <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
           <TouchableOpacity style={styles.resetFooterBtn} onPress={handleReset} activeOpacity={0.8}>
             <RotateCcw size={16} color="#475569" />
@@ -329,7 +327,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
 
           <TouchableOpacity style={styles.applyFooterBtn} onPress={handleApply} activeOpacity={0.85}>
             <Text style={styles.applyFooterBtnText}>
-              Apply Filters ({totalMatchingJobsCount} Vacancies)
+              Apply Filters ({totalMatchingJobsCount} Jobs)
             </Text>
           </TouchableOpacity>
         </View>
@@ -386,29 +384,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 110,
-    gap: 14,
   },
-  filterCard3D: {
+  groupHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    marginTop: 14,
+    marginBottom: 6,
+    paddingLeft: 4,
+  },
+  singleMasterCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 10,
-    padding: 14,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
+    borderRadius: 0,
+    padding: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   pillsWrap: {
     flexDirection: 'row',
@@ -419,9 +418,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 20,
-    paddingHorizontal: 13,
-    paddingVertical: 6,
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   filterChipActive: {
     backgroundColor: '#2563EB',
@@ -430,23 +429,39 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#334155',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
-  checkboxRow: {
+  facilityRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
     gap: 10,
-    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  facilityIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  facilityLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   checkboxBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
+    width: 22,
+    height: 22,
+    borderRadius: 0,
     borderWidth: 1.5,
-    borderColor: '#94A3B8',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
@@ -454,11 +469,6 @@ const styles = StyleSheet.create({
   checkboxBoxActive: {
     backgroundColor: '#2563EB',
     borderColor: '#2563EB',
-  },
-  checkboxLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
   },
   fixedFooter: {
     position: 'absolute',
@@ -475,9 +485,9 @@ const styles = StyleSheet.create({
     gap: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 8,
   },
   resetFooterBtn: {
     flexDirection: 'row',
@@ -487,9 +497,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    borderRadius: 0,
+    paddingHorizontal: 16,
+    height: 46,
   },
   resetFooterBtnText: {
     fontSize: 13,
@@ -501,8 +511,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingVertical: 13,
+    borderRadius: 0,
+    height: 46,
   },
   applyFooterBtnText: {
     fontSize: 14,

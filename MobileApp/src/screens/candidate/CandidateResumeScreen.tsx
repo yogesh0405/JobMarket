@@ -273,7 +273,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     padding: 16,
@@ -282,13 +282,16 @@ const styles = StyleSheet.create({
   },
   card3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 16,
     gap: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -297,7 +300,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
   },
   cardSub: {
@@ -312,13 +315,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 0,
     gap: 10,
   },
   fileIconSquare: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -348,7 +351,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
   },
   emptyDesc: {
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 0,
     marginTop: 6,
   },
   uploadBtnText: {
@@ -399,7 +402,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 0,
     gap: 8,
   },
   summaryItem: {

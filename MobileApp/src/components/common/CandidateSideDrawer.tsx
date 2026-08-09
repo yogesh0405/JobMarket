@@ -90,7 +90,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
     }, 100);
   };
 
-  const menuItems = [
+  const coreMenuItems = [
     {
       label: 'Dashboard & Analytics',
       icon: LayoutGrid,
@@ -105,29 +105,32 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
       },
     },
     {
-      label: 'My Profile',
+      label: 'My Candidate Profile',
       icon: UserIcon,
       action: () => handleNavigate('CandidateProfile'),
     },
     {
-      label: 'My Resume',
+      label: 'Resume & Bio-Data',
       icon: FileText,
       action: () => handleNavigate('CandidateResume'),
     },
+  ];
+
+  const secMenuItems = [
     {
       label: 'Security Settings',
       icon: ShieldCheck,
       action: () => handleNavigate('SecuritySettings'),
     },
     {
-      label: 'About us',
-      icon: Info,
-      action: () => handleNavigate('AboutUs'),
-    },
-    {
       label: 'Help & Support',
       icon: HelpCircle,
       action: () => handleNavigate('HelpSupport'),
+    },
+    {
+      label: 'About JobMarket',
+      icon: Info,
+      action: () => handleNavigate('AboutUs'),
     },
   ];
 
@@ -149,7 +152,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          <View style={styles.drawerHeader}>
+          <View style={styles.profileHeaderCard}>
             <View style={styles.headerInfo}>
               <View style={styles.avatarContainer}>
                 {user?.profilePictureUrl ? (
@@ -165,10 +168,14 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
                   </View>
                 )}
               </View>
+
               <View style={styles.profileTextContainer}>
-                <Text style={styles.userName} numberOfLines={1}>
-                  {user?.name || 'Candidate User'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Text style={styles.userName} numberOfLines={1}>
+                    {user?.name || 'Candidate User'}
+                  </Text>
+                  <ShieldCheck size={14} color="#2563EB" />
+                </View>
                 <Text style={styles.userEmail} numberOfLines={1}>
                   {user?.email || 'candidate@jobmarket.com'}
                 </Text>
@@ -176,36 +183,66 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
             </View>
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <X size={20} color="#64748B" />
+              <X size={16} color="#64748B" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.menuContainer}>
-            {menuItems.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.menuItem}
-                  onPress={item.action}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={styles.iconBox}>
-                      <Icon size={18} color="#2563EB" />
+            <Text style={styles.sectionHeaderLabel}>CORE NAVIGATION</Text>
+            <View style={styles.groupedMenuCard}>
+              {coreMenuItems.map((item, index) => {
+                const Icon = item.icon;
+                const isLast = index === coreMenuItems.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.menuItem, !isLast && styles.menuItemBorder]}
+                    activeOpacity={0.7}
+                    onPress={item.action}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <View style={styles.iconBox}>
+                        <Icon size={17} color="#2563EB" />
+                      </View>
+                      <Text style={styles.menuItemText}>{item.label}</Text>
                     </View>
-                    <Text style={styles.menuItemText}>{item.label}</Text>
-                  </View>
-                  <ChevronRight size={16} color="#CBD5E1" />
-                </TouchableOpacity>
-              );
-            })}
+                    <ChevronRight size={15} color="#CBD5E1" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sectionHeaderLabel}>SETTINGS & SUPPORT</Text>
+            <View style={styles.groupedMenuCard}>
+              {secMenuItems.map((item, index) => {
+                const Icon = item.icon;
+                const isLast = index === secMenuItems.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.menuItem, !isLast && styles.menuItemBorder]}
+                    activeOpacity={0.7}
+                    onPress={item.action}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <View style={styles.iconBox}>
+                        <Icon size={17} color="#2563EB" />
+                      </View>
+                      <Text style={styles.menuItemText}>{item.label}</Text>
+                    </View>
+                    <ChevronRight size={15} color="#CBD5E1" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           <View style={styles.drawerFooter}>
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <LogOut size={18} color="#EF4444" />
-              <Text style={styles.logoutText}>Logout</Text>
+            <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8} onPress={handleLogout}>
+              <LogOut size={16} color="#DC2626" />
+              <Text style={styles.logoutText}>Log Out Account</Text>
             </TouchableOpacity>
+            <Text style={styles.versionText}>JobMarket Mobile v1.0 • MIDC Verified</Text>
           </View>
         </Animated.View>
       </View>
@@ -229,26 +266,34 @@ const styles = StyleSheet.create({
   drawerContainer: {
     width: DRAWER_WIDTH,
     height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
-    shadowColor: '#000000',
+    backgroundColor: '#F8FAFC',
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 16,
-    paddingTop: 50,
-    paddingBottom: 30,
+    paddingTop: 52,
+    paddingBottom: 24,
     justifyContent: 'space-between',
   },
-  drawerHeader: {
+  profileHeaderCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+    marginHorizontal: 14,
+    marginBottom: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   headerInfo: {
     flex: 1,
@@ -256,58 +301,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: 10,
   },
   avatarImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#E2E8F0',
+    borderWidth: 2,
+    borderColor: '#2563EB',
   },
   avatarPlaceholder: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#DBEAFE',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#2563EB',
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
   profileTextContainer: {
     flex: 1,
     justifyContent: 'center',
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 2,
+    letterSpacing: -0.2,
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
+    marginTop: 1,
   },
   closeBtn: {
-    padding: 4,
-    marginLeft: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
   },
   menuContainer: {
     flex: 1,
-    marginTop: 20,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    paddingHorizontal: 14,
+  },
+  sectionHeaderLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.6,
+    marginBottom: 6,
+    paddingLeft: 4,
+  },
+  groupedMenuCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginBottom: 14,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   menuItemLeft: {
     flexDirection: 'row',
@@ -320,28 +392,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   menuItemText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '700',
     color: '#334155',
   },
   drawerFooter: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 20,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 14,
+    gap: 8,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#EF4444',
-    marginLeft: 10,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  versionText: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });

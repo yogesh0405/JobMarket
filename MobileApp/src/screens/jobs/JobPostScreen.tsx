@@ -203,11 +203,19 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
   const isEdit = !!editJobId;
   const { user } = useAuth();
 
+  const defaultProfileLogo =
+    user?.companyLogo ||
+    (user as any)?.company_logo ||
+    (user as any)?.avatarUrl ||
+    (user as any)?.profilePicture ||
+    (user as any)?.avatar ||
+    null;
+
   // AI Prompt input
   const [aiPrompt, setAiPrompt] = useState('');
 
-  // 1. Company Logo
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  // 1. Company Logo (Defaults to employer profile picture)
+  const [companyLogo, setCompanyLogo] = useState<string | null>(defaultProfileLogo);
 
   // 2. Industry & Job Role
   const [industry, setIndustry] = useState<string>('');
@@ -367,7 +375,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const resetForm = useCallback(() => {
     setAiPrompt('');
-    setCompanyLogo(null);
+    setCompanyLogo(defaultProfileLogo);
     setIndustry('');
     setCustomIndustry('');
     setTitle('');
@@ -425,7 +433,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
     setRequirements('');
     setSkillsTags([]);
     setError(null);
-  }, []);
+  }, [defaultProfileLogo]);
 
   // Load existing job for editing whenever screen gains focus with jobId, or reset for new job
   useFocusEffect(
@@ -437,7 +445,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
           setLoading(false);
           if (res.success && res.data) {
             const j = res.data as any;
-            setCompanyLogo(j.companyLogo || j.company_logo || null);
+            setCompanyLogo(j.companyLogo || j.company_logo || defaultProfileLogo);
             const ind = j.industry || j.trade || 'Industrial Manufacturing';
             setIndustry(ind);
             handleIndustryChange(ind);
@@ -785,59 +793,31 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {error ? <ErrorBanner message={error} /> : null}
 
-          {/* AI Job Builder Card */}
-          {!isEdit ? (
-            <View style={styles.aiCard}>
-              <View style={styles.aiTitleRow}>
-                <Sparkles size={20} color={COLORS.primary} />
-                <Text style={styles.aiTitleText}>AI Job Builder</Text>
-              </View>
-              <Text style={styles.aiDescText}>
-                Type requirements in simple words (e.g. "Need 10 CNC operators at Chakan MIDC, night shift with bus and canteen")
-              </Text>
-              <View style={styles.aiRow}>
-                <TextInput
-                  style={styles.aiInput}
-                  placeholder="Type job requirements..."
-                  placeholderTextColor={COLORS.slate400}
-                  value={aiPrompt}
-                  onChangeText={setAiPrompt}
-                />
-                <TouchableOpacity style={styles.aiBtn} onPress={handleAiBuild}>
-                  <Text style={styles.aiBtnText}>Generate Form</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-
           {/* Section 1: Governance & Logo */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <ShieldCheck size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Company Logo & Settings</Text>
+          <View style={styles.compactLogoCard}>
+            <View style={styles.compactHeaderRow}>
+              <ShieldCheck size={16} color="#2563EB" />
+              <Text style={styles.compactSectionTitle}>Company Logo & Settings</Text>
             </View>
 
-            <Text style={styles.fieldLabel}>Upload Company / Factory / Organization Logo</Text>
-            <View style={styles.logoRow}>
-              <TouchableOpacity style={styles.logoBox} onPress={handlePickLogo}>
+            <View style={styles.compactLogoRow}>
+              <TouchableOpacity activeOpacity={0.8} style={styles.logoBoxCompact} onPress={handlePickLogo}>
                 {companyLogo ? (
-                  <Image source={{ uri: companyLogo }} style={styles.logoImage} />
+                  <Image source={{ uri: companyLogo }} style={styles.logoImageCompact} resizeMode="cover" />
                 ) : (
-                  <Building2 size={32} color={COLORS.primary} />
+                  <Building2 size={20} color="#2563EB" />
                 )}
               </TouchableOpacity>
-              <View style={styles.logoActions}>
-                <TouchableOpacity style={styles.uploadLogoBtn} onPress={handlePickLogo}>
-                  <Upload size={14} color={COLORS.textWhite} />
-                  <Text style={styles.uploadLogoText}>Upload Logo</Text>
-                </TouchableOpacity>
-                {companyLogo ? (
-                  <TouchableOpacity style={styles.removeLogoBtn} onPress={() => setCompanyLogo(null)}>
-                    <Trash2 size={14} color={COLORS.danger} />
-                    <Text style={styles.removeLogoText}>Remove</Text>
-                  </TouchableOpacity>
-                ) : null}
+
+              <View style={styles.compactLogoInfo}>
+                <Text style={styles.compactLogoLabel}>Company Logo</Text>
+                <Text style={styles.compactLogoSub}>Defaults to profile image</Text>
               </View>
+
+              <TouchableOpacity style={styles.uploadLogoBtnCompact} activeOpacity={0.8} onPress={handlePickLogo}>
+                <Upload size={13} color="#2563EB" />
+                <Text style={styles.uploadLogoTextCompact}>Upload Logo</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1202,26 +1182,26 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
 
             <Text style={styles.fieldLabel}>Select Hiring Mode</Text>
-            <View style={styles.hiringModeBox}>
+            <View style={styles.hiringSegmentedTrack}>
               <TouchableOpacity
                 activeOpacity={0.8}
-                style={[styles.hiringCard, hiringMethod === 'STANDARD' && styles.hiringCardActive]}
+                style={[styles.hiringTabBtn, hiringMethod === 'STANDARD' && styles.hiringTabBtnActive]}
                 onPress={() => setHiringMethod('STANDARD')}
               >
-                <Building2 size={22} color={hiringMethod === 'STANDARD' ? '#2563EB' : '#64748B'} />
-                <Text style={[styles.hiringTitle, hiringMethod === 'STANDARD' && styles.hiringTitleActive]}>
-                  Standard Online Applications
+                <Building2 size={16} color={hiringMethod === 'STANDARD' ? '#2563EB' : '#64748B'} />
+                <Text style={[styles.hiringTabText, hiringMethod === 'STANDARD' && styles.hiringTabTextActive]}>
+                  Standard Online
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 activeOpacity={0.8}
-                style={[styles.hiringCard, hiringMethod === 'WALK_IN' && styles.hiringCardActive]}
+                style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
                 onPress={() => setHiringMethod('WALK_IN')}
               >
-                <UserCheck size={22} color={hiringMethod === 'WALK_IN' ? '#2563EB' : '#64748B'} />
-                <Text style={[styles.hiringTitle, hiringMethod === 'WALK_IN' && styles.hiringTitleActive]}>
-                  Direct Walk-in Interview Drive
+                <UserCheck size={16} color={hiringMethod === 'WALK_IN' ? '#2563EB' : '#64748B'} />
+                <Text style={[styles.hiringTabText, hiringMethod === 'WALK_IN' && styles.hiringTabTextActive]}>
+                  Direct Walk-in Drive
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1466,25 +1446,23 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
     padding: 14,
-    marginBottom: 14,
+    marginBottom: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
-    paddingBottom: 6,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -1492,9 +1470,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0F172A',
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
   fieldLabel: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#334155',
     marginBottom: SPACING.xs,
@@ -1509,57 +1488,49 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: '#F8FAFC',
     marginRight: 6,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
   },
   chipActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+    borderWidth: 1.5,
   },
   chipText: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     color: '#334155',
     fontWeight: '700',
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: '#2563EB',
     fontWeight: '800',
   },
   stepperBox: {
     flexDirection: 'row',
     alignItems: 'center',
     width: 140,
-    height: 42,
+    height: 40,
     borderWidth: 1,
-    borderColor: COLORS.slate300,
-    borderRadius: RADIUS.sm,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
     overflow: 'hidden',
   },
   stepperBtn: {
-    width: 42,
-    height: 42,
-    backgroundColor: COLORS.slate100,
+    width: 40,
+    height: 40,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperInput: {
     flex: 1,
     textAlign: 'center',
-    fontWeight: '700',
-    fontSize: 16,
-    color: COLORS.slate900,
+    fontWeight: '800',
+    fontSize: 15,
+    color: '#0F172A',
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -1607,27 +1578,30 @@ const styles = StyleSheet.create({
   },
   segmentedRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.slate100,
-    borderRadius: RADIUS.sm,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
     padding: 3,
+    gap: 3,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: SPACING.sm,
+    height: 34,
     alignItems: 'center',
-    borderRadius: RADIUS.sm - 2,
+    justifyContent: 'center',
+    borderRadius: 6,
   },
   segmentBtnActive: {
-    backgroundColor: COLORS.surface,
-    ...SHADOWS.sm,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   segmentText: {
-    fontSize: 13.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: '#64748B',
   },
   segmentTextActive: {
-    color: COLORS.primary,
+    color: '#2563EB',
     fontWeight: '800',
   },
   rowTwo: {
@@ -1647,106 +1621,118 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.xs,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.slate100,
+    borderBottomColor: '#F1F5F9',
   },
   perkLabel: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#334155',
   },
-  hiringModeBox: {
+  hiringSegmentedTrack: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    padding: 3,
+    gap: 4,
+    marginTop: 4,
     marginBottom: 8,
   },
-  hiringCard: {
+  hiringTabBtn: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
+    height: 38,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    borderRadius: 6,
+    backgroundColor: 'transparent',
   },
-  hiringCardActive: {
-    borderColor: '#2563EB',
-    borderBottomWidth: 3,
-    borderBottomColor: '#1D4ED8',
-    backgroundColor: '#EFF6FF',
+  hiringTabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
-  hiringTitle: {
-    fontSize: 12,
+  hiringTabText: {
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#334155',
-    textAlign: 'center',
-    lineHeight: 16,
+    color: '#64748B',
   },
-  hiringTitleActive: {
+  hiringTabTextActive: {
     color: '#2563EB',
-    fontWeight: '900',
+    fontWeight: '800',
   },
-  logoRow: {
+  compactLogoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  compactHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
-    marginTop: SPACING.xs,
+    gap: 6,
+    marginBottom: 8,
   },
-  logoBox: {
-    width: 60,
-    height: 60,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.slate100,
+  compactSectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  compactLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoBoxCompact: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: COLORS.slate300,
+    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  logoImage: {
-    width: 60,
-    height: 60,
-    borderRadius: RADIUS.sm,
+  logoImageCompact: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
-  logoActions: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
+  compactLogoInfo: {
+    flex: 1,
   },
-  uploadLogoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.sm,
-  },
-  uploadLogoText: {
-    color: COLORS.textWhite,
+  compactLogoLabel: {
     fontSize: 12,
     fontWeight: '700',
+    color: '#0F172A',
   },
-  removeLogoBtn: {
+  compactLogoSub: {
+    fontSize: 10.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  uploadLogoBtnCompact: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.sm,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
-  removeLogoText: {
-    color: COLORS.danger,
-    fontSize: 12,
-    fontWeight: '700',
+  uploadLogoTextCompact: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#2563EB',
   },
   submitContainer: {
     marginTop: SPACING.md,

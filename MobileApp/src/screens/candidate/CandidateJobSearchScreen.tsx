@@ -589,23 +589,48 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
 
       {/* Search Input & Filters Button Row */}
-      <View style={[styles.searchFilterRow, { marginHorizontal: 16 }]}>
-        <View style={styles.inputSearchBox}>
-          <Search size={18} color="#94A3B8" />
-          <TextInput
-            style={styles.inputSearchText}
-            placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+      {(() => {
+        const activeFilterCount = [
+          activeFilters.industry !== 'All Industries',
+          activeFilters.midcZone !== 'All MIDC Zones',
+          activeFilters.jobType !== 'All Types',
+          activeFilters.workMode !== 'All Modes',
+          activeFilters.minExperience !== 'All Experience',
+          activeFilters.busFacility,
+          activeFilters.canteen,
+          activeFilters.accommodation,
+          activeFilters.overtime,
+        ].filter(Boolean).length;
 
-        <TouchableOpacity style={styles.filtersBtn} onPress={() => setFilterDrawerOpen(true)} activeOpacity={0.8}>
-          <SlidersHorizontal size={16} color="#0F172A" />
-          <Text style={styles.filtersBtnText}>Filters</Text>
-        </TouchableOpacity>
-      </View>
+        return (
+          <View style={[styles.searchFilterRow, { marginHorizontal: 16 }]}>
+            <View style={styles.inputSearchBox}>
+              <Search size={18} color="#94A3B8" />
+              <TextInput
+                style={styles.inputSearchText}
+                placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
+              onPress={() => setFilterDrawerOpen(true)}
+              activeOpacity={0.8}
+            >
+              <SlidersHorizontal size={16} color={activeFilterCount > 0 ? '#2563EB' : '#0F172A'} />
+              <Text style={[styles.filtersBtnText, activeFilterCount > 0 && { color: '#2563EB' }]}>Filters</Text>
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadgePill}>
+                  <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        );
+      })()}
 
       {/* Dynamic View Mode Switching: Map View vs Scrollable Stream */}
       {viewMode === 'map' ? (
@@ -1015,28 +1040,33 @@ const styles = StyleSheet.create({
   viewSegmentBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    padding: 2,
+    borderColor: '#E2E8F0',
+    borderRadius: 0,
+    padding: 3,
     gap: 2,
   },
   segmentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 6,
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 0,
   },
   segmentBtnActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#93C5FD',
+    borderColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   segmentBtnText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -1050,7 +1080,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 10,
+    borderRadius: 0,
     padding: 10,
     gap: 8,
     shadowColor: '#0F172A',
@@ -1069,7 +1099,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   categoryPillActive: {
     backgroundColor: '#2563EB',
@@ -1087,7 +1117,7 @@ const styles = StyleSheet.create({
   catArrowRightBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -1105,18 +1135,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 10,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
     paddingHorizontal: 12,
     height: 46,
     gap: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1.5,
+    shadowRadius: 3,
+    elevation: 1,
   },
   inputSearchText: {
     flex: 1,
@@ -1133,22 +1161,38 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 14,
     height: 46,
-    borderRadius: 10,
+    borderRadius: 0,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1.5,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  filtersBtnActive: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
   },
   filtersBtnText: {
     fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
+  },
+  filterBadgePill: {
+    backgroundColor: '#2563EB',
+    borderRadius: 0,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgePillText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
+    fontWeight: '900',
   },
   compactListCard: {
     backgroundColor: '#FFFFFF',

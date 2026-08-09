@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Svg, { Circle } from 'react-native-svg';
 import {
   View,
   Text,
@@ -11,6 +12,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import {
   User as UserIcon,
@@ -36,6 +38,8 @@ import {
   Eye,
   Bookmark,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   AlertCircle,
   Sparkles,
   Building2,
@@ -102,9 +106,12 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(true);
 
   // Modal States
   const [skillInput, setSkillInput] = useState('');
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
   const [expModalOpen, setExpModalOpen] = useState(false);
   const [expTitle, setExpTitle] = useState('');
   const [expCompany, setExpCompany] = useState('');
@@ -538,36 +545,6 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Profile Avatar Header */}
-        <View style={styles.card3D}>
-          <View style={styles.avatarHeaderRow}>
-            <TouchableOpacity style={styles.avatarCircleBox} onPress={handlePickPhoto} activeOpacity={0.8}>
-              {profilePhotoUrl ? (
-                <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImg} />
-              ) : (
-                <Text style={styles.avatarLetter}>{(name || 'C').charAt(0).toUpperCase()}</Text>
-              )}
-
-              <View style={styles.cameraIconBadge}>
-                {uploadingPhoto ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Camera size={12} color="#FFFFFF" />
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.displayName}>{name || 'Candidate User'}</Text>
-              <Text style={styles.displayEmail}>{user?.email}</Text>
-              <View style={styles.verifiedBadgePill}>
-                <ShieldCheck size={12} color="#10B981" />
-                <Text style={styles.verifiedBadgeText}>VERIFIED WORKFORCE CANDIDATE</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
         {/* Tabbed Menu Switcher Bar: Profile vs Dashboard */}
         <View style={styles.tabBarContainer}>
           <TouchableOpacity
@@ -595,318 +572,377 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
         {activeTab === 'PROFILE' ? (
           <>
+            <View style={styles.singleMasterCard}>
+            {/* 1. Profile Avatar Header with Circular Svg Progress Ring */}
+            <View style={styles.avatarHeaderRow}>
+              <View style={styles.circularAvatarWrapper}>
+                {/* SVG Progress Ring */}
+                <Svg width={72} height={72} style={styles.svgRingOverlay}>
+                  {/* Background Track */}
+                  <Circle
+                    cx={36}
+                    cy={36}
+                    r={33}
+                    stroke="#E2E8F0"
+                    strokeWidth={3.5}
+                    fill="transparent"
+                  />
+                  {/* Active Progress Segment */}
+                  <Circle
+                    cx={36}
+                    cy={36}
+                    r={33}
+                    stroke={completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#F59E0B' : '#2563EB'}
+                    strokeWidth={3.5}
+                    strokeDasharray={207.35}
+                    strokeDashoffset={207.35 * (1 - completenessScore / 100)}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    transform="rotate(-90 36 36)"
+                  />
+                </Svg>
 
-        {/* Profile Completeness Card with Progress Bar */}
-        <View style={styles.card3D}>
-          <View style={styles.completenessHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Award size={18} color="#2563EB" />
-              <Text style={styles.completenessTitle}>Profile Completeness</Text>
-            </View>
-            <Text style={[styles.completenessPctText, { color: completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#D97706' : '#2563EB' }]}>
-              {completenessScore}% Completed
-            </Text>
-          </View>
+                {/* Avatar Touch Target */}
+                <TouchableOpacity style={styles.avatarCircleBoxInner} onPress={handlePickPhoto} activeOpacity={0.85}>
+                  {profilePhotoUrl ? (
+                    <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImgInner} />
+                  ) : (
+                    <Text style={styles.avatarLetter}>{(name || 'C').charAt(0).toUpperCase()}</Text>
+                  )}
 
-          <View style={styles.progressBgBar}>
-            <View
-              style={[
-                styles.progressFillBar,
-                {
-                  width: `${completenessScore}%`,
-                  backgroundColor: completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#F59E0B' : '#2563EB',
-                },
-              ]}
-            />
-          </View>
-
-          <Text style={styles.completenessHintText}>
-            {completenessScore === 100
-              ? '🎉 Great job! Your candidate profile is 100% complete and stands out to recruiters.'
-              : `Complete remaining profile details to boost candidate visibility by ${100 - completenessScore}%.`}
-          </Text>
-        </View>
-
-        {/* Resume CV Document Upload & View Card */}
-        <View style={styles.card3D}>
-          <Text style={styles.sectionTitle}>Resume & Bio-Data Document</Text>
-          <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 12 }}>
-            Upload your PDF or Image resume document to auto-attach it to all job applications.
-          </Text>
-
-          {resumeUrl ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' }}>
-              <FileText size={24} color="#2563EB" />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
-                  {resumeName}
-                </Text>
-                <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700' }}>
-                  ✓ Document Attached & Live in Database
-                </Text>
+                  <View style={styles.cameraIconBadge}>
+                    {uploadingPhoto ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Camera size={10} color="#FFFFFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
               </View>
 
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={styles.displayName} numberOfLines={2}>
+                  {name || 'Candidate User'}
+                </Text>
+
+                <Text style={styles.displayEmail} numberOfLines={1}>{user?.email}</Text>
+                {headline ? <Text style={styles.displayHeadline} numberOfLines={1}>{headline}</Text> : null}
+
+                <View style={styles.headerBadgesRow}>
+                  <View style={styles.verifiedBadgePill}>
+                    <ShieldCheck size={12} color="#2563EB" />
+                    <Text style={styles.verifiedBadgeText}>VERIFIED CANDIDATE</Text>
+                  </View>
+
+                  <View style={[styles.completenessBadgePill, { backgroundColor: completenessScore >= 80 ? '#DCFCE7' : completenessScore >= 50 ? '#FEF3C7' : '#EFF6FF', borderColor: completenessScore >= 80 ? '#86EFAC' : completenessScore >= 50 ? '#FDE68A' : '#BFDBFE' }]}>
+                    <Text style={[styles.completenessBadgeText, { color: completenessScore >= 80 ? '#15803D' : completenessScore >= 50 ? '#B45309' : '#2563EB' }]}>
+                      {completenessScore}% Complete
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* 4. Personal Info Form (Collapsible Accordion) */}
+            <View>
               <TouchableOpacity
-                style={{ padding: 8, backgroundColor: '#EFF6FF', borderRadius: 6, borderWidth: 1, borderColor: '#BFDBFE' }}
-                onPress={() => setShowPdfModal(true)}
+                activeOpacity={0.7}
+                style={styles.collapsibleHeaderRow}
+                onPress={() => setPersonalInfoOpen((prev) => !prev)}
               >
-                <ExternalLink size={16} color="#2563EB" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <UserIcon size={18} color="#2563EB" />
+                  <Text style={styles.sectionTitleNoMargin}>Personal & Contact Details</Text>
+                </View>
+                <View style={styles.chevronCircleBadge}>
+                  {personalInfoOpen ? (
+                    <ChevronUp size={18} color="#2563EB" />
+                  ) : (
+                    <ChevronDown size={18} color="#64748B" />
+                  )}
+                </View>
               </TouchableOpacity>
 
+              {personalInfoOpen ? (
+                <View style={{ marginTop: 12 }}>
+                  <Input
+                    label="Full Name *"
+                    required
+                    value={name}
+                    onChangeText={setName}
+                    leftIcon={<UserIcon size={18} color="#64748B" />}
+                  />
+
+                  <Input
+                    label="Professional Headline *"
+                    value={headline}
+                    placeholder="e.g. ITI VMC Operator & CNC Setter"
+                    onChangeText={setHeadline}
+                    leftIcon={<Briefcase size={18} color="#64748B" />}
+                  />
+
+                  <Input
+                    label="Current City / MIDC Location *"
+                    required
+                    value={location}
+                    placeholder="e.g. Waluj MIDC, Chhatrapati Sambhajinagar"
+                    onChangeText={setLocation}
+                    leftIcon={<MapPin size={18} color="#64748B" />}
+                  />
+
+                  <Input
+                    label="Mobile Phone Number *"
+                    required
+                    value={phone}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    onChangeText={setPhone}
+                    leftIcon={<Phone size={18} color="#64748B" />}
+                  />
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Bio / Career Summary</Text>
+                    <TextInput
+                      style={styles.textArea}
+                      multiline
+                      numberOfLines={3}
+                      placeholder="Brief summary of your factory experience and technical skills..."
+                      placeholderTextColor="#94A3B8"
+                      value={bio}
+                      onChangeText={setBio}
+                    />
+                  </View>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* 5. Industrial Trade & Work Preferences */}
+            <View>
+              <Text style={styles.sectionTitle}>Trade Specialization & Preferences</Text>
+
+              <Text style={styles.inputLabel}>Trade Specialization *</Text>
               <TouchableOpacity
-                style={{ padding: 8, backgroundColor: '#FEF2F2', borderRadius: 6, borderWidth: 1, borderColor: '#FCA5A5' }}
-                onPress={handleDeleteResumeDoc}
-                disabled={deletingResume}
+                activeOpacity={0.8}
+                style={styles.dropdownPickerRow}
+                onPress={() => setTradeModalOpen(true)}
               >
-                {deletingResume ? (
-                  <ActivityIndicator size="small" color="#DC2626" />
+                <Award size={18} color="#2563EB" />
+                <Text style={styles.dropdownPickerText}>
+                  {(isOtherSelected || tradeSpecialization === 'Other') ? (customTrade || 'Other (Specify Below)') : tradeSpecialization}
+                </Text>
+                <ChevronDown size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {(isOtherSelected || tradeSpecialization === 'Other') ? (
+                <Input
+                  label="Custom Trade Specialization *"
+                  placeholder="e.g. Laser Cutting Operator / PLC Automation Programmer"
+                  value={customTrade}
+                  onChangeText={setCustomTrade}
+                  leftIcon={<Award size={18} color="#64748B" />}
+                />
+              ) : null}
+
+              <Text style={styles.inputLabel}>Preferred Shift *</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.dropdownPickerRow}
+                onPress={() => setShiftModalOpen(true)}
+              >
+                <Clock size={18} color="#2563EB" />
+                <Text style={styles.dropdownPickerText}>{preferredShift}</Text>
+                <ChevronDown size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleTitle}>Requires Bus Transport</Text>
+                  <Text style={styles.toggleDesc}>Company bus pickup/drop facility needed</Text>
+                </View>
+                <Switch
+                  value={requiresBus}
+                  onValueChange={setRequiresBus}
+                  trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                  thumbColor={requiresBus ? '#2563EB' : '#94A3B8'}
+                />
+              </View>
+
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleTitle}>Requires Hostel Stay</Text>
+                  <Text style={styles.toggleDesc}>Accommodation / Hostel room facility needed</Text>
+                </View>
+                <Switch
+                  value={requiresAccommodation}
+                  onValueChange={setRequiresAccommodation}
+                  trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                  thumbColor={requiresAccommodation ? '#2563EB' : '#94A3B8'}
+                />
+              </View>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* 6. Skills Tag Management */}
+            <View>
+              <Text style={styles.sectionTitle}>Skills & Technical Capabilities</Text>
+
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                <TextInput
+                  style={[styles.inputField, { flex: 1 }]}
+                  placeholder="e.g. Vernier Caliper, Fanuc Control..."
+                  placeholderTextColor="#94A3B8"
+                  value={skillInput}
+                  onChangeText={setSkillInput}
+                />
+                <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.addSkillBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.skillsTagRow}>
+                {skills.map((s, idx) => (
+                  <View key={idx} style={styles.skillChip}>
+                    <Text style={styles.skillChipText}>{s}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveSkill(s)}>
+                      <X size={13} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* 7. Work Experience Section */}
+            <View>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.sectionTitle}>Work Experience History</Text>
+                <TouchableOpacity style={styles.addBtnSmall} onPress={() => setExpModalOpen(true)}>
+                  <Plus size={14} color="#2563EB" />
+                  <Text style={styles.addBtnSmallText}>Add Experience</Text>
+                </TouchableOpacity>
+              </View>
+
+              {experience.length === 0 ? (
+                <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
+              ) : (
+                experience.map((item, idx) => (
+                  <View key={idx} style={styles.itemRowCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemRowTitle}>{item.title}</Text>
+                      <Text style={styles.itemRowSub}>{item.company} • {item.duration}</Text>
+                      {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
+                    </View>
+                    <TouchableOpacity onPress={() => handleRemoveExperience(idx)}>
+                      <Trash2 size={16} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* 8. Education Section */}
+            <View>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.sectionTitle}>Education & ITI Certification</Text>
+                <TouchableOpacity style={styles.addBtnSmall} onPress={() => setEduModalOpen(true)}>
+                  <Plus size={14} color="#2563EB" />
+                  <Text style={styles.addBtnSmallText}>Add Education</Text>
+                </TouchableOpacity>
+              </View>
+
+              {education.length === 0 ? (
+                <Text style={styles.emptySubText}>No education or ITI certificate entries added yet.</Text>
+              ) : (
+                education.map((item, idx) => (
+                  <View key={idx} style={styles.itemRowCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemRowTitle}>{item.degree}</Text>
+                      <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleRemoveEducation(idx)}>
+                      <Trash2 size={16} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+          </View>
+
+          {/* Standalone Resume CV Document Master Card */}
+          <View style={styles.singleMasterCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <FileText size={18} color="#2563EB" />
+              <Text style={styles.sectionTitleNoMargin}>Resume & Bio-Data Document</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#64748B', marginTop: -4 }}>
+              Upload your PDF or Image resume document to auto-attach it to all job applications.
+            </Text>
+
+            {resumeUrl ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 4 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={20} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+                    {resumeName}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700', marginTop: 1 }}>
+                    ✓ Document Attached & Live in Database
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={{ padding: 9, backgroundColor: '#EFF6FF', borderRadius: 8, borderWidth: 1, borderColor: '#BFDBFE' }}
+                  onPress={() => setShowPdfModal(true)}
+                >
+                  <ExternalLink size={16} color="#2563EB" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{ padding: 9, backgroundColor: '#FEF2F2', borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5' }}
+                  onPress={handleDeleteResumeDoc}
+                  disabled={deletingResume}
+                >
+                  {deletingResume ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <Trash2 size={16} color="#DC2626" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563EB', paddingVertical: 12, borderRadius: 8 }}
+                onPress={handlePickResume}
+                disabled={uploadingResume}
+              >
+                {uploadingResume ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Trash2 size={16} color="#DC2626" />
+                  <>
+                    <UploadCloud size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Upload Resume PDF / Image</Text>
+                  </>
                 )}
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563EB', paddingVertical: 12, borderRadius: 8 }}
-              onPress={handlePickResume}
-              disabled={uploadingResume}
-            >
-              {uploadingResume ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <UploadCloud size={18} color="#FFFFFF" />
-                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Upload Resume PDF / Image</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Personal Info Form Card */}
-        <View style={styles.card3D}>
-          <Text style={styles.sectionTitle}>Personal & Contact Details</Text>
-
-          <Input
-            label="Full Name *"
-            required
-            value={name}
-            onChangeText={setName}
-            leftIcon={<UserIcon size={18} color="#64748B" />}
-          />
-
-          <Input
-            label="Professional Headline *"
-            value={headline}
-            placeholder="e.g. ITI VMC Operator & CNC Setter"
-            onChangeText={setHeadline}
-            leftIcon={<Briefcase size={18} color="#64748B" />}
-          />
-
-          <Input
-            label="Current City / MIDC Location *"
-            required
-            value={location}
-            placeholder="e.g. Waluj MIDC, Chhatrapati Sambhajinagar"
-            onChangeText={setLocation}
-            leftIcon={<MapPin size={18} color="#64748B" />}
-          />
-
-          <Input
-            label="Mobile Phone Number *"
-            required
-            value={phone}
-            keyboardType="phone-pad"
-            maxLength={10}
-            onChangeText={setPhone}
-            leftIcon={<Phone size={18} color="#64748B" />}
-          />
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Bio / Career Summary</Text>
-            <TextInput
-              style={styles.textArea}
-              multiline
-              numberOfLines={3}
-              placeholder="Brief summary of your factory experience and technical skills..."
-              placeholderTextColor="#94A3B8"
-              value={bio}
-              onChangeText={setBio}
-            />
+            )}
           </View>
-        </View>
-
-        {/* Industrial Trade & Work Preferences */}
-        <View style={styles.card3D}>
-          <Text style={styles.sectionTitle}>Trade Specialization & Preferences</Text>
-
-          <Text style={styles.inputLabel}>Select Trade Specialization *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, marginBottom: 12 }}>
-            {TRADES.map((trade) => {
-              const isActive = (trade === 'Other' && isOtherSelected) || (!isOtherSelected && tradeSpecialization === trade);
-              return (
-                <TouchableOpacity
-                  key={trade}
-                  activeOpacity={0.8}
-                  style={[styles.tradePill, isActive && styles.tradePillActive]}
-                  onPress={() => handleSelectTrade(trade)}
-                >
-                  <Text style={[styles.tradePillText, isActive && styles.tradePillTextActive]}>{trade}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {(isOtherSelected || tradeSpecialization === 'Other') ? (
-            <Input
-              label="Custom Trade Specialization *"
-              placeholder="e.g. Laser Cutting Operator / PLC Automation Programmer"
-              value={customTrade}
-              onChangeText={setCustomTrade}
-              leftIcon={<Award size={18} color="#64748B" />}
-            />
-          ) : null}
-
-          <Text style={styles.inputLabel}>Preferred Shift *</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-            {SHIFTS.map((shift) => {
-              const isActive = preferredShift === shift;
-              return (
-                <TouchableOpacity
-                  key={shift}
-                  activeOpacity={0.8}
-                  style={[styles.shiftTab, isActive && styles.shiftTabActive]}
-                  onPress={() => setPreferredShift(shift)}
-                >
-                  <Text style={[styles.shiftTabText, isActive && styles.shiftTabTextActive]}>{shift}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.toggleTitle}>Requires Bus Transport</Text>
-              <Text style={styles.toggleDesc}>Company bus pickup/drop facility needed</Text>
-            </View>
-            <Switch
-              value={requiresBus}
-              onValueChange={setRequiresBus}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={requiresBus ? '#2563EB' : '#94A3B8'}
-            />
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.toggleTitle}>Requires Hostel Stay</Text>
-              <Text style={styles.toggleDesc}>Accommodation / Hostel room facility needed</Text>
-            </View>
-            <Switch
-              value={requiresAccommodation}
-              onValueChange={setRequiresAccommodation}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={requiresAccommodation ? '#2563EB' : '#94A3B8'}
-            />
-          </View>
-        </View>
-
-        {/* Skills Tag Management Card */}
-        <View style={styles.card3D}>
-          <Text style={styles.sectionTitle}>Skills & Technical Capabilities</Text>
-
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-            <TextInput
-              style={[styles.inputField, { flex: 1 }]}
-              placeholder="e.g. Vernier Caliper, Fanuc Control..."
-              placeholderTextColor="#94A3B8"
-              value={skillInput}
-              onChangeText={setSkillInput}
-            />
-            <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.addSkillBtnText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.skillsTagRow}>
-            {skills.map((s, idx) => (
-              <View key={idx} style={styles.skillChip}>
-                <Text style={styles.skillChipText}>{s}</Text>
-                <TouchableOpacity onPress={() => handleRemoveSkill(s)}>
-                  <X size={13} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Work Experience Section */}
-        <View style={styles.card3D}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={styles.sectionTitle}>Work Experience History</Text>
-            <TouchableOpacity style={styles.addBtnSmall} onPress={() => setExpModalOpen(true)}>
-              <Plus size={14} color="#2563EB" />
-              <Text style={styles.addBtnSmallText}>Add Experience</Text>
-            </TouchableOpacity>
-          </View>
-
-          {experience.length === 0 ? (
-            <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
-          ) : (
-            experience.map((item, idx) => (
-              <View key={idx} style={styles.itemRowCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemRowTitle}>{item.title}</Text>
-                  <Text style={styles.itemRowSub}>{item.company} • {item.duration}</Text>
-                  {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
-                </View>
-                <TouchableOpacity onPress={() => handleRemoveExperience(idx)}>
-                  <Trash2 size={16} color="#DC2626" />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Education & Certifications Section */}
-        <View style={styles.card3D}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={styles.sectionTitle}>Education & ITI Certification</Text>
-            <TouchableOpacity style={styles.addBtnSmall} onPress={() => setEduModalOpen(true)}>
-              <Plus size={14} color="#2563EB" />
-              <Text style={styles.addBtnSmallText}>Add Education</Text>
-            </TouchableOpacity>
-          </View>
-
-          {education.length === 0 ? (
-            <Text style={styles.emptySubText}>No education or ITI certificate entries added yet.</Text>
-          ) : (
-            education.map((item, idx) => (
-              <View key={idx} style={styles.itemRowCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemRowTitle}>{item.degree}</Text>
-                  <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
-                </View>
-                <TouchableOpacity onPress={() => handleRemoveEducation(idx)}>
-                  <Trash2 size={16} color="#DC2626" />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* Save Profile Button */}
-        <Button
-          title="Save Profile & Bio-Data"
-          onPress={handleSaveProfile}
-          loading={saving}
-          size="lg"
-          style={{ marginBottom: 30 }}
-        />
-      </>
-    ) : (
+        </>
+      ) : (
       /* Dashboard Tab View */
       <View style={{ gap: 14 }}>
         {/* Stats Grid (4 Compact Perfectly Aligned 3D Cards) */}
@@ -1106,7 +1142,88 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         </View>
       </Modal>
 
-      {/* Resume Document Preview Modal */}
+      {/* Select Trade Specialization Modal Sheet */}
+      <Modal
+        visible={tradeModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTradeModalOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setTradeModalOpen(false)}>
+          <Pressable style={[styles.modalSheet, { paddingBottom: 24 }]} onPress={(e: any) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Trade Specialization</Text>
+              <TouchableOpacity
+                onPress={() => setTradeModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+              {TRADES.map((t) => {
+                const isSel = (t === 'Other' && isOtherSelected) || (!isOtherSelected && tradeSpecialization === t);
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    activeOpacity={0.7}
+                    style={[styles.pickerItem, isSel && styles.pickerItemActive]}
+                    onPress={() => {
+                      handleSelectTrade(t);
+                      setTradeModalOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.pickerItemText, isSel && styles.pickerItemTextActive]}>{t}</Text>
+                    {isSel ? <CheckCircle2 size={16} color="#2563EB" /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Select Preferred Shift Modal Sheet */}
+      <Modal
+        visible={shiftModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShiftModalOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShiftModalOpen(false)}>
+          <Pressable style={[styles.modalSheet, { paddingBottom: 24 }]} onPress={(e: any) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Preferred Shift</Text>
+              <TouchableOpacity
+                onPress={() => setShiftModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+              {SHIFTS.map((shift) => {
+                const isSel = preferredShift === shift;
+                return (
+                  <TouchableOpacity
+                    key={shift}
+                    activeOpacity={0.7}
+                    style={[styles.pickerItem, isSel && styles.pickerItemActive]}
+                    onPress={() => {
+                      setPreferredShift(shift);
+                      setShiftModalOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.pickerItemText, isSel && styles.pickerItemTextActive]}>{shift}</Text>
+                    {isSel ? <CheckCircle2 size={16} color="#2563EB" /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <ResumePdfViewerModal
         visible={showPdfModal}
         onClose={() => setShowPdfModal(false)}
@@ -1128,6 +1245,164 @@ const styles = StyleSheet.create({
     paddingBottom: 130,
     gap: 16,
   },
+  tabBarContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  tabSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 9.5,
+    borderRadius: 7,
+  },
+  tabSegmentBtnActive: {
+    backgroundColor: '#2563EB',
+    borderRadius: 7,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabSegmentText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: -0.2,
+  },
+  tabSegmentTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  singleMasterCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 18,
+    gap: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+    marginBottom: 20,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
+  },
+  avatarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  circularAvatarWrapper: {
+    width: 72,
+    height: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  svgRingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  avatarCircleBoxInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarImgInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 29,
+  },
+  avatarLetter: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  displayName: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  displayEmail: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  displayHeadline: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  headerBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  completenessBadgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  completenessBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  verifiedBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  verifiedBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#2563EB',
+    letterSpacing: 0.3,
+  },
   completenessHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1144,144 +1419,132 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   progressBgBar: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E2E8F0',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F1F5F9',
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFillBar: {
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 4,
   },
   completenessHintText: {
     fontSize: 11.5,
     color: '#64748B',
     lineHeight: 16,
   },
-  card3D: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    padding: 16,
-    gap: 12,
-  },
-  avatarHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  avatarCircleBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 32,
-  },
-  avatarLetter: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '900',
-  },
-  cameraIconBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  displayName: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  displayEmail: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  verifiedBadgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginTop: 6,
-    alignSelf: 'flex-start',
-  },
-  verifiedBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#10B981',
-  },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  sectionTitleNoMargin: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  collapsibleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  chevronCircleBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inputGroup: {
     gap: 4,
+    marginTop: 8,
   },
   inputLabel: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#334155',
     marginBottom: 4,
   },
   inputField: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 42,
-    fontSize: 13,
+    height: 44,
+    fontSize: 13.5,
     color: '#0F172A',
     fontWeight: '600',
   },
-  textArea: {
-    backgroundColor: '#F8FAFC',
+  dropdownPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 8,
-    padding: 10,
-    fontSize: 13,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 10,
+    marginBottom: 12,
+  },
+  dropdownPickerText: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '700',
     color: '#0F172A',
-    minHeight: 70,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  pickerItemActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  pickerItemText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  pickerItemTextActive: {
+    color: '#2563EB',
+    fontWeight: '800',
+  },
+  textArea: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 13.5,
+    color: '#0F172A',
+    minHeight: 74,
     textAlignVertical: 'top',
   },
   tradePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
   },
   tradePillActive: {
     backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
+    borderColor: '#2563EB',
   },
   tradePillText: {
     fontSize: 12,
@@ -1290,33 +1553,35 @@ const styles = StyleSheet.create({
   },
   tradePillTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   shiftTab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: 'center',
     borderRadius: 6,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
   },
   shiftTabActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
   },
   shiftTabText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#475569',
   },
   shiftTabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
@@ -1328,6 +1593,7 @@ const styles = StyleSheet.create({
   toggleDesc: {
     fontSize: 11.5,
     color: '#64748B',
+    marginTop: 1,
   },
   addSkillBtn: {
     flexDirection: 'row',
@@ -1336,6 +1602,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     paddingHorizontal: 14,
     borderRadius: 8,
+    justifyContent: 'center',
   },
   addSkillBtnText: {
     color: '#FFFFFF',
@@ -1346,14 +1613,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    marginTop: 4,
   },
   skillChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#BFDBFE',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -1361,12 +1629,26 @@ const styles = StyleSheet.create({
   skillChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: '#2563EB',
+  },
+  card3D: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 16,
+    gap: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   addBtnSmall: {
     flexDirection: 'row',
@@ -1386,27 +1668,25 @@ const styles = StyleSheet.create({
   itemRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
     gap: 10,
   },
   itemRowTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
   },
   itemRowSub: {
     fontSize: 11.5,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
   },
   itemRowDesc: {
     fontSize: 11.5,
     color: '#475569',
-    marginTop: 3,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -1415,10 +1695,12 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     padding: 20,
-    gap: 10,
+    gap: 12,
+    borderTopWidth: 3,
+    borderTopColor: '#2563EB',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1428,44 +1710,8 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  tabBarContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 3,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    marginVertical: 4,
-  },
-  tabSegmentBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 6,
-  },
-  tabSegmentBtnActive: {
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  tabSegmentText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  tabSegmentTextActive: {
-    color: '#FFFFFF',
     fontWeight: '800',
+    color: '#0F172A',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1475,20 +1721,23 @@ const styles = StyleSheet.create({
   statCard: {
     width: '48.8%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   statIconBox: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
@@ -1498,8 +1747,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statNumber: {
-    fontSize: 15.5,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0F172A',
   },
   statLabel: {
@@ -1513,14 +1762,11 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   emptyApplicationsBox: {
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
   emptyTitle: {
     fontSize: 14,
@@ -1539,7 +1785,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     marginTop: 4,
   },
   searchJobsBtnText: {
@@ -1548,22 +1794,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   applicationsList: {
-    gap: 8,
+    gap: 0,
   },
   applicationItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
     gap: 10,
   },
   companyIconSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -1571,28 +1816,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   appJobTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
   },
   appCompanyText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
   },
   statusPillSmall: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 1,
   },
   statusPillSmallText: {
     fontSize: 9.5,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   recCardBox: {
-    width: 170,
-    backgroundColor: '#F8FAFC',
+    width: 175,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -1615,7 +1860,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#F1F5F9',
   },
   recSalaryText: {
     fontSize: 11.5,
@@ -1625,7 +1870,7 @@ const styles = StyleSheet.create({
   arrowIconPill: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: 6,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',

@@ -116,11 +116,11 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
           {/* Header summary bar */}
           <View style={styles.summaryBar}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.summaryTitle}>Bookmarked Vacancies</Text>
+              <Text style={styles.summaryTitle}>Saved Jobs</Text>
               <Text style={styles.summarySub}>Jobs saved for quick reference and direct application</Text>
             </View>
             <View style={styles.countBadge}>
-              <Bookmark size={14} color="#8B5CF6" fill="#8B5CF6" />
+              <Bookmark size={14} color="#2563EB" fill="#2563EB" />
               <Text style={styles.countBadgeText}>{savedJobs.length} Saved</Text>
             </View>
           </View>
@@ -236,21 +236,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    padding: 14,
+    paddingHorizontal: 2,
+    paddingVertical: 4,
+    marginBottom: 4,
   },
   summaryTitle: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 17.5,
+    fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.3,
   },
   summarySub: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
@@ -258,9 +255,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#DDD6FE',
+    borderColor: '#BFDBFE',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -268,15 +265,13 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#8B5CF6',
+    color: '#2563EB',
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
     padding: 36,
     alignItems: 'center',
     justifyContent: 'center',
@@ -284,7 +279,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
   },
   emptyDesc: {
@@ -298,8 +293,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#2563EB',
     paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
     marginTop: 6,
   },
   browseBtnText: {
@@ -309,16 +304,16 @@ const styles = StyleSheet.create({
   },
   savedCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 14,
     gap: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1.5,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -331,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -343,12 +338,13 @@ const styles = StyleSheet.create({
   },
   jobTitle: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.2,
   },
   companyName: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#64748B',
     marginTop: 1,
   },
@@ -371,17 +367,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   metaBadgeText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
-    color: '#475569',
+    color: '#2563EB',
   },
   cardFooterRow: {
     flexDirection: 'row',
@@ -395,22 +391,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#DCFCE7',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#86EFAC',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   salaryPillText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#16A34A',
+    color: '#15803D',
   },
   applyActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   applyActionText: {
     fontSize: 12,
