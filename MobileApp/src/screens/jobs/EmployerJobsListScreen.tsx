@@ -386,13 +386,14 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   industryTabPillActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2563EB',
+    borderWidth: 1.5,
     borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
+    borderBottomColor: '#2563EB',
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 3,
   },
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   industryTabTextActive: {
-    color: '#FFFFFF',
+    color: '#2563EB',
     fontWeight: '800',
   },
   tabCountBadge: {
@@ -415,7 +416,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabCountBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   tabCountText: {
     fontSize: 10.5,
@@ -423,7 +426,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   tabCountTextActive: {
-    color: '#FFFFFF',
+    color: '#2563EB',
     fontWeight: '800',
   },
   listContent: {

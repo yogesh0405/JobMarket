@@ -258,12 +258,15 @@
 }
 
 .dashboard-welcome {
-  background: var(--gradient-hero);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-bottom: 3px solid #cbd5e1;
   border-radius: var(--radius-lg);
   padding: var(--space-8);
-  color: white;
+  color: #0f172a;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .dashboard-welcome::before {
@@ -273,7 +276,7 @@
   right: -50px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
   border-radius: 50%;
 }
 
@@ -282,11 +285,12 @@
   margin-bottom: var(--space-2);
   position: relative;
   z-index: 1;
-  color: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 800;
 }
 
 .dashboard-welcome p {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: #64748b !important;
   font-size: var(--fs-sm);
   position: relative;
   z-index: 1;
