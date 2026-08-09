@@ -1,8 +1,8 @@
 import { getAccessToken, getRefreshToken, getSessionId, saveTokens, clearAuthSession } from '../utils/secureStorage';
 
-// CANONICAL BACKEND API URL (defaults to http://127.0.0.1:5000 for single source of truth with Web)
+// CANONICAL BACKEND API URL (defaults to live Render backend: https://jobmarket-ongn.onrender.com)
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+  process.env.EXPO_PUBLIC_API_URL || 'https://jobmarket-ongn.onrender.com';
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
