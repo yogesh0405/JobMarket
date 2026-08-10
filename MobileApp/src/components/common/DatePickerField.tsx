@@ -129,7 +129,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         <CalendarIcon size={18} color={value ? COLORS.primary : COLORS.slate400} style={styles.icon} />
 
         <Text style={[styles.inputText, !value && styles.placeholderText]}>
-          {value ? `${formatDisplayDate(value)} (${value})` : placeholder}
+          {value ? value : placeholder}
         </Text>
 
         {value ? (
@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   inputBoxActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#F0F9FF',
+    borderColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
   },
   icon: {
     marginRight: 10,
@@ -341,9 +341,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   presetChip: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: RADIUS.md,
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   presetChipText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.slate700,
   },
   monthHeader: {
     flexDirection: 'row',
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   daySlotSelected: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#0F172A',
   },
   daySlotDisabled: {
     opacity: 0.3,

@@ -28,6 +28,7 @@ import {
   Calendar,
   Phone,
   UserCheck,
+  User,
   FileText,
   Wrench,
   CheckCircle2,
@@ -35,7 +36,13 @@ import {
   Plus,
   Minus,
   Check,
+  ChevronDown,
+  ChevronUp,
+  Sun,
+  Moon,
+  RotateCw,
 } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -48,6 +55,57 @@ import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { DatePickerField } from '../../components/common/DatePickerField';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
+
+// Section Circular Pie Chart Progress Component (Small circle + percentage)
+const SectionProgressPie: React.FC<{ percentage: number; size?: number }> = ({ percentage, size = 22 }) => {
+  const strokeWidth = 2.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const isComplete = percentage >= 100;
+  const activeColor = '#2563EB';
+  const unfilledColor = '#CBD5E1';
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={unfilledColor}
+            strokeWidth={strokeWidth}
+            fill={isComplete ? '#EFF6FF' : 'transparent'}
+          />
+          {percentage > 0 && (
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              stroke={activeColor}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+              strokeDasharray={`${circumference} ${circumference}`}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            />
+          )}
+        </Svg>
+      </View>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: '800',
+          color: isComplete ? '#2563EB' : percentage > 0 ? '#1E40AF' : '#64748B',
+        }}
+      >
+        {Math.round(percentage)}%
+      </Text>
+    </View>
+  );
+};
 
 // Web App Industry & Role Mappings
 const INDUSTRY_LIST = [
@@ -299,11 +357,88 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
   const [requirements, setRequirements] = useState('');
   const [skillsTags, setSkillsTags] = useState<string[]>([]);
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  const [customSkillInput, setCustomSkillInput] = useState('');
 
   // UI States
   const [resolvingMap, setResolvingMap] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Collapsible Section Accordion States (First section OPEN by default, others CLOSED by default)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    industryRole: true, // First section open by default
+    location: false,
+    experienceSalary: false,
+    shiftPerks: false,
+    eligibility: false,
+    hiringMode: false,
+    descriptionSkills: false,
+  });
+
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
+  // Section Completeness Calculation (0 - 100%)
+  const getIndustryRoleCompletion = (): number => {
+    let count = 0;
+    const total = 3;
+    const activeInd = industry === 'Other' ? customIndustry.trim() : industry.trim();
+    const activeRole = title === 'Other' ? customTitle.trim() : title.trim();
+    if (activeInd) count++;
+    if (activeRole) count++;
+    if (openingsInput && parseInt(openingsInput, 10) > 0) count++;
+    return Math.round((count / total) * 100);
+  };
+
+  const getLocationCompletion = (): number => {
+    if (!location.trim()) return 0;
+    if (googleMapsUrl.trim() || (latitude !== null && longitude !== null)) return 100;
+    return 70;
+  };
+
+  const getExperienceSalaryCompletion = (): number => {
+    let count = 0;
+    let total = 2;
+    if (!experienceRequired || (minExperience !== '' && maxExperience !== '')) count++;
+    if (!discloseSalary || (salaryMin !== '' && salaryMax !== '')) count++;
+    return Math.round((count / total) * 100);
+  };
+
+  const getShiftPerksCompletion = (): number => {
+    if (shiftCategory) return 100;
+    return 0;
+  };
+
+  const getEligibilityCompletion = (): number => {
+    let count = 0;
+    let total = 2;
+    if (genderPreference) count++;
+    if (minAgeInput.trim() && maxAgeInput.trim()) count++;
+    return Math.round((count / total) * 100);
+  };
+
+  const getHiringModeCompletion = (): number => {
+    let count = 0;
+    let total = hiringMethod === 'WALK_IN' ? 3 : 1;
+    if (applicationDeadline.trim()) count++;
+    if (hiringMethod === 'WALK_IN') {
+      if (walkInDate.trim()) count++;
+      if (interviewAddress.trim()) count++;
+    }
+    return Math.round((count / total) * 100);
+  };
+
+  const getDescriptionSkillsCompletion = (): number => {
+    let count = 0;
+    let total = 2;
+    if (description.trim().length >= 10) count++;
+    if (skillsTags.length > 0) count++;
+    return Math.round((count / total) * 100);
+  };
 
   // AUTOMATIC MAP COORDINATE RESOLUTION ON INPUT CHANGE / PASTE
   useEffect(() => {
@@ -564,6 +699,15 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const handleAddCustomSkill = () => {
+    const trimmed = customSkillInput.trim();
+    if (!trimmed) return;
+    if (!skillsTags.includes(trimmed)) {
+      setSkillsTags([...skillsTags, trimmed]);
+    }
+    setCustomSkillInput('');
+  };
+
   const handleResolveMapUrl = async () => {
     const targetUrl = googleMapsUrl || location;
     if (!targetUrl || !targetUrl.includes('http')) {
@@ -821,552 +965,720 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
 
-          {/* Section 2: Industry & Role Specifications */}
+          {/* Section 1: Industry & Role Specifications */}
           <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <Building2 size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Industry & Role Specifications</Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.industryRole && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('industryRole')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <Building2 size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Industry & Role Specifications</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getIndustryRoleCompletion()} />
+                {expandedSections.industryRole ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
 
-            {/* Step 1: Select Industry Type / Sector Dropdown */}
-            <SelectDropdown
-              label="Step 1: Select Industry Type / Sector"
-              required
-              placeholder="Select Industry / Sector..."
-              value={industry}
-              options={[...INDUSTRY_LIST, 'Other']}
-              onSelect={(val) => handleIndustryChange(val)}
-            />
+            {expandedSections.industryRole ? (
+              <View style={styles.cardBody}>
+                {/* Step 1: Select Industry Type / Sector Dropdown */}
+                <SelectDropdown
+                  label="Step 1: Select Industry Type / Sector"
+                  required
+                  placeholder="Select Industry / Sector..."
+                  value={industry}
+                  options={[...INDUSTRY_LIST, 'Other']}
+                  onSelect={(val) => handleIndustryChange(val)}
+                />
 
-            {industry === 'Other' ? (
-              <Input
-                placeholder="Type custom industry sector (e.g. Renewable Energy & Solar)"
-                value={customIndustry}
-                onChangeText={setCustomIndustry}
-                style={{ marginTop: -SPACING.xs }}
-              />
-            ) : null}
+                {industry === 'Other' ? (
+                  <Input
+                    placeholder="Type custom industry sector (e.g. Renewable Energy & Solar)"
+                    value={customIndustry}
+                    onChangeText={setCustomIndustry}
+                    style={{ marginTop: -SPACING.xs }}
+                  />
+                ) : null}
 
-            {/* Step 2: Select Job Role Dropdown (Dynamic based on selected Industry!) */}
-            <SelectDropdown
-              label="Step 2: Select Job Role"
-              required
-              placeholder={
-                industry
-                  ? 'Select Role for this Industry...'
-                  : '👈 Select Industry Type first'
-              }
-              disabledPlaceholder="👈 Select Industry Type first"
-              disabled={!industry}
-              value={title}
-              options={[...currentRoleOptions, 'Other']}
-              onSelect={(val) => {
-                setTitle(val);
-                if (val !== 'Other') setCustomTitle('');
-              }}
-            />
-
-            {title === 'Other' ? (
-              <Input
-                placeholder="Type custom job role (e.g. Senior VMC Programmer)"
-                value={customTitle}
-                onChangeText={setCustomTitle}
-                style={{ marginTop: -SPACING.xs }}
-              />
-            ) : null}
-
-            {/* Vacancy Count Stepper */}
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.xs }]}>
-              No. of Vacancies <Text style={styles.required}>*</Text>
-            </Text>
-            <View style={styles.stepperBox}>
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => {
-                  const curr = parseInt(openingsInput, 10) || 1;
-                  setOpeningsInput(String(Math.max(1, curr - 1)));
-                }}
-              >
-                <Minus size={18} color={COLORS.slate800} />
-              </TouchableOpacity>
-              <TextInput
-                style={styles.stepperInput}
-                keyboardType="numeric"
-                value={openingsInput}
-                onChangeText={(val) => {
-                  const sanitized = val.replace(/^0+/, '');
-                  setOpeningsInput(sanitized);
-                }}
-                onBlur={() => {
-                  if (!openingsInput || parseInt(openingsInput, 10) < 1) {
-                    setOpeningsInput('1');
+                {/* Step 2: Select Job Role Dropdown (Dynamic based on selected Industry!) */}
+                <SelectDropdown
+                  label="Step 2: Select Job Role"
+                  required
+                  placeholder={
+                    industry
+                      ? 'Select Role for this Industry...'
+                      : '👈 Select Industry Type first'
                   }
-                }}
-              />
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => {
-                  const curr = parseInt(openingsInput, 10) || 1;
-                  setOpeningsInput(String(curr + 1));
-                }}
-              >
-                <Plus size={18} color={COLORS.slate800} />
-              </TouchableOpacity>
-            </View>
+                  disabledPlaceholder="👈 Select Industry Type first"
+                  disabled={!industry}
+                  value={title}
+                  options={[...currentRoleOptions, 'Other']}
+                  onSelect={(val) => {
+                    setTitle(val);
+                    if (val !== 'Other') setCustomTitle('');
+                  }}
+                />
 
-            {/* Target ITI Checkbox */}
+                {title === 'Other' ? (
+                  <Input
+                    placeholder="Type custom job role (e.g. Senior VMC Programmer)"
+                    value={customTitle}
+                    onChangeText={setCustomTitle}
+                    style={{ marginTop: -SPACING.xs }}
+                  />
+                ) : null}
+
+                {/* Vacancy Count Stepper */}
+                <Text style={[styles.fieldLabel, { marginTop: SPACING.xs }]}>
+                  No. of Vacancies <Text style={styles.required}>*</Text>
+                </Text>
+                <View style={styles.stepperBox}>
+                  <TouchableOpacity
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const curr = parseInt(openingsInput, 10) || 1;
+                      setOpeningsInput(String(Math.max(1, curr - 1)));
+                    }}
+                  >
+                    <Minus size={18} color={COLORS.slate800} />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.stepperInput}
+                    keyboardType="numeric"
+                    value={openingsInput}
+                    onChangeText={(val) => {
+                      const sanitized = val.replace(/^0+/, '');
+                      setOpeningsInput(sanitized);
+                    }}
+                    onBlur={() => {
+                      if (!openingsInput || parseInt(openingsInput, 10) < 1) {
+                        setOpeningsInput('1');
+                      }
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={styles.stepperBtn}
+                    onPress={() => {
+                      const curr = parseInt(openingsInput, 10) || 1;
+                      setOpeningsInput(String(curr + 1));
+                    }}
+                  >
+                    <Plus size={18} color={COLORS.slate800} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Target ITI Checkbox */}
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  activeOpacity={0.8}
+                  onPress={() => setTargetIti(!targetIti)}
+                >
+                  <Award size={16} color={COLORS.primary} />
+                  <Text style={styles.checkboxText}>Target ITI Professionals</Text>
+                  <Switch value={targetIti} onValueChange={setTargetIti} />
+                </TouchableOpacity>
+
+                {targetIti ? (
+                  <View style={{ marginTop: SPACING.xs }}>
+                    <SelectDropdown
+                      label="ITI Specialization Trade"
+                      placeholder="Select ITI Specialization Trade..."
+                      value={itiTrade}
+                      options={ITI_TRADES_LIST}
+                      onSelect={(val) => setItiTrade(val)}
+                    />
+                  </View>
+                ) : null}
+
+                {/* MIDC Area Checkbox */}
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  activeOpacity={0.8}
+                  onPress={() => setIsMidcLocation(!isMidcLocation)}
+                >
+                  <Building2 size={16} color={COLORS.primary} />
+                  <Text style={styles.checkboxText}>This Job is Located in an MIDC Area</Text>
+                  <Switch value={isMidcLocation} onValueChange={setIsMidcLocation} />
+                </TouchableOpacity>
+
+                {isMidcLocation ? (
+                  <View style={{ marginTop: SPACING.xs }}>
+                    <SelectDropdown
+                      label="Select MIDC Zone in Maharashtra"
+                      placeholder="Select MIDC Zone in Maharashtra..."
+                      value={midcZone}
+                      options={MIDC_LIST}
+                      onSelect={(val) => setMidcZone(val)}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
+          {/* Section 2: Work Location & GIS Mapping */}
+          <View style={styles.card}>
             <TouchableOpacity
-              style={styles.checkboxRow}
-              activeOpacity={0.8}
-              onPress={() => setTargetIti(!targetIti)}
+              style={[styles.sectionHeaderTouchable, expandedSections.location && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('location')}
             >
-              <Award size={16} color={COLORS.primary} />
-              <Text style={styles.checkboxText}>Target ITI Professionals</Text>
-              <Switch value={targetIti} onValueChange={setTargetIti} />
+              <View style={styles.sectionHeaderRowLeft}>
+                <MapPin size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Work Location & GIS Mapping</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getLocationCompletion()} />
+                {expandedSections.location ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
             </TouchableOpacity>
 
-            {targetIti ? (
-              <View style={{ marginTop: SPACING.xs }}>
-                <SelectDropdown
-                  label="ITI Specialization Trade"
-                  placeholder="Select ITI Specialization Trade..."
-                  value={itiTrade}
-                  options={ITI_TRADES_LIST}
-                  onSelect={(val) => setItiTrade(val)}
-                />
-              </View>
-            ) : null}
-
-            {/* MIDC Area Checkbox */}
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              activeOpacity={0.8}
-              onPress={() => setIsMidcLocation(!isMidcLocation)}
-            >
-              <Building2 size={16} color={COLORS.primary} />
-              <Text style={styles.checkboxText}>This Job is Located in an MIDC Area</Text>
-              <Switch value={isMidcLocation} onValueChange={setIsMidcLocation} />
-            </TouchableOpacity>
-
-            {isMidcLocation ? (
-              <View style={{ marginTop: SPACING.xs }}>
-                <SelectDropdown
-                  label="Select MIDC Zone in Maharashtra"
-                  placeholder="Select MIDC Zone in Maharashtra..."
-                  value={midcZone}
-                  options={MIDC_LIST}
-                  onSelect={(val) => setMidcZone(val)}
-                />
-              </View>
-            ) : null}
-          </View>
-
-          {/* Section 3: Work Location & GIS Mapping */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <MapPin size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Work Location & GIS Mapping</Text>
-            </View>
-
-            <Input
-              label="City Location / Factory Address *"
-              required
-              placeholder="e.g. Plot E-42, Waluj MIDC, Chhatrapati Sambhajinagar or paste Google Maps link"
-              value={location}
-              onChangeText={setLocation}
-              leftIcon={<MapPin size={18} color={COLORS.slate400} />}
-            />
-
-            <Input
-              label="Google Maps Short Link (Auto-Resolves Coordinates)"
-              placeholder="e.g. https://maps.app.goo.gl/..."
-              value={googleMapsUrl}
-              onChangeText={setGoogleMapsUrl}
-              leftIcon={<Map size={18} color={COLORS.slate400} />}
-              style={{ marginTop: SPACING.sm }}
-            />
-
-            {/* Auto-Resolution Status Badge */}
-            {autoResolveMsg ? (
-              <View style={styles.autoResolveBadge}>
-                <CheckCircle2 size={16} color="#10B981" />
-                <Text style={styles.autoResolveBadgeText}>{autoResolveMsg}</Text>
-              </View>
-            ) : null}
-
-            {googleMapsUrl || location.includes('http') ? (
-              <TouchableOpacity
-                style={styles.resolveBtn}
-                onPress={handleResolveMapUrl}
-                disabled={resolvingMap}
-              >
-                <Map size={16} color={COLORS.primary} />
-                <Text style={styles.resolveText}>
-                  {resolvingMap ? 'Resolving Coordinates...' : 'Re-verify Map Coordinates'}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-
-            {/* Interactive Leaflet Location Map Preview - Only shown when Map Link or Coordinates are entered */}
-            {((latitude !== null && longitude !== null) || (googleMapsUrl && googleMapsUrl.trim().length > 0)) ? (
-              <JobLocationMapPreview
-                latitude={latitude}
-                longitude={longitude}
-                locationName={resolvedAddress || location || 'Factory Location'}
-                height={220}
-              />
-            ) : null}
-          </View>
-
-          {/* Section 4: Experience & Salary Requirements */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <Briefcase size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Experience & Salary Requirements</Text>
-            </View>
-
-            {/* Experience Checkbox */}
-            <View style={styles.switchHeaderRow}>
-              <Text style={styles.fieldLabel}>Require Previous Work Experience</Text>
-              <Switch value={experienceRequired} onValueChange={setExperienceRequired} />
-            </View>
-
-            {experienceRequired ? (
-              <View style={styles.rowTwo}>
-                <View style={{ flex: 1 }}>
-                  <Input label="Min Experience (Yrs)" keyboardType="numeric" value={minExperience} onChangeText={setMinExperience} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Input label="Max Experience (Yrs)" keyboardType="numeric" value={maxExperience} onChangeText={setMaxExperience} />
-                </View>
-              </View>
-            ) : null}
-
-            {/* Disclose Salary Checkbox */}
-            <View style={[styles.switchHeaderRow, { marginTop: SPACING.md }]}>
-              <Text style={styles.fieldLabel}>Disclose Monthly Salary Range to Candidates</Text>
-              <Switch value={discloseSalary} onValueChange={setDiscloseSalary} />
-            </View>
-
-            {discloseSalary ? (
-              <View style={styles.rowTwo}>
-                <View style={{ flex: 1 }}>
-                  <Input label="Min Salary (₹/Month)" keyboardType="numeric" value={salaryMin} onChangeText={setSalaryMin} leftIcon={<IndianRupee size={16} color={COLORS.slate400} />} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Input label="Max Salary (₹/Month)" keyboardType="numeric" value={salaryMax} onChangeText={setSalaryMax} leftIcon={<IndianRupee size={16} color={COLORS.slate400} />} />
-                </View>
-              </View>
-            ) : null}
-
-            {/* Workplace Mode */}
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Workplace Mode</Text>
-            <View style={styles.segmentedRow}>
-              {(['On-site', 'Remote', 'Hybrid'] as const).map((m) => (
-                <TouchableOpacity
-                  key={m}
-                  style={[styles.segmentBtn, workMode === m && styles.segmentBtnActive]}
-                  onPress={() => setWorkMode(m)}
-                >
-                  <Text style={[styles.segmentText, workMode === m && styles.segmentTextActive]}>{m}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Employment Type */}
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Employment Type</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {(['Full-time', 'Part-time', 'Contract', 'Apprenticeship'] as const).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.chip, workType === t && styles.chipActive]}
-                  onPress={() => setWorkType(t)}
-                >
-                  <Text style={[styles.chipText, workType === t && styles.chipTextActive]}>{t}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Section 5: Shift Timing & Statutory Facilities */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <Clock size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Shift Timing & Statutory Facilities</Text>
-            </View>
-
-            <Text style={styles.fieldLabel}>Shift Category</Text>
-            <View style={styles.segmentedRow}>
-              {(['Day Shift', 'Night Shift', 'Rotational Shift'] as const).map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.segmentBtn, shiftCategory === s && styles.segmentBtnActive]}
-                  onPress={() => setShiftCategory(s)}
-                >
-                  <Text style={[styles.segmentText, shiftCategory === s && styles.segmentTextActive]}>{s}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.perkGrid}>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Overtime Pay (OT)</Text>
-                <Switch value={overtime} onValueChange={setOvertime} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Subsidized Canteen</Text>
-                <Switch value={canteen} onValueChange={setCanteen} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Bus / Transport Facility</Text>
-                <Switch value={busFacility} onValueChange={setBusFacility} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Free Accommodation / Quarters</Text>
-                <Switch value={accommodation} onValueChange={setAccommodation} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Provident Fund (PF)</Text>
-                <Switch value={pf} onValueChange={setPf} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>ESIC Medical Facility</Text>
-                <Switch value={esic} onValueChange={setEsic} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Uniform & Safety Shoes</Text>
-                <Switch value={uniform} onValueChange={setUniform} />
-              </View>
-              <View style={styles.perkItem}>
-                <Text style={styles.perkLabel}>Medical Insurance</Text>
-                <Switch value={medicalInsurance} onValueChange={setMedicalInsurance} />
-              </View>
-            </View>
-          </View>
-
-          {/* Section 6: Applicant Eligibility & Age Criteria */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <Users size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Applicant Eligibility & Age Criteria</Text>
-            </View>
-
-            <Text style={styles.fieldLabel}>Gender Preference</Text>
-            <View style={styles.segmentedRow}>
-              {(['No Preference', 'Male Only', 'Female Only'] as const).map((g) => (
-                <TouchableOpacity
-                  key={g}
-                  style={[styles.segmentBtn, genderPreference === g && styles.segmentBtnActive]}
-                  onPress={() => setGenderPreference(g)}
-                >
-                  <Text style={[styles.segmentText, genderPreference === g && styles.segmentTextActive]}>{g}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={[styles.rowTwo, { marginTop: SPACING.md }]}>
-              <View style={{ flex: 1 }}>
-                <Input label="Min Age (Years)" keyboardType="numeric" value={minAgeInput} onChangeText={setMinAgeInput} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Input label="Max Age (Years)" keyboardType="numeric" value={maxAgeInput} onChangeText={setMaxAgeInput} />
-              </View>
-            </View>
-          </View>
-
-          {/* Section 7: Application Preferences & Hiring Mode */}
-          <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <FileText size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Application Preferences & Hiring Mode</Text>
-            </View>
-
-            <Text style={styles.fieldLabel}>Select Hiring Mode</Text>
-            <View style={styles.hiringSegmentedTrack}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.hiringTabBtn, hiringMethod === 'STANDARD' && styles.hiringTabBtnActive]}
-                onPress={() => setHiringMethod('STANDARD')}
-              >
-                <Building2 size={16} color={hiringMethod === 'STANDARD' ? '#2563EB' : '#64748B'} />
-                <Text style={[styles.hiringTabText, hiringMethod === 'STANDARD' && styles.hiringTabTextActive]}>
-                  Standard Online
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
-                onPress={() => setHiringMethod('WALK_IN')}
-              >
-                <UserCheck size={16} color={hiringMethod === 'WALK_IN' ? '#2563EB' : '#64748B'} />
-                <Text style={[styles.hiringTabText, hiringMethod === 'WALK_IN' && styles.hiringTabTextActive]}>
-                  Direct Walk-in Drive
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {hiringMethod === 'WALK_IN' ? (
-              <View style={{ marginTop: 8, gap: 10 }}>
-                <DatePickerField
-                  label="Walk-in Interview Date"
-                  placeholder="Select walk-in date..."
-                  value={walkInDate}
-                  onChange={setWalkInDate}
-                  minDate={new Date()}
-                />
-                <View style={styles.rowTwo}>
-                  <View style={{ flex: 1 }}>
-                    <Input label="Start Time" placeholder="10:00 AM" value={walkInStartTime} onChangeText={setWalkInStartTime} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Input label="End Time" placeholder="04:00 PM" value={walkInEndTime} onChangeText={setWalkInEndTime} />
-                  </View>
-                </View>
+            {expandedSections.location ? (
+              <View style={styles.cardBody}>
                 <Input
-                  label="Interview Venue Address"
-                  placeholder="Gate No 2, Factory Reception, MIDC"
-                  value={interviewAddress}
-                  onChangeText={setInterviewAddress}
+                  label="City Location / Factory Address *"
+                  required
+                  placeholder="e.g. Plot E-42, Waluj MIDC, Chhatrapati Sambhajinagar or paste Google Maps link"
+                  value={location}
+                  onChangeText={setLocation}
                   leftIcon={<MapPin size={18} color={COLORS.slate400} />}
                 />
-                <View style={styles.rowTwo}>
-                  <View style={{ flex: 1 }}>
-                    <Input label="Contact Person" placeholder="HR Manager / Supervisor" value={walkInContactPerson} onChangeText={setWalkInContactPerson} leftIcon={<UserCheck size={18} color={COLORS.slate400} />} />
+
+                <Input
+                  label="Google Maps Short Link (Auto-Resolves Coordinates)"
+                  placeholder="e.g. https://maps.app.goo.gl/..."
+                  value={googleMapsUrl}
+                  onChangeText={setGoogleMapsUrl}
+                  leftIcon={<Map size={18} color={COLORS.slate400} />}
+                  style={{ marginTop: SPACING.sm }}
+                />
+
+                {/* Auto-Resolution Status Badge */}
+                {autoResolveMsg ? (
+                  <View style={styles.autoResolveBadge}>
+                    <CheckCircle2 size={16} color="#10B981" />
+                    <Text style={styles.autoResolveBadgeText}>{autoResolveMsg}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Input label="Contact Mobile" placeholder="10-digit number" keyboardType="phone-pad" value={walkInContactNumber} onChangeText={setWalkInContactNumber} leftIcon={<Phone size={18} color={COLORS.slate400} />} />
+                ) : null}
+
+                {googleMapsUrl || location.includes('http') ? (
+                  <TouchableOpacity
+                    style={styles.resolveBtn}
+                    onPress={handleResolveMapUrl}
+                    disabled={resolvingMap}
+                  >
+                    <Map size={16} color={COLORS.primary} />
+                    <Text style={styles.resolveText}>
+                      {resolvingMap ? 'Resolving Coordinates...' : 'Re-verify Map Coordinates'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {/* Interactive Leaflet Location Map Preview - Only shown when Map Link or Coordinates are entered */}
+                {((latitude !== null && longitude !== null) || (googleMapsUrl && googleMapsUrl.trim().length > 0)) ? (
+                  <JobLocationMapPreview
+                    latitude={latitude}
+                    longitude={longitude}
+                    locationName={resolvedAddress || location || 'Factory Location'}
+                    height={220}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
+          {/* Section 3: Experience & Salary Requirements */}
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.experienceSalary && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('experienceSalary')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <Briefcase size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Experience & Salary Requirements</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getExperienceSalaryCompletion()} />
+                {expandedSections.experienceSalary ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {expandedSections.experienceSalary ? (
+              <View style={styles.cardBody}>
+                {/* Experience Checkbox */}
+                <View style={styles.switchHeaderRow}>
+                  <Text style={styles.fieldLabel}>Require Previous Work Experience</Text>
+                  <Switch value={experienceRequired} onValueChange={setExperienceRequired} />
+                </View>
+
+                {experienceRequired ? (
+                  <View style={styles.rowTwo}>
+                    <View style={{ flex: 1 }}>
+                      <Input label="Min Experience (Yrs)" keyboardType="numeric" value={minExperience} onChangeText={setMinExperience} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Input label="Max Experience (Yrs)" keyboardType="numeric" value={maxExperience} onChangeText={setMaxExperience} />
+                    </View>
+                  </View>
+                ) : null}
+
+                {/* Disclose Salary Checkbox */}
+                <View style={[styles.switchHeaderRow, { marginTop: SPACING.md }]}>
+                  <Text style={styles.fieldLabel}>Disclose Monthly Salary Range to Candidates</Text>
+                  <Switch value={discloseSalary} onValueChange={setDiscloseSalary} />
+                </View>
+
+                {discloseSalary ? (
+                  <View style={styles.rowTwo}>
+                    <View style={{ flex: 1 }}>
+                      <Input label="Min Salary (₹/Month)" keyboardType="numeric" value={salaryMin} onChangeText={setSalaryMin} leftIcon={<IndianRupee size={16} color={COLORS.slate400} />} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Input label="Max Salary (₹/Month)" keyboardType="numeric" value={salaryMax} onChangeText={setSalaryMax} leftIcon={<IndianRupee size={16} color={COLORS.slate400} />} />
+                    </View>
+                  </View>
+                ) : null}
+
+                {/* Workplace Mode */}
+                <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Workplace Mode</Text>
+                <View style={styles.segmentedRow}>
+                  {(['On-site', 'Remote', 'Hybrid'] as const).map((m) => (
+                    <TouchableOpacity
+                      key={m}
+                      style={[styles.segmentBtn, workMode === m && styles.segmentBtnActive]}
+                      onPress={() => setWorkMode(m)}
+                    >
+                      <Text style={[styles.segmentText, workMode === m && styles.segmentTextActive]}>{m}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Employment Type */}
+                <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Employment Type</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                  {(['Full-time', 'Part-time', 'Contract', 'Apprenticeship'] as const).map((t) => (
+                    <TouchableOpacity
+                      key={t}
+                      style={[styles.chip, workType === t && styles.chipActive]}
+                      onPress={() => setWorkType(t)}
+                    >
+                      <Text style={[styles.chipText, workType === t && styles.chipTextActive]}>{t}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Section 4: Shift Timing & Statutory Facilities */}
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.shiftPerks && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('shiftPerks')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <Clock size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Shift Timing & Statutory Facilities</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getShiftPerksCompletion()} />
+                {expandedSections.shiftPerks ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {expandedSections.shiftPerks ? (
+              <View style={styles.cardBody}>
+                <Text style={styles.fieldLabel}>Shift Category</Text>
+                {/* Standard Clean LinkedIn & Apple iPhone Underline Tab Bar */}
+                <View style={styles.hiringSegmentedTrack}>
+                  {(['Day Shift', 'Night Shift', 'Rotational Shift'] as const).map((s) => {
+                    const isSelected = shiftCategory === s;
+                    const IconComp = s === 'Day Shift' ? Sun : (s === 'Night Shift' ? Moon : RotateCw);
+                    return (
+                      <TouchableOpacity
+                        key={s}
+                        activeOpacity={0.8}
+                        style={[styles.hiringTabBtn, isSelected && styles.hiringTabBtnActive]}
+                        onPress={() => setShiftCategory(s)}
+                      >
+                        <IconComp size={15} color={isSelected ? '#2563EB' : '#64748B'} />
+                        <Text style={[styles.hiringTabText, isSelected && styles.hiringTabTextActive]}>
+                          {s}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.perkGrid}>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Overtime Pay (OT)</Text>
+                    <Switch value={overtime} onValueChange={setOvertime} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Subsidized Canteen</Text>
+                    <Switch value={canteen} onValueChange={setCanteen} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Bus / Transport Facility</Text>
+                    <Switch value={busFacility} onValueChange={setBusFacility} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Free Accommodation / Quarters</Text>
+                    <Switch value={accommodation} onValueChange={setAccommodation} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Provident Fund (PF)</Text>
+                    <Switch value={pf} onValueChange={setPf} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>ESIC Medical Facility</Text>
+                    <Switch value={esic} onValueChange={setEsic} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Uniform & Safety Shoes</Text>
+                    <Switch value={uniform} onValueChange={setUniform} />
+                  </View>
+                  <View style={styles.perkItem}>
+                    <Text style={styles.perkLabel}>Medical Insurance</Text>
+                    <Switch value={medicalInsurance} onValueChange={setMedicalInsurance} />
                   </View>
                 </View>
               </View>
             ) : null}
-
-            <View style={[styles.rowTwo, { marginTop: 12 }]}>
-              <View style={{ flex: 1 }}>
-                <DatePickerField
-                  label="Application Deadline"
-                  required
-                  placeholder="Select deadline date..."
-                  value={applicationDeadline}
-                  onChange={setApplicationDeadline}
-                  minDate={new Date()}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Input
-                  label="Max Applicants Cap"
-                  placeholder="e.g. 50 (0 = Unlimited)"
-                  keyboardType="numeric"
-                  value={maxApplicantsInput}
-                  onChangeText={setMaxApplicantsInput}
-                />
-              </View>
-            </View>
           </View>
 
-          {/* Section 8: Job Description, Responsibilities & Skills */}
+          {/* Section 5: Applicant Eligibility & Age Criteria */}
           <View style={styles.card}>
-            <View style={styles.sectionHeaderRow}>
-              <Wrench size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Job Description, Responsibilities & Skills</Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.eligibility && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('eligibility')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <Users size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Applicant Eligibility & Age Criteria</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getEligibilityCompletion()} />
+                {expandedSections.eligibility ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
 
-            <Input
-              label="Job Description *"
-              required
-              multiline
-              numberOfLines={4}
-              placeholder="Describe machine operations, shop floor duties, and expectations..."
-              value={description}
-              onChangeText={setDescription}
-              style={{ minHeight: 90 }}
-            />
+            {expandedSections.eligibility ? (
+              <View style={styles.cardBody}>
+                <Text style={styles.fieldLabel}>Gender Preference</Text>
+                {/* Standard Clean LinkedIn & Apple iPhone Underline Tab Bar */}
+                <View style={styles.hiringSegmentedTrack}>
+                  {(['No Preference', 'Male Only', 'Female Only'] as const).map((g) => {
+                    const isSelected = genderPreference === g;
+                    const IconComp = g === 'No Preference' ? Users : (g === 'Male Only' ? User : UserCheck);
+                    return (
+                      <TouchableOpacity
+                        key={g}
+                        activeOpacity={0.8}
+                        style={[styles.hiringTabBtn, isSelected && styles.hiringTabBtnActive]}
+                        onPress={() => setGenderPreference(g)}
+                      >
+                        <IconComp size={15} color={isSelected ? '#2563EB' : '#64748B'} />
+                        <Text style={[styles.hiringTabText, isSelected && styles.hiringTabTextActive]}>
+                          {g}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-            {/* Responsibilities Toggle Switch */}
-            <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
-              <Text style={styles.fieldLabel}>Add Key Responsibilities</Text>
-              <Switch
-                value={showResponsibilities}
-                onValueChange={(val) => {
-                  setShowResponsibilities(val);
-                  if (!val) setResponsibilities('');
-                }}
-              />
-            </View>
-
-            {showResponsibilities ? (
-              <Input
-                label="Key Responsibilities (One per line)"
-                multiline
-                numberOfLines={3}
-                placeholder="e.g. Operate CNC machine per job card&#10;Perform Quality Checks"
-                value={responsibilities}
-                onChangeText={setResponsibilities}
-                style={{ marginTop: 4, minHeight: 70 }}
-              />
+                <View style={[styles.rowTwo, { marginTop: SPACING.md }]}>
+                  <View style={{ flex: 1 }}>
+                    <Input label="Min Age (Years)" keyboardType="numeric" value={minAgeInput} onChangeText={setMinAgeInput} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Input label="Max Age (Years)" keyboardType="numeric" value={maxAgeInput} onChangeText={setMaxAgeInput} />
+                  </View>
+                </View>
+              </View>
             ) : null}
+          </View>
 
-            {/* Requirements Toggle Switch */}
-            <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
-              <Text style={styles.fieldLabel}>Add Job Requirements & Qualifications</Text>
-              <Switch
-                value={showRequirements}
-                onValueChange={(val) => {
-                  setShowRequirements(val);
-                  if (!val) setRequirements('');
-                }}
-              />
-            </View>
+          {/* Section 6: Application and Hiring Mode */}
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.hiringMode && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('hiringMode')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <FileText size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Application and Hiring Mode</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getHiringModeCompletion()} />
+                {expandedSections.hiringMode ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
 
-            {showRequirements ? (
-              <Input
-                label="Job Requirements & Qualification (One per line)"
-                multiline
-                numberOfLines={3}
-                placeholder="e.g. ITI / Diploma in Fitter Trade&#10;1+ year shopfloor experience"
-                value={requirements}
-                onChangeText={setRequirements}
-                style={{ marginTop: 4, minHeight: 70 }}
-              />
-            ) : null}
-
-            {/* Dynamic Skills Pills */}
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Suggested Skill Tags (Tap to add)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {availableSkills.map((sk) => {
-                const isSelected = skillsTags.includes(sk);
-                return (
+            {expandedSections.hiringMode ? (
+              <View style={styles.cardBody}>
+                <Text style={styles.fieldLabel}>Select Hiring Mode</Text>
+                {/* Standard Clean LinkedIn & Apple iPhone Underline Tab Bar */}
+                <View style={styles.hiringSegmentedTrack}>
                   <TouchableOpacity
-                    key={sk}
-                    style={[styles.chip, isSelected && styles.chipActive]}
-                    onPress={() => handleToggleSkill(sk)}
+                    activeOpacity={0.8}
+                    style={[styles.hiringTabBtn, hiringMethod === 'STANDARD' && styles.hiringTabBtnActive]}
+                    onPress={() => setHiringMethod('STANDARD')}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
-                      {isSelected ? `✓ ${sk}` : `+ ${sk}`}
+                    <Building2 size={15} color={hiringMethod === 'STANDARD' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.hiringTabText, hiringMethod === 'STANDARD' && styles.hiringTabTextActive]}>
+                      Standard Online
                     </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
+                    onPress={() => setHiringMethod('WALK_IN')}
+                  >
+                    <UserCheck size={15} color={hiringMethod === 'WALK_IN' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.hiringTabText, hiringMethod === 'WALK_IN' && styles.hiringTabTextActive]}>
+                      Direct Walk-in Drive
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {hiringMethod === 'WALK_IN' ? (
+                  <View style={{ marginTop: 8, gap: 10 }}>
+                    <DatePickerField
+                      label="Walk-in Interview Date"
+                      placeholder="Select walk-in date..."
+                      value={walkInDate}
+                      onChange={setWalkInDate}
+                      minDate={new Date()}
+                    />
+                    <View style={styles.rowTwo}>
+                      <View style={{ flex: 1 }}>
+                        <Input label="Start Time" placeholder="10:00 AM" value={walkInStartTime} onChangeText={setWalkInStartTime} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Input label="End Time" placeholder="04:00 PM" value={walkInEndTime} onChangeText={setWalkInEndTime} />
+                      </View>
+                    </View>
+                    <Input
+                      label="Interview Venue Address"
+                      placeholder="Gate No 2, Factory Reception, MIDC"
+                      value={interviewAddress}
+                      onChangeText={setInterviewAddress}
+                      leftIcon={<MapPin size={18} color={COLORS.slate400} />}
+                    />
+                    <View style={styles.rowTwo}>
+                      <View style={{ flex: 1 }}>
+                        <Input label="Contact Person" placeholder="HR Manager / Supervisor" value={walkInContactPerson} onChangeText={setWalkInContactPerson} leftIcon={<UserCheck size={18} color={COLORS.slate400} />} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Input label="Contact Mobile" placeholder="10-digit number" keyboardType="phone-pad" value={walkInContactNumber} onChangeText={setWalkInContactNumber} leftIcon={<Phone size={18} color={COLORS.slate400} />} />
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
+
+                <View style={[styles.rowTwo, { marginTop: 12 }]}>
+                  <View style={{ flex: 1 }}>
+                    <DatePickerField
+                      label="Application Deadline"
+                      required
+                      placeholder="Select deadline date..."
+                      value={applicationDeadline}
+                      onChange={setApplicationDeadline}
+                      minDate={new Date()}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      label="Max Applicants Cap"
+                      placeholder="e.g. 50 (0 = Unlimited)"
+                      keyboardType="numeric"
+                      value={maxApplicantsInput}
+                      onChangeText={setMaxApplicantsInput}
+                    />
+                  </View>
+                </View>
+              </View>
+            ) : null}
           </View>
 
-          {/* Form Submit Bar */}
-          <View style={styles.submitContainer}>
-            <Button
-              title={
-                loading
-                  ? 'Uploading Job Data to Database...'
-                  : isEdit
-                  ? 'Resubmit Job for Approval'
-                  : 'Publish Enterprise Job'
-              }
-              onPress={handleSubmitJob}
-              variant="primary"
-              size="lg"
-              loading={loading}
-            />
+          {/* Section 7: Job Description, Responsibilities & Skills */}
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={[styles.sectionHeaderTouchable, expandedSections.descriptionSkills && styles.sectionHeaderTouchableExpanded]}
+              activeOpacity={0.7}
+              onPress={() => toggleSection('descriptionSkills')}
+            >
+              <View style={styles.sectionHeaderRowLeft}>
+                <Wrench size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Job Description, Responsibilities & Skills</Text>
+              </View>
+              <View style={styles.sectionHeaderRowRight}>
+                <SectionProgressPie percentage={getDescriptionSkillsCompletion()} />
+                {expandedSections.descriptionSkills ? (
+                  <ChevronUp size={20} color={COLORS.slate600} />
+                ) : (
+                  <ChevronDown size={20} color={COLORS.slate600} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {expandedSections.descriptionSkills ? (
+              <View style={styles.cardBody}>
+                <Input
+                  label="Job Description *"
+                  required
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Describe machine operations, shop floor duties, and expectations..."
+                  value={description}
+                  onChangeText={setDescription}
+                  style={{ minHeight: 90 }}
+                />
+
+                {/* Responsibilities Toggle Switch */}
+                <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
+                  <Text style={styles.fieldLabel}>Add Key Responsibilities</Text>
+                  <Switch
+                    value={showResponsibilities}
+                    onValueChange={(val) => {
+                      setShowResponsibilities(val);
+                      if (!val) setResponsibilities('');
+                    }}
+                  />
+                </View>
+
+                {showResponsibilities ? (
+                  <Input
+                    label="Key Responsibilities (One per line)"
+                    multiline
+                    numberOfLines={3}
+                    placeholder="e.g. Operate CNC machine per job card&#10;Perform Quality Checks"
+                    value={responsibilities}
+                    onChangeText={setResponsibilities}
+                    style={{ marginTop: 4, minHeight: 70 }}
+                  />
+                ) : null}
+
+                {/* Requirements Toggle Switch */}
+                <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
+                  <Text style={styles.fieldLabel}>Add Job Requirements & Qualifications</Text>
+                  <Switch
+                    value={showRequirements}
+                    onValueChange={(val) => {
+                      setShowRequirements(val);
+                      if (!val) setRequirements('');
+                    }}
+                  />
+                </View>
+
+                {showRequirements ? (
+                  <Input
+                    label="Job Requirements & Qualification (One per line)"
+                    multiline
+                    numberOfLines={3}
+                    placeholder="e.g. ITI / Diploma in Fitter Trade&#10;1+ year shopfloor experience"
+                    value={requirements}
+                    onChangeText={setRequirements}
+                    style={{ marginTop: 4, minHeight: 70 }}
+                  />
+                ) : null}
+
+                {/* Dynamic Skills Pills */}
+                <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Required Skill Tags & Custom Skills</Text>
+                
+                {/* Custom Skill Input Row for "Other" Skill Addition */}
+                <View style={styles.customSkillInputRow}>
+                  <TextInput
+                    style={styles.customSkillInput}
+                    placeholder="Type custom skill (e.g. CNC, TIG Welding)..."
+                    placeholderTextColor="#94A3B8"
+                    value={customSkillInput}
+                    onChangeText={setCustomSkillInput}
+                    onSubmitEditing={handleAddCustomSkill}
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity
+                    style={styles.addCustomSkillBtn}
+                    activeOpacity={0.8}
+                    onPress={handleAddCustomSkill}
+                  >
+                    <Plus size={15} color="#FFFFFF" />
+                    <Text style={styles.addCustomSkillBtnText}>Add Skill</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Selected & Suggested Skill Tags */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                  {Array.from(new Set([...skillsTags, ...availableSkills])).map((sk) => {
+                    const isSelected = skillsTags.includes(sk);
+                    return (
+                      <TouchableOpacity
+                        key={sk}
+                        style={[styles.chip, isSelected && styles.chipActive]}
+                        onPress={() => handleToggleSkill(sk)}
+                      >
+                        <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                          {isSelected ? `✓ ${sk}` : `+ ${sk}`}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
+
+        {/* Fixed Sticky Form Submit Bar Above Bottom Dock Menu */}
+        <View style={styles.submitContainer}>
+          <Button
+            title={
+              loading
+                ? 'Uploading Job Data to Database...'
+                : isEdit
+                ? 'Resubmit Job for Approval'
+                : 'Publish Enterprise Job'
+            }
+            onPress={handleSubmitJob}
+            variant="primary"
+            size="lg"
+            loading={loading}
+          />
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -1380,7 +1692,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.md,
     paddingTop: 10,
-    paddingBottom: 140,
+    paddingBottom: 24,
   },
   aiCard: {
     backgroundColor: '#F8FAFC',
@@ -1446,7 +1758,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
@@ -1456,6 +1768,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 2,
     elevation: 1,
+  },
+  sectionHeaderTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  sectionHeaderTouchableExpanded: {
+    paddingBottom: 10,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  sectionHeaderRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  sectionHeaderRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardBody: {
+    marginTop: 2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -1471,6 +1809,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '800',
     letterSpacing: -0.2,
+    flexShrink: 1,
   },
   fieldLabel: {
     fontSize: 13,
@@ -1633,40 +1972,41 @@ const styles = StyleSheet.create({
   hiringSegmentedTrack: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 3,
-    gap: 4,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    gap: 16,
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   hiringTabBtn: {
-    flex: 1,
     height: 38,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    borderRadius: 6,
     backgroundColor: 'transparent',
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 4,
+    marginBottom: -1,
   },
   hiringTabBtnActive: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    backgroundColor: 'transparent',
+    borderBottomColor: '#2563EB',
   },
   hiringTabText: {
     fontSize: 12.5,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#64748B',
   },
   hiringTabTextActive: {
     color: '#2563EB',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   compactLogoCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
@@ -1734,7 +2074,50 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2563EB',
   },
+  customSkillInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  customSkillInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  addCustomSkillBtn: {
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  addCustomSkillBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   submitContainer: {
-    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 78 : 72,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 10,
   },
 });

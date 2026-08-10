@@ -508,7 +508,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={{ zIndex: 999, position: 'relative' }}>
           <View style={styles.topSearchPillRow}>
             <TouchableOpacity onPress={handleSearchSubmit} style={styles.searchIconBadge3D} activeOpacity={0.8}>
-              <Search size={16} color="#2563EB" strokeWidth={2.8} />
+              <Search size={18} color="#2563EB" strokeWidth={2.2} />
             </TouchableOpacity>
 
             <TextInput
@@ -518,11 +518,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
               value={topSearch}
               onChangeText={(txt) => {
                 setTopSearch(txt);
-                setShowSuggestions(true);
+                setShowSuggestions(txt.trim().length > 0);
               }}
               onFocus={() => {
                 setIsInputFocused(true);
-                setShowSuggestions(true);
+                setShowSuggestions(topSearch.trim().length > 0);
               }}
               onBlur={() => {
                 setIsInputFocused(false);
@@ -537,32 +537,15 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   setTopSearch('');
                   setShowSuggestions(false);
                 }}
-                style={{ padding: 4, marginRight: 4 }}
+                style={styles.searchClearBtn}
               >
-                <X size={16} color="#64748B" />
+                <X size={15} color="#64748B" />
               </TouchableOpacity>
             ) : null}
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={{
-                backgroundColor: '#2563EB',
-                paddingHorizontal: 14,
-                paddingVertical: 7,
-                borderRadius: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-              }}
-              onPress={handleSearchSubmit}
-            >
-              <Search size={13} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>Search</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Autocomplete Dropdown Overlay */}
-          {showSuggestions && (topSearch.trim().length > 0 || isInputFocused) ? (
+          {/* Autocomplete Dropdown Overlay (Only visible when text is entered) */}
+          {showSuggestions && topSearch.trim().length > 0 ? (
             <View style={styles.suggestionsContainer}>
               <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled style={{ maxHeight: 270 }}>
                 {/* 1. View All Matches Header */}
@@ -1295,35 +1278,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     height: 48,
     gap: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowRadius: 5,
+    elevation: 2,
   },
   searchIconBadge3D: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topSearchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 13.5,
+    fontSize: 14,
     color: '#0F172A',
-    fontWeight: '600',
+    fontWeight: '500',
     textAlignVertical: 'center',
     paddingVertical: 0,
     margin: 0,
+  },
+  searchClearBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   suggestionsContainer: {
     position: 'absolute',

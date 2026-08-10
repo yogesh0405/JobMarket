@@ -64,9 +64,9 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   defaultBadge: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#2563EB',

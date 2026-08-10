@@ -52,7 +52,11 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
-  const avatarUri = user?.profilePictureUrl || (user as any)?.profile_picture_url;
+  const avatarUri =
+    user?.profilePictureUrl ||
+    (user as any)?.profile_picture_url ||
+    (user as any)?.profilePhotoUrl ||
+    (user as any)?.avatar;
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   const dockWidth = windowWidth;
@@ -141,27 +145,26 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                 onPress={onPress}
                 style={styles.tabItem}
               >
-                {isProfileTab ? (
-                  <View style={[styles.avatarBox, isFocused && styles.avatarBoxActive]}>
-                    {avatarUri ? (
-                      <Image source={{ uri: avatarUri }} style={styles.avatarImg} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.initialsBg, isFocused && styles.initialsBgActive]}>
-                        <Text style={[styles.initialsText, isFocused && styles.initialsTextActive]}>
-                          {userInitial}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ) : (
-                  <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                    <IconComponent
-                      size={20}
-                      color={isFocused ? '#FFFFFF' : '#0F172A'}
-                      strokeWidth={isFocused ? 2.5 : 2.2}
+                <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
+                  {isProfileTab && avatarUri ? (
+                    <Image
+                      source={{ uri: avatarUri }}
+                      style={{
+                        width: isFocused ? 26 : 24,
+                        height: isFocused ? 26 : 24,
+                        borderRadius: isFocused ? 13 : 12,
+                        borderWidth: isFocused ? 2 : 1,
+                        borderColor: isFocused ? '#2563EB' : '#94A3B8',
+                      }}
                     />
-                  </View>
-                )}
+                  ) : (
+                    <IconComponent
+                      size={22}
+                      color={isFocused ? '#2563EB' : '#64748B'}
+                      strokeWidth={isFocused ? 2.4 : 2.0}
+                    />
+                  )}
+                </View>
 
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
@@ -227,27 +230,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconPillBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
   iconPillBoxActive: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#2563EB',
-    borderWidth: 1.5,
-    borderColor: '#93C5FD',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
     overflow: 'hidden',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 5,
   },
   avatarBox: {
     width: 34,

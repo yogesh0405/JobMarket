@@ -21,6 +21,7 @@ import {
   ChevronRight,
   LayoutGrid,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { COLORS } from '../../constants/theme';
 
@@ -39,55 +40,20 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
   navigation,
 }) => {
   const { user, logout } = useAuth();
-  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -DRAWER_WIDTH,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, slideAnim, backdropOpacity]);
+  const insets = useSafeAreaInsets();
 
   const handleNavigate = (screenName: string) => {
     onClose();
-    setTimeout(() => {
-      navigation.navigate(screenName);
-    }, 100);
+    navigation.navigate(screenName);
   };
 
   const handleLogout = async () => {
     onClose();
-    setTimeout(async () => {
-      try {
-        await logout();
-      } catch (err) {
-        console.error('Logout error in drawer:', err);
-      }
-    }, 100);
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error in drawer:', err);
+    }
   };
 
   const coreMenuItems = [
@@ -96,12 +62,10 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
       icon: LayoutGrid,
       action: () => {
         onClose();
-        setTimeout(() => {
-          navigation.navigate('CandidateMain', {
-            screen: 'CandidateProfileTab',
-            params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
-          });
-        }, 100);
+        navigation.navigate('CandidateMain', {
+          screen: 'CandidateProfileTab',
+          params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
+        });
       },
     },
     {
@@ -143,15 +107,10 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
     >
       <View style={styles.modalContainer}>
         <TouchableWithoutFeedback onPress={onClose}>
-          <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+          <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <Animated.View
-          style={[
-            styles.drawerContainer,
-            { transform: [{ translateX: slideAnim }] },
-          ]}
-        >
+        <View style={[styles.drawerContainer, { paddingTop: Math.max(insets.top + 8, 20) }]}>
           <View style={styles.profileHeaderCard}>
             <View style={styles.headerInfo}>
               <View style={styles.avatarContainer}>
@@ -244,7 +203,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
             </TouchableOpacity>
             <Text style={styles.versionText}>JobMarket Mobile v1.0 • MIDC Verified</Text>
           </View>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -261,7 +220,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#000000',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   drawerContainer: {
     width: DRAWER_WIDTH,
@@ -282,18 +241,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 12,
+    backgroundColor: 'transparent',
+    paddingVertical: 8,
     marginHorizontal: 14,
     marginBottom: 6,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   headerInfo: {
     flex: 1,
@@ -386,18 +337,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   menuItemText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#334155',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
   },
   drawerFooter: {
     paddingHorizontal: 14,

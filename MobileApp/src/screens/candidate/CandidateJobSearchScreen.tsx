@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,8 @@ import {
   MoreVertical,
   Star,
   GraduationCap,
+  Award,
+  X,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -299,6 +301,58 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState(route?.params?.keyword || '');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const matchedSuggestions = useMemo(() => {
+    const trimmed = searchQuery.trim().toLowerCase();
+
+    // 1. Matched Jobs from live database jobs
+    const matchedJobs = jobs.filter((j) => {
+      if (!trimmed) return false;
+      const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
+      const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
+      const industryMatch = (j.industry || '').toLowerCase().includes(trimmed);
+      const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
+      const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(trimmed));
+      return titleMatch || companyMatch || industryMatch || tradeMatch || skillsMatch;
+    }).slice(0, 4);
+
+    // 2. Matched Trades
+    const popularTrades = [
+      'VMC Operator',
+      'CNC Machinist',
+      'Fitter',
+      'Electrician',
+      'Quality Inspector',
+      'Welder',
+      'Tool & Die Maker',
+      'Assembly Operator',
+      'Turner',
+      'Maintenance Technician',
+    ];
+    const matchedTrades = popularTrades.filter((t) => !trimmed || t.toLowerCase().includes(trimmed)).slice(0, trimmed ? 3 : 5);
+
+    // 3. Matched Locations
+    const defaultMIDCs = [
+      'Waluj MIDC, Chhatrapati Sambhajinagar',
+      'Chakan MIDC, Pune',
+      'Bhosari MIDC, Pune',
+      'Taloja MIDC, Navi Mumbai',
+      'Thane Belapur MIDC',
+      'Ranjangaon MIDC',
+      'Pimpri Industrial Zone',
+    ];
+    const jobLocations = jobs.map((j) => j.location).filter(Boolean);
+    const allLocations = Array.from(new Set([...defaultMIDCs, ...jobLocations]));
+    const matchedLocations = allLocations.filter((l) => trimmed && l.toLowerCase().includes(trimmed)).slice(0, 3);
+
+    return {
+      jobs: matchedJobs,
+      trades: matchedTrades,
+      locations: matchedLocations,
+    };
+  }, [searchQuery, jobs]);
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
@@ -563,25 +617,31 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           <TouchableOpacity
             style={[styles.segmentBtn, viewMode === 'grid' && styles.segmentBtnActive]}
             onPress={() => setViewMode('grid')}
+            activeOpacity={0.7}
           >
             <LayoutGrid size={15} color={viewMode === 'grid' ? '#2563EB' : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'grid' && styles.segmentBtnTextActive]}>Grid</Text>
+            {viewMode === 'grid' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}
             onPress={() => setViewMode('list')}
+            activeOpacity={0.7}
           >
             <List size={15} color={viewMode === 'list' ? '#2563EB' : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'list' && styles.segmentBtnTextActive]}>List</Text>
+            {viewMode === 'list' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}
             onPress={() => setViewMode('map')}
+            activeOpacity={0.7}
           >
             <Map size={15} color={viewMode === 'map' ? '#2563EB' : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'map' && styles.segmentBtnTextActive]}>Map</Text>
+            {viewMode === 'map' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
         </View>
       </View>
@@ -603,31 +663,146 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         ].filter(Boolean).length;
 
         return (
-          <View style={[styles.searchFilterRow, { marginHorizontal: 16 }]}>
-            <View style={styles.inputSearchBox}>
-              <Search size={18} color="#94A3B8" />
-              <TextInput
-                style={styles.inputSearchText}
-                placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-                placeholderTextColor="#94A3B8"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
+          <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16 }}>
+            <View style={styles.searchFilterRow}>
+              <View style={styles.inputSearchBox}>
+                <Search size={18} color="#2563EB" />
+                <TextInput
+                  style={styles.inputSearchText}
+                  placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+                  placeholderTextColor="#94A3B8"
+                  value={searchQuery}
+                  onChangeText={(txt) => {
+                    setSearchQuery(txt);
+                    setShowSuggestions(txt.trim().length > 0);
+                  }}
+                  onFocus={() => {
+                    setIsInputFocused(true);
+                    setShowSuggestions(searchQuery.trim().length > 0);
+                  }}
+                  onBlur={() => {
+                    setIsInputFocused(false);
+                  }}
+                />
+                {searchQuery.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery('');
+                      setShowSuggestions(false);
+                    }}
+                    style={styles.searchClearBtn}
+                  >
+                    <X size={15} color="#64748B" />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
+                onPress={() => setFilterDrawerOpen(true)}
+                activeOpacity={0.8}
+              >
+                <SlidersHorizontal size={16} color={activeFilterCount > 0 ? '#2563EB' : '#0F172A'} />
+                <Text style={[styles.filtersBtnText, activeFilterCount > 0 && { color: '#2563EB' }]}>Filters</Text>
+                {activeFilterCount > 0 && (
+                  <View style={styles.filterBadgePill}>
+                    <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
-              onPress={() => setFilterDrawerOpen(true)}
-              activeOpacity={0.8}
-            >
-              <SlidersHorizontal size={16} color={activeFilterCount > 0 ? '#2563EB' : '#0F172A'} />
-              <Text style={[styles.filtersBtnText, activeFilterCount > 0 && { color: '#2563EB' }]}>Filters</Text>
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadgePill}>
-                  <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            {/* Live Autocomplete Suggestions Overlay (Only visible when text is entered) */}
+            {showSuggestions && searchQuery.trim().length > 0 ? (
+              <View style={styles.suggestionsContainer}>
+                {searchQuery.trim().length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.suggestionRowHeader}
+                    onPress={() => {
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <Search size={15} color="#2563EB" />
+                    <Text style={styles.suggestionHeaderText} numberOfLines={1}>
+                      Search all jobs matching "<Text style={{ fontWeight: '800', color: '#2563EB' }}>{searchQuery.trim()}</Text>"
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {/* 2. Matched Live Jobs */}
+                {matchedSuggestions.jobs.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
+                    {matchedSuggestions.jobs.map((j) => (
+                      <TouchableOpacity
+                        key={j.id}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setShowSuggestions(false);
+                          setActiveSelectedJobId(j.id);
+                          setDrawerOpen(true);
+                        }}
+                      >
+                        <Briefcase size={16} color="#2563EB" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
+                          <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {/* 3. Matched Trades */}
+                {matchedSuggestions.trades.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>POPULAR TRADES & SKILLS</Text>
+                    {matchedSuggestions.trades.map((trade) => (
+                      <TouchableOpacity
+                        key={trade}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setSearchQuery(trade);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <Award size={16} color="#059669" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle}>{trade}</Text>
+                          <Text style={styles.suggestionItemSub}>ITI / Industrial Trade</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {/* 4. Matched MIDC Locations */}
+                {matchedSuggestions.locations.length > 0 ? (
+                  <View style={styles.suggestionGroup}>
+                    <Text style={styles.suggestionGroupLabel}>INDUSTRIAL ZONES & LOCATIONS</Text>
+                    {matchedSuggestions.locations.map((loc) => (
+                      <TouchableOpacity
+                        key={loc}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setShowSuggestions(false);
+                          setActiveFilters((prev) => ({ ...prev, midcZone: loc }));
+                        }}
+                      >
+                        <MapPin size={16} color="#D97706" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle}>{loc}</Text>
+                          <Text style={styles.suggestionItemSub}>Industrial Cluster</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         );
       })()}
@@ -1029,7 +1204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 4,
-    marginBottom: 4,
+    marginBottom: 10,
   },
   screenTitleText: {
     fontSize: 19,
@@ -1040,34 +1215,29 @@ const styles = StyleSheet.create({
   viewSegmentBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 0,
-    padding: 3,
-    gap: 2,
+    gap: 12,
   },
   segmentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 0,
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    position: 'relative',
   },
-  segmentBtnActive: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+  segmentBtnActive: {},
+  activeTabIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: '#2563EB',
+    borderRadius: 2,
   },
   segmentBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#64748B',
   },
   segmentBtnTextActive: {
@@ -1136,15 +1306,87 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 0,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    height: 46,
+    height: 48,
     gap: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  searchClearBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 54,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 999,
+  },
+  suggestionRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  suggestionHeaderText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  suggestionGroup: {
+    marginBottom: 8,
+  },
+  suggestionGroupLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  suggestionItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
+    marginBottom: 4,
+  },
+  suggestionItemTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  suggestionItemSub: {
+    fontSize: 10.5,
+    color: '#64748B',
+    marginTop: 1,
   },
   inputSearchText: {
     flex: 1,

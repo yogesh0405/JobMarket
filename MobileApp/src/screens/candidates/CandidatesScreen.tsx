@@ -30,6 +30,8 @@ import {
   Calendar,
   ChevronRight,
   UserCheck,
+  SlidersHorizontal,
+  Check,
 } from 'lucide-react-native';
 import { apiFetch } from '../../api/client';
 import { User } from '../../types';
@@ -239,19 +241,25 @@ export const CandidatesScreen: React.FC = () => {
     fetchCandidates();
   }, []);
 
+  const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
+  const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
+  const [aadhaarOnlyFilter, setAadhaarOnlyFilter] = useState<boolean>(false);
+  const [filterModalVisible, setFilterModalVisible] = useState<boolean>(false);
+
+  const hasActiveFilters = Boolean(activeTradeFilter || activeExpFilter || aadhaarOnlyFilter);
+
   const onRefresh = () => {
     setRefreshing(true);
     setSearchQuery('');
     setActiveFilter(null);
+    setActiveTradeFilter(null);
+    setActiveExpFilter(null);
+    setAadhaarOnlyFilter(false);
     fetchCandidates();
   };
 
-  const handleFilterClick = (tag: string) => {
-    setActiveFilter((prev) => (prev === tag ? null : tag));
-  };
-
   const filteredCandidates = candidates.filter((item) => {
-    // 1. Comprehensive multi-field search filter (skill, location, trade, education, experience, phone, name, bio)
+    // 1. Multi-field search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const nameMatch = safeString(item.name).toLowerCase().includes(q);
@@ -278,16 +286,25 @@ export const CandidatesScreen: React.FC = () => {
         return false;
       }
     }
-    // 2. Category tag filter
-    if (activeFilter) {
-      const filterLower = activeFilter.toLowerCase();
-      const matchesSkill = item.skills?.some((s) => safeString(s).toLowerCase().includes(filterLower));
-      const matchesTitle = safeString(item.title).toLowerCase().includes(filterLower);
-      const matchesLoc = safeString(item.location).toLowerCase().includes(filterLower);
-      const matchesEdu = safeString(item.education).toLowerCase().includes(filterLower);
-      if (!matchesSkill && !matchesTitle && !matchesLoc && !matchesEdu) {
-        return false;
-      }
+    // 2. Trade Specialization Filter
+    if (activeTradeFilter) {
+      const f = activeTradeFilter.toLowerCase();
+      const matchesSkill = item.skills?.some((s) => safeString(s).toLowerCase().includes(f));
+      const matchesTitle = safeString(item.title || item.trade_specialization).toLowerCase().includes(f);
+      if (!matchesSkill && !matchesTitle) return false;
+    }
+    // 3. Experience Level Filter
+    if (activeExpFilter) {
+      const expStr = safeString(item.experience).toLowerCase();
+      const numMatch = parseInt(expStr.match(/\d+/)?.[0] || '0', 10);
+      if (activeExpFilter === '1+ Yrs' && numMatch < 1) return false;
+      if (activeExpFilter === '3+ Yrs' && numMatch < 3) return false;
+      if (activeExpFilter === '5+ Yrs' && numMatch < 5) return false;
+      if (activeExpFilter === '8+ Yrs' && numMatch < 8) return false;
+    }
+    // 4. Aadhaar Verification Filter
+    if (aadhaarOnlyFilter) {
+      if (!item.verified && !item.aadhaar_verified) return false;
     }
     return true;
   });
@@ -301,7 +318,7 @@ export const CandidatesScreen: React.FC = () => {
       onPress={() => setSelectedCandidate(item)}
       style={styles.card}
     >
-      {/* Header Row: Compact Avatar, Name + Verified Badge, Title */}
+      {/* Header Row (Profile Pic, Name, Trade Speciality) with subtle gray background */}
       <View style={styles.cardHeaderRow}>
         <Image
           source={{ uri: item.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
@@ -318,9 +335,12 @@ export const CandidatesScreen: React.FC = () => {
               </View>
             ) : null}
           </View>
-          <Text style={styles.candidateTitle} numberOfLines={1}>
-            {safeString(item.title, 'Skilled Technical Operator')}
-          </Text>
+          <View style={styles.tradeTitleBadge}>
+            <Briefcase size={12} color="#2563EB" />
+            <Text style={styles.candidateTitle} numberOfLines={1}>
+              {safeString(item.title, 'Skilled Technical Operator')}
+            </Text>
+          </View>
         </View>
         <ChevronRight size={18} color="#94A3B8" style={{ marginLeft: 4 }} />
       </View>
@@ -349,6 +369,7 @@ export const CandidatesScreen: React.FC = () => {
             if (!skillText) return null;
             return (
               <View key={idx} style={styles.skillPill}>
+                <View style={styles.skillDot} />
                 <Text style={styles.skillText}>{skillText}</Text>
               </View>
             );
@@ -363,61 +384,63 @@ export const CandidatesScreen: React.FC = () => {
       {/* 100% Exact Same Header */}
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-      {/* Fully Functional Live Candidate Search Bar */}
+      {/* Live Candidate Search Bar + Side Filter Button */}
       <View style={styles.searchBarWrapper}>
-        <View style={styles.searchBarContainer}>
-          <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
-            placeholderTextColor="#94A3B8"
-            returnKeyType="search"
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
-              <X size={16} color="#64748B" />
-            </TouchableOpacity>
-          ) : null}
+        <View style={styles.searchRowWithFilter}>
+          <View style={styles.searchBarContainer}>
+            <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
+              placeholderTextColor="#94A3B8"
+              returnKeyType="search"
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+                <X size={16} color="#64748B" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Filter Option Button at the side of search bar */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setFilterModalVisible(true)}
+            style={[
+              styles.sideFilterBtn,
+              hasActiveFilters && styles.sideFilterBtnActive,
+            ]}
+          >
+            <SlidersHorizontal size={18} color={hasActiveFilters ? '#FFFFFF' : '#2563EB'} />
+            {hasActiveFilters ? <View style={styles.activeFilterBadgeDot} /> : null}
+          </TouchableOpacity>
         </View>
 
-        {searchQuery ? (
+        {searchQuery || hasActiveFilters ? (
           <View style={styles.searchResultsInfoRow}>
             <Text style={styles.searchResultsCountText}>
-              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'} matching "{searchQuery}"
+              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'}
+              {activeTradeFilter ? ` • ${activeTradeFilter}` : ''}
+              {activeExpFilter ? ` • ${activeExpFilter}` : ''}
+              {aadhaarOnlyFilter ? ' • Aadhaar Verified' : ''}
             </Text>
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Text style={styles.clearSearchText}>Clear Search</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery('');
+                setActiveTradeFilter(null);
+                setActiveExpFilter(null);
+                setAadhaarOnlyFilter(false);
+              }}
+            >
+              <Text style={styles.clearSearchText}>Reset All</Text>
             </TouchableOpacity>
           </View>
         ) : null}
       </View>
 
-      {/* Filter Tags Horizontal Strip */}
-      <View style={styles.filterStripContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterStripContent}
-        >
-          {FILTER_TAGS.map((tag) => {
-            const isSelected = activeFilter === tag;
-            return (
-              <TouchableOpacity
-                key={tag}
-                activeOpacity={0.75}
-                onPress={() => handleFilterClick(tag)}
-                style={[styles.filterTagPill, isSelected && styles.filterTagPillActive]}
-              >
-                <Text style={[styles.filterTagText, isSelected && styles.filterTagTextActive]}>
-                  {tag}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+      {/* Error Banner */}
 
       {error ? (
         <ErrorBanner message={error} onRetry={fetchCandidates} style={{ marginHorizontal: SPACING.lg }} />
@@ -448,179 +471,186 @@ export const CandidatesScreen: React.FC = () => {
       >
         <SafeAreaView style={styles.fullScreenPageContainer} edges={['top', 'bottom']}>
           <View style={{ flex: 1 }}>
-            {/* Full Screen Header Bar */}
-            <View style={styles.fullPageHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
-                  {selectedCandidate?.name || 'Candidate Profile'}
-                </Text>
-                <Text style={{ fontSize: 11.5, color: '#64748B' }} numberOfLines={1}>
-                  {safeString(selectedCandidate?.title, 'Technical Specialist')}
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setSelectedCandidate(null)}
-              >
-                <X size={20} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
             {selectedCandidate ? (
               <ScrollView style={styles.modalScrollBody} showsVerticalScrollIndicator={false}>
-                {/* Hero Profile Block */}
+                {/* Clean Candidate Hero Profile Banner with Inline Action Buttons */}
                 <View style={styles.heroProfileCard}>
-                  <Image
-                    source={{ uri: selectedCandidate.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
-                    style={styles.heroAvatar}
-                  />
+                  <View style={styles.heroTopRow}>
+                    <Image
+                      source={{ uri: selectedCandidate.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
+                      style={styles.heroAvatar}
+                    />
 
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.nameBadgeRow}>
-                      <Text style={styles.heroNameText}>{selectedCandidate.name}</Text>
-                      {selectedCandidate.verified || selectedCandidate.aadhaar_verified ? (
-                        <ShieldCheck size={16} color="#16A34A" />
-                      ) : null}
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <View style={styles.nameBadgeRow}>
+                        <Text style={styles.heroNameText}>{selectedCandidate.name}</Text>
+                        {selectedCandidate.verified || selectedCandidate.aadhaar_verified ? (
+                          <ShieldCheck size={16} color="#16A34A" />
+                        ) : null}
+                      </View>
+
+                      <Text style={styles.heroTitleText}>{safeString(selectedCandidate.title, 'Technical Operator')}</Text>
                     </View>
 
-                    <Text style={styles.heroTitleText}>{safeString(selectedCandidate.title, 'Technical Operator')}</Text>
+                    {/* Close Cross Button on the Right */}
+                    <TouchableOpacity
+                      style={styles.modalCloseBtn}
+                      onPress={() => setSelectedCandidate(null)}
+                      activeOpacity={0.7}
+                    >
+                      <X size={20} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
 
-                    <View style={styles.heroLocationRow}>
-                      <MapPin size={13} color="#64748B" />
-                      <Text style={styles.heroLocationText} numberOfLines={1}>
-                        {safeString(selectedCandidate.location, 'Chhatrapati Sambhajinagar MIDC')}
-                      </Text>
-                    </View>
+                  {/* Direct Action Contact Row Inside Hero Section Below Profile & Name */}
+                  <View style={styles.contactActionBarInline}>
+                    {/* 1. Phone Call */}
+                    <TouchableOpacity
+                      style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1 }]}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        const ph = safeString(selectedCandidate.phone);
+                        if (ph) Linking.openURL(`tel:${ph}`);
+                        else Alert.alert('Notice', 'Phone number not provided.');
+                      }}
+                    >
+                      <Phone size={15} color="#2563EB" />
+                      <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Call</Text>
+                    </TouchableOpacity>
+
+                    {/* 2. WhatsApp */}
+                    <TouchableOpacity
+                      style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1.35 }]}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        const ph = safeString(selectedCandidate.phone);
+                        if (ph) Linking.openURL(`https://wa.me/${ph.replace(/[^0-9]/g, '')}`);
+                        else Alert.alert('Notice', 'WhatsApp number not provided.');
+                      }}
+                    >
+                      <WhatsAppIcon size={16} color="#16A34A" />
+                      <Text style={[styles.contactPillText, { color: '#15803D' }]}>WhatsApp</Text>
+                    </TouchableOpacity>
+
+                    {/* 3. Email */}
+                    <TouchableOpacity
+                      style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1 }]}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        const em = safeString(selectedCandidate.email);
+                        if (em) Linking.openURL(`mailto:${em}`);
+                        else Alert.alert('Notice', 'Email address not provided.');
+                      }}
+                    >
+                      <Mail size={15} color="#DC2626" />
+                      <Text style={[styles.contactPillText, { color: '#DC2626' }]}>Email</Text>
+                    </TouchableOpacity>
+
+                    {/* 4. Resume */}
+                    <TouchableOpacity
+                      style={[styles.contactPillBtn, { borderColor: '#2563EB', flex: 1.3 }]}
+                      activeOpacity={0.8}
+                      onPress={() => setPdfModalVisible(true)}
+                    >
+                      <FileText size={15} color="#2563EB" />
+                      <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Resume</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
-                {/* Direct Action Contact Row - Logos Only + Resume Button on Right */}
-                <View style={styles.contactActionBar}>
-                  {/* 1. Phone Call Logo */}
-                  <TouchableOpacity
-                    style={[styles.iconOnlyContactBtn, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      const ph = safeString(selectedCandidate.phone);
-                      if (ph) Linking.openURL(`tel:${ph}`);
-                      else Alert.alert('Notice', 'Phone number not provided.');
-                    }}
-                  >
-                    <Phone size={16} color="#2563EB" />
-                  </TouchableOpacity>
-
-                  {/* 2. WhatsApp Logo */}
-                  <TouchableOpacity
-                    style={[styles.iconOnlyContactBtn, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      const ph = safeString(selectedCandidate.phone);
-                      if (ph) Linking.openURL(`https://wa.me/${ph.replace(/[^0-9]/g, '')}`);
-                      else Alert.alert('Notice', 'WhatsApp number not provided.');
-                    }}
-                  >
-                    <WhatsAppIcon size={18} color="#16A34A" />
-                  </TouchableOpacity>
-
-                  {/* 3. Email Logo */}
-                  <TouchableOpacity
-                    style={[styles.iconOnlyContactBtn, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      const em = safeString(selectedCandidate.email);
-                      if (em) Linking.openURL(`mailto:${em}`);
-                      else Alert.alert('Notice', 'Email address not provided.');
-                    }}
-                  >
-                    <Mail size={16} color="#D97706" />
-                  </TouchableOpacity>
-
-                  {/* 4. Resume Button on the Right Side */}
-                  <TouchableOpacity
-                    style={styles.resumeActionBtn}
-                    activeOpacity={0.8}
-                    onPress={() => setPdfModalVisible(true)}
-                  >
-                    <FileText size={15} color="#FFFFFF" />
-                    <Text style={styles.resumeActionText}>View Resume</Text>
-                  </TouchableOpacity>
-                </View>
+                {/* Section Separator */}
+                <View style={styles.sectionSeparator} />
 
                 {/* Candidate Overview Bio */}
                 {selectedCandidate.bio ? (
-                  <View style={styles.modalSectionBox}>
-                    <Text style={styles.sectionHeadingTitle}>PROFESSIONAL SUMMARY</Text>
-                    <Text style={styles.bioTextContent}>{safeString(selectedCandidate.bio)}</Text>
-                  </View>
+                  <>
+                    <View style={styles.modalSectionBox}>
+                      <Text style={styles.sectionHeadingTitle}>PROFESSIONAL SUMMARY</Text>
+                      <Text style={styles.bioTextContent}>{safeString(selectedCandidate.bio)}</Text>
+                    </View>
+                    <View style={styles.sectionSeparator} />
+                  </>
                 ) : null}
 
-                {/* Key Technical Information Grid - 3 Row Layout */}
+                {/* Key Technical Information Grid - Perfectly Aligned iOS Rows */}
                 <View style={styles.modalSectionBox}>
                   <Text style={styles.sectionHeadingTitle}>WORK & AVAILABILITY</Text>
 
-                  <View style={{ gap: 8, marginTop: 4 }}>
-                    {/* Row 1: Experience in One Row */}
-                    <View style={styles.fullWidthSpecCard}>
-                      <View style={styles.specHeaderRow}>
-                        <Briefcase size={13} color="#2563EB" />
-                        <Text style={styles.specGridLabel}>Work Experience</Text>
+                  <View style={styles.specRowsContainer}>
+                    {/* Row 1: Location Address */}
+                    <View style={styles.specRowItem}>
+                      <View style={styles.specIconBadge}>
+                        <MapPin size={15} color="#0284C7" />
                       </View>
-                      <Text style={styles.specGridValue}>
-                        {safeString(selectedCandidate.experience, '5+ Years')}
-                      </Text>
-                    </View>
-
-                    {/* Row 2: Education in One Row */}
-                    <View style={styles.fullWidthSpecCard}>
-                      <View style={styles.specHeaderRow}>
-                        <Award size={13} color="#16A34A" />
-                        <Text style={styles.specGridLabel}>Education / Trade</Text>
-                      </View>
-                      <Text style={styles.specGridValue}>
-                        {safeString(selectedCandidate.education, 'NCVT ITI Fitter & Switchgear Technician')}
-                      </Text>
-                    </View>
-
-                    {/* Row 3: Notice Period and Preferred Shift in One Row */}
-                    <View style={styles.twoColRow}>
-                      <View style={styles.halfWidthSpecCard}>
-                        <View style={styles.specHeaderRow}>
-                          <Calendar size={13} color="#D97706" />
-                          <Text style={styles.specGridLabel}>Notice Period</Text>
-                        </View>
-                        <Text style={styles.specGridValue} numberOfLines={1}>
-                          {safeString(selectedCandidate.notice_period, 'Immediate')}
+                      <View style={styles.specTextCol}>
+                        <Text style={styles.specGridLabel}>MIDC Location Address</Text>
+                        <Text style={styles.specGridValue}>
+                          {safeString(selectedCandidate.location, 'Chhatrapati Sambhajinagar MIDC Industrial Area')}
                         </Text>
                       </View>
+                    </View>
 
-                      <View style={styles.halfWidthSpecCard}>
-                        <View style={styles.specHeaderRow}>
-                          <UserCheck size={13} color="#0284C7" />
-                          <Text style={styles.specGridLabel}>Preferred Shift</Text>
-                        </View>
-                        <Text style={styles.specGridValue} numberOfLines={1}>
+                    <View style={styles.rowDivider} />
+
+                    {/* Row 2: Experience */}
+                    <View style={styles.specRowItem}>
+                      <View style={styles.specIconBadge}>
+                        <Briefcase size={15} color="#2563EB" />
+                      </View>
+                      <View style={styles.specTextCol}>
+                        <Text style={styles.specGridLabel}>Work Experience</Text>
+                        <Text style={styles.specGridValue}>
+                          {safeString(selectedCandidate.experience, '5+ Years')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.rowDivider} />
+
+                    {/* Row 3: Education */}
+                    <View style={styles.specRowItem}>
+                      <View style={styles.specIconBadge}>
+                        <Award size={15} color="#16A34A" />
+                      </View>
+                      <View style={styles.specTextCol}>
+                        <Text style={styles.specGridLabel}>Education & Trade</Text>
+                        <Text style={styles.specGridValue}>
+                          {safeString(selectedCandidate.education, 'NCVT ITI Fitter & Switchgear Technician')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.rowDivider} />
+
+                    {/* Row 4: Preferred Shift */}
+                    <View style={styles.specRowItem}>
+                      <View style={styles.specIconBadge}>
+                        <UserCheck size={15} color="#D97706" />
+                      </View>
+                      <View style={styles.specTextCol}>
+                        <Text style={styles.specGridLabel}>Preferred Shift</Text>
+                        <Text style={styles.specGridValue}>
                           {safeString(selectedCandidate.preferred_shift, 'Day / Rotational')}
                         </Text>
                       </View>
                     </View>
                   </View>
-                </View>
 
-                {/* Technical Skills Section */}
-                {selectedCandidate.skills && selectedCandidate.skills.length > 0 ? (
-                  <View style={styles.modalSectionBox}>
-                    <Text style={styles.sectionHeadingTitle}>TECHNICAL SKILLS & CERTIFICATIONS</Text>
-                    <View style={styles.modalSkillsFlex}>
-                      {selectedCandidate.skills.map((sk, index) => (
-                        <View key={index} style={styles.modalSkillTag}>
-                          <CheckCircle2 size={12} color="#2563EB" />
-                          <Text style={styles.modalSkillText}>{sk}</Text>
-                        </View>
-                      ))}
+                  {/* Technical Skills Section inside main card */}
+                  {selectedCandidate.skills && selectedCandidate.skills.length > 0 ? (
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.sectionHeadingTitle}>TECHNICAL SKILLS & CERTIFICATIONS</Text>
+                      <View style={styles.modalSkillsFlex}>
+                        {selectedCandidate.skills.map((sk, index) => (
+                          <View key={index} style={styles.modalSkillTag}>
+                            <CheckCircle2 size={12} color="#0F172A" />
+                            <Text style={styles.modalSkillText}>{sk}</Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
-                  </View>
-                ) : null}
+                  ) : null}
+                </View>
               </ScrollView>
             ) : null}
 
@@ -654,6 +684,97 @@ export const CandidatesScreen: React.FC = () => {
           pdfUrl={selectedCandidate.resume_url || selectedCandidate.resumeUrl || selectedCandidate.resume}
         />
       ) : null}
+
+      {/* Interactive Candidate Filter Action Sheet Modal */}
+      <Modal visible={filterModalVisible} transparent animationType="slide" onRequestClose={() => setFilterModalVisible(false)}>
+        <View style={styles.sheetOverlayBottom}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
+          <View style={styles.cleanIosSheetCard}>
+            <View style={styles.sheetGrabHandle} />
+            <View style={styles.sheetHeaderRow}>
+              <Text style={styles.sheetTitleText}>FILTER CANDIDATES</Text>
+              <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 380, marginVertical: 8 }} showsVerticalScrollIndicator={false}>
+              {/* Trade Specialization */}
+              <Text style={styles.filterSectionTitle}>TRADE SPECIALIZATION</Text>
+              <View style={styles.filterOptionsGrid}>
+                {['VMC Operator', 'CNC Turner', 'Fitter', 'Welder', 'Electrician', 'Quality Inspector'].map((trade) => {
+                  const isSelected = activeTradeFilter === trade;
+                  return (
+                    <TouchableOpacity
+                      key={trade}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveTradeFilter(isSelected ? null : trade)}
+                      style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                    >
+                      <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>{trade}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.rowDivider} />
+
+              {/* Experience Level */}
+              <Text style={styles.filterSectionTitle}>MINIMUM EXPERIENCE</Text>
+              <View style={styles.filterOptionsGrid}>
+                {['1+ Yrs', '3+ Yrs', '5+ Yrs', '8+ Yrs'].map((exp) => {
+                  const isSelected = activeExpFilter === exp;
+                  return (
+                    <TouchableOpacity
+                      key={exp}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveExpFilter(isSelected ? null : exp)}
+                      style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                    >
+                      <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>{exp}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.rowDivider} />
+
+              {/* Verification Status */}
+              <Text style={styles.filterSectionTitle}>VERIFICATION STATUS</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setAadhaarOnlyFilter(!aadhaarOnlyFilter)}
+                style={[styles.filterCheckRow, aadhaarOnlyFilter && styles.filterCheckRowSelected]}
+              >
+                <ShieldCheck size={18} color={aadhaarOnlyFilter ? '#2563EB' : '#64748B'} />
+                <Text style={styles.filterCheckLabel}>Aadhaar Verified Candidates Only</Text>
+                {aadhaarOnlyFilter ? <Check size={18} color="#2563EB" /> : null}
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.sheetActionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  setActiveTradeFilter(null);
+                  setActiveExpFilter(null);
+                  setAadhaarOnlyFilter(false);
+                }}
+                style={styles.sheetResetBtn}
+              >
+                <Text style={styles.sheetResetText}>Reset All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setFilterModalVisible(false)}
+                style={styles.sheetApplyBtn}
+              >
+                <Text style={styles.sheetApplyText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -661,17 +782,24 @@ export const CandidatesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   searchBarWrapper: {
     paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: 4,
+    paddingBottom: 8,
+    marginBottom: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
+  searchRowWithFilter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   searchBarContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -687,6 +815,159 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+  },
+  sideFilterBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  sideFilterBtnActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#1D4ED8',
+  },
+  activeFilterBadgeDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  sheetOverlayBottom: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  cleanIosSheetCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 24,
+    width: '100%',
+  },
+  sheetGrabHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  sheetTitleText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  filterSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#2563EB',
+    letterSpacing: 0.8,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  filterOptionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  filterChipActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  filterChipTextActive: {
+    color: '#2563EB',
+    fontWeight: '800',
+  },
+  filterCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  filterCheckRowSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+  filterCheckLabel: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  sheetActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+  },
+  sheetResetBtn: {
+    flex: 1,
+    height: 42,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetResetText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  sheetApplyBtn: {
+    flex: 1.5,
+    height: 42,
+    backgroundColor: '#2563EB',
+    borderRadius: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetApplyText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   searchInput: {
     flex: 1,
@@ -749,31 +1030,35 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    shadowColor: '#64748B',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 2,
     elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    paddingBottom: 10,
+    marginBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#CBD5E1',
   },
   avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 6,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     backgroundColor: '#F1F5F9',
-    marginRight: 8,
+    marginRight: 10,
   },
   headerInfo: {
     flex: 1,
@@ -783,7 +1068,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 1,
+    marginBottom: 2,
   },
   candidateName: {
     fontSize: 14.5,
@@ -794,29 +1079,30 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 3,
+    marginLeft: 2,
+  },
+  tradeTitleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
   },
   candidateTitle: {
-    fontSize: 11.5,
-    color: '#475569',
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   infoBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 4,
     marginBottom: 6,
-    gap: 2,
+    gap: 3,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   infoIcon: {
-    marginRight: 5,
+    marginRight: 6,
   },
   infoLocationText: {
     fontSize: 11.5,
@@ -832,44 +1118,50 @@ const styles = StyleSheet.create({
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 5,
+    marginTop: 2,
   },
   skillPill: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 1,
+    marginRight: 8,
+  },
+  skillDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#2563EB',
   },
   skillText: {
-    color: '#2563EB',
+    color: '#0F172A',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   /* Candidate Full Info Modal Styles */
   fullScreenPageContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 12,
   },
   fullPageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 2,
+    borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     gap: 10,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
   },
   fullPageBackBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 0,
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -883,20 +1175,10 @@ const styles = StyleSheet.create({
   modalContentCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
     overflow: 'hidden',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -915,27 +1197,36 @@ const styles = StyleSheet.create({
   },
   modalCloseBtn: {
     padding: 6,
-    borderRadius: 14,
+    borderRadius: 0,
     backgroundColor: '#F1F5F9',
   },
   modalScrollBody: {
-    paddingBottom: SPACING.md,
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   heroProfileCard: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  heroTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: SPACING.sm + 2,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    gap: 12,
+    marginBottom: 12,
+  },
+  contactActionBarInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   heroAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 58,
+    height: 58,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -959,7 +1250,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#86EFAC',
   },
@@ -989,116 +1280,97 @@ const styles = StyleSheet.create({
   contactActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginVertical: 10,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
   },
-  iconOnlyContactBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderBottomWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resumeActionBtn: {
+  contactPillBtn: {
     flex: 1,
-    height: 38,
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
+    gap: 5,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#1D4ED8',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    borderRadius: 0,
+    paddingHorizontal: 4,
   },
-  resumeActionText: {
-    fontSize: 12.5,
+  contactPillText: {
+    fontSize: 11.5,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
   modalSectionBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 10,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  fullWidthSpecCard: {
-    width: '100%',
+  sectionSeparator: {
+    height: 8,
     backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  twoColRow: {
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
+  },
+  specRowsContainer: {
+    marginTop: 6,
+  },
+  specRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 6,
   },
-  halfWidthSpecCard: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+  specIconBadge: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  specHeaderRow: {
+  specTextCol: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: 'center',
+  },
+  twoColRowSpec: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingVertical: 6,
+    paddingLeft: 46,
+  },
+  halfSpecCol: {
+    flex: 1,
+  },
+  specMetaHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginBottom: 3,
   },
   specGridLabel: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#64748B',
   },
   specGridValue: {
     fontSize: 12.5,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0F172A',
   },
   sectionHeadingTitle: {
     ...TYPOGRAPHY.caption,
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: COLORS.slate400,
+    color: COLORS.primary,
     letterSpacing: 0.8,
     marginBottom: SPACING.xs + 2,
   },
@@ -1141,32 +1413,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    marginRight: 8,
   },
   modalSkillText: {
     ...TYPOGRAPHY.caption,
     fontSize: 11.5,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: '#0F172A',
   },
   modalFooterRow: {
-    paddingTop: SPACING.sm,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 22,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E2E8F0',
   },
   modalPrimaryCallBtn: {
+    width: '100%',
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 6,
+    backgroundColor: '#2563EB',
+    borderRadius: 0,
+    marginBottom: 4,
   },
   modalPrimaryCallText: {
     ...TYPOGRAPHY.subtitle,

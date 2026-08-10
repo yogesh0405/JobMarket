@@ -24,6 +24,12 @@ import {
   HelpCircle,
   ChevronUp,
   ChevronDown,
+  Calendar,
+  Send,
+  Megaphone,
+  ShieldCheck,
+  FileText,
+  XCircle,
 } from 'lucide-react-native';
 import { AppNotification } from '../../api/notificationApi';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
@@ -136,21 +142,38 @@ export const NotificationModal: React.FC<Props> = ({
     return true;
   });
 
-  const getNotifIcon = (type?: string) => {
-    const t = (type || '').toUpperCase();
-    if (t.includes('JOB_APPLICATION') || t.includes('CANDIDATE')) {
-      return <UserCheck size={18} color="#2563EB" />;
+  const getNotifIcon = (type?: string, title?: string, message?: string) => {
+    const combined = `${type || ''} ${title || ''} ${message || ''}`.toUpperCase();
+
+    if (combined.includes('INTERVIEW') || combined.includes('SCHEDULED') || combined.includes('WALK-IN') || combined.includes('SHORTLIST')) {
+      return <Calendar size={18} color="#16A34A" />;
     }
-    if (t.includes('APPROVAL') || t.includes('APPROVED')) {
-      return <CheckCircle2 size={18} color="#10B981" />;
+    if (combined.includes('HIRED') || combined.includes('ACCEPTED') || combined.includes('APPROV')) {
+      return <CheckCircle2 size={18} color="#16A34A" />;
     }
-    if (t.includes('REJECTED') || t.includes('CANCEL')) {
-      return <AlertTriangle size={18} color="#DC2626" />;
+    if (combined.includes('APPLIED') || combined.includes('APPLICATION') || combined.includes('APPLY')) {
+      return <Send size={18} color="#2563EB" />;
     }
-    if (t.includes('SUPPORT') || t.includes('TICKET')) {
+    if (combined.includes('JOB') || combined.includes('VACANCY') || combined.includes('POSTED')) {
+      return <Briefcase size={18} color="#2563EB" />;
+    }
+    if (combined.includes('BANNER') || combined.includes('PROMOT') || combined.includes('ADVERTI')) {
+      return <Megaphone size={18} color="#D97706" />;
+    }
+    if (combined.includes('VERIF') || combined.includes('SECURITY') || combined.includes('SHIELD')) {
+      return <ShieldCheck size={18} color="#2563EB" />;
+    }
+    if (combined.includes('RESUME') || combined.includes('DOC') || combined.includes('BIO-DATA')) {
+      return <FileText size={18} color="#7C3AED" />;
+    }
+    if (combined.includes('REJECT') || combined.includes('CANCEL') || combined.includes('DECLIN')) {
+      return <XCircle size={18} color="#DC2626" />;
+    }
+    if (combined.includes('SUPPORT') || combined.includes('TICKET') || combined.includes('HELP')) {
       return <HelpCircle size={18} color="#8B5CF6" />;
     }
-    return <Briefcase size={18} color="#0EA5E9" />;
+
+    return <Bell size={18} color="#2563EB" />;
   };
 
   return (
@@ -171,7 +194,7 @@ export const NotificationModal: React.FC<Props> = ({
               <Text style={styles.headerTitle}>Notifications</Text>
               {unreadCount > 0 ? (
                 <View style={styles.unreadBadgePill}>
-                  <Text style={styles.unreadBadgeText}>{unreadCount} New</Text>
+                  <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount} New</Text>
                 </View>
               ) : null}
             </View>
@@ -271,7 +294,7 @@ export const NotificationModal: React.FC<Props> = ({
                       if (onNavigateItem) onNavigateItem(item);
                     }}
                   >
-                    <View style={styles.itemIconSquircle}>{getNotifIcon(item.type)}</View>
+                    <View style={styles.itemIconSquircle}>{getNotifIcon(item.type, item.title, item.message)}</View>
 
                     <View style={styles.itemContent}>
                       <View style={styles.itemTitleRow}>
@@ -368,9 +391,9 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   unreadBadgePill: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#93C5FD',
+    borderColor: '#2563EB',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
@@ -383,9 +406,9 @@ const styles = StyleSheet.create({
   expandBtn: {
     padding: 6,
     borderRadius: 16,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#2563EB',
   },
   closeBtn: {
     padding: 6,
@@ -490,16 +513,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   itemCardUnread: {
-    backgroundColor: '#F0F9FF',
-    borderColor: '#BAE6FD',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2563EB',
+    borderWidth: 1.5,
   },
   itemIconSquircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    width: 32,
+    height: 32,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

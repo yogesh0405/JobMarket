@@ -375,14 +375,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* CARD 1: SECURITY OVERVIEW & SESSIONS */}
-        <Text style={styles.groupHeaderLabel}>SECURITY OVERVIEW & SESSIONS</Text>
+        {/* SINGLE MASTER CARD: ALL SECURITY & LOGIN SESSIONS SECTIONS */}
         <View style={styles.singleMasterCard}>
+          {/* SECTION 1: HERO OVERVIEW */}
           <View style={styles.heroHeaderSection}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <View style={styles.heroIconBox}>
-                <ShieldCheck size={20} color="#2563EB" />
-              </View>
+              <ShieldCheck size={20} color="#2563EB" />
               <Text style={styles.heroTitle}>Security & Active Sessions</Text>
             </View>
             <Text style={styles.heroSubtitle}>
@@ -390,9 +388,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
 
-          <View style={styles.sectionDivider} />
+          <View style={styles.sectionDividerInline} />
 
-          {/* SECTION 1: ACTIVE LOGIN SESSIONS */}
+          {/* SECTION 2: ACTIVE LOGIN SESSIONS */}
           <View>
             <View style={styles.cardHeaderBox}>
               <Text style={styles.sectionTitle} numberOfLines={1}>
@@ -409,8 +407,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               <View style={styles.sessionList}>
                 {sessions.map((sess, idx) => {
                   const isCurrent = idx === 0 || sess.is_current;
-
-                  // Computer / Desktop vs Mobile Phone Detection
                   const dType = (sess?.device_type || sess?.deviceType || '').toLowerCase();
                   const dName = (sess?.device_name || sess?.deviceName || '').toLowerCase();
                   const osStr = (sess?.os || '').toLowerCase();
@@ -436,36 +432,22 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                       key={sess.id || idx}
                       style={[styles.sessionCard, isCurrent && styles.sessionCardCurrent]}
                     >
-                      <View style={[styles.deviceAvatar, (isCurrent || isComputer) && styles.deviceAvatarCurrent]}>
-                        <DeviceIconComp size={20} color={isCurrent ? '#2563EB' : isComputer ? '#0F172A' : '#475569'} />
-                      </View>
+                      <DeviceIconComp size={18} color={isCurrent ? '#16A34A' : '#64748B'} style={{ marginTop: 2 }} />
 
                       <View style={{ flex: 1 }}>
-                        <View style={styles.sessionNameRow}>
-                          <Text style={styles.deviceNameText} numberOfLines={1}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Text
+                            style={[styles.deviceNameText, isCurrent && { color: '#16A34A', fontWeight: '800' }]}
+                            numberOfLines={1}
+                          >
                             {sess.device_name || sess.deviceName || (isComputer ? 'Desktop / Laptop PC' : 'Mobile Smartphone')}
                           </Text>
-                          {isCurrent ? (
-                            <View style={styles.activePillBadge}>
-                              <View style={styles.activePulseDot} />
-                              <Text style={styles.activePillText}>This Phone • Active Now</Text>
-                            </View>
-                          ) : null}
+                          {isCurrent ? <CheckCircle2 size={13} color="#16A34A" /> : null}
                         </View>
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          <Globe size={12} color="#64748B" />
-                          <Text style={styles.sessionMetaText} numberOfLines={1}>
-                            {sess.os || (isComputer ? 'Windows / macOS' : 'Android OS')} • {sess.browser || (isComputer ? 'Enterprise Web Browser' : 'CSN Mobile Client')}
-                          </Text>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                          <Wifi size={12} color="#15803D" />
-                          <Text style={styles.sessionIpText} numberOfLines={1}>
-                            IP Address: {sess.ip_address || '103.195.202.14'}
-                          </Text>
-                        </View>
+                        <Text style={styles.sessionMetaText} numberOfLines={1}>
+                          {sess.os || (isComputer ? 'Windows / macOS' : 'Android OS')} • IP: {sess.ip_address || '103.195.202.14'}
+                        </Text>
                       </View>
 
                       {!isCurrent ? (
@@ -487,66 +469,60 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             )}
           </View>
-        </View>
 
-        {/* CARD 2: ACCOUNT CREDENTIALS */}
-        <Text style={styles.groupHeaderLabel}>ACCOUNT CREDENTIALS</Text>
-        <View style={[styles.singleMasterCard, { padding: 0, gap: 0 }]}>
-          {/* iOS Row 1: Change Account Password */}
-          <TouchableOpacity
-            style={styles.iosListRow}
-            onPress={() => {
-              setPasswordError(null);
-              setIsChangePassModalOpen(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iosRowIconBox, { backgroundColor: '#EFF6FF' }]}>
+          <View style={styles.sectionDividerInline} />
+
+          {/* SECTION 3: ACCOUNT CREDENTIALS */}
+          <View>
+            <Text style={[styles.sectionTitle, { marginBottom: 10 }]} numberOfLines={1}>
+              Account Credentials
+            </Text>
+
+            {/* Row 1: Change Account Password */}
+            <TouchableOpacity
+              style={styles.iosListRow}
+              onPress={() => {
+                setPasswordError(null);
+                setIsChangePassModalOpen(true);
+              }}
+              activeOpacity={0.7}
+            >
               <Lock size={18} color="#2563EB" />
-            </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.iosRowTitle}>Change Account Password</Text>
+                <Text style={styles.iosRowSubtitle}>
+                  Update current password using existing account credentials
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#94A3B8" />
+            </TouchableOpacity>
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.iosRowTitle}>Change Account Password</Text>
-              <Text style={styles.iosRowSubtitle}>
-                Update current password using existing account credentials
-              </Text>
-            </View>
+            <View style={styles.iosHairlineDivider} />
 
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <View style={styles.iosHairlineDivider} />
-
-          {/* iOS Row 2: Reset Password via Email OTP */}
-          <TouchableOpacity
-            style={styles.iosListRow}
-            onPress={handleDirectForgotPassword}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iosRowIconBox, { backgroundColor: '#EFF6FF' }]}>
+            {/* Row 2: Reset Password via Email OTP */}
+            <TouchableOpacity
+              style={styles.iosListRow}
+              onPress={handleDirectForgotPassword}
+              activeOpacity={0.7}
+            >
               <KeyRound size={18} color="#2563EB" />
-            </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.iosRowTitle}>Forgot Password? Reset via Email OTP</Text>
+                <Text style={styles.iosRowSubtitle}>
+                  Send a 6-digit verification code to your email address
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#2563EB" />
+            </TouchableOpacity>
+          </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.iosRowTitle}>Forgot Password? Reset via Email OTP</Text>
-              <Text style={styles.iosRowSubtitle}>
-                Send a 6-digit verification code to your email address
-              </Text>
-            </View>
+          <View style={styles.sectionDividerInline} />
 
-            <ChevronRight size={18} color="#2563EB" />
-          </TouchableOpacity>
-        </View>
-
-        {/* CARD 3: MULTI-FACTOR AUTHENTICATION (2FA) */}
-        <Text style={styles.groupHeaderLabel}>MULTI-FACTOR AUTHENTICATION (2FA)</Text>
-        <View style={styles.singleMasterCard}>
+          {/* SECTION 4: MULTI-FACTOR AUTHENTICATION (2FA) */}
           <View>
             <View style={styles.cardHeaderBox}>
               <View style={styles.cardHeaderLeftGroup}>
-                <View style={[styles.sectionIconBox, { backgroundColor: twoFactorEnabled ? '#ECFDF5' : '#FFFBEB' }]}>
-                  <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
-                </View>
+                <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sectionTitle} numberOfLines={1}>
                     Two-Factor Authentication (2FA)
@@ -593,8 +569,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         transparent
         onRequestClose={() => setIsChangePassModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsChangePassModalOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -723,8 +699,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 style={{ marginTop: 8 }}
               />
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* POPUP MODAL SHEET 2: EMAIL OTP RESET PASSWORD */}
@@ -734,8 +710,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         transparent
         onRequestClose={() => setIsOtpModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsOtpModalOpen(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <KeyRound size={20} color="#2563EB" />
@@ -798,8 +774,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -842,6 +818,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E2E8F0',
     marginVertical: 16,
+  },
+  sectionDividerInline: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
   },
   heroHeaderSection: {
     marginBottom: 0,
@@ -949,9 +930,8 @@ const styles = StyleSheet.create({
   },
   sessionCardCurrent: {
     backgroundColor: 'transparent',
-    borderLeftWidth: 3,
-    borderLeftColor: '#2563EB',
-    paddingLeft: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: '#16A34A',
   },
   deviceAvatar: {
     width: 42,
@@ -1011,11 +991,8 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
   revokeIconButton: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FEF2F2',
-    borderRadius: 0,
+    padding: 6,
+    backgroundColor: 'transparent',
   },
   inputLabel: {
     fontSize: 12.5,

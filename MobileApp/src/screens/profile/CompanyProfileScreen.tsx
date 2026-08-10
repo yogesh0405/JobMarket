@@ -292,7 +292,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
         >
           {error ? <ErrorBanner message={error} style={{ marginBottom: SPACING.md }} /> : null}
 
-          {/* Compact White Header Profile Card */}
+          {/* Compact White Header Profile Card with Tabular Navigation Inside Below Profile & Name */}
           <View style={styles.heroBanner}>
             <View style={styles.avatarRow}>
               <TouchableOpacity style={styles.avatarPicker} activeOpacity={0.8} onPress={handlePickLogo}>
@@ -308,167 +308,136 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
               </TouchableOpacity>
 
-              <View style={{ flex: 1 }}>
-                <View style={styles.verifiedBadge}>
-                  <ShieldCheck size={12} color="#2563EB" />
-                  <Text style={styles.verifiedText}>Verified Employer</Text>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.companyTitle} numberOfLines={1}>
+                    {companyName || 'Enterprise Company Name'}
+                  </Text>
+                  <ShieldCheck size={16} color="#16A34A" />
                 </View>
-                <Text style={styles.companyTitle} numberOfLines={1}>
-                  {companyName || 'Enterprise Company Name'}
-                </Text>
                 <Text style={styles.emailSubtitle} numberOfLines={1}>
                   {user?.email}
                 </Text>
               </View>
             </View>
-          </View>
 
-          {/* iOS Standard Segmented Control Bar */}
-          <View style={styles.tabStripWrapper}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setProfileTab('PROFILE')}
-              style={[styles.tabBtn, profileTab === 'PROFILE' ? styles.tabBtnActive : styles.tabBtnInactive]}
-            >
-              <Building2 size={14} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
-              <Text style={[styles.tabBtnText, profileTab === 'PROFILE' && styles.tabBtnTextActive]}>
-                Company Profile
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.cardRowDivider} />
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setProfileTab('ANALYTICS')}
-              style={[styles.tabBtn, profileTab === 'ANALYTICS' ? styles.tabBtnActive : styles.tabBtnInactive]}
-            >
-              <BarChart3 size={14} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
-              <Text style={[styles.tabBtnText, profileTab === 'ANALYTICS' && styles.tabBtnTextActive]}>
-                Analytics
-              </Text>
-            </TouchableOpacity>
+            {/* Tabular Segmented Menu Inside Header Card Below Profile & Name */}
+            <View style={styles.tabsInsideHeroWrapper}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setProfileTab('PROFILE')}
+                style={[styles.industryTabPill, profileTab === 'PROFILE' && styles.industryTabPillActive]}
+              >
+                <Building2 size={14} color={profileTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
+                <Text style={[styles.industryTabText, profileTab === 'PROFILE' && styles.industryTabTextActive]}>
+                  Company Profile
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setProfileTab('ANALYTICS')}
+                style={[styles.industryTabPill, profileTab === 'ANALYTICS' && styles.industryTabPillActive]}
+              >
+                <BarChart3 size={14} color={profileTab === 'ANALYTICS' ? '#2563EB' : '#64748B'} />
+                <Text style={[styles.industryTabText, profileTab === 'ANALYTICS' && styles.industryTabTextActive]}>
+                  Analytics
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {profileTab === 'ANALYTICS' ? (
-            <View style={{ gap: 14 }}>
-              {/* Single Unified 3D Master Analytics Card */}
-              {/* Ultra-Professional Industry Grade Performance Card */}
-              <View style={styles.analyticsCard}>
-                {/* Header Row with Title & Live Database Badge */}
-                <View style={styles.cardHeaderWithBadge}>
-                  <View style={styles.cardTitleBox}>
-                    <View style={styles.sectionIconBox}>
-                      <BarChart3 size={18} color="#2563EB" />
-                    </View>
-                    <View>
-                      <Text style={styles.sectionTitle}>Recruitment Performance</Text>
-                      <Text style={styles.sectionSubtitle}>Real-time pipeline & hiring statistics</Text>
-                    </View>
+            <View style={styles.analyticsCard}>
+              {/* SECTION 1: Recruitment Performance */}
+              <View style={styles.cardHeaderWithBadge}>
+                <View style={styles.cardTitleBox}>
+                  <View style={styles.sectionIconBox}>
+                    <BarChart3 size={18} color="#2563EB" />
                   </View>
-                  <View style={styles.liveIndicatorBadge}>
-                    <View style={styles.greenPulseDot} />
-                    <Text style={styles.liveBadgeText}>ANALYTICS</Text>
+                  <View>
+                    <Text style={styles.sectionTitle}>Recruitment Performance</Text>
+                    <Text style={styles.sectionSubtitle}>Real-time pipeline & hiring statistics</Text>
                   </View>
                 </View>
-
-                {/* 6 Razor-Sharp Aligned Metric Rows */}
-                <View style={styles.proRowsContainer}>
-                  {/* Row 1: Posted Vacancies */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#EFF6FF' }]}>
-                      <Briefcase size={16} color="#2563EB" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Posted Job Vacancies</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillBlue}>
-                        <Text style={styles.proMetaPillTextBlue}>{analyticsData.activeJobs} Active</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.totalJobs}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowDivider} />
-
-                  {/* Row 2: Total Applications */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#F0FDF4' }]}>
-                      <Users size={16} color="#16A34A" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Total Applications</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillGreen}>
-                        <Text style={styles.proMetaPillTextGreen}>Received</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.totalApplications}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowDivider} />
-
-                  {/* Row 3: Shortlisted */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#FEF3C7' }]}>
-                      <Award size={16} color="#D97706" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Shortlisted Candidates</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillAmber}>
-                        <Text style={styles.proMetaPillTextAmber}>Qualified</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.shortlisted}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowDivider} />
-
-                  {/* Row 4: Technical Interviews */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#E0F2FE' }]}>
-                      <Calendar size={16} color="#0284C7" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Technical Interviews</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillSky}>
-                        <Text style={styles.proMetaPillTextSky}>Scheduled</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.interviewed}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowDivider} />
-
-                  {/* Row 5: Confirmed Hires Offered */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#F3E8FF' }]}>
-                      <UserCheck size={16} color="#9333EA" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Confirmed Hires</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillPurple}>
-                        <Text style={styles.proMetaPillTextPurple}>Joined</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.hired}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rowDivider} />
-
-                  {/* Row 6: Response Speed */}
-                  <View style={styles.metricRow}>
-                    <View style={[styles.rowIconBox, { backgroundColor: '#ECFDF5' }]}>
-                      <Clock size={16} color="#059669" />
-                    </View>
-                    <Text style={styles.rowMetricTitle}>Avg Response Speed</Text>
-                    <View style={styles.rowRightBox}>
-                      <View style={styles.proMetaPillEmerald}>
-                        <Text style={styles.proMetaPillTextEmerald}>Fast SLA</Text>
-                      </View>
-                      <Text style={styles.rowMetricVal}>{analyticsData.avgResponseTimeHours}h</Text>
-                    </View>
-                  </View>
+                <View style={styles.liveIndicatorBadge}>
+                  <View style={styles.greenPulseDot} />
+                  <Text style={styles.liveBadgeText}>ANALYTICS</Text>
                 </View>
               </View>
 
-              {/* Hiring Conversion Funnel Card */}
+              {/* 6 Aligned Metric Rows */}
+              <View style={styles.proRowsContainer}>
+                {/* Row 1: Posted Vacancies */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <Briefcase size={16} color="#2563EB" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Posted Job Vacancies</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.totalJobs}</Text>
+                </View>
+
+                <View style={styles.rowDivider} />
+
+                {/* Row 2: Total Applications */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <Users size={16} color="#16A34A" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Total Applications</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.totalApplications}</Text>
+                </View>
+
+                <View style={styles.rowDivider} />
+
+                {/* Row 3: Shortlisted */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <Award size={16} color="#D97706" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Shortlisted Candidates</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.shortlisted}</Text>
+                </View>
+
+                <View style={styles.rowDivider} />
+
+                {/* Row 4: Technical Interviews */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <Calendar size={16} color="#0284C7" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Technical Interviews</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.interviewed}</Text>
+                </View>
+
+                <View style={styles.rowDivider} />
+
+                {/* Row 5: Confirmed Hires Offered */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <UserCheck size={16} color="#9333EA" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Confirmed Hires</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.hired}</Text>
+                </View>
+
+                <View style={styles.rowDivider} />
+
+                {/* Row 6: Response Speed */}
+                <View style={styles.metricRow}>
+                  <View style={styles.rowIconBox}>
+                    <Clock size={16} color="#059669" />
+                  </View>
+                  <Text style={styles.rowMetricTitle}>Avg Response Speed</Text>
+                  <Text style={styles.rowMetricVal}>{analyticsData.avgResponseTimeHours}h</Text>
+                </View>
+              </View>
+
+              <View style={styles.sectionDividerInline} />
+
+              {/* SECTION 2: Hiring Conversion Funnel */}
               {(() => {
                 const totalApps = analyticsData.totalApplications || 1;
                 const shortlistedPct = Math.min(100, Math.round((analyticsData.shortlisted / totalApps) * 100));
@@ -476,10 +445,10 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 const hiredPct = Math.min(100, Math.round((analyticsData.hired / totalApps) * 100));
 
                 return (
-                  <View style={styles.analyticsCard}>
+                  <View>
                     <View style={styles.cardTitleBox}>
-                      <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-                        <PieChart size={20} color="#2563EB" />
+                      <View style={styles.sectionIconBox}>
+                        <PieChart size={18} color="#2563EB" />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.sectionTitle}>Recruitment Conversion Funnel</Text>
@@ -532,14 +501,16 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 );
               })()}
 
-              {/* Quick Navigation Shortcuts */}
-              <View style={styles.analyticsCard}>
+              <View style={styles.sectionDividerInline} />
+
+              {/* SECTION 3: Quick Navigation Shortcuts */}
+              <View>
                 <Text style={styles.infoSectionTitle}>RECRUITMENT DASHBOARD ACTIONS</Text>
-                <View style={{ gap: 8, marginTop: 6 }}>
+                <View style={{ gap: 4, marginTop: 4 }}>
                   <TouchableOpacity
                     style={styles.actionNavRow}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate('JobPost')}
+                    onPress={() => navigation.navigate('PostTab')}
                   >
                     <Briefcase size={16} color="#2563EB" />
                     <Text style={styles.actionNavText}>Post New Job Vacancy</Text>
@@ -549,7 +520,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                   <TouchableOpacity
                     style={styles.actionNavRow}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate('EmployerJobs')}
+                    onPress={() => navigation.navigate('ManageJobsTab')}
                   >
                     <Layers size={16} color="#D97706" />
                     <Text style={styles.actionNavText}>Manage Posted Jobs & Vacancies</Text>
@@ -559,7 +530,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                   <TouchableOpacity
                     style={styles.actionNavRow}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate('Candidates')}
+                    onPress={() => navigation.navigate('CandidatesTab')}
                   >
                     <Users size={16} color="#16A34A" />
                     <Text style={styles.actionNavText}>Explore Candidate Talent Pool</Text>
@@ -706,15 +677,15 @@ const styles = StyleSheet.create({
   },
   heroBanner: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 4,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 1,
     elevation: 1,
   },
   avatarRow: {
@@ -783,22 +754,63 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 1,
   },
+  cardRowDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  tabsInsideHeroWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 2,
+  },
+  industryTabPill: {
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 4,
+    marginBottom: -2,
+  },
+  industryTabPillActive: {
+    borderBottomColor: '#2563EB',
+  },
+  industryTabText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  industryTabTextActive: {
+    color: '#2563EB',
+    fontWeight: '700',
+  },
   sectionDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
     marginVertical: 16,
   },
+  sectionDividerInline: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
+  },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 4,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 1,
     elevation: 1,
   },
   cardTitleBox: {
@@ -808,14 +820,10 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
   },
   sectionTitle: {
     ...TYPOGRAPHY.h2,
@@ -945,11 +953,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   proRowsContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
     paddingVertical: 4,
     marginTop: 4,
   },
@@ -983,6 +986,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     minWidth: 26,
     textAlign: 'right',
+    marginRight: 10,
   },
   rowDivider: {
     height: 1,
@@ -1028,87 +1032,63 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   proMetaPillBlue: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextBlue: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#2563EB',
   },
   proMetaPillGreen: {
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextGreen: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#16A34A',
   },
   proMetaPillAmber: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextAmber: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#D97706',
   },
   proMetaPillSky: {
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextSky: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#0284C7',
   },
   proMetaPillPurple: {
-    backgroundColor: '#F3E8FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextPurple: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#9333EA',
   },
   proMetaPillEmerald: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
     marginLeft: 'auto',
   },
   proMetaPillTextEmerald: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#059669',
   },
   analyticsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 1,
     elevation: 1,
   },
   funnelRow: {
@@ -1147,12 +1127,9 @@ const styles = StyleSheet.create({
   actionNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
     gap: 10,
   },
   actionNavText: {

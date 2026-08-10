@@ -24,6 +24,7 @@ import {
   Send,
 } from 'lucide-react-native';
 import { Job } from '../../types';
+import { getCompanyLogoUrl } from '../../utils/companyLogos';
 
 interface InteractiveJobMapViewProps {
   jobs: Job[];
@@ -51,11 +52,14 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
   const [modeFilter, setModeFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
 
-  // Prepare map jobs with precise Sambhajinagar coordinates
+  // Prepare map jobs with precise Sambhajinagar coordinates & corporate logos
   const mapJobs = jobs.map((job, idx) => {
     // Generate deterministic coordinate offsets around Sambhajinagar industrial hubs if lat/lng are null
     const baseLat = 19.8762 + ((((idx * 17) % 50) - 25) * 0.0035);
     const baseLng = 75.3433 + ((((idx * 23) % 50) - 25) * 0.0042);
+
+    const rawLogo = job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo;
+    const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
 
     return {
       id: job.id,
@@ -66,7 +70,7 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
       salaryMax: job.salary_max ?? (job as any).salaryMax ?? 30000,
       jobType: job.job_type || (job as any).jobType || 'Full-time',
       workMode: job.work_mode || (job as any).workMode || 'On-site',
-      logoUrl: job.companyLogo || (job as any).company_logo || '',
+      logoUrl: logoUrl,
       latitude: Number(job.latitude) || baseLat,
       longitude: Number(job.longitude) || baseLng,
     };
@@ -244,10 +248,11 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
           });
 
           const markersMap = {};
+          const fallbackBadgeSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><path d='M30 75 V40 L50 25 L70 40 V75 Z' fill='none' stroke='%23FFFFFF' stroke-width='6'/><rect x='42' y='55' width='16' height='20' fill='%23FFFFFF'/></svg>";
 
           jobsData.forEach(job => {
-            const logoUrl = job.logoUrl || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100';
-            const pinHtml = '<div id="pin-' + job.id + '" class="custom-single-pin"><img class="single-pin-logo" src="' + logoUrl + '" onError="this.src=\\'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100\\'" /></div>';
+            const logoUrl = (job.logoUrl && job.logoUrl.trim().length > 5) ? job.logoUrl.trim() : fallbackBadgeSvg;
+            const pinHtml = '<div id="pin-' + job.id + '" class="custom-single-pin"><img class="single-pin-logo" src="' + logoUrl + '" onError="this.src=\\' font-size:0; ' + fallbackBadgeSvg + '\\'" /></div>';
 
             const customIcon = L.divIcon({
               html: pinHtml,

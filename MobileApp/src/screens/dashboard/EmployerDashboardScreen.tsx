@@ -269,9 +269,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Jobs</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#EFF6FF' }]}>
-                <Briefcase size={14} color="#2563EB" />
-              </View>
+              <Briefcase size={16} color="#2563EB" />
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : totalJobs}</Text>
           </View>
@@ -279,9 +277,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Approved Active</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0FDF4' }]}>
-                <CheckCircle2 size={14} color="#16A34A" />
-              </View>
+              <CheckCircle2 size={16} color="#16A34A" />
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : activeJobs}</Text>
           </View>
@@ -289,9 +285,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Pending Review</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#FEF3C7' }]}>
-                <Clock size={14} color="#D97706" />
-              </View>
+              <Clock size={16} color="#D97706" />
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : pendingJobs}</Text>
           </View>
@@ -299,9 +293,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Candidates</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0F9FF' }]}>
-                <Users size={14} color="#0284C7" />
-              </View>
+              <Users size={16} color="#0284C7" />
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : totalApplicants}</Text>
           </View>

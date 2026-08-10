@@ -39,12 +39,15 @@ import {
   X,
   Award,
   UserCheck,
-  DollarSign,
+  IndianRupee,
+  Check,
+  Eye,
 } from 'lucide-react-native';
 import { applicantsApi } from '../../api/applicantsApi';
 import { jobsApi } from '../../api/jobsApi';
 import { WhatsAppIcon } from '../../components/common/WhatsAppIcon';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
+import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { JobApplication, ApplicationStatus, Job } from '../../types';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -159,6 +162,65 @@ const APPLICANT_SEARCH_SUGGESTIONS = [
   'Search Candidates by Name or Phone...',
 ];
 
+const EMAIL_TEMPLATES = [
+  {
+    key: 'INTERVIEW',
+    label: 'Interview Invitation',
+    desc: 'Invite candidate for in-person or video interview',
+    subject: (title: string) => `Interview Invitation: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nWe are pleased to invite you for an interview for the ${title} position. Please review the scheduled details and reply to confirm your availability.\n\nBest regards,\nRecruitment Team`,
+  },
+  {
+    key: 'DOCUMENT',
+    label: 'Document Verification Request',
+    desc: 'Request ITI certificates, marksheets, Aadhaar & bank details',
+    subject: (title: string) => `Document Verification Request: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nTo process your application for ${title}, please submit copies of your ITI/Diploma Trade Certificate, Aadhaar Card, PAN Card, and latest bank passbook.\n\nBest regards,\nRecruitment Team`,
+  },
+  {
+    key: 'OFFER',
+    label: 'Job Offer Letter',
+    desc: 'Extend official job offer with salary & joining details',
+    subject: (title: string) => `Job Offer Letter: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nWe are delighted to extend a formal job offer for the position of ${title}. Please find your offer terms enclosed and reply to confirm your acceptance.\n\nBest regards,\nRecruitment Team`,
+  },
+  {
+    key: 'SHORTLIST',
+    label: 'Profile Shortlisted Notification',
+    desc: 'Inform candidate that their application is shortlisted',
+    subject: (title: string) => `Application Update: Shortlisted for ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nCongratulations! Your profile has been shortlisted for the ${title} position. Our hiring manager is currently scheduling the interview rounds and we will reach out shortly.\n\nBest regards,\nRecruitment Team`,
+  },
+  {
+    key: 'PRACTICAL',
+    label: 'Trade / Practical Test Invite',
+    desc: 'Invite for VMC/CNC/Fitter machine practical assessment',
+    subject: (title: string) => `Practical Trade Test Invitation: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nYou are invited to complete a practical trade test for the ${title} role at our plant facility. Please bring safety shoes and original trade credentials.\n\nBest regards,\nRecruitment Team`,
+  },
+  {
+    key: 'JOINING',
+    label: 'Onboarding & Joining Instructions',
+    desc: 'Provide day 1 reporting time, location & safety rules',
+    subject: (title: string) => `Joining & Onboarding Instructions: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nWelcome to the team! Your joining date is confirmed. Please report to Main Security Gate at 09:00 AM on your joining date with original ID proofs.\n\nBest regards,\nHuman Resources`,
+  },
+  {
+    key: 'REJECT',
+    label: 'Application Regret Letter',
+    desc: 'Inform candidate application is not moving forward',
+    subject: (title: string) => `Application Status Update: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nThank you for taking the time to apply for the ${title} role. Although your profile is impressive, we have chosen to move forward with candidates whose qualifications more closely match our immediate requirements.\n\nBest regards,\nRecruitment Team`,
+  },
+];
+
 export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const jobId = route?.params?.jobId;
   const jobTitle = route?.params?.jobTitle || 'Job Applicants';
@@ -209,6 +271,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [interviewTime, setInterviewTime] = useState('10:00 AM');
   const [interviewMode, setInterviewMode] = useState('In-Person Walk-in');
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [currentPickerMonth, setCurrentPickerMonth] = useState(new Date());
 
   const getDaysInMonthGrid = (dateObj: Date) => {
@@ -236,6 +299,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   // Email Form States
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
+  const [templateDropdownVisible, setTemplateDropdownVisible] = useState(false);
+  const [selectedTemplateLabel, setSelectedTemplateLabel] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
 
   const fetchApplicants = useCallback(async () => {
@@ -524,16 +589,9 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             </Text>
 
             <View style={styles.metaPillRow}>
-              <View style={styles.miniPill}>
-                <MapPin size={11} color={COLORS.slate500} />
-                <Text style={styles.miniPillText} numberOfLines={1}>
-                  {candidateLocation}
-                </Text>
-              </View>
-
-              <View style={styles.miniPill}>
-                <Briefcase size={11} color={COLORS.primary} />
-                <Text style={styles.miniPillText} numberOfLines={1}>
+              <View style={styles.inlineIconTextItem}>
+                <Briefcase size={12} color="#2563EB" />
+                <Text style={styles.candidateMetaTextInline} numberOfLines={1}>
                   {candidateExp}
                 </Text>
               </View>
@@ -592,7 +650,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                 ? 'All Jobs'
                 : (myJobs.find((j) => j.id === selectedJobId)?.title?.replace(/^job-[\d]+$/i, 'Selected Job') || 'Selected Job')}
             </Text>
-            <ChevronDown size={14} color={selectedJobId !== 'ALL' ? '#FFFFFF' : '#64748B'} />
+            <ChevronDown size={14} color={selectedJobId !== 'ALL' ? '#2563EB' : '#64748B'} />
           </TouchableOpacity>
 
           {[
@@ -725,169 +783,215 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       <Modal visible={detailModalVisible} transparent={false} animationType="slide" onRequestClose={() => setDetailModalVisible(false)}>
         <SafeAreaView style={styles.fullScreenPageContainer} edges={['top', 'bottom']}>
           <View style={{ flex: 1 }}>
-            {/* Full Screen Header Bar */}
+            {/* Full Screen Header Bar with Tabular Segmented Menu Inside Below Profile & Name */}
             <View style={styles.fullPageHeader}>
-              <View style={styles.modalAvatarBox}>
-                {selectedApplicant?.user?.profilePictureUrl || selectedApplicant?.user?.profile_picture_url ? (
-                  <Image
-                    source={{ uri: selectedApplicant.user.profilePictureUrl || selectedApplicant.user.profile_picture_url }}
-                    style={styles.avatarImg}
-                  />
-                ) : (
-                  <UserIcon size={22} color={COLORS.primary} />
-                )}
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.modalCandidateName} numberOfLines={1}>
-                    {safeValue(selectedApplicant?.user?.name)}
-                  </Text>
-                  {selectedApplicant?.user?.aadhaar_verified || selectedApplicant?.user?.aadhaarVerified ? (
-                    <ShieldCheck size={16} color="#16A34A" />
-                  ) : null}
+              <View style={styles.fullPageHeaderTopRow}>
+                <View style={styles.modalAvatarBox}>
+                  {selectedApplicant?.user?.profilePictureUrl || selectedApplicant?.user?.profile_picture_url ? (
+                    <Image
+                      source={{ uri: selectedApplicant.user.profilePictureUrl || selectedApplicant.user.profile_picture_url }}
+                      style={styles.avatarImg}
+                    />
+                  ) : (
+                    <UserIcon size={22} color={COLORS.primary} />
+                  )}
                 </View>
 
-                <Text style={styles.modalCandidateHeadline} numberOfLines={1}>
-                  {safeValue(selectedApplicant?.user?.headline || selectedApplicant?.user?.trade_specialization)}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.modalCandidateName} numberOfLines={1}>
+                      {safeValue(selectedApplicant?.user?.name)}
+                    </Text>
+                    {selectedApplicant?.user?.aadhaar_verified || selectedApplicant?.user?.aadhaarVerified ? (
+                      <ShieldCheck size={16} color="#16A34A" />
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.modalCandidateHeadline} numberOfLines={1}>
+                    {safeValue(selectedApplicant?.user?.headline || selectedApplicant?.user?.trade_specialization)}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setDetailModalVisible(false)}
+                  style={styles.closeBtn}
+                  activeOpacity={0.7}
+                >
+                  <X size={20} color={COLORS.slate600} />
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                onPress={() => setDetailModalVisible(false)}
-                style={styles.closeBtn}
-                activeOpacity={0.7}
-              >
-                <X size={20} color={COLORS.slate600} />
-              </TouchableOpacity>
-            </View>
-
-            {/* 5-Tab Industry-Standard Segmented Control */}
-            <View style={styles.menuTabBarWrapper}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.menuTabBarContent}
-              >
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setModalTab('JOB')}
-                  style={[styles.menuTabItem, modalTab === 'JOB' && styles.menuTabItemActive]}
+              {/* 5-Tab Industry-Standard Segmented Control Inside Top Header Section Below Profile & Name */}
+              <View style={styles.menuTabBarWrapperInline}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.menuTabBarContent}
                 >
-                  <Briefcase size={14} color={modalTab === 'JOB' ? '#2563EB' : '#64748B'} />
-                  <Text style={[styles.menuTabText, modalTab === 'JOB' && styles.menuTabTextActive]}>
-                    Job Info
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setModalTab('JOB')}
+                    style={[styles.menuTabItem, modalTab === 'JOB' && styles.menuTabItemActive]}
+                  >
+                    <Briefcase size={14} color={modalTab === 'JOB' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.menuTabText, modalTab === 'JOB' && styles.menuTabTextActive]}>
+                      Job Info
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setModalTab('CANDIDATE')}
-                  style={[styles.menuTabItem, modalTab === 'CANDIDATE' && styles.menuTabItemActive]}
-                >
-                  <UserIcon size={14} color={modalTab === 'CANDIDATE' ? '#2563EB' : '#64748B'} />
-                  <Text style={[styles.menuTabText, modalTab === 'CANDIDATE' && styles.menuTabTextActive]}>
-                    Candidate Info
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setModalTab('CANDIDATE')}
+                    style={[styles.menuTabItem, modalTab === 'CANDIDATE' && styles.menuTabItemActive]}
+                  >
+                    <UserIcon size={14} color={modalTab === 'CANDIDATE' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.menuTabText, modalTab === 'CANDIDATE' && styles.menuTabTextActive]}>
+                      Candidate Info
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setModalTab('STATUS')}
-                  style={[styles.menuTabItem, modalTab === 'STATUS' && styles.menuTabItemActive]}
-                >
-                  <Zap size={14} color={modalTab === 'STATUS' ? '#2563EB' : '#64748B'} />
-                  <Text style={[styles.menuTabText, modalTab === 'STATUS' && styles.menuTabTextActive]}>
-                    Status
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setModalTab('STATUS')}
+                    style={[styles.menuTabItem, modalTab === 'STATUS' && styles.menuTabItemActive]}
+                  >
+                    <Zap size={14} color={modalTab === 'STATUS' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.menuTabText, modalTab === 'STATUS' && styles.menuTabTextActive]}>
+                      Status
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setModalTab('INTERVIEW')}
-                  style={[styles.menuTabItem, modalTab === 'INTERVIEW' && styles.menuTabItemActive]}
-                >
-                  <Calendar size={14} color={modalTab === 'INTERVIEW' ? '#2563EB' : '#64748B'} />
-                  <Text style={[styles.menuTabText, modalTab === 'INTERVIEW' && styles.menuTabTextActive]}>
-                    Interview
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setModalTab('INTERVIEW')}
+                    style={[styles.menuTabItem, modalTab === 'INTERVIEW' && styles.menuTabItemActive]}
+                  >
+                    <Calendar size={14} color={modalTab === 'INTERVIEW' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.menuTabText, modalTab === 'INTERVIEW' && styles.menuTabTextActive]}>
+                      Interview
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setModalTab('EMAIL')}
-                  style={[styles.menuTabItem, modalTab === 'EMAIL' && styles.menuTabItemActive]}
-                >
-                  <Mail size={14} color={modalTab === 'EMAIL' ? '#2563EB' : '#64748B'} />
-                  <Text style={[styles.menuTabText, modalTab === 'EMAIL' && styles.menuTabTextActive]}>
-                    Send Email
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setModalTab('EMAIL')}
+                    style={[styles.menuTabItem, modalTab === 'EMAIL' && styles.menuTabItemActive]}
+                  >
+                    <Mail size={14} color={modalTab === 'EMAIL' ? '#2563EB' : '#64748B'} />
+                    <Text style={[styles.menuTabText, modalTab === 'EMAIL' && styles.menuTabTextActive]}>
+                      Send Email
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
             </View>
 
             {/* Modal Body Content depending on Active Tab */}
             <ScrollView style={styles.modalBodyScroll} showsVerticalScrollIndicator={false}>
-              {/* TAB 1: JOB INFO (Exact Job Details for Which Candidate Applied) */}
+              {/* TAB 1: JOB INFO (Single Unified Card Container with Soft Separators) */}
               {modalTab === 'JOB' ? (() => {
                 const appliedJob = selectedApplicant?.job || myJobs.find((j) => j.id === selectedApplicant?.job_id) || jobDetails;
                 return (
                   <View>
-                    <View style={styles.minimalStatusBox}>
-                      <Text style={styles.infoSectionTitle}>APPLIED JOB SPECIFICATIONS</Text>
+                    <View style={styles.modalSectionBox}>
+                      {/* Section 1: Applied Job Header */}
+                      <Text style={styles.sectionHeadingTitle}>APPLIED JOB SPECIFICATIONS</Text>
                       <Text style={styles.jobTitleLarge}>{appliedJob?.title || jobTitle || 'Industrial Operator'}</Text>
                       <Text style={styles.jobCompanySub}>
                         {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
                       </Text>
-                    </View>
 
-                    <View style={styles.infoGridTwoCol}>
-                      <View style={styles.gridBox}>
-                        <Text style={styles.gridLabel}>Salary Offer</Text>
-                        <Text style={styles.gridVal}>
-                          {appliedJob?.salary_min
-                            ? `₹${appliedJob.salary_min.toLocaleString()} - ₹${appliedJob.salary_max?.toLocaleString()} / mo`
-                            : '₹25,000 - ₹35,000 / mo'}
-                        </Text>
-                      </View>
+                      <View style={[styles.rowDivider, { marginVertical: 12 }]} />
 
-                      <View style={styles.gridBox}>
-                        <Text style={styles.gridLabel}>Vacancies</Text>
-                        <Text style={styles.gridVal}>{appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings</Text>
-                      </View>
+                      {/* Section 2: Details & Salary Specifications */}
+                      <Text style={styles.sectionHeadingTitle}>JOB DETAILS & SALARY</Text>
 
-                      <View style={styles.gridBox}>
-                        <Text style={styles.gridLabel}>MIDC Location</Text>
-                        <Text style={styles.gridVal}>{safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC')}</Text>
-                      </View>
+                      <View style={styles.specRowsContainer}>
+                        {/* Salary Row */}
+                        <View style={styles.specRowItem}>
+                          <View style={styles.specIconBadge}>
+                            <IndianRupee size={15} color="#2563EB" />
+                          </View>
+                          <View style={styles.specTextCol}>
+                            <Text style={styles.specGridLabel}>Salary Offer</Text>
+                            <Text style={styles.specGridValue}>
+                              {appliedJob?.salary_min
+                                ? `₹${appliedJob.salary_min.toLocaleString()} - ₹${appliedJob.salary_max?.toLocaleString()} / mo`
+                                : '₹25,000 - ₹35,000 / mo'}
+                            </Text>
+                          </View>
+                        </View>
 
-                      <View style={styles.gridBox}>
-                        <Text style={styles.gridLabel}>Work Shift & Mode</Text>
-                        <Text style={styles.gridVal}>
-                          {safeValue((appliedJob as any)?.shift_timing || (appliedJob as any)?.shift_category || 'Day Shift')} • {appliedJob?.work_mode || 'On-site'}
-                        </Text>
-                      </View>
-                    </View>
+                        <View style={styles.rowDivider} />
 
-                    {appliedJob?.description ? (
-                      <View style={styles.infoSection}>
-                        <Text style={styles.infoSectionTitle}>JOB DESCRIPTION & REQUIREMENTS</Text>
-                        <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
-                      </View>
-                    ) : null}
+                        {/* Vacancies Row */}
+                        <View style={styles.specRowItem}>
+                          <View style={styles.specIconBadge}>
+                            <Building2 size={15} color="#16A34A" />
+                          </View>
+                          <View style={styles.specTextCol}>
+                            <Text style={styles.specGridLabel}>Vacancies & Openings</Text>
+                            <Text style={styles.specGridValue}>
+                              {appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings
+                            </Text>
+                          </View>
+                        </View>
 
-                    {appliedJob?.skills && appliedJob.skills.length > 0 ? (
-                      <View style={styles.infoSection}>
-                        <Text style={styles.infoSectionTitle}>REQUIRED TRADE SKILLS</Text>
-                        <View style={styles.skillsWrapRow}>
-                          {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
-                            <View key={i} style={styles.skillTag}>
-                              <Text style={styles.skillTagText}>{safeValue(skill)}</Text>
-                            </View>
-                          ))}
+                        <View style={styles.rowDivider} />
+
+                        {/* MIDC Location Row */}
+                        <View style={styles.specRowItem}>
+                          <View style={styles.specIconBadge}>
+                            <MapPin size={15} color="#0284C7" />
+                          </View>
+                          <View style={styles.specTextCol}>
+                            <Text style={styles.specGridLabel}>MIDC Location Address</Text>
+                            <Text style={styles.specGridValue}>
+                              {safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC Industrial Area')}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.rowDivider} />
+
+                        {/* Work Shift & Mode Row */}
+                        <View style={styles.specRowItem}>
+                          <View style={styles.specIconBadge}>
+                            <Clock size={15} color="#D97706" />
+                          </View>
+                          <View style={styles.specTextCol}>
+                            <Text style={styles.specGridLabel}>Work Shift & Mode</Text>
+                            <Text style={styles.specGridValue}>
+                              {safeValue((appliedJob as any)?.shift_timing || (appliedJob as any)?.shift_category || 'Day Shift')} • {appliedJob?.work_mode || 'On-site'}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    ) : null}
+
+                      {/* Section 3: Job Description & Requirements */}
+                      {appliedJob?.description ? (
+                        <>
+                          <View style={[styles.rowDivider, { marginVertical: 12 }]} />
+                          <Text style={styles.sectionHeadingTitle}>JOB DESCRIPTION & REQUIREMENTS</Text>
+                          <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
+                        </>
+                      ) : null}
+
+                      {/* Section 4: Required Trade Skills */}
+                      {appliedJob?.skills && appliedJob.skills.length > 0 ? (
+                        <>
+                          <View style={[styles.rowDivider, { marginVertical: 12 }]} />
+                          <Text style={styles.sectionHeadingTitle}>REQUIRED TRADE SKILLS</Text>
+                          <View style={styles.skillsWrapRow}>
+                            {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
+                              <View key={i} style={styles.borderlessSkillTag}>
+                                <Text style={styles.borderlessSkillText}>{safeValue(skill)}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </>
+                      ) : null}
+                    </View>
                   </View>
                 );
               })() : null}
@@ -895,195 +999,219 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               {/* TAB 2: CANDIDATE INFO */}
               {modalTab === 'CANDIDATE' ? (
                 <View>
-                  {/* Quick Action Contact Row - Logos Only + Resume Button on Right */}
-                  <View style={styles.contactActionRow}>
-                    {/* 1. Phone Call Logo */}
-                    <TouchableOpacity
-                      style={[styles.iconOnlyContactBtn, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        const phone = selectedApplicant?.user?.phone;
-                        if (phone) Linking.openURL(`tel:${phone}`);
-                        else Alert.alert('Notice', 'Phone number not provided.');
-                      }}
-                    >
-                      <Phone size={16} color="#2563EB" />
-                    </TouchableOpacity>
+                  <View style={styles.modalSectionBox}>
+                    {/* Direct Action Contact Row - Professional Outline Icon Pills */}
+                    <View style={styles.contactActionBarInlineRow}>
+                      {/* 1. Phone Call */}
+                      <TouchableOpacity
+                        style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1 }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          const phone = selectedApplicant?.user?.phone;
+                          if (phone) Linking.openURL(`tel:${phone}`);
+                          else Alert.alert('Notice', 'Phone number not provided.');
+                        }}
+                      >
+                        <Phone size={15} color="#2563EB" />
+                        <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Call</Text>
+                      </TouchableOpacity>
 
-                    {/* 2. WhatsApp Logo */}
-                    <TouchableOpacity
-                      style={[styles.iconOnlyContactBtn, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        const phone = selectedApplicant?.user?.phone?.replace(/[^0-9]/g, '');
-                        if (phone) Linking.openURL(`https://wa.me/${phone}`);
-                        else Alert.alert('Notice', 'WhatsApp number not provided.');
-                      }}
-                    >
-                      <WhatsAppIcon size={18} color="#16A34A" />
-                    </TouchableOpacity>
+                      {/* 2. WhatsApp */}
+                      <TouchableOpacity
+                        style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1.35 }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          const phone = selectedApplicant?.user?.phone?.replace(/[^0-9]/g, '');
+                          if (phone) Linking.openURL(`https://wa.me/${phone}`);
+                          else Alert.alert('Notice', 'WhatsApp number not provided.');
+                        }}
+                      >
+                        <WhatsAppIcon size={16} color="#16A34A" />
+                        <Text style={[styles.contactPillText, { color: '#15803D' }]}>WhatsApp</Text>
+                      </TouchableOpacity>
 
-                    {/* 3. Email Logo */}
-                    <TouchableOpacity
-                      style={[styles.iconOnlyContactBtn, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        const email = selectedApplicant?.user?.email;
-                        if (email) Linking.openURL(`mailto:${email}`);
-                        else setModalTab('EMAIL');
-                      }}
-                    >
-                      <Mail size={16} color="#D97706" />
-                    </TouchableOpacity>
+                      {/* 3. Email */}
+                      <TouchableOpacity
+                        style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1 }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          const email = selectedApplicant?.user?.email;
+                          if (email) Linking.openURL(`mailto:${email}`);
+                          else setModalTab('EMAIL');
+                        }}
+                      >
+                        <Mail size={15} color="#DC2626" />
+                        <Text style={[styles.contactPillText, { color: '#DC2626' }]}>Email</Text>
+                      </TouchableOpacity>
 
-                    {/* 4. Resume Button on Right */}
-                    <TouchableOpacity
-                      style={styles.resumeActionBtn}
-                      activeOpacity={0.8}
-                      onPress={() => setPdfModalVisible(true)}
-                    >
-                      <FileText size={15} color="#FFFFFF" />
-                      <Text style={styles.resumeActionText}>View Resume</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Summary / Bio */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>ABOUT CANDIDATE</Text>
-                    <Text style={styles.infoSectionBody}>
-                      {safeValue(selectedApplicant?.user?.bio)}
-                    </Text>
-                  </View>
-
-                  {/* Skills Badges */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>TECHNICAL SKILLS</Text>
-                    <View style={styles.skillsWrapRow}>
-                      {selectedApplicant?.user?.skills && selectedApplicant.user.skills.length > 0 ? (
-                        selectedApplicant.user.skills.map((skill, i) => (
-                          <View key={i} style={styles.skillTag}>
-                            <Text style={styles.skillTagText}>{skill}</Text>
-                          </View>
-                        ))
-                      ) : (
-                        <Text style={styles.infoSectionBody}>Not Provided</Text>
-                      )}
+                      {/* 4. Resume */}
+                      <TouchableOpacity
+                        style={[styles.contactPillBtn, { borderColor: '#2563EB', flex: 1.3 }]}
+                        activeOpacity={0.8}
+                        onPress={() => setPdfModalVisible(true)}
+                      >
+                        <FileText size={15} color="#2563EB" />
+                        <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Resume</Text>
+                      </TouchableOpacity>
                     </View>
-                  </View>
 
-                  {/* WORK & AVAILABILITY - 3 Row Layout */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>WORK & AVAILABILITY</Text>
-                    <View style={{ gap: 8, marginTop: 4 }}>
-                      {/* Row 1: Experience in One Row */}
-                      <View style={styles.fullWidthSpecCard}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                          <Briefcase size={12} color="#2563EB" />
-                          <Text style={styles.gridLabel}>Work Experience</Text>
-                        </View>
-                        <Text style={styles.gridVal}>{safeValue(selectedApplicant?.user?.experience)}</Text>
+                    {/* Summary / Bio */}
+                    {selectedApplicant?.user?.bio ? (
+                      <View style={{ marginTop: 12, marginBottom: 10 }}>
+                        <Text style={styles.sectionHeadingTitle}>ABOUT CANDIDATE</Text>
+                        <Text style={styles.infoSectionBody}>
+                          {safeValue(selectedApplicant?.user?.bio)}
+                        </Text>
                       </View>
+                    ) : null}
 
-                      {/* Row 2: Education in One Row */}
-                      <View style={styles.fullWidthSpecCard}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                          <Award size={12} color="#16A34A" />
-                          <Text style={styles.gridLabel}>Education / Trade</Text>
+                    {/* WORK & AVAILABILITY */}
+                    <Text style={[styles.sectionHeadingTitle, { marginTop: 12 }]}>WORK & AVAILABILITY</Text>
+
+                    <View style={styles.specRowsContainer}>
+                      {/* MIDC Location */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <MapPin size={15} color="#0284C7" />
                         </View>
-                        <Text style={styles.gridVal}>{safeValue(selectedApplicant?.user?.education)}</Text>
-                      </View>
-
-                      {/* Row 3: Notice Period and Preferred Shift in One Row */}
-                      <View style={styles.twoColRow}>
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Calendar size={12} color="#D97706" />
-                            <Text style={styles.gridLabel}>Notice Period</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.notice_period)}</Text>
-                        </View>
-
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <UserCheck size={12} color="#0284C7" />
-                            <Text style={styles.gridLabel}>Preferred Shift</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.preferred_shift)}</Text>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>MIDC Location Address</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.location)}</Text>
                         </View>
                       </View>
 
-                      {/* Email & Phone */}
-                      <View style={styles.twoColRow}>
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Mail size={12} color="#D97706" />
-                            <Text style={styles.gridLabel}>Email Address</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.email)}</Text>
-                        </View>
+                      <View style={styles.rowDivider} />
 
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Phone size={12} color="#2563EB" />
-                            <Text style={styles.gridLabel}>Phone Number</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.phone)}</Text>
+                      {/* Work Experience */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Briefcase size={15} color="#2563EB" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Work Experience</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.experience)}</Text>
                         </View>
                       </View>
 
-                      {/* MIDC Location & Aadhaar Verification */}
-                      <View style={styles.twoColRow}>
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <MapPin size={12} color="#64748B" />
-                            <Text style={styles.gridLabel}>MIDC Location</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>{safeValue(selectedApplicant?.user?.location)}</Text>
-                        </View>
+                      <View style={styles.rowDivider} />
 
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <ShieldCheck size={12} color="#16A34A" />
-                            <Text style={styles.gridLabel}>Aadhaar Verification</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>
+                      {/* Education / Trade */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Award size={15} color="#16A34A" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Education & Trade</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.education)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.rowDivider} />
+
+                      {/* Preferred Shift */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <UserCheck size={15} color="#D97706" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Preferred Shift</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.preferred_shift)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.rowDivider} />
+
+                      {/* Email Address */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Mail size={15} color="#DC2626" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Email Address</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.email)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.rowDivider} />
+
+                      {/* Phone Number */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Phone size={15} color="#2563EB" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Phone Number</Text>
+                          <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.phone)}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.rowDivider} />
+
+                      {/* Aadhaar Verification */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <ShieldCheck size={15} color="#16A34A" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Aadhaar Verification</Text>
+                          <Text style={styles.specGridValue}>
                             {selectedApplicant?.user?.aadhaar_verified ? 'Verified (Government Aadhaar)' : 'Pending Verification'}
                           </Text>
                         </View>
                       </View>
 
-                      {/* Facilities & Expectations */}
-                      <View style={styles.twoColRow}>
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Zap size={12} color="#2563EB" />
-                            <Text style={styles.gridLabel}>Bus & Hostel Facility</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>
+                      <View style={styles.rowDivider} />
+
+                      {/* Bus & Hostel Facility */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Zap size={15} color="#2563EB" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Bus & Hostel Facility</Text>
+                          <Text style={styles.specGridValue}>
                             {(selectedApplicant?.user as any)?.requiresBus ? 'Bus Required' : 'Self Transport'} • {(selectedApplicant?.user as any)?.requiresAccommodation ? 'Hostel Needed' : 'Local Resident'}
                           </Text>
                         </View>
+                      </View>
 
-                        <View style={styles.halfWidthSpecCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                            <Clock size={12} color="#64748B" />
-                            <Text style={styles.gridLabel}>Applied On</Text>
-                          </View>
-                          <Text style={styles.gridVal} numberOfLines={1}>
-                            {new Date(selectedApplicant?.applied_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <View style={styles.rowDivider} />
+
+                      {/* Applied Date */}
+                      <View style={styles.specRowItem}>
+                        <View style={styles.specIconBadge}>
+                          <Clock size={15} color="#64748B" />
+                        </View>
+                        <View style={styles.specTextCol}>
+                          <Text style={styles.specGridLabel}>Applied On</Text>
+                          <Text style={styles.specGridValue}>
+                            {new Date(selectedApplicant?.applied_at || Date.now()).toLocaleDateString()}
                           </Text>
                         </View>
                       </View>
                     </View>
+                    {/* Technical Skills inside the main card */}
+                    {selectedApplicant?.user?.skills && selectedApplicant.user.skills.length > 0 ? (
+                      <View style={{ marginTop: 12 }}>
+                        <Text style={styles.sectionHeadingTitle}>TECHNICAL SKILLS</Text>
+                        <View style={styles.skillsWrapRow}>
+                          {selectedApplicant.user.skills.map((skill, i) => (
+                            <View key={i} style={styles.borderlessSkillTag}>
+                              <Text style={styles.borderlessSkillText}>{skill}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ) : null}
                   </View>
                 </View>
               ) : null}
 
-              {/* TAB 3: STATUS & WORKFLOW - Minimal Industry Design */}
+              {/* TAB 3: STATUS & WORKFLOW - Clean iOS Design */}
               {modalTab === 'STATUS' ? (
                 <View>
-                  <View style={styles.minimalStatusBox}>
-                    <Text style={styles.infoSectionTitle}>CURRENT APPLICATION STATUS</Text>
+                  <View style={styles.modalSectionBox}>
+                    <Text style={styles.sectionHeadingTitle}>CURRENT APPLICATION STATUS</Text>
                     <View style={styles.minimalStatusRow}>
                       <Badge status={selectedApplicant?.status || 'applied'} />
                       <Text style={styles.minimalStatusSub}>
@@ -1092,15 +1220,17 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     </View>
                   </View>
 
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>SELECT CANDIDATE WORKFLOW STATUS</Text>
+                  <View style={styles.sectionSeparator} />
+
+                  <View style={styles.modalSectionBox}>
+                    <Text style={styles.sectionHeadingTitle}>SELECT CANDIDATE WORKFLOW STATUS</Text>
                     <View style={styles.statusButtonList}>
                       {[
-                        { key: 'applied', label: 'Mark as Applied' },
-                        { key: 'shortlisted', label: 'Shortlist Candidate' },
-                        { key: 'interviewed', label: 'Mark as Interviewed' },
-                        { key: 'hired', label: 'Hire Candidate / Send Offer' },
-                        { key: 'rejected', label: 'Reject Candidate' },
+                        { key: 'applied', label: 'Applied', desc: 'Candidate application received' },
+                        { key: 'shortlisted', label: 'Shortlisted', desc: 'Mark candidate as shortlisted for review' },
+                        { key: 'interviewed', label: 'Interviewed', desc: 'Candidate interview conducted' },
+                        { key: 'hired', label: 'Hired', desc: 'Offer extended & candidate hired' },
+                        { key: 'rejected', label: 'Rejected', desc: 'Application not moving forward' },
                       ].map((item) => {
                         const isSelected = selectedApplicant?.status === item.key;
                         return (
@@ -1108,8 +1238,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                             key={item.key}
                             activeOpacity={0.8}
                             style={[
-                              styles.minimalStatusBtn,
-                              isSelected && styles.minimalStatusBtnSelected,
+                              styles.cleanStatusOptionRow,
+                              isSelected && styles.cleanStatusOptionRowSelected,
                             ]}
                             onPress={() => {
                               if (selectedApplicant) {
@@ -1117,16 +1247,19 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                               }
                             }}
                           >
-                            <Text
-                              style={[
-                                styles.minimalStatusBtnText,
-                                isSelected && styles.minimalStatusBtnTextSelected,
-                              ]}
-                            >
-                              {item.label}
-                            </Text>
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={[
+                                  styles.cleanStatusOptionText,
+                                  isSelected && styles.cleanStatusOptionTextSelected,
+                                ]}
+                              >
+                                {item.label}
+                              </Text>
+                              <Text style={styles.cleanStatusOptionDesc}>{item.desc}</Text>
+                            </View>
                             {isSelected ? (
-                              <CheckCircle2 size={16} color="#2563EB" />
+                              <CheckCircle2 size={18} color="#2563EB" />
                             ) : (
                               <View style={styles.radioDotOutline} />
                             )}
@@ -1138,19 +1271,20 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
               ) : null}
 
-              {/* TAB 4: SCHEDULE INTERVIEW - Industry-Grade Suite */}
+              {/* TAB 4: SCHEDULE INTERVIEW - Single Unified Card Container */}
               {modalTab === 'INTERVIEW' ? (
                 <View>
-                  <View style={styles.minimalStatusBox}>
-                    <Text style={styles.infoSectionTitle}>SCHEDULE INTERVIEW INVITE</Text>
+                  <View style={styles.modalSectionBox}>
+                    {/* Header Intro */}
+                    <Text style={styles.sectionHeadingTitle}>SCHEDULE INTERVIEW INVITE</Text>
                     <Text style={styles.infoSectionBody}>
                       Invite <Text style={{ fontWeight: '800', color: '#0F172A' }}>{safeValue(selectedApplicant?.user?.name)}</Text> to an official technical interview.
                     </Text>
-                  </View>
 
-                  {/* 1. Interview Mode Selector Pills */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>1. SELECT INTERVIEW MODE</Text>
+                    <View style={[styles.rowDivider, { marginVertical: 14 }]} />
+
+                    {/* Section 1: Interview Mode Selector Pills */}
+                    <Text style={styles.sectionHeadingTitle}>1. SELECT INTERVIEW MODE</Text>
                     <View style={styles.modePillRow}>
                       {[
                         { key: 'In-Person Walk-in', icon: Building2, label: 'In-Person' },
@@ -1163,195 +1297,157 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                           <TouchableOpacity
                             key={item.key}
                             activeOpacity={0.8}
-                            style={[styles.modePillBtn, isSelected && styles.modePillBtnSelected]}
+                            style={[styles.cleanModePillBtn, isSelected && styles.cleanModePillBtnSelected]}
                             onPress={() => setInterviewMode(item.key)}
                           >
-                            <IconComp size={13} color={isSelected ? '#2563EB' : '#64748B'} />
-                            <Text style={[styles.modePillText, isSelected && styles.modePillTextSelected]}>
+                            <IconComp size={14} color={isSelected ? '#2563EB' : '#64748B'} />
+                            <Text style={[styles.cleanModePillText, isSelected && styles.cleanModePillTextSelected]}>
                               {item.label}
                             </Text>
                           </TouchableOpacity>
                         );
                       })}
                     </View>
-                  </View>
 
-                  {/* 2. Quick Date Shortcuts */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>2. QUICK DATE SELECTION</Text>
-                    <View style={styles.modePillRow}>
-                      {[
-                        { label: 'Tomorrow', days: 1 },
-                        { label: 'In 2 Days', days: 2 },
-                        { label: 'In 3 Days', days: 3 },
-                      ].map((item) => {
-                        const dateStr = new Date(Date.now() + item.days * 86400000).toISOString().split('T')[0];
-                        const isSelected = interviewDate === dateStr;
-                        return (
-                          <TouchableOpacity
-                            key={item.days}
-                            activeOpacity={0.8}
-                            style={[styles.modePillBtn, isSelected && styles.modePillBtnSelected]}
-                            onPress={() => setInterviewDate(dateStr)}
-                          >
-                            <Calendar size={12} color={isSelected ? '#2563EB' : '#64748B'} />
-                            <Text style={[styles.modePillText, isSelected && styles.modePillTextSelected]}>
-                              {item.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
+                    <View style={[styles.rowDivider, { marginVertical: 14 }]} />
 
-                  {/* 3. Quick Time Slot Pills */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>3. SELECT TIME SLOT</Text>
-                    <View style={styles.modePillRow}>
-                      {['10:00 AM', '11:30 AM', '02:00 PM', '04:00 PM'].map((slot) => {
-                        const isSelected = interviewTime === slot;
-                        return (
-                          <TouchableOpacity
-                            key={slot}
-                            activeOpacity={0.8}
-                            style={[styles.modePillBtn, isSelected && styles.modePillBtnSelected]}
-                            onPress={() => setInterviewTime(slot)}
-                          >
-                            <Clock size={12} color={isSelected ? '#2563EB' : '#64748B'} />
-                            <Text style={[styles.modePillText, isSelected && styles.modePillTextSelected]}>
-                              {slot}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
+                    {/* Section 2: Form Details & Venue */}
+                    <Text style={styles.sectionHeadingTitle}>2. INTERVIEW DETAILS & VENUE</Text>
 
-                  {/* Interactive Date Picker Trigger Button */}
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={styles.inputLabelStyle}>
-                      INTERVIEW DATE <Text style={{ color: '#EF4444' }}>*</Text>
-                    </Text>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => setDatePickerVisible(true)}
-                      style={styles.datePickerTriggerBtn}
-                    >
-                      <Calendar size={18} color="#2563EB" />
-                      <Text style={styles.datePickerTriggerText}>
-                        {interviewDate
-                          ? new Date(interviewDate + 'T00:00:00').toLocaleDateString('en-IN', {
-                              weekday: 'short',
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : 'Tap to Select Date from Calendar...'}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={styles.inputLabelStyle}>
+                        INTERVIEW DATE <Text style={{ color: '#EF4444' }}>*</Text>
                       </Text>
-                      <ChevronRight size={16} color="#64748B" />
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setDatePickerVisible(true)}
+                        style={styles.cleanDatePickerTriggerBtn}
+                      >
+                        <Calendar size={16} color="#2563EB" />
+                        <Text style={styles.cleanDatePickerTriggerText}>
+                          {interviewDate
+                            ? new Date(interviewDate + 'T00:00:00').toDateString()
+                            : 'Tap to Select Date from Calendar...'}
+                        </Text>
+                        <ChevronRight size={16} color="#64748B" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={styles.inputLabelStyle}>
+                        INTERVIEW TIME <Text style={{ color: '#EF4444' }}>*</Text>
+                      </Text>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setTimePickerVisible(true)}
+                        style={styles.cleanDatePickerTriggerBtn}
+                      >
+                        <Clock size={16} color="#2563EB" />
+                        <Text style={styles.cleanDatePickerTriggerText}>
+                          {interviewTime || 'Tap to Select Interview Time...'}
+                        </Text>
+                        <ChevronRight size={16} color="#64748B" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Input
+                      label="Venue Address / Video Link"
+                      placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
+                      value={interviewLocation}
+                      onChangeText={setInterviewLocation}
+                    />
+
+                    <Input
+                      label="Instructions / Special Notes for Candidate"
+                      placeholder="Bring original ITI trade certificate & Aadhaar card."
+                      value={interviewNotes}
+                      onChangeText={setInterviewNotes}
+                    />
+
+                    <Button
+                      title="Schedule & Send Interview Invite"
+                      onPress={handleScheduleInterview}
+                      loading={modalLoading}
+                      icon={<Calendar size={16} color="#FFFFFF" />}
+                      style={{ marginTop: 14, height: 46, borderRadius: 0 }}
+                    />
                   </View>
-
-                  <Input
-                    label="Interview Time"
-                    placeholder="10:30 AM"
-                    value={interviewTime}
-                    onChangeText={setInterviewTime}
-                  />
-
-                  <Input
-                    label="Venue Address / Video Link"
-                    placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
-                    value={interviewLocation}
-                    onChangeText={setInterviewLocation}
-                  />
-
-                  <Input
-                    label="Instructions / Special Notes for Candidate"
-                    placeholder="Bring original ITI trade certificate & Aadhaar card."
-                    value={interviewNotes}
-                    onChangeText={setInterviewNotes}
-                  />
-
-                  <Button
-                    title="Schedule & Send Interview Invite"
-                    onPress={handleScheduleInterview}
-                    loading={modalLoading}
-                    icon={<Calendar size={16} color="#FFFFFF" />}
-                    style={{ marginTop: 12, marginBottom: 20 }}
-                  />
                 </View>
               ) : null}
 
-              {/* TAB 5: SEND CUSTOM EMAIL */}
+              {/* TAB 5: SEND CUSTOM EMAIL - Single Unified Card Container */}
               {modalTab === 'EMAIL' ? (
                 <View>
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>SEND CUSTOM EMAIL TO CANDIDATE</Text>
-                    <Text style={styles.infoSectionBody}>
-                      Recipient: <Text style={{ fontWeight: '700', color: '#0F172A' }}>{safeValue(selectedApplicant?.user?.name)}</Text> ({safeValue(selectedApplicant?.user?.email)})
-                    </Text>
-                  </View>
+                  <View style={styles.modalSectionBox}>
+                    {/* Recipient Overview */}
+                    <Text style={styles.sectionHeadingTitle}>EMAIL RECIPIENT</Text>
+                    <View style={styles.specRowItem}>
+                      <View style={styles.specIconBadge}>
+                        <Mail size={16} color="#2563EB" />
+                      </View>
+                      <View style={styles.specTextCol}>
+                        <Text style={styles.specGridLabel}>Target Candidate Email</Text>
+                        <Text style={styles.specGridValue}>
+                          {safeValue(selectedApplicant?.user?.email)}
+                        </Text>
+                      </View>
+                    </View>
 
-                  {/* Template Quick Selection Pills */}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoSectionTitle}>QUICK EMAIL TEMPLATES</Text>
-                    <View style={styles.templatePillRow}>
-                      <TouchableOpacity
-                        style={styles.templatePillBtn}
-                        onPress={() => applyEmailTemplate('INTERVIEW')}
-                      >
-                        <Calendar size={12} color="#2563EB" />
-                        <Text style={styles.templatePillText}>Interview Invite</Text>
-                      </TouchableOpacity>
+                    <View style={[styles.rowDivider, { marginVertical: 14 }]} />
 
+                    {/* Email Templates & Form Box */}
+                    <Text style={styles.sectionHeadingTitle}>EMAIL TEMPLATE & MESSAGE</Text>
+                    <View style={{ marginBottom: 14 }}>
                       <TouchableOpacity
-                        style={styles.templatePillBtn}
-                        onPress={() => applyEmailTemplate('DOCUMENT')}
+                        activeOpacity={0.8}
+                        onPress={() => setTemplateDropdownVisible(true)}
+                        style={styles.cleanDatePickerTriggerBtn}
                       >
-                        <FileText size={12} color="#0284C7" />
-                        <Text style={styles.templatePillText}>Document Request</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.templatePillBtn}
-                        onPress={() => applyEmailTemplate('OFFER')}
-                      >
-                        <Zap size={12} color="#16A34A" />
-                        <Text style={styles.templatePillText}>Offer Letter</Text>
+                        <FileText size={16} color="#2563EB" />
+                        <Text style={styles.cleanDatePickerTriggerText}>
+                          {selectedTemplateLabel || 'Tap to Select Email Template...'}
+                        </Text>
+                        <ChevronRight size={16} color="#64748B" />
                       </TouchableOpacity>
                     </View>
+
+                    <View style={{ marginTop: 4 }}>
+                      <Input
+                        label="Email Subject Line"
+                        required
+                        placeholder="Enter email subject line..."
+                        value={emailSubject}
+                        onChangeText={setEmailSubject}
+                      />
+
+                      <Input
+                        label="Email Message Body"
+                        required
+                        placeholder="Write custom email message to candidate..."
+                        value={emailMessage}
+                        onChangeText={setEmailMessage}
+                        multiline
+                        numberOfLines={10}
+                        style={{ minHeight: 180, textAlignVertical: 'top' }}
+                      />
+                    </View>
                   </View>
-
-                  <Input
-                    label="Email Subject Line"
-                    required
-                    placeholder="Enter email subject line..."
-                    value={emailSubject}
-                    onChangeText={setEmailSubject}
-                  />
-
-                  <Input
-                    label="Email Message Body"
-                    required
-                    placeholder="Write custom email message to candidate..."
-                    value={emailMessage}
-                    onChangeText={setEmailMessage}
-                    multiline
-                    numberOfLines={6}
-                    style={{ minHeight: 110, textAlignVertical: 'top' }}
-                  />
-
-                  <Button
-                    title="Send Custom Email"
-                    onPress={handleSendCustomEmail}
-                    loading={modalLoading}
-                    icon={<Send size={16} color="#FFFFFF" />}
-                    style={{ marginTop: 12, marginBottom: 20 }}
-                  />
                 </View>
               ) : null}
             </ScrollView>
+
+            {/* Fixed Sticky Bottom Call Bar for Email Tab */}
+            {modalTab === 'EMAIL' ? (
+              <View style={styles.modalStickyCallBar}>
+                <Button
+                  title="Send Custom Email"
+                  onPress={handleSendCustomEmail}
+                  loading={modalLoading}
+                  icon={<Send size={16} color="#FFFFFF" />}
+                  style={{ width: '100%', height: 40, borderRadius: 0 }}
+                />
+              </View>
+            ) : null}
           </View>
         </SafeAreaView>
       </Modal>
@@ -1369,8 +1465,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Interactive 3D Calendar Date Picker Modal */}
       <Modal visible={datePickerVisible} transparent animationType="fade" onRequestClose={() => setDatePickerVisible(false)}>
-        <View style={styles.datePickerModalOverlay}>
-          <View style={styles.datePickerModalCard}>
+        <TouchableOpacity style={styles.datePickerModalOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.datePickerModalCard} onPress={(e) => e.stopPropagation()}>
             {/* Calendar Month Navigation Header */}
             <View style={styles.calendarHeaderRow}>
               <TouchableOpacity
@@ -1386,7 +1482,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               </TouchableOpacity>
 
               <Text style={styles.calendarMonthTitle}>
-                {currentPickerMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                {currentPickerMonth.toDateString()}
               </Text>
 
               <TouchableOpacity
@@ -1455,9 +1551,82 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             >
               <Text style={styles.calendarCloseBtnText}>Done / Close Calendar</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
+
+      {/* Email Template Selection Modal - Clean Apple iOS Bottom Sheet */}
+      <Modal visible={templateDropdownVisible} transparent animationType="slide" onRequestClose={() => setTemplateDropdownVisible(false)}>
+        <TouchableOpacity style={styles.sheetOverlayBottom} activeOpacity={1} onPress={() => setTemplateDropdownVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.cleanIosSheetCard} onPress={(e) => e.stopPropagation()}>
+            {/* Top Sheet Grab Handle */}
+            <View style={styles.sheetGrabHandle} />
+
+            <View style={styles.sheetHeaderRow}>
+              <View>
+                <Text style={styles.sheetTitle}>SELECT EMAIL TEMPLATE</Text>
+                <Text style={styles.sheetSubtitle}>Choose a template to auto-fill Subject & Body</Text>
+              </View>
+              <TouchableOpacity style={styles.closeHeaderBtn} activeOpacity={0.7} onPress={() => setTemplateDropdownVisible(false)}>
+                <X size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 360, marginTop: 6 }} showsVerticalScrollIndicator={false}>
+              {EMAIL_TEMPLATES.map((tmpl, idx) => {
+                const isSelected = selectedTemplateLabel === tmpl.label;
+                return (
+                  <React.Fragment key={tmpl.key}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={[
+                        styles.cleanIosDropdownOptionRow,
+                        isSelected && styles.cleanIosDropdownOptionRowSelected,
+                      ]}
+                      onPress={() => {
+                        const cName = safeValue(selectedApplicant?.user?.name);
+                        setEmailSubject(tmpl.subject(jobTitle));
+                        setEmailMessage(tmpl.message(cName, jobTitle));
+                        setSelectedTemplateLabel(tmpl.label);
+                        setTemplateDropdownVisible(false);
+                      }}
+                    >
+                      <View style={styles.dropdownIconBadge}>
+                        <FileText size={16} color={isSelected ? '#2563EB' : '#475569'} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text
+                          style={[
+                            styles.cleanStatusOptionText,
+                            isSelected && styles.cleanStatusOptionTextSelected,
+                          ]}
+                        >
+                          {tmpl.label}
+                        </Text>
+                        <Text style={styles.cleanStatusOptionDesc}>{tmpl.desc}</Text>
+                      </View>
+                      {isSelected ? (
+                        <Check size={18} color="#2563EB" />
+                      ) : (
+                        <ChevronRight size={16} color="#CBD5E1" />
+                      )}
+                    </TouchableOpacity>
+                    {idx < EMAIL_TEMPLATES.length - 1 ? <View style={styles.rowDivider} /> : null}
+                  </React.Fragment>
+                );
+              })}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Radial Clock Time Picker Modal */}
+      <ClockTimePickerModal
+        visible={timePickerVisible}
+        onClose={() => setTimePickerVisible(false)}
+        onSelectTime={(timeStr) => setInterviewTime(timeStr)}
+        initialTime={interviewTime}
+      />
     </View>
   );
 };
@@ -1465,12 +1634,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
   },
   searchBarWrapper: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
@@ -1493,72 +1663,65 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     paddingVertical: 0,
   },
-  /* Industry Grade Status Filter Bar */
+  /* Industry Grade LinkedIn / iPhone Underline Status Filter Bar */
   tabsBarWrapper: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 0,
   },
   tabsScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: 14,
+    gap: 18,
   },
   industryTabPill: {
-    height: 36,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 2,
+    marginBottom: -1,
   },
   industryTabPillActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
-    borderBottomWidth: 3,
-    borderBottomColor: '#1E40AF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: 'transparent',
+    borderBottomColor: '#2563EB',
   },
   industryTabText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#334155',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
   },
   industryTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '900',
+    color: '#2563EB',
+    fontWeight: '700',
   },
   tabCountBadge: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
-    minWidth: 18,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabCountBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#EFF6FF',
   },
   tabCountText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#334155',
+    color: '#64748B',
   },
   tabCountTextActive: {
-    color: '#FFFFFF',
+    color: '#2563EB',
     fontWeight: '800',
   },
   listContent: {
@@ -1568,14 +1731,17 @@ const styles = StyleSheet.create({
   },
   candidateCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 8,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 1,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1637,67 +1803,43 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     maxWidth: '48%',
   },
-  miniPillText: {
-    fontSize: 10.5,
+  inlineIconTextItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '48%',
+  },
+  candidateMetaTextInline: {
+    fontSize: 11.5,
+    fontWeight: '600',
     color: '#64748B',
+  },
+  dotSeparator: {
+    color: '#2563EB',
+    fontWeight: '800',
   },
 
   /* Modal Overlay & Card */
   fullScreenPageContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     padding: 12,
   },
   fullPageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: '#E2E8F0',
-    gap: 10,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  fullPageBackBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  fullModalCard: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CBD5E1',
-    overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  modalHeader: {
+  fullPageHeaderTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    gap: 10,
+    marginBottom: 10,
   },
   modalAvatarBox: {
     width: 44,
@@ -1721,75 +1863,52 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 1,
   },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-  },
-  verifiedBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: '#15803D',
-  },
   closeBtn: {
     padding: 6,
     backgroundColor: '#F1F5F9',
     borderRadius: 16,
   },
-
-  /* 5-Tab Industry-Standard Segmented Control Bar */
+  menuTabBarWrapperInline: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginTop: 6,
+  },
   menuTabBarWrapper: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 3,
-    marginVertical: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginTop: 6,
   },
   menuTabBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 20,
+    paddingHorizontal: 4,
   },
   menuTabItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    gap: 6,
+    paddingHorizontal: 2,
+    paddingVertical: 10,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    marginBottom: -1,
   },
   menuTabItemActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#93C5FD',
-    borderBottomWidth: 2,
+    backgroundColor: 'transparent',
     borderBottomColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
   },
   menuTabText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: '#64748B',
   },
   menuTabTextActive: {
     color: '#2563EB',
-    fontWeight: '800',
+    fontWeight: '700',
   },
 
   /* Modal Body Scroll */
@@ -1799,104 +1918,195 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingBottom: 36,
   },
-  contactActionRow: {
+  modalSectionBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  sectionSeparator: {
+    height: 8,
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
+  },
+  specRowsContainer: {
+    marginTop: 6,
+  },
+  specRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginVertical: 10,
+    paddingVertical: 6,
   },
-  iconOnlyContactBtn: {
+  specIconBadge: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  specTextCol: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: 'center',
+  },
+  specGridLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  specGridValue: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  borderlessSkillTag: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    marginRight: 8,
+  },
+  borderlessSkillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  inlineViewResumeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  inlineViewResumeText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  resumeCardBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 6,
+    padding: 12,
+    marginTop: 6,
+  },
+  resumeCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginRight: 10,
+  },
+  pdfIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 8,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderBottomWidth: 2,
+    borderColor: '#FCA5A5',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  resumeActionBtn: {
-    flex: 1,
-    height: 38,
+  resumeFileName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  resumeSubText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  openPdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     backgroundColor: '#2563EB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#1D4ED8',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
   },
-  resumeActionText: {
-    fontSize: 12.5,
+  openPdfBtnText: {
+    fontSize: 11.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  fullWidthSpecCard: {
-    width: '100%',
+  modalStickyCallBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
-  twoColRow: {
+  contactActionBarInlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginBottom: 8,
   },
-  halfWidthSpecCard: {
+  contactActionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+  },
+  contactPillBtn: {
     flex: 1,
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 0,
+    paddingHorizontal: 4,
+  },
+  contactPillText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  sectionHeadingTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#2563EB',
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   infoSection: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   infoSectionTitle: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.6,
-    marginBottom: 4,
+    color: '#2563EB',
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   infoSectionBody: {
     fontSize: 12.5,
@@ -2027,9 +2237,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#334155',
   },
-  minimalStatusBtnTextSelected: {
+  cleanStatusOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 0,
+  },
+  cleanStatusOptionRowSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#2563EB',
+  },
+  cleanStatusOptionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  cleanStatusOptionTextSelected: {
     color: '#2563EB',
-    fontWeight: '900',
+    fontWeight: '800',
+  },
+  cleanStatusOptionDesc: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 1,
   },
   radioDotOutline: {
     width: 14,
@@ -2043,6 +2279,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 4,
+  },
+  cleanTemplatePillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 0,
+  },
+  cleanTemplatePillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   templatePillBtn: {
     flexDirection: 'row',
@@ -2072,6 +2324,82 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 4,
+  },
+  cleanModePillBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 0,
+  },
+  cleanModePillBtnSelected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cleanModePillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  cleanModePillTextSelected: {
+    color: '#2563EB',
+    fontWeight: '800',
+  },
+  cleanDatePickerTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 0,
+    marginTop: 4,
+  },
+  cleanDatePickerTriggerText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginLeft: 8,
+  },
+  cleanTimeSlotGridBtn: {
+    width: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 0,
+  },
+  cleanTimeSlotGridBtnSelected: {
+    backgroundColor: '#2563EB',
+    borderColor: '#1D4ED8',
+  },
+  cleanTimeSlotGridText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  cleanTimeSlotGridTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   modePillBtn: {
     flexDirection: 'row',
@@ -2207,6 +2535,82 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+  },
+  sheetOverlayBottom: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  cleanIosSheetCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 24,
+    width: '100%',
+  },
+  sheetGrabHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  cleanIosDropdownOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  cleanIosDropdownOptionRowSelected: {
+    backgroundColor: '#F8FAFC',
+  },
+  dropdownIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerSheet: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sheetTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  sheetSubtitle: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 1,
+  },
+  closeHeaderBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   datePickerModalCard: {
     width: '100%',

@@ -85,57 +85,13 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [modalMounted, setModalMounted] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(400)).current;
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
   const openDrawer = () => {
-    slideAnim.setValue(400);
-    fadeAnim.setValue(0);
     setModalMounted(true);
   };
 
-  React.useEffect(() => {
-    if (modalMounted) {
-      requestAnimationFrame(() => {
-        Animated.parallel([
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            damping: 26,
-            mass: 0.8,
-            stiffness: 240,
-            restDisplacementThreshold: 0.01,
-            restSpeedThreshold: 0.01,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 220,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    }
-  }, [modalMounted]);
-
   const closeDrawer = (action?: () => void) => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 400,
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setModalMounted(false);
-      if (action) action();
-    });
+    setModalMounted(false);
+    if (action) action();
   };
 
   // 1 Second (1000ms) Rotating Placeholder Timer
@@ -168,9 +124,20 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
   };
 
   // Derive Profile Info
-  const displayName = user?.companyName || user?.company_name || user?.name || 'insightforge';
-  const displayEmail = user?.email || 'noreply.insightforge19@gmail.com';
-  const initialLetter = displayName.charAt(0).toUpperCase() || 'I';
+  const displayName = user?.companyName || user?.company_name || user?.name || 'User';
+  const displayEmail = user?.email || 'user@jobmarket.com';
+  const initialLetter = displayName.charAt(0).toUpperCase() || 'U';
+
+  const userPhotoUri =
+    user?.profilePictureUrl ||
+    (user as any)?.profile_picture_url ||
+    (user as any)?.profilePhotoUrl ||
+    (user as any)?.avatar ||
+    (user as any)?.companyLogo ||
+    (user as any)?.company_logo ||
+    (user as any)?.logoUrl ||
+    (user as any)?.logo_url ||
+    (user as any)?.logo;
 
   return (
     <>
@@ -256,22 +223,20 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback onPress={() => closeDrawer()}>
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim, backgroundColor: 'rgba(15, 23, 42, 0.45)' }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.45)' }]} />
           </TouchableWithoutFeedback>
 
-          {/* Sliding Drawer Menu Panel */}
-          <Animated.View
+          {/* Drawer Menu Panel */}
+          <View
             style={[
               styles.drawerPanel,
               {
-                paddingTop: Math.max(insets.top + 12, 24),
-                transform: [{ translateX: slideAnim }],
+                paddingTop: Math.max(insets.top + 2, 10),
               },
             ]}
           >
             {/* Top Close Button */}
-            <View style={styles.topCloseRow}>
-              <Text style={styles.menuDrawerTitle}>Menu</Text>
+            <View style={[styles.topCloseRow, { justifyContent: 'flex-end' }]}>
               <TouchableOpacity
                 activeOpacity={0.7}
                 style={styles.closeBtn}
@@ -286,7 +251,11 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
             <View style={styles.profileHeaderBlock}>
               <View style={styles.avatarRow}>
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarLetter}>{initialLetter}</Text>
+                  {userPhotoUri ? (
+                    <Image source={{ uri: userPhotoUri }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarLetter}>{initialLetter}</Text>
+                  )}
                 </View>
 
                 <View style={{ flex: 1 }}>
@@ -440,7 +409,7 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
                 <ChevronRight size={16} color="#DC2626" />
               </TouchableOpacity>
             </ScrollView>
-          </Animated.View>
+          </View>
         </View>
       </Modal>
 
@@ -624,7 +593,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
+    marginBottom: 2,
     paddingHorizontal: 2,
   },
   menuDrawerTitle: {
@@ -639,14 +608,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.slate100,
   },
   profileHeaderBlock: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm + 2,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
+    backgroundColor: 'transparent',
+    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: 2,
+    marginBottom: SPACING.sm,
   },
   avatarRow: {
     flexDirection: 'row',
@@ -660,6 +625,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   avatarLetter: {
     color: '#FFFFFF',
@@ -697,23 +668,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 6,
     borderRadius: 8,
-    gap: 12,
+    gap: 10,
   },
   iconSquircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   menuItemTitle: {
-    ...TYPOGRAPHY.subtitle,
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: COLORS.slate900,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
     flex: 1,
   },
   menuDivider: {

@@ -28,6 +28,8 @@ import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { getCompanyLogoUrl } from '../../utils/companyLogos';
 
 interface Props {
   navigation: any;
@@ -77,31 +79,28 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderStatusPill = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
-    let bg = '#EFF6FF';
-    let border = '#93C5FD';
-    let text = '#1D4ED8';
-    let label = 'APPLIED';
+    let color = '#16A34A'; // Green color for Applied
+    let label = 'Applied';
+    let IconComponent = CheckCircle2;
 
     if (s === 'shortlisted' || s === 'accepted') {
-      bg = '#DCFCE7';
-      border = '#86EFAC';
-      text = '#15803D';
-      label = s === 'accepted' ? 'HIRED' : 'SHORTLISTED';
+      color = '#16A34A';
+      label = s === 'accepted' ? 'Hired' : 'Shortlisted';
+      IconComponent = CheckCircle2;
     } else if (s === 'reviewed') {
-      bg = '#FEF3C7';
-      border = '#FDE68A';
-      text = '#B45309';
-      label = 'UNDER REVIEW';
+      color = '#D97706';
+      label = 'Under Review';
+      IconComponent = Clock;
     } else if (s === 'rejected') {
-      bg = '#FEF2F2';
-      border = '#FCA5A5';
-      text = '#DC2626';
-      label = 'REJECTED';
+      color = '#DC2626';
+      label = 'Rejected';
+      IconComponent = AlertCircle;
     }
 
     return (
-      <View style={[styles.statusPill, { backgroundColor: bg, borderColor: border }]}>
-        <Text style={[styles.statusPillText, { color: text }]}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <IconComponent size={14} color={color} />
+        <Text style={{ fontSize: 12, fontWeight: '700', color }}>{label}</Text>
       </View>
     );
   };
@@ -155,7 +154,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.summaryBar}>
             <View style={{ flex: 1 }}>
               <Text style={styles.summaryTitle}>Job Application Progress</Text>
-              <Text style={styles.summarySub}>Track your status and scheduled walk-in interview calls</Text>
+              <Text style={styles.summarySub}>Track status & interview calls</Text>
             </View>
             <View style={styles.countBadge}>
               <ClipboardList size={14} color="#2563EB" />
@@ -183,23 +182,18 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               const job = item.job || item;
               const status = (item.status || 'applied').toLowerCase();
               const isShortlisted = status === 'shortlisted' || status === 'accepted';
-              const logoUrl = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo;
+              const rawLogo = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo || (job as any).companyLogoUrl;
+              const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
 
               return (
                 <View key={item.jobId || job.id} style={styles.appliedCard3D}>
                   {/* Card Top Row */}
                   <View style={styles.cardHeaderRow}>
-                    <View style={styles.companyIconSquare}>
-                      {logoUrl ? (
-                        <Image
-                          source={{ uri: logoUrl }}
-                          style={styles.companyLogoImg}
-                          resizeMode="contain"
-                        />
-                      ) : (
-                        <Building2 size={20} color="#2563EB" />
-                      )}
-                    </View>
+                    <CompanyLogoAvatar
+                      logoUrl={logoUrl}
+                      companyName={job.company}
+                      size={38}
+                    />
 
                     <View style={{ flex: 1 }}>
                       <Text style={styles.jobTitle} numberOfLines={1}>
@@ -209,21 +203,19 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                         {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC'}
                       </Text>
                     </View>
-
-                    {renderStatusPill(item.status)}
                   </View>
 
-                  {/* Metadata Row */}
+                  {/* Metadata Row (Clean inline text, no chip boxes) */}
                   <View style={styles.metaRow}>
-                    <View style={styles.metaBadge}>
+                    <View style={styles.metaInlineItem}>
                       <MapPin size={12} color="#2563EB" />
-                      <Text style={styles.metaBadgeText}>{job.location || 'MIDC Zone'}</Text>
+                      <Text style={styles.metaInlineText}>{job.location || 'MIDC Zone'}</Text>
                     </View>
 
                     {job.salary_max || job.salaryMax ? (
-                      <View style={[styles.metaBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                        <IndianRupee size={12} color="#16A34A" />
-                        <Text style={[styles.metaBadgeText, { color: '#16A34A', fontWeight: '800' }]}>
+                      <View style={styles.metaInlineItem}>
+                        <IndianRupee size={12} color="#0F172A" />
+                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '700' }]}>
                           ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
                         </Text>
                       </View>
@@ -281,11 +273,12 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      style={styles.viewJobBtn}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                       onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
                     >
-                      <Text style={styles.viewJobBtnText}>View Vacancy Details</Text>
-                      <ChevronRight size={14} color="#2563EB" />
+                      <CheckCircle2 size={14} color="#16A34A" />
+                      <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#16A34A' }}>Applied</Text>
+                      <ChevronRight size={14} color="#16A34A" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -345,7 +338,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 36,
@@ -377,16 +370,16 @@ const styles = StyleSheet.create({
   },
   appliedCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 14,
     gap: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1.5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -394,19 +387,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   companyIconSquare: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   companyLogoImg: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 6,
   },
   jobTitle: {
@@ -432,24 +423,19 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 12,
   },
-  metaBadge: {
+  metaInlineItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
   },
-  metaBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
+  metaInlineText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748B',
   },
   interviewContainer: {
     backgroundColor: '#F0FDF4',

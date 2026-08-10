@@ -331,8 +331,8 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* 2FA Verification Modal Overlay */}
       <Modal visible={show2FAModal} transparent animationType="fade" onRequestClose={() => setShow2FAModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShow2FAModal(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={styles.modalIconBox}>
                 <ShieldCheck size={22} color="#0066C2" />
@@ -366,8 +366,8 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
               onPress={handleVerify2FACode}
               style={{ marginTop: 12 }}
             />
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -443,21 +443,19 @@ const styles = StyleSheet.create({
   },
   floatingCardContainer: {
     paddingHorizontal: 16,
-    marginTop: -26,
+    marginTop: -24,
   },
   formCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 4,
-    borderBottomColor: '#0066C2',
+    borderColor: '#E2E8F0',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardHeaderRow: {
     marginBottom: 16,
@@ -466,20 +464,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.3,
   },
   welcomeSubtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 3,
     lineHeight: 17,
   },
   segmentedContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: '#F1F5F9',
     borderRadius: 10,
-    padding: 4,
+    padding: 3,
     gap: 4,
     marginBottom: 16,
   },
@@ -490,24 +487,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 7,
+    borderRadius: 8,
   },
   segmentedTabActive: {
-    backgroundColor: '#0066C2',
-    shadowColor: '#0066C2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#2563EB',
   },
   segmentedTabText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
+    fontWeight: '600',
+    color: '#64748B',
   },
   segmentedTabTextActive: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '800',
   },
   inputLabel: {
     fontSize: 12,
@@ -518,7 +510,7 @@ const styles = StyleSheet.create({
   forgotPassLink: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#0066C2',
+    color: '#2563EB',
   },
   inputEyeWrapper: {
     position: 'relative',
@@ -534,20 +526,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#0066C2',
+    backgroundColor: '#2563EB',
     paddingVertical: 13,
-    borderRadius: 8,
-    marginTop: 4,
-    shadowColor: '#0066C2',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
+    borderRadius: 10,
+    marginTop: 6,
   },
   primaryActionButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   dividerRow: {
     flexDirection: 'row',
@@ -629,7 +616,7 @@ const styles = StyleSheet.create({
   registerLinkText: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#0066C2',
+    color: '#2563EB',
   },
   modalOverlay: {
     flex: 1,

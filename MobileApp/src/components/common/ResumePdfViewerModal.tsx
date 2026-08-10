@@ -8,6 +8,8 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Printer, Download, ExternalLink, FileText } from 'lucide-react-native';
@@ -36,19 +38,28 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
     rawUrlStr = (pdfUrl as any).url || (pdfUrl as any).fileUrl || (pdfUrl as any).uri || (pdfUrl as any).link || '';
   }
 
-  const lowerUrl = rawUrlStr.toLowerCase();
+  // Ensure relative backend upload paths (e.g. /uploads/...) resolve to full backend URL
+  let targetDocUrl = rawUrlStr;
+  if (targetDocUrl && !targetDocUrl.startsWith('http://') && !targetDocUrl.startsWith('https://') && !targetDocUrl.startsWith('data:')) {
+    targetDocUrl = `http://10.0.2.2:5000${targetDocUrl.startsWith('/') ? '' : '/'}${targetDocUrl}`;
+  }
+
+  const lowerUrl = targetDocUrl.toLowerCase();
   const isImage =
     lowerUrl.includes('.png') ||
     lowerUrl.includes('.jpg') ||
     lowerUrl.includes('.jpeg') ||
     lowerUrl.includes('.webp') ||
-    lowerUrl.startsWith('data:image/');
+    lowerUrl.includes('.gif') ||
+    lowerUrl.includes('.bmp') ||
+    lowerUrl.startsWith('data:image/') ||
+    (pdfUrl && typeof pdfUrl === 'object' && (pdfUrl as any).type === 'image');
 
-  const defaultPdfUrl = rawUrlStr || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+  const defaultPdfUrl = targetDocUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
   const googleDocsViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(defaultPdfUrl)}`;
 
   const handlePrint = () => {
-    const targetUrl = rawUrlStr || defaultPdfUrl;
+    const targetUrl = targetDocUrl || defaultPdfUrl;
     if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
       Linking.openURL(targetUrl);
     } else {
@@ -56,28 +67,7 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
     }
   };
 
-  // 2. HTML Template for Uploaded Image Documents
-  const uploadedImageHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0">
-        <style>
-          body { background: #0f172a; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-          .img-card { background: #ffffff; padding: 12px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 100%; text-align: center; }
-          img { max-width: 100%; height: auto; border-radius: 4px; display: block; margin: 0 auto; }
-          @media print { body { background: white; padding: 0; } .img-card { box-shadow: none; padding: 0; } }
-        </style>
-      </head>
-      <body>
-        <div class="img-card">
-          <img src="${pdfUrl}" alt="${candidateName} Resume Document" />
-        </div>
-      </body>
-    </html>
-  `;
-
-  // 3. Fallback Simulated A4 PDF Document
+  // 2. Fallback Simulated A4 PDF Document
   const simulatedResumeHtml = `
     <!DOCTYPE html>
     <html>
@@ -145,7 +135,7 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
             <FileText size={18} color="#2563EB" />
             <View>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {candidateName.replace(/\s+/g, '_')}_Resume.pdf
+                {candidateName.replace(/\s+/g, '_')}_Resume{isImage ? '.png' : '.pdf'}
               </Text>
               <Text style={styles.headerSubtitle}>In-App Document Preview</Text>
             </View>
@@ -157,15 +147,23 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* WebView PDF / Image Document Canvas */}
+        {/* WebView PDF / Native Image Document Canvas */}
         <View style={styles.webViewWrapper}>
-          {isImage ? (
-            <WebView
-              source={{ html: uploadedImageHtml }}
-              style={{ flex: 1 }}
-              originWhitelist={['*']}
-            />
-          ) : pdfUrl && (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) ? (
+          {isImage && targetDocUrl ? (
+            <ScrollView
+              contentContainerStyle={styles.imageScrollBody}
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+            >
+              <Image
+                source={{ uri: targetDocUrl }}
+                style={styles.fullImageDoc}
+                resizeMode="contain"
+              />
+            </ScrollView>
+          ) : targetDocUrl && (targetDocUrl.startsWith('http://') || targetDocUrl.startsWith('https://')) ? (
             <WebView
               source={{ uri: googleDocsViewerUrl }}
               style={{ flex: 1 }}
@@ -274,6 +272,19 @@ const styles = StyleSheet.create({
   webViewWrapper: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  imageScrollBody: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0F172A',
+    padding: 12,
+  },
+  fullImageDoc: {
+    width: '100%',
+    height: '100%',
+    minHeight: 500,
+    borderRadius: 8,
   },
   loadingBox: {
     position: 'absolute',

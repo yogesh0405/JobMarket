@@ -120,8 +120,6 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
               labelText = 'Company';
             }
 
-            const isProfileTab = route.name === 'ProfileTab';
-
             return (
               <TouchableOpacity
                 key={route.key}
@@ -130,20 +128,11 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                 style={styles.tabItem}
               >
                 <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                  {isProfileTab ? (
-                    <CompanyLogoAvatar
-                      logoUrl={(user as any)?.companyLogoUrl || user?.company_logo || user?.profile_picture_url}
-                      companyName={user?.companyName || user?.company_name || user?.name}
-                      size={24}
-                      borderRadius={12}
-                    />
-                  ) : (
-                    <IconComponent
-                      size={20}
-                      color={isFocused ? '#FFFFFF' : '#0F172A'}
-                      strokeWidth={isFocused ? 2.5 : 2.2}
-                    />
-                  )}
+                  <IconComponent
+                    size={20}
+                    color={isFocused ? '#FFFFFF' : '#0F172A'}
+                    strokeWidth={isFocused ? 2.5 : 2.2}
+                  />
                 </View>
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}

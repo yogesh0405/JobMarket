@@ -137,9 +137,9 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
     let salaryStr = 'Salary Undisclosed';
     if (salMin && salMax) {
-      salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')} / mo`;
+      salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
     } else if (salMin || salMax) {
-      salaryStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')} / mo`;
+      salaryStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')}`;
     }
 
     const totalVacancies = item.openings ?? (item as any).openings ?? 1;
@@ -149,6 +149,8 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
       : (typeof (item as any).applicantsCount === 'number'
           ? (item as any).applicantsCount
           : (Array.isArray((item as any).applicants) ? (item as any).applicants.length : 0));
+
+    const locationText = item.location || (item as any).midcZone || 'MIDC Area';
 
     return (
       <TouchableOpacity
@@ -162,7 +164,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             {logoUri ? (
               <Image source={{ uri: logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
             ) : (
-              <Building2 size={22} color="#2563EB" />
+              <Building2 size={20} color="#2563EB" />
             )}
           </View>
 
@@ -180,42 +182,35 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {pending ? (
-          <View style={styles.pendingCardNotice}>
-            <Clock size={13} color="#D97706" />
-            <Text style={styles.pendingNoticeText}>
-              Sent for Admin Review • Stored in Database
-            </Text>
-          </View>
-        ) : null}
+        <View style={styles.cardRowDivider} />
 
-        {/* Action Footer Bar with Vacancies Option */}
-        <View style={styles.cardFooter}>
+        {/* Action Footer Bar - Single Card Sub-Layout (NO CARDS IN CARDS) */}
+        <View style={styles.cardFooterInline}>
           <TouchableOpacity
-            style={styles.applicantBtn}
+            style={styles.applicantBtnInline}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title })}
           >
-            <Users size={14} color="#2563EB" />
-            <Text style={styles.applicantBtnText}>
+            <Users size={14} color="#0F172A" />
+            <Text style={styles.applicantBtnTextInline}>
               {actualApplicantCount} {actualApplicantCount === 1 ? 'Candidate' : 'Candidates'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.vacanciesPillBtn}
+            style={styles.vacanciesBtnInline}
             activeOpacity={0.8}
             onPress={() => setManageVacanciesJob(item)}
           >
-            <Briefcase size={13} color="#0284C7" />
-            <Text style={styles.vacanciesPillText}>
+            <Briefcase size={13} color="#0F172A" />
+            <Text style={styles.vacanciesBtnTextInline}>
               {filledVacancies} / {totalVacancies} Vacancies
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.actionsGroup}>
+          <View style={styles.actionsGroupInline}>
             <TouchableOpacity
-              style={styles.actionIconButton}
+              style={styles.actionIconButtonInline}
               activeOpacity={0.7}
               onPress={() => {
                 navigation.navigate('PostTab', { jobId: item.id });
@@ -225,7 +220,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionIconButton, styles.deleteBtn]}
+              style={styles.actionIconButtonInline}
               activeOpacity={0.7}
               onPress={() => handleDeleteJob(item.id, item.title)}
             >
@@ -241,9 +236,9 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-      {/* Filter Tabs Bar - Clean Blue Segmented Control */}
+      {/* Filter Tabs Bar - Industry Grade LinkedIn / iPhone Underline Tab Navigation */}
       <View style={styles.tabsBarWrapper}>
-        <View style={styles.segmentedTrackContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScrollContent}>
           {[
             { key: 'ALL', label: 'All Jobs', count: jobs.length },
             { key: 'APPROVED', label: 'Active', count: approvedCount },
@@ -256,15 +251,20 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 key={tab.key}
                 activeOpacity={0.8}
                 onPress={() => setActiveTab(tab.key as FilterTab)}
-                style={[styles.segmentedTabBtn, isSelected && styles.segmentedTabBtnActive]}
+                style={[styles.industryTabPill, isSelected && styles.industryTabPillActive]}
               >
-                <Text style={[styles.segmentedTabText, isSelected && styles.segmentedTabTextActive]}>
-                  {tab.label} ({tab.count})
+                <Text style={[styles.industryTabText, isSelected && styles.industryTabTextActive]}>
+                  {tab.label}
                 </Text>
+                <View style={[styles.tabCountBadge, isSelected && styles.tabCountBadgeActive]}>
+                  <Text style={[styles.tabCountText, isSelected && styles.tabCountTextActive]}>
+                    {tab.count}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {error ? <ErrorBanner message={error} onRetry={fetchJobs} style={{ marginHorizontal: SPACING.lg }} /> : null}
@@ -312,48 +312,71 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
   },
   addHeaderBtn: {
     backgroundColor: COLORS.primary,
     padding: SPACING.xs,
     borderRadius: RADIUS.md,
   },
-  /* Pure White Borderless Tab Bar Styles */
+  /* Industry Grade LinkedIn / iPhone Underline Status Filter Bar */
   tabsBarWrapper: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingTop: 4,
+    paddingBottom: 0,
   },
-  segmentedTrackContainer: {
+  tabsScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    gap: 6,
+    paddingHorizontal: 14,
+    gap: 18,
   },
-  segmentedTabBtn: {
-    flex: 1,
-    height: 36,
+  industryTabPill: {
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    gap: 6,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 2,
+    marginBottom: -1,
   },
-  segmentedTabBtnActive: {
+  industryTabPillActive: {
+    backgroundColor: 'transparent',
+    borderBottomColor: '#2563EB',
+  },
+  industryTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  industryTabTextActive: {
+    color: '#2563EB',
+    fontWeight: '700',
+  },
+  tabCountBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabCountBadgeActive: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
-    borderWidth: 1.5,
-    borderRadius: 8,
   },
-  segmentedTabText: {
-    fontSize: 11.5,
+  tabCountText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#64748B',
   },
-  segmentedTabTextActive: {
+  tabCountTextActive: {
     color: '#2563EB',
     fontWeight: '800',
   },
@@ -364,29 +387,29 @@ const styles = StyleSheet.create({
   },
   jobCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 14,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
+    shadowOpacity: 0.02,
+    shadowRadius: 1,
     elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   companyLogoBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    width: 38,
+    height: 38,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -408,7 +431,7 @@ const styles = StyleSheet.create({
   },
   jobTitleText: {
     ...TYPOGRAPHY.subtitle,
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -421,51 +444,77 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 1,
   },
-  pendingCardNotice: {
+  cardMetaInlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 8,
+    marginTop: 6,
   },
-  pendingNoticeText: {
-    ...TYPOGRAPHY.caption,
+  inlineMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cardMetaText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  dotSeparator: {
+    color: '#2563EB',
+    fontWeight: '800',
+  },
+  pendingCardNoticeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  pendingNoticeTextInline: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#92400E',
+    fontWeight: '600',
+    color: '#D97706',
   },
-  cardFooter: {
+  cardRowDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 8,
+  },
+  cardFooterInline: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 10,
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
     gap: 8,
   },
-  applicantBtn: {
+  applicantBtnInline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    flex: 1,
+    gap: 5,
+    paddingVertical: 2,
   },
-  applicantBtnText: {
-    ...TYPOGRAPHY.caption,
+  applicantBtnTextInline: {
     fontSize: 12,
-    fontWeight: '800',
-    color: '#2563EB',
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  vacanciesBtnInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  vacanciesBtnTextInline: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  actionsGroupInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  actionIconButtonInline: {
+    padding: 4,
   },
   vacanciesPillBtn: {
     flexDirection: 'row',

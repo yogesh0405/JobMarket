@@ -32,12 +32,14 @@ import {
   Calendar,
   Layers,
   UploadCloud,
+  ArrowRight,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Header } from '../../components/common/Header';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
 import { Advertisement, AdvertisementAnalytics, AdvertisementType, Job } from '../../types';
+import { DatePickerField } from '../../components/common/DatePickerField';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -282,7 +284,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
         <View style={styles.topActionBar}>
           <View style={{ flex: 1 }}>
             <Text style={styles.actionBarTitle}>Promote Jobs & Company</Text>
-            <Text style={styles.actionBarSubtitle}>Display high-impact banners on homepage</Text>
+            <Text style={styles.actionBarSubtitle}>Reach More Employees</Text>
           </View>
           <TouchableOpacity style={styles.createBtn} activeOpacity={0.8} onPress={openCreateModal}>
             <Plus size={16} color="#FFFFFF" />
@@ -295,9 +297,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Banners</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#EFF6FF' }]}>
-                <ImageIcon size={14} color="#2563EB" />
-              </View>
+              <ImageIcon size={16} color="#2563EB" />
             </View>
             <Text style={styles.metricValueText}>{analytics?.total_advertisements ?? banners.length}</Text>
           </View>
@@ -305,9 +305,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Active Live</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0FDF4' }]}>
-                <CheckCircle2 size={14} color="#16A34A" />
-              </View>
+              <CheckCircle2 size={16} color="#16A34A" />
             </View>
             <Text style={styles.metricValueText}>{analytics?.active_advertisements ?? banners.filter((b) => b.is_active).length}</Text>
           </View>
@@ -315,9 +313,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Views</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0F9FF' }]}>
-                <Eye size={14} color="#0284C7" />
-              </View>
+              <Eye size={16} color="#0284C7" />
             </View>
             <Text style={styles.metricValueText}>{analytics?.total_views ?? 0}</Text>
           </View>
@@ -325,9 +321,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Clicks</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#FEF3C7' }]}>
-                <MousePointerClick size={14} color="#D97706" />
-              </View>
+              <MousePointerClick size={16} color="#D97706" />
             </View>
             <Text style={styles.metricValueText}>{analytics?.total_clicks ?? 0}</Text>
           </View>
@@ -362,74 +356,93 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
             const isRejected = (banner.status || '').toUpperCase() === 'REJECTED';
 
             return (
-              <View key={banner.id} style={styles.bannerCard}>
-                {/* Banner Preview Image */}
-                <View style={styles.bannerImageContainer}>
+              <View key={banner.id} style={styles.bannerCardContainer}>
+                {/* Status & Date Header Row */}
+                <View style={styles.cardHeaderRow}>
+                  {renderStatusBadge(banner)}
+                  <Text style={styles.campaignDateText}>
+                    {banner.start_date ? banner.start_date.slice(0, 10) : ''} - {banner.end_date ? banner.end_date.slice(0, 10) : ''}
+                  </Text>
+                </View>
+
+                {/* 1:1 Pure Live Candidate Homepage Banner Layout */}
+                <View style={styles.liveHomepageBannerCard}>
                   <Image
                     source={{
-                      uri: banner.banner_image || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80',
+                      uri: banner.banner_image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
                     }}
-                    style={styles.bannerPreviewImage}
+                    style={styles.livePromoImage}
                     resizeMode="cover"
                   />
-                  <View style={styles.bannerImageOverlay}>
-                    {renderStatusBadge(banner)}
-                    <View style={styles.typeTagPill}>
-                      <Text style={styles.typeTagText}>{(banner.advertisement_type || 'BANNER').replace('_', ' ')}</Text>
+
+                  <View style={styles.livePromoOverlay}>
+                    <View style={styles.livePromoBadgeOrange}>
+                      <Text style={styles.livePromoBadgeOrangeText}>
+                        {(banner.advertisement_type || 'BANNER').replace('_', ' ')}
+                      </Text>
+                    </View>
+
+                    <View style={{ gap: 2 }}>
+                      <Text style={styles.livePromoTitle} numberOfLines={1}>
+                        {banner.title}
+                      </Text>
+                      {banner.description ? (
+                        <Text style={styles.livePromoDesc} numberOfLines={2}>
+                          {banner.description}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    <View style={styles.livePromoActionBtnBlue}>
+                      <Text style={styles.livePromoActionBtnText}>
+                        {banner.button_text || 'Apply Now'}
+                      </Text>
+                      <ArrowRight size={13} color="#FFFFFF" />
                     </View>
                   </View>
                 </View>
 
-                {/* Banner Metadata */}
-                <View style={styles.bannerBody}>
-                  <Text style={styles.bannerTitleText} numberOfLines={1}>
-                    {banner.title}
-                  </Text>
-                  {banner.description ? (
-                    <Text style={styles.bannerDescText} numberOfLines={2}>
-                      {banner.description}
+                {/* Rejection Notice Box if rejected */}
+                {isRejected && banner.rejection_reason ? (
+                  <View style={styles.rejectionNoticeBox}>
+                    <AlertCircle size={14} color="#DC2626" />
+                    <Text style={styles.rejectionNoticeText}>
+                      Rejection Reason: {banner.rejection_reason}
                     </Text>
-                  ) : null}
+                  </View>
+                ) : null}
 
-                  {isRejected && banner.rejection_reason ? (
-                    <View style={styles.rejectionNoticeBox}>
-                      <AlertCircle size={14} color="#DC2626" />
-                      <Text style={styles.rejectionNoticeText}>
-                        Rejection Reason: {banner.rejection_reason}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.statsBar}>
+                {/* Card Footer: Views/Clicks Analytics + Edit/Delete Action Buttons */}
+                <View style={styles.bannerFooterRow}>
+                  <View style={styles.statsBarInline}>
                     <View style={styles.statItem}>
                       <Eye size={13} color="#64748B" />
                       <Text style={styles.statText}>{banner.views_count || 0} Views</Text>
                     </View>
-                    <View style={styles.statDivider} />
+                    <Text style={{ color: '#CBD5E1' }}>•</Text>
                     <View style={styles.statItem}>
                       <MousePointerClick size={13} color="#64748B" />
                       <Text style={styles.statText}>{banner.clicks_count || 0} Clicks</Text>
                     </View>
                   </View>
-                </View>
 
-                {/* Card Action Row */}
-                <View style={styles.bannerFooterRow}>
-                  <TouchableOpacity
-                    style={styles.actionBtnSecondary}
-                    onPress={() => openEditModal(banner)}
-                  >
-                    <Edit3 size={14} color="#2563EB" />
-                    <Text style={styles.actionBtnSecondaryText}>{isRejected ? 'Resubmit' : 'Edit'}</Text>
-                  </TouchableOpacity>
+                  <View style={styles.actionButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.actionBtnSecondary}
+                      onPress={() => openEditModal(banner)}
+                    >
+                      <Edit3 size={14} color="#2563EB" />
+                      <Text style={styles.actionBtnSecondaryText}>{isRejected ? 'Resubmit' : 'Edit'}</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.actionBtnDanger}
-                    onPress={() => handleDelete(banner.id, banner.title)}
-                  >
-                    <Trash2 size={14} color="#DC2626" />
-                    <Text style={styles.actionBtnDangerText}>Delete</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionBtnDanger}
+                      onPress={() => handleDelete(banner.id, banner.title)}
+                    >
+                      <Trash2 size={14} color="#DC2626" />
+                      <Text style={styles.actionBtnDangerText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             );
@@ -439,8 +452,8 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
 
       {/* Modal Form for Creating / Editing Banner */}
       <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalTitle}>{editingBanner ? 'Edit Banner Advertisement' : 'Create Promotional Banner'}</Text>
@@ -532,6 +545,45 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 </>
               ) : null}
 
+              {/* Action Button Name / Label Input & Presets */}
+              <Text style={styles.inputLabel}>Action Button Text / Label *</Text>
+              <TextInput
+                style={[styles.textInput, { marginBottom: 6 }]}
+                placeholder="e.g. Apply Now, View Details, Register Spot Interview"
+                value={buttonText}
+                onChangeText={setButtonText}
+              />
+              <Text style={[styles.inputLabel, { marginTop: 2, marginBottom: 4, color: '#64748B', fontSize: 11 }]}>
+                Quick Button Suggestions (Tap to select):
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 14 }}
+              >
+                {[
+                  'Apply Now',
+                  'View Job Details',
+                  'Register Spot Interview',
+                  'Explore Jobs',
+                  'Direct Walk-In',
+                  'Contact Recruiter',
+                ].map((preset) => (
+                  <TouchableOpacity
+                    key={preset}
+                    style={[
+                      styles.typeChip,
+                      buttonText === preset && styles.typeChipActive,
+                    ]}
+                    onPress={() => setButtonText(preset)}
+                  >
+                    <Text style={[styles.typeChipText, buttonText === preset && styles.typeChipTextActive]}>
+                      {preset}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
               {/* Banner Image Upload & Picker */}
               <Text style={styles.inputLabel}>Banner Image *</Text>
               <TouchableOpacity
@@ -553,24 +605,26 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 onChangeText={setBannerImage}
               />
 
-              {/* Start & End Date */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              {/* Start & End Date Pickers */}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD) *</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="YYYY-MM-DD"
+                  <DatePickerField
+                    label="Campaign Start Date"
+                    required
                     value={startDate}
-                    onChangeText={setStartDate}
+                    onChange={setStartDate}
+                    placeholder="Select start date..."
+                    minDate={new Date()}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>End Date (YYYY-MM-DD) *</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="YYYY-MM-DD"
+                  <DatePickerField
+                    label="Campaign End Date"
+                    required
                     value={endDate}
-                    onChangeText={setEndDate}
+                    onChange={setEndDate}
+                    placeholder="Select end date..."
+                    minDate={startDate ? new Date(startDate) : new Date()}
                   />
                 </View>
               </View>
@@ -584,21 +638,38 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 onChangeText={setTargetAudience}
               />
 
-              {/* Banner Live Card Preview */}
-              <Text style={styles.inputLabel}>Live Banner Card Preview</Text>
-              <View style={styles.previewCard}>
+              {/* Banner Live Card Preview (1:1 Exact Homepage Live Layout) */}
+              <Text style={styles.inputLabel}>Live Homepage Banner Preview</Text>
+              <View style={styles.liveHomepageBannerCard}>
                 <Image
                   source={{
-                    uri: bannerImage.trim() || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80',
+                    uri: bannerImage.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
                   }}
-                  style={{ width: '100%', height: 110, borderRadius: 6 }}
+                  style={styles.livePromoImage}
                   resizeMode="cover"
                 />
-                <View style={{ padding: 10 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F172A' }}>{title || 'Sample Banner Title'}</Text>
-                  <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{description || 'Sample description text preview'}</Text>
-                  <View style={styles.previewBtn}>
-                    <Text style={styles.previewBtnText}>{buttonText || 'Apply Now'}</Text>
+
+                <View style={styles.livePromoOverlay}>
+                  <View style={styles.livePromoBadgeOrange}>
+                    <Text style={styles.livePromoBadgeOrangeText}>
+                      {(advertisementType || 'FEATURED_JOB').replace('_', ' ')}
+                    </Text>
+                  </View>
+
+                  <View style={{ gap: 2 }}>
+                    <Text style={styles.livePromoTitle} numberOfLines={1}>
+                      {title.trim() || 'Sample Banner Title'}
+                    </Text>
+                    <Text style={styles.livePromoDesc} numberOfLines={2}>
+                      {description.trim() || 'Sample description text preview as shown to candidates on homepage.'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.livePromoActionBtnBlue}>
+                    <Text style={styles.livePromoActionBtnText}>
+                      {buttonText || 'Apply Now'}
+                    </Text>
+                    <ArrowRight size={13} color="#FFFFFF" />
                   </View>
                 </View>
               </View>
@@ -618,8 +689,8 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -639,7 +710,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -835,22 +906,116 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
     marginHorizontal: 12,
   },
+  bannerCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+    marginBottom: 14,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  campaignDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  liveHomepageBannerCard: {
+    height: 175,
+    borderRadius: 6,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    marginBottom: 4,
+  },
+  livePromoImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.4,
+  },
+  livePromoOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  livePromoBadgeOrange: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  livePromoBadgeOrangeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  livePromoTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  livePromoDesc: {
+    fontSize: 11.5,
+    color: '#E2E8F0',
+    lineHeight: 15,
+  },
+  livePromoActionBtnBlue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  livePromoActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  statsBarInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   bannerFooterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
   },
   actionBtnSecondary: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 6,
   },
   actionBtnSecondaryText: {
@@ -859,15 +1024,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   actionBtnDanger: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#FCA5A5',
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 6,
   },
   actionBtnDangerText: {
@@ -957,7 +1122,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 6,
@@ -967,7 +1132,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   typeChip: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 6,
@@ -976,7 +1141,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   typeChipActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderColor: '#2563EB',
   },
   imagePickerBtn: {
@@ -984,9 +1149,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#93C5FD',
+    borderColor: '#2563EB',
     borderStyle: 'dashed',
     borderRadius: 8,
     paddingVertical: 12,
@@ -1007,7 +1172,7 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   jobChip: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 6,
@@ -1017,7 +1182,7 @@ const styles = StyleSheet.create({
     maxWidth: 160,
   },
   jobChipActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderColor: '#2563EB',
   },
   jobChipText: {

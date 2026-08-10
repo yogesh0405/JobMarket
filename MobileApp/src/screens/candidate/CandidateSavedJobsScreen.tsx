@@ -116,8 +116,8 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
           {/* Header summary bar */}
           <View style={styles.summaryBar}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.summaryTitle}>Saved Jobs</Text>
-              <Text style={styles.summarySub}>Jobs saved for quick reference and direct application</Text>
+              <Text style={styles.summaryTitle}>Saved Vacancies</Text>
+              <Text style={styles.summarySub}>Jobs saved for quick reference</Text>
             </View>
             <View style={styles.countBadge}>
               <Bookmark size={14} color="#2563EB" fill="#2563EB" />
@@ -195,21 +195,6 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.metaBadge}>
                       <Briefcase size={12} color="#64748B" />
                       <Text style={styles.metaBadgeText}>{job.job_type || job.jobType || 'Full-time'}</Text>
-                    </View>
-                  </View>
-
-                  {/* Footer Row */}
-                  <View style={styles.cardFooterRow}>
-                    <View style={styles.salaryPill}>
-                      <IndianRupee size={12} color="#16A34A" />
-                      <Text style={styles.salaryPillText}>
-                        ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000}/mo
-                      </Text>
-                    </View>
-
-                    <View style={styles.applyActionBtn}>
-                      <Text style={styles.applyActionText}>View & Apply</Text>
-                      <ChevronRight size={14} color="#2563EB" />
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -367,41 +352,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+    marginRight: 10,
   },
   metaBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#2563EB',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
   },
   cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-  },
-  salaryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  salaryPillText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#15803D',
   },
   applyActionBtn: {
     flexDirection: 'row',
