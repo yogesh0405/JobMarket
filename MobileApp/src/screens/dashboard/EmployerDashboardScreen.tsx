@@ -508,8 +508,9 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   <CompanyLogoAvatar
                     logoUrl={photoUri}
                     companyName={candidateName}
-                    size={38}
+                    size={36}
                     borderRadius={0}
+                    style={{ marginRight: 10 }}
                   />
                   <View style={{ flex: 1, paddingRight: 4 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

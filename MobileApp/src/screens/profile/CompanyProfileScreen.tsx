@@ -373,10 +373,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.sectionSubtitle}>Real-time pipeline & hiring statistics</Text>
                   </View>
                 </View>
-                <View style={styles.liveIndicatorBadge}>
-                  <View style={styles.greenPulseDot} />
-                  <Text style={styles.liveBadgeText}>ANALYTICS</Text>
-                </View>
               </View>
 
               {/* 6 Aligned Metric Rows */}
@@ -467,7 +463,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                       </View>
                     </View>
 
-                    <View style={{ gap: 10, marginTop: 6 }}>
+                    <View style={{ gap: 6, marginTop: 4 }}>
                       <View>
                         <View style={styles.funnelRow}>
                           <Text style={styles.funnelLabel}>1. Total Applications Received</Text>
@@ -498,7 +494,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
                       </View>
 
-                      <View>
+                      <View style={{ marginBottom: 14 }}>
                         <View style={styles.funnelRow}>
                           <Text style={styles.funnelLabel}>4. Confirmed Hires Offered</Text>
                           <Text style={styles.funnelVal}>{analyticsData.hired} ({hiredPct}%)</Text>
@@ -512,10 +508,10 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 );
               })()}
 
-              <View style={styles.sectionDividerInline} />
+              <View style={[styles.sectionDividerInline, { marginBottom: 12, marginTop: 10 }]} />
 
               {/* SECTION 3: Quick Navigation Shortcuts */}
-              <View>
+              <View style={{ marginTop: 8 }}>
                 <Text style={styles.infoSectionTitle}>RECRUITMENT DASHBOARD ACTIONS</Text>
                 <View style={{ gap: 4, marginTop: 4 }}>
                   <TouchableOpacity
@@ -680,7 +676,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     padding: SPACING.lg,
@@ -808,8 +804,9 @@ const styles = StyleSheet.create({
   },
   sectionDividerInline: {
     height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
+    backgroundColor: '#64748B',
+    marginTop: 14,
+    marginBottom: 28,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -964,19 +961,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   proRowsContainer: {
-    paddingVertical: 4,
-    marginTop: 4,
+    paddingVertical: 2,
+    marginTop: 2,
   },
   metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    gap: 10,
+    paddingVertical: 5,
+    gap: 8,
   },
   rowIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

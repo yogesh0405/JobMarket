@@ -104,16 +104,16 @@ const safeString = (val: any, fallback: string = ''): string => {
 };
 
 const CANDIDATE_SEARCH_SUGGESTIONS = [
-  'Search by Skill (e.g. CNC, VMC, PLC, Hydraulics)...',
-  'Search by Location (e.g. Waluj MIDC, Chakan, Bhosari)...',
-  'Search by Trade (e.g. Wireman, Fitter, Turner, Machinist)...',
-  'Search by Education (e.g. ITI, Diploma, BE Mechanical)...',
-  'Search by Experience (e.g. 5+ Years, Senior)...',
-  'Search Candidate Name or Phone Number...',
+  'Search candidates by name or skill...',
+  'Search by trade (e.g. VMC, Fitter)...',
+  'Search by location (e.g. MIDC)...',
+  'Search by education (e.g. ITI, BE)...',
 ];
 
 export const CandidatesScreen: React.FC = () => {
   const [candidates, setCandidates] = useState<ExtendedCandidate[]>([]);
+  const searchInputRef = React.useRef<any>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -256,8 +256,9 @@ export const CandidatesScreen: React.FC = () => {
         <CompanyLogoAvatar
           logoUrl={item.avatarUrl}
           companyName={item.name}
-          size={56}
+          size={40}
           borderRadius={0}
+          style={{ marginRight: 10 }}
         />
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
@@ -321,18 +322,30 @@ export const CandidatesScreen: React.FC = () => {
 
       {/* Integrated Live Candidate Search Bar + Filter Section */}
       <View style={styles.searchBarWrapper}>
-        <View style={styles.searchBarContainer}>
-          <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => searchInputRef.current?.focus()}
+          style={[
+            styles.searchBarContainer,
+            (isSearchFocused || !!searchQuery) && styles.searchBarContainerActive,
+          ]}
+        >
+          <Search size={18} color={isSearchFocused ? '#2563EB' : '#64748B'} style={{ marginRight: 8 }} />
           <TextInput
+            ref={searchInputRef}
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
             placeholderTextColor="#94A3B8"
             returnKeyType="search"
+            numberOfLines={1}
+            multiline={false}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4, marginRight: 2 }}>
               <X size={16} color="#64748B" />
             </TouchableOpacity>
           ) : null}
@@ -352,82 +365,7 @@ export const CandidatesScreen: React.FC = () => {
               <View style={styles.inlineFilterBadgeDotOnly} />
             ) : null}
           </TouchableOpacity>
-        </View>
-
-        {/* Horizontal Quick Filter Pills Bar Embedded Inside Search Bar Section */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.quickFilterScrollContent}
-          style={styles.quickFilterScrollView}
-        >
-          {/* All Candidates Pill */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setActiveTradeFilter(null);
-              setActiveExpFilter(null);
-              setAadhaarOnlyFilter(false);
-            }}
-            style={[
-              styles.quickFilterPill,
-              !hasActiveFilters && styles.quickFilterPillActive,
-            ]}
-          >
-            <Text style={[styles.quickFilterPillText, !hasActiveFilters && styles.quickFilterPillTextActive]}>
-              All Candidates
-            </Text>
-          </TouchableOpacity>
-
-          {/* Aadhaar Verified Pill */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setAadhaarOnlyFilter(!aadhaarOnlyFilter)}
-            style={[
-              styles.quickFilterPill,
-              aadhaarOnlyFilter && styles.quickFilterPillActive,
-            ]}
-          >
-            <ShieldCheck size={13} color={aadhaarOnlyFilter ? '#FFFFFF' : '#16A34A'} style={{ marginRight: 4 }} />
-            <Text style={[styles.quickFilterPillText, aadhaarOnlyFilter && styles.quickFilterPillTextActive]}>
-              Aadhaar Verified
-            </Text>
-          </TouchableOpacity>
-
-          {/* Trade Specialization Quick Pills */}
-          {['VMC Operator', 'CNC Turner', 'Fitter', 'Welder', 'Electrician', 'Quality Inspector'].map((trade) => {
-            const isSelected = activeTradeFilter === trade;
-            return (
-              <TouchableOpacity
-                key={trade}
-                activeOpacity={0.8}
-                onPress={() => setActiveTradeFilter(isSelected ? null : trade)}
-                style={[styles.quickFilterPill, isSelected && styles.quickFilterPillActive]}
-              >
-                <Text style={[styles.quickFilterPillText, isSelected && styles.quickFilterPillTextActive]}>
-                  {trade}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Experience Pills */}
-          {['1+ Yrs', '3+ Yrs', '5+ Yrs'].map((exp) => {
-            const isSelected = activeExpFilter === exp;
-            return (
-              <TouchableOpacity
-                key={exp}
-                activeOpacity={0.8}
-                onPress={() => setActiveExpFilter(isSelected ? null : exp)}
-                style={[styles.quickFilterPill, isSelected && styles.quickFilterPillActive]}
-              >
-                <Text style={[styles.quickFilterPillText, isSelected && styles.quickFilterPillTextActive]}>
-                  {exp}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        </TouchableOpacity>
 
         {searchQuery || hasActiveFilters ? (
           <View style={styles.searchResultsInfoRow}>
@@ -490,8 +428,9 @@ export const CandidatesScreen: React.FC = () => {
                     <CompanyLogoAvatar
                       logoUrl={selectedCandidate.avatarUrl}
                       companyName={selectedCandidate.name}
-                      size={64}
+                      size={44}
                       borderRadius={0}
+                      style={{ marginRight: 10 }}
                     />
 
                     <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -823,6 +762,15 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  searchBarContainerActive: {
+    borderColor: '#2563EB',
+    borderBottomColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   inlineFilterDivider: {
     width: 1,
     height: 22,
@@ -1006,6 +954,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 12.5,
     fontWeight: '600',
     color: '#0F172A',

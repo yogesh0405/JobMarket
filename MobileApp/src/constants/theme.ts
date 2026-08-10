@@ -27,7 +27,7 @@ export const COLORS = {
   infoBg: '#F0F9FF',      // Sky 50
   
   // Surfaces & Borders
-  background: '#F8FAFC',
+  background: '#FFFFFF',
   surface: '#FFFFFF',
   border: '#E2E8F0',
   borderFocus: '#2563EB',

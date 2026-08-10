@@ -930,6 +930,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                           <View style={styles.skillsWrapRow}>
                             {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
                               <View key={i} style={styles.borderlessSkillTag}>
+                                <View style={styles.skillDot} />
                                 <Text style={styles.borderlessSkillText}>{safeValue(skill)}</Text>
                               </View>
                             ))}
@@ -1142,7 +1143,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         <View style={styles.skillsWrapRow}>
                           {selectedApplicant.user.skills.map((skill, i) => (
                             <View key={i} style={styles.borderlessSkillTag}>
-                              <Text style={styles.borderlessSkillText}>{skill}</Text>
+                              <View style={styles.skillDot} />
+                              <Text style={styles.borderlessSkillText}>{safeValue(skill)}</Text>
                             </View>
                           ))}
                         </View>
@@ -1592,7 +1594,7 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderBottomWidth: 2,
@@ -1676,7 +1678,7 @@ const styles = StyleSheet.create({
   },
   candidateCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
@@ -1774,9 +1776,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: '#E2E8F0',
+    paddingBottom: 4,
+    borderBottomWidth: 0,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
@@ -1815,9 +1816,8 @@ const styles = StyleSheet.create({
   },
   menuTabBarWrapperInline: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    marginTop: 6,
+    borderBottomWidth: 0,
+    marginTop: 4,
   },
   menuTabBarWrapper: {
     backgroundColor: '#FFFFFF',
@@ -1865,9 +1865,9 @@ const styles = StyleSheet.create({
   },
   modalSectionBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -1916,11 +1916,21 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   borderlessSkillTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'transparent',
     borderWidth: 0,
     paddingHorizontal: 0,
-    paddingVertical: 2,
-    marginRight: 8,
+    paddingVertical: 3,
+    marginRight: 12,
+    marginBottom: 6,
+    gap: 6,
+  },
+  skillDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#2563EB',
   },
   borderlessSkillText: {
     fontSize: 11.5,
