@@ -219,10 +219,21 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      const base64Data = asset.base64
-        ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
-        : asset.uri;
-      setLogoUri(base64Data);
+      const photoUri = asset.uri || (asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : '');
+      setLogoUri(photoUri);
+
+      // Immediately update global AuthContext & SecureStorage so logo/photo changes instantly everywhere!
+      await updateUserProfile({
+        companyLogo: photoUri,
+        company_logo: photoUri,
+        logoUrl: photoUri,
+        logo_url: photoUri,
+        profile_picture_url: photoUri,
+        profilePictureUrl: photoUri,
+        avatar_url: photoUri,
+        avatarUrl: photoUri,
+        avatar: photoUri,
+      } as any);
     }
   };
 

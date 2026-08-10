@@ -214,7 +214,7 @@ export class UserRepository {
   }
 
   static async getAllCandidates(): Promise<any[]> {
-    return CacheService.getOrSet('cache:candidates:all', 300, async () => {
+    return CacheService.getOrSet('cache:candidates:all', 30, async () => {
       const query = `
         SELECT id, email, name, phone, role, status, created_at, updated_at,
                headline, location, skills, preferred_shift, requires_bus,
@@ -223,8 +223,8 @@ export class UserRepository {
                aadhaar_verified as "aadhaarVerified",
                COALESCE(is_resume_public, true) as "isResumePublic"
         FROM users
-        WHERE LOWER(role) = 'candidate' AND COALESCE(is_resume_public, true) = true
-        ORDER BY name ASC;
+        WHERE LOWER(role) = 'candidate'
+        ORDER BY created_at DESC, name ASC;
       `;
       const result = await pool.query(query);
       return result.rows.map(row => ({

@@ -14,13 +14,13 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: any) => Promise<any>;
+  login: (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => Promise<any>;
   loginWithGoogle: (payload: any) => Promise<void>;
   verify2FALogin: (mfaToken: string, otpCode: string) => Promise<void>;
   signup: (payload: any) => Promise<{ email: string }>;
   verifyOTP: (email: string, otpCode: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserProfile: (data: Partial<User>) => Promise<void>;
+  updateUserProfile: (data: Partial<User>) => Promise<User | void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -28,7 +28,7 @@ export const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Automatically reset user to null if an unauthenticated 401 response occurs
   useEffect(() => {
@@ -39,14 +39,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
+      const storedUser = (await getStoredUser()) || {};
       const res = await authApi.getProfile();
       if (res.success && res.data) {
         const fetchedUser = (res.data as any).user || res.data;
-        setUser(fetchedUser);
-        await saveStoredUser(fetchedUser);
+        const photoUri =
+          (storedUser as any)?.profile_picture_url ||
+          (storedUser as any)?.profilePictureUrl ||
+          (storedUser as any)?.avatar_url ||
+          (storedUser as any)?.avatarUrl ||
+          user?.profile_picture_url ||
+          user?.profilePictureUrl;
+
+        const photoPreservation = photoUri
+          ? {
+              profile_picture_url: fetchedUser?.profile_picture_url || fetchedUser?.profilePictureUrl || photoUri,
+              profilePictureUrl: fetchedUser?.profilePictureUrl || fetchedUser?.profile_picture_url || photoUri,
+              avatar_url: fetchedUser?.avatar_url || fetchedUser?.avatarUrl || photoUri,
+              avatarUrl: fetchedUser?.avatarUrl || fetchedUser?.avatar_url || photoUri,
+            }
+          : {};
+
+        const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...photoPreservation };
+        setUser(mergedUser);
+        await saveStoredUser(mergedUser);
+      } else if (storedUser && Object.keys(storedUser).length > 0) {
+        setUser(storedUser as User);
       }
     } catch (error) {
       console.warn('Background profile refresh notice:', error);
+      const storedUser = await getStoredUser();
+      if (storedUser) {
+        setUser(storedUser);
+      }
     }
   };
 
@@ -58,11 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const token = await getAccessToken();
         const storedUser = await getStoredUser();
 
-        if (mounted && token && storedUser) {
+        if (token && storedUser && mounted) {
           setUser(storedUser);
         }
-      } catch (e) {
-        console.error('Auth initialization error:', e);
+      } catch (error) {
+        console.warn('Failed to restore auth state:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -73,31 +102,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (credentials: any) => {
+  const login = async (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => {
     setIsLoading(true);
     try {
-      const res = await authApi.login(credentials);
+      const loginData = typeof emailOrPayload === 'object'
+        ? emailOrPayload
+        : { email: emailOrPayload, password, authMethod, ...payload };
+
+      const res = await authApi.login(loginData);
       if (res.success && res.data) {
-        if (res.data.require2FA) {
-          return {
-            require2FA: true,
-            mfaToken: res.data.mfaToken,
-            email: res.data.email,
-            message: res.data.message,
-          };
+        const { user: userData, token, accessToken, refreshToken, sessionId, isMFAEnabled } = res.data;
+
+        if (isMFAEnabled) {
+          return { isMFAEnabled: true, mfaToken: (res.data as any).mfaToken };
         }
 
-        const { accessToken, refreshToken, sessionId, user: userData } = res.data;
-
-        if (!accessToken || !refreshToken) {
+        const validToken = token || accessToken;
+        if (!validToken) {
           throw new Error('Invalid authentication tokens from server');
         }
 
-        // Save tokens to secure storage & fast memory cache
-        await saveTokens({ accessToken, refreshToken }, sessionId);
+        await saveTokens({ accessToken: validToken, refreshToken }, sessionId);
         await saveStoredUser(userData);
-
-        // Set user state to trigger navigation to Dashboard
         setUser(userData);
         return { success: true };
       } else {
@@ -162,12 +188,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUserProfile = async (data: Partial<User>) => {
-    let updatedUser = { ...user, ...data } as User;
+    const storedUser = (await getStoredUser()) || {};
+
+    const photoUri =
+      (data as any)?.profile_picture_url ||
+      (data as any)?.profilePictureUrl ||
+      (data as any)?.avatar_url ||
+      (data as any)?.avatarUrl ||
+      (data as any)?.avatar ||
+      (data as any)?.companyLogo ||
+      (data as any)?.company_logo ||
+      (data as any)?.logoUrl ||
+      (data as any)?.logo_url;
+
+    const photoNormalizedData = photoUri
+      ? {
+          profile_picture_url: photoUri,
+          profilePictureUrl: photoUri,
+          avatar_url: photoUri,
+          avatarUrl: photoUri,
+          avatar: photoUri,
+          companyLogo: photoUri,
+          company_logo: photoUri,
+          logoUrl: photoUri,
+          logo_url: photoUri,
+        }
+      : {};
+
+    let updatedUser = { ...storedUser, ...user, ...data, ...photoNormalizedData } as User;
+
     try {
-      const res = await authApi.updateProfile(data);
+      const res = await authApi.updateProfile({ ...data, ...photoNormalizedData });
       if (res.success && res.data) {
         const returnedUser = (res.data as any).user || res.data;
-        updatedUser = { ...updatedUser, ...returnedUser };
+        if (returnedUser && typeof returnedUser === 'object') {
+          updatedUser = { ...updatedUser, ...returnedUser, ...photoNormalizedData };
+        }
       }
     } catch (e) {
       console.warn('Backend updateProfile sync notice:', e);
@@ -175,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(updatedUser);
     await saveStoredUser(updatedUser);
+    return updatedUser;
   };
 
   const loginWithGoogle = async (googlePayload: any) => {

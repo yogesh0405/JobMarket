@@ -235,6 +235,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [topSearch, setTopSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const topSearchInputRef = React.useRef<TextInput>(null);
 
   const matchedSuggestions = useMemo(() => {
     const trimmed = topSearch.trim().toLowerCase();
@@ -506,12 +507,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
         <View style={{ zIndex: 999, position: 'relative' }}>
-          <View style={styles.topSearchPillRow}>
+          <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
             <TouchableOpacity onPress={handleSearchSubmit} style={styles.searchIconBadge3D} activeOpacity={0.8}>
-              <Search size={18} color="#2563EB" strokeWidth={2.2} />
+              <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} strokeWidth={2.2} />
             </TouchableOpacity>
 
             <TextInput
+              ref={topSearchInputRef}
               style={styles.topSearchInput}
               placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
               placeholderTextColor="#94A3B8"
@@ -520,6 +522,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 setTopSearch(txt);
                 setShowSuggestions(txt.trim().length > 0);
               }}
+              onPressIn={() => setIsInputFocused(true)}
               onFocus={() => {
                 setIsInputFocused(true);
                 setShowSuggestions(topSearch.trim().length > 0);
@@ -1278,7 +1281,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 14,
     height: 48,
     gap: 10,
@@ -1287,6 +1290,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 5,
     elevation: 2,
+  },
+  topSearchPillRowActive: {
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   searchIconBadge3D: {
     width: 24,

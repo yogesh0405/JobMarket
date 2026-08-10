@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 
 interface Props {
   navigation: any;
@@ -37,28 +38,48 @@ interface Props {
 
 export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
-  const [appliedList, setAppliedList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [appliedList, setAppliedList] = useState<any[]>(appliedJobsStore.getAppliedJobs());
+  const [loading, setLoading] = useState(appliedJobsStore.getAppliedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
+
+  const syncListWithStore = useCallback((apiData?: any[]) => {
+    if (apiData && Array.isArray(apiData)) {
+      appliedJobsStore.setAppliedJobs(apiData);
+    }
+    setAppliedList([...appliedJobsStore.getAppliedJobs()]);
+  }, []);
 
   const fetchAppliedData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
     try {
       const res = await candidateApi.getAppliedJobs();
       if (res.success && res.data) {
-        setAppliedList(res.data || []);
+        syncListWithStore(res.data);
+      } else {
+        syncListWithStore();
       }
     } catch (e) {
       console.log('Error loading applied jobs:', e);
+      syncListWithStore();
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  }, [syncListWithStore]);
+
+  // Subscribe to appliedJobsStore for instant 0ms updates
+  useEffect(() => {
+    const unsubscribe = appliedJobsStore.subscribe(() => {
+      setAppliedList([...appliedJobsStore.getAppliedJobs()]);
+    });
+    return unsubscribe;
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchAppliedData(false);
+      const hasPending = appliedJobsStore.consumePendingRefresh();
+      const showSkeleton = hasPending || appliedJobsStore.getAppliedJobs().length === 0;
+      fetchAppliedData(showSkeleton);
     }, [fetchAppliedData])
   );
 

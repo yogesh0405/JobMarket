@@ -39,6 +39,7 @@ import { WhatsAppIcon } from '../../components/common/WhatsAppIcon';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { Header } from '../../components/common/Header';
 import { WebHeader } from '../../components/common/WebHeader';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
@@ -65,77 +66,6 @@ interface ExtendedCandidate extends Partial<User> {
   notice_period?: string;
   preferred_shift?: string;
 }
-
-const SAMPLE_CANDIDATES: ExtendedCandidate[] = [
-  {
-    id: 'c1',
-    name: 'Anil Gavhane',
-    verified: true,
-    aadhaar_verified: true,
-    title: 'Senior Hydraulics & Pneumatics Maintenance Engineer',
-    location: 'Railway Station MIDC, Chhatrapati Sambhajinagar',
-    experience: '9+ Years (2015 - Present)',
-    skills: ['Hydraulics', 'Pneumatics', 'Preventive Maintenance', 'Pump Overhaul', 'PLC Troubleshooting'],
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    phone: '+91 98230 11223',
-    email: 'anil.gavhane@jobmarket.local',
-    education: 'Diploma in Mechanical Engineering (Government Polytechnic)',
-    bio: 'Experienced industrial hydraulics engineer specializing in heavy press maintenance, pneumatic circuit troubleshooting, and preventive maintenance across automotive manufacturing plants.',
-    notice_period: 'Immediate (0-7 Days)',
-    preferred_shift: 'Rotational / Day Shift',
-  },
-  {
-    id: 'c2',
-    name: 'Manoj Jadhav',
-    verified: true,
-    aadhaar_verified: true,
-    title: 'Certified Heavy Material Handling & Forklift Operator',
-    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
-    experience: '5+ Years (2019 - Present)',
-    skills: ['Forklift Operating', 'Material Loading', 'Pallet Handling', 'Safety Checklists', 'Warehouse Management'],
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    phone: '+91 98230 44556',
-    email: 'manoj.jadhav@jobmarket.local',
-    education: 'ITI Material Handling & Heavy Driving License (RTO Verified)',
-    bio: 'Certified forklift and reach-truck operator with flawless safety record in Waluj MIDC logistics hubs. Expert in pallet loading, ERP inventory tracking, and warehouse stack management.',
-    notice_period: 'Immediate',
-    preferred_shift: 'Day Shift',
-  },
-  {
-    id: 'c3',
-    name: 'Pradeep Shinde',
-    verified: true,
-    aadhaar_verified: true,
-    title: 'High-Pressure Heavy MIG & TIG Welder',
-    location: 'Paithan MIDC, Chhatrapati Sambhajinagar',
-    experience: '7+ Years (2017 - Present)',
-    skills: ['MIG Welding', 'TIG Welding', 'Structural Steel Fabrication', 'Pressure Vessel Testing', 'Arc Welding'],
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-    phone: '+91 98230 77889',
-    email: 'pradeep.shinde@jobmarket.local',
-    education: 'NCVT ITI Welder Trade Certificate',
-    bio: 'High-pressure certified MIG/TIG welder with expertise in boiler pipes, heavy steel structure fabrication, radiographical weld inspection, and MIG machine calibration.',
-    notice_period: '15 Days',
-    preferred_shift: 'Day / Night Shift',
-  },
-  {
-    id: 'c4',
-    name: 'Sanjay Kulkarni',
-    verified: true,
-    aadhaar_verified: true,
-    title: 'VMC & CNC Machine Programmer & Setter',
-    location: 'Chakan MIDC, Pune',
-    experience: '8+ Years (2016 - Present)',
-    skills: ['VMC Programming', 'Mastercam', 'AutoCAD', 'Fixture Design', 'CNC Turning', 'Fanuc Controls'],
-    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    phone: '+91 98230 99001',
-    email: 'sanjay.kulkarni@jobmarket.local',
-    education: 'BE Mechanical / Advanced Tooling & CNC Certification',
-    bio: 'Precision VMC programmer and setter skilled in Fanuc & Siemens CNC controllers, Mastercam 3D milling, precision GD&T inspection, and fixture design for automotive components.',
-    notice_period: 'Immediate',
-    preferred_shift: 'General / Day Shift',
-  },
-];
 
 const FILTER_TAGS = ['VMC Programming', 'Mastercam', 'AutoCAD', 'Fixture Design', 'Hydraulics', 'CNC Operator'];
 
@@ -183,11 +113,11 @@ const CANDIDATE_SEARCH_SUGGESTIONS = [
 ];
 
 export const CandidatesScreen: React.FC = () => {
-  const [candidates, setCandidates] = useState<ExtendedCandidate[]>(SAMPLE_CANDIDATES);
+  const [candidates, setCandidates] = useState<ExtendedCandidate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -204,33 +134,36 @@ export const CandidatesScreen: React.FC = () => {
     setError(null);
     try {
       const res = await apiFetch('/api/v1/jobs/workers/all');
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.success && Array.isArray(res.data)) {
         const mapped: ExtendedCandidate[] = res.data.map((u: any, idx: number) => {
-          const sample = SAMPLE_CANDIDATES[idx % SAMPLE_CANDIDATES.length];
           return {
             ...u,
             id: safeString(u.id, `worker-${idx}`),
-            name: safeString(u.name, sample.name),
-            verified: u.aadhaar_verified ?? true,
-            title: safeString(u.headline || u.trade_specialization, sample.title),
-            location: safeString(u.location, sample.location),
-            experience: safeString(u.experience, sample.experience),
+            name: safeString(u.name || u.displayName || u.fullName, 'Registered Candidate'),
+            verified: u.aadhaar_verified ?? u.is_verified ?? false,
+            title: safeString(u.headline || u.trade_specialization || u.trade || u.role, 'Skilled Technical Operator'),
+            location: safeString(u.location || u.address || u.midc_zone, 'MIDC Industrial Zone'),
+            experience: safeString(u.experience, 'Industrial Experience'),
             skills: Array.isArray(u.skills)
               ? u.skills.map((s: any) => safeString(s)).filter(Boolean)
-              : sample.skills,
-            avatarUrl: safeString(u.profilePictureUrl || u.profile_picture_url, sample.avatarUrl || ''),
-            phone: safeString(u.phone, sample.phone),
-            email: safeString(u.email, sample.email),
-            education: safeString(u.education || u.qualifications, sample.education || 'NCVT ITI Certified'),
-            bio: safeString(u.bio || u.summary || u.about, sample.bio || 'Skilled technical operator with industrial MIDC experience.'),
-            notice_period: safeString(u.notice_period || u.noticePeriod, sample.notice_period || 'Immediate'),
-            preferred_shift: safeString(u.preferred_shift || u.shiftPreference, sample.preferred_shift || 'Day / Rotational Shift'),
+              : typeof u.skills === 'string'
+              ? u.skills.split(',').map((s: string) => s.trim())
+              : [],
+            avatarUrl: safeString(u.profilePictureUrl || u.profile_picture_url || u.avatar_url || u.avatarUrl || u.avatar, ''),
+            phone: safeString(u.phone || u.mobile || u.phoneNumber, ''),
+            email: safeString(u.email, ''),
+            education: safeString(u.education || u.qualifications, 'NCVT ITI Certified'),
+            bio: safeString(u.bio || u.summary || u.about, 'Registered candidate in JobMarket database.'),
+            notice_period: safeString(u.notice_period || u.noticePeriod, 'Immediate'),
+            preferred_shift: safeString(u.preferred_shift || u.shiftPreference, 'General Shift'),
           };
         });
         setCandidates(mapped);
+      } else {
+        setCandidates([]);
       }
     } catch (err: any) {
-      // Keep sample candidates for 100% visual fidelity
+      setCandidates([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -320,9 +253,11 @@ export const CandidatesScreen: React.FC = () => {
     >
       {/* Header Row (Profile Pic, Name, Trade Speciality) with subtle gray background */}
       <View style={styles.cardHeaderRow}>
-        <Image
-          source={{ uri: item.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
-          style={styles.avatar}
+        <CompanyLogoAvatar
+          logoUrl={item.avatarUrl}
+          companyName={item.name}
+          size={56}
+          borderRadius={0}
         />
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
@@ -384,39 +319,115 @@ export const CandidatesScreen: React.FC = () => {
       {/* 100% Exact Same Header */}
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-      {/* Live Candidate Search Bar + Side Filter Button */}
+      {/* Integrated Live Candidate Search Bar + Filter Section */}
       <View style={styles.searchBarWrapper}>
-        <View style={styles.searchRowWithFilter}>
-          <View style={styles.searchBarContainer}>
-            <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
-              placeholderTextColor="#94A3B8"
-              returnKeyType="search"
-            />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
-                <X size={16} color="#64748B" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+        <View style={styles.searchBarContainer}>
+          <Search size={18} color="#2563EB" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
+            placeholderTextColor="#94A3B8"
+            returnKeyType="search"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
+              <X size={16} color="#64748B" />
+            </TouchableOpacity>
+          ) : null}
 
-          {/* Filter Option Button at the side of search bar */}
+          {/* Inline Soft Divider */}
+          <View style={styles.inlineFilterDivider} />
+
+          {/* Integrated Filter Action Button Inside Search Bar (Icon Only, Transparent Background) */}
           <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             onPress={() => setFilterModalVisible(true)}
-            style={[
-              styles.sideFilterBtn,
-              hasActiveFilters && styles.sideFilterBtnActive,
-            ]}
+            style={styles.inlineFilterBtnIconOnly}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <SlidersHorizontal size={18} color={hasActiveFilters ? '#FFFFFF' : '#2563EB'} />
-            {hasActiveFilters ? <View style={styles.activeFilterBadgeDot} /> : null}
+            <SlidersHorizontal size={18} color={hasActiveFilters ? '#2563EB' : '#64748B'} />
+            {hasActiveFilters ? (
+              <View style={styles.inlineFilterBadgeDotOnly} />
+            ) : null}
           </TouchableOpacity>
         </View>
+
+        {/* Horizontal Quick Filter Pills Bar Embedded Inside Search Bar Section */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickFilterScrollContent}
+          style={styles.quickFilterScrollView}
+        >
+          {/* All Candidates Pill */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              setActiveTradeFilter(null);
+              setActiveExpFilter(null);
+              setAadhaarOnlyFilter(false);
+            }}
+            style={[
+              styles.quickFilterPill,
+              !hasActiveFilters && styles.quickFilterPillActive,
+            ]}
+          >
+            <Text style={[styles.quickFilterPillText, !hasActiveFilters && styles.quickFilterPillTextActive]}>
+              All Candidates
+            </Text>
+          </TouchableOpacity>
+
+          {/* Aadhaar Verified Pill */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setAadhaarOnlyFilter(!aadhaarOnlyFilter)}
+            style={[
+              styles.quickFilterPill,
+              aadhaarOnlyFilter && styles.quickFilterPillActive,
+            ]}
+          >
+            <ShieldCheck size={13} color={aadhaarOnlyFilter ? '#FFFFFF' : '#16A34A'} style={{ marginRight: 4 }} />
+            <Text style={[styles.quickFilterPillText, aadhaarOnlyFilter && styles.quickFilterPillTextActive]}>
+              Aadhaar Verified
+            </Text>
+          </TouchableOpacity>
+
+          {/* Trade Specialization Quick Pills */}
+          {['VMC Operator', 'CNC Turner', 'Fitter', 'Welder', 'Electrician', 'Quality Inspector'].map((trade) => {
+            const isSelected = activeTradeFilter === trade;
+            return (
+              <TouchableOpacity
+                key={trade}
+                activeOpacity={0.8}
+                onPress={() => setActiveTradeFilter(isSelected ? null : trade)}
+                style={[styles.quickFilterPill, isSelected && styles.quickFilterPillActive]}
+              >
+                <Text style={[styles.quickFilterPillText, isSelected && styles.quickFilterPillTextActive]}>
+                  {trade}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Experience Pills */}
+          {['1+ Yrs', '3+ Yrs', '5+ Yrs'].map((exp) => {
+            const isSelected = activeExpFilter === exp;
+            return (
+              <TouchableOpacity
+                key={exp}
+                activeOpacity={0.8}
+                onPress={() => setActiveExpFilter(isSelected ? null : exp)}
+                style={[styles.quickFilterPill, isSelected && styles.quickFilterPillActive]}
+              >
+                <Text style={[styles.quickFilterPillText, isSelected && styles.quickFilterPillTextActive]}>
+                  {exp}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {searchQuery || hasActiveFilters ? (
           <View style={styles.searchResultsInfoRow}>
@@ -476,9 +487,11 @@ export const CandidatesScreen: React.FC = () => {
                 {/* Clean Candidate Hero Profile Banner with Inline Action Buttons */}
                 <View style={styles.heroProfileCard}>
                   <View style={styles.heroTopRow}>
-                    <Image
-                      source={{ uri: selectedCandidate.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' }}
-                      style={styles.heroAvatar}
+                    <CompanyLogoAvatar
+                      logoUrl={selectedCandidate.avatarUrl}
+                      companyName={selectedCandidate.name}
+                      size={64}
+                      borderRadius={0}
                     />
 
                     <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -793,13 +806,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  searchRowWithFilter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   searchBarContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -809,38 +816,66 @@ const styles = StyleSheet.create({
     borderBottomColor: '#CBD5E1',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
-  sideFilterBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+  inlineFilterDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 8,
+  },
+  inlineFilterBtnIconOnly: {
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
     position: 'relative',
   },
-  sideFilterBtnActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
-  },
-  activeFilterBadgeDot: {
+  inlineFilterBadgeDotOnly: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 2,
+    right: 2,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#2563EB',
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
+  },
+  quickFilterScrollView: {
+    marginTop: 10,
+  },
+  quickFilterScrollContent: {
+    paddingRight: 12,
+    gap: 6,
+  },
+  quickFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 0,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  quickFilterPillActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#1D4ED8',
+  },
+  quickFilterPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  quickFilterPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   sheetOverlayBottom: {
     flex: 1,

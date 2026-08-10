@@ -38,6 +38,8 @@ import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
+
 interface Props {
   navigation: any;
   route: any;
@@ -51,6 +53,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const job = route.params?.job as Job;
   const onAppliedSuccess = route.params?.onAppliedSuccess;
 
+  const [currentSalary, setCurrentSalary] = useState<string>((user as any)?.currentSalary || (user as any)?.current_salary || '');
   const [expectedSalary, setExpectedSalary] = useState('');
   const [coverNote, setCoverNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -128,19 +131,13 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const locationVal = user?.location || user?.address || (user as any)?.city;
   const tradeVal = user?.tradeSpecialization || (user as any)?.trade_specialization || user?.headline || (user as any)?.trade;
   const shiftVal = user?.preferredShift || (user as any)?.preferred_shift;
-  const expVal = (user as any)?.experienceYears || (user as any)?.totalExperience || (user as any)?.experience_years;
-  const salaryVal = (user as any)?.currentSalary || (user as any)?.current_salary;
 
+  // Missing profile fields (Excludes optional Current Salary and Total Experience)
   const missingSections: string[] = [];
   if (!phoneVal) missingSections.push('Phone Number');
   if (!locationVal) missingSections.push('Location');
   if (!tradeVal) missingSections.push('Trade Specialization');
-  if (!shiftVal) missingSections.push('Preferred Shift');
-  if (!expVal) missingSections.push('Total Experience');
-  if (!salaryVal) missingSections.push('Current Salary');
   if (skillsList.length === 0) missingSections.push('Technical Skills');
-  if (workExpList.length === 0) missingSections.push('Work Experience History');
-  if (educationList.length === 0) missingSections.push('Education / ITI Details');
   if (!hasResume) missingSections.push('Resume Document');
 
   const handleApplySubmit = async () => {
@@ -149,26 +146,30 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
       return;
     }
 
+    // Immediately record in optimistic store for 0ms delay update
+    appliedJobsStore.addAppliedJob(job);
+
     setSubmitting(true);
     try {
       const payload: any = {};
+      if (currentSalary) payload.currentSalary = currentSalary;
       if (expectedSalary) payload.expectedSalary = expectedSalary;
       if (coverNote) payload.coverNote = coverNote;
 
       const res = await candidateApi.applyForJob(job.id, payload);
       if (res.success) {
         showToast('Your application has been submitted to the recruiter.', 'success');
-        if (onAppliedSuccess) onAppliedSuccess();
+        if (onAppliedSuccess) onAppliedSuccess(job);
         navigation.goBack();
       } else {
         showToast(res.message || 'Application submitted', 'info');
-        if (onAppliedSuccess) onAppliedSuccess();
+        if (onAppliedSuccess) onAppliedSuccess(job);
         navigation.goBack();
       }
     } catch (err: any) {
       console.log('Error applying for job:', err);
       showToast('Application record registered with employer.', 'success');
-      if (onAppliedSuccess) onAppliedSuccess();
+      if (onAppliedSuccess) onAppliedSuccess(job);
       navigation.goBack();
     } finally {
       setSubmitting(false);
@@ -194,254 +195,245 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Missing Profile Alert Banner with Exact Missing Info Count */}
+          {/* Missing Profile Alert Banner (Only shown if essential fields are missing) */}
           {missingSections.length > 0 && (
-            <View style={styles.incompleteAlertCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, flex: 1 }}>
-                <AlertTriangle size={18} color="#D97706" style={{ marginTop: 2 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.incompleteAlertTitle}>
-                    Incomplete Profile ({missingSections.length} {missingSections.length === 1 ? 'Field' : 'Fields'} Missing)
-                  </Text>
-                  <Text style={styles.incompleteAlertDesc}>
-                    Exact Missing Info ({missingSections.length}): {missingSections.join(', ')}. Complete your candidate profile for 5x recruiter response rate!
+            <>
+              <View style={styles.incompleteAlertCard}>
+                <View style={styles.incompleteAlertLeft}>
+                  <AlertTriangle size={16} color="#B45309" />
+                  <Text style={styles.incompleteAlertTitle} numberOfLines={1}>
+                    Incomplete Profile ({missingSections.length} {missingSections.length === 1 ? 'field' : 'fields'} missing)
                   </Text>
                 </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.editProfileSmallBtn}
+                  onPress={() => navigation.navigate('CandidateProfile')}
+                >
+                  <Text style={styles.editProfileSmallBtnText}>Complete</Text>
+                  <ArrowRight size={12} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.editProfileSmallBtn}
-                onPress={() => navigation.navigate('CandidateProfile')}
-              >
-                <Text style={styles.editProfileSmallBtnText}>Complete Profile</Text>
-                <ArrowRight size={12} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+              <View style={styles.sectionDivider} />
+            </>
           )}
 
-          {/* Target Job Summary Box */}
-          <View style={styles.targetJobSummaryCard}>
-            <Text style={styles.applyingForLabel}>TARGET POSITION:</Text>
-            <Text style={styles.applyingForTitle}>{job.title}</Text>
-            <Text style={styles.applyingForCompany}>
+          {/* SECTION 1: TARGET POSITION */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.groupHeaderLabel}>TARGET POSITION</Text>
+            <Text style={styles.targetJobTitle}>{job.title}</Text>
+            <Text style={styles.targetJobSub}>
               {job.company || 'Enterprise Employer'} • {job.location || 'MIDC Zone'}
             </Text>
           </View>
+          <View style={styles.sectionDivider} />
 
-          {/* Candidate Profile Specifications Box */}
-          <View style={styles.card3D}>
+          {/* SECTION 2: CANDIDATE APPLICATION SPECS (Flat iOS List) */}
+          <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
               <ShieldCheck size={18} color="#2563EB" />
               <Text style={styles.sectionHeaderTitle}>Candidate Application Specs</Text>
               <Text style={styles.sectionHeaderBadge}>Sent to Employer</Text>
             </View>
 
-            <View style={styles.specGrid}>
-              {/* 1. Full Name */}
-              <View style={styles.specBox}>
-                <View style={styles.specBoxLabelRow}>
-                  <User size={11} color="#64748B" />
-                  <Text style={styles.specBoxLabel}>FULL NAME</Text>
-                </View>
-                <Text style={styles.specBoxValue}>{user?.name || 'Workforce Applicant'}</Text>
+            {/* 1. Full Name */}
+            <View style={[styles.cleanSpecRow, styles.cleanRowBorder]}>
+              <View style={styles.specLabelWrap}>
+                <CheckCircle2 size={16} color="#16A34A" />
+                <Text style={styles.cleanSpecLabel}>Full Name</Text>
               </View>
-
-              {/* 2. Email */}
-              <View style={styles.specBox}>
-                <View style={styles.specBoxLabelRow}>
-                  <Mail size={11} color="#64748B" />
-                  <Text style={styles.specBoxLabel}>EMAIL ADDRESS</Text>
-                </View>
-                <Text style={styles.specBoxValue} numberOfLines={1}>
-                  {user?.email || 'N/A'}
-                </Text>
-              </View>
-
-              {/* 3. Phone */}
-              <View style={[styles.specBox, !user?.phone && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <Phone size={11} color={user?.phone ? '#16A34A' : '#E11D48'} />
-                  <Text style={[styles.specBoxLabel, !user?.phone && { color: '#E11D48' }]}>PHONE</Text>
-                </View>
-                <Text style={[styles.specBoxValue, !user?.phone && { color: '#E11D48' }]}>
-                  {user?.phone || '⚠️ Missing (Not Provided)'}
-                </Text>
-              </View>
-
-              {/* 4. Location */}
-              <View style={[styles.specBox, !user?.location && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <MapPin size={11} color={user?.location ? '#2563EB' : '#E11D48'} />
-                  <Text style={[styles.specBoxLabel, !user?.location && { color: '#E11D48' }]}>LOCATION</Text>
-                </View>
-                <Text style={[styles.specBoxValue, !user?.location && { color: '#E11D48' }]}>
-                  {user?.location || '⚠️ Missing (Not Provided)'}
-                </Text>
-              </View>
-
-              {/* 5. Primary Trade */}
-              <View style={[styles.specBox, (!user?.tradeSpecialization && !(user as any)?.trade_specialization && !user?.headline) && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <Wrench size={11} color="#2563EB" />
-                  <Text style={[styles.specBoxLabel, (!user?.tradeSpecialization && !(user as any)?.trade_specialization && !user?.headline) && { color: '#E11D48' }]}>PRIMARY TRADE</Text>
-                </View>
-                <Text style={[styles.specBoxValue, (!user?.tradeSpecialization && !(user as any)?.trade_specialization && !user?.headline) && { color: '#E11D48' }]}>
-                  {user?.tradeSpecialization || (user as any)?.trade_specialization || user?.headline || '⚠️ Missing (Not Provided)'}
-                </Text>
-              </View>
-
-              {/* 6. Preferred Shift */}
-              <View style={[styles.specBox, (!user?.preferredShift && !(user as any)?.preferred_shift) && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <Clock size={11} color="#D97706" />
-                  <Text style={[styles.specBoxLabel, (!user?.preferredShift && !(user as any)?.preferred_shift) && { color: '#E11D48' }]}>PREFERRED SHIFT</Text>
-                </View>
-                <Text style={[styles.specBoxValue, (!user?.preferredShift && !(user as any)?.preferred_shift) && { color: '#E11D48' }]}>
-                  {user?.preferredShift || (user as any)?.preferred_shift || '⚠️ Missing (Any Shift)'}
-                </Text>
-              </View>
-
-              {/* 7. Total Experience */}
-              <View style={[styles.specBox, (!(user as any)?.experienceYears && !(user as any)?.totalExperience) && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <Briefcase size={11} color="#2563EB" />
-                  <Text style={[styles.specBoxLabel, (!(user as any)?.experienceYears && !(user as any)?.totalExperience) && { color: '#E11D48' }]}>EXPERIENCE</Text>
-                </View>
-                <Text style={[styles.specBoxValue, (!(user as any)?.experienceYears && !(user as any)?.totalExperience) && { color: '#E11D48' }]}>
-                  {(user as any)?.experienceYears || (user as any)?.totalExperience ? `${(user as any)?.experienceYears || (user as any)?.totalExperience} Years` : '⚠️ Missing (Not Provided)'}
-                </Text>
-              </View>
-
-              {/* 8. Current Salary */}
-              <View style={[styles.specBox, !(user as any)?.currentSalary && styles.specBoxMissing]}>
-                <View style={styles.specBoxLabelRow}>
-                  <IndianRupee size={11} color="#16A34A" />
-                  <Text style={[styles.specBoxLabel, !(user as any)?.currentSalary && { color: '#E11D48' }]}>CURRENT SALARY</Text>
-                </View>
-                <Text style={[styles.specBoxValue, !(user as any)?.currentSalary && { color: '#E11D48' }]}>
-                  {(user as any)?.currentSalary ? `₹${(user as any)?.currentSalary}/mo` : '⚠️ Missing (Not Provided)'}
-                </Text>
-              </View>
+              <Text style={styles.cleanSpecValue}>{user?.name || 'Workforce Applicant'}</Text>
             </View>
 
-            {/* 9. Technical Skills Chip List */}
-            <View style={{ marginTop: 8 }}>
-              <View style={styles.specBoxLabelRow}>
-                <Award size={12} color="#2563EB" />
-                <Text style={styles.specSectionTitle}>TECHNICAL SKILLS ({skillsList.length}):</Text>
+            {/* 2. Email Address */}
+            <View style={[styles.cleanSpecRow, styles.cleanRowBorder]}>
+              <View style={styles.specLabelWrap}>
+                <CheckCircle2 size={16} color="#16A34A" />
+                <Text style={styles.cleanSpecLabel}>Email Address</Text>
               </View>
-              {skillsList.length > 0 ? (
-                <View style={styles.skillsChipContainer}>
-                  {skillsList.map((skill, idx) => (
-                    <View key={idx} style={styles.specSkillChip}>
-                      <Text style={styles.specSkillChipText}>{skill}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.missingBoxPill}>
-                  <Text style={styles.missingErrorText}>⚠️ Missing — No technical skills added to profile</Text>
-                </View>
-              )}
-            </View>
-
-            {/* 10. Work Experience History */}
-            <View style={{ marginTop: 8 }}>
-              <View style={styles.specBoxLabelRow}>
-                <Briefcase size={12} color="#0284C7" />
-                <Text style={styles.specSectionTitle}>WORK EXPERIENCE ({workExpList.length}):</Text>
-              </View>
-              {workExpList.length > 0 ? (
-                <View style={{ gap: 6, marginTop: 4 }}>
-                  {workExpList.map((exp: any, idx: number) => (
-                    <View key={idx} style={styles.expEntryItem}>
-                      <Text style={styles.expEntryTitle}>
-                        {exp.title || exp.jobTitle} {exp.company ? `at ${exp.company}` : ''}
-                      </Text>
-                      <Text style={styles.expEntrySubtitle}>
-                        {exp.duration || exp.years || 'Past Experience'} {exp.description ? `• ${exp.description}` : ''}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.missingBoxPill}>
-                  <Text style={styles.missingErrorText}>⚠️ Missing — No work experience entries added</Text>
-                </View>
-              )}
-            </View>
-
-            {/* 11. Education History */}
-            <View style={{ marginTop: 8 }}>
-              <View style={styles.specBoxLabelRow}>
-                <GraduationCap size={12} color="#16A34A" />
-                <Text style={styles.specSectionTitle}>EDUCATION / ITI QUALIFICATION ({educationList.length}):</Text>
-              </View>
-              {educationList.length > 0 ? (
-                <View style={{ gap: 6, marginTop: 4 }}>
-                  {educationList.map((edu: any, idx: number) => (
-                    <View key={idx} style={styles.eduEntryItem}>
-                      <Text style={styles.eduEntryTitle}>
-                        {edu.degree || edu.course} {edu.institution || edu.school ? `— ${edu.institution || edu.school}` : ''}
-                      </Text>
-                      <Text style={styles.eduEntrySubtitle}>Passing Year: {edu.year || 'Completed'}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.missingBoxPill}>
-                  <Text style={styles.missingErrorText}>⚠️ Missing — No education or ITI details added</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* 12. Attached Resume Document Box */}
-          <View style={[styles.resumeInfoBox, !hasResume && styles.resumeInfoBoxMissing]}>
-            <FileText size={22} color={hasResume ? '#2563EB' : '#DC2626'} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.resumeInfoTitle, !hasResume && { color: '#DC2626' }]}>
-                {hasResume ? resumeFileName : '⚠️ Missing — No Resume Uploaded'}
-              </Text>
-              <Text style={[styles.resumeInfoDesc, !hasResume && { color: '#DC2626' }]} numberOfLines={1}>
-                {hasResume ? 'Document attached & transmitted to employer' : 'Upload your resume in profile for 5x recruiter callbacks'}
+              <Text style={styles.cleanSpecValue} numberOfLines={1}>
+                {user?.email || 'N/A'}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.manageResumeBtn}
-              onPress={() => navigation.navigate('CandidateResume')}
-            >
-              <Text style={styles.manageResumeBtnText}>{hasResume ? 'Attached' : 'Upload'}</Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Expected Monthly Salary Input */}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Expected Monthly Salary (₹):</Text>
-            <TextInput
-              style={styles.salaryInput}
-              keyboardType="number-pad"
-              placeholder="e.g. 25000"
-              placeholderTextColor="#94A3B8"
-              value={expectedSalary}
-              onChangeText={setExpectedSalary}
-            />
-          </View>
+            {/* 3. Phone Number */}
+            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !phoneVal && styles.missingRowHighlight]}>
+              <View style={styles.specLabelWrap}>
+                {phoneVal ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={[styles.cleanSpecLabel, !phoneVal && styles.missingLabelText]}>Phone Number</Text>
+              </View>
+              <Text style={[styles.cleanSpecValue, !phoneVal && styles.missingValueText]}>
+                {phoneVal || '⚠️ Missing'}
+              </Text>
+            </View>
 
-          {/* Cover Note Input */}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Note / Message for Employer (Optional):</Text>
-            <TextInput
-              style={styles.coverNoteInput}
-              multiline
-              numberOfLines={3}
-              placeholder="e.g. I have 2 years VMC setting experience and can join immediately..."
-              placeholderTextColor="#94A3B8"
-              value={coverNote}
-              onChangeText={setCoverNote}
-            />
+            {/* 4. Location */}
+            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !locationVal && styles.missingRowHighlight]}>
+              <View style={styles.specLabelWrap}>
+                {locationVal ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={[styles.cleanSpecLabel, !locationVal && styles.missingLabelText]}>Location</Text>
+              </View>
+              <Text style={[styles.cleanSpecValue, !locationVal && styles.missingValueText]}>
+                {locationVal || '⚠️ Missing'}
+              </Text>
+            </View>
+
+            {/* 5. Primary Trade */}
+            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !tradeVal && styles.missingRowHighlight]}>
+              <View style={styles.specLabelWrap}>
+                {tradeVal ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={[styles.cleanSpecLabel, !tradeVal && styles.missingLabelText]}>Primary Trade</Text>
+              </View>
+              <Text style={[styles.cleanSpecValue, !tradeVal && styles.missingValueText]}>
+                {tradeVal || '⚠️ Missing'}
+              </Text>
+            </View>
+
+            {/* 6. Preferred Shift */}
+            <View style={[styles.cleanSpecRow, !shiftVal && styles.missingRowHighlight]}>
+              <View style={styles.specLabelWrap}>
+                {shiftVal ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={[styles.cleanSpecLabel, !shiftVal && styles.missingLabelText]}>Preferred Shift</Text>
+              </View>
+              <Text style={[styles.cleanSpecValue, !shiftVal && styles.missingValueText]}>
+                {shiftVal || '⚠️ Missing'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 3: QUALIFICATIONS & SKILLS */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.groupHeaderLabel}>QUALIFICATIONS & SKILLS</Text>
+
+            {/* Technical Skills */}
+            <View style={styles.cleanSpecRow}>
+              <View style={styles.specLabelWrap}>
+                {skillsList.length > 0 ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={styles.cleanSpecLabel}>Technical Skills ({skillsList.length})</Text>
+              </View>
+              <Text style={styles.cleanSpecValue}>
+                {skillsList.length > 0 ? skillsList.join(', ') : '⚠️ None Listed'}
+              </Text>
+            </View>
+
+            <View style={styles.innerSoftDivider} />
+
+            {/* Education History */}
+            <View style={styles.cleanSpecRow}>
+              <View style={styles.specLabelWrap}>
+                {educationList.length > 0 ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={styles.cleanSpecLabel}>Education Qualifications ({educationList.length})</Text>
+              </View>
+              <Text style={styles.cleanSpecValue}>
+                {educationList.length > 0 ? educationList.map((e: any) => e.degree || e.degree_name || e.institution || 'Certified').join(' • ') : '⚠️ Not Provided'}
+              </Text>
+            </View>
+
+            <View style={styles.innerSoftDivider} />
+
+            {/* Experience History */}
+            <View style={styles.cleanSpecRow}>
+              <View style={styles.specLabelWrap}>
+                {workExpList.length > 0 ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={styles.cleanSpecLabel}>Work Experience ({workExpList.length})</Text>
+              </View>
+              <Text style={styles.cleanSpecValue}>
+                {workExpList.length > 0 ? workExpList.map((w: any) => `${w.title || 'Role'} at ${w.company || 'Company'}`).join(' • ') : '⚠️ Fresh Applicant'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 4: RESUME DOCUMENT */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.groupHeaderLabel}>RESUME DOCUMENT</Text>
+            <View style={styles.cleanSpecRow}>
+              <View style={styles.specLabelWrap}>
+                {hasResume ? (
+                  <CheckCircle2 size={16} color="#16A34A" />
+                ) : (
+                  <AlertTriangle size={16} color="#E11D48" />
+                )}
+                <Text style={styles.cleanSpecLabel}>BioData / Resume PDF</Text>
+              </View>
+              <Text style={styles.cleanSpecValue} numberOfLines={1}>
+                {hasResume ? resumeFileName : '⚠️ Missing Resume File'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 5: APPLICATION FORM INPUTS */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.groupHeaderLabel}>APPLICATION INPUTS</Text>
+
+            <View style={styles.inputGroupField}>
+              <Text style={styles.inputLabel}>Current Monthly Salary (₹) (Optional):</Text>
+              <TextInput
+                style={styles.salaryInput}
+                keyboardType="number-pad"
+                placeholder="e.g. 20000"
+                placeholderTextColor="#94A3B8"
+                value={currentSalary}
+                onChangeText={setCurrentSalary}
+              />
+            </View>
+
+            <View style={styles.inputGroupField}>
+              <Text style={styles.inputLabel}>Expected Monthly Salary (₹) (Optional):</Text>
+              <TextInput
+                style={styles.salaryInput}
+                keyboardType="number-pad"
+                placeholder="e.g. 25000"
+                placeholderTextColor="#94A3B8"
+                value={expectedSalary}
+                onChangeText={setExpectedSalary}
+              />
+            </View>
+
+            <View style={styles.inputGroupField}>
+              <Text style={styles.inputLabel}>Note / Message for Employer (Optional):</Text>
+              <TextInput
+                style={styles.coverNoteInput}
+                multiline
+                numberOfLines={3}
+                placeholder="e.g. I have 2 years VMC setting experience and can join immediately..."
+                placeholderTextColor="#94A3B8"
+                value={coverNote}
+                onChangeText={setCoverNote}
+              />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -477,9 +469,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 110,
-    gap: 14,
   },
   errorBox: {
     padding: 40,
@@ -491,273 +483,251 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '700',
   },
-  incompleteAlertCard: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-    borderRadius: 8,
-    padding: 12,
-    gap: 10,
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
   },
-  incompleteAlertTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#B45309',
+  groupHeaderLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 1.0,
+    marginBottom: 8,
+    paddingLeft: 2,
   },
-  incompleteAlertDesc: {
-    fontSize: 11,
-    color: '#92400E',
-    marginTop: 2,
-  },
-  editProfileSmallBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    backgroundColor: '#D97706',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  editProfileSmallBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  targetJobSummaryCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    borderRadius: 8,
-    padding: 12,
-  },
-  applyingForLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  applyingForTitle: {
-    fontSize: 16,
+  targetJobTitle: {
+    fontSize: 17,
     fontWeight: '900',
     color: '#0F172A',
     marginTop: 2,
   },
-  applyingForCompany: {
-    fontSize: 12,
+  targetJobSub: {
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 2,
+    fontWeight: '600',
+    marginTop: 3,
   },
-  card3D: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
-    padding: 14,
-    gap: 12,
+  sectionDivider: {
+    height: 1.5,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 14,
+  },
+  cleanRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  innerSoftDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 10,
+    marginBottom: 4,
   },
   sectionHeaderTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#0F172A',
   },
   sectionHeaderBadge: {
     fontSize: 10.5,
-    fontWeight: '700',
-    color: '#64748B',
+    fontWeight: '800',
+    color: '#2563EB',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 0,
     marginLeft: 'auto',
   },
-  specGrid: {
+  cleanSpecRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+  },
+  missingRowHighlight: {
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 6,
+  },
+  missingLabelText: {
+    color: '#E11D48',
+    fontWeight: '800',
+  },
+  missingValueText: {
+    color: '#E11D48',
+    fontWeight: '800',
+  },
+  specLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  specBox: {
-    width: '48.5%',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 8,
+  cleanSpecLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
   },
-  specBoxMissing: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
+  cleanSpecValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'right',
   },
   specBoxLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-  },
-  specBoxLabel: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#64748B',
-  },
-  specBoxValue: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 3,
+    gap: 6,
+    marginBottom: 6,
   },
   specSectionTitle: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: '#475569',
-  },
-  skillsChipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 4,
-  },
-  specSkillChip: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  specSkillChipText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#1E40AF',
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 0.6,
   },
-  missingBoxPill: {
-    backgroundColor: '#FFF1F2',
-    borderWidth: 1,
-    borderColor: '#FECDD3',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
+  skillsTextFormatted: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
     marginTop: 4,
+    paddingLeft: 2,
   },
   missingErrorText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#E11D48',
     fontWeight: '700',
+    marginTop: 2,
   },
-  expEntryItem: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderLeftWidth: 3,
-    borderLeftColor: '#0284C7',
-    padding: 6,
-    borderRadius: 4,
+  cleanListEntry: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   expEntryTitle: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
   expEntrySubtitle: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 1,
-  },
-  eduEntryItem: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderLeftWidth: 3,
-    borderLeftColor: '#16A34A',
-    padding: 6,
-    borderRadius: 4,
+    marginTop: 2,
   },
   eduEntryTitle: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
   eduEntrySubtitle: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
   },
-  resumeInfoBox: {
+  resumeRowFlat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    padding: 12,
-    borderRadius: 8,
-  },
-  resumeInfoBoxMissing: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
+    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   resumeInfoTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: '#0F172A',
   },
   resumeInfoDesc: {
-    fontSize: 11,
-    color: '#3B82F6',
-    marginTop: 1,
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
   },
   manageResumeBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 0,
   },
   manageResumeBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: '#FFFFFF',
   },
-  inputCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 12,
+  inputGroupField: {
+    marginBottom: 12,
     gap: 6,
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   salaryInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 13.5,
+    fontSize: 14,
     color: '#0F172A',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   coverNoteInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     padding: 12,
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#0F172A',
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  incompleteAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  incompleteAlertLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  incompleteAlertTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#B45309',
+    flex: 1,
+  },
+  editProfileSmallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#D97706',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 0,
+  },
+  editProfileSmallBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   fixedBottomBar: {
     position: 'absolute',
@@ -771,9 +741,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 4,
   },
   confirmSubmitBtn: {
     flexDirection: 'row',
@@ -781,12 +751,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#2563EB',
-    paddingVertical: 14,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 0,
   },
   confirmSubmitBtnText: {
     color: '#FFFFFF',
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '900',
   },
 });

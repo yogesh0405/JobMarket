@@ -259,9 +259,64 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     return (
       <View style={styles.container}>
         <Header title="Job Details" onBack={() => navigation.goBack()} />
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8, marginBottom: 16 }} />
-          <SkeletonLoader width="100%" height={240} style={{ borderRadius: 8 }} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.singleMasterCard}>
+            {/* Header Banner Skeleton */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <SkeletonLoader width={46} height={46} style={{ borderRadius: 0 }} />
+              <View style={{ flex: 1, gap: 8 }}>
+                <SkeletonLoader width="70%" height={18} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width="45%" height={13} style={{ borderRadius: 0 }} />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Quick Highlights Skeleton */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              <SkeletonLoader width={100} height={14} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width={85} height={14} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width={90} height={14} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width={105} height={14} style={{ borderRadius: 0 }} />
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Salary Section Skeleton */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <SkeletonLoader width={140} height={14} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width={150} height={16} style={{ borderRadius: 0 }} />
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* Technical Skills Skeleton */}
+            <SkeletonLoader width={180} height={16} style={{ borderRadius: 0 }} />
+            <View style={{ gap: 8, marginTop: 4 }}>
+              <SkeletonLoader width="90%" height={13} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="75%" height={13} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="80%" height={13} style={{ borderRadius: 0 }} />
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* Overview Skeleton */}
+            <SkeletonLoader width={160} height={16} style={{ borderRadius: 0 }} />
+            <View style={{ gap: 6, marginTop: 4 }}>
+              <SkeletonLoader width="98%" height={13} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="95%" height={13} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="60%" height={13} style={{ borderRadius: 0 }} />
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* Responsibilities Skeleton */}
+            <SkeletonLoader width={170} height={16} style={{ borderRadius: 0 }} />
+            <View style={{ gap: 8, marginTop: 4 }}>
+              <SkeletonLoader width="88%" height={13} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="82%" height={13} style={{ borderRadius: 0 }} />
+            </View>
+          </View>
         </ScrollView>
       </View>
     );
@@ -285,8 +340,9 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       <Header title="Job Details" onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Main Job Banner Card */}
-        <View style={styles.card3D}>
+        {/* Single Master Card Container */}
+        <View style={styles.singleMasterCard}>
+          {/* SECTION 1: Banner & Header */}
           <View style={styles.bannerTopRow}>
             {/* Left Company Logo */}
             <CompanyLogoAvatar
@@ -305,7 +361,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               ) : null}
             </View>
 
-            {/* Right Top Actions (Share + Save) Perfectly Aligned */}
+            {/* Right Top Actions (Share + Save) */}
             <View style={styles.topRightActionsRow}>
               <TouchableOpacity
                 style={styles.shareBtnTop}
@@ -363,108 +419,114 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
           <View style={styles.divider} />
 
-          {/* Salary Section (Clean row layout without card-in-card) */}
+          {/* Salary Section */}
           <View style={styles.salaryRowSection}>
-            <Text style={styles.salaryTitle}>Offered Salary Package</Text>
+            <Text style={styles.salaryTitle}>Offered Salary Package:</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <IndianRupee size={16} color="#15803D" />
+              <IndianRupee size={14} color="#15803D" />
               <Text style={styles.salaryValue}>
                 ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000} / year
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Required Skills Section */}
-        {Array.isArray(job.skills) && job.skills.length > 0 ? (
-          <View style={styles.card3D}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <Sparkles size={16} color="#2563EB" />
-              <Text style={styles.sectionHeaderTitle}>Key Technical Skills & Trade</Text>
-            </View>
-            <View style={styles.skillsGrid}>
-              {job.skills.map((skill, idx) => (
-                <View key={idx} style={styles.skillChip}>
-                  <Text style={styles.skillChipText}>{skill}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
+          {/* SECTION 2: Technical Skills */}
+          {Array.isArray(job.skills) && job.skills.length > 0 ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Sparkles size={16} color="#2563EB" />
+                <Text style={styles.sectionHeaderTitle}>Key Technical Skills & Trade</Text>
+              </View>
+              <View style={styles.bulletList}>
+                {job.skills.map((skill, idx) => (
+                  <View key={idx} style={styles.bulletItem}>
+                    <CheckCircle2 size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <Text style={styles.bulletText}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
 
-        {/* Job Description Card */}
-        <View style={styles.card3D}>
+          {/* SECTION 3: Job Overview & Description */}
+          <View style={styles.sectionDivider} />
           <Text style={styles.sectionHeaderTitle}>Job Overview & Description</Text>
           <Text style={styles.bodyText}>{job.description || 'No detailed description provided.'}</Text>
+
+          {/* SECTION 4: Key Responsibilities */}
+          {Array.isArray(job.responsibilities) && job.responsibilities.length > 0 ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <Text style={styles.sectionHeaderTitle}>Key Responsibilities</Text>
+              <View style={styles.bulletList}>
+                {job.responsibilities.map((resp, idx) => (
+                  <View key={idx} style={styles.bulletItem}>
+                    <CheckCircle2 size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <Text style={styles.bulletText}>{resp}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {/* SECTION 5: Requirements & ITI Certification */}
+          {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <Text style={styles.sectionHeaderTitle}>Requirements & ITI Certification</Text>
+              <View style={styles.bulletList}>
+                {job.requirements.map((req, idx) => (
+                  <View key={idx} style={styles.bulletItem}>
+                    <Award size={15} color="#D97706" style={{ marginTop: 2 }} />
+                    <Text style={styles.bulletText}>{req}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {/* SECTION 6: Walk-in Interview Venue & Address */}
+          {(job.interview_address || (job as any).interviewAddress) ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <Calendar size={16} color="#059669" />
+                <Text style={styles.sectionHeaderTitle}>Interview Venue & Address</Text>
+              </View>
+              <Text style={styles.bodyText}>{job.interview_address || (job as any).interviewAddress}</Text>
+            </>
+          ) : null}
+
+          {/* SECTION 7: Perks & Amenities */}
+          {uniquePerks.length > 0 ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <Text style={styles.sectionHeaderTitle}>Perks & Facilities Offered</Text>
+              <View style={styles.bulletList}>
+                {uniquePerks.map((perk, idx) => (
+                  <View key={idx} style={styles.bulletItem}>
+                    <CheckCircle2 size={15} color="#16A34A" style={{ marginTop: 2 }} />
+                    <Text style={styles.bulletText}>{perk}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {/* SECTION 8: Interactive Google Map Preview */}
+          {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <Text style={styles.sectionHeaderTitle}>Factory Location Map</Text>
+              <JobLocationMapPreview
+                latitude={job.latitude}
+                longitude={job.longitude}
+                locationName={job.location}
+              />
+            </>
+          ) : null}
         </View>
-
-        {/* Key Responsibilities */}
-        {Array.isArray(job.responsibilities) && job.responsibilities.length > 0 ? (
-          <View style={styles.card3D}>
-            <Text style={styles.sectionHeaderTitle}>Key Responsibilities</Text>
-            <View style={styles.bulletList}>
-              {job.responsibilities.map((resp, idx) => (
-                <View key={idx} style={styles.bulletItem}>
-                  <CheckCircle2 size={15} color="#2563EB" style={{ marginTop: 2 }} />
-                  <Text style={styles.bulletText}>{resp}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {/* Requirements & Certifications */}
-        {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
-          <View style={styles.card3D}>
-            <Text style={styles.sectionHeaderTitle}>Requirements & ITI Certification</Text>
-            <View style={styles.bulletList}>
-              {job.requirements.map((req, idx) => (
-                <View key={idx} style={styles.bulletItem}>
-                  <Award size={15} color="#D97706" style={{ marginTop: 2 }} />
-                  <Text style={styles.bulletText}>{req}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {/* Walk-in Interview Venue & Address */}
-        {(job.interview_address || (job as any).interviewAddress) ? (
-          <View style={styles.card3D}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <Calendar size={16} color="#059669" />
-              <Text style={styles.sectionHeaderTitle}>Interview Venue & Address</Text>
-            </View>
-            <Text style={styles.bodyText}>{job.interview_address || (job as any).interviewAddress}</Text>
-          </View>
-        ) : null}
-
-        {/* Perks & Amenities */}
-        {uniquePerks.length > 0 ? (
-          <View style={styles.card3D}>
-            <Text style={styles.sectionHeaderTitle}>Perks & Facilities Offered</Text>
-            <View style={styles.perksGrid}>
-              {uniquePerks.map((perk, idx) => (
-                <View key={idx} style={styles.perkChip}>
-                  <CheckCircle2 size={13} color="#16A34A" />
-                  <Text style={styles.perkChipText}>{perk}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {/* Interactive Google Map Preview */}
-        {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
-          <View style={styles.card3D}>
-            <Text style={styles.sectionHeaderTitle}>Factory Location Map</Text>
-            <JobLocationMapPreview
-              latitude={job.latitude}
-              longitude={job.longitude}
-              locationName={job.location}
-            />
-          </View>
-        ) : null}
       </ScrollView>
 
       {/* Bottom Sticky Action Bar */}
@@ -506,18 +568,23 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     gap: 16,
   },
-  card3D: {
+  singleMasterCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 14,
+    padding: 16,
     gap: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.02,
     shadowRadius: 2,
     elevation: 1,
+  },
+  sectionDivider: {
+    height: 1.5,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 14,
   },
   bannerTopRow: {
     flexDirection: 'row',
@@ -601,12 +668,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 0,
+    marginRight: 10,
+    marginVertical: 2,
   },
   highlightText: {
     fontSize: 12,
@@ -616,17 +679,18 @@ const styles = StyleSheet.create({
   salaryRowSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 12,
     paddingTop: 4,
   },
   salaryTitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#64748B',
   },
   salaryValue: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 13.5,
+    fontWeight: '800',
     color: '#15803D',
   },
   sectionHeaderTitle: {

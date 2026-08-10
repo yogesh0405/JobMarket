@@ -18,6 +18,7 @@ import {
   Bookmark,
   Building2,
   Clock,
+  Users,
   SlidersHorizontal,
   LayoutGrid,
   List,
@@ -303,6 +304,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [searchQuery, setSearchQuery] = useState(route?.params?.keyword || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const searchInputRef = React.useRef<TextInput>(null);
 
   const matchedSuggestions = useMemo(() => {
     const trimmed = searchQuery.trim().toLowerCase();
@@ -589,6 +591,67 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     return true;
   });
 
+  const getMatchingCountForDraft = useCallback(
+    (draftFilters: FilterOptions) => {
+      return jobs.filter((job) => {
+        const titleMatch = job.title && job.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const companyMatch = job.company && job.company.toLowerCase().includes(searchQuery.toLowerCase());
+        const locationMatch = job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase());
+        const queryMatch = titleMatch || companyMatch || locationMatch;
+
+        const catMatch =
+          selectedCategory === 'All Jobs' ||
+          (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+          (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+          (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+          (selectedCategory === 'HR Jobs' && (job.title.includes('HR') || job.industry.includes('HR'))) ||
+          (selectedCategory === 'Marketing Jobs' && (job.title.includes('Marketing') || job.industry.includes('Marketing'))) ||
+          (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
+          (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
+
+        if (!queryMatch || !catMatch) return false;
+
+        // Filter Side Drawer options
+        if (draftFilters.industry !== 'All Industries') {
+          const indKey = draftFilters.industry.toLowerCase();
+          const jobInd = (job.industry || '').toLowerCase();
+          const jobTitle = (job.title || '').toLowerCase();
+          if (!jobInd.includes(indKey) && !jobTitle.includes(indKey)) return false;
+        }
+
+        if (draftFilters.midcZone !== 'All MIDC Zones') {
+          const zoneKey = draftFilters.midcZone.toLowerCase();
+          const jobLoc = (job.location || '').toLowerCase();
+          if (!jobLoc.includes(zoneKey)) return false;
+        }
+
+        if (draftFilters.jobType !== 'All Types') {
+          const typeKey = draftFilters.jobType.toLowerCase();
+          const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
+          if (!jType.includes(typeKey)) return false;
+        }
+
+        if (draftFilters.workMode !== 'All Modes') {
+          const modeKey = draftFilters.workMode.toLowerCase();
+          const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
+          if (!jMode.includes(modeKey)) return false;
+        }
+
+        if (draftFilters.minExperience !== 'All Experience') {
+          if (draftFilters.minExperience.includes('Fresher') && (job as any).min_experience && (job as any).min_experience > 0) return false;
+        }
+
+        if (draftFilters.busFacility && !(job.bus_facility || (job as any).busFacility)) return false;
+        if (draftFilters.canteen && !(job.canteen || (job as any).canteen)) return false;
+        if (draftFilters.accommodation && !(job.accommodation || (job as any).accommodation)) return false;
+        if (draftFilters.overtime && !(job.overtime || (job as any).overtime)) return false;
+
+        return true;
+      }).length;
+    },
+    [jobs, searchQuery, selectedCategory]
+  );
+
   const handleScroll = useCallback(
     (event: any) => {
       const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -663,49 +726,53 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         ].filter(Boolean).length;
 
         return (
-          <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16 }}>
-            <View style={styles.searchFilterRow}>
-              <View style={styles.inputSearchBox}>
-                <Search size={18} color="#2563EB" />
-                <TextInput
-                  style={styles.inputSearchText}
-                  placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-                  placeholderTextColor="#94A3B8"
-                  value={searchQuery}
-                  onChangeText={(txt) => {
-                    setSearchQuery(txt);
-                    setShowSuggestions(txt.trim().length > 0);
+          <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16, marginBottom: 12 }}>
+            <View style={[styles.inputSearchBox, isInputFocused && styles.inputSearchBoxActive]}>
+              <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.inputSearchText}
+                placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={(txt) => {
+                  setSearchQuery(txt);
+                  setShowSuggestions(txt.trim().length > 0);
+                }}
+                onPressIn={() => setIsInputFocused(true)}
+                onFocus={() => {
+                  setIsInputFocused(true);
+                  setShowSuggestions(searchQuery.trim().length > 0);
+                }}
+                onBlur={() => {
+                  setIsInputFocused(false);
+                }}
+              />
+              {searchQuery.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchQuery('');
+                    setShowSuggestions(false);
                   }}
-                  onFocus={() => {
-                    setIsInputFocused(true);
-                    setShowSuggestions(searchQuery.trim().length > 0);
-                  }}
-                  onBlur={() => {
-                    setIsInputFocused(false);
-                  }}
-                />
-                {searchQuery.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSearchQuery('');
-                      setShowSuggestions(false);
-                    }}
-                    style={styles.searchClearBtn}
-                  >
-                    <X size={15} color="#64748B" />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
+                  style={styles.searchClearBtn}
+                >
+                  <X size={15} color="#64748B" />
+                </TouchableOpacity>
+              ) : null}
 
+              {/* Vertical Soft Divider inside Search Bar */}
+              <View style={styles.inlineFilterDivider} />
+
+              {/* Integrated Inline Filter Action Button */}
               <TouchableOpacity
-                style={[styles.filtersBtn, activeFilterCount > 0 && styles.filtersBtnActive]}
+                style={[styles.inlineFilterBtn, activeFilterCount > 0 && styles.inlineFilterBtnActive]}
                 onPress={() => setFilterDrawerOpen(true)}
                 activeOpacity={0.8}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <SlidersHorizontal size={16} color={activeFilterCount > 0 ? '#2563EB' : '#0F172A'} />
-                <Text style={[styles.filtersBtnText, activeFilterCount > 0 && { color: '#2563EB' }]}>Filters</Text>
+                <SlidersHorizontal size={18} color={activeFilterCount > 0 ? '#2563EB' : '#475569'} />
                 {activeFilterCount > 0 && (
-                  <View style={styles.filterBadgePill}>
+                  <View style={styles.filterBadgePillInline}>
                     <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
                   </View>
                 )}
@@ -988,19 +1055,22 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                       </View>
                     </View>
 
-                    {/* Grid Card Middle Chips Section */}
+                    {/* Grid Card Middle Simple Text Row with Icons (No Separators) */}
                     <View style={styles.naukriCardMiddleSection}>
-                      <View style={styles.naukriBadgeJobType}>
-                        <Text style={styles.naukriBadgeJobTypeText}>{job.job_type || (job as any).jobType || 'Full-time'}</Text>
+                      <View style={styles.naukriSpecItem}>
+                        <Clock size={13} color="#64748B" />
+                        <Text style={styles.naukriSimpleText}>{job.job_type || (job as any).jobType || 'Full-time'}</Text>
                       </View>
 
-                      <View style={styles.naukriBadgeWorkMode}>
-                        <Text style={styles.naukriBadgeWorkModeText}>{job.work_mode || (job as any).workMode || 'On-site'}</Text>
+                      <View style={styles.naukriSpecItem}>
+                        <Building2 size={13} color="#64748B" />
+                        <Text style={styles.naukriSimpleText}>{job.work_mode || (job as any).workMode || 'On-site'}</Text>
                       </View>
 
                       {(job.openings || (job as any).vacancies) ? (
-                        <View style={styles.naukriBadgeShift}>
-                          <Text style={styles.naukriBadgeShiftText}>
+                        <View style={styles.naukriSpecItem}>
+                          <Users size={13} color="#64748B" />
+                          <Text style={styles.naukriSimpleText}>
                             {job.openings || (job as any).vacancies} Vacancies
                           </Text>
                         </View>
@@ -1088,6 +1158,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           })
         }
         totalMatchingJobsCount={filteredJobs.length}
+        onGetMatchingCount={getMatchingCountForDraft}
       />
     </View>
   );
@@ -1250,7 +1321,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 0,
+    borderRadius: 8,
     padding: 10,
     gap: 8,
     shadowColor: '#0F172A',
@@ -1269,7 +1340,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 0,
+    borderRadius: 8,
   },
   categoryPillActive: {
     backgroundColor: '#2563EB',
@@ -1287,7 +1358,7 @@ const styles = StyleSheet.create({
   catArrowRightBtn: {
     width: 32,
     height: 32,
-    borderRadius: 0,
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -1298,15 +1369,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginBottom: 12,
   },
   inputSearchBox: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
     gap: 8,
@@ -1316,6 +1388,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
+  inputSearchBoxActive: {
+    borderColor: '#2563EB',
+    borderWidth: 2,
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   searchClearBtn: {
     width: 24,
     height: 24,
@@ -1323,6 +1403,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inlineFilterDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 2,
+  },
+  inlineFilterBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  inlineFilterBtnActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  filterBadgePillInline: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: '#2563EB',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  filterBadgePillText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
+    fontWeight: '900',
   },
   suggestionsContainer: {
     position: 'absolute',
@@ -1396,45 +1510,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlignVertical: 'center',
     paddingVertical: 0,
-  },
-  filtersBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 14,
-    height: 46,
-    borderRadius: 0,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  filtersBtnActive: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-  filtersBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  filterBadgePill: {
-    backgroundColor: '#2563EB',
-    borderRadius: 0,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  filterBadgePillText: {
-    color: '#FFFFFF',
-    fontSize: 10.5,
-    fontWeight: '900',
   },
   compactListCard: {
     backgroundColor: '#FFFFFF',
@@ -1557,71 +1632,19 @@ const styles = StyleSheet.create({
   },
   naukriCardMiddleSection: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingTop: 6,
+    paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#CBD5E1',
   },
-  naukriBadgeWorkMode: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  naukriBadgeWorkModeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
-  naukriBadgeJobType: {
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  naukriBadgeJobTypeText: {
-    fontSize: 11,
+  naukriSimpleText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#475569',
-  },
-  naukriBadgeEdu: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  naukriBadgeEduText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#166534',
-  },
-  naukriBadgeShift: {
-    backgroundColor: '#F8F4FF',
-    borderWidth: 1,
-    borderColor: '#DDD6FE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  naukriBadgeShiftText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6D28D9',
   },
   naukriCardBottomSection: {
     paddingHorizontal: 14,

@@ -101,57 +101,6 @@ const safeValue = (val?: any): string => {
   return String(val);
 };
 
-const SEEDED_APPLICANTS: JobApplication[] = [
-  {
-    id: 'app-wireman-1',
-    user_id: 'u-anil-1',
-    job_id: 'j-wireman',
-    status: 'applied' as ApplicationStatus,
-    applied_at: new Date().toISOString(),
-    user: {
-      id: 'u-anil-1',
-      name: 'Anil Gavhane',
-      email: 'anil.gavhane@jobmarket.local',
-      phone: '+91 98230 11223',
-      role: 'candidate',
-      headline: 'Senior Control Panel Wireman & Electrical Panel Specialist',
-      location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
-      experience: '6+ Years (2018 - Present)',
-      skills: ['Control Panel Wiring', 'PLC Troubleshooting', '3-Phase Circuits', 'Schematic Reading'],
-      profilePictureUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      aadhaar_verified: true,
-      education: 'Diploma in Electrical Engineering (Government Polytechnic)',
-      bio: 'Experienced control panel wireman specializing in industrial automation panels, PLC harness wiring, relay testing, and heavy electrical switchgear assembly.',
-      notice_period: 'Immediate',
-      preferred_shift: 'Day Shift',
-    },
-  },
-  {
-    id: 'app-wireman-2',
-    user_id: 'u-suresh-2',
-    job_id: 'j-wireman',
-    status: 'shortlisted' as ApplicationStatus,
-    applied_at: new Date(Date.now() - 86400000).toISOString(),
-    user: {
-      id: 'u-suresh-2',
-      name: 'Suresh Deshmukh',
-      email: 'suresh.deshmukh@jobmarket.local',
-      phone: '+91 98230 44556',
-      role: 'candidate',
-      headline: 'Control Panel Wireman & Industrial Switchgear Technician',
-      location: 'Railway Station MIDC, Chhatrapati Sambhajinagar',
-      experience: '4+ Years (2020 - Present)',
-      skills: ['Panel Wiring', 'Busbar Bending', 'Relay Testing', 'Electrical Panel Assembly'],
-      profilePictureUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      aadhaar_verified: true,
-      education: 'NCVT ITI Electrician & Wireman Trade Certificate',
-      bio: 'Certified ITI wireman with expertise in control panel wiring, VFD installation, cable lug crimping, and high-voltage panel safety inspection.',
-      notice_period: '7 Days',
-      preferred_shift: 'Rotational / Day Shift',
-    },
-  },
-];
-
 const APPLICANT_SEARCH_SUGGESTIONS = [
   'Search by Trade Type (e.g. VMC Operator, Fitter)...',
   'Search by Role (e.g. Quality Inspector, Turner)...',
@@ -225,7 +174,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const jobId = route?.params?.jobId;
   const jobTitle = route?.params?.jobTitle || 'Job Applicants';
 
-  const [applicants, setApplicants] = useState<JobApplication[]>(SEEDED_APPLICANTS);
+  const [applicants, setApplicants] = useState<JobApplication[]>([]);
   const [jobDetails, setJobDetails] = useState<Job | null>(null);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('ALL');
@@ -387,17 +336,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           const results = await Promise.all(appPromises);
           results.forEach((apps) => allApps.push(...apps));
 
-          if (allApps.length > 0) {
-            setApplicants(allApps);
-          } else {
-            setApplicants(SEEDED_APPLICANTS);
-          }
+          setApplicants(allApps);
           return;
         }
       }
-      setApplicants(SEEDED_APPLICANTS);
+      setApplicants([]);
     } catch (err: any) {
-      setApplicants(SEEDED_APPLICANTS);
+      setApplicants([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

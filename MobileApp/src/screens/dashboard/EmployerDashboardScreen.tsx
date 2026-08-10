@@ -39,6 +39,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { Header } from '../../components/common/Header';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 
 interface Props {
   navigation: any;
@@ -49,6 +50,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [realCandidates, setRealCandidates] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState({
     totalJobs: 0,
     activeJobs: 0,
@@ -67,15 +69,22 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const fetchDashboardData = useCallback(async () => {
     setError(null);
     try {
-      const [jobsRes, analyticsRes] = await Promise.all([
+      const [jobsRes, analyticsRes, candidatesRes] = await Promise.all([
         jobsApi.getMyJobs(),
         apiFetch('/api/v1/jobs/employer/analytics').catch(() => ({ success: false, data: null })),
+        apiFetch('/api/v1/jobs/workers/all').catch(() => apiFetch('/api/v1/users/candidates')).catch(() => ({ success: false, data: [] })),
       ]);
 
       if (jobsRes.success && Array.isArray(jobsRes.data)) {
         setJobs(jobsRes.data);
       } else {
         setJobs([]);
+      }
+
+      if (candidatesRes && candidatesRes.success && Array.isArray(candidatesRes.data)) {
+        setRealCandidates(candidatesRes.data);
+      } else {
+        setRealCandidates([]);
       }
 
       if (analyticsRes.success && analyticsRes.data) {
@@ -166,8 +175,20 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* 4 Metric Cards Grid Skeleton */}
-          <View style={styles.metricsGrid}>
-            {[1, 2, 3, 4].map((k) => (
+          <View style={styles.metricsRow}>
+            {[1, 2].map((k) => (
+              <View key={k} style={styles.metricCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Skeleton width="55%" height={12} style={{ borderRadius: 4 }} />
+                  <Skeleton width={24} height={24} style={{ borderRadius: 6 }} />
+                </View>
+                <Skeleton width="40%" height={24} style={{ borderRadius: 4 }} />
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.metricsRow}>
+            {[3, 4].map((k) => (
               <View key={k} style={styles.metricCard}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <Skeleton width="55%" height={12} style={{ borderRadius: 4 }} />
@@ -231,11 +252,11 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
-        {/* Minimal Hero Header Card */}
+        {/* iPhone Clean Hero Card with Quick Post Job Action */}
         <View style={styles.minimalHeroCard}>
           <View style={styles.heroRow}>
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}
               activeOpacity={0.7}
               onPress={() => navigation.navigate('CompanyProfile')}
             >
@@ -257,19 +278,30 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   </View>
                 </View>
                 <Text style={styles.companySubtitleText}>
-                  {totalJobs} Jobs Posted • {totalApplicants} Applicants
+                  {totalJobs} Active Jobs • {totalApplicants} Candidates
                 </Text>
               </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.compactPostBtn}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('PostJob')}
+            >
+              <PlusCircle size={14} color="#FFFFFF" />
+              <Text style={styles.compactPostBtnText}>Post Job</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* 4 Metric Cards Grid - Minimal & Perfectly Aligned */}
-        <View style={styles.metricsGrid}>
+        {/* 4 Metric Cards Grid - Structured 2-Row Layout with Perfect iPhone Alignment */}
+        <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Jobs</Text>
-              <Briefcase size={16} color="#2563EB" />
+              <View style={[styles.miniIconSquircle, { backgroundColor: '#EFF6FF' }]}>
+                <Briefcase size={14} color="#2563EB" />
+              </View>
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : totalJobs}</Text>
           </View>
@@ -277,15 +309,21 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Approved Active</Text>
-              <CheckCircle2 size={16} color="#16A34A" />
+              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0FDF4' }]}>
+                <CheckCircle2 size={14} color="#16A34A" />
+              </View>
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : activeJobs}</Text>
           </View>
+        </View>
 
+        <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Pending Review</Text>
-              <Clock size={16} color="#D97706" />
+              <View style={[styles.miniIconSquircle, { backgroundColor: '#FFFBEB' }]}>
+                <Clock size={14} color="#D97706" />
+              </View>
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : pendingJobs}</Text>
           </View>
@@ -293,7 +331,9 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Candidates</Text>
-              <Users size={16} color="#0284C7" />
+              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0F9FF' }]}>
+                <Users size={14} color="#0284C7" />
+              </View>
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : totalApplicants}</Text>
           </View>
@@ -364,7 +404,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           );
         })()}
 
-        {/* Dynamic MIDC Region & Trade Breakdown */}
+        {/* Dynamic Regional & Trade Breakdown */}
         <View style={styles.analyticsTwoColRow}>
           <View style={styles.subAnalyticsCard}>
             <View style={styles.subHeaderRow}>
@@ -373,7 +413,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             {dynamicLocations.map((item, idx) => (
-              <View key={idx} style={{ marginBottom: 4 }}>
+              <View key={idx} style={{ marginBottom: 6 }}>
                 <View style={styles.miniMetricRow}>
                   <Text style={styles.miniMetricLabel} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.miniMetricVal}>{item.pct}%</Text>
@@ -400,7 +440,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             {dynamicTrades.map((item, idx) => (
-              <View key={idx} style={{ marginBottom: 4 }}>
+              <View key={idx} style={{ marginBottom: 6 }}>
                 <View style={styles.miniMetricRow}>
                   <Text style={styles.miniMetricLabel} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.miniMetricVal}>{item.pct}%</Text>
@@ -420,6 +460,86 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
             ))}
           </View>
         </View>
+
+        {/* Real Candidates from Database Section */}
+        <View style={{ height: 1, backgroundColor: '#94A3B8', marginTop: 16, marginBottom: 24 }} />
+
+        <View style={styles.recentSectionHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Users size={16} color="#2563EB" />
+            <Text style={styles.sectionTitleText}>REAL CANDIDATES IN DATABASE</Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('CandidatesTab')}>
+            <Text style={styles.viewAllText}>View All ({realCandidates.length}) →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <View style={styles.candidatesSingleCard}>
+            <Skeleton width="100%" height={60} style={{ borderRadius: 0 }} />
+          </View>
+        ) : realCandidates.length === 0 ? (
+          <View style={styles.emptyCandidatesCard}>
+            <Users size={28} color="#94A3B8" />
+            <Text style={styles.emptyCandidatesTitle}>No Registered Candidates Found</Text>
+            <Text style={styles.emptyCandidatesSubtitle}>
+              Real candidates registered in the database will be listed here.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.candidatesSingleCard}>
+            {realCandidates.slice(0, 4).map((c: any, index: number, arr: any[]) => {
+              const photoUri = c.profilePictureUrl || c.profile_picture_url || c.avatar_url || c.avatarUrl || c.avatar;
+              const candidateName = c.name || c.displayName || c.fullName || 'Registered Candidate';
+              const tradeText = c.headline || c.trade_specialization || c.trade || c.role || 'Skilled Industrial Worker';
+              const locationText = c.location || c.address || 'MIDC Industrial Zone';
+              const isLast = index === arr.length - 1;
+
+              return (
+                <TouchableOpacity
+                  key={c.id || `candidate-${index}`}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.candidateRowItem,
+                    isLast && { borderBottomWidth: 0 },
+                  ]}
+                  onPress={() => navigation.navigate('CandidateDetail', { candidate: c })}
+                >
+                  <CompanyLogoAvatar
+                    logoUrl={photoUri}
+                    companyName={candidateName}
+                    size={38}
+                    borderRadius={0}
+                  />
+                  <View style={{ flex: 1, paddingRight: 4 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={styles.candidateNameText} numberOfLines={1}>
+                        {candidateName}
+                      </Text>
+                      {c.aadhaar_verified ? (
+                        <View style={styles.verifiedPill}>
+                          <ShieldCheck size={10} color="#15803D" />
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={styles.candidateTradeText} numberOfLines={1}>
+                      {tradeText}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <MapPin size={11} color="#64748B" />
+                      <Text style={styles.candidateLocationText} numberOfLines={1}>
+                        {locationText}
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color="#94A3B8" />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={{ height: 1, backgroundColor: '#94A3B8', marginTop: 24, marginBottom: 24 }} />
 
         {/* Recent Jobs Section */}
         <View style={styles.recentSectionHeader}>
@@ -559,28 +679,29 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 130,
   },
-  /* Minimal Hero Card */
+  /* iPhone Clean Hero Card */
   minimalHeroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
   },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 10,
   },
   companyLogoBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 6,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -600,7 +721,7 @@ const styles = StyleSheet.create({
   },
   companyNameText: {
     ...TYPOGRAPHY.h2,
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -611,7 +732,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 6,
     paddingVertical: 1.5,
-    borderRadius: 6,
+    borderRadius: 4,
   },
   verifiedPillText: {
     fontSize: 9.5,
@@ -619,110 +740,88 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
   companySubtitleText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
+    fontWeight: '500',
   },
   compactPostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   compactPostBtnText: {
-    color: COLORS.textWhite,
-    fontSize: 11.5,
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '700',
   },
 
-  /* Metrics Grid */
-  metricsGrid: {
+  /* Metrics Grid (Structured 2-Row Layout) */
+  metricsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 10,
   },
   metricCard: {
-    width: '48.5%',
-    minHeight: 76,
+    flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     justifyContent: 'space-between',
+    minHeight: 76,
   },
   metricHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   metricLabelText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#64748B',
   },
   miniIconSquircle: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   metricValueText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
-  },
-
-  /* Quick Actions Row */
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 8,
-  },
-  quickActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  quickActionText: {
-    fontSize: 11.5,
-    fontWeight: '700',
   },
 
   /* Minimal Analytics Card */
   analyticsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingBottom: 4,
+    marginBottom: 10,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   cardSectionTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -731,36 +830,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   liveMetricsText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '700',
     color: '#15803D',
   },
   funnelItem: {
-    marginBottom: 6,
+    marginBottom: 8,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
   },
   funnelLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   funnelTitle: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#334155',
   },
   funnelVal: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   progressBg: {
-    height: 5,
+    height: 6,
     backgroundColor: '#F1F5F9',
     borderRadius: 3,
     overflow: 'hidden',
@@ -773,29 +875,29 @@ const styles = StyleSheet.create({
   /* 2-Column Analytics Sub Cards */
   analyticsTwoColRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 10,
   },
   subAnalyticsCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   subHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 6,
-    paddingBottom: 3,
+    gap: 5,
+    marginBottom: 8,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   subHeaderTitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -804,27 +906,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 4,
-    marginBottom: 2,
+    marginBottom: 3,
   },
   miniMetricLabel: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#475569',
   },
   miniMetricVal: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#0F172A',
   },
   miniBarBg: {
-    height: 4,
+    height: 5,
     backgroundColor: '#F1F5F9',
-    borderRadius: 2,
+    borderRadius: 2.5,
     overflow: 'hidden',
   },
   miniBarFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 2.5,
   },
 
   /* Recent Jobs Header */
@@ -832,42 +934,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
-    marginTop: 2,
+    marginBottom: 8,
+    marginTop: 4,
   },
   sectionTitleText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#94A3B8',
     letterSpacing: 0.6,
   },
   viewAllText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.primary,
   },
   recentJobCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
   },
   jobCardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   headerTextCol: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
   },
   titleBadgeRow: {
     flexDirection: 'row',
@@ -876,45 +973,45 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   jobTitleText: {
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
     flex: 1,
     letterSpacing: -0.2,
   },
   recentCompanyNameText: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#475569',
     fontWeight: '500',
-    marginTop: 1,
+    marginTop: 2,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 6,
   },
   tradeBadge: {
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
   },
   tradeBadgeText: {
     color: '#2563EB',
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
   },
   locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     flex: 1,
   },
   locationText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#64748B',
     fontWeight: '500',
   },
@@ -922,10 +1019,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 4,
   },
   salaryTag: {
@@ -934,13 +1031,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   salaryLabel: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
   },
   salaryText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '800',
     color: COLORS.primary,
   },
@@ -951,12 +1048,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   openingsText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
     color: '#334155',
   },
@@ -964,34 +1061,95 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 6,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
   applicantBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   applicantBtnText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.primary,
   },
   adjustVacanciesBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: '#F0F9FF',
     borderWidth: 1,
     borderColor: '#BAE6FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 4,
   },
   adjustVacanciesBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 11.5,
+    fontWeight: '700',
     color: '#0284C7',
+  },
+  /* Real Database Candidates Single Card Container */
+  candidatesSingleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 10,
+    marginBottom: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  candidateRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 10,
+  },
+  candidateNameText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  candidateTradeText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#2563EB',
+    marginTop: 1,
+  },
+  candidateLocationText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  emptyCandidatesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyCandidatesTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 8,
+  },
+  emptyCandidatesSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

@@ -48,6 +48,7 @@ import {
   Search,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { CandidateDashboardScreen } from './CandidateDashboardScreen';
 import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
 import { jobsApi } from '../../api/jobsApi';
@@ -247,17 +248,39 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         base64: true,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]?.base64) {
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
         setUploadingPhoto(true);
-        const base64Img = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        const res = await candidateApi.uploadProfilePicture(base64Img);
-        setUploadingPhoto(false);
+        const imageUri = asset.uri || (asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : '');
+        const base64Img = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
 
-        if (res.success) {
-          await refreshUser();
-          showToast('Profile photo updated successfully', 'success');
-        } else {
-          showToast(res.message || 'Failed to update photo', 'error');
+        // 1. Immediately update global user state & local storage so photo changes instantly everywhere!
+        await updateUserProfile({
+          profile_picture_url: imageUri,
+          profilePictureUrl: imageUri,
+          avatar_url: imageUri,
+          avatarUrl: imageUri,
+          avatar: imageUri,
+        } as any);
+
+        showToast('Profile photo updated successfully', 'success');
+
+        // 2. Sync to server in background
+        try {
+          const res = await candidateApi.uploadProfilePicture(base64Img);
+          if (res?.success && res?.data?.url) {
+            await updateUserProfile({
+              profile_picture_url: res.data.url,
+              profilePictureUrl: res.data.url,
+              avatar_url: res.data.url,
+              avatarUrl: res.data.url,
+              avatar: res.data.url,
+            } as any);
+          }
+        } catch (err: any) {
+          console.warn('Background avatar server upload notice:', err);
+        } finally {
+          setUploadingPhoto(false);
         }
       }
     } catch (e: any) {
@@ -285,10 +308,10 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
       const payload: any = {
         name,
-        headline,
-        location,
+        headline: headline.trim() || finalTrade,
+        location: location.trim() || 'Maharashtra MIDC Zone',
         phone,
-        bio,
+        bio: bio.trim(),
         tradeSpecialization: finalTrade,
         preferredShift,
         requiresBus,
@@ -300,30 +323,34 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
       await updateUserProfile(payload);
       setSaving(false);
-      await refreshUser();
-      showToast('Candidate Profile Updated', 'success');
+      showToast('Candidate Profile Updated & Saved', 'success');
     } catch (e: any) {
       setSaving(false);
       showToast(e.message || 'Failed to save profile', 'error');
     }
   };
 
-  const handleAddSkill = () => {
+  const handleAddSkill = async () => {
     const trimmed = skillInput.trim();
     if (!trimmed) return;
     if (skills.includes(trimmed)) {
       showToast('Skill already added', 'warning');
       return;
     }
-    setSkills([...skills, trimmed]);
+    const updatedSkills = [...skills, trimmed];
+    setSkills(updatedSkills);
     setSkillInput('');
+    await updateUserProfile({ skills: updatedSkills });
+    showToast('Skill added & saved', 'success');
   };
 
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setSkills(skills.filter((s) => s !== skillToRemove));
+  const handleRemoveSkill = async (skillToRemove: string) => {
+    const updatedSkills = skills.filter((s) => s !== skillToRemove);
+    setSkills(updatedSkills);
+    await updateUserProfile({ skills: updatedSkills });
   };
 
-  const handleAddExperienceSubmit = () => {
+  const handleAddExperienceSubmit = async () => {
     if (!expTitle.trim() || !expCompany.trim() || !expDuration.trim()) {
       showToast('Please fill in required experience fields', 'warning');
       return;
@@ -334,19 +361,24 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
       duration: expDuration.trim(),
       description: expDesc.trim(),
     };
-    setExperience([...experience, newItem]);
+    const updatedExp = [...experience, newItem];
+    setExperience(updatedExp);
     setExpTitle('');
     setExpCompany('');
     setExpDuration('');
     setExpDesc('');
     setExpModalOpen(false);
+    await updateUserProfile({ experience: updatedExp as any });
+    showToast('Experience added & saved', 'success');
   };
 
-  const handleRemoveExperience = (idx: number) => {
-    setExperience(experience.filter((_, i) => i !== idx));
+  const handleRemoveExperience = async (idx: number) => {
+    const updatedExp = experience.filter((_, i) => i !== idx);
+    setExperience(updatedExp);
+    await updateUserProfile({ experience: updatedExp as any });
   };
 
-  const handleAddEducationSubmit = () => {
+  const handleAddEducationSubmit = async () => {
     if (!eduDegree.trim() || !eduInstitution.trim() || !eduYear.trim()) {
       showToast('Please fill in required education fields', 'warning');
       return;
@@ -356,15 +388,20 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
       institution: eduInstitution.trim(),
       year: eduYear.trim(),
     };
-    setEducation([...education, newItem]);
+    const updatedEdu = [...education, newItem];
+    setEducation(updatedEdu);
     setEduDegree('');
     setEduInstitution('');
     setEduYear('');
     setEduModalOpen(false);
+    await updateUserProfile({ education: updatedEdu as any });
+    showToast('Education added & saved', 'success');
   };
 
-  const handleRemoveEducation = (idx: number) => {
-    setEducation(education.filter((_, i) => i !== idx));
+  const handleRemoveEducation = async (idx: number) => {
+    const updatedEdu = education.filter((_, i) => i !== idx);
+    setEducation(updatedEdu);
+    await updateUserProfile({ education: updatedEdu as any });
   };
 
   const [loading, setLoading] = useState(true);
@@ -395,7 +432,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
   } else if (typeof rawResume === 'string') {
     try { parsedObj = JSON.parse(rawResume); } catch (_) {}
   }
-  const profilePhotoUrl = user?.profile_picture_url || user?.profilePictureUrl;
+  const profilePhotoUrl = user?.profile_picture_url || user?.profilePictureUrl || (user as any)?.avatar_url || (user as any)?.avatarUrl || (user as any)?.avatar;
   const resumeUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
   const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_BioData_Resume.jpg';
 
@@ -482,7 +519,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
     return (
       <View style={styles.container}>
         <Header
-          title="Profile"
+          title="JobMarket"
+          subtitle="Industrial & Factory Jobs"
           showBack={true}
           onBack={() => {
             if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
@@ -495,42 +533,39 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Avatar Header Skeleton */}
-          <View style={styles.card3D}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <SkeletonLoader width={76} height={76} style={{ borderRadius: 38 }} />
-              <View style={{ flex: 1, gap: 8 }}>
-                <SkeletonLoader width="65%" height={20} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width="45%" height={14} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={160} height={22} style={{ borderRadius: 12 }} />
-              </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 4 }}>
+            <SkeletonLoader width={72} height={72} style={{ borderRadius: 36 }} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <SkeletonLoader width="65%" height={20} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="45%" height={14} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width={140} height={20} style={{ borderRadius: 0 }} />
             </View>
           </View>
+
+          <View style={styles.sectionDivider} />
 
           {/* Personal Details Form Skeleton */}
-          <View style={styles.card3D}>
-            <SkeletonLoader width="45%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-          </View>
+          <SkeletonLoader width="45%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
+
+          <View style={styles.sectionDivider} />
 
           {/* Industrial Preferences Skeleton */}
-          <View style={styles.card3D}>
-            <SkeletonLoader width="50%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-            <SkeletonLoader width="100%" height={46} style={{ borderRadius: 8, marginBottom: 12 }} />
-          </View>
+          <SkeletonLoader width="50%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
+
+          <View style={styles.sectionDivider} />
 
           {/* Skills & Experience Skeleton */}
-          <View style={styles.card3D}>
-            <SkeletonLoader width="35%" height={18} style={{ borderRadius: 4, marginBottom: 14 }} />
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <SkeletonLoader width={80} height={32} style={{ borderRadius: 16 }} />
-              <SkeletonLoader width={95} height={32} style={{ borderRadius: 16 }} />
-              <SkeletonLoader width={85} height={32} style={{ borderRadius: 16 }} />
-              <SkeletonLoader width={105} height={32} style={{ borderRadius: 16 }} />
-            </View>
+          <SkeletonLoader width="35%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <SkeletonLoader width={80} height={30} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width={95} height={30} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width={85} height={30} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width={105} height={30} style={{ borderRadius: 0 }} />
           </View>
         </ScrollView>
       </View>
@@ -540,8 +575,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
   return (
     <View style={styles.container}>
       <Header
-        title={activeTab === 'DASHBOARD' ? 'Dashboard' : 'Profile & Account'}
-        subtitle="Industrial & Factory Workforce"
+        title="JobMarket"
+        subtitle="Industrial & Factory Jobs"
         showBack={false}
       />
 
@@ -634,13 +669,15 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
                 <Text style={styles.displayEmail} numberOfLines={1}>{user?.email}</Text>
                 {headline ? <Text style={styles.displayHeadline} numberOfLines={1}>{headline}</Text> : null}
 
-                <View style={styles.headerBadgesRow}>
-                  <View style={[styles.completenessBadgePill, { backgroundColor: completenessScore >= 80 ? '#DCFCE7' : completenessScore >= 50 ? '#FEF3C7' : '#EFF6FF', borderColor: completenessScore >= 80 ? '#86EFAC' : completenessScore >= 50 ? '#FDE68A' : '#BFDBFE' }]}>
-                    <Text style={[styles.completenessBadgeText, { color: completenessScore >= 80 ? '#15803D' : completenessScore >= 50 ? '#B45309' : '#2563EB' }]}>
-                      {completenessScore}% Complete
-                    </Text>
+                {completenessScore < 100 ? (
+                  <View style={styles.headerBadgesRow}>
+                    <View style={[styles.completenessBadgePill, { backgroundColor: completenessScore >= 80 ? '#DCFCE7' : completenessScore >= 50 ? '#FEF3C7' : '#EFF6FF', borderColor: completenessScore >= 80 ? '#86EFAC' : completenessScore >= 50 ? '#FDE68A' : '#BFDBFE' }]}>
+                      <Text style={[styles.completenessBadgeText, { color: completenessScore >= 80 ? '#15803D' : completenessScore >= 50 ? '#B45309' : '#2563EB' }]}>
+                        {completenessScore}% Complete
+                      </Text>
+                    </View>
                   </View>
-                </View>
+                ) : null}
               </View>
             </View>
 
@@ -980,173 +1017,10 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
           </TouchableOpacity>
         </>
       ) : (
-      /* Dashboard Tab View */
-      <View style={{ gap: 14 }}>
-        {/* Stats Grid (Single Master Card with 4 Metrics & Soft Dividers) */}
-        <View style={styles.singleMasterCard}>
-          <View style={styles.statsQuadGrid}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.statMetricItem}
-              onPress={() => navigation.navigate('CandidateAppliedTab')}
-            >
-              <Briefcase size={18} color="#2563EB" />
-              <View style={styles.statTextStack}>
-                <Text style={styles.statNumber}>{appliedJobs.length}</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Jobs Applied</Text>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.statVerticalDivider} />
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.statMetricItem}
-              onPress={() => navigation.navigate('CandidateSavedTab')}
-            >
-              <Bookmark size={18} color="#7C3AED" />
-              <View style={styles.statTextStack}>
-                <Text style={styles.statNumber}>{savedJobs.length}</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Saved Jobs</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.statHorizontalDivider} />
-
-          <View style={styles.statsQuadGrid}>
-            <View style={styles.statMetricItem}>
-              <Eye size={18} color="#059669" />
-              <View style={styles.statTextStack}>
-                <Text style={styles.statNumber}>24</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Profile Views</Text>
-              </View>
-            </View>
-
-            <View style={styles.statVerticalDivider} />
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.statMetricItem}
-              onPress={() => setActiveTab('PROFILE')}
-            >
-              <Award size={18} color="#D97706" />
-              <View style={styles.statTextStack}>
-                <Text style={styles.statNumber}>{skills.length}</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Skills & Trades</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Recent Applications Card */}
-        <View style={styles.card3D}>
-          <View style={styles.cardHeaderRow}>
-            <Briefcase size={18} color="#0F172A" />
-            <Text style={styles.sectionTitle}>Recent Applications</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('CandidateAppliedTab')}
-            >
-              <Text style={styles.viewAllText}>View All ({appliedJobs.length})</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loadingDashboard ? (
-            <ActivityIndicator size="small" color="#2563EB" style={{ marginVertical: 12 }} />
-          ) : appliedJobs.length === 0 ? (
-            <View style={styles.emptyApplicationsBox}>
-              <Building2 size={32} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No Job Applications Yet</Text>
-              <Text style={styles.emptyDesc}>
-                Start applying to industrial vacancies across MIDC zones.
-              </Text>
-              <TouchableOpacity
-                style={styles.searchJobsBtn}
-                onPress={() => navigation.navigate('CandidateJobsTab')}
-              >
-                <Search size={14} color="#FFFFFF" />
-                <Text style={styles.searchJobsBtnText}>Explore Vacancies</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.applicationsList}>
-              {appliedJobs.slice(0, 4).map((appItem, idx) => {
-                const job = appItem.job || appItem;
-                return (
-                  <TouchableOpacity
-                    key={appItem.id || idx}
-                    style={styles.applicationItemRow}
-                    activeOpacity={0.8}
-                    onPress={() => navigation.navigate('CandidateJobsTab', { screen: 'CandidateJobDetail', params: { jobId: job.id } })}
-                  >
-                    <View style={styles.companyIconSquare}>
-                      <Building2 size={18} color="#2563EB" />
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.appJobTitle} numberOfLines={1}>
-                        {job.title || 'Technical Role'}
-                      </Text>
-                      <Text style={styles.appCompanyText} numberOfLines={1}>
-                        {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC'}
-                      </Text>
-                    </View>
-
-                    {renderStatusPill(appItem.status)}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* Recommended Industrial Jobs Section */}
-        {recommendedJobs.length > 0 ? (
-          <View style={styles.card3D}>
-            <View style={styles.cardHeaderRow}>
-              <Sparkles size={18} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Recommended Industrial Jobs</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('CandidateJobsTab')}
-              >
-                <Text style={styles.viewAllText}>Browse All</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-              {recommendedJobs.map((recJob) => (
-                <TouchableOpacity
-                  key={recJob.id}
-                  activeOpacity={0.85}
-                  style={styles.recCardBox}
-                  onPress={() => navigation.navigate('CandidateJobsTab', { screen: 'CandidateJobDetail', params: { jobId: recJob.id } })}
-                >
-                  <Text style={styles.recTitleText} numberOfLines={1}>{recJob.title}</Text>
-                  <Text style={styles.recCompanyText} numberOfLines={1}>{recJob.company}</Text>
-
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <MapPin size={11} color="#64748B" />
-                    <Text style={{ fontSize: 11, color: '#64748B' }}>{recJob.location}</Text>
-                  </View>
-
-                  <View style={styles.recCardFooter}>
-                    <Text style={styles.recSalaryText}>
-                      ₹{(recJob.salary_max || (recJob as any).salaryMax || 25000).toLocaleString()}/mo
-                    </Text>
-                    <View style={styles.arrowIconPill}>
-                      <ArrowRight size={12} color="#2563EB" />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-      </View>
-    )}
-  </ScrollView>
+        /* Dashboard Tab View */
+        <CandidateDashboardScreen navigation={navigation} hideHeader={true} />
+      )}
+    </ScrollView>
 
       {/* Experience Modal */}
       <Modal visible={expModalOpen} transparent animationType="slide" onRequestClose={() => setExpModalOpen(false)}>
@@ -1277,12 +1151,13 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 130,
-    gap: 16,
+    padding: 8,
+    paddingBottom: 100,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
   },
   tabBarContainer: {
     flexDirection: 'row',
@@ -1324,22 +1199,23 @@ const styles = StyleSheet.create({
   },
   singleMasterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 14,
     paddingVertical: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 8,
+    backgroundColor: '#94A3B8',
+    marginTop: 10,
+    marginBottom: 24,
   },
   avatarHeaderRow: {
     flexDirection: 'row',
@@ -1416,7 +1292,7 @@ const styles = StyleSheet.create({
   completenessBadgePill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 0,
     borderWidth: 1,
   },
   completenessBadgeText: {
@@ -1432,7 +1308,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 0,
     marginTop: 6,
     alignSelf: 'flex-start',
   },
@@ -1458,15 +1334,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   progressBgBar: {
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 0,
     backgroundColor: '#F1F5F9',
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFillBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 0,
   },
   completenessHintText: {
     fontSize: 11.5,
@@ -1474,14 +1350,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 6,
     letterSpacing: -0.2,
   },
   sectionTitleNoMargin: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -1495,10 +1371,10 @@ const styles = StyleSheet.create({
   chevronCircleBadge: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 0,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1516,7 +1392,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 12,
     height: 44,
     fontSize: 13.5,
@@ -1529,7 +1405,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 12,
     height: 44,
     gap: 10,
@@ -1566,7 +1442,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     padding: 12,
     fontSize: 13.5,
     color: '#0F172A',
@@ -1576,7 +1452,7 @@ const styles = StyleSheet.create({
   tradePill: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -1598,7 +1474,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     alignItems: 'center',
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -1640,7 +1516,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: '#2563EB',
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 0,
     justifyContent: 'center',
   },
   addSkillBtnText: {
@@ -1663,7 +1539,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   skillChipText: {
     fontSize: 12,
@@ -1672,22 +1548,22 @@ const styles = StyleSheet.create({
   },
   card3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 16,
-    gap: 12,
+    padding: 14,
+    gap: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   addBtnSmall: {
     flexDirection: 'row',
@@ -1734,8 +1610,7 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderRadius: 0,
     padding: 20,
     gap: 12,
     borderTopWidth: 3,
@@ -1819,7 +1694,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 0,
     marginTop: 4,
   },
   searchJobsBtnText: {
@@ -1858,7 +1733,7 @@ const styles = StyleSheet.create({
   statusPillSmall: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 0,
     borderWidth: 1,
   },
   statusPillSmallText: {
@@ -1868,7 +1743,7 @@ const styles = StyleSheet.create({
   recCardBox: {
     width: 175,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,
@@ -1900,7 +1775,7 @@ const styles = StyleSheet.create({
   arrowIconPill: {
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1912,13 +1787,13 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#2563EB',
     height: 48,
-    borderRadius: 12,
+    borderRadius: 0,
     marginTop: 4,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   saveProfileBtnText: {
     color: '#FFFFFF',

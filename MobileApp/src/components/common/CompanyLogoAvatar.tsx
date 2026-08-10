@@ -23,7 +23,14 @@ export const CompanyLogoAvatar: React.FC<Props> = ({
     typeof logoUrl === 'string' &&
     logoUrl.trim().length > 5 &&
     !logoUrl.startsWith('data:image/svg+xml') &&
-    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:image/png') || logoUrl.startsWith('data:image/jpeg') || logoUrl.startsWith('data:image/webp'))
+    (
+      logoUrl.startsWith('http://') ||
+      logoUrl.startsWith('https://') ||
+      logoUrl.startsWith('file://') ||
+      logoUrl.startsWith('content://') ||
+      logoUrl.startsWith('ph://') ||
+      logoUrl.startsWith('data:image/')
+    )
       ? logoUrl.trim()
       : null;
 
