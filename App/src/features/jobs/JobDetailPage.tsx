@@ -291,94 +291,115 @@ export const JobDetailPage: React.FC = () => {
 
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '24px 16px 140px 16px' }}>
-      {/* 100% Exact Matching Mobile App Handoff Modal Popup Card */}
-      {showAppBanner && (
-        <div style={{
-          background: '#FFFFFF',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          marginBottom: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          boxShadow: '0 12px 36px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04)',
-          border: '1px solid #E2E8F0',
-          position: 'relative'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-            {/* White Soft Shield Logo Box */}
+      {/* 100% Exact Matching Mobile App Handoff Modal Popup Overlay with Faded Backdrop */}
+      {showAppBanner && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAppBanner(false);
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.48)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px 22px',
+            width: '100%',
+            maxWidth: '540px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08)',
+            border: '1px solid #E2E8F0',
+            position: 'relative'
+          }}>
+            {/* Left Soft Shield Logo Box */}
             <div style={{
-              width: '54px',
-              height: '54px',
+              width: '56px',
+              height: '56px',
               borderRadius: '12px',
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              background: '#FAFAFA',
+              border: '1px solid #F1F5F9',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L3 6V11C3 16.55 7.03 21.74 12 23C16.97 21.74 21 16.55 21 11V6L12 2Z" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M9 12L11 14L15 10" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
 
-            {/* Title & Subtitle Stack */}
+            {/* Center Text Stack */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, marginBottom: '3px' }}>
+              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, marginBottom: '4px', letterSpacing: '-0.2px' }}>
                 Better experience in the app
               </div>
               <div style={{ fontSize: '12.5px', color: '#64748B', lineHeight: 1.45, fontWeight: '400' }}>
                 Open this job in the JobMarket app to get easy apply, real-time updates and more.
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-            <button
-              onClick={handleOpenInApp}
-              style={{
-                background: '#344BFD',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '10px 18px',
-                fontSize: '13.5px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(52, 75, 253, 0.35)',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Continue in App
-            </button>
-            <button
-              onClick={() => setShowAppBanner(false)}
-              style={{
-                background: 'transparent',
-                color: '#94A3B8',
-                border: 'none',
-                padding: '6px',
-                cursor: 'pointer',
-                fontSize: '18px',
-                lineHeight: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title="Dismiss"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            {/* Right Action & Dismiss */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+              <button
+                onClick={handleOpenInApp}
+                style={{
+                  background: '#344BFD',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '11px 20px',
+                  fontSize: '13.5px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(52, 75, 253, 0.35)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Continue in App
+              </button>
+              <button
+                onClick={() => setShowAppBanner(false)}
+                style={{
+                  background: 'transparent',
+                  color: '#94A3B8',
+                  border: 'none',
+                  padding: '6px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Dismiss"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <style>{`
         .detail-sticky-bar {
