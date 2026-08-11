@@ -410,7 +410,6 @@ export const JobDetailPage: React.FC = () => {
           }
         }
       `}</style>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         {/* Back Link */}
         <button
           onClick={() => navigate(-1)}
