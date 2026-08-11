@@ -71,7 +71,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve Mobile App assets statically (app icon, badges)
+// Serve Mobile App assets & Web App frontend static assets
+const webDistPath = path.join(__dirname, '../../App/dist');
+app.use(express.static(webDistPath));
 app.use('/assets', express.static(path.join(__dirname, '../../MobileApp/assets')));
 
 // Health Check Endpoints
@@ -113,8 +115,8 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
   ]);
 });
 
-// Industry-Standard Smart Universal Share & Deep-Link Route
-app.get('/job/:id', async (req, res) => {
+// Industry-Standard Smart Universal Share & Direct Web Application Route
+app.get('/job/:id', async (req, res, next) => {
   const jobId = req.params.id;
   let job: any = null;
   try {
@@ -127,7 +129,6 @@ app.get('/job/:id', async (req, res) => {
   const minSal = job?.salary_min || job?.salaryMin;
   const maxSal = job?.salary_max || job?.salaryMax;
   const salStr = minSal && maxSal ? `₹${Math.round(minSal / 1000)}k - ₹${Math.round(maxSal / 1000)}k / month` : 'Competitive Salary';
-  const tradeStr = job?.trade || 'Technical Specialist';
   const description = job?.title
     ? `Role: ${job.title} | Company: ${companyStr} | Location: ${locationStr} | Salary: ${salStr}`
     : 'View industrial job vacancies and career opportunities on JobMarket.';
@@ -145,11 +146,15 @@ app.get('/job/:id', async (req, res) => {
     }
   }
 
-  const html = `<!DOCTYPE html>
+  const userAgent = req.headers['user-agent'] || '';
+  const isCrawler = /whatsapp|facebookexternalhit|twitterbot|linkedinbot|telegrambot|slackbot|discordbot|googlebot|bot|crawler|spider/i.test(userAgent);
+
+  // 1. Return OpenGraph metadata HTML preview card for social media crawlers
+  if (isCrawler) {
+    const crawlerHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>${title}</title>
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
@@ -159,221 +164,56 @@ app.get('/job/:id', async (req, res) => {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
-  <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      background-color: #F8FAFC;
-      color: #0F172A;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 24px 16px;
-      -webkit-font-smoothing: antialiased;
-    }
-    .nav-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-    .nav-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      object-fit: contain;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-    }
-    .nav-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0F172A;
-      letter-spacing: -0.5px;
-    }
-    .card {
-      background-color: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      padding: 36px 28px 32px;
-      max-width: 440px;
-      width: 100%;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-      text-align: center;
-    }
-    .logo-box {
-      width: 76px;
-      height: 76px;
-      background-color: #EFF6FF;
-      border: 1px solid #DBEAFE;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 22px;
-      overflow: hidden;
-      position: relative;
-    }
-    .logo-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      padding: 6px;
-    }
-    .logo-fallback {
-      width: 100%;
-      height: 100%;
-      background-color: #EFF6FF;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    h1 {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 0 0 6px;
-      color: #0F172A;
-      line-height: 1.35;
-      letter-spacing: -0.4px;
-    }
-    .company-name {
-      font-size: 15px;
-      color: #2563EB;
-      margin: 0 0 24px;
-      font-weight: 700;
-    }
-    .inset-group {
-      background-color: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 14px;
-      padding: 16px 18px;
-      margin-bottom: 28px;
-      font-size: 14px;
-      color: #1E293B;
-      text-align: left;
-      line-height: 1.6;
-    }
-    .row {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .row:last-child {
-      margin-bottom: 0;
-    }
-    .row-icon {
-      font-size: 16px;
-      line-height: 1.4;
-    }
-    .row-content {
-      flex: 1;
-    }
-    .row-label {
-      font-weight: 700;
-      color: #0F172A;
-      display: inline;
-    }
-    .row-val {
-      color: #475569;
-      display: inline;
-      margin-left: 4px;
-    }
-    .cta-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      padding: 16px 0;
-      background: #2563EB;
-      color: #FFFFFF;
-      font-weight: 700;
-      text-decoration: none;
-      font-size: 16px;
-      border-radius: 14px;
-      letter-spacing: -0.2px;
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
-      transition: all 0.2s ease;
-    }
-    .cta-btn:active {
-      transform: scale(0.98);
-      background: #1D4ED8;
-    }
-    .footer-text {
-      margin-top: 24px;
-      font-size: 13px;
-      color: #64748B;
-      font-weight: 500;
-    }
-  </style>
-  <script>
-    (function() {
-      var appUrl = "${appLink}";
-      window.location.href = appUrl;
-    })();
-  </script>
 </head>
 <body>
-  <div class="nav-bar">
-    <img src="https://jobmarket-ongn.onrender.com/assets/icon.png" class="nav-icon" alt="JobMarket" onError="this.style.display='none';" />
-    <div class="nav-title">JobMarket</div>
-  </div>
-
-  <div class="card">
-    <div class="logo-box">
-      ${formattedLogo ? `
-        <img src="${formattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('company-fb').style.display='flex';" />
-        <div id="company-fb" class="logo-fallback" style="display:none;">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
-        </div>
-      ` : `
-        <div class="logo-fallback">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
-        </div>
-      `}
-    </div>
-
-    <h1>${job?.title || 'Industrial Job Vacancy'}</h1>
-    <div class="company-name">${companyStr}</div>
-
-    <div class="inset-group">
-      <div class="row">
-        <span class="row-icon">📍</span>
-        <div class="row-content">
-          <span class="row-label">Location:</span>
-          <span class="row-val">${locationStr}</span>
-        </div>
-      </div>
-      <div class="row">
-        <span class="row-icon">💰</span>
-        <div class="row-content">
-          <span class="row-label">Salary:</span>
-          <span class="row-val">${salStr}</span>
-        </div>
-      </div>
-      <div class="row">
-        <span class="row-icon">🏭</span>
-        <div class="row-content">
-          <span class="row-label">Trade:</span>
-          <span class="row-val">${tradeStr}</span>
-        </div>
-      </div>
-    </div>
-
-    <a href="${appLink}" class="cta-btn">
-      <span>Open in JobMarket App</span>
-    </a>
-  </div>
-
-  <div class="footer-text">Verified Recruiter Vacancy • JobMarket Connect</div>
+  <h1>${title}</h1>
+  <p>${description}</p>
 </body>
 </html>`;
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(crawlerHtml);
+  }
 
-  res.setHeader('Content-Type', 'text/html');
-  res.send(html);
+  // 2. Direct Web Application navigation for users without the mobile app (with app deep-link hand-off script)
+  const indexPath = path.join(webDistPath, 'index.html');
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(indexPath)) {
+      let indexHtml = fs.readFileSync(indexPath, 'utf8');
+      const injectionScript = `
+        <meta property="og:title" content="${title}" />
+        <meta property="og:description" content="${description}" />
+        ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+        <script>
+          (function() {
+            var appUrl = "${appLink}";
+            window.location.href = appUrl;
+          })();
+        </script>
+      </head>`;
+      indexHtml = indexHtml.replace('</head>', `${injectionScript}`);
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(indexHtml);
+    }
+  } catch (e) {}
+
+  next();
+});
+
+// Wildcard SPA route fallback for Web Application
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || req.path.startsWith('/uploads/')) {
+    return next();
+  }
+  const indexPath = path.join(webDistPath, 'index.html');
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(indexPath)) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.sendFile(indexPath);
+    }
+  } catch (e) {}
+  next();
 });
 
 // Global Error Handler
