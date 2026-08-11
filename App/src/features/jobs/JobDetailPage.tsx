@@ -294,101 +294,42 @@ export const JobDetailPage: React.FC = () => {
       {/* 100% Exact Matching Mobile App Handoff Modal Popup Overlay with Faded Backdrop */}
       {showAppBanner && typeof document !== 'undefined' && createPortal(
         <div
+          className="app-handoff-modal-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowAppBanner(false);
           }}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.48)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            zIndex: 999999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px'
-          }}
         >
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '20px 22px',
-            width: '100%',
-            maxWidth: '540px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #E2E8F0',
-            position: 'relative'
-          }}>
-            {/* Left Soft Shield Logo Box */}
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '12px',
-              background: '#FAFAFA',
-              border: '1px solid #F1F5F9',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L3 6V11C3 16.55 7.03 21.74 12 23C16.97 21.74 21 16.55 21 11V6L12 2Z" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9 12L11 14L15 10" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-
-            {/* Center Text Stack */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, marginBottom: '4px', letterSpacing: '-0.2px' }}>
-                Better experience in the app
+          <div className="app-handoff-modal-card">
+            {/* Left Content Area (Icon + Text Stack) */}
+            <div className="app-handoff-left-group">
+              <div className="app-handoff-icon-box">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L3 6V11C3 16.55 7.03 21.74 12 23C16.97 21.74 21 16.55 21 11V6L12 2Z" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 12L11 14L15 10" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
-              <div style={{ fontSize: '12.5px', color: '#64748B', lineHeight: 1.45, fontWeight: '400' }}>
-                Open this job in the JobMarket app to get easy apply, real-time updates and more.
+
+              <div className="app-handoff-text-stack">
+                <div className="app-handoff-title">
+                  Better experience in the app
+                </div>
+                <div className="app-handoff-subtext">
+                  Open this job in the JobMarket app to get easy apply, real-time updates and more.
+                </div>
               </div>
             </div>
 
-            {/* Right Action & Dismiss */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            {/* Right Action Area (Button + Dismiss) */}
+            <div className="app-handoff-actions">
               <button
+                className="app-handoff-btn"
                 onClick={handleOpenInApp}
-                style={{
-                  background: '#344BFD',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '11px 20px',
-                  fontSize: '13.5px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(52, 75, 253, 0.35)',
-                  whiteSpace: 'nowrap'
-                }}
               >
                 Continue in App
               </button>
               <button
+                className="app-handoff-close-btn"
                 onClick={() => setShowAppBanner(false)}
-                style={{
-                  background: 'transparent',
-                  color: '#94A3B8',
-                  border: 'none',
-                  padding: '6px',
-                  cursor: 'pointer',
-                  fontSize: '18px',
-                  lineHeight: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
                 title="Dismiss"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -402,8 +343,155 @@ export const JobDetailPage: React.FC = () => {
         document.body
       )}
       <style>{`
+        .app-handoff-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(15, 23, 42, 0.48);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 999999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        }
+
+        .app-handoff-modal-card {
+          background: #FFFFFF;
+          border-radius: 16px;
+          padding: 20px 22px;
+          width: 100%;
+          max-width: 560px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08);
+          border: 1px solid #E2E8F0;
+          position: relative;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .app-handoff-left-group {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .app-handoff-icon-box {
+          width: 52px;
+          height: 52px;
+          border-radius: 12px;
+          background: #FAFAFA;
+          border: 1px solid #F1F5F9;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .app-handoff-text-stack {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .app-handoff-title {
+          font-size: 15px;
+          font-weight: 800;
+          color: #0F172A;
+          line-height: 1.3;
+          margin-bottom: 4px;
+          letter-spacing: -0.2px;
+        }
+
+        .app-handoff-subtext {
+          font-size: 12.5px;
+          color: #64748B;
+          line-height: 1.45;
+          font-weight: 400;
+        }
+
+        .app-handoff-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .app-handoff-btn {
+          background: #344BFD;
+          color: #FFFFFF;
+          border: none;
+          border-radius: 10px;
+          padding: 11px 20px;
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(52, 75, 253, 0.35);
+          white-space: nowrap;
+          transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .app-handoff-btn:active {
+          transform: scale(0.98);
+        }
+
+        .app-handoff-close-btn {
+          background: transparent;
+          color: #94A3B8;
+          border: none;
+          padding: 6px;
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .app-handoff-close-btn:hover {
+          background: #F1F5F9;
+          color: #64748B;
+        }
+
+        @media (max-width: 580px) {
+          .app-handoff-modal-card {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 18px 18px;
+            gap: 16px;
+          }
+
+          .app-handoff-left-group {
+            width: 100%;
+          }
+
+          .app-handoff-actions {
+            width: 100%;
+            justify-content: space-between;
+            padding-top: 8px;
+            border-top: 1px solid #F1F5F9;
+          }
+
+          .app-handoff-btn {
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+            padding: 11px 16px;
+          }
+        }
+
         .detail-sticky-bar {
           display: none !important;
+        }nt;
         }
         @media (max-width: 768px) {
           #page-content {
