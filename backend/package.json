@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
-    "build": "npx tsc -b tsconfig.json",
+    "build": "cd ../App && npm install && npm run build && cd ../backend && npx tsc -b tsconfig.json",
     "start": "node dist/server.js",
     "migrate": "npx tsx src/database/scripts/migrate.ts",
     "seed": "npx tsx src/database/seeders/masterSeeder.ts",

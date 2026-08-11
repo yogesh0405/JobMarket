@@ -115,8 +115,8 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
   ]);
 });
 
-// Industry-Standard Smart Universal Share & Deep-Link Route
-app.get('/job/:id', async (req, res) => {
+// Industry-Standard Smart Universal Share & Direct Web Application Route
+app.get('/job/:id', async (req, res, next) => {
   const jobId = req.params.id;
   let job: any = null;
   try {
@@ -147,6 +147,61 @@ app.get('/job/:id', async (req, res) => {
     }
   }
 
+  const userAgent = req.headers['user-agent'] || '';
+  const isCrawler = /whatsapp|facebookexternalhit|twitterbot|linkedinbot|telegrambot|slackbot|discordbot|googlebot|bot|crawler|spider/i.test(userAgent);
+
+  // 1. Social Media Crawlers: Return OpenGraph HTML metadata preview card
+  if (isCrawler) {
+    const crawlerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://jobmarket-ongn.onrender.com/job/${jobId}" />
+  ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+</head>
+<body>
+  <h1>${title}</h1>
+  <p>${description}</p>
+</body>
+</html>`;
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(crawlerHtml);
+  }
+
+  // 2. Web Browsers (macOS / Windows / Mobile Browser): Serve the REAL Web Application
+  const indexPath = path.join(webDistPath, 'index.html');
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(indexPath)) {
+      let indexHtml = fs.readFileSync(indexPath, 'utf8');
+      const injectionScript = `
+        <meta property="og:title" content="${title}" />
+        <meta property="og:description" content="${description}" />
+        ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+        <script>
+          (function() {
+            var appUrl = "${appLink}";
+            // On mobile devices, attempt hand-off to installed mobile app
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+              window.location.href = appUrl;
+            }
+          })();
+        </script>
+      </head>`;
+      indexHtml = indexHtml.replace('</head>', `${injectionScript}`);
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(indexHtml);
+    }
+  } catch (e) {}
+
+  // Fallback SSR Card if index.html is missing
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -314,7 +369,9 @@ app.get('/job/:id', async (req, res) => {
   <script>
     (function() {
       var appUrl = "${appLink}";
-      window.location.href = appUrl;
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = appUrl;
+      }
     })();
   </script>
 </head>
