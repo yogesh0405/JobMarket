@@ -38,6 +38,8 @@ import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
 import { RoleTabsManagementPage } from './modules/admin/pages/RoleTabsManagementPage';
 import { AdminMapAnalyticsPage } from './modules/admin/pages/AdminMapAnalyticsPage';
 
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
 export const App: React.FC = () => {
   const navigate = useNavigate();
   const { syncUser } = useAuth();
@@ -74,54 +76,56 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <Routes>
-      {/* 1. Standalone Auth Pages (Full screen - NO Navbar/Footer) */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/verify-otp" element={<VerifyOTPPage />} />
+    <ErrorBoundary>
+      <Routes>
+        {/* 1. Standalone Auth Pages (Full screen - NO Navbar/Footer) */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/verify-otp" element={<VerifyOTPPage />} />
 
-      {/* 2. Admin Module Routes (Isolated Portal) */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="login" element={<Navigate to="/admin/login" replace />} />
-        <Route path="job-approvals" element={<JobApprovalPage />} />
-        <Route path="advertisements" element={<AdminAdvertisementPage />} />
-        <Route path="jobs" element={<JobsPage />} />
-        <Route path="users" element={<UserManagementPage />} />
-        <Route path="employers" element={<EmployerManagementPage />} />
-        <Route path="workers" element={<WorkerManagementPage />} />
-        <Route path="categories" element={<CategorySkillManagementPage />} />
-        <Route path="role-tabs" element={<RoleTabsManagementPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="support" element={<SupportManagementPage />} />
-        <Route path="broadcast" element={<BroadcastPage />} />
-        <Route path="map-analytics" element={<AdminMapAnalyticsPage />} />
-      </Route>
+        {/* 2. Admin Module Routes (Isolated Portal) */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="login" element={<Navigate to="/admin/login" replace />} />
+          <Route path="job-approvals" element={<JobApprovalPage />} />
+          <Route path="advertisements" element={<AdminAdvertisementPage />} />
+          <Route path="jobs" element={<JobsPage />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="employers" element={<EmployerManagementPage />} />
+          <Route path="workers" element={<WorkerManagementPage />} />
+          <Route path="categories" element={<CategorySkillManagementPage />} />
+          <Route path="role-tabs" element={<RoleTabsManagementPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="support" element={<SupportManagementPage />} />
+          <Route path="broadcast" element={<BroadcastPage />} />
+          <Route path="map-analytics" element={<AdminMapAnalyticsPage />} />
+        </Route>
 
-      {/* 3. Public Pages (WITH Navbar/Footer Layout) */}
-      <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/jobs" element={<JobSearchPage />} />
-        <Route path="/jobs/map" element={<JobMapPage />} />
-        <Route path="/job/:id" element={<JobDetailPage />} />
-        <Route path="/jobs/:id" element={<JobDetailPage />} />
-        <Route path="/post-job" element={<JobPostPage />} />
-        <Route path="/edit-job/:id" element={<JobPostPage />} />
-        <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
-        <Route path="/profile/:id" element={<PublicProfilePage />} />
-        <Route path="/p/:id" element={<PublicProfilePage />} />
-        <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-      </Route>
+        {/* 3. Public Pages (WITH Navbar/Footer Layout) */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/jobs" element={<JobSearchPage />} />
+          <Route path="/jobs/map" element={<JobMapPage />} />
+          <Route path="/job/:id" element={<JobDetailPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/post-job" element={<JobPostPage />} />
+          <Route path="/edit-job/:id" element={<JobPostPage />} />
+          <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
+          <Route path="/profile/:id" element={<PublicProfilePage />} />
+          <Route path="/p/:id" element={<PublicProfilePage />} />
+          <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+        </Route>
 
-      {/* 4. Fallback Catch-All */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* 4. Fallback Catch-All */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 };
