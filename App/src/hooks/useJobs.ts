@@ -131,7 +131,7 @@ export const useJobs = () => {
     } catch (err) {
       console.error(`Error fetching job ${id}:`, err);
     }
-    return null;
+    return state.jobs.find(j => j.id === id) || null;
   }, [dispatch, state.jobs]);
 
   const getJobsByEmployer = useCallback((employerId: string) => {

@@ -43,6 +43,7 @@ import { CandidateSideDrawer } from '../../components/common/CandidateSideDrawer
 import { InteractiveJobMapView } from '../../components/map/InteractiveJobMapView';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
 
 const CATEGORIES = [
   'All Jobs',
@@ -55,7 +56,7 @@ const CATEGORIES = [
   'Education',
 ];
 
-const FALLBACK_JOBS: Job[] = [];
+const FALLBACK_JOBS: Job[] = FALLBACK_SEED_JOBS;
 
 interface Props {
   navigation: any;

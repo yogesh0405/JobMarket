@@ -100,6 +100,66 @@ export const JobDetailPage: React.FC = () => {
     }
   }, [isMobileDevice, job]);
 
+  const handleSave = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!currentUser) {
+      showToast('Please login to save jobs', 'info');
+      navigate('/login');
+      return;
+    }
+    if (!job) return;
+    const newSavedStatus = toggleSaveJob(job.id);
+    setLocalSavedOverride(newSavedStatus);
+    showToast(newSavedStatus ? 'Job saved successfully!' : 'Job removed from saved list', 'success');
+  };
+
+  const handleWhatsAppShare = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!job) return;
+    const text = `Check out this job opening: ${job.title} at ${job.company} (${job.location}). Apply here: ${window.location.href}`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleApply = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!currentUser) {
+      showToast('Please login as a candidate to apply for jobs', 'info');
+      navigate('/login');
+      return;
+    }
+    if (currentUser.role !== 'candidate') {
+      showToast('Only candidate accounts can apply for jobs', 'error');
+      return;
+    }
+    if (!job) return;
+
+    if (job.hiringMethod === 'WALK_IN' || job.isWalkIn) {
+      setShowWalkInPassModal(true);
+      return;
+    }
+
+    setShowApplyModal(true);
+  };
+
+  const handleConfirmApply = async () => {
+    if (!job) return;
+    setIsApplying(true);
+    try {
+      const res = await applyToJob(job.id);
+      if (res.success) {
+        showToast('Application submitted successfully!', 'success');
+        setShowApplyModal(false);
+      } else {
+        showToast(res.error || 'Failed to submit application', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error submitting application', 'error');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   if (isFetchingJob && !job) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '65vh', gap: '16px', padding: '32px' }}>

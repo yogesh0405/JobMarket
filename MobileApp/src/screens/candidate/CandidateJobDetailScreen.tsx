@@ -53,6 +53,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { logger } from '../../utils/logger';
+import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
 
 interface Props {
   navigation: any;
@@ -73,8 +74,9 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
-  const [job, setJob] = useState<Job | null>(passedJob || null);
-  const [loading, setLoading] = useState(!passedJob);
+  const fallbackJob = passedJob || (activeJobId ? FALLBACK_SEED_JOBS.find(j => j.id === activeJobId) : undefined);
+  const [job, setJob] = useState<Job | null>(fallbackJob || null);
+  const [loading, setLoading] = useState(!fallbackJob);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -148,15 +150,22 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       try {
         // 1. Fetch public job details FIRST (instant 50ms load)
         const jobRes = await jobsApi.getJobById(jobId).catch(() => null);
-        if (mounted && jobRes) {
+        if (mounted) {
           const rawJob: any = jobRes;
           const parsedJob: Job | null = rawJob?.data || (rawJob?.id ? rawJob : null);
           if (parsedJob) {
             setJob(parsedJob);
+          } else if (!job) {
+            const seedMatch = FALLBACK_SEED_JOBS.find(j => j.id === jobId);
+            if (seedMatch) setJob(seedMatch);
           }
         }
       } catch (e) {
         console.log('Error fetching job details:', e);
+        if (mounted && !job) {
+          const seedMatch = FALLBACK_SEED_JOBS.find(j => j.id === jobId);
+          if (seedMatch) setJob(seedMatch);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
