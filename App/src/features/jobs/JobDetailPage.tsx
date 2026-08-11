@@ -303,10 +303,15 @@ export const JobDetailPage: React.FC = () => {
             {/* Left Content Area (Icon + Text Stack) */}
             <div className="app-handoff-left-group">
               <div className="app-handoff-icon-box">
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L3 6V11C3 16.55 7.03 21.74 12 23C16.97 21.74 21 16.55 21 11V6L12 2Z" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M9 12L11 14L15 10" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img
+                  src="/logo.png"
+                  alt="JobMarket Logo"
+                  style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+                  onError={(e) => {
+                    // Fallback to favicon.png if logo.png is missing
+                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
+                  }}
+                />
               </div>
 
               <div className="app-handoff-text-stack">
@@ -349,9 +354,7 @@ export const JobDetailPage: React.FC = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: rgba(15, 23, 42, 0.48);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+          background-color: rgba(15, 23, 42, 0.4);
           z-index: 999999;
           display: flex;
           align-items: center;
@@ -365,7 +368,7 @@ export const JobDetailPage: React.FC = () => {
           padding: 20px 22px;
           width: 100%;
           max-width: 560px;
-          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06);
           border: 1px solid #E2E8F0;
           position: relative;
           display: flex;
@@ -387,13 +390,14 @@ export const JobDetailPage: React.FC = () => {
           width: 52px;
           height: 52px;
           border-radius: 12px;
-          background: #FAFAFA;
-          border: 1px solid #F1F5F9;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          overflow: hidden;
         }
 
         .app-handoff-text-stack {
@@ -467,7 +471,7 @@ export const JobDetailPage: React.FC = () => {
             flex-direction: column;
             align-items: stretch;
             padding: 18px 18px;
-            gap: 16px;
+            gap: 14px;
           }
 
           .app-handoff-left-group {
@@ -477,8 +481,8 @@ export const JobDetailPage: React.FC = () => {
           .app-handoff-actions {
             width: 100%;
             justify-content: space-between;
-            padding-top: 8px;
-            border-top: 1px solid #F1F5F9;
+            padding-top: 0;
+            border-top: none;
           }
 
           .app-handoff-btn {
