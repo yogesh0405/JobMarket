@@ -760,8 +760,17 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Bar (Dynamic Single Source of Truth Application Status) */}
+      {/* Bottom Sticky Action Bar */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
+        {/* Bookmark / Save Button (Always available to save/unsave in Saved Jobs) */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[styles.bottomShareBtn, isSaved && { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
+          onPress={handleToggleSave}
+        >
+          <Bookmark size={20} color={isSaved ? '#2563EB' : '#64748B'} fill={isSaved ? '#2563EB' : 'transparent'} />
+        </TouchableOpacity>
+
         {hasApplied ? (
           (() => {
             const st = (appliedItem?.status || 'applied').toLowerCase();
@@ -769,7 +778,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             let borderColor = '#BBF7D0';
             let textColor = '#15803D';
             let IconComp = CheckCircle2;
-            let statusTitle = 'Application Submitted to Recruiter';
+            let statusTitle = 'Application Submitted';
             let statusSub = 'Employer has received your candidate profile & CV specs.';
 
             if (st === 'reviewed' || st === 'under_review') {
@@ -777,7 +786,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               borderColor = '#BFDBFE';
               textColor = '#1D4ED8';
               IconComp = FileText;
-              statusTitle = 'Application Under Recruiter Review';
+              statusTitle = 'Under Recruiter Review';
               statusSub = 'Employer HR team is reviewing your application.';
             } else if (st === 'shortlisted') {
               bg = '#F0F9FF';
@@ -811,10 +820,10 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
             return (
               <View style={[styles.appliedBanner, { backgroundColor: bg, borderColor: borderColor }]}>
-                <IconComp size={20} color={textColor} />
+                <IconComp size={18} color={textColor} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.appliedBannerText, { color: textColor }]}>{statusTitle}</Text>
-                  <Text style={styles.appliedBannerSubtext}>{statusSub}</Text>
+                  <Text style={[styles.appliedBannerText, { color: textColor }]} numberOfLines={1}>{statusTitle}</Text>
+                  <Text style={styles.appliedBannerSubtext} numberOfLines={1}>{statusSub}</Text>
                 </View>
               </View>
             );
