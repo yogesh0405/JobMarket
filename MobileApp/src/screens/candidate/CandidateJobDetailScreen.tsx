@@ -54,6 +54,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { logger } from '../../utils/logger';
 import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 
 interface Props {
   navigation: any;
@@ -109,6 +110,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [loading, setLoading] = useState(!initialFallbackJob);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [appliedItem, setAppliedItem] = useState<any>(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [expectedSalary, setExpectedSalary] = useState('');
   const [coverNote, setCoverNote] = useState('');
@@ -172,6 +174,25 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   }, []);
 
   useEffect(() => {
+    const syncFromStore = () => {
+      if (!activeJobId) return;
+      const allApplied = appliedJobsStore.getAppliedJobs();
+      const match = allApplied.find((a: any) =>
+        (a.jobId || a.job?.id || a.id) === activeJobId ||
+        String(a.jobId) === String(activeJobId)
+      );
+      if (match) {
+        setHasApplied(true);
+        setAppliedItem(match);
+      }
+    };
+
+    syncFromStore();
+    const unsubscribe = appliedJobsStore.subscribe(syncFromStore);
+    return () => unsubscribe();
+  }, [activeJobId]);
+
+  useEffect(() => {
     const jobId = activeJobId;
     if (!jobId) return;
     let mounted = true;
@@ -225,8 +246,16 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             let appliedList: any[] = [];
             if (Array.isArray(appliedData)) appliedList = appliedData;
             else if (appliedData?.data) appliedList = appliedData.data;
-            const already = appliedList.some((item: any) => (item.jobId || item.job?.id || item.id) === jobId);
-            setHasApplied(already);
+            
+            appliedJobsStore.setAppliedJobs(appliedList);
+            const matchApp = appliedList.find((item: any) =>
+              (item.jobId || item.job?.id || item.id) === jobId ||
+              String(item.jobId) === String(jobId)
+            );
+            if (matchApp) {
+              setHasApplied(true);
+              setAppliedItem(matchApp);
+            }
           }
         }).catch(() => {});
       }
@@ -621,6 +650,108 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             </>
           ) : null}
 
+          {/* SECTION 7.5: Live Interview Schedule & Entry Pass Details */}
+          {(hasApplied && ((appliedItem?.status || '').toLowerCase().includes('interview') || appliedItem?.interviewDate || appliedItem?.venueAddress || (job as any)?.interview_address)) ? (
+            <>
+              <View style={styles.sectionDivider} />
+              <View style={styles.interviewDetailsCard}>
+                <View style={styles.interviewHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={styles.interviewIconBox}>
+                      <Calendar size={18} color="#B45309" />
+                    </View>
+                    <View>
+                      <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
+                      <Text style={styles.interviewHeaderSub}>Recruiter Walk-In & Entry Pass</Text>
+                    </View>
+                  </View>
+                  <View style={styles.interviewStatusBadge}>
+                    <Text style={styles.interviewStatusBadgeText}>CONFIRMED</Text>
+                  </View>
+                </View>
+
+                <View style={styles.interviewSpecGrid}>
+                  {/* Date & Time */}
+                  <View style={styles.interviewSpecRow}>
+                    <Clock size={15} color="#0284C7" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.interviewSpecLabel}>Date & Time</Text>
+                      <Text style={styles.interviewSpecValue}>
+                        {appliedItem?.interviewDate || (job as any)?.interview_date || 'Date to be confirmed by HR'}
+                        {appliedItem?.interviewTime ? ` (${appliedItem.interviewTime})` : ''}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Venue Address */}
+                  <View style={styles.interviewSpecRow}>
+                    <MapPin size={15} color="#059669" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.interviewSpecLabel}>Venue Address</Text>
+                      <Text style={styles.interviewSpecValue}>
+                        {appliedItem?.venueAddress || appliedItem?.interviewAddress || (job as any)?.interview_address || job.location}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Documents to Carry */}
+                  <View style={styles.interviewSpecRow}>
+                    <FileText size={15} color="#D97706" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.interviewSpecLabel}>Documents to Carry</Text>
+                      <Text style={styles.interviewSpecValue}>
+                        {appliedItem?.interviewDocuments || (job as any)?.walkInDocuments || 'Aadhaar Card, ITI Trade Certificate, Resume CV, 2 Passport Photos'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* HR Contact */}
+                  {(appliedItem?.hrContactPerson || appliedItem?.hrPhone) ? (
+                    <View style={styles.interviewSpecRow}>
+                      <Phone size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.interviewSpecLabel}>Recruiter HR Contact</Text>
+                        <Text style={styles.interviewSpecValue}>
+                          {appliedItem?.hrContactPerson || 'HR Lead'} {appliedItem?.hrPhone ? `(${appliedItem.hrPhone})` : ''}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Actions */}
+                <View style={styles.interviewActionRow}>
+                  {(job?.google_maps_url || job?.googleMapsUrl || (job?.latitude && job?.longitude)) && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.interviewMapBtn}
+                      onPress={() => {
+                        const mapsUrl = job?.google_maps_url || job?.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job?.location || '')}`;
+                        Linking.openURL(mapsUrl);
+                      }}
+                    >
+                      <MapPin size={14} color="#0284C7" />
+                      <Text style={styles.interviewMapBtnText}>Google Maps Directions</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {appliedItem?.hrPhone && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.interviewCallBtn}
+                      onPress={() => {
+                        Linking.openURL(`tel:${appliedItem.hrPhone}`);
+                      }}
+                    >
+                      <Phone size={14} color="#FFFFFF" />
+                      <Text style={styles.interviewCallBtnText}>Call HR</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </>
+          ) : null}
+
           {/* SECTION 8: Interactive Google Map Preview */}
           {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
             <>
@@ -636,13 +767,65 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Bar */}
+      {/* Bottom Sticky Action Bar (Dynamic Single Source of Truth Application Status) */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
         {hasApplied ? (
-          <View style={styles.appliedBanner}>
-            <CheckCircle2 size={18} color="#15803D" />
-            <Text style={styles.appliedBannerText}>Application Submitted to Recruiter</Text>
-          </View>
+          (() => {
+            const st = (appliedItem?.status || 'applied').toLowerCase();
+            let bg = '#F0FDF4';
+            let borderColor = '#BBF7D0';
+            let textColor = '#15803D';
+            let IconComp = CheckCircle2;
+            let statusTitle = 'Application Submitted to Recruiter';
+            let statusSub = 'Employer has received your candidate profile & CV specs.';
+
+            if (st === 'reviewed' || st === 'under_review') {
+              bg = '#EFF6FF';
+              borderColor = '#BFDBFE';
+              textColor = '#1D4ED8';
+              IconComp = FileText;
+              statusTitle = 'Application Under Recruiter Review';
+              statusSub = 'Employer HR team is reviewing your application.';
+            } else if (st === 'shortlisted') {
+              bg = '#F0F9FF';
+              borderColor = '#BAE6FD';
+              textColor = '#0284C7';
+              IconComp = Award;
+              statusTitle = 'Shortlisted by Recruiter';
+              statusSub = 'Profile passed initial screening for interview selection.';
+            } else if (st === 'interview' || st === 'interview_scheduled') {
+              bg = '#FEF3C7';
+              borderColor = '#FCD34D';
+              textColor = '#B45309';
+              IconComp = Calendar;
+              statusTitle = 'Interview Scheduled';
+              statusSub = 'Interview invitation details released by recruiter.';
+            } else if (st === 'hired' || st === 'selected') {
+              bg = '#ECFDF5';
+              borderColor = '#A7F3D0';
+              textColor = '#047857';
+              IconComp = CheckCircle2;
+              statusTitle = 'Selected / Offer Released';
+              statusSub = 'Congratulations! You have been selected for this position.';
+            } else if (st === 'rejected') {
+              bg = '#F8FAFC';
+              borderColor = '#CBD5E1';
+              textColor = '#475569';
+              IconComp = AlertCircle;
+              statusTitle = 'Application Process Closed';
+              statusSub = 'Employer selected another candidate for this opening.';
+            }
+
+            return (
+              <View style={[styles.appliedBanner, { backgroundColor: bg, borderColor: borderColor }]}>
+                <IconComp size={20} color={textColor} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.appliedBannerText, { color: textColor }]}>{statusTitle}</Text>
+                  <Text style={styles.appliedBannerSubtext}>{statusSub}</Text>
+                </View>
+              </View>
+            );
+          })()
         ) : (
           <TouchableOpacity
             activeOpacity={0.85}
@@ -922,18 +1105,131 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    justifyContent: 'flex-start',
+    gap: 10,
     backgroundColor: '#DCFCE7',
     borderWidth: 1,
     borderColor: '#86EFAC',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 0,
   },
   appliedBannerText: {
     color: '#15803D',
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '900',
+  },
+  appliedBannerSubtext: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  interviewDetailsCard: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#FCD34D',
+    borderRadius: 0,
+    padding: 14,
+    gap: 12,
+  },
+  interviewHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  interviewIconBox: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  interviewHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#92400E',
+  },
+  interviewHeaderSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#B45309',
+  },
+  interviewStatusBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 0,
+  },
+  interviewStatusBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  interviewSpecGrid: {
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: 10,
+  },
+  interviewSpecRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  interviewSpecLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  interviewSpecValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  interviewActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  interviewMapBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  interviewMapBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+  interviewCallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#2563EB',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  interviewCallBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,
