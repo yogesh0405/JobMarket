@@ -56,6 +56,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
           <Stack.Screen name="EmployerBanners" component={EmployerBannersScreen} />
           <Stack.Screen name="JobApplicants" component={JobApplicantsScreen} />
+          <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />

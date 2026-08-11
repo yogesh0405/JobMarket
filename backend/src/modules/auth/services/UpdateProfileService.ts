@@ -12,6 +12,7 @@ export class UpdateProfileService {
     tradeSpecialization?: string;
     headline?: string;
     location?: string;
+    bio?: string;
     skills?: string[];
     preferredShift?: string;
     requiresBus?: boolean;

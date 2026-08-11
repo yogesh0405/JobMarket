@@ -179,6 +179,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const handleShareJob = async () => {
     const targetJob = job || passedJob;
     const jobIdStr = jobId || targetJob?.id || '';
+    const appDeepLink = jobIdStr ? `jobmarket://job/${jobIdStr}` : 'jobmarket://';
     const liveWebUrl = jobIdStr ? `https://jobmarket-ongn.onrender.com/job/${jobIdStr}` : 'https://jobmarket-ongn.onrender.com';
     const titleStr = targetJob?.title ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}` : 'Industrial Job Vacancy';
     const locationStr = targetJob?.location || 'MIDC Industrial Zone';
@@ -192,11 +193,11 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       }
     }
 
-    const shareMsg = `🔥 Industrial Job Opening!\n\n📋 Role: ${targetJob?.title || 'Technical Specialist'}\n🏢 Company: ${targetJob?.company || 'Industrial Company'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n👉 Open in JobMarket App or Web:\n${liveWebUrl}`;
+    const shareMsg = `🔥 Industrial Job Opening!\n\n📋 Role: ${targetJob?.title || 'Technical Specialist'}\n🏢 Company: ${targetJob?.company || 'Industrial Company'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n📲 Open in JobMarket App:\n${appDeepLink}\n\n🌐 View on Web:\n${liveWebUrl}`;
 
     try {
       if (Platform.OS === 'ios') {
-        await Share.share({ title: titleStr, message: shareMsg, url: liveWebUrl });
+        await Share.share({ title: titleStr, message: shareMsg, url: appDeepLink });
       } else {
         await Share.share({ title: titleStr, message: shareMsg }, { dialogTitle: titleStr });
       }

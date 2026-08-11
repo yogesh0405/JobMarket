@@ -11,10 +11,23 @@ import { useAuth } from './src/hooks/useAuth';
 
 // Deep Linking Configuration for Shared Job & Platform URLs
 const linking: LinkingOptions<any> = {
-  prefixes: ['jobmarket://', 'https://jobmarket-ongn.onrender.com'],
+  prefixes: [
+    'jobmarket://',
+    'https://jobmarket-ongn.onrender.com',
+    'http://jobmarket-ongn.onrender.com',
+  ],
   config: {
     screens: {
       CandidateJobDetail: 'job/:jobId',
+      CandidateMain: {
+        screens: {
+          CandidateJobsTab: {
+            screens: {
+              CandidateJobDetail: 'job/:jobId',
+            },
+          },
+        },
+      },
       VerifyOTP: 'verify-otp',
       CandidateProfile: 'candidate-profile',
       CompanyProfile: 'company-profile',
