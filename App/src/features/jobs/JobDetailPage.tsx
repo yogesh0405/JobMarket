@@ -257,14 +257,14 @@ export const JobDetailPage: React.FC = () => {
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '16px 16px 140px 16px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
-        {/* Concise Top App Handoff Banner Bar */}
+        {/* Compact Top App Handoff Banner Bar */}
         {showAppBanner && (
           <div className="app-handoff-banner-bar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '6px',
+                width: '24px',
+                height: '24px',
+                borderRadius: '5px',
                 background: '#EFF6FF',
                 border: '1px solid #BFDBFE',
                 color: '#2563EB',
@@ -273,7 +273,7 @@ export const JobDetailPage: React.FC = () => {
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
                   <line x1="12" y1="18" x2="12.01" y2="18"/>
                 </svg>
@@ -295,7 +295,7 @@ export const JobDetailPage: React.FC = () => {
                 onClick={() => setShowAppBanner(false)}
                 title="Dismiss"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -307,32 +307,32 @@ export const JobDetailPage: React.FC = () => {
         <style>{`
           .app-handoff-banner-bar {
             background: #FFFFFF;
-            border-radius: 10px;
-            padding: 12px 18px;
+            border-radius: 8px;
+            padding: 7px 12px;
             width: 100%;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
-            border: 1.5px solid #CBD5E1;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+            border: 1px solid #CBD5E1;
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-bottom: 12px;
             box-sizing: border-box;
           }
 
           .app-handoff-title {
-            font-size: 15px;
-            font-weight: 800;
+            font-size: 13px;
+            font-weight: 700;
             color: #0F172A;
             line-height: 1.2;
-            letter-spacing: -0.2px;
+            letter-spacing: -0.1px;
           }
 
           .app-handoff-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-shrink: 0;
           }
 
@@ -340,16 +340,16 @@ export const JobDetailPage: React.FC = () => {
             background: #344BFD;
             color: #FFFFFF;
             border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 13.5px;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 3px 10px rgba(52, 75, 253, 0.25);
+            box-shadow: 0 2px 6px rgba(52, 75, 253, 0.2);
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             transition: all 0.15s ease;
           }
 
