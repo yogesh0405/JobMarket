@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   Sparkles,
   Image as ImageIcon,
+  Megaphone,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -462,11 +463,11 @@ export const Header: React.FC<HeaderProps> = ({
                       });
                     }}
                   >
-                    <View style={[styles.iconSquircle, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-                      <Sparkles size={17} color="#2563EB" />
+                    <View style={styles.iconSquircle}>
+                      <Megaphone size={17} color="#334155" />
                     </View>
-                    <Text style={[styles.menuItemTitle, { color: '#2563EB', fontWeight: '800' }]}>Promote Banner / Ads</Text>
-                    <ChevronRight size={16} color="#2563EB" />
+                    <Text style={styles.menuItemTitle}>Promote Banner / Ads</Text>
+                    <ChevronRight size={16} color={COLORS.slate400} />
                   </TouchableOpacity>
                 </>
               )}
