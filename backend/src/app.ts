@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -71,9 +72,28 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve Mobile App assets & Web App frontend static assets
-const webDistPath = path.join(__dirname, '../../App/dist');
-app.use(express.static(webDistPath));
+// Helper to locate Web App frontend build path dynamically
+const findWebDistPath = (): string => {
+  const candidatePaths = [
+    path.join(__dirname, '../../App/dist'),
+    path.join(__dirname, '../App/dist'),
+    path.join(process.cwd(), '../App/dist'),
+    path.join(process.cwd(), 'App/dist'),
+    path.join(__dirname, '../../../App/dist')
+  ];
+  for (const p of candidatePaths) {
+    if (fs.existsSync(path.join(p, 'index.html'))) {
+      return p;
+    }
+  }
+  return path.join(__dirname, '../../App/dist');
+};
+
+const webDistPath = findWebDistPath();
+app.use((req, res, next) => {
+  const currentDist = findWebDistPath();
+  express.static(currentDist)(req, res, next);
+});
 app.use('/assets', express.static(path.join(__dirname, '../../MobileApp/assets')));
 
 // Health Check Endpoints
@@ -176,7 +196,8 @@ app.get('/job/:id', async (req, res, next) => {
   }
 
   // 2. Web Browsers (macOS / Windows / Mobile Browser): Serve the REAL Web Application
-  const indexPath = path.join(webDistPath, 'index.html');
+  const activeWebDist = findWebDistPath();
+  const indexPath = path.join(activeWebDist, 'index.html');
   try {
     const fs = require('fs');
     if (fs.existsSync(indexPath)) {
@@ -441,7 +462,8 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || req.path.startsWith('/uploads/')) {
     return next();
   }
-  const indexPath = path.join(webDistPath, 'index.html');
+  const activeWebDist = findWebDistPath();
+  const indexPath = path.join(activeWebDist, 'index.html');
   try {
     const fs = require('fs');
     if (fs.existsSync(indexPath)) {
