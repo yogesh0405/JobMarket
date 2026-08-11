@@ -238,20 +238,28 @@ export const JobDetailPage: React.FC = () => {
     } catch (e) {}
 
     const isAndroid = /Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const jobId = job.id;
     const webUrl = `${window.location.origin}/job/${jobId}`;
     const customSchemeUrl = `jobmarket://job/${jobId}`;
     const androidIntentUrl = `intent://job/${jobId}#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=${encodeURIComponent(webUrl)};end;`;
 
-    if (isAndroid) {
-      window.location.href = androidIntentUrl;
-      setTimeout(() => {
-        window.location.href = customSchemeUrl;
-      }, 400);
-    } else {
+    // 1. Trigger high-priority DOM anchor click for OS deep scheme handler
+    const link = document.createElement('a');
+    link.style.display = 'none';
+    link.href = isAndroid ? androidIntentUrl : customSchemeUrl;
+    document.body.appendChild(link);
+    link.click();
+
+    // 2. Direct location assignment fallback
+    setTimeout(() => {
       window.location.href = customSchemeUrl;
-    }
+    }, 200);
+
+    setTimeout(() => {
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
+    }, 800);
   };
 
   return (

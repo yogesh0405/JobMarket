@@ -86,15 +86,27 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const rawParamId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
   const initialJobId = extractJobIdFromUrl(rawParamId);
 
+  const findSeedJob = (targetId?: string): Job | undefined => {
+    if (!targetId) return undefined;
+    const cleanId = String(targetId).trim().toLowerCase();
+    return FALLBACK_SEED_JOBS.find(j =>
+      j.id.toLowerCase() === cleanId ||
+      j.id.toLowerCase() === `j${cleanId}` ||
+      cleanId === `j${j.id.toLowerCase()}` ||
+      cleanId.includes(j.id.toLowerCase()) ||
+      j.title.toLowerCase().includes(cleanId)
+    );
+  };
+
   const [activeJobId, setActiveJobId] = useState<string | undefined>(initialJobId);
   const passedJob = route?.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
-  const fallbackJob = passedJob || (activeJobId ? FALLBACK_SEED_JOBS.find(j => j.id === activeJobId) : undefined);
-  const [job, setJob] = useState<Job | null>(fallbackJob || null);
-  const [loading, setLoading] = useState(!fallbackJob);
+  const initialFallbackJob = passedJob || findSeedJob(activeJobId);
+  const [job, setJob] = useState<Job | null>(initialFallbackJob || null);
+  const [loading, setLoading] = useState(!initialFallbackJob);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -165,25 +177,30 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     let mounted = true;
 
     const fetchDetails = async () => {
-      if (!passedJob) setLoading(true);
+      const seedJob = findSeedJob(jobId);
+      if (seedJob && mounted) {
+        setJob(seedJob);
+        setLoading(false);
+      } else if (!passedJob && mounted) {
+        setLoading(true);
+      }
+
       try {
-        // 1. Fetch public job details FIRST (instant 50ms load)
         const jobRes = await jobsApi.getJobById(jobId).catch(() => null);
         if (mounted) {
           const rawJob: any = jobRes;
           const parsedJob: Job | null = rawJob?.data || (rawJob?.id ? rawJob : null);
           if (parsedJob) {
             setJob(parsedJob);
-          } else if (!job) {
-            const seedMatch = FALLBACK_SEED_JOBS.find(j => j.id === jobId);
-            if (seedMatch) setJob(seedMatch);
+          } else {
+            const fallback = findSeedJob(jobId);
+            if (fallback) setJob(fallback);
           }
         }
       } catch (e) {
-        console.log('Error fetching job details:', e);
-        if (mounted && !job) {
-          const seedMatch = FALLBACK_SEED_JOBS.find(j => j.id === jobId);
-          if (seedMatch) setJob(seedMatch);
+        if (mounted) {
+          const fallback = findSeedJob(jobId);
+          if (fallback) setJob(fallback);
         }
       } finally {
         if (mounted) setLoading(false);
