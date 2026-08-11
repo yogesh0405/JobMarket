@@ -95,10 +95,35 @@ export const JobDetailPage: React.FC = () => {
   }, [location.hash]);
 
   useEffect(() => {
-    if (isMobileDevice && job) {
-      setShowAppBanner(true);
+    if (!isMobileDevice || !job) {
+      setShowAppBanner(false);
+      return;
+    }
+
+    try {
+      const isDismissed = localStorage.getItem('jobmarket_app_banner_dismissed') === 'true';
+      const isInstalled = localStorage.getItem('jobmarket_app_installed') === 'true' ||
+                          localStorage.getItem('jobmarket_has_mobile_app') === 'true' ||
+                          /JobMarket|JobMarketApp/i.test(navigator.userAgent) ||
+                          (window as any).isJobMarketApp === true;
+
+      // Only show the app banner if app is confirmed installed on device and not dismissed
+      if (isInstalled && !isDismissed) {
+        setShowAppBanner(true);
+      } else {
+        setShowAppBanner(false);
+      }
+    } catch (e) {
+      setShowAppBanner(false);
     }
   }, [isMobileDevice, job]);
+
+  const handleDismissAppBanner = () => {
+    setShowAppBanner(false);
+    try {
+      localStorage.setItem('jobmarket_app_banner_dismissed', 'true');
+    } catch (e) {}
+  };
 
   const handleBackToJobs = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -284,7 +309,7 @@ export const JobDetailPage: React.FC = () => {
               </button>
               <button
                 className="app-handoff-close-btn"
-                onClick={() => setShowAppBanner(false)}
+                onClick={handleDismissAppBanner}
                 title="Dismiss"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
