@@ -21,6 +21,8 @@ import {
   AlertCircle,
   ChevronRight,
   ClipboardList,
+  Send,
+  Award,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -98,30 +100,38 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
-  const renderStatusPill = (status?: string) => {
+  const renderStatusBadge = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
-    let color = '#16A34A'; // Green color for Applied
-    let label = 'Applied';
-    let IconComponent = CheckCircle2;
+    let color = '#2563EB';
+    let label = 'Application Submitted';
+    let IconComp = Send;
 
-    if (s === 'shortlisted' || s === 'accepted') {
-      color = '#16A34A';
-      label = s === 'accepted' ? 'Hired' : 'Shortlisted';
-      IconComponent = CheckCircle2;
-    } else if (s === 'reviewed') {
-      color = '#D97706';
+    if (s === 'reviewed' || s === 'under_review') {
+      color = '#1D4ED8';
       label = 'Under Review';
-      IconComponent = Clock;
+      IconComp = Clock;
+    } else if (s === 'shortlisted') {
+      color = '#0284C7';
+      label = 'Shortlisted by Recruiter';
+      IconComp = Award;
+    } else if (s === 'interview' || s === 'interview_scheduled') {
+      color = '#B45309';
+      label = 'Interview Scheduled';
+      IconComp = Calendar;
+    } else if (s === 'hired' || s === 'selected' || s === 'accepted') {
+      color = '#047857';
+      label = 'Selected / Hired';
+      IconComp = CheckCircle2;
     } else if (s === 'rejected') {
-      color = '#DC2626';
-      label = 'Rejected';
-      IconComponent = AlertCircle;
+      color = '#64748B';
+      label = 'Application Closed';
+      IconComp = AlertCircle;
     }
 
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        <IconComponent size={14} color={color} />
-        <Text style={{ fontSize: 12, fontWeight: '700', color }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <IconComp size={14} color={color} />
+        <Text style={{ fontSize: 12.5, fontWeight: '800', color }}>{label}</Text>
       </View>
     );
   };
@@ -201,13 +211,19 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
           ) : (
             appliedList.map((item) => {
               const job = item.job || item;
+              const targetJobId = item.jobId || job.id || job._id;
               const status = (item.status || 'applied').toLowerCase();
-              const isShortlisted = status === 'shortlisted' || status === 'accepted';
+              const isShortlisted = status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
               const rawLogo = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo || (job as any).companyLogoUrl;
               const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
 
               return (
-                <View key={item.jobId || job.id} style={styles.appliedCard3D}>
+                <TouchableOpacity
+                  key={targetJobId || `app-${Math.random()}`}
+                  activeOpacity={0.88}
+                  style={styles.appliedCard3D}
+                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: targetJobId, id: targetJobId, job })}
+                >
                   {/* Card Top Row */}
                   <View style={styles.cardHeaderRow}>
                     <CompanyLogoAvatar
@@ -224,9 +240,11 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                         {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC'}
                       </Text>
                     </View>
+
+                    <ChevronRight size={18} color="#94A3B8" />
                   </View>
 
-                  {/* Metadata Row (Clean inline text, no chip boxes) */}
+                  {/* Metadata Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaInlineItem}>
                       <MapPin size={12} color="#2563EB" />
@@ -243,14 +261,14 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     ) : null}
                   </View>
 
-                  {/* Interview Schedule Container (If Shortlisted) */}
+                  {/* Interview Schedule Details (If Interview Scheduled) */}
                   {isShortlisted && (item.interviewDate || item.interview_date) ? (
                     <View style={styles.interviewContainer}>
                       <View style={styles.interviewHeaderRow}>
                         <Calendar size={16} color="#15803D" />
                         <Text style={styles.interviewHeaderTitle}>Interview Call Scheduled</Text>
                         <View style={styles.actionPill}>
-                          <Text style={styles.actionPillText}>ACTION REQUIRED</Text>
+                          <Text style={styles.actionPillText}>CONFIRMED</Text>
                         </View>
                       </View>
 
@@ -276,7 +294,10 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                         <TouchableOpacity
                           activeOpacity={0.8}
                           style={styles.openMapsBtn}
-                          onPress={() => handleOpenMaps(item.mapsLink || item.maps_link)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleOpenMaps(item.mapsLink || item.maps_link);
+                          }}
                         >
                           <MapPin size={14} color="#FFFFFF" />
                           <Text style={styles.openMapsBtnText}>Open Directions in Google Maps</Text>
@@ -286,23 +307,15 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                   ) : null}
 
-                  {/* Footer Action Row */}
+                  {/* Footer Action Row with Real Live Application Status */}
                   <View style={styles.cardFooterRow}>
                     <Text style={styles.appliedDateText}>
-                      Applied on {item.appliedAt ? new Date(item.appliedAt).toLocaleDateString() : 'Recently'}
+                      Applied {item.appliedAt ? new Date(item.appliedAt).toLocaleDateString() : 'Recently'}
                     </Text>
 
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                      onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
-                    >
-                      <CheckCircle2 size={14} color="#16A34A" />
-                      <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#16A34A' }}>Applied</Text>
-                      <ChevronRight size={14} color="#16A34A" />
-                    </TouchableOpacity>
+                    {renderStatusBadge(item.status)}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })
           )}
