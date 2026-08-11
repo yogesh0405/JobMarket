@@ -66,7 +66,7 @@ export class UserRepository {
     return CacheService.getOrSet(`user:profile:${id}`, 900, async () => {
       const query = `
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
-               trade_specialization, status, created_at, updated_at, headline, location, bio, skills, 
+               trade_specialization, status, created_at, updated_at, headline, location, skills, 
                preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url,
                COALESCE(is_resume_public, true) as is_resume_public 
         FROM users 
@@ -153,7 +153,6 @@ export class UserRepository {
     const fieldMap: Record<string, string> = {
       name: 'name',
       phone: 'phone',
-      bio: 'bio',
       company_name: 'company_name',
       companyName: 'company_name',
       gst_number: 'gst_number',
