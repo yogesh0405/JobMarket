@@ -239,22 +239,14 @@ export const JobDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '24px 16px 140px 16px' }}>
-      {/* 100% Exact Matching Mobile App Handoff Modal Popup Overlay with Faded Backdrop */}
-      {showAppBanner && typeof document !== 'undefined' && createPortal(
-        <div
-          className="app-handoff-modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowAppBanner(false);
-          }}
-        >
-          <div className="app-handoff-modal-card">
-            {/* Title (No Logo) */}
+    <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '16px 16px 140px 16px' }}>
+      {/* Clean Sticky Top App Handoff Banner Bar */}
+      {showAppBanner && (
+          <div className="app-handoff-banner-bar">
             <div className="app-handoff-title">
               Better experience in the app
             </div>
 
-            {/* Right Action Area (Open Button + Dismiss in SAME line) */}
             <div className="app-handoff-actions">
               <button
                 className="app-handoff-btn"
@@ -282,40 +274,87 @@ export const JobDetailPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-      <style>{`
-        .app-handoff-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(15, 23, 42, 0.35);
-          z-index: 999999;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 14px;
-        }
+        )}
 
-        .app-handoff-modal-card {
-          background: #FFFFFF;
-          border-radius: 12px;
-          padding: 12px 16px;
-          width: 100%;
-          max-width: 520px;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08);
-          border: 1px solid #E2E8F0;
-          position: relative;
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-top: 6px;
-        }
+        <style>{`
+          .app-handoff-banner-bar {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 10px 16px;
+            width: 100%;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            border: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+          }
+
+          .app-handoff-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0F172A;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+          }
+
+          .app-handoff-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+          }
+
+          .app-handoff-btn {
+            background: #FFFFFF;
+            color: #2563EB;
+            border: 1.5px solid #2563EB;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+          }
+
+          .app-handoff-btn:hover {
+            background: #F8FAFC;
+            border-color: #1D4ED8;
+            color: #1D4ED8;
+          }
+
+          .app-handoff-btn:active {
+            transform: scale(0.98);
+          }
+
+          .app-handoff-close-btn {
+            background: transparent;
+            color: #94A3B8;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+          }
+
+          .app-handoff-close-btn:hover {
+            background: #F1F5F9;
+            color: #64748B;
+          }
 
         .app-handoff-title {
           font-size: 14px;
