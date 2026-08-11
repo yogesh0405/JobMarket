@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-const { ZodError } = require('zod');
+import { z, ZodError } from 'zod';
 import { BadRequestError } from '../errors/AppError';
 
 export const validate = (schema: any) => {
@@ -11,17 +11,18 @@ export const validate = (schema: any) => {
         params: req.params,
       });
       next();
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const zodErrors = (error as any).issues || (error as any).errors || [];
-        const errors = zodErrors.map((err: any) => ({
-          field: err.path.join('.'),
+    } catch (error: any) {
+      const isZodError = error instanceof ZodError || error?.name === 'ZodError' || Array.isArray(error?.issues) || Array.isArray(error?.errors);
+      if (isZodError) {
+        const zodIssues = error?.issues || error?.errors || [];
+        const errors = zodIssues.map((err: any) => ({
+          field: Array.isArray(err.path) ? err.path.join('.') : err.path,
           message: err.message
         }));
-        // We can throw our custom error or handle it directly here
-        res.status(400).json({ 
+        const firstMessage = errors[0]?.message || 'Validation failed.';
+        return res.status(400).json({ 
           success: false, 
-          message: 'Validation failed.', 
+          message: firstMessage, 
           data: null, 
           errors 
         });

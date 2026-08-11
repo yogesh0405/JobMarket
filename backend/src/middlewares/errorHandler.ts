@@ -37,12 +37,13 @@ export const errorHandler = (
     });
   }
 
-  logger.error('Unhandled Error', err);
+  logger.error('Unhandled Error:', err);
 
-  return res.status(500).json({
+  const status = (err as any).status || 500;
+  return res.status(status).json({
     success: false,
-    message: 'Internal Server Error',
+    message: err.message || 'Internal Server Error',
     data: null,
-    errors: []
+    errors: [err.name || 'INTERNAL_ERROR']
   });
 };
