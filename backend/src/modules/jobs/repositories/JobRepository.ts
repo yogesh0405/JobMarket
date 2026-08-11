@@ -192,7 +192,7 @@ export class JobRepository {
     return CacheService.getOrSet(`cache:job:${id}`, 180, async () => {
       const query = `
         SELECT j.*, 
-               COALESCE(NULLIF(j.company_logo, ''), NULLIF(u.profile_picture_url, ''), NULLIF(u.company_logo, '')) as company_logo
+               COALESCE(NULLIF(j.company_logo, ''), NULLIF(u.profile_picture_url, '')) as company_logo
         FROM jobs j
         LEFT JOIN users u ON j.employer_id = u.id
         WHERE j.id = $1
