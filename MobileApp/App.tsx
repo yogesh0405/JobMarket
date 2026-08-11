@@ -22,15 +22,6 @@ const linking: LinkingOptions<any> = {
   config: {
     screens: {
       CandidateJobDetail: 'job/:jobId',
-      CandidateMain: {
-        screens: {
-          CandidateJobsTab: {
-            screens: {
-              CandidateJobDetail: 'job/:jobId',
-            },
-          },
-        },
-      },
       VerifyOTP: 'verify-otp',
       CandidateProfile: 'candidate-profile',
       CompanyProfile: 'company-profile',
