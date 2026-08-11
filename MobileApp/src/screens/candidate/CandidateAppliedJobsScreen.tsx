@@ -103,7 +103,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const renderStatusBadge = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
     let color = '#2563EB';
-    let label = 'Application Submitted';
+    let label = 'Applied';
     let IconComp = Send;
 
     if (s === 'reviewed' || s === 'under_review') {
@@ -112,26 +112,26 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
       IconComp = Clock;
     } else if (s === 'shortlisted') {
       color = '#0284C7';
-      label = 'Shortlisted by Recruiter';
+      label = 'Shortlisted';
       IconComp = Award;
     } else if (s === 'interview' || s === 'interview_scheduled') {
-      color = '#B45309';
-      label = 'Interview Scheduled';
+      color = '#D97706';
+      label = 'Interview';
       IconComp = Calendar;
     } else if (s === 'hired' || s === 'selected' || s === 'accepted') {
       color = '#047857';
-      label = 'Selected / Hired';
+      label = 'Hired';
       IconComp = CheckCircle2;
     } else if (s === 'rejected') {
-      color = '#64748B';
-      label = 'Application Closed';
+      color = '#DC2626';
+      label = 'Rejected';
       IconComp = AlertCircle;
     }
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
         <IconComp size={14} color={color} />
-        <Text style={{ fontSize: 12.5, fontWeight: '800', color }}>{label}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '800', color }}>{label}</Text>
       </View>
     );
   };

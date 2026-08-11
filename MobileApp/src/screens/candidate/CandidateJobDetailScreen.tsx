@@ -776,45 +776,45 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             const st = (appliedItem?.status || 'applied').toLowerCase();
             let bg = '#F0FDF4';
             let borderColor = '#BBF7D0';
-            let textColor = '#15803D';
-            let IconComp = CheckCircle2;
-            let statusTitle = 'Application Submitted';
-            let statusSub = 'Employer has received your candidate profile & CV specs.';
+            let textColor = '#2563EB';
+            let IconComp = Send;
+            let statusTitle = 'Applied';
+            let statusSub = 'Employer received your candidate profile & CV specs.';
 
             if (st === 'reviewed' || st === 'under_review') {
               bg = '#EFF6FF';
               borderColor = '#BFDBFE';
               textColor = '#1D4ED8';
-              IconComp = FileText;
-              statusTitle = 'Under Recruiter Review';
+              IconComp = Clock;
+              statusTitle = 'Under Review';
               statusSub = 'Employer HR team is reviewing your application.';
             } else if (st === 'shortlisted') {
               bg = '#F0F9FF';
               borderColor = '#BAE6FD';
               textColor = '#0284C7';
               IconComp = Award;
-              statusTitle = 'Shortlisted by Recruiter';
+              statusTitle = 'Shortlisted';
               statusSub = 'Profile passed initial screening for interview selection.';
             } else if (st === 'interview' || st === 'interview_scheduled') {
               bg = '#FEF3C7';
               borderColor = '#FCD34D';
-              textColor = '#B45309';
+              textColor = '#D97706';
               IconComp = Calendar;
-              statusTitle = 'Interview Scheduled';
+              statusTitle = 'Interview';
               statusSub = 'Interview invitation details released by recruiter.';
-            } else if (st === 'hired' || st === 'selected') {
+            } else if (st === 'hired' || st === 'selected' || st === 'accepted') {
               bg = '#ECFDF5';
               borderColor = '#A7F3D0';
               textColor = '#047857';
               IconComp = CheckCircle2;
-              statusTitle = 'Selected / Offer Released';
+              statusTitle = 'Hired';
               statusSub = 'Congratulations! You have been selected for this position.';
             } else if (st === 'rejected') {
               bg = '#F8FAFC';
               borderColor = '#CBD5E1';
-              textColor = '#475569';
+              textColor = '#DC2626';
               IconComp = AlertCircle;
-              statusTitle = 'Application Process Closed';
+              statusTitle = 'Rejected';
               statusSub = 'Employer selected another candidate for this opening.';
             }
 
