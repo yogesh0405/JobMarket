@@ -12,6 +12,7 @@ import {
   Image,
   Share,
   Platform,
+  Linking,
 } from 'react-native';
 import {
   MapPin,
@@ -59,7 +60,14 @@ interface Props {
 }
 
 export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const jobId = route.params?.jobId || route.params?.id;
+  const rawParamId = route.params?.jobId || route.params?.id;
+  const extractUuid = (input?: string): string | undefined => {
+    if (!input || typeof input !== 'string') return undefined;
+    const match = input.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+    return match ? match[1] : input;
+  };
+
+  const [activeJobId, setActiveJobId] = useState<string | undefined>(() => extractUuid(rawParamId));
   const passedJob = route.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -107,18 +115,39 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (!hasResume) missingSections.push('Resume CV Document');
 
   useEffect(() => {
+    if (activeJobId) return;
+
+    // Check cold start initial deep link URL
+    Linking.getInitialURL().then((url: string | null) => {
+      if (url) {
+        const foundId = extractUuid(url);
+        if (foundId) setActiveJobId(foundId);
+      }
+    }).catch(() => {});
+
+    // Listen to warm/background deep link URL events
+    const subscription = Linking.addEventListener('url', (event: { url: string }) => {
+      if (event.url) {
+        const foundId = extractUuid(event.url);
+        if (foundId) setActiveJobId(foundId);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [activeJobId]);
+
+  useEffect(() => {
+    const jobId = activeJobId;
     if (!jobId) return;
     let mounted = true;
 
     const fetchDetails = async () => {
       if (!passedJob) setLoading(true);
       try {
-        const [jobRes, savedRes, appliedRes] = await Promise.all([
-          jobsApi.getJobById(jobId).catch(() => null),
-          candidateApi.getSavedJobs().catch(() => null),
-          candidateApi.getAppliedJobs().catch(() => null),
-        ]);
-
+        // 1. Fetch public job details FIRST (instant 50ms load)
+        const jobRes = await jobsApi.getJobById(jobId).catch(() => null);
         if (mounted && jobRes) {
           const rawJob: any = jobRes;
           const parsedJob: Job | null = rawJob?.data || (rawJob?.id ? rawJob : null);
@@ -126,28 +155,35 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             setJob(parsedJob);
           }
         }
-
-        if (mounted && savedRes) {
-          const savedData: any = savedRes;
-          let savedList: any[] = [];
-          if (Array.isArray(savedData)) savedList = savedData;
-          else if (savedData?.data) savedList = savedData.data;
-          const savedIds = savedList.map((j: any) => j.id || j.jobId);
-          setIsSaved(savedIds.includes(jobId));
-        }
-
-        if (mounted && appliedRes) {
-          const appliedData: any = appliedRes;
-          let appliedList: any[] = [];
-          if (Array.isArray(appliedData)) appliedList = appliedData;
-          else if (appliedData?.data) appliedList = appliedData.data;
-          const already = appliedList.some((item: any) => (item.jobId || item.job?.id || item.id) === jobId);
-          setHasApplied(already);
-        }
       } catch (e) {
         console.log('Error fetching job details:', e);
       } finally {
         if (mounted) setLoading(false);
+      }
+
+      // 2. Fetch saved/applied state in background ONLY if user is logged in
+      if (mounted && user) {
+        candidateApi.getSavedJobs().then((savedRes) => {
+          if (mounted && savedRes) {
+            const savedData: any = savedRes;
+            let savedList: any[] = [];
+            if (Array.isArray(savedData)) savedList = savedData;
+            else if (savedData?.data) savedList = savedData.data;
+            const savedIds = savedList.map((j: any) => j.id || j.jobId);
+            setIsSaved(savedIds.includes(jobId));
+          }
+        }).catch(() => {});
+
+        candidateApi.getAppliedJobs().then((appliedRes) => {
+          if (mounted && appliedRes) {
+            const appliedData: any = appliedRes;
+            let appliedList: any[] = [];
+            if (Array.isArray(appliedData)) appliedList = appliedData;
+            else if (appliedData?.data) appliedList = appliedData.data;
+            const already = appliedList.some((item: any) => (item.jobId || item.job?.id || item.id) === jobId);
+            setHasApplied(already);
+          }
+        }).catch(() => {});
       }
     };
 
@@ -155,7 +191,9 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     return () => {
       mounted = false;
     };
-  }, [jobId, passedJob]);
+  }, [activeJobId, passedJob]);
+
+  const jobId = activeJobId;
 
   const handleToggleSave = () => {
     if (!user) {
