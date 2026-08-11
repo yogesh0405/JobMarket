@@ -655,101 +655,89 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             </>
           ) : null}
 
-          {/* SECTION 7.5: Live Interview Schedule & Entry Pass Details */}
+          {/* SECTION 7.5: Live Interview Schedule & Walk-In Pass */}
           {(hasApplied && ((appliedItem?.status || '').toLowerCase().includes('interview') || appliedItem?.interviewDate || appliedItem?.venueAddress || (job as any)?.interview_address)) ? (
             <>
               <View style={styles.sectionDivider} />
-              <View style={styles.interviewDetailsCard}>
-                <View style={styles.interviewHeaderRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={styles.interviewIconBox}>
-                      <Calendar size={18} color="#B45309" />
-                    </View>
-                    <View>
-                      <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
-                      <Text style={styles.interviewHeaderSub}>Recruiter Walk-In & Entry Pass</Text>
-                    </View>
-                  </View>
-                  <View style={styles.interviewStatusBadge}>
-                    <Text style={styles.interviewStatusBadgeText}>CONFIRMED</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Calendar size={16} color="#2563EB" />
+                <Text style={styles.sectionHeaderTitle}>Interview Schedule & Walk-In Pass</Text>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                {/* Date & Time */}
+                <View style={styles.interviewRowPlain}>
+                  <Clock size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.interviewLabelPlain}>Date & Time</Text>
+                    <Text style={styles.interviewValuePlain}>
+                      {appliedItem?.interviewDate || (job as any)?.interview_date || 'Date to be confirmed by HR'}
+                      {appliedItem?.interviewTime ? ` (${appliedItem.interviewTime})` : ''}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.interviewSpecGrid}>
-                  {/* Date & Time */}
-                  <View style={styles.interviewSpecRow}>
-                    <Clock size={15} color="#0284C7" style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.interviewSpecLabel}>Date & Time</Text>
-                      <Text style={styles.interviewSpecValue}>
-                        {appliedItem?.interviewDate || (job as any)?.interview_date || 'Date to be confirmed by HR'}
-                        {appliedItem?.interviewTime ? ` (${appliedItem.interviewTime})` : ''}
-                      </Text>
-                    </View>
+                {/* Venue Address */}
+                <View style={styles.interviewRowPlain}>
+                  <MapPin size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.interviewLabelPlain}>Interview Venue & Address</Text>
+                    <Text style={styles.interviewValuePlain}>
+                      {appliedItem?.venueAddress || appliedItem?.interviewAddress || (job as any)?.interview_address || job.location}
+                    </Text>
                   </View>
-
-                  {/* Venue Address */}
-                  <View style={styles.interviewSpecRow}>
-                    <MapPin size={15} color="#059669" style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.interviewSpecLabel}>Venue Address</Text>
-                      <Text style={styles.interviewSpecValue}>
-                        {appliedItem?.venueAddress || appliedItem?.interviewAddress || (job as any)?.interview_address || job.location}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Documents to Carry */}
-                  <View style={styles.interviewSpecRow}>
-                    <FileText size={15} color="#D97706" style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.interviewSpecLabel}>Documents to Carry</Text>
-                      <Text style={styles.interviewSpecValue}>
-                        {appliedItem?.interviewDocuments || (job as any)?.walkInDocuments || 'Aadhaar Card, ITI Trade Certificate, Resume CV, 2 Passport Photos'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* HR Contact */}
-                  {(appliedItem?.hrContactPerson || appliedItem?.hrPhone) ? (
-                    <View style={styles.interviewSpecRow}>
-                      <Phone size={15} color="#2563EB" style={{ marginTop: 2 }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.interviewSpecLabel}>Recruiter HR Contact</Text>
-                        <Text style={styles.interviewSpecValue}>
-                          {appliedItem?.hrContactPerson || 'HR Lead'} {appliedItem?.hrPhone ? `(${appliedItem.hrPhone})` : ''}
-                        </Text>
-                      </View>
-                    </View>
-                  ) : null}
                 </View>
+
+                {/* Documents to Carry */}
+                <View style={styles.interviewRowPlain}>
+                  <FileText size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.interviewLabelPlain}>Documents to Carry</Text>
+                    <Text style={styles.interviewValuePlain}>
+                      {appliedItem?.interviewDocuments || (job as any)?.walkInDocuments || 'Aadhaar Card, ITI Trade Certificate, Resume CV, 2 Passport Photos'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* HR Contact */}
+                {(appliedItem?.hrContactPerson || appliedItem?.hrPhone) ? (
+                  <View style={styles.interviewRowPlain}>
+                    <Phone size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.interviewLabelPlain}>Recruiter HR Contact</Text>
+                      <Text style={styles.interviewValuePlain}>
+                        {appliedItem?.hrContactPerson || 'HR Lead'} {appliedItem?.hrPhone ? `(${appliedItem.hrPhone})` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
 
                 {/* Actions */}
-                <View style={styles.interviewActionRow}>
+                <View style={styles.interviewActionRowPlain}>
                   {(job?.google_maps_url || job?.googleMapsUrl || (job?.latitude && job?.longitude)) && (
                     <TouchableOpacity
                       activeOpacity={0.8}
-                      style={styles.interviewMapBtn}
+                      style={styles.interviewMapBtnPlain}
                       onPress={() => {
                         const mapsUrl = job?.google_maps_url || job?.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job?.location || '')}`;
                         Linking.openURL(mapsUrl);
                       }}
                     >
-                      <MapPin size={14} color="#0284C7" />
-                      <Text style={styles.interviewMapBtnText}>Google Maps Directions</Text>
+                      <MapPin size={14} color="#2563EB" />
+                      <Text style={styles.interviewMapBtnTextPlain}>Google Maps Directions</Text>
                     </TouchableOpacity>
                   )}
 
                   {appliedItem?.hrPhone && (
                     <TouchableOpacity
                       activeOpacity={0.8}
-                      style={styles.interviewCallBtn}
+                      style={styles.interviewCallBtnPlain}
                       onPress={() => {
                         Linking.openURL(`tel:${appliedItem.hrPhone}`);
                       }}
                     >
                       <Phone size={14} color="#FFFFFF" />
-                      <Text style={styles.interviewCallBtnText}>Call HR</Text>
+                      <Text style={styles.interviewCallBtnTextPlain}>Call HR</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1130,109 +1118,61 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 1,
   },
-  interviewDetailsCard: {
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1.5,
-    borderColor: '#FCD34D',
-    borderRadius: 0,
-    padding: 14,
-    gap: 12,
-  },
-  interviewHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  interviewIconBox: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  interviewHeaderTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#92400E',
-  },
-  interviewHeaderSub: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#B45309',
-  },
-  interviewStatusBadge: {
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 0,
-  },
-  interviewStatusBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  interviewSpecGrid: {
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    padding: 10,
-  },
-  interviewSpecRow: {
+  interviewRowPlain: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
   },
-  interviewSpecLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#92400E',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  interviewSpecValue: {
-    fontSize: 12,
+  interviewLabelPlain: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 1,
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
-  interviewActionRow: {
+  interviewValuePlain: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  interviewActionRowPlain: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 2,
+    marginTop: 4,
   },
-  interviewMapBtn: {
+  interviewMapBtnPlain: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderColor: '#CBD5E1',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 0,
   },
-  interviewMapBtnText: {
-    fontSize: 11.5,
+  interviewMapBtnTextPlain: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#2563EB',
   },
-  interviewCallBtn: {
+  interviewCallBtnPlain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     backgroundColor: '#2563EB',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 0,
   },
-  interviewCallBtnText: {
-    fontSize: 11.5,
+  interviewCallBtnTextPlain: {
+    fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
   },
