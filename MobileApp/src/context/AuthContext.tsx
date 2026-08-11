@@ -43,24 +43,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await authApi.getProfile();
       if (res.success && res.data) {
         const fetchedUser = (res.data as any).user || res.data;
-        const photoUri =
+
+        // Include defined properties (including empty strings "") so server updates and field deletions on Web sync accurately
+        const cleanedServerData: any = {};
+        if (fetchedUser && typeof fetchedUser === 'object') {
+          Object.keys(fetchedUser).forEach((key) => {
+            if (fetchedUser[key] !== null && fetchedUser[key] !== undefined) {
+              cleanedServerData[key] = fetchedUser[key];
+            }
+          });
+        }
+
+        const serverPhotoUri =
+          fetchedUser?.profile_picture_url ||
+          fetchedUser?.profilePictureUrl ||
+          fetchedUser?.avatar_url ||
+          fetchedUser?.avatarUrl ||
+          fetchedUser?.companyLogo ||
+          fetchedUser?.company_logo ||
+          fetchedUser?.logoUrl ||
+          fetchedUser?.logo_url;
+
+        const localPhotoUri =
           (storedUser as any)?.profile_picture_url ||
           (storedUser as any)?.profilePictureUrl ||
           (storedUser as any)?.avatar_url ||
           (storedUser as any)?.avatarUrl ||
+          (storedUser as any)?.companyLogo ||
+          (storedUser as any)?.company_logo ||
           user?.profile_picture_url ||
           user?.profilePictureUrl;
 
-        const photoPreservation = photoUri
+        const activePhotoUri = serverPhotoUri || localPhotoUri;
+
+        const photoNormalizedData = activePhotoUri
           ? {
-              profile_picture_url: fetchedUser?.profile_picture_url || fetchedUser?.profilePictureUrl || photoUri,
-              profilePictureUrl: fetchedUser?.profilePictureUrl || fetchedUser?.profile_picture_url || photoUri,
-              avatar_url: fetchedUser?.avatar_url || fetchedUser?.avatarUrl || photoUri,
-              avatarUrl: fetchedUser?.avatarUrl || fetchedUser?.avatar_url || photoUri,
+              profile_picture_url: activePhotoUri,
+              profilePictureUrl: activePhotoUri,
+              avatar_url: activePhotoUri,
+              avatarUrl: activePhotoUri,
+              companyLogo: activePhotoUri,
+              company_logo: activePhotoUri,
             }
           : {};
 
-        const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...photoPreservation };
+        // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
+        const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
         setUser(mergedUser);
         await saveStoredUser(mergedUser);
       } else if (storedUser && Object.keys(storedUser).length > 0) {
@@ -215,22 +243,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       : {};
 
-    let updatedUser = { ...storedUser, ...user, ...data, ...photoNormalizedData } as User;
+    // Standardize all profile fields (both camelCase and snake_case)
+    const normalizedData: any = {
+      ...data,
+      ...photoNormalizedData,
+    };
+
+    if (data.companyName || (data as any).company_name) {
+      normalizedData.companyName = data.companyName || (data as any).company_name;
+      normalizedData.company_name = (data as any).company_name || data.companyName;
+    }
+    if (data.tradeSpecialization || (data as any).trade_specialization) {
+      normalizedData.tradeSpecialization = data.tradeSpecialization || (data as any).trade_specialization;
+      normalizedData.trade_specialization = (data as any).trade_specialization || data.tradeSpecialization;
+    }
+    if (data.gstNumber || (data as any).gst_number) {
+      normalizedData.gstNumber = data.gstNumber || (data as any).gst_number;
+      normalizedData.gst_number = (data as any).gst_number || data.gstNumber;
+    }
+    if (data.midcZone || (data as any).midc_zone) {
+      normalizedData.midcZone = data.midcZone || (data as any).midc_zone;
+      normalizedData.midc_zone = (data as any).midc_zone || data.midcZone;
+    }
+    if ((data as any).contactPerson || (data as any).contact_person) {
+      normalizedData.contactPerson = (data as any).contactPerson || (data as any).contact_person;
+      normalizedData.contact_person = (data as any).contact_person || (data as any).contactPerson;
+    }
+    if ((data as any).companyDescription || (data as any).company_description) {
+      normalizedData.companyDescription = (data as any).companyDescription || (data as any).company_description;
+      normalizedData.company_description = (data as any).company_description || (data as any).companyDescription;
+    }
+    if (data.bio !== undefined) {
+      normalizedData.bio = data.bio;
+    }
+
+    let updatedUser = { ...storedUser, ...user, ...normalizedData } as User;
+
+    // Immediately persist locally so state & AsyncStorage are ALWAYS updated instantly
+    setUser(updatedUser);
+    await saveStoredUser(updatedUser);
 
     try {
-      const res = await authApi.updateProfile({ ...data, ...photoNormalizedData });
+      const res = await authApi.updateProfile(normalizedData);
       if (res.success && res.data) {
         const returnedUser = (res.data as any).user || res.data;
         if (returnedUser && typeof returnedUser === 'object') {
-          updatedUser = { ...updatedUser, ...returnedUser, ...photoNormalizedData };
+          updatedUser = { ...updatedUser, ...returnedUser, ...normalizedData };
+          setUser(updatedUser);
+          await saveStoredUser(updatedUser);
         }
       }
     } catch (e) {
-      console.warn('Backend updateProfile sync notice:', e);
+      console.warn('Backend updateProfile sync notice (saved locally):', e);
     }
 
-    setUser(updatedUser);
-    await saveStoredUser(updatedUser);
     return updatedUser;
   };
 

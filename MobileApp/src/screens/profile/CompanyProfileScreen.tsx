@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -43,12 +44,14 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
 import { jobsApi } from '../../api/jobsApi';
+import { candidateApi } from '../../api/candidateApi';
 import { apiFetch } from '../../api/client';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { SelectDropdown } from '../../components/common/SelectDropdown';
+import { ProfileSkeleton, AnalyticsSkeleton } from '../../components/common/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface Props {
@@ -88,7 +91,7 @@ const MIDC_LIST = [
 ];
 
 export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, updateUserProfile, logout } = useAuth();
+  const { user, updateUserProfile, refreshUser, logout } = useAuth();
 
   // Tab State: PROFILE vs ANALYTICS
   const [profileTab, setProfileTab] = useState<'PROFILE' | 'ANALYTICS'>('PROFILE');
@@ -107,6 +110,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [description, setDescription] = useState(user?.companyDescription || user?.company_description || '');
   const [logoUri, setLogoUri] = useState<string | null>(user?.companyLogo || user?.company_logo || null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Live Backend Analytics State
@@ -174,14 +179,25 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
           avgResponseTimeHours: 24,
         });
       }
-    } catch (err) {
-      // Keep baseline values if offline
+    } catch (_) {} finally {
+      setPageLoading(false);
     }
   };
 
   useEffect(() => {
     fetchAnalytics();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUser();
+      await fetchAnalytics();
+    } catch (_) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   React.useEffect(() => {
     if (user) {
@@ -219,21 +235,29 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      const photoUri = asset.uri || (asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : '');
+      const photoUri = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : (asset.uri || '');
       setLogoUri(photoUri);
 
-      // Immediately update global AuthContext & SecureStorage so logo/photo changes instantly everywhere!
-      await updateUserProfile({
-        companyLogo: photoUri,
-        company_logo: photoUri,
-        logoUrl: photoUri,
-        logo_url: photoUri,
-        profile_picture_url: photoUri,
-        profilePictureUrl: photoUri,
-        avatar_url: photoUri,
-        avatarUrl: photoUri,
-        avatar: photoUri,
-      } as any);
+      // Upload to live Cloudinary CDN & PostgreSQL Database
+      try {
+        const res = await candidateApi.uploadProfilePicture(photoUri);
+        const finalCloudUrl = res.data?.url || photoUri;
+
+        await updateUserProfile({
+          companyLogo: finalCloudUrl,
+          company_logo: finalCloudUrl,
+          logoUrl: finalCloudUrl,
+          logo_url: finalCloudUrl,
+          profile_picture_url: finalCloudUrl,
+          profilePictureUrl: finalCloudUrl,
+          avatar_url: finalCloudUrl,
+          avatarUrl: finalCloudUrl,
+          avatar: finalCloudUrl,
+        } as any);
+        setLogoUri(finalCloudUrl);
+      } catch (err) {
+        console.warn('Background logo Cloudinary upload notice:', err);
+      }
     }
   };
 
@@ -300,9 +324,16 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} tintColor="#2563EB" />
+          }
         >
           {error ? <ErrorBanner message={error} style={{ marginBottom: SPACING.md }} /> : null}
 
+          {pageLoading ? (
+            profileTab === 'ANALYTICS' ? <AnalyticsSkeleton /> : <ProfileSkeleton />
+          ) : (
+            <>
           {/* Compact White Header Profile Card with Tabular Navigation Inside Below Profile & Name */}
           <View style={styles.heroBanner}>
             <View style={styles.avatarRow}>
@@ -667,6 +698,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
           )}
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -935,7 +968,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 2,
   },
   liveIndicatorBadge: {
     flexDirection: 'row',
@@ -961,13 +994,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   proRowsContainer: {
-    paddingVertical: 2,
-    marginTop: 2,
+    paddingVertical: 0,
+    marginTop: 0,
   },
   metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: 1.5,
     gap: 8,
   },
   rowIconBox: {
@@ -1092,7 +1125,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 14,
+    padding: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,

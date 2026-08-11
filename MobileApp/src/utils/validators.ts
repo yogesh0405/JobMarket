@@ -1,55 +1,145 @@
-import { z } from 'zod';
+export interface Issue {
+  path: (string | number)[];
+  message: string;
+}
 
-export const passwordSchema = z.string()
-  .min(8, 'Password must be at least 8 characters long.')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter.')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter.')
-  .regex(/[0-9]/, 'Password must contain at least one number.')
-  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character.');
+export type SafeParseResult<T> =
+  | { success: true; data: T; error?: undefined }
+  | { success: false; data?: undefined; error: { issues: Issue[]; errors: Issue[] } };
 
-export const phoneSchema = z.string()
-  .regex(/^[6-9]\d{9}$/, 'Phone number must be a valid 10-digit Indian mobile number');
+export interface Validator<T> {
+  safeParse: (data: any) => SafeParseResult<T>;
+}
 
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email format').trim().toLowerCase(),
-  password: z.string().min(1, 'Password is required'),
+const createValidator = <T>(validateFn: (data: any) => Issue[]): Validator<T> => ({
+  safeParse: (data: any): SafeParseResult<T> => {
+    const issues = validateFn(data || {});
+    if (issues.length > 0) {
+      return {
+        success: false,
+        error: {
+          issues,
+          errors: issues,
+        },
+      };
+    }
+    return {
+      success: true,
+      data: data as T,
+    };
+  },
 });
 
-export const signupSchema = z.object({
-  email: z.string().email('Invalid email format').trim().toLowerCase(),
-  password: passwordSchema,
-  confirmPassword: z.string(),
-  name: z.string().min(1, 'Full name is required'),
-  phone: phoneSchema,
-  companyName: z.string().min(1, 'Company name is required'),
-  gstNumber: z.string().optional(),
-  tradeSpecialization: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/;
+
+export const validatePassword = (pass: string): Issue[] => {
+  const issues: Issue[] = [];
+  const val = String(pass || '');
+  if (val.length < 8) {
+    issues.push({ path: ['password'], message: 'Password must be at least 8 characters long.' });
+  }
+  if (!/[A-Z]/.test(val)) {
+    issues.push({ path: ['password'], message: 'Password must contain at least one uppercase letter.' });
+  }
+  if (!/[a-z]/.test(val)) {
+    issues.push({ path: ['password'], message: 'Password must contain at least one lowercase letter.' });
+  }
+  if (!/[0-9]/.test(val)) {
+    issues.push({ path: ['password'], message: 'Password must contain at least one number.' });
+  }
+  if (!/[^A-Za-z0-9]/.test(val)) {
+    issues.push({ path: ['password'], message: 'Password must contain at least one special character.' });
+  }
+  return issues;
+};
+
+export const passwordSchema = createValidator<string>((val) => validatePassword(String(val || '')));
+
+export const phoneSchema = createValidator<string>((val) => {
+  const issues: Issue[] = [];
+  if (!INDIAN_PHONE_REGEX.test(String(val || '').trim())) {
+    issues.push({ path: ['phone'], message: 'Phone number must be a valid 10-digit Indian mobile number' });
+  }
+  return issues;
 });
 
-export const otpSchema = z.object({
-  otpCode: z.string().length(6, 'OTP must be exactly 6 digits'),
+export const loginSchema = createValidator<{ email: string; password: string }>((data) => {
+  const issues: Issue[] = [];
+  const email = String(data?.email || '').trim().toLowerCase();
+  const password = String(data?.password || '');
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    issues.push({ path: ['email'], message: 'Invalid email format' });
+  }
+  if (!password || password.trim().length === 0) {
+    issues.push({ path: ['password'], message: 'Password is required' });
+  }
+  return issues;
 });
 
-export const jobPostSchema = z.object({
-  title: z.string().min(1, 'Job title is required'),
-  trade: z.string().min(1, 'Trade specialization is required'),
-  industry: z.string().min(1, 'Industry category is required'),
-  job_type: z.enum(['Full-time', 'Part-time', 'Contract', 'Apprenticeship']),
-  work_mode: z.enum(['On-site', 'Remote', 'Hybrid']),
-  min_experience: z.number().min(0, 'Min experience must be 0 or greater'),
-  max_experience: z.number().min(0, 'Max experience must be 0 or greater'),
-  salary_min: z.number().min(1, 'Minimum salary is required'),
-  salary_max: z.number().min(1, 'Maximum salary is required'),
-  openings: z.number().min(1, 'At least 1 opening is required'),
-  location: z.string().min(1, 'Job location / address is required'),
-  description: z.string().min(10, 'Job description must be at least 10 characters'),
-}).refine((data) => data.salary_max >= data.salary_min, {
-  message: "Maximum salary must be greater than or equal to minimum salary.",
-  path: ["salary_max"],
-}).refine((data) => data.max_experience >= data.min_experience, {
-  message: "Maximum experience must be greater than or equal to minimum experience.",
-  path: ["max_experience"],
+export const signupSchema = createValidator<any>((data) => {
+  const issues: Issue[] = [];
+  const email = String(data?.email || '').trim().toLowerCase();
+  const password = String(data?.password || '');
+  const confirmPassword = String(data?.confirmPassword || '');
+  const name = String(data?.name || '').trim();
+  const phone = String(data?.phone || '').trim();
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    issues.push({ path: ['email'], message: 'Invalid email format' });
+  }
+
+  const passIssues = validatePassword(password);
+  issues.push(...passIssues);
+
+  if (password !== confirmPassword) {
+    issues.push({ path: ['confirmPassword'], message: 'Passwords do not match.' });
+  }
+
+  if (!name) {
+    issues.push({ path: ['name'], message: 'Full name is required' });
+  }
+
+  if (!INDIAN_PHONE_REGEX.test(phone)) {
+    issues.push({ path: ['phone'], message: 'Phone number must be a valid 10-digit Indian mobile number' });
+  }
+
+  return issues;
+});
+
+export const otpSchema = createValidator<{ otpCode: string }>((data) => {
+  const issues: Issue[] = [];
+  const code = String(data?.otpCode || '').trim();
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    issues.push({ path: ['otpCode'], message: 'OTP must be exactly 6 digits' });
+  }
+  return issues;
+});
+
+export const jobPostSchema = createValidator<any>((data) => {
+  const issues: Issue[] = [];
+  const title = String(data?.title || '').trim();
+  const trade = String(data?.trade || '').trim();
+  const industry = String(data?.industry || '').trim();
+  const minExp = Number(data?.min_experience ?? 0);
+  const maxExp = Number(data?.max_experience ?? 0);
+  const salaryMin = Number(data?.salary_min ?? 0);
+  const salaryMax = Number(data?.salary_max ?? 0);
+  const openings = Number(data?.openings ?? 1);
+  const location = String(data?.location || '').trim();
+  const description = String(data?.description || '').trim();
+
+  if (!title) issues.push({ path: ['title'], message: 'Job title is required' });
+  if (!trade) issues.push({ path: ['trade'], message: 'Trade specialization is required' });
+  if (!industry) issues.push({ path: ['industry'], message: 'Industry category is required' });
+  if (minExp < 0) issues.push({ path: ['min_experience'], message: 'Min experience must be 0 or greater' });
+  if (maxExp < minExp) issues.push({ path: ['max_experience'], message: 'Maximum experience must be greater than or equal to minimum experience.' });
+  if (salaryMin <= 0) issues.push({ path: ['salary_min'], message: 'Minimum salary is required' });
+  if (salaryMax < salaryMin) issues.push({ path: ['salary_max'], message: 'Maximum salary must be greater than or equal to minimum salary.' });
+  if (openings < 1) issues.push({ path: ['openings'], message: 'At least 1 opening is required' });
+  if (!location) issues.push({ path: ['location'], message: 'Job location / address is required' });
+  if (description.length < 10) issues.push({ path: ['description'], message: 'Job description must be at least 10 characters' });
+
+  return issues;
 });

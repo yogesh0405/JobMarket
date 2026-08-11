@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Building2 } from 'lucide-react-native';
 
 interface Props {
@@ -10,13 +10,13 @@ interface Props {
   style?: any;
 }
 
-export const CompanyLogoAvatar: React.FC<Props> = ({
+export function CompanyLogoAvatar({
   logoUrl,
   companyName,
   size = 40,
   borderRadius = 8,
   style,
-}) => {
+}: Props) {
   const [imageError, setImageError] = useState(false);
 
   const cleanUrl =
@@ -47,6 +47,20 @@ export const CompanyLogoAvatar: React.FC<Props> = ({
     );
   }
 
+  const initialLetter =
+    typeof companyName === 'string' && companyName.trim().length > 0
+      ? companyName.trim().charAt(0).toUpperCase()
+      : null;
+
+  if (initialLetter) {
+    const fontSize = Math.max(12, Math.floor(size * 0.42));
+    return (
+      <View style={[styles.initialBadge, { width: size, height: size, borderRadius }, style]}>
+        <Text style={[styles.initialText, { fontSize }]}>{initialLetter}</Text>
+      </View>
+    );
+  }
+
   // High-Grade Professional Corporate / Industrial Default Badge
   const iconSize = Math.max(16, Math.floor(size * 0.5));
 
@@ -55,7 +69,7 @@ export const CompanyLogoAvatar: React.FC<Props> = ({
       <Building2 size={iconSize} color="#2563EB" strokeWidth={2.2} />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   imageContainer: {
@@ -69,6 +83,18 @@ const styles = StyleSheet.create({
   logoImage: {
     width: '100%',
     height: '100%',
+  },
+  initialBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  initialText: {
+    fontWeight: '800',
+    color: '#2563EB',
   },
   defaultBadge: {
     backgroundColor: '#FFFFFF',

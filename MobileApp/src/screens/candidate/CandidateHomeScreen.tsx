@@ -49,6 +49,7 @@ import {
   FileText,
   Smartphone,
   Check,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -60,6 +61,7 @@ import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoad
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -151,52 +153,52 @@ const DEFAULT_ROLE_TABS_DATA: RoleTabItem[] = [
 
 // 3-Column ITI Trade Cards Grid Data
 const ITI_TRADES_GRID = [
-  { name: 'Fitter', count: '1,450 open positions', icon: Wrench },
-  { name: 'Welder', count: '980 open positions', icon: Zap },
-  { name: 'CNC Operator', count: '1,200 open positions', icon: Tv },
-  { name: 'Electrician', count: '750 open positions', icon: Power },
-  { name: 'Machinist', count: '850 open positions', icon: Cog },
-  { name: 'Helper / Loader', count: '2,100 open positions', icon: Package },
-  { name: 'Quality Inspector', count: '480 open positions', icon: Search },
-  { name: 'Apprentice', count: '1,600 open positions', icon: GraduationCap },
-  { name: 'Driver / Forklift', count: '320 open positions', icon: Briefcase },
-  { name: 'Security Guard', count: '550 open positions', icon: Shield },
-  { name: 'Store Keeper', count: '420 open positions', icon: Folder },
-  { name: 'Technician', count: '680 open positions', icon: Wrench },
+  { name: 'Fitter', icon: Wrench },
+  { name: 'Welder', icon: Zap },
+  { name: 'CNC Operator', icon: Tv },
+  { name: 'Electrician', icon: Power },
+  { name: 'Machinist', icon: Cog },
+  { name: 'Helper / Loader', icon: Package },
+  { name: 'Quality Inspector', icon: Search },
+  { name: 'Apprentice', icon: GraduationCap },
+  { name: 'Driver / Forklift', icon: Briefcase },
+  { name: 'Security Guard', icon: Shield },
+  { name: 'Store Keeper', icon: Folder },
+  { name: 'Technician', icon: Wrench },
 ];
 
 // 3-Column Education Qualification Cards Grid Data
 const EDUCATION_GRID = [
-  { name: '12th Pass Jobs', count: '63,232 Job Openings', icon: GraduationCap },
-  { name: 'B.Com Jobs', count: '34,503 Job Openings', icon: BarChart2 },
-  { name: 'BA Jobs', count: '28,123 Job Openings', icon: FileText },
-  { name: 'B.E. / B.Tech Jobs', count: '26,397 Job Openings', icon: Cog },
-  { name: 'Diploma Jobs', count: '26,208 Job Openings', icon: CheckCircle2 },
-  { name: 'BCA Jobs', count: '21,767 Job Openings', icon: Tv },
-  { name: 'BBA Jobs', count: '19,641 Job Openings', icon: BarChart2 },
-  { name: 'B.Sc Jobs', count: '18,617 Job Openings', icon: Tv },
-  { name: '10th Pass Jobs', count: '27,412 Job Openings', icon: GraduationCap },
+  { name: '12th Pass Jobs', icon: GraduationCap },
+  { name: 'B.Com Jobs', icon: BarChart2 },
+  { name: 'BA Jobs', icon: FileText },
+  { name: 'B.E. / B.Tech Jobs', icon: Cog },
+  { name: 'Diploma Jobs', icon: CheckCircle2 },
+  { name: 'BCA Jobs', icon: Tv },
+  { name: 'BBA Jobs', icon: BarChart2 },
+  { name: 'B.Sc Jobs', icon: Tv },
+  { name: '10th Pass Jobs', icon: GraduationCap },
 ];
 
 // Hospital & Healthcare Jobs Grid Data
 const HOSPITAL_GRID = [
-  { name: 'Staff Nurse', count: '450 Job Openings', icon: HeartPulse },
-  { name: 'Ward Boy / Assistant', count: '380 Job Openings', icon: HeartPulse },
-  { name: 'Lab Assistant', count: '190 Job Openings', icon: HeartPulse },
+  { name: 'Staff Nurse', icon: HeartPulse },
+  { name: 'Ward Boy / Assistant', icon: HeartPulse },
+  { name: 'Lab Assistant', icon: HeartPulse },
 ];
 
 // Hotel, Restaurant & Catering Jobs Grid Data
 const HOTEL_GRID = [
-  { name: 'Commi 1 Chef / Cook', count: '320 Job Openings', icon: Utensils },
-  { name: 'Hotel Waiter', count: '280 Job Openings', icon: Utensils },
-  { name: 'Housekeeping Associate', count: '210 Job Openings', icon: Utensils },
+  { name: 'Commi 1 Chef / Cook', icon: Utensils },
+  { name: 'Hotel Waiter', icon: Utensils },
+  { name: 'Housekeeping Associate', icon: Utensils },
 ];
 
 // School, College & Education Jobs Grid Data
 const SCHOOL_GRID = [
-  { name: 'Primary Teacher', count: '290 Job Openings', icon: BookOpen },
-  { name: 'High School Teacher', count: '240 Job Openings', icon: BookOpen },
-  { name: 'Librarian Assistant', count: '110 Job Openings', icon: HeartPulse },
+  { name: 'Primary Teacher', icon: BookOpen },
+  { name: 'High School Teacher', icon: BookOpen },
+  { name: 'Librarian Assistant', icon: HeartPulse },
 ];
 
 interface Props {
@@ -231,6 +233,25 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const DEFAULT_HOME_FILTERS: FilterOptions = useMemo(
+    () => ({
+      industry: 'All Industries',
+      jobType: 'All Types',
+      workMode: 'All Modes',
+      minExperience: 'All Experience',
+      salaryMin: 0,
+      midcZone: 'All MIDC Zones',
+      busFacility: false,
+      canteen: false,
+      accommodation: false,
+      overtime: false,
+    }),
+    []
+  );
+
+  const [homeFilterDrawerOpen, setHomeFilterDrawerOpen] = useState(false);
+  const [homeFilters, setHomeFilters] = useState<FilterOptions>(DEFAULT_HOME_FILTERS);
 
   const [topSearch, setTopSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -418,6 +439,24 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
+  const handleOpenFilter = () => {
+    setHomeFilterDrawerOpen(true);
+  };
+
+  const handleApplyHomeFilters = (appliedFilters: FilterOptions) => {
+    setHomeFilters(appliedFilters);
+    setHomeFilterDrawerOpen(false);
+    navigation.navigate('CandidateJobsTab', {
+      screen: 'CandidateJobSearch',
+      params: {
+        keyword: topSearch.trim() || undefined,
+        location: appliedFilters.midcZone !== 'All MIDC Zones' ? appliedFilters.midcZone : (locationQuery.trim() || undefined),
+        industry: appliedFilters.industry !== 'All Industries' ? appliedFilters.industry : (selectedIndustry !== 'Select Industry' ? selectedIndustry : undefined),
+        appliedFilters,
+      },
+    });
+  };
+
   const handleQuickTradeSearch = (
     val: string,
     filterType?: 'keyword' | 'location' | 'industry' | 'education'
@@ -506,9 +545,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
       >
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
-        <View style={{ zIndex: 999, position: 'relative' }}>
+        <View style={{ zIndex: 999, position: 'relative', marginBottom: 12 }}>
           <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
-            <TouchableOpacity onPress={handleSearchSubmit} style={styles.searchIconBadge3D} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={handleSearchSubmit}
+              style={styles.searchIconBadge3D}
+              activeOpacity={0.8}
+            >
               <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} strokeWidth={2.2} />
             </TouchableOpacity>
 
@@ -542,9 +585,22 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 }}
                 style={styles.searchClearBtn}
               >
-                <X size={15} color="#64748B" />
+                <X size={14} color="#64748B" strokeWidth={2.2} />
               </TouchableOpacity>
             ) : null}
+
+            {/* Vertical Soft Divider inside Search Bar */}
+            <View style={styles.inlineFilterDivider} />
+
+            {/* Integrated Filter Action Icon Button */}
+            <TouchableOpacity
+              style={styles.inlineFilterBtnIconOnly}
+              onPress={handleOpenFilter}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <SlidersHorizontal size={18} color="#2563EB" strokeWidth={2.2} />
+            </TouchableOpacity>
           </View>
 
           {/* Autocomplete Dropdown Overlay (Only visible when text is entered) */}
@@ -1261,6 +1317,16 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Job Filter Side Drawer Modal on Candidate Home Screen */}
+      <JobFilterSideDrawer
+        visible={homeFilterDrawerOpen}
+        onClose={() => setHomeFilterDrawerOpen(false)}
+        currentFilters={homeFilters}
+        onApplyFilters={handleApplyHomeFilters}
+        onResetFilters={() => setHomeFilters(DEFAULT_HOME_FILTERS)}
+        totalMatchingJobsCount={jobs?.length || 0}
+      />
     </View>
   );
 };
@@ -1271,46 +1337,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 130,
-    gap: 10,
+    gap: 6,
   },
   topSearchPillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#CBD5E1',
     borderRadius: 8,
-    paddingHorizontal: 14,
-    height: 48,
+    paddingHorizontal: 10,
+    height: 50,
     gap: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     elevation: 2,
   },
   topSearchPillRowActive: {
     borderColor: '#2563EB',
-    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#2563EB',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
     elevation: 4,
   },
   searchIconBadge3D: {
-    width: 24,
-    height: 24,
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   topSearchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 14.5,
     color: '#0F172A',
-    fontWeight: '500',
+    fontWeight: '600',
     textAlignVertical: 'center',
     paddingVertical: 0,
     margin: 0,
@@ -1322,6 +1389,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inlineFilterDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 2,
+  },
+  inlineFilterBtnIconOnly: {
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   suggestionsContainer: {
     position: 'absolute',

@@ -9,12 +9,17 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
 import { useAuth } from './src/hooks/useAuth';
 
-// Deep Linking Configuration for Shared Job URLs
+// Deep Linking Configuration for Shared Job & Platform URLs
 const linking: LinkingOptions<any> = {
   prefixes: ['jobmarket://', 'https://jobmarket-ongn.onrender.com'],
   config: {
     screens: {
       CandidateJobDetail: 'job/:jobId',
+      VerifyOTP: 'verify-otp',
+      CandidateProfile: 'candidate-profile',
+      CompanyProfile: 'company-profile',
+      EmployerDashboard: 'employer-dashboard',
+      JobApplicants: 'job-applicants/:jobId',
     },
   },
 };

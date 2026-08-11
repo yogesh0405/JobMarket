@@ -40,10 +40,15 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   
   const token = await getAccessToken();
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
+
+  if (isFormData && (options.headers as Record<string, string>)?.[ 'Content-Type' ] === undefined) {
+    delete headers['Content-Type'];
+  }
 
   if (token && !isAuthEndpoint(endpoint)) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -93,7 +98,26 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
         headers['Authorization'] = `Bearer ${newAccessToken}`;
         const retryRes = await fetch(url, { ...options, headers });
         const retryText = await retryRes.text();
-        return (retryText && retryText.trim() ? JSON.parse(retryText) : {}) as T;
+        let retryJson: any = {};
+        if (retryText && retryText.trim()) {
+          try {
+            retryJson = JSON.parse(retryText);
+          } catch (e) {
+            if (!retryRes.ok) {
+              throw new Error(`Server status ${retryRes.status}: Temporary server error.`);
+            }
+            throw new Error('Server returned non-JSON response.');
+          }
+        }
+        if (!retryRes.ok) {
+          const errorMsg =
+            retryJson?.error ||
+            retryJson?.message ||
+            (Array.isArray(retryJson?.errors) && typeof retryJson.errors[0] === 'object' ? retryJson.errors[0].message : retryJson?.errors?.[0]) ||
+            `Request failed with status ${retryRes.status}`;
+          throw new Error(errorMsg);
+        }
+        return retryJson as T;
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         await clearAuthSession();
@@ -113,7 +137,22 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
             try {
               const res = await fetch(url, { ...options, headers });
               const textRes = await res.text();
-              const jsonRes = textRes && textRes.trim() ? JSON.parse(textRes) : {};
+              let jsonRes: any = {};
+              if (textRes && textRes.trim()) {
+                try {
+                  jsonRes = JSON.parse(textRes);
+                } catch (e) {
+                  if (!res.ok) {
+                    reject(new Error(`Server status ${res.status}: Temporary server error.`));
+                    return;
+                  }
+                }
+              }
+              if (!res.ok) {
+                const errorMsg = jsonRes?.error || jsonRes?.message || `Request failed with status ${res.status}`;
+                reject(new Error(errorMsg));
+                return;
+              }
               resolve(jsonRes);
             } catch (err) {
               reject(err);

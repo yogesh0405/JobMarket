@@ -407,6 +407,10 @@ export const CandidatesScreen: React.FC = () => {
           renderItem={renderCandidateCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={true}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         />
       )}
@@ -738,9 +742,9 @@ const styles = StyleSheet.create({
   },
   searchBarWrapper: {
     paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
-    marginBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 6,
+    marginBottom: 6,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',

@@ -35,6 +35,7 @@ import {
   Wrench,
   GraduationCap,
   AlertTriangle,
+  AlertCircle,
   Check,
   ArrowRight,
   ShieldCheck,
@@ -50,6 +51,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
+import { logger } from '../../utils/logger';
 
 interface Props {
   navigation: any;
@@ -156,6 +158,17 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   }, [jobId, passedJob]);
 
   const handleToggleSave = () => {
+    if (!user) {
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in or create an account to save job vacancies.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => navigation.navigate('EmployerLogin') },
+        ]
+      );
+      return;
+    }
     if (!jobId) return;
     const newSavedState = !isSaved;
     setIsSaved(newSavedState);
@@ -188,7 +201,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         await Share.share({ title: titleStr, message: shareMsg }, { dialogTitle: titleStr });
       }
     } catch (error: any) {
-      console.log('Share error:', error);
+      logger.warn('Share error:', error);
       showToast(error.message || 'Could not open share options', 'error');
     }
   };
@@ -224,38 +237,19 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           ]
         );
       } else {
-        // Fallback success for live user testing when backend warms up
-        setHasApplied(true);
-        Alert.alert(
-          'Application Delivered Successfully! 🎉',
-          `Your application for "${job?.title}" has been transmitted directly to ${job?.company || 'the employer'}.\n\nIt is now listed under your "Applied Jobs" tab.`,
-          [
-            {
-              text: 'View Applied Jobs',
-              onPress: () => navigation.navigate('CandidateAppliedTab'),
-            },
-            { text: 'OK', style: 'cancel' },
-          ]
-        );
+        const errorMsg = res?.message || res?.error || 'Failed to submit application. Please try again.';
+        showToast(errorMsg, 'error');
+        Alert.alert('Application Failed', errorMsg);
       }
     } catch (e: any) {
       setSubmitting(false);
-      setHasApplied(true);
-      Alert.alert(
-        'Application Delivered Successfully! 🎉',
-        `Your application for "${job?.title}" has been transmitted directly to ${job?.company || 'the employer'}.\n\nIt is now listed under your "Applied Jobs" tab.`,
-        [
-          {
-            text: 'View Applied Jobs',
-            onPress: () => navigation.navigate('CandidateAppliedTab'),
-          },
-          { text: 'OK', style: 'cancel' },
-        ]
-      );
+      const errorMsg = e?.message || 'Failed to submit application. Please check your internet connection.';
+      showToast(errorMsg, 'error');
+      Alert.alert('Application Failed', errorMsg);
     }
   };
 
-  if (loading || !job) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <Header title="Job Details" onBack={() => navigation.goBack()} />
@@ -318,6 +312,28 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             </View>
           </View>
         </ScrollView>
+      </View>
+    );
+  }
+
+  if (!job) {
+    return (
+      <View style={styles.container}>
+        <Header title="Job Details" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', padding: 24, borderRadius: 0, width: '100%', alignItems: 'center', gap: 12 }}>
+            <AlertCircle size={44} color="#DC2626" />
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Job Vacancy Unavailable</Text>
+            <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 18 }}>This job listing is no longer active, has expired, or was removed by the employer.</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 }}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Back to Jobs</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
@@ -541,6 +557,17 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             activeOpacity={0.85}
             style={styles.applyNowBtn}
             onPress={() => {
+              if (!user) {
+                Alert.alert(
+                  'Sign In Required',
+                  'Please sign in or create an account to apply for job vacancies.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Sign In', onPress: () => navigation.navigate('EmployerLogin') },
+                  ]
+                );
+                return;
+              }
               if (job) {
                 navigation.navigate('CandidateApplyConfirm', {
                   job,

@@ -13,6 +13,7 @@ import {
   TextInput,
   ActivityIndicator,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import {
   User as UserIcon,
@@ -56,7 +57,7 @@ import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
+import { Skeleton as SkeletonLoader, ProfileSkeleton } from '../../components/common/SkeletonLoader';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
@@ -106,9 +107,13 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
   const [education, setEducation] = useState<any[]>(Array.isArray(user?.education) ? (user?.education as any[]) : []);
 
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [personalInfoOpen, setPersonalInfoOpen] = useState(true);
-  const [tradePrefOpen, setTradePrefOpen] = useState(true);
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
+  const [tradePrefOpen, setTradePrefOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [experienceOpen, setExperienceOpen] = useState(false);
+  const [educationOpen, setEducationOpen] = useState(false);
 
   // Modal States
   const [skillInput, setSkillInput] = useState('');
@@ -251,8 +256,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
         setUploadingPhoto(true);
-        const imageUri = asset.uri || (asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : '');
-        const base64Img = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        const imageUri = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : (asset.uri || '');
+        const base64Img = imageUri;
 
         // 1. Immediately update global user state & local storage so photo changes instantly everywhere!
         await updateUserProfile({
@@ -268,15 +273,14 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         // 2. Sync to server in background
         try {
           const res = await candidateApi.uploadProfilePicture(base64Img);
-          if (res?.success && res?.data?.url) {
-            await updateUserProfile({
-              profile_picture_url: res.data.url,
-              profilePictureUrl: res.data.url,
-              avatar_url: res.data.url,
-              avatarUrl: res.data.url,
-              avatar: res.data.url,
-            } as any);
-          }
+          const finalUrl = res?.data?.url || (res as any)?.url || imageUri;
+          await updateUserProfile({
+            profile_picture_url: finalUrl,
+            profilePictureUrl: finalUrl,
+            avatar_url: finalUrl,
+            avatarUrl: finalUrl,
+            avatar: finalUrl,
+          } as any);
         } catch (err: any) {
           console.warn('Background avatar server upload notice:', err);
         } finally {
@@ -421,6 +425,16 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
     };
   }, []);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUser();
+    } catch (_) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const [uploadingResume, setUploadingResume] = useState(false);
   const [deletingResume, setDeletingResume] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -459,7 +473,14 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         const res = await candidateApi.uploadResume(base64Data, fileName);
         setUploadingResume(false);
 
-        if (res.success) {
+        if (res.success || res.data) {
+          const finalResumeUrl = res.data?.url || (res as any).url || base64Data;
+          await updateUserProfile({
+            resume_url: finalResumeUrl,
+            resumeUrl: finalResumeUrl,
+            resumeName: fileName,
+            resume: { url: finalResumeUrl, name: fileName },
+          } as any);
           await refreshUser();
           showToast('Resume document uploaded successfully', 'success');
         } else {
@@ -532,41 +553,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         />
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Avatar Header Skeleton */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 4 }}>
-            <SkeletonLoader width={72} height={72} style={{ borderRadius: 36 }} />
-            <View style={{ flex: 1, gap: 8 }}>
-              <SkeletonLoader width="65%" height={20} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="45%" height={14} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width={140} height={20} style={{ borderRadius: 0 }} />
-            </View>
-          </View>
-
-          <View style={styles.sectionDivider} />
-
-          {/* Personal Details Form Skeleton */}
-          <SkeletonLoader width="45%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
-
-          <View style={styles.sectionDivider} />
-
-          {/* Industrial Preferences Skeleton */}
-          <SkeletonLoader width="50%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <SkeletonLoader width="100%" height={44} style={{ borderRadius: 0, marginBottom: 8 }} />
-
-          <View style={styles.sectionDivider} />
-
-          {/* Skills & Experience Skeleton */}
-          <SkeletonLoader width="35%" height={16} style={{ borderRadius: 0, marginBottom: 8 }} />
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <SkeletonLoader width={80} height={30} style={{ borderRadius: 0 }} />
-            <SkeletonLoader width={95} height={30} style={{ borderRadius: 0 }} />
-            <SkeletonLoader width={85} height={30} style={{ borderRadius: 0 }} />
-            <SkeletonLoader width={105} height={30} style={{ borderRadius: 0 }} />
-          </View>
+          <ProfileSkeleton />
         </ScrollView>
       </View>
     );
@@ -580,7 +567,13 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         showBack={false}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} tintColor="#2563EB" />
+        }
+      >
         {/* Tabbed Menu Switcher Bar: Profile vs Dashboard (Apple Underline Tab Menu) */}
         <View style={styles.tabBarContainer}>
           <TouchableOpacity
@@ -845,93 +838,157 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
             <View style={[styles.sectionDivider, !tradePrefOpen && { marginVertical: 6 }]} />
 
-            {/* 6. Skills Tag Management */}
+            {/* 6. Skills Tag Management (Collapsible Dropdown Accordion) */}
             <View>
-              <Text style={styles.sectionTitle}>Skills & Technical Capabilities</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.collapsibleHeaderRow, !skillsOpen && { paddingVertical: 2 }]}
+                onPress={() => setSkillsOpen((prev) => !prev)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <Sparkles size={18} color="#2563EB" />
+                  <Text style={styles.sectionTitleNoMargin}>Skills & Technical Capabilities</Text>
+                </View>
+                <View style={styles.chevronCircleBadge}>
+                  {skillsOpen ? (
+                    <ChevronUp size={18} color="#2563EB" />
+                  ) : (
+                    <ChevronDown size={18} color="#64748B" />
+                  )}
+                </View>
+              </TouchableOpacity>
 
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                <TextInput
-                  style={[styles.inputField, { flex: 1 }]}
-                  placeholder="e.g. Vernier Caliper, Fanuc Control..."
-                  placeholderTextColor="#94A3B8"
-                  value={skillInput}
-                  onChangeText={setSkillInput}
-                />
-                <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
-                  <Plus size={16} color="#FFFFFF" />
-                  <Text style={styles.addSkillBtnText}>Add</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.skillsTagRow}>
-                {skills.map((s, idx) => (
-                  <View key={idx} style={styles.skillChip}>
-                    <Text style={styles.skillChipText}>{s}</Text>
-                    <TouchableOpacity onPress={() => handleRemoveSkill(s)}>
-                      <X size={13} color="#64748B" />
+              {skillsOpen ? (
+                <View style={{ marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    <TextInput
+                      style={[styles.inputField, { flex: 1 }]}
+                      placeholder="e.g. Vernier Caliper, Fanuc Control..."
+                      placeholderTextColor="#94A3B8"
+                      value={skillInput}
+                      onChangeText={setSkillInput}
+                    />
+                    <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
+                      <Plus size={16} color="#FFFFFF" />
+                      <Text style={styles.addSkillBtnText}>Add</Text>
                     </TouchableOpacity>
                   </View>
-                ))}
-              </View>
+
+                  <View style={styles.skillsTagRow}>
+                    {skills.map((s, idx) => (
+                      <View key={idx} style={styles.skillChip}>
+                        <Text style={styles.skillChipText}>{s}</Text>
+                        <TouchableOpacity onPress={() => handleRemoveSkill(s)}>
+                          <X size={13} color="#64748B" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </View>
 
-            <View style={styles.sectionDivider} />
+            <View style={[styles.sectionDivider, !skillsOpen && { marginVertical: 6 }]} />
 
-            {/* 7. Work Experience Section */}
+            {/* 7. Work Experience Section (Collapsible Dropdown Accordion) */}
             <View>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.sectionTitle}>Work Experience History</Text>
-                <TouchableOpacity style={styles.addBtnSmall} onPress={() => setExpModalOpen(true)}>
-                  <Plus size={14} color="#2563EB" />
-                  <Text style={styles.addBtnSmallText}>Add Experience</Text>
-                </TouchableOpacity>
-              </View>
-
-              {experience.length === 0 ? (
-                <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
-              ) : (
-                experience.map((item, idx) => (
-                  <View key={idx} style={styles.itemRowCard}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemRowTitle}>{item.title}</Text>
-                      <Text style={styles.itemRowSub}>{item.company} • {item.duration}</Text>
-                      {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
-                    </View>
-                    <TouchableOpacity onPress={() => handleRemoveExperience(idx)}>
-                      <Trash2 size={16} color="#DC2626" />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.collapsibleHeaderRow, !experienceOpen && { paddingVertical: 2 }]}
+                onPress={() => setExperienceOpen((prev) => !prev)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <Briefcase size={18} color="#2563EB" />
+                  <Text style={styles.sectionTitleNoMargin}>Work Experience History</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  {experienceOpen ? (
+                    <TouchableOpacity style={styles.addBtnSmall} onPress={() => setExpModalOpen(true)}>
+                      <Plus size={14} color="#2563EB" />
+                      <Text style={styles.addBtnSmallText}>Add</Text>
                     </TouchableOpacity>
+                  ) : null}
+                  <View style={styles.chevronCircleBadge}>
+                    {experienceOpen ? (
+                      <ChevronUp size={18} color="#2563EB" />
+                    ) : (
+                      <ChevronDown size={18} color="#64748B" />
+                    )}
                   </View>
-                ))
-              )}
+                </View>
+              </TouchableOpacity>
+
+              {experienceOpen ? (
+                <View style={{ marginTop: 12 }}>
+                  {experience.length === 0 ? (
+                    <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
+                  ) : (
+                    experience.map((item, idx) => (
+                      <View key={idx} style={styles.itemRowCard}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.itemRowTitle}>{item.title}</Text>
+                          <Text style={styles.itemRowSub}>{item.company} • {item.duration}</Text>
+                          {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
+                        </View>
+                        <TouchableOpacity onPress={() => handleRemoveExperience(idx)}>
+                          <Trash2 size={16} color="#DC2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ) : null}
             </View>
 
-            <View style={styles.sectionDivider} />
+            <View style={[styles.sectionDivider, !experienceOpen && { marginVertical: 6 }]} />
 
-            {/* 8. Education Section */}
+            {/* 8. Education Section (Collapsible Dropdown Accordion) */}
             <View>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.sectionTitle}>Education & ITI Certification</Text>
-                <TouchableOpacity style={styles.addBtnSmall} onPress={() => setEduModalOpen(true)}>
-                  <Plus size={14} color="#2563EB" />
-                  <Text style={styles.addBtnSmallText}>Add Education</Text>
-                </TouchableOpacity>
-              </View>
-
-              {education.length === 0 ? (
-                <Text style={styles.emptySubText}>No education or ITI certificate entries added yet.</Text>
-              ) : (
-                education.map((item, idx) => (
-                  <View key={idx} style={styles.itemRowCard}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemRowTitle}>{item.degree}</Text>
-                      <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleRemoveEducation(idx)}>
-                      <Trash2 size={16} color="#DC2626" />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.collapsibleHeaderRow, !educationOpen && { paddingVertical: 2 }]}
+                onPress={() => setEducationOpen((prev) => !prev)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <FileText size={18} color="#2563EB" />
+                  <Text style={styles.sectionTitleNoMargin}>Education & ITI Certification</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  {educationOpen ? (
+                    <TouchableOpacity style={styles.addBtnSmall} onPress={() => setEduModalOpen(true)}>
+                      <Plus size={14} color="#2563EB" />
+                      <Text style={styles.addBtnSmallText}>Add</Text>
                     </TouchableOpacity>
+                  ) : null}
+                  <View style={styles.chevronCircleBadge}>
+                    {educationOpen ? (
+                      <ChevronUp size={18} color="#2563EB" />
+                    ) : (
+                      <ChevronDown size={18} color="#64748B" />
+                    )}
                   </View>
-                ))
-              )}
+                </View>
+              </TouchableOpacity>
+
+              {educationOpen ? (
+                <View style={{ marginTop: 12 }}>
+                  {education.length === 0 ? (
+                    <Text style={styles.emptySubText}>No education or ITI certificate entries added yet.</Text>
+                  ) : (
+                    education.map((item, idx) => (
+                      <View key={idx} style={styles.itemRowCard}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.itemRowTitle}>{item.degree}</Text>
+                          <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => handleRemoveEducation(idx)}>
+                          <Trash2 size={16} color="#DC2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.sectionDivider} />
@@ -1369,12 +1426,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   chevronCircleBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 0,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    padding: 4,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1773,10 +1826,8 @@ const styles = StyleSheet.create({
     color: '#16A34A',
   },
   arrowIconPill: {
-    width: 22,
-    height: 22,
-    borderRadius: 0,
-    backgroundColor: '#EFF6FF',
+    padding: 4,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -28,11 +28,12 @@ export const AppNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isAuthenticated ? (
-        // Auth Stack (Default for guest/login)
+        // Auth Stack (Default for guest/login & public shared job link resolution)
         <>
           <Stack.Screen name="EmployerLogin" component={EmployerLoginScreen} />
           <Stack.Screen name="EmployerSignup" component={EmployerSignupScreen} />
           <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
+          <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
         </>
       ) : isCandidate ? (
         // Candidate / Employee App Stack (RBAC)

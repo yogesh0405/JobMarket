@@ -9,7 +9,14 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jobmarket.mobileapp"
+      "bundleIdentifier": "com.jobmarket.mobileapp",
+      "associatedDomains": [
+        "applinks:jobmarket-ongn.onrender.com"
+      ],
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "JobMarket requires access to your photo library to let you upload profile pictures and resume documents.",
+        "NSCameraUsageDescription": "JobMarket requires access to your camera to take profile photos."
+      }
     },
     "android": {
       "package": "com.jobmarket.mobileapp",
@@ -19,8 +26,44 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "jobmarket-ongn.onrender.com",
+              "pathPrefix": "/job"
+            },
+            {
+              "scheme": "jobmarket"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "JobMarket requires access to your photo library to let you upload profile pictures and resume documents.",
+          "cameraPermission": "JobMarket requires access to your camera to take profile photos."
+        }
+      ],
+      "expo-secure-store"
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -30,8 +73,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "673d9a6f-addd-4116-86cf-b54b9c2c2cbe"
+        "projectId": "673f709a-f3b0-4a3f-8df7-377c007d41df"
       }
-    }
+    },
+    "owner": "insightforge"
   }
 }

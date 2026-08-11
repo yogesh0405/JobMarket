@@ -55,140 +55,7 @@ const CATEGORIES = [
   'Education',
 ];
 
-const FALLBACK_JOBS: Job[] = [
-  {
-    id: 'fallback-job-1',
-    employer_id: 'emp-1',
-    company: 'Skyline Manufacturing',
-    title: 'TIG Welder (GTAW)',
-    industry: 'Welding & Metal Fabrication',
-    location: 'pune',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 0,
-    max_experience: 2,
-    salary_min: 200000,
-    salary_max: 250000,
-    openings: 5,
-    description: 'Looking for skilled TIG Welder for stainless steel pipe fabrication in Pune MIDC.',
-    responsibilities: ['Execute TIG welding as per drawing', 'Inspect weld joints for quality'],
-    requirements: ['ITI Welder certificate', '0-2 years experience'],
-    skills: ['TIG Welding', 'GTAW', 'Blueprint Reading'],
-    status: 'APPROVED',
-    posted_at: '7h ago',
-    shift_details: 'Day Shift (8:00 AM - 5:00 PM (9 hrs))',
-  },
-  {
-    id: 'fallback-job-2',
-    employer_id: 'emp-2',
-    company: 'Siemens Industrial Automation',
-    title: 'Control Panel Wireman',
-    industry: 'Electricals & Electronics',
-    location: 'Chakan MIDC, Pune',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 0,
-    max_experience: 3,
-    salary_min: 180000,
-    salary_max: 300000,
-    openings: 8,
-    description: 'Control panel wiring and testing for PLC automation systems.',
-    responsibilities: ['Wire control panels as per schematic', 'Test circuit continuity'],
-    requirements: ['ITI Electrician or Wireman', '0-3 years experience'],
-    skills: ['Control Wiring', 'Panel Assembly', 'Circuit Testing'],
-    status: 'APPROVED',
-    posted_at: '12h ago',
-    shift_details: 'Day Shift (8:30 AM - 5:30 PM)',
-  },
-  {
-    id: 'fallback-job-3',
-    employer_id: 'emp-3',
-    company: 'Tata Motors Component Unit',
-    title: 'CNC & VMC Machine Operator',
-    industry: 'CNC Machining & Tooling',
-    location: 'Bhosari MIDC, Pune',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 1,
-    max_experience: 4,
-    salary_min: 220000,
-    salary_max: 320000,
-    openings: 12,
-    description: 'Precision component machining on Fanuc / Siemens controlled CNC VMC machines.',
-    responsibilities: ['Load components and set zero offset', 'Measure dimensions using micrometer'],
-    requirements: ['ITI Machinist / Turner / CNC operator', '1+ year experience'],
-    skills: ['CNC Operating', 'VMC Operating', 'Vernier & Micrometer'],
-    status: 'APPROVED',
-    posted_at: '1d ago',
-    shift_details: 'Rotational Shift (8 hrs)',
-  },
-  {
-    id: 'fallback-job-4',
-    employer_id: 'emp-4',
-    company: 'Bajaj Auto Plant',
-    title: 'Senior HR Executive',
-    industry: 'HR Jobs',
-    location: 'Waluj MIDC, Chhatrapati SambhajiNagar',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 2,
-    max_experience: 5,
-    salary_min: 350000,
-    salary_max: 500000,
-    openings: 2,
-    description: 'Factory manpower recruitment, payroll processing, and attendance management.',
-    responsibilities: ['Manage daily worker attendance', 'Conduct hiring interviews for technicians'],
-    requirements: ['MBA HR or BBA', '2-5 years experience in factory HR'],
-    skills: ['Recruitment', 'Payroll', 'Labour Laws'],
-    status: 'APPROVED',
-    posted_at: '2d ago',
-    shift_details: 'General Shift (9:00 AM - 6:00 PM)',
-  },
-  {
-    id: 'fallback-job-5',
-    employer_id: 'emp-5',
-    company: 'Godrej Consumer Products',
-    title: 'Marketing Executive',
-    industry: 'Marketing Jobs',
-    location: 'Pune Regional Office',
-    job_type: 'Full-time',
-    work_mode: 'Hybrid',
-    min_experience: 1,
-    max_experience: 3,
-    salary_min: 300000,
-    salary_max: 450000,
-    openings: 4,
-    description: 'Field marketing, dealer network expansion, and promotional campaigns.',
-    responsibilities: ['Visit dealer networks', 'Execute promotional events'],
-    requirements: ['Degree in Marketing / Commerce', 'Good communication skills'],
-    skills: ['B2B Sales', 'Dealer Management', 'Promotional Campaigns'],
-    status: 'APPROVED',
-    posted_at: '3d ago',
-    shift_details: 'Flexible Hours',
-  },
-  {
-    id: 'fallback-job-6',
-    employer_id: 'emp-6',
-    company: 'Sahyadri Specialty Hospital',
-    title: 'Staff Nurse & Medical Assistant',
-    industry: 'Healthcare',
-    location: 'Deccan Gymkhana, Pune',
-    job_type: 'Full-time',
-    work_mode: 'On-site',
-    min_experience: 0,
-    max_experience: 3,
-    salary_min: 240000,
-    salary_max: 360000,
-    openings: 6,
-    description: 'Patient care, vitals monitoring, and assisting ICU doctors in ward operations.',
-    responsibilities: ['Administer medication', 'Maintain patient charts'],
-    requirements: ['B.Sc Nursing or GNM Certificate'],
-    skills: ['Patient Care', 'ICU Care', 'Vitals Monitoring'],
-    status: 'APPROVED',
-    posted_at: '4d ago',
-    shift_details: 'Rotational Shift (8 hrs)',
-  },
-];
+const FALLBACK_JOBS: Job[] = [];
 
 interface Props {
   navigation: any;
@@ -405,8 +272,14 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       if (p.education && p.education !== searchQuery) {
         setSearchQuery(p.education);
       }
+      if (p.openFilterDrawer) {
+        setFilterDrawerOpen(true);
+        if (navigation && typeof navigation.setParams === 'function') {
+          navigation.setParams({ openFilterDrawer: undefined });
+        }
+      }
     }
-  }, [route?.params]);
+  }, [route?.params, navigation]);
 
   // Real-time duration ticker (updates every 30s)
   const [, setTick] = useState(0);
@@ -469,6 +342,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
+    setFilterDrawerOpen(false);
     setSearchQuery('');
     setSelectedCategory('All Jobs');
     setActiveFilters(defaultFilters);
@@ -479,6 +353,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         industry: undefined,
         location: undefined,
         education: undefined,
+        openFilterDrawer: undefined,
       });
     }
 
@@ -726,7 +601,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         ].filter(Boolean).length;
 
         return (
-          <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16, marginBottom: 12 }}>
+          <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16, marginBottom: 6 }}>
             <View style={[styles.inputSearchBox, isInputFocused && styles.inputSearchBoxActive]}>
               <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} />
               <TextInput
@@ -1237,7 +1112,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 130,
     gap: 8,
     backgroundColor: '#FFFFFF',

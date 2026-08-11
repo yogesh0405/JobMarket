@@ -120,6 +120,18 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
               labelText = 'Company';
             }
 
+            const isProfileTab = route.name === 'ProfileTab';
+            const companyLogo =
+              (user as any)?.companyLogo ||
+              (user as any)?.company_logo ||
+              (user as any)?.logoUrl ||
+              (user as any)?.logo_url ||
+              (user as any)?.profile_picture_url ||
+              (user as any)?.profilePictureUrl ||
+              (user as any)?.avatar_url ||
+              (user as any)?.avatarUrl ||
+              (user as any)?.avatar;
+
             return (
               <TouchableOpacity
                 key={route.key}
@@ -128,11 +140,28 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                 style={styles.tabItem}
               >
                 <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                  <IconComponent
-                    size={20}
-                    color={isFocused ? '#FFFFFF' : '#0F172A'}
-                    strokeWidth={isFocused ? 2.5 : 2.2}
-                  />
+                  {isProfileTab && companyLogo ? (
+                    <Image
+                      source={{ uri: companyLogo }}
+                      style={{
+                        width: isFocused ? 26 : 24,
+                        height: isFocused ? 26 : 24,
+                        borderRadius: isFocused ? 13 : 12,
+                        borderWidth: isFocused ? 1.5 : 1,
+                        borderColor: isFocused ? '#FFFFFF' : '#94A3B8',
+                      }}
+                    />
+                  ) : isProfileTab ? (
+                    <Text style={[styles.avatarInitialText, isFocused && { color: '#FFFFFF' }]}>
+                      {firstInitial}
+                    </Text>
+                  ) : (
+                    <IconComponent
+                      size={20}
+                      color={isFocused ? '#FFFFFF' : '#0F172A'}
+                      strokeWidth={isFocused ? 2.5 : 2.2}
+                    />
+                  )}
                 </View>
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
@@ -247,15 +276,15 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#60A5FA',
-    borderBottomWidth: 3.5,
-    borderBottomColor: '#1E40AF',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2563EB',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 3,
   },
   avatarMiniImg: {
     width: 22,

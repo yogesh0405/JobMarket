@@ -146,9 +146,6 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
       return;
     }
 
-    // Immediately record in optimistic store for 0ms delay update
-    appliedJobsStore.addAppliedJob(job);
-
     setSubmitting(true);
     try {
       const payload: any = {};
@@ -158,19 +155,17 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
       const res = await candidateApi.applyForJob(job.id, payload);
       if (res.success) {
+        appliedJobsStore.addAppliedJob(job);
         showToast('Your application has been submitted to the recruiter.', 'success');
         if (onAppliedSuccess) onAppliedSuccess(job);
         navigation.goBack();
       } else {
-        showToast(res.message || 'Application submitted', 'info');
-        if (onAppliedSuccess) onAppliedSuccess(job);
-        navigation.goBack();
+        const errorMsg = res.message || res.error || 'Failed to submit application. Please try again.';
+        showToast(errorMsg, 'error');
       }
     } catch (err: any) {
       console.log('Error applying for job:', err);
-      showToast('Application record registered with employer.', 'success');
-      if (onAppliedSuccess) onAppliedSuccess(job);
-      navigation.goBack();
+      showToast(err.message || 'Failed to submit application. Please check your network connection.', 'error');
     } finally {
       setSubmitting(false);
     }

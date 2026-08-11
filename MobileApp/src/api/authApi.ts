@@ -90,78 +90,20 @@ export const authApi = {
   },
 
   forgotPassword: async (email: string): Promise<ApiResponse> => {
-    const token = await getAccessToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const res: any = await apiFetch('/api/v1/auth/forgot-password', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ email, emailAddress: email }),
-      });
-      if (res && (res.success || res.status === 200 || res.ok)) return res;
-    } catch (e) {
-      try {
-        const fallbackRes: any = await apiFetch('/api/v1/auth/send-otp', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ email }),
-        });
-        if (fallbackRes) return fallbackRes;
-      } catch (e2) {
-        // Fallback simulation for live testing when backend free tier warms up
-      }
-    }
-
-    return { success: true, message: `OTP code sent directly to ${email}` };
+    return apiFetch('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
   },
 
   resetPassword: async (payload: { email: string; otpCode: string; newPassword: string }): Promise<ApiResponse> => {
-    const token = await getAccessToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const res: any = await apiFetch('/api/v1/auth/reset-password', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          email: payload.email,
-          otpCode: payload.otpCode,
-          otp: payload.otpCode,
-          newPassword: payload.newPassword,
-          password: payload.newPassword,
-        }),
-      });
-      if (res && (res.success || res.status === 200)) return res;
-    } catch (e) {
-      try {
-        const verifyRes = await apiFetch('/api/v1/auth/verify-otp', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ email: payload.email, otpCode: payload.otpCode }),
-        });
-        if (verifyRes) {
-          return await apiFetch('/api/v1/auth/change-password', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ newPassword: payload.newPassword }),
-          });
-        }
-      } catch (e2) {
-        // Fallback simulation
-      }
-    }
-
-    return { success: true, message: 'Password reset successfully' };
+    return apiFetch('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: payload.email,
+        otpCode: payload.otpCode,
+        newPassword: payload.newPassword,
+      }),
+    });
   },
 };

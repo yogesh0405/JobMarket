@@ -12,6 +12,7 @@ import { JobApplication } from '../../types';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { WhatsAppIcon } from '../common/WhatsAppIcon';
+import { CompanyLogoAvatar } from '../common/CompanyLogoAvatar';
 import { COLORS, SPACING, RADIUS } from '../../constants/theme';
 
 interface ApplicantCardProps {
@@ -50,13 +51,13 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={styles.avatarBox}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-          ) : (
-            <UserIcon size={24} color="#64748B" />
-          )}
-        </View>
+        <CompanyLogoAvatar
+          logoUrl={avatarUri}
+          companyName={candidateName}
+          size={40}
+          borderRadius={0}
+          style={{ marginRight: 10 }}
+        />
         <View style={styles.nameCol}>
           <View style={styles.nameRow}>
             <Text style={styles.candidateName}>{candidateName}</Text>

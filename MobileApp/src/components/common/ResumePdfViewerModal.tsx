@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Printer, Download, ExternalLink, FileText } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 
+import { API_BASE_URL } from '../../api/client';
+
 interface ResumePdfViewerModalProps {
   visible: boolean;
   onClose: () => void;
@@ -27,7 +29,7 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
   visible,
   onClose,
   candidateName = 'Candidate',
-  candidateRole = 'Technical Specialist',
+  candidateRole = 'Resume',
   pdfUrl,
 }) => {
   // 1. Safely extract string URL from string or object parameter
@@ -39,9 +41,10 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
   }
 
   // Ensure relative backend upload paths (e.g. /uploads/...) resolve to full backend URL
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   let targetDocUrl = rawUrlStr;
   if (targetDocUrl && !targetDocUrl.startsWith('http://') && !targetDocUrl.startsWith('https://') && !targetDocUrl.startsWith('data:')) {
-    targetDocUrl = `http://10.0.2.2:5000${targetDocUrl.startsWith('/') ? '' : '/'}${targetDocUrl}`;
+    targetDocUrl = `${baseUrl}${targetDocUrl.startsWith('/') ? '' : '/'}${targetDocUrl}`;
   }
 
   const lowerUrl = targetDocUrl.toLowerCase();

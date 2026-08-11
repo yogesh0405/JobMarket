@@ -72,7 +72,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
         role: role,
         googleId: `google_user_${Date.now()}`,
       });
-      showToast(`🎉 Welcome! Logged in with Google as ${role.toUpperCase()}`, 'success');
     } catch (err: any) {
       setError(err.message || 'Google Sign-In failed');
       showToast(err.message || 'Google Sign-In failed', 'error');
@@ -114,13 +113,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
         setMfaToken(loginRes.mfaToken);
         setShow2FAModal(true);
         showToast('🛡️ 2FA Required: Enter the 6-digit code sent to your email.', 'info');
-      } else {
-        showToast(
-          role === 'candidate'
-            ? '🎉 Welcome to Employee Workspace!'
-            : '🎉 Welcome to Employer Portal!',
-          'success'
-        );
       }
     } catch (err: any) {
       const errorMsg = err.message || 'Invalid email or password. Please check your credentials.';
@@ -142,7 +134,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await verify2FALogin(mfaToken, twoFactorOtp.trim());
       setShow2FAModal(false);
-      showToast('🎉 2FA Verification Successful! Welcome back.', 'success');
     } catch (err: any) {
       setTwoFactorError(err.message || 'Invalid 6-digit 2FA security code.');
     } finally {

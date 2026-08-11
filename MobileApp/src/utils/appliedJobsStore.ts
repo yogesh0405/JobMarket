@@ -75,6 +75,12 @@ class AppliedJobsStore {
     return this.appliedJobs.some((item) => item.jobId === jobId || item.job?.id === jobId);
   }
 
+  clear() {
+    this.appliedJobs = [];
+    this.pendingRefresh = false;
+    this.notify();
+  }
+
   consumePendingRefresh(): boolean {
     const flag = this.pendingRefresh;
     this.pendingRefresh = false;

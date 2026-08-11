@@ -720,6 +720,10 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           renderItem={renderApplicantItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={true}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         />
       )}
@@ -1816,7 +1820,8 @@ const styles = StyleSheet.create({
   },
   menuTabBarWrapperInline: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
     marginTop: 4,
   },
   menuTabBarWrapper: {
