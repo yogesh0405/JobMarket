@@ -41,7 +41,7 @@ export const JobDetailPage: React.FC = () => {
           setIsFetchingJob(false);
         });
     }
-  }, [id, fetchJobById]);
+  }, [id]);
 
   if (isFetchingJob && !job) {
     return (
@@ -211,71 +211,12 @@ export const JobDetailPage: React.FC = () => {
   }
 
   const isMobileDevice = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const [showAppBanner, setShowAppBanner] = useState<boolean>(() => {
-    if (!isMobileDevice) return false;
-    try {
-      return localStorage.getItem('jobmarket_app_installed') === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
+  const [showAppBanner, setShowAppBanner] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isMobileDevice || !job) return;
-
-    try {
-      if (localStorage.getItem('jobmarket_app_installed') === 'true') {
-        setShowAppBanner(true);
-        return;
-      }
-    } catch (e) {}
-
-    let detected = false;
-    const handleAppDetected = () => {
-      if (!detected) {
-        detected = true;
-        try {
-          localStorage.setItem('jobmarket_app_installed', 'true');
-        } catch (e) {}
-        setShowAppBanner(true);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        handleAppDetected();
-      }
-    };
-
-    window.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handleAppDetected);
-    window.addEventListener('blur', handleAppDetected);
-
-    // Silent probe to test if app is installed
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = `jobmarket://job/${job.id}`;
-    document.body.appendChild(iframe);
-
-    const timer = setTimeout(() => {
-      try {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      } catch (e) {}
-    }, 1200);
-
-    return () => {
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handleAppDetected);
-      window.removeEventListener('blur', handleAppDetected);
-      clearTimeout(timer);
-      try {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      } catch (e) {}
-    };
+    if (isMobileDevice && job) {
+      setShowAppBanner(true);
+    }
   }, [isMobileDevice, job]);
 
   const handleOpenInApp = () => {
