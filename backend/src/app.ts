@@ -229,10 +229,17 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
         ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
         <script>
           (function() {
-            var appUrl = "${appLink}";
-            // On mobile devices, attempt hand-off to installed mobile app
-            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-              window.location.href = appUrl;
+            var isAndroid = /Android/i.test(navigator.userAgent);
+            var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            var jobId = "${jobId}";
+            var webUrl = "https://jobmarket-ongn.onrender.com/job/" + jobId;
+            var customSchemeUrl = "jobmarket://job/" + jobId;
+            var androidIntentUrl = "intent://job/" + jobId + "#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=" + encodeURIComponent(webUrl) + ";end;";
+
+            if (isAndroid) {
+              window.location.href = androidIntentUrl;
+            } else if (isIOS) {
+              window.location.href = customSchemeUrl;
             }
           })();
         </script>
@@ -410,9 +417,17 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
   </style>
   <script>
     (function() {
-      var appUrl = "${appLink}";
-      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        window.location.href = appUrl;
+      var isAndroid = /Android/i.test(navigator.userAgent);
+      var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      var jobId = "${jobId}";
+      var webUrl = "https://jobmarket-ongn.onrender.com/job/" + jobId;
+      var customSchemeUrl = "jobmarket://job/" + jobId;
+      var androidIntentUrl = "intent://job/" + jobId + "#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=" + encodeURIComponent(webUrl) + ";end;";
+
+      if (isAndroid) {
+        window.location.href = androidIntentUrl;
+      } else if (isIOS) {
+        window.location.href = customSchemeUrl;
       }
     })();
   </script>
