@@ -20,7 +20,10 @@ export const JobDetailPage: React.FC = () => {
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
-  const job = id ? getJobById(id) : undefined;
+  const [directJob, setDirectJob] = useState<any>(null);
+  const storeJob = id ? getJobById(id) : undefined;
+  const job = storeJob || directJob || undefined;
+
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
@@ -28,10 +31,14 @@ export const JobDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (id && fetchJobById) {
-      setIsFetchingJob(true);
-      fetchJobById(id).finally(() => {
-        setIsFetchingJob(false);
-      });
+      if (!job) setIsFetchingJob(true);
+      fetchJobById(id)
+        .then((data: any) => {
+          if (data) setDirectJob(data);
+        })
+        .finally(() => {
+          setIsFetchingJob(false);
+        });
     }
   }, [id, fetchJobById]);
 

@@ -116,16 +116,17 @@ export const useJobs = () => {
     try {
       const res = await apiFetch(`/api/v1/jobs/${id}`);
       const json = await res.json();
-      if (res.ok && json.data) {
+      const payload = json.data || (json.id ? json : json.job);
+      if (res.ok && payload) {
         const existingIndex = state.jobs.findIndex(j => j.id === id);
         if (existingIndex >= 0) {
           const updatedJobs = [...state.jobs];
-          updatedJobs[existingIndex] = json.data;
+          updatedJobs[existingIndex] = payload;
           dispatch({ type: 'SET_JOBS', payload: updatedJobs });
         } else {
-          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, json.data] });
+          dispatch({ type: 'SET_JOBS', payload: [...state.jobs, payload] });
         }
-        return json.data;
+        return payload;
       }
     } catch (err) {
       console.error(`Error fetching job ${id}:`, err);
