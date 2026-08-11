@@ -257,38 +257,30 @@ export const JobDetailPage: React.FC = () => {
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '16px 16px 140px 16px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
-        {/* Clean Top App Handoff Banner Bar */}
+        {/* Concise Top App Handoff Banner Bar */}
         {showAppBanner && (
           <div className="app-handoff-banner-bar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
               <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
                 background: '#EFF6FF',
                 border: '1px solid #BFDBFE',
+                color: '#2563EB',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <img
-                  src="/logo.png"
-                  alt="JobMarket Logo"
-                  style={{ width: '22px', height: '22px', objectFit: 'contain' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
-                  }}
-                />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                  <line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                <span className="app-handoff-title">
-                  Better experience in the app
-                </span>
-                <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  Get instant job updates, 1-tap apply & direct recruiter contact
-                </span>
-              </div>
+              <span className="app-handoff-title">
+                Better experience in the app
+              </span>
             </div>
 
             <div className="app-handoff-actions">
@@ -297,16 +289,13 @@ export const JobDetailPage: React.FC = () => {
                 onClick={handleOpenInApp}
               >
                 <span>Open App</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
               </button>
               <button
                 className="app-handoff-close-btn"
                 onClick={() => setShowAppBanner(false)}
                 title="Dismiss"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
