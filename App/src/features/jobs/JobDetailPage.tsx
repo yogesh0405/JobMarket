@@ -21,6 +21,8 @@ export const JobDetailPage: React.FC = () => {
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
+
+  // Unconditional Hooks Declaration at Top (Strict Rules of Hooks)
   const [directJob, setDirectJob] = useState<any>(null);
   const storeJob = id ? getJobById(id) : undefined;
   const job = storeJob || directJob || undefined;
@@ -29,19 +31,60 @@ export const JobDetailPage: React.FC = () => {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
   const [isFetchingJob, setIsFetchingJob] = useState(!job);
+  const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
+  const [showAppBanner, setShowAppBanner] = useState<boolean>(false);
+
+  const isMobileDevice = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const jobIdStr = job?.id;
+  const storeSaved = jobIdStr ? isJobSaved(jobIdStr) : false;
+  const saved = localSavedOverride !== null ? localSavedOverride : storeSaved;
 
   useEffect(() => {
+    let isMounted = true;
     if (id && fetchJobById) {
       if (!job) setIsFetchingJob(true);
       fetchJobById(id)
         .then((data: any) => {
-          if (data) setDirectJob(data);
+          if (isMounted && data) setDirectJob(data);
         })
         .finally(() => {
-          setIsFetchingJob(false);
+          if (isMounted) setIsFetchingJob(false);
         });
     }
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
+
+  useEffect(() => {
+    setLocalSavedOverride(null);
+  }, [storeSaved]);
+
+  useEffect(() => {
+    if (!location.hash || location.hash !== '#apply') {
+      window.scrollTo(0, 0);
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (location.hash === '#apply' || window.location.hash === '#apply') {
+      const timer = setTimeout(() => {
+        const applyEl = document.getElementById('apply');
+        if (applyEl) {
+          applyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash]);
+
+  useEffect(() => {
+    if (isMobileDevice && job) {
+      setShowAppBanner(true);
+    }
+  }, [isMobileDevice, job]);
 
   if (isFetchingJob && !job) {
     return (
@@ -64,7 +107,7 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
-  const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id || a.id === currentUser?.id);
+  const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser?.id || a.id === currentUser?.id);
   const hasApplied = Boolean(
     currentUser && (
       currentUser.appliedJobs?.includes(job.id) ||
@@ -92,132 +135,8 @@ export const JobDetailPage: React.FC = () => {
     if (currentUser.resume) profileStrength += 10;
   }
   if (profileStrength === 0) profileStrength = 75;
-  const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
-  const storeSaved = isJobSaved(job.id);
-  const saved = localSavedOverride !== null ? localSavedOverride : storeSaved;
-
-  useEffect(() => {
-    setLocalSavedOverride(null);
-  }, [storeSaved]);
 
   const isOwner = currentUser && currentUser.role === 'employer' && job.employerId === currentUser.id;
-
-  // Reset scroll position to top whenever job detail loads unless linked to #apply anchor
-  useEffect(() => {
-    if (!location.hash || location.hash !== '#apply') {
-      window.scrollTo(0, 0);
-      document.body.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-    }
-  }, [id, location.hash]);
-
-  // Auto-scroll smoothly to #apply anchor when linked via URL hash
-  useEffect(() => {
-    if (location.hash === '#apply' || window.location.hash === '#apply') {
-      const timer = setTimeout(() => {
-        const applyEl = document.getElementById('apply');
-        if (applyEl) {
-          applyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [location.hash]);
-
-  const handleApply = () => {
-    if (!currentUser) {
-      showToast('Please login to apply', 'warning');
-      navigate('/login');
-      return;
-    }
-    if (currentUser.role !== 'candidate') {
-      showToast('Only candidates can apply to jobs', 'error');
-      return;
-    }
-    if (hasApplied) {
-      showToast('You have already applied to this job listing', 'info');
-      return;
-    }
-    setShowApplyModal(true);
-  };
-
-  const handleConfirmApply = async () => {
-    if (!job) return;
-    setIsApplying(true);
-    try {
-      const result = await applyToJob(job.id);
-      if (result.success) {
-        showToast('Application submitted successfully! 🎉 Profile sent to employer.', 'success');
-        setShowApplyModal(false);
-        if (id && fetchJobById) {
-          await fetchJobById(id);
-        }
-        if (job.hiringMethod === 'WALK_IN' || job.isWalkIn) {
-          setShowWalkInPassModal(true);
-        }
-      } else {
-        showToast(result.error || 'Failed to apply', 'error');
-      }
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const handleSave = () => {
-    if (!currentUser) {
-      showToast('Please login to save jobs', 'warning');
-      navigate('/login');
-      return;
-    }
-    const nextState = !saved;
-    setLocalSavedOverride(nextState);
-    const isNowSaved = toggleSaveJob(job.id);
-    showToast(isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved', isNowSaved ? 'success' : 'info');
-  };
-
-  const handleShare = () => {
-    const targetUrl = `${window.location.protocol}//${window.location.host}/job/${job.id}`;
-    shareContent(
-      job.title,
-      `Check out this job: ${job.title} at ${job.company}`,
-      targetUrl,
-      () => showToast('Job link copied to clipboard! 📋', 'success')
-    );
-  };
-
-  const handleWhatsAppShare = () => {
-    const shareUrl = encodeURIComponent(window.location.origin + '/job/' + job.id);
-    const shareText = encodeURIComponent(`Check out this job on JobMarket:\n*${job.title}* at *${job.company}*\nLocation: ${job.location}\nSalary: ₹${formatNumber(job.salaryMin)} - ₹${formatNumber(job.salaryMax)}/month\n\nApply here:`);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  // Calculate matching score
-  let matchScore = 0;
-  if (currentUser && currentUser.role === 'candidate') {
-    if (currentUser.tradeSpecialization && job.trade && currentUser.tradeSpecialization.toLowerCase() === job.trade.toLowerCase()) {
-      matchScore += 50;
-    } else {
-      matchScore += 20;
-    }
-    if (currentUser.preferredShift && job.shiftDetails && currentUser.preferredShift.toLowerCase() === job.shiftDetails.toLowerCase()) {
-      matchScore += 20;
-    } else {
-      matchScore += 10;
-    }
-  } else {
-    const code = (job.id.charCodeAt(0) || 0) + (job.id.charCodeAt(job.id.length - 1) || 0);
-    matchScore = 78 + (code % 19);
-  }
-
-  const isMobileDevice = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const [showAppBanner, setShowAppBanner] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (isMobileDevice && job) {
-      setShowAppBanner(true);
-    }
-  }, [isMobileDevice, job]);
 
   const handleOpenInApp = () => {
     if (!job) return;
