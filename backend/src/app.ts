@@ -200,8 +200,9 @@ app.get('/job/:id', async (req, res, next) => {
   next();
 });
 
-// Wildcard SPA route fallback for Web Application
-app.get('*', (req, res, next) => {
+// Wildcard SPA route fallback for Web Application (Express 5 compatible)
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
   if (req.path.startsWith('/api/') || req.path.startsWith('/assets/') || req.path.startsWith('/uploads/')) {
     return next();
   }
