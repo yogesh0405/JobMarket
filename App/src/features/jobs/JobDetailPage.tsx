@@ -225,13 +225,17 @@ export const JobDetailPage: React.FC = () => {
     } catch (e) {}
 
     const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const jobId = job.id;
-    const webUrl = `https://job-market-wine.vercel.app/job/${jobId}`;
+    const webUrl = `${window.location.origin}/job/${jobId}`;
     const customSchemeUrl = `jobmarket://job/${jobId}`;
     const androidIntentUrl = `intent://job/${jobId}#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=${encodeURIComponent(webUrl)};end;`;
 
     if (isAndroid) {
       window.location.href = androidIntentUrl;
+      setTimeout(() => {
+        window.location.href = customSchemeUrl;
+      }, 400);
     } else {
       window.location.href = customSchemeUrl;
     }
@@ -239,11 +243,39 @@ export const JobDetailPage: React.FC = () => {
 
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '16px 16px 140px 16px' }}>
-      {/* Clean Sticky Top App Handoff Banner Bar */}
-      {showAppBanner && (
+      <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        {/* Clean Top App Handoff Banner Bar */}
+        {showAppBanner && (
           <div className="app-handoff-banner-bar">
-            <div className="app-handoff-title">
-              Better experience in the app
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <img
+                  src="/logo.png"
+                  alt="JobMarket Logo"
+                  style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                  onError={(e) => {
+                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                <span className="app-handoff-title">
+                  Better experience in the app
+                </span>
+                <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Get instant job updates, 1-tap apply & direct recruiter contact
+                </span>
+              </div>
             </div>
 
             <div className="app-handoff-actions">
@@ -251,15 +283,10 @@ export const JobDetailPage: React.FC = () => {
                 className="app-handoff-btn"
                 onClick={handleOpenInApp}
               >
-                <img
-                  src="/logo.png"
-                  alt=""
-                  style={{ width: '18px', height: '18px', objectFit: 'contain' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
-                  }}
-                />
-                <span>Open</span>
+                <span>Open App</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
               </button>
               <button
                 className="app-handoff-close-btn"
@@ -278,59 +305,55 @@ export const JobDetailPage: React.FC = () => {
         <style>{`
           .app-handoff-banner-bar {
             background: #FFFFFF;
-            border-radius: 12px;
-            padding: 10px 16px;
+            border-radius: 10px;
+            padding: 12px 18px;
             width: 100%;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+            border: 1.5px solid #CBD5E1;
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             margin-bottom: 16px;
+            box-sizing: border-box;
           }
 
           .app-handoff-title {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             color: #0F172A;
             line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            min-width: 0;
+            letter-spacing: -0.2px;
           }
 
           .app-handoff-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             flex-shrink: 0;
           }
 
           .app-handoff-btn {
-            background: #FFFFFF;
-            color: #2563EB;
-            border: 1.5px solid #2563EB;
+            background: #344BFD;
+            color: #FFFFFF;
+            border: none;
             border-radius: 8px;
-            padding: 7px 14px;
-            font-size: 13px;
+            padding: 8px 16px;
+            font-size: 13.5px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 3px 10px rgba(52, 75, 253, 0.25);
             white-space: nowrap;
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+            transition: all 0.15s ease;
           }
 
           .app-handoff-btn:hover {
-            background: #F8FAFC;
-            border-color: #1D4ED8;
-            color: #1D4ED8;
+            background: #1A2EB8;
+            box-shadow: 0 4px 14px rgba(52, 75, 253, 0.35);
           }
 
           .app-handoff-btn:active {
@@ -355,75 +378,10 @@ export const JobDetailPage: React.FC = () => {
             color: #64748B;
           }
 
-        .app-handoff-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #0F172A;
-          line-height: 1.2;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .app-handoff-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-
-        .app-handoff-btn {
-          background: #FFFFFF;
-          color: #2563EB;
-          border: 1.5px solid #2563EB;
-          border-radius: 8px;
-          padding: 7px 14px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
-          white-space: nowrap;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-        }
-
-        .app-handoff-btn:hover {
-          background: #F8FAFC;
-          border-color: #1D4ED8;
-          color: #1D4ED8;
-        }
-
-        .app-handoff-btn:active {
-          transform: scale(0.98);
-        }
-
-        .app-handoff-close-btn {
-          background: transparent;
-          color: #94A3B8;
-          border: none;
-          padding: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 6px;
-          transition: background 0.15s ease;
-        }
-
-        .app-handoff-close-btn:hover {
-          background: #F1F5F9;
-          color: #64748B;
-        }
-
-        .detail-sticky-bar {
-          display: none !important;
-        }nt;
-        }
-        @media (max-width: 768px) {
+          .detail-sticky-bar {
+            display: none !important;
+          }
+          @media (max-width: 768px) {
           #page-content {
             transform: none !important;
           }

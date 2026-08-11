@@ -61,15 +61,33 @@ interface Props {
 }
 
 export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const rawParamId = route.params?.jobId || route.params?.id;
-  const extractUuid = (input?: string): string | undefined => {
+  const extractJobIdFromUrl = (input?: string): string | undefined => {
     if (!input || typeof input !== 'string') return undefined;
-    const match = input.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
-    return match ? match[1] : input;
+    const str = input.trim();
+    if (str.includes('/') || str.includes('?')) {
+      const uuidMatch = str.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+      if (uuidMatch) return uuidMatch[1];
+
+      const urlClean = str.split('?')[0].split('#')[0];
+      const matchJobPath = urlClean.match(/job[s]?\/([^\/]+)/i);
+      if (matchJobPath && matchJobPath[1]) {
+        return matchJobPath[1];
+      }
+
+      const segments = urlClean.split('/').filter(Boolean);
+      const lastSeg = segments[segments.length - 1];
+      if (lastSeg && lastSeg !== 'job' && lastSeg !== 'jobs') {
+        return lastSeg;
+      }
+    }
+    return str;
   };
 
-  const [activeJobId, setActiveJobId] = useState<string | undefined>(() => extractUuid(rawParamId));
-  const passedJob = route.params?.job as Job | undefined;
+  const rawParamId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
+  const initialJobId = extractJobIdFromUrl(rawParamId);
+
+  const [activeJobId, setActiveJobId] = useState<string | undefined>(initialJobId);
+  const passedJob = route?.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
@@ -117,28 +135,29 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (!hasResume) missingSections.push('Resume CV Document');
 
   useEffect(() => {
-    if (activeJobId) return;
+    const paramId = extractJobIdFromUrl(route?.params?.jobId || route?.params?.id || route?.params?.job_id);
+    if (paramId && paramId !== activeJobId) {
+      setActiveJobId(paramId);
+    }
+  }, [route?.params]);
 
-    // Check cold start initial deep link URL
-    Linking.getInitialURL().then((url: string | null) => {
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
       if (url) {
-        const foundId = extractUuid(url);
+        const foundId = extractJobIdFromUrl(url);
         if (foundId) setActiveJobId(foundId);
       }
-    }).catch(() => {});
+    };
 
-    // Listen to warm/background deep link URL events
+    Linking.getInitialURL().then(handleUrl).catch(() => {});
     const subscription = Linking.addEventListener('url', (event: { url: string }) => {
-      if (event.url) {
-        const foundId = extractUuid(event.url);
-        if (foundId) setActiveJobId(foundId);
-      }
+      handleUrl(event.url);
     });
 
     return () => {
       subscription.remove();
     };
-  }, [activeJobId]);
+  }, []);
 
   useEffect(() => {
     const jobId = activeJobId;
