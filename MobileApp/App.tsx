@@ -12,6 +12,8 @@ import { useAuth } from './src/hooks/useAuth';
 // Industry-Standard Deep Linking & Universal Link Configuration
 const linking: LinkingOptions<any> = {
   prefixes: [
+    'https://job-market-wine.vercel.app',
+    'http://job-market-wine.vercel.app',
     'https://jobmarket-ongn.onrender.com',
     'http://jobmarket-ongn.onrender.com',
     'jobmarket://',

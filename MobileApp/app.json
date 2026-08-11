@@ -11,6 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jobmarket.mobileapp",
       "associatedDomains": [
+        "applinks:job-market-wine.vercel.app",
         "applinks:jobmarket-ongn.onrender.com"
       ],
       "infoPlist": {
@@ -37,6 +38,16 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            {
+              "scheme": "https",
+              "host": "job-market-wine.vercel.app",
+              "pathPrefix": "/job"
+            },
+            {
+              "scheme": "https",
+              "host": "job-market-wine.vercel.app",
+              "pathPrefix": "/jobs"
+            },
             {
               "scheme": "https",
               "host": "jobmarket-ongn.onrender.com",

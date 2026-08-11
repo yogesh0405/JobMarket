@@ -179,7 +179,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const handleShareJob = async () => {
     const targetJob = job || passedJob;
     const jobIdStr = jobId || targetJob?.id || '';
-    const canonicalHttpsUrl = jobIdStr ? `https://jobmarket-ongn.onrender.com/job/${jobIdStr}` : 'https://jobmarket-ongn.onrender.com';
+    const canonicalHttpsUrl = jobIdStr ? `https://job-market-wine.vercel.app/job/${jobIdStr}` : 'https://job-market-wine.vercel.app';
     const titleStr = targetJob?.title ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}` : 'Industrial Job Vacancy';
     const locationStr = targetJob?.location || 'MIDC Industrial Zone';
 
