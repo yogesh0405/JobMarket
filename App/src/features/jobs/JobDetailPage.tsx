@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -15,6 +15,7 @@ import { Zap, Calendar, FileText, CheckCircle2, Phone } from 'lucide-react';
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { getJobById, fetchJobById, applyToJob, toggleSaveJob, isJobSaved } = useJobs();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
