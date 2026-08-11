@@ -311,7 +311,15 @@ export const JobDetailPage: React.FC = () => {
                 className="app-handoff-btn"
                 onClick={handleOpenInApp}
               >
-                Open
+                <img
+                  src="/logo.png"
+                  alt=""
+                  style={{ width: '18px', height: '18px', objectFit: 'contain' }}
+                  onError={(e) => {
+                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
+                  }}
+                />
+                <span>Open</span>
               </button>
               <button
                 className="app-handoff-close-btn"
@@ -380,17 +388,26 @@ export const JobDetailPage: React.FC = () => {
         }
 
         .app-handoff-btn {
-          background: #344BFD;
-          color: #FFFFFF;
-          border: none;
+          background: #FFFFFF;
+          color: #2563EB;
+          border: 1.5px solid #2563EB;
           border-radius: 8px;
-          padding: 8px 18px;
+          padding: 7px 14px;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 3px 10px rgba(52, 75, 253, 0.3);
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
           white-space: nowrap;
-          transition: transform 0.15s ease, background 0.15s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .app-handoff-btn:hover {
+          background: #F8FAFC;
+          border-color: #1D4ED8;
+          color: #1D4ED8;
         }
 
         .app-handoff-btn:active {
