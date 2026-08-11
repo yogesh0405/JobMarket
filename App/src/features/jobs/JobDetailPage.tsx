@@ -10,7 +10,7 @@ import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { JobApplyModal } from '../../components/jobs/JobApplyModal';
-import { Zap, Calendar, FileText, CheckCircle2, Phone } from 'lucide-react';
+import { Zap, Calendar, FileText, CheckCircle2, Phone, Smartphone } from 'lucide-react';
 
 const ensureArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.filter(Boolean).map(String);
@@ -261,23 +261,7 @@ export const JobDetailPage: React.FC = () => {
         {showAppBanner && (
           <div className="app-handoff-banner-bar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-              <div style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '5px',
-                background: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                color: '#2563EB',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                  <line x1="12" y1="18" x2="12.01" y2="18"/>
-                </svg>
-              </div>
+              <Smartphone size={16} color="#2563EB" style={{ flexShrink: 0 }} />
               <span className="app-handoff-title">
                 Better experience in the app
               </span>
