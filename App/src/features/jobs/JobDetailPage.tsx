@@ -202,8 +202,104 @@ export const JobDetailPage: React.FC = () => {
     matchScore = 78 + (code % 19);
   }
 
+  const isMobileDevice = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [showAppBanner, setShowAppBanner] = useState(isMobileDevice);
+
+  const handleOpenInApp = () => {
+    if (!job) return;
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const jobId = job.id;
+    const webUrl = `https://job-market-wine.vercel.app/job/${jobId}`;
+    const customSchemeUrl = `jobmarket://job/${jobId}`;
+    const androidIntentUrl = `intent://job/${jobId}#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=${encodeURIComponent(webUrl)};end;`;
+
+    if (isAndroid) {
+      window.location.href = androidIntentUrl;
+    } else {
+      window.location.href = customSchemeUrl;
+    }
+  };
+
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '24px 16px 140px 16px' }}>
+      {/* Mobile App Handoff Top Banner */}
+      {showAppBanner && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+          color: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: '#2563EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
+                JobMarket Mobile App
+              </div>
+              <div style={{ fontSize: '12px', color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Open in app for a faster & better experience
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              onClick={handleOpenInApp}
+              style={{
+                background: '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Open in App
+            </button>
+            <button
+              onClick={() => setShowAppBanner(false)}
+              style={{
+                background: 'transparent',
+                color: '#94A3B8',
+                border: 'none',
+                padding: '6px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                lineHeight: 1
+              }}
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       <style>{`
         .detail-sticky-bar {
           display: none !important;
