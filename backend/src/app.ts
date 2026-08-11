@@ -123,7 +123,6 @@ app.get('/job/:id', async (req, res) => {
 
   const title = job?.title ? `${job.title} - ${job.company || 'JobMarket'}` : 'Industrial Job Vacancy | JobMarket';
   const companyStr = job?.company || 'Industrial Company';
-  const companyInitial = companyStr.trim().charAt(0).toUpperCase() || 'J';
   const locationStr = job?.location || 'MIDC Industrial Zone';
   const minSal = job?.salary_min || job?.salaryMin;
   const maxSal = job?.salary_max || job?.salaryMax;
@@ -150,7 +149,7 @@ app.get('/job/:id', async (req, res) => {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>${title}</title>
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
@@ -161,10 +160,10 @@ app.get('/job/:id', async (req, res) => {
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #F1F5F9;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: #F8FAFC;
       color: #0F172A;
       display: flex;
       flex-direction: column;
@@ -173,23 +172,24 @@ app.get('/job/:id', async (req, res) => {
       min-height: 100vh;
       margin: 0;
       padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
     }
-    .brand-header {
+    .nav-bar {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
-    .brand-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
+    .nav-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       object-fit: contain;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
     }
-    .brand-title {
+    .nav-title {
       font-size: 20px;
-      font-weight: 900;
+      font-weight: 800;
       color: #0F172A;
       letter-spacing: -0.5px;
     }
@@ -199,19 +199,20 @@ app.get('/job/:id', async (req, res) => {
       padding: 36px 28px 32px;
       max-width: 440px;
       width: 100%;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
       text-align: center;
     }
-    .logo-container {
-      width: 72px;
-      height: 72px;
+    .logo-box {
+      width: 76px;
+      height: 76px;
       background-color: #EFF6FF;
       border: 1px solid #DBEAFE;
-      border-radius: 14px;
+      border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 20px;
+      margin: 0 auto 22px;
       overflow: hidden;
       position: relative;
     }
@@ -232,45 +233,55 @@ app.get('/job/:id', async (req, res) => {
     h1 {
       font-size: 22px;
       font-weight: 800;
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       color: #0F172A;
       line-height: 1.35;
+      letter-spacing: -0.4px;
     }
-    .company {
+    .company-name {
       font-size: 15px;
       color: #2563EB;
       margin: 0 0 24px;
       font-weight: 700;
     }
-    .details {
+    .inset-group {
       background-color: #F8FAFC;
       border: 1px solid #E2E8F0;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 16px 18px;
       margin-bottom: 28px;
       font-size: 14px;
       color: #1E293B;
       text-align: left;
       line-height: 1.6;
     }
-    .details-row {
+    .row {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .details-row:last-child {
+    .row:last-child {
       margin-bottom: 0;
     }
-    .details-label {
-      font-weight: 700;
-      color: #0F172A;
-      min-width: 80px;
+    .row-icon {
+      font-size: 16px;
+      line-height: 1.4;
     }
-    .details-val {
-      color: #334155;
+    .row-content {
       flex: 1;
     }
-    .btn {
+    .row-label {
+      font-weight: 700;
+      color: #0F172A;
+      display: inline;
+    }
+    .row-val {
+      color: #475569;
+      display: inline;
+      margin-left: 4px;
+    }
+    .cta-btn {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -279,21 +290,23 @@ app.get('/job/:id', async (req, res) => {
       padding: 16px 0;
       background: #2563EB;
       color: #FFFFFF;
-      font-weight: 800;
+      font-weight: 700;
       text-decoration: none;
-      font-size: 15px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-      transition: background 0.2s ease;
+      font-size: 16px;
+      border-radius: 14px;
+      letter-spacing: -0.2px;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+      transition: all 0.2s ease;
     }
-    .btn:hover, .btn:active {
+    .cta-btn:active {
+      transform: scale(0.98);
       background: #1D4ED8;
     }
-    .footer-note {
+    .footer-text {
       margin-top: 24px;
-      font-size: 12px;
+      font-size: 13px;
       color: #64748B;
-      font-weight: 600;
+      font-weight: 500;
     }
   </style>
   <script>
@@ -304,53 +317,58 @@ app.get('/job/:id', async (req, res) => {
   </script>
 </head>
 <body>
-  <div class="brand-header">
-    <img src="https://jobmarket-ongn.onrender.com/assets/icon.png" class="brand-icon" alt="JobMarket Icon" onError="this.style.display='none';" />
-    <div class="brand-title">JobMarket Platform</div>
+  <div class="nav-bar">
+    <img src="https://jobmarket-ongn.onrender.com/assets/icon.png" class="nav-icon" alt="JobMarket" onError="this.style.display='none';" />
+    <div class="nav-title">JobMarket</div>
   </div>
 
   <div class="card">
-    <div class="logo-container">
+    <div class="logo-box">
       ${formattedLogo ? `
-        <img src="${formattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('logo-fb').style.display='flex';" />
-        <div id="logo-fb" class="logo-fallback" style="display:none;">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+        <img src="${formattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('company-fb').style.display='flex';" />
+        <div id="company-fb" class="logo-fallback" style="display:none;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
         </div>
       ` : `
         <div class="logo-fallback">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
         </div>
       `}
     </div>
 
     <h1>${job?.title || 'Industrial Job Vacancy'}</h1>
-    <div class="company">${companyStr}</div>
+    <div class="company-name">${companyStr}</div>
 
-    <div class="details">
-      <div class="details-row">
-        <span>📍</span>
-        <span class="details-label">Location:</span>
-        <span class="details-val">${locationStr}</span>
+    <div class="inset-group">
+      <div class="row">
+        <span class="row-icon">📍</span>
+        <div class="row-content">
+          <span class="row-label">Location:</span>
+          <span class="row-val">${locationStr}</span>
+        </div>
       </div>
-      <div class="details-row">
-        <span>💰</span>
-        <span class="details-label">Salary:</span>
-        <span class="details-val">${salStr}</span>
+      <div class="row">
+        <span class="row-icon">💰</span>
+        <div class="row-content">
+          <span class="row-label">Salary:</span>
+          <span class="row-val">${salStr}</span>
+        </div>
       </div>
-      <div class="details-row">
-        <span>🏭</span>
-        <span class="details-label">Trade:</span>
-        <span class="details-val">${tradeStr}</span>
+      <div class="row">
+        <span class="row-icon">🏭</span>
+        <div class="row-content">
+          <span class="row-label">Trade:</span>
+          <span class="row-val">${tradeStr}</span>
+        </div>
       </div>
     </div>
 
-    <a href="${appLink}" class="btn">
-      <span>📲</span>
-      <span>OPEN IN JOBMARKET APP</span>
+    <a href="${appLink}" class="cta-btn">
+      <span>Open in JobMarket App</span>
     </a>
   </div>
 
-  <div class="footer-note">Verified Recruiter Vacancy • JobMarket Direct Connect</div>
+  <div class="footer-text">Verified Recruiter Vacancy • JobMarket Connect</div>
 </body>
 </html>`;
 

@@ -190,7 +190,13 @@ export class JobRepository {
 
   static async getJobById(id: string): Promise<any | null> {
     return CacheService.getOrSet(`cache:job:${id}`, 180, async () => {
-      const query = 'SELECT * FROM jobs WHERE id = $1';
+      const query = `
+        SELECT j.*, 
+               COALESCE(NULLIF(j.company_logo, ''), NULLIF(u.profile_picture_url, ''), NULLIF(u.company_logo, '')) as company_logo
+        FROM jobs j
+        LEFT JOIN users u ON j.employer_id = u.id
+        WHERE j.id = $1
+      `;
       const result = await pool.query(query, [id]);
       if (result.rows.length === 0) return null;
       return this.mapDbJobToApi(result.rows[0]);
