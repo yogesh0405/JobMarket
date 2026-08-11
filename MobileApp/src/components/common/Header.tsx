@@ -88,6 +88,97 @@ export const Header: React.FC<HeaderProps> = ({
 
 
 
+  const handleNotificationClick = (item: any) => {
+    if (!navigation || typeof navigation.navigate !== 'function') return;
+
+    const userRole = (user?.role || '').toLowerCase();
+    const type = (item.type || '').toUpperCase();
+    const title = (item.title || '').toUpperCase();
+    const message = (item.message || '').toUpperCase();
+    const combined = `${type} ${title} ${message}`;
+    const linkStr = item.link || (item as any).url || '';
+
+    // 1. Extract potential Job ID from item payload or link string
+    let extractedJobId: string | undefined = (item as any).job_id || (item as any).jobId;
+    if (!extractedJobId && linkStr) {
+      const match = linkStr.match(/job[s]?\/([^\/]+)/i) || linkStr.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i) || linkStr.match(/(j\d+)/i);
+      if (match && match[1]) {
+        extractedJobId = match[1];
+      }
+    }
+
+    // 2. Candidate Job Detail / Interview Pass Notification
+    if (
+      extractedJobId ||
+      combined.includes('INTERVIEW') ||
+      combined.includes('SHORTLIST') ||
+      combined.includes('WALK-IN') ||
+      combined.includes('JOB_INTERVIEW') ||
+      combined.includes('JOB_STATUS') ||
+      combined.includes('VACANCY')
+    ) {
+      if (userRole === 'employer') {
+        navigation.navigate('JobApplicants', { jobId: extractedJobId || 'j1', jobTitle: item.title });
+      } else {
+        navigation.navigate('CandidateJobDetail', { jobId: extractedJobId || 'j1', id: extractedJobId || 'j1' });
+      }
+      return;
+    }
+
+    // 3. Application Submission & Tracking
+    if (combined.includes('APPLICATION') || combined.includes('APPLIED') || type.includes('APPLICATION')) {
+      if (userRole === 'employer') {
+        navigation.navigate('JobApplicants', { jobId: extractedJobId, jobTitle: item.title });
+      } else {
+        navigation.navigate('CandidateMain', { screen: 'CandidateAppliedJobsTab' });
+      }
+      return;
+    }
+
+    // 4. Candidate Profile & Resume Updates
+    if (combined.includes('RESUME') || combined.includes('PROFILE') || combined.includes('BIO-DATA') || combined.includes('CV')) {
+      if (userRole === 'employer') {
+        navigation.navigate('CompanyProfile');
+      } else {
+        navigation.navigate('CandidateProfile');
+      }
+      return;
+    }
+
+    // 5. Employer Banners & Ads
+    if (combined.includes('BANNER') || combined.includes('AD_') || combined.includes('PROMOT')) {
+      if (userRole === 'employer') {
+        navigation.navigate('EmployerBanners');
+      } else {
+        navigation.navigate('CandidateMain', { screen: 'CandidateJobsTab' });
+      }
+      return;
+    }
+
+    // 6. Employer Dashboard & Analytics
+    if (combined.includes('DASHBOARD') || combined.includes('ANALYTICS') || combined.includes('RECRUITER')) {
+      if (userRole === 'employer') {
+        navigation.navigate('EmployerDashboard');
+      } else {
+        navigation.navigate('CandidateMain', { screen: 'CandidateHomeTab' });
+      }
+      return;
+    }
+
+    // 7. Security & Account Settings
+    if (combined.includes('SECURITY') || combined.includes('PASSWORD') || combined.includes('OTP') || combined.includes('VERIF')) {
+      navigation.navigate('SecuritySettings');
+      return;
+    }
+
+    // 8. Default fallback navigation based on user role
+    if (userRole === 'employer') {
+      navigation.navigate('EmployerDashboard');
+    } else {
+      navigation.navigate('CandidateMain', { screen: 'CandidateJobsTab' });
+    }
+  };
+
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -476,9 +567,7 @@ export const Header: React.FC<HeaderProps> = ({
         onClearAll={onClearAllNotif}
         onNavigateItem={(item) => {
           setNotifModalVisible(false);
-          if (item.type?.includes('JOB') && navigation && typeof navigation.navigate === 'function') {
-            navigation.navigate('JobApplicants', { jobId: undefined, jobTitle: 'Notifications' });
-          }
+          handleNotificationClick(item);
         }}
       />
     </>
