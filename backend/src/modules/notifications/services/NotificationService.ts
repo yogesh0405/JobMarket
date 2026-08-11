@@ -6,9 +6,21 @@ export class NotificationService {
     title: string,
     message: string,
     type: string = 'SYSTEM',
-    link?: string | null
+    link?: string | null,
+    entityType?: string | null,
+    entityId?: string | null,
+    metadata?: any | null
   ): Promise<NotificationRecord> {
-    return NotificationRepository.createNotification(userId, title, message, type, link);
+    return NotificationRepository.createNotification(
+      userId,
+      title,
+      message,
+      type,
+      link,
+      entityType,
+      entityId,
+      metadata
+    );
   }
 
   static async broadcast(

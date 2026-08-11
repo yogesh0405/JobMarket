@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../utils/api';
 import { timeAgo } from '../../utils/helpers';
+import { resolveWebNotificationRoute } from '../../utils/notificationRouter';
 
 export interface NotificationItem {
   id: string;
@@ -168,11 +169,14 @@ export const NavbarNotificationBell: React.FC = () => {
     apiFetch(`/api/v1/notifications/${item.id}/read`, { method: 'PATCH' }).catch(() => {});
     setIsOpen(false);
 
-    if (item.link) {
-      if (item.link.startsWith('#')) {
-        window.location.hash = item.link;
+    const userRole = (currentUser as any)?.role || 'candidate';
+    const targetRoute = resolveWebNotificationRoute(item as any, userRole);
+
+    if (targetRoute) {
+      if (targetRoute.startsWith('#')) {
+        window.location.hash = targetRoute;
       } else {
-        navigate(item.link);
+        navigate(targetRoute);
       }
     }
   };

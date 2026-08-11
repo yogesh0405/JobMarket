@@ -593,7 +593,10 @@ export class JobController {
               `New Candidate Application`,
               `${candidate.name} applied for "${job.title}"`,
               'JOB_APPLICATION',
-              `/dashboard?tab=applicants`
+              `/dashboard?tab=applicants&jobId=${job.id}`,
+              'APPLICATION',
+              job.id,
+              { jobId: job.id, candidateId: candidate.id }
             ).catch(err => console.error('Failed to create employer in-app notification:', err));
 
             // Send in-app confirmation notification to Candidate
@@ -602,7 +605,10 @@ export class JobController {
               `Application Submitted Successfully`,
               `Your application for "${job.title}" at ${job.company || 'Employer'} has been received.`,
               'APPLICATION_CONFIRMATION',
-              `/job/${job.id}`
+              `/job/${job.id}`,
+              'APPLICATION',
+              job.id,
+              { jobId: job.id }
             ).catch(err => console.error('Failed to create candidate in-app notification:', err));
 
             const resumeUrl = candidate.resume && (candidate.resume as any).url ? (candidate.resume as any).url : null;
@@ -683,7 +689,10 @@ export class JobController {
               `Application Status: ${status.toUpperCase()}`,
               `Your application for "${job.title}" at ${companyName} is now ${status.toUpperCase()}`,
               'JOB_STATUS',
-              `/dashboard?tab=applied`
+              `/job/${job.id}`,
+              'APPLICATION',
+              job.id,
+              { jobId: job.id, status }
             ).catch(err => console.error('Failed to send status in-app notification:', err));
 
             await EmailService.sendApplicationStatusUpdateEmail(
@@ -753,7 +762,10 @@ export class JobController {
               `Interview Scheduled: ${job.title}`,
               `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime} (${venueAddress})`,
               'JOB_INTERVIEW',
-              `/dashboard?tab=applied`
+              `/job/${job.id}`,
+              'INTERVIEW',
+              job.id,
+              { jobId: job.id, interviewDate, interviewTime, venueAddress }
             ).catch(err => console.error('Failed to send interview in-app notification:', err));
 
             await EmailService.sendInterviewScheduledEmail(

@@ -9,6 +9,9 @@ export interface NotificationRecord {
   type: string;
   read: boolean;
   link: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  metadata?: any | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -22,15 +25,35 @@ export class NotificationRepository {
     title: string,
     message: string,
     type: string = 'SYSTEM',
-    link?: string | null
+    link?: string | null,
+    entityType?: string | null,
+    entityId?: string | null,
+    metadata?: any | null
   ): Promise<NotificationRecord> {
     try {
+      // Ensure columns exist gracefully
+      await pool.query(`
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50);
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS entity_id VARCHAR(255);
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS metadata JSONB;
+      `).catch(() => {});
+
       const query = `
-        INSERT INTO notifications (user_id, title, message, type, read, link, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, FALSE, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO notifications (user_id, title, message, type, read, link, entity_type, entity_id, metadata, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, FALSE, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *;
       `;
-      const { rows } = await pool.query(query, [userId, title, message, type, link || null]);
+      const metaJson = metadata ? JSON.stringify(metadata) : null;
+      const { rows } = await pool.query(query, [
+        userId,
+        title,
+        message,
+        type,
+        link || null,
+        entityType || null,
+        entityId || null,
+        metaJson,
+      ]);
       return rows[0];
     } catch (error) {
       logger.error('Error creating notification in DB:', error);
