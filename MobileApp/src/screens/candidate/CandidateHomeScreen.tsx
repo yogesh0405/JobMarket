@@ -545,7 +545,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
       >
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
-        <View style={{ zIndex: 999, position: 'relative', marginBottom: 12 }}>
+        <View style={{ zIndex: 999, position: 'relative', marginTop: 14, marginBottom: 14 }}>
           <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
             <TouchableOpacity
               onPress={handleSearchSubmit}
@@ -1338,7 +1338,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 14,
     paddingBottom: 130,
     gap: 6,
   },
