@@ -69,13 +69,22 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [syncListWithStore]);
 
-  // Subscribe to appliedJobsStore for instant 0ms updates
+  // Subscribe to appliedJobsStore & live interval polling for real-time status updates
   useEffect(() => {
+    fetchAppliedData(false);
+    const interval = setInterval(() => {
+      fetchAppliedData(false);
+    }, 4000);
+
     const unsubscribe = appliedJobsStore.subscribe(() => {
       setAppliedList([...appliedJobsStore.getAppliedJobs()]);
     });
-    return unsubscribe;
-  }, []);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [fetchAppliedData]);
 
   useFocusEffect(
     useCallback(() => {

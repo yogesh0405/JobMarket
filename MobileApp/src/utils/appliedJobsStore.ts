@@ -44,19 +44,20 @@ class AppliedJobsStore {
     if (!Array.isArray(items)) return;
 
     const formatted: AppliedJobItem[] = items.map((item) => {
-      if (item && item.jobId && item.job) {
-        return item as AppliedJobItem;
-      }
+      const targetStatus = item?.applicationStatus || item?.application_status || item?.status || item?.job?.applicationStatus || item?.job?.status || 'applied';
+      const targetJobId = item?.jobId || item?.job_id || item?.job?.id || item?.id;
+      const actualJob = item?.job || item;
+
       return {
-        id: item?.id,
-        jobId: item?.id,
-        job: item,
-        status: item?.status || 'applied',
-        appliedAt: item?.appliedAt || item?.created_at || new Date().toISOString(),
-        interviewDate: item?.interviewDate,
-        interviewTime: item?.interviewTime,
-        venueAddress: item?.venueAddress,
-        mapsLink: item?.mapsLink,
+        id: item?.id || targetJobId,
+        jobId: targetJobId,
+        job: actualJob,
+        status: targetStatus as any,
+        appliedAt: item?.appliedAt || item?.applied_at || item?.created_at || new Date().toISOString(),
+        interviewDate: item?.interviewDate || item?.interview_date,
+        interviewTime: item?.interviewTime || item?.interview_time,
+        venueAddress: item?.venueAddress || item?.venue_address,
+        mapsLink: item?.mapsLink || item?.maps_link,
       };
     });
 
@@ -65,7 +66,7 @@ class AppliedJobsStore {
       (opt) => !serverJobIds.has(opt.jobId) && !serverJobIds.has(opt.job?.id)
     );
 
-    this.appliedJobs = [...optimisticUnsynced, ...formatted];
+    this.appliedJobs = [...formatted, ...optimisticUnsynced];
     this.pendingRefresh = false;
     this.notify();
   }
