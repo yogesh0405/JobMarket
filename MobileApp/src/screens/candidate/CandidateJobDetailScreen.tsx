@@ -287,10 +287,18 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     }
   };
 
+  const handleBackNavigation = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('CandidateTab', { screen: 'CandidateHomeTab' });
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="Job Details" onBack={() => navigation.goBack()} />
+        <Header title="Job Details" onBack={handleBackNavigation} />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.singleMasterCard}>
             {/* Header Banner Skeleton */}
@@ -357,7 +365,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (!job) {
     return (
       <View style={styles.container}>
-        <Header title="Job Details" onBack={() => navigation.goBack()} />
+        <Header title="Job Details" onBack={handleBackNavigation} />
         <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', padding: 24, borderRadius: 0, width: '100%', alignItems: 'center', gap: 12 }}>
             <AlertCircle size={44} color="#DC2626" />
@@ -366,7 +374,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             <TouchableOpacity
               activeOpacity={0.85}
               style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 }}
-              onPress={() => navigation.goBack()}
+              onPress={handleBackNavigation}
             >
               <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Back to Jobs</Text>
             </TouchableOpacity>
@@ -391,7 +399,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   return (
     <View style={styles.container}>
-      <Header title="Job Details" onBack={() => navigation.goBack()} />
+      <Header title="Job Details" onBack={handleBackNavigation} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Single Master Card Container */}

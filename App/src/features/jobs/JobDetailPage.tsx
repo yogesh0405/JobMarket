@@ -12,6 +12,20 @@ import { JobLocationMapPreview } from '../../components/map/JobLocationMapPrevie
 import { JobApplyModal } from '../../components/jobs/JobApplyModal';
 import { Zap, Calendar, FileText, CheckCircle2, Phone } from 'lucide-react';
 
+const ensureArray = (val: any): string[] => {
+  if (Array.isArray(val)) return val.filter(Boolean).map(String);
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+      return [val.trim()];
+    } catch (e) {
+      return [val.trim()];
+    }
+  }
+  return [];
+};
+
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -107,7 +121,13 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
-  const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser?.id || a.id === currentUser?.id);
+  const safeApplicants = ensureArray(job.applicants);
+  const safeResponsibilities = ensureArray(job.responsibilities);
+  const safeRequirements = ensureArray(job.requirements);
+  const safeSkills = ensureArray(job.skills);
+  const safePerks = ensureArray(job.perks);
+
+  const applicantRecord = safeApplicants.find((a: any) => a && (a.userId === currentUser?.id || a.id === currentUser?.id));
   const hasApplied = Boolean(
     currentUser && (
       currentUser.appliedJobs?.includes(job.id) ||
@@ -122,7 +142,7 @@ export const JobDetailPage: React.FC = () => {
     appliedAt: applicantRecord.appliedAt
   } : null);
 
-  const realApplicantCount = Array.isArray(job.applicants) ? job.applicants.length : 0;
+  const realApplicantCount = safeApplicants.length;
 
   // Dynamic Profile Strength Calculation based on completed user profile fields
   let profileStrength = 0;
@@ -781,8 +801,8 @@ export const JobDetailPage: React.FC = () => {
                   paddingLeft: '20px',
                   listStyleType: 'disc'
                 }}>
-                  {(job.responsibilities && job.responsibilities.length > 0) ? (
-                    job.responsibilities.map((r, i) => <li key={i} style={{ marginBottom: '6px' }}>{r}</li>)
+                  {safeResponsibilities.length > 0 ? (
+                    safeResponsibilities.map((r, i) => <li key={i} style={{ marginBottom: '6px' }}>{r}</li>)
                   ) : (
                     <>
                       <li style={{ marginBottom: '6px' }}>Execute operational deliverables inline with product quality directives.</li>
@@ -800,7 +820,7 @@ export const JobDetailPage: React.FC = () => {
                   Skills:
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {(job.skills || []).map(s => (
+                  {safeSkills.map(s => (
                     <span
                       key={s}
                       style={{
