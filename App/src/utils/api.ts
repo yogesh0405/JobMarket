@@ -13,7 +13,9 @@ export const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/$/, '');
   }
-  // Use relative pathing in development so Vite dev server proxies all /api requests to http://127.0.0.1:5000
+  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://jobmarket-ongn.onrender.com';
+  }
   return '';
 };
 
