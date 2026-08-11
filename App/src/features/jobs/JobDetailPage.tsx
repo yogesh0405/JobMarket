@@ -203,10 +203,79 @@ export const JobDetailPage: React.FC = () => {
   }
 
   const isMobileDevice = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const [showAppBanner, setShowAppBanner] = useState(isMobileDevice);
+  const [showAppBanner, setShowAppBanner] = useState<boolean>(() => {
+    if (!isMobileDevice) return false;
+    try {
+      return localStorage.getItem('jobmarket_app_installed') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (!isMobileDevice || !job) return;
+
+    try {
+      if (localStorage.getItem('jobmarket_app_installed') === 'true') {
+        setShowAppBanner(true);
+        return;
+      }
+    } catch (e) {}
+
+    let detected = false;
+    const handleAppDetected = () => {
+      if (!detected) {
+        detected = true;
+        try {
+          localStorage.setItem('jobmarket_app_installed', 'true');
+        } catch (e) {}
+        setShowAppBanner(true);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleAppDetected();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleAppDetected);
+    window.addEventListener('blur', handleAppDetected);
+
+    // Silent probe to test if app is installed
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `jobmarket://job/${job.id}`;
+    document.body.appendChild(iframe);
+
+    const timer = setTimeout(() => {
+      try {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      } catch (e) {}
+    }, 1200);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleAppDetected);
+      window.removeEventListener('blur', handleAppDetected);
+      clearTimeout(timer);
+      try {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      } catch (e) {}
+    };
+  }, [isMobileDevice, job]);
 
   const handleOpenInApp = () => {
     if (!job) return;
+    try {
+      localStorage.setItem('jobmarket_app_installed', 'true');
+    } catch (e) {}
+
     const isAndroid = /Android/i.test(navigator.userAgent);
     const jobId = job.id;
     const webUrl = `https://job-market-wine.vercel.app/job/${jobId}`;
@@ -222,65 +291,70 @@ export const JobDetailPage: React.FC = () => {
 
   return (
     <div className="detail-page-container" style={{ background: 'var(--bg)', minHeight: '100vh', padding: '24px 16px 140px 16px' }}>
-      {/* Mobile App Handoff Top Banner */}
+      {/* 100% Exact Matching Mobile App Handoff Modal Popup Card */}
       {showAppBanner && (
         <div style={{
-          background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-          color: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '14px 16px',
-          marginBottom: '20px',
+          background: '#FFFFFF',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          marginBottom: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px',
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          gap: '16px',
+          boxShadow: '0 12px 36px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04)',
+          border: '1px solid #E2E8F0',
+          position: 'relative'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+            {/* White Soft Shield Logo Box */}
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: '#2563EB',
+              width: '54px',
+              height: '54px',
+              borderRadius: '12px',
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+              flexShrink: 0
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L3 6V11C3 16.55 7.03 21.74 12 23C16.97 21.74 21 16.55 21 11V6L12 2Z" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 12L11 14L15 10" stroke="#2563EB" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
+
+            {/* Title & Subtitle Stack */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '14px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
-                JobMarket Mobile App
+              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, marginBottom: '3px' }}>
+                Better experience in the app
               </div>
-              <div style={{ fontSize: '12px', color: '#94A3B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                Open in app for a faster & better experience
+              <div style={{ fontSize: '12.5px', color: '#64748B', lineHeight: 1.45, fontWeight: '400' }}>
+                Open this job in the JobMarket app to get easy apply, real-time updates and more.
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
             <button
               onClick={handleOpenInApp}
               style={{
-                background: '#2563EB',
+                background: '#344BFD',
                 color: '#FFFFFF',
                 border: 'none',
-                borderRadius: '8px',
-                padding: '8px 14px',
-                fontSize: '13px',
+                borderRadius: '10px',
+                padding: '10px 18px',
+                fontSize: '13.5px',
                 fontWeight: '700',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
+                boxShadow: '0 4px 14px rgba(52, 75, 253, 0.35)',
                 whiteSpace: 'nowrap'
               }}
             >
-              Open in App
+              Continue in App
             </button>
             <button
               onClick={() => setShowAppBanner(false)}
@@ -290,12 +364,18 @@ export const JobDetailPage: React.FC = () => {
                 border: 'none',
                 padding: '6px',
                 cursor: 'pointer',
-                fontSize: '16px',
-                lineHeight: 1
+                fontSize: '18px',
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               title="Dismiss"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
         </div>
