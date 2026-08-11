@@ -66,7 +66,7 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
   };
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 1100, padding: '12px' }}>
+    <div className="modal-backdrop" onClick={onClose}>
       <div
         className="modal"
         onClick={(e) => e.stopPropagation()}

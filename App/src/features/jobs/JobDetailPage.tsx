@@ -1352,7 +1352,7 @@ export const JobDetailPage: React.FC = () => {
       )}
       {showWalkInPassModal && (
         createPortal(
-          <div className="modal-backdrop" onClick={() => setShowWalkInPassModal(false)} style={{ zIndex: 1150 }}>
+          <div className="modal-backdrop" onClick={() => setShowWalkInPassModal(false)}>
             <div
               className="modal"
               onClick={(e) => e.stopPropagation()}
