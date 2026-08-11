@@ -762,15 +762,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
       {/* Bottom Sticky Action Bar */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
-        {/* Bookmark / Save Button (Always available to save/unsave in Saved Jobs) */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.bottomShareBtn, isSaved && { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
-          onPress={handleToggleSave}
-        >
-          <Bookmark size={20} color={isSaved ? '#2563EB' : '#64748B'} fill={isSaved ? '#2563EB' : 'transparent'} />
-        </TouchableOpacity>
-
         {hasApplied ? (
           (() => {
             const st = (appliedItem?.status || 'applied').toLowerCase();
