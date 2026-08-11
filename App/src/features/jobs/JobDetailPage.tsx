@@ -300,22 +300,9 @@ export const JobDetailPage: React.FC = () => {
           }}
         >
           <div className="app-handoff-modal-card">
-            {/* Left Content Area (Logo PNG + Title in SAME line) */}
-            <div className="app-handoff-left-group">
-              <div className="app-handoff-icon-box">
-                <img
-                  src="/logo.png"
-                  alt="JobMarket Logo"
-                  style={{ width: '34px', height: '34px', objectFit: 'contain' }}
-                  onError={(e) => {
-                    (e.target as HTMLElement).setAttribute('src', '/favicon.png');
-                  }}
-                />
-              </div>
-
-              <div className="app-handoff-title">
-                Better experience in the app
-              </div>
+            {/* Title (No Logo) */}
+            <div className="app-handoff-title">
+              Better experience in the app
             </div>
 
             {/* Right Action Area (Open Button + Dismiss in SAME line) */}
@@ -351,18 +338,18 @@ export const JobDetailPage: React.FC = () => {
           background-color: rgba(15, 23, 42, 0.35);
           z-index: 999999;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
-          padding: 16px;
+          padding: 14px;
         }
 
         .app-handoff-modal-card {
           background: #FFFFFF;
-          border-radius: 14px;
+          border-radius: 12px;
           padding: 12px 16px;
           width: 100%;
           max-width: 520px;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08);
           border: 1px solid #E2E8F0;
           position: relative;
           display: flex;
@@ -370,28 +357,7 @@ export const JobDetailPage: React.FC = () => {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-        }
-
-        .app-handoff-left-group {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .app-handoff-icon-box {
-          width: 38px;
-          height: 38px;
-          border-radius: 9px;
-          background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          overflow: hidden;
+          margin-top: 6px;
         }
 
         .app-handoff-title {
@@ -402,6 +368,8 @@ export const JobDetailPage: React.FC = () => {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex: 1;
+          min-width: 0;
         }
 
         .app-handoff-actions {
