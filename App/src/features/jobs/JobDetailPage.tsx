@@ -300,37 +300,31 @@ export const JobDetailPage: React.FC = () => {
           }}
         >
           <div className="app-handoff-modal-card">
-            {/* Left Content Area (Icon + Text Stack) */}
+            {/* Left Content Area (Logo PNG + Title in SAME line) */}
             <div className="app-handoff-left-group">
               <div className="app-handoff-icon-box">
                 <img
                   src="/logo.png"
                   alt="JobMarket Logo"
-                  style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+                  style={{ width: '34px', height: '34px', objectFit: 'contain' }}
                   onError={(e) => {
-                    // Fallback to favicon.png if logo.png is missing
                     (e.target as HTMLElement).setAttribute('src', '/favicon.png');
                   }}
                 />
               </div>
 
-              <div className="app-handoff-text-stack">
-                <div className="app-handoff-title">
-                  Better experience in the app
-                </div>
-                <div className="app-handoff-subtext">
-                  Open this job in the JobMarket app to get easy apply, real-time updates and more.
-                </div>
+              <div className="app-handoff-title">
+                Better experience in the app
               </div>
             </div>
 
-            {/* Right Action Area (Button + Dismiss) */}
+            {/* Right Action Area (Open Button + Dismiss in SAME line) */}
             <div className="app-handoff-actions">
               <button
                 className="app-handoff-btn"
                 onClick={handleOpenInApp}
               >
-                Continue in App
+                Open
               </button>
               <button
                 className="app-handoff-close-btn"
@@ -354,7 +348,7 @@ export const JobDetailPage: React.FC = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: rgba(15, 23, 42, 0.4);
+          background-color: rgba(15, 23, 42, 0.35);
           z-index: 999999;
           display: flex;
           align-items: center;
@@ -364,35 +358,35 @@ export const JobDetailPage: React.FC = () => {
 
         .app-handoff-modal-card {
           background: #FFFFFF;
-          border-radius: 16px;
-          padding: 20px 22px;
+          border-radius: 14px;
+          padding: 12px 16px;
           width: 100%;
-          max-width: 560px;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06);
+          max-width: 520px;
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
           border: 1px solid #E2E8F0;
           position: relative;
           display: flex;
           flex-direction: row;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
+          gap: 12px;
         }
 
         .app-handoff-left-group {
           display: flex;
-          align-items: flex-start;
-          gap: 14px;
+          align-items: center;
+          gap: 10px;
           flex: 1;
           min-width: 0;
         }
 
         .app-handoff-icon-box {
-          width: 52px;
-          height: 52px;
-          border-radius: 12px;
+          width: 38px;
+          height: 38px;
+          border-radius: 9px;
           background: #FFFFFF;
           border: 1px solid #E2E8F0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -400,31 +394,20 @@ export const JobDetailPage: React.FC = () => {
           overflow: hidden;
         }
 
-        .app-handoff-text-stack {
-          flex: 1;
-          min-width: 0;
-        }
-
         .app-handoff-title {
-          font-size: 15px;
-          font-weight: 800;
+          font-size: 14px;
+          font-weight: 700;
           color: #0F172A;
-          line-height: 1.3;
-          margin-bottom: 4px;
-          letter-spacing: -0.2px;
-        }
-
-        .app-handoff-subtext {
-          font-size: 12.5px;
-          color: #64748B;
-          line-height: 1.45;
-          font-weight: 400;
+          line-height: 1.2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .app-handoff-actions {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
           flex-shrink: 0;
         }
 
@@ -432,12 +415,12 @@ export const JobDetailPage: React.FC = () => {
           background: #344BFD;
           color: #FFFFFF;
           border: none;
-          border-radius: 10px;
-          padding: 11px 20px;
-          font-size: 13.5px;
+          border-radius: 8px;
+          padding: 8px 18px;
+          font-size: 13px;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(52, 75, 253, 0.35);
+          box-shadow: 0 3px 10px rgba(52, 75, 253, 0.3);
           white-space: nowrap;
           transition: transform 0.15s ease, background 0.15s ease;
         }
@@ -450,47 +433,18 @@ export const JobDetailPage: React.FC = () => {
           background: transparent;
           color: #94A3B8;
           border: none;
-          padding: 6px;
+          padding: 4px;
           cursor: pointer;
-          font-size: 18px;
-          line-height: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 6px;
-          transition: background 0.15s ease, color 0.15s ease;
+          transition: background 0.15s ease;
         }
 
         .app-handoff-close-btn:hover {
           background: #F1F5F9;
           color: #64748B;
-        }
-
-        @media (max-width: 580px) {
-          .app-handoff-modal-card {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 18px 18px;
-            gap: 14px;
-          }
-
-          .app-handoff-left-group {
-            width: 100%;
-          }
-
-          .app-handoff-actions {
-            width: 100%;
-            justify-content: space-between;
-            padding-top: 0;
-            border-top: none;
-          }
-
-          .app-handoff-btn {
-            flex: 1;
-            text-align: center;
-            justify-content: center;
-            padding: 11px 16px;
-          }
         }
 
         .detail-sticky-bar {
