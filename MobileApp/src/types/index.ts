@@ -115,7 +115,7 @@ export interface Job {
   created_at?: string;
 }
 
-export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
+export type ApplicationStatus = 'applied' | 'reviewed' | 'under_review' | 'shortlisted' | 'interview' | 'interview_scheduled' | 'interviewed' | 'hired' | 'selected' | 'rejected' | string;
 
 export interface JobApplication {
   id: string;

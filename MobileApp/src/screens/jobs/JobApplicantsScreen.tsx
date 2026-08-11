@@ -361,20 +361,30 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     fetchApplicants();
   };
 
-  const handleUpdateStatus = async (userId: string, newStatus: ApplicationStatus) => {
+  const handleUpdateStatus = async (userId: string, newStatus: ApplicationStatus, targetJobId?: string) => {
     try {
-      if (jobId) {
-        await applicantsApi.updateApplicantStatus(jobId, userId, newStatus);
+      const activeJobId = targetJobId || selectedApplicant?.job_id || (selectedApplicant as any)?.jobId || jobId;
+      if (!activeJobId) {
+        Alert.alert('Error', 'Target job ID is required to update candidate status.');
+        return;
       }
-      setApplicants((prev) =>
-        prev.map((app) => (app.user_id === userId ? { ...app, status: newStatus } : app))
-      );
-      if (selectedApplicant && selectedApplicant.user_id === userId) {
-        setSelectedApplicant((prev) => (prev ? { ...prev, status: newStatus } : prev));
+
+      const res = await applicantsApi.updateApplicantStatus(activeJobId, userId, newStatus);
+      if (res && res.success) {
+        setApplicants((prev) =>
+          prev.map((app) => (app.user_id === userId || (app as any).userId === userId ? { ...app, status: newStatus } : app))
+        );
+        if (selectedApplicant && (selectedApplicant.user_id === userId || (selectedApplicant as any).userId === userId)) {
+          setSelectedApplicant((prev) => (prev ? { ...prev, status: newStatus } : prev));
+        }
+        Alert.alert('Status Updated', `Candidate status changed to "${newStatus.toUpperCase()}" on backend.`);
+      } else {
+        const errorMsg = res?.message || res?.error || 'Failed to update applicant status on live backend.';
+        Alert.alert('Backend Update Failed', errorMsg);
       }
-      Alert.alert('Status Updated', `Candidate status changed to "${newStatus.toUpperCase()}".`);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to update candidate status.');
+      console.log('Error updating applicant status on live backend:', err);
+      Alert.alert('Error', err.message || 'Failed to update candidate status on live backend.');
     }
   };
 
@@ -384,21 +394,31 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       Alert.alert('Validation Error', 'Please enter the interview date.');
       return;
     }
+    const targetJobId = selectedApplicant?.job_id || (selectedApplicant as any)?.jobId || jobId;
+    if (!targetJobId) {
+      Alert.alert('Error', 'Target job ID is required to schedule interview.');
+      return;
+    }
+
     setModalLoading(true);
     try {
-      if (jobId) {
-        await applicantsApi.scheduleInterview(jobId, selectedApplicant.user_id, {
-          interviewDate,
-          interviewTime,
-          interviewMode,
-          interviewLocation,
-          notes: interviewNotes,
-        });
+      const res = await applicantsApi.scheduleInterview(targetJobId, selectedApplicant.user_id, {
+        interviewDate,
+        interviewTime,
+        interviewMode,
+        interviewLocation,
+        notes: interviewNotes,
+      });
+
+      if (res && res.success) {
+        await handleUpdateStatus(selectedApplicant.user_id, 'interview', targetJobId);
+        Alert.alert('Interview Scheduled', 'Interview invite successfully recorded and sent to candidate.');
+      } else {
+        const errorMsg = res?.message || res?.error || 'Failed to schedule interview on backend.';
+        Alert.alert('Scheduling Error', errorMsg);
       }
-      await handleUpdateStatus(selectedApplicant.user_id, 'interviewed');
-      Alert.alert('Interview Scheduled', 'Interview invite successfully recorded and sent to candidate.');
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to schedule interview.');
+      Alert.alert('Error', err.message || 'Failed to schedule interview on live backend.');
     } finally {
       setModalLoading(false);
     }
@@ -1179,11 +1199,11 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       {[
                         { key: 'applied', label: 'Applied', desc: 'Candidate application received' },
                         { key: 'shortlisted', label: 'Shortlisted', desc: 'Mark candidate as shortlisted for review' },
-                        { key: 'interviewed', label: 'Interviewed', desc: 'Candidate interview conducted' },
+                        { key: 'interview', label: 'Interview Scheduled', desc: 'Interview invite & walk-in pass released' },
                         { key: 'hired', label: 'Hired', desc: 'Offer extended & candidate hired' },
                         { key: 'rejected', label: 'Rejected', desc: 'Application not moving forward' },
                       ].map((item) => {
-                        const isSelected = selectedApplicant?.status === item.key;
+                        const isSelected = selectedApplicant?.status === item.key || (item.key === 'interview' && (selectedApplicant?.status === 'interviewed' || selectedApplicant?.status === 'interview_scheduled'));
                         return (
                           <TouchableOpacity
                             key={item.key}
@@ -1194,7 +1214,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                             ]}
                             onPress={() => {
                               if (selectedApplicant) {
-                                handleUpdateStatus(selectedApplicant.user_id, item.key as ApplicationStatus);
+                                const activeJId = selectedApplicant.job_id || (selectedApplicant as any).jobId || jobId;
+                                handleUpdateStatus(selectedApplicant.user_id, item.key as ApplicationStatus, activeJId);
                               }
                             }}
                           >
