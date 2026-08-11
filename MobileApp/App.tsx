@@ -17,12 +17,11 @@ const linking: LinkingOptions<any> = {
     'https://jobmarket-ongn.onrender.com',
     'http://jobmarket-ongn.onrender.com',
     'jobmarket://',
+    'exp://',
   ],
   config: {
     screens: {
-      CandidateJobDetail: {
-        path: 'job/:jobId',
-      },
+      CandidateJobDetail: 'job/:jobId',
       CandidateMain: {
         screens: {
           CandidateJobsTab: {

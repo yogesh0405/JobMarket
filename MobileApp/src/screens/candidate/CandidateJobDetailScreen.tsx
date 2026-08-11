@@ -66,6 +66,11 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     if (!input || typeof input !== 'string') return undefined;
     const str = input.trim();
     if (str.includes('/') || str.includes('?')) {
+      const queryMatch = str.match(/[?&](?:jobId|id|job_id)=([^&]+)/i);
+      if (queryMatch && queryMatch[1]) {
+        return queryMatch[1];
+      }
+
       const uuidMatch = str.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
       if (uuidMatch) return uuidMatch[1];
 
