@@ -228,20 +228,21 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
         <meta property="og:description" content="${description}" />
         ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
         <script>
-          (function() {
+          window.addEventListener('DOMContentLoaded', function() {
             var isAndroid = /Android/i.test(navigator.userAgent);
             var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
             var jobId = "${jobId}";
-            var webUrl = "https://jobmarket-ongn.onrender.com/job/" + jobId;
-            var customSchemeUrl = "jobmarket://job/" + jobId;
-            var androidIntentUrl = "intent://job/" + jobId + "#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=" + encodeURIComponent(webUrl) + ";end;";
-
-            if (isAndroid) {
-              window.location.href = androidIntentUrl;
-            } else if (isIOS) {
-              window.location.href = customSchemeUrl;
+            if (isAndroid || isIOS) {
+              setTimeout(function() {
+                try {
+                  var iframe = document.createElement('iframe');
+                  iframe.style.display = 'none';
+                  iframe.src = "jobmarket://job/" + jobId;
+                  document.body.appendChild(iframe);
+                } catch (e) {}
+              }, 400);
             }
-          })();
+          });
         </script>
       </head>`;
       indexHtml = indexHtml.replace('</head>', `${injectionScript}`);
@@ -416,20 +417,21 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
     }
   </style>
   <script>
-    (function() {
+    window.addEventListener('DOMContentLoaded', function() {
       var isAndroid = /Android/i.test(navigator.userAgent);
       var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       var jobId = "${jobId}";
-      var webUrl = "https://jobmarket-ongn.onrender.com/job/" + jobId;
-      var customSchemeUrl = "jobmarket://job/" + jobId;
-      var androidIntentUrl = "intent://job/" + jobId + "#Intent;scheme=jobmarket;package=com.jobmarket.mobileapp;S.browser_fallback_url=" + encodeURIComponent(webUrl) + ";end;";
-
-      if (isAndroid) {
-        window.location.href = androidIntentUrl;
-      } else if (isIOS) {
-        window.location.href = customSchemeUrl;
+      if (isAndroid || isIOS) {
+        setTimeout(function() {
+          try {
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = "jobmarket://job/" + jobId;
+            document.body.appendChild(iframe);
+          } catch (e) {}
+        }, 400);
       }
-    })();
+    });
   </script>
 </head>
 <body>
