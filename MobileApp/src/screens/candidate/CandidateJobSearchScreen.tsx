@@ -843,7 +843,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                       style={[styles.compactListCard, isSelected && styles.compactListCardActive]}
                       onPress={() => {
                         setActiveSelectedJobId(job.id);
-                        navigation.navigate('CandidateJobDetail', { jobId: job.id });
+                        navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job });
                       }}
                     >
                       {/* Left Company Logo Badge */}
@@ -881,7 +881,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                     key={job.id}
                     activeOpacity={0.92}
                     style={styles.naukriJobCard}
-                    onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                    onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
                   >
                     {/* Grid Card Top Section */}
                     <View style={styles.naukriCardTopSection}>

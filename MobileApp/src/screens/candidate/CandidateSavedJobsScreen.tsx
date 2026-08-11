@@ -149,7 +149,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   key={job.id}
                   activeOpacity={0.85}
                   style={styles.savedCard3D}
-                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
                 >
                   <View style={styles.cardTopRow}>
                     <View style={styles.companyIconSquare}>

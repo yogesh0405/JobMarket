@@ -295,7 +295,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                      onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                      onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
                     >
                       <CheckCircle2 size={14} color="#16A34A" />
                       <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#16A34A' }}>Applied</Text>
