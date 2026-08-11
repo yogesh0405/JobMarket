@@ -100,6 +100,19 @@ export const JobDetailPage: React.FC = () => {
     }
   }, [isMobileDevice, job]);
 
+  const handleBackToJobs = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    try {
+      if (window.history.state && window.history.state.idx > 0) {
+        navigate(-1);
+      } else {
+        navigate('/jobs');
+      }
+    } catch (err) {
+      navigate('/jobs');
+    }
+  };
+
   const handleSave = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!currentUser) {
@@ -412,7 +425,7 @@ export const JobDetailPage: React.FC = () => {
       `}</style>
         {/* Back Link */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBackToJobs}
           style={{
             background: 'transparent',
             border: 'none',
