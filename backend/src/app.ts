@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -69,6 +70,9 @@ app.use(cors({
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve Mobile App assets statically (app icon, badges)
+app.use('/assets', express.static(path.join(__dirname, '../../MobileApp/assets')));
 
 // Health Check Endpoints
 app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
@@ -173,19 +177,18 @@ app.get('/job/:id', async (req, res) => {
     .brand-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 24px;
     }
-    .brand-badge {
-      width: 36px;
-      height: 36px;
-      background: #2563EB;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: contain;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
     .brand-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
       color: #0F172A;
       letter-spacing: -0.5px;
@@ -202,8 +205,9 @@ app.get('/job/:id', async (req, res) => {
     .logo-container {
       width: 72px;
       height: 72px;
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
+      background-color: #EFF6FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -215,18 +219,15 @@ app.get('/job/:id', async (req, res) => {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      padding: 4px;
+      padding: 6px;
     }
     .logo-fallback {
       width: 100%;
       height: 100%;
-      background: #2563EB;
-      color: #FFFFFF;
+      background-color: #EFF6FF;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
-      font-weight: 800;
     }
     h1 {
       font-size: 22px;
@@ -304,9 +305,7 @@ app.get('/job/:id', async (req, res) => {
 </head>
 <body>
   <div class="brand-header">
-    <div class="brand-badge">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-    </div>
+    <img src="https://jobmarket-ongn.onrender.com/assets/icon.png" class="brand-icon" alt="JobMarket Icon" onError="this.style.display='none';" />
     <div class="brand-title">JobMarket Platform</div>
   </div>
 
@@ -314,9 +313,13 @@ app.get('/job/:id', async (req, res) => {
     <div class="logo-container">
       ${formattedLogo ? `
         <img src="${formattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('logo-fb').style.display='flex';" />
-        <div id="logo-fb" class="logo-fallback" style="display:none;">${companyInitial}</div>
+        <div id="logo-fb" class="logo-fallback" style="display:none;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+        </div>
       ` : `
-        <div class="logo-fallback">${companyInitial}</div>
+        <div class="logo-fallback">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+        </div>
       `}
     </div>
 
