@@ -120,8 +120,8 @@ app.use('/api/v1/admin', adminAdvertisementRouter);
 app.use('/api/v1', publicSettingsRouter);
 app.use('/api/v1', unifiedNotificationRoutes);
 
-// Android App Links verification route
-app.get('/.well-known/assetlinks.json', (req, res) => {
+// Android App Links verification route (Digital Asset Links)
+const assetLinksHandler = (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'application/json');
   res.json([
     {
@@ -133,11 +133,32 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
       },
     },
   ]);
-});
+};
+app.get('/.well-known/assetlinks.json', assetLinksHandler);
+app.get('/assetlinks.json', assetLinksHandler);
+
+// iOS Universal Links verification route (Apple App Site Association)
+const appleAasaHandler = (req: express.Request, res: express.Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    applinks: {
+      apps: [],
+      details: [
+        {
+          appID: 'com.jobmarket.mobileapp',
+          paths: ['/job/*', '/jobs/*'],
+        },
+      ],
+    },
+  });
+};
+app.get('/.well-known/apple-app-site-association', appleAasaHandler);
+app.get('/apple-app-site-association', appleAasaHandler);
 
 // Industry-Standard Smart Universal Share & Direct Web Application Route
-app.get('/job/:id', async (req, res, next) => {
-  const jobId = req.params.id;
+app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const rawId = req.params.id;
+  const jobId = (Array.isArray(rawId) ? rawId[0] : rawId) as string;
   let job: any = null;
   try {
     job = await JobRepository.getJobById(jobId);

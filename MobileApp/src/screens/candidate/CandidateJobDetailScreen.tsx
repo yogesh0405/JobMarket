@@ -59,7 +59,7 @@ interface Props {
 }
 
 export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const jobId = route.params?.jobId;
+  const jobId = route.params?.jobId || route.params?.id;
   const passedJob = route.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -179,8 +179,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const handleShareJob = async () => {
     const targetJob = job || passedJob;
     const jobIdStr = jobId || targetJob?.id || '';
-    const appDeepLink = jobIdStr ? `jobmarket://job/${jobIdStr}` : 'jobmarket://';
-    const liveWebUrl = jobIdStr ? `https://jobmarket-ongn.onrender.com/job/${jobIdStr}` : 'https://jobmarket-ongn.onrender.com';
+    const canonicalHttpsUrl = jobIdStr ? `https://jobmarket-ongn.onrender.com/job/${jobIdStr}` : 'https://jobmarket-ongn.onrender.com';
     const titleStr = targetJob?.title ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}` : 'Industrial Job Vacancy';
     const locationStr = targetJob?.location || 'MIDC Industrial Zone';
 
@@ -193,11 +192,11 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       }
     }
 
-    const shareMsg = `🔥 Industrial Job Opening!\n\n📋 Role: ${targetJob?.title || 'Technical Specialist'}\n🏢 Company: ${targetJob?.company || 'Industrial Company'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n📲 Open in JobMarket App:\n${appDeepLink}\n\n🌐 View on Web:\n${liveWebUrl}`;
+    const shareMsg = `🔥 Industrial Job Opening!\n\n📋 Role: ${targetJob?.title || 'Technical Specialist'}\n🏢 Company: ${targetJob?.company || 'Industrial Company'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n👉 Apply / View Details:\n${canonicalHttpsUrl}`;
 
     try {
       if (Platform.OS === 'ios') {
-        await Share.share({ title: titleStr, message: shareMsg, url: appDeepLink });
+        await Share.share({ title: titleStr, message: shareMsg, url: canonicalHttpsUrl });
       } else {
         await Share.share({ title: titleStr, message: shareMsg }, { dialogTitle: titleStr });
       }

@@ -43,6 +43,11 @@
               "pathPrefix": "/job"
             },
             {
+              "scheme": "https",
+              "host": "jobmarket-ongn.onrender.com",
+              "pathPrefix": "/jobs"
+            },
+            {
               "scheme": "jobmarket"
             }
           ],
