@@ -128,7 +128,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
       >
         {/* LAYOUT HEADER: Curved Enterprise Gradient Hero Banner */}
         <LinearGradient
-          colors={['#0F172A', '#032B69', '#1E3A8A']}
+          colors={COLORS.employerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.heroHeader}
@@ -159,7 +159,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           </View>
 
           <Text style={styles.heroTaglineText}>
-            Join India's official industrial recruiting network for verified MIDC manufacturing plants.
+            Hire Smarter. Build Stronger.
           </Text>
         </LinearGradient>
 
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   segmentedTabActive: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
   },
   segmentedTabText: {
     fontSize: 12,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 13,
     borderRadius: 10,
     marginTop: 10,
@@ -572,6 +572,6 @@ const styles = StyleSheet.create({
   registerLinkText: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
 });

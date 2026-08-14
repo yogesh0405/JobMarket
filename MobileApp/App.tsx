@@ -3,6 +3,15 @@ import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -35,16 +44,28 @@ function MainAppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { isLoading: isLoadingAuth } = useAuth();
 
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
+
+  // Keep splash visible while fonts + auth are loading
+  const isReady = fontsLoaded && !isLoadingAuth;
+
   return (
     <View style={{ flex: 1 }}>
       <NavigationContainer linking={linking}>
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>
-      {showSplash && (
+      {(showSplash || !fontsLoaded) && (
         <SplashScreen
           onFinish={() => setShowSplash(false)}
-          isLoadingAuth={isLoadingAuth}
+          isLoadingAuth={!isReady}
         />
       )}
     </View>

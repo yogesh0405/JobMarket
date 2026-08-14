@@ -63,7 +63,7 @@ const SectionProgressPie: React.FC<{ percentage: number; size?: number }> = ({ p
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
   const isComplete = percentage >= 100;
-  const activeColor = '#2563EB';
+  const activeColor = COLORS.primary;
   const unfilledColor = '#CBD5E1';
 
   return (
@@ -98,7 +98,7 @@ const SectionProgressPie: React.FC<{ percentage: number; size?: number }> = ({ p
         style={{
           fontSize: 11,
           fontWeight: '800',
-          color: isComplete ? '#2563EB' : percentage > 0 ? '#1E40AF' : '#64748B',
+          color: isComplete ? COLORS.primary : percentage > 0 ? COLORS.primary : '#64748B',
         }}
       >
         {Math.round(percentage)}%
@@ -940,7 +940,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* Section 1: Governance & Logo */}
           <View style={styles.compactLogoCard}>
             <View style={styles.compactHeaderRow}>
-              <ShieldCheck size={16} color="#2563EB" />
+              <ShieldCheck size={16} color={COLORS.primary} />
               <Text style={styles.compactSectionTitle}>Company Logo & Settings</Text>
             </View>
 
@@ -949,7 +949,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
                 {companyLogo ? (
                   <Image source={{ uri: companyLogo }} style={styles.logoImageCompact} resizeMode="cover" />
                 ) : (
-                  <Building2 size={20} color="#2563EB" />
+                  <Building2 size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
 
@@ -959,7 +959,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
 
               <TouchableOpacity style={styles.uploadLogoBtnCompact} activeOpacity={0.8} onPress={handlePickLogo}>
-                <Upload size={13} color="#2563EB" />
+                <Upload size={13} color={COLORS.primary} />
                 <Text style={styles.uploadLogoTextCompact}>Upload Logo</Text>
               </TouchableOpacity>
             </View>
@@ -1322,7 +1322,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
                         style={[styles.hiringTabBtn, isSelected && styles.hiringTabBtnActive]}
                         onPress={() => setShiftCategory(s)}
                       >
-                        <IconComp size={15} color={isSelected ? '#2563EB' : '#64748B'} />
+                        <IconComp size={15} color={isSelected ? COLORS.primary : '#64748B'} />
                         <Text style={[styles.hiringTabText, isSelected && styles.hiringTabTextActive]}>
                           {s}
                         </Text>
@@ -1405,7 +1405,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
                         style={[styles.hiringTabBtn, isSelected && styles.hiringTabBtnActive]}
                         onPress={() => setGenderPreference(g)}
                       >
-                        <IconComp size={15} color={isSelected ? '#2563EB' : '#64748B'} />
+                        <IconComp size={15} color={isSelected ? COLORS.primary : '#64748B'} />
                         <Text style={[styles.hiringTabText, isSelected && styles.hiringTabTextActive]}>
                           {g}
                         </Text>
@@ -1457,7 +1457,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
                     style={[styles.hiringTabBtn, hiringMethod === 'STANDARD' && styles.hiringTabBtnActive]}
                     onPress={() => setHiringMethod('STANDARD')}
                   >
-                    <Building2 size={15} color={hiringMethod === 'STANDARD' ? '#2563EB' : '#64748B'} />
+                    <Building2 size={15} color={hiringMethod === 'STANDARD' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.hiringTabText, hiringMethod === 'STANDARD' && styles.hiringTabTextActive]}>
                       Standard Online
                     </Text>
@@ -1468,7 +1468,7 @@ export const JobPostScreen: React.FC<Props> = ({ route, navigation }) => {
                     style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
                     onPress={() => setHiringMethod('WALK_IN')}
                   >
-                    <UserCheck size={15} color={hiringMethod === 'WALK_IN' ? '#2563EB' : '#64748B'} />
+                    <UserCheck size={15} color={hiringMethod === 'WALK_IN' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.hiringTabText, hiringMethod === 'WALK_IN' && styles.hiringTabTextActive]}>
                       Direct Walk-in Drive
                     </Text>
@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderWidth: 1.5,
   },
   chipText: {
@@ -1844,7 +1844,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   chipTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   stepperBox: {
@@ -1940,7 +1940,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   segmentTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   rowTwo: {
@@ -1993,7 +1993,7 @@ const styles = StyleSheet.create({
   },
   hiringTabBtnActive: {
     backgroundColor: 'transparent',
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
   },
   hiringTabText: {
     fontSize: 12.5,
@@ -2001,7 +2001,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   hiringTabTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '700',
   },
   compactLogoCard: {
@@ -2072,7 +2072,7 @@ const styles = StyleSheet.create({
   uploadLogoTextCompact: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   customSkillInputRow: {
     flexDirection: 'row',
@@ -2098,7 +2098,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     borderRadius: 8,
   },

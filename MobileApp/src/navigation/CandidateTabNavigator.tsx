@@ -14,6 +14,7 @@ import { Home, Search, Bookmark, ClipboardCheck, User } from 'lucide-react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FONTS, COLORS } from '../constants/theme';
 
 import { CandidateHomeScreen } from '../screens/candidate/CandidateHomeScreen';
 import { CandidateJobSearchScreen } from '../screens/candidate/CandidateJobSearchScreen';
@@ -60,14 +61,15 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   const dockWidth = windowWidth;
-  const dockHeight = 62 + Math.max(insets.bottom, 6);
+  const dockHeight = 58 + Math.max(insets.bottom, 10);
   const center = dockWidth / 2;
 
+  // Ultra-Smooth iOS-Style Concave Notch Curve
   const pathD = `
     M 0,0
-    H ${center - 38}
-    C ${center - 24},0 ${center - 20},22 ${center},22
-    C ${center + 20},22 ${center + 24},0 ${center + 38},0
+    H ${center - 42}
+    C ${center - 26},0 ${center - 22},24 ${center},24
+    C ${center + 22},24 ${center + 26},0 ${center + 42},0
     H ${dockWidth}
     V ${dockHeight}
     H 0
@@ -78,10 +80,10 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
     <View style={styles.floatingWrapper} pointerEvents="box-none">
       <View style={[styles.dockContainer, { width: dockWidth, height: dockHeight }]}>
         <Svg width={dockWidth} height={dockHeight} style={StyleSheet.absoluteFill}>
-          <Path d={pathD} fill="#FFFFFF" stroke="#CBD5E1" strokeWidth={1.5} />
+          <Path d={pathD} fill="#FFFFFF" stroke="#E2E8F0" strokeWidth={0.8} />
         </Svg>
 
-        <View style={[styles.dockItemsRow, { paddingBottom: Math.max(insets.bottom, 4) }]}>
+        <View style={[styles.dockItemsRow, { paddingBottom: Math.max(insets.bottom, 6) }]}>
           {state.routes.map((route: any, index: number) => {
             const isFocused = state.index === index;
 
@@ -106,14 +108,14 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                     style={styles.fabTouchable}
                   >
                     <LinearGradient
-                      colors={['#2563EB', '#1D4ED8']}
+                      colors={COLORS.employerGradient}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.fabCircleGradient}
                     >
-                      <Search size={22} color="#FFFFFF" strokeWidth={2.8} />
+                      <Search size={22} color="#FFFFFF" fill="none" strokeWidth={2.4} />
                     </LinearGradient>
-                    <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive, { marginTop: 6 }]}>Find Jobs</Text>
+                    <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive, { marginTop: 4 }]}>Find Jobs</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -137,6 +139,7 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
             }
 
             const isProfileTab = route.name === 'CandidateProfileTab';
+            const iconColor = isFocused ? COLORS.employerPrimary : '#1E293B';
 
             return (
               <TouchableOpacity
@@ -150,21 +153,25 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                     <Image
                       source={{ uri: avatarUri }}
                       style={{
-                        width: isFocused ? 26 : 24,
-                        height: isFocused ? 26 : 24,
-                        borderRadius: isFocused ? 13 : 12,
-                        borderWidth: isFocused ? 2 : 1,
-                        borderColor: isFocused ? '#2563EB' : '#94A3B8',
+                        width: isFocused ? 24 : 22,
+                        height: isFocused ? 24 : 22,
+                        borderRadius: isFocused ? 12 : 11,
+                        borderWidth: isFocused ? 2 : 1.5,
+                        borderColor: isFocused ? COLORS.employerPrimary : '#1E293B',
                       }}
                     />
                   ) : (
                     <IconComponent
                       size={22}
-                      color={isFocused ? '#2563EB' : '#64748B'}
-                      strokeWidth={isFocused ? 2.4 : 2.0}
+                      color={iconColor}
+                      fill="none"
+                      strokeWidth={isFocused ? 2.5 : 2.2}
                     />
                   )}
                 </View>
+
+                {/* Sleek Active Indicator Capsule Underneath */}
+                {isFocused ? <View style={styles.activeCapsuleIndicator} /> : null}
 
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
@@ -208,19 +215,19 @@ const styles = StyleSheet.create({
   dockContainer: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 14,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   dockItemsRow: {
     flexDirection: 'row',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 6,
+    paddingHorizontal: 10,
     zIndex: 10,
-    elevation: 10,
+    elevation: 2,
     position: 'relative',
   },
   tabItem: {
@@ -228,103 +235,60 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 6,
   },
   iconPillBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    borderWidth: 0,
   },
   iconPillBoxActive: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
-  avatarBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-  },
-  avatarBoxActive: {
-    borderColor: '#2563EB',
-    borderWidth: 2,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 17,
-  },
-  initialsBg: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initialsBgActive: {
-    backgroundColor: '#2563EB',
-  },
-  initialsText: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  initialsTextActive: {
-    color: '#FFFFFF',
+  activeCapsuleIndicator: {
+    width: 16,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: COLORS.employerPrimary,
+    marginTop: 2,
   },
   tabLabelText: {
-    fontSize: 10,
+    fontSize: 11,
+    fontFamily: FONTS.bold,
     fontWeight: '700',
-    color: '#334155',
+    color: '#1E293B',
     marginTop: 2,
     textAlign: 'center',
   },
   tabLabelTextActive: {
-    color: '#2563EB',
+    color: COLORS.employerPrimary,
+    fontFamily: FONTS.bold,
     fontWeight: '800',
   },
   centerFabSlot: {
-    width: 62,
+    width: 68,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   fabTouchable: {
-    top: -15,
+    top: -18,
     alignItems: 'center',
   },
   fabCircleGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#60A5FA',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2563EB',
-    shadowColor: '#0F172A',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: COLORS.employerPrimary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 3,
   },
 });

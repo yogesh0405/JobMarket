@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -303,7 +304,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <Text style={styles.appTitle}>JobMarket</Text>
 
           <View style={styles.subtitleContainer}>
-            <Briefcase size={13} color="#2563EB" style={styles.subtitleIcon} />
+            <Briefcase size={13} color={COLORS.primary} style={styles.subtitleIcon} />
             <Text style={styles.appSubtitle}>Industrial & Factory Jobs</Text>
           </View>
 
@@ -378,7 +379,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   pulseRing1: {
-    borderColor: '#3B82F6',
+    borderColor: COLORS.primary,
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
   },
   pulseRing2: {
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
   loadingFill: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
   footerText: {

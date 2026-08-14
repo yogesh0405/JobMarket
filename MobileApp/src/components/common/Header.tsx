@@ -51,6 +51,9 @@ interface HeaderProps {
   showBack?: boolean;
   rightAction?: React.ReactNode;
   useThreeDots?: boolean;
+  hideRightActions?: boolean;
+  hideBell?: boolean;
+  hideMenu?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -60,6 +63,9 @@ export const Header: React.FC<HeaderProps> = ({
   showBack = true,
   rightAction,
   useThreeDots = true,
+  hideRightActions = false,
+  hideBell = false,
+  hideMenu = false,
 }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -161,34 +167,44 @@ export const Header: React.FC<HeaderProps> = ({
           </View>
 
           {/* Right Header Actions */}
-          <View style={styles.rightSlot}>
-            {rightAction ? <View style={{ marginRight: SPACING.xs }}>{rightAction}</View> : null}
+          {!hideRightActions ? (
+            <View style={styles.rightSlot}>
+              {rightAction ? <View style={{ marginRight: SPACING.xs }}>{rightAction}</View> : null}
 
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={styles.bellButton}
-              onPress={() => setNotifModalVisible(true)}
-            >
-              <Bell size={20} color={COLORS.slate700} />
-              {unreadCount > 0 ? (
-                <View style={styles.notifBadge}>
-                  <Text style={styles.notifText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                </View>
+              {!hideBell ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.bellButton}
+                  onPress={() => {
+                    if (navigation && typeof navigation.navigate === 'function') {
+                      navigation.navigate('Notification');
+                    }
+                  }}
+                >
+                  <Bell size={20} color={COLORS.slate700} />
+                  {unreadCount > 0 ? (
+                    <View style={styles.notifBadge}>
+                      <Text style={styles.notifText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
               ) : null}
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={styles.menuButton}
-              onPress={openDrawer}
-            >
-              {useThreeDots ? (
-                <MoreVertical size={24} color={COLORS.slate800} />
-              ) : (
-                <Menu size={24} color={COLORS.slate800} />
-              )}
-            </TouchableOpacity>
-          </View>
+              {!hideMenu ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.menuButton}
+                  onPress={openDrawer}
+                >
+                  {useThreeDots ? (
+                    <MoreVertical size={24} color={COLORS.slate800} />
+                  ) : (
+                    <Menu size={24} color={COLORS.slate800} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -272,12 +288,12 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                   >
                     <View style={[styles.iconSquircle, { backgroundColor: '#EFF6FF' }]}>
-                      <UserIcon size={17} color="#2563EB" />
+                      <UserIcon size={17} color={COLORS.primary} />
                     </View>
-                    <Text style={[styles.menuItemTitle, { fontWeight: '800', color: '#2563EB' }]}>
+                    <Text style={[styles.menuItemTitle, { fontWeight: '800', color: COLORS.primary }]}>
                       My Profile & Bio-Data
                     </Text>
-                    <ChevronRight size={16} color="#2563EB" />
+                    <ChevronRight size={16} color={COLORS.primary} />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -536,11 +552,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 9,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -655,7 +671,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

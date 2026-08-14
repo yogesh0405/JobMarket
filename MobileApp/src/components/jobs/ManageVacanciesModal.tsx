@@ -293,8 +293,8 @@ export const ManageVacanciesModal: React.FC<ManageVacanciesModalProps> = ({
 
               {/* Status Badge Indicator */}
               <View style={[styles.statusBox, isFullyFilled ? styles.statusBoxClosed : styles.statusBoxActive]}>
-                <CheckCircle2 size={16} color={isFullyFilled ? '#059669' : '#2563EB'} />
-                <Text style={[styles.statusBoxText, { color: isFullyFilled ? '#047857' : '#1D4ED8' }]}>
+                <CheckCircle2 size={16} color={isFullyFilled ? '#059669' : COLORS.primary} />
+                <Text style={[styles.statusBoxText, { color: isFullyFilled ? '#047857' : COLORS.primary }]}>
                   {isFullyFilled
                     ? `Fully Allotted (${filledOpenings}/${totalOpenings}) • Job will be marked CLOSED`
                     : `Recruiting (${filledOpenings}/${totalOpenings} Filled) • Job remains ACTIVE`}

@@ -23,8 +23,15 @@ export const useNotifications = () => {
     
     try {
       const res = await notificationApi.getNotifications();
-      if (res.success && res.data && isMounted.current) {
-        setNotifications(res.data);
+      if (res.success && isMounted.current) {
+        const rawList = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray((res as any)?.notifications)
+          ? (res as any).notifications
+          : Array.isArray((res as any)?.data?.notifications)
+          ? (res as any).data.notifications
+          : [];
+        setNotifications(rawList);
         hasFetchedRef.current = true;
       }
     } catch (e) {

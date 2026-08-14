@@ -1,3 +1,4 @@
+import { COLORS } from '../constants/theme';
 /**
  * Professional Corporate Logo Generator & Registry
  * Provides high-quality vector corporate logos (SVG Data URIs and database images)
@@ -5,7 +6,7 @@
  */
 
 const CORPORATE_PALETTES = [
-  { bg1: '#0F172A', bg2: '#1E3A8A', accent: '#60A5FA' },
+  { bg1: '#0F172A', bg2: COLORS.primary, accent: '#60A5FA' },
   { bg1: '#451A03', bg2: '#B45309', accent: '#FBBF24' },
   { bg1: '#064E3B', bg2: '#047857', accent: '#34D399' },
   { bg1: '#3B0764', bg2: '#6D28D9', accent: '#A78BFA' },

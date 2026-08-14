@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
+  ArrowLeft,
   ShieldCheck,
   Lock,
   Smartphone,
@@ -38,7 +39,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -69,6 +70,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
 
   // Forgot / Reset Password Modal State
+  const [isResetConfirmModalOpen, setIsResetConfirmModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [otpStep, setOtpStep] = useState<1 | 2>(1);
   const [resetEmail, setResetEmail] = useState(user?.email || '');
@@ -77,6 +79,28 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [otpConfirmPass, setOtpConfirmPass] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+
+  const handleOpenResetConfirm = () => {
+    const targetEmail = user?.email || 'yogeshdand04@gmail.com';
+    setResetEmail(targetEmail);
+    setIsResetConfirmModalOpen(true);
+  };
+
+  const handleConfirmSendOtp = async () => {
+    setIsResetConfirmModalOpen(false);
+    setOtpError(null);
+    setOtpStep(1);
+    setIsOtpModalOpen(true);
+
+    try {
+      const res = await authApi.forgotPassword(resetEmail);
+      if (!res.success) {
+        setOtpError(res.message || 'Could not dispatch OTP. Please check email address.');
+      }
+    } catch (err: any) {
+      console.warn('Direct OTP trigger error:', err);
+    }
+  };
 
   const detectRealTimeDeviceSession = async () => {
     let deviceName = 'Android / Desktop Workstation';
@@ -306,21 +330,38 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleDirectForgotPassword = async () => {
-    setOtpError(null);
+  const handleDirectForgotPassword = () => {
     const targetEmail = user?.email || 'yogeshdand04@gmail.com';
-    setResetEmail(targetEmail);
-    setOtpStep(1);
-    setIsOtpModalOpen(true);
 
-    try {
-      const res = await authApi.forgotPassword(targetEmail);
-      if (!res.success) {
-        setOtpError(res.message || 'Could not dispatch OTP. Please check email address.');
-      }
-    } catch (err: any) {
-      console.warn('Direct OTP trigger error:', err);
-    }
+    Alert.alert(
+      'Request Password Reset',
+      `A 6-digit verification OTP code will be sent to your email address:\n\n${targetEmail}\n\nDo you want to proceed?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Send OTP Code',
+          style: 'default',
+          onPress: async () => {
+            setOtpError(null);
+            setResetEmail(targetEmail);
+            setOtpStep(1);
+            setIsOtpModalOpen(true);
+
+            try {
+              const res = await authApi.forgotPassword(targetEmail);
+              if (!res.success) {
+                setOtpError(res.message || 'Could not dispatch OTP. Please check email address.');
+              }
+            } catch (err: any) {
+              console.warn('Direct OTP trigger error:', err);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleResetWithOtp = async () => {
@@ -368,196 +409,235 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Security & Login Sessions" onBack={() => navigation.goBack()} />
+      {/* Top Overscroll Navy Blue Background */}
+      <View style={styles.topOverscrollBlueFill} />
+
+      {/* Top Navy Header Banner with Back Button & Stats */}
+      <LinearGradient
+        colors={COLORS.employerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={styles.headerBannerContainer}
+      >
+        <View style={styles.headerTitleNavRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ padding: 4 }}
+          >
+            <ArrowLeft size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitleText}>Security & Active Sessions</Text>
+        </View>
+
+        {/* Embedded Top Translucent Stats Card */}
+        <View style={styles.topBannerStatsCard}>
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>{twoFactorEnabled ? 'Active' : 'Off'}</Text>
+            <Text style={styles.statLabelMutedText}>2FA Protection</Text>
+          </View>
+          <View style={styles.statColDivider} />
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>{sessions.length || 1}</Text>
+            <Text style={styles.statLabelMutedText}>Device Sessions</Text>
+          </View>
+          <View style={styles.statColDivider} />
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>100%</Text>
+            <Text style={styles.statLabelMutedText}>Encrypted</Text>
+          </View>
+        </View>
+      </LinearGradient>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* SINGLE MASTER CARD: ALL SECURITY & LOGIN SESSIONS SECTIONS */}
-        <View style={styles.singleMasterCard}>
-          {/* SECTION 1: HERO OVERVIEW */}
-          <View style={styles.heroHeaderSection}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <ShieldCheck size={20} color="#2563EB" />
-              <Text style={styles.heroTitle}>Security & Active Sessions</Text>
+        {/* CARD BLOCK 1: ACTIVE LOGIN SESSIONS */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.iconChipBox}>
+              <Laptop size={18} color={COLORS.primary} />
             </View>
-            <Text style={styles.heroSubtitle}>
-              Manage active logged-in devices, update account credentials, or perform an instant email OTP password reset.
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionBlockTitle}>Active Login Sessions</Text>
+              <Text style={styles.sectionBlockSub}>Currently authenticated devices & IP addresses</Text>
+            </View>
           </View>
 
-          <View style={styles.sectionDividerInline} />
-
-          {/* SECTION 2: ACTIVE LOGIN SESSIONS */}
-          <View>
-            <View style={styles.cardHeaderBox}>
-              <Text style={styles.sectionTitle} numberOfLines={1}>
-                Active Login Sessions
-              </Text>
+          {sessionsLoading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Detecting active device sessions...</Text>
             </View>
+          ) : (
+            <View style={styles.sessionList}>
+              {sessions.map((sess, idx) => {
+                const isCurrent = idx === 0 || sess.is_current;
+                const dType = (sess?.device_type || sess?.deviceType || '').toLowerCase();
+                const dName = (sess?.device_name || sess?.deviceName || '').toLowerCase();
+                const osStr = (sess?.os || '').toLowerCase();
+                const isComputer =
+                  dType.includes('desktop') ||
+                  dType.includes('computer') ||
+                  dType.includes('laptop') ||
+                  dName.includes('desktop') ||
+                  dName.includes('mac') ||
+                  dName.includes('windows') ||
+                  dName.includes('computer') ||
+                  dName.includes('laptop') ||
+                  dName.includes('workstation') ||
+                  osStr.includes('windows') ||
+                  osStr.includes('mac') ||
+                  osStr.includes('linux') ||
+                  osStr.includes('ubuntu');
 
-            {sessionsLoading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator size="small" color="#2563EB" />
-                <Text style={styles.loadingText}>Detecting active device sessions...</Text>
-              </View>
-            ) : (
-              <View style={styles.sessionList}>
-                {sessions.map((sess, idx) => {
-                  const isCurrent = idx === 0 || sess.is_current;
-                  const dType = (sess?.device_type || sess?.deviceType || '').toLowerCase();
-                  const dName = (sess?.device_name || sess?.deviceName || '').toLowerCase();
-                  const osStr = (sess?.os || '').toLowerCase();
-                  const isComputer =
-                    dType.includes('desktop') ||
-                    dType.includes('computer') ||
-                    dType.includes('laptop') ||
-                    dName.includes('desktop') ||
-                    dName.includes('mac') ||
-                    dName.includes('windows') ||
-                    dName.includes('computer') ||
-                    dName.includes('laptop') ||
-                    dName.includes('workstation') ||
-                    osStr.includes('windows') ||
-                    osStr.includes('mac') ||
-                    osStr.includes('linux') ||
-                    osStr.includes('ubuntu');
+                const DeviceIconComp = isComputer ? Laptop : Smartphone;
 
-                  const DeviceIconComp = isComputer ? Laptop : Smartphone;
+                return (
+                  <View
+                    key={sess.id || idx}
+                    style={styles.sessionItemRow}
+                  >
+                    <View style={styles.sessionIconChip}>
+                      <DeviceIconComp size={18} color={isCurrent ? '#16A34A' : '#64748B'} />
+                    </View>
 
-                  return (
-                    <View
-                      key={sess.id || idx}
-                      style={[styles.sessionCard, isCurrent && styles.sessionCardCurrent]}
-                    >
-                      <DeviceIconComp size={18} color={isCurrent ? '#16A34A' : '#64748B'} style={{ marginTop: 2 }} />
-
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Text
-                            style={[styles.deviceNameText, isCurrent && { color: '#16A34A', fontWeight: '800' }]}
-                            numberOfLines={1}
-                          >
-                            {sess.device_name || sess.deviceName || (isComputer ? 'Desktop / Laptop PC' : 'Mobile Smartphone')}
-                          </Text>
-                          {isCurrent ? <CheckCircle2 size={13} color="#16A34A" /> : null}
-                        </View>
-
-                        <Text style={styles.sessionMetaText} numberOfLines={1}>
-                          {sess.os || (isComputer ? 'Windows / macOS' : 'Android OS')} • IP: {sess.ip_address || '103.195.202.14'}
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text
+                          style={styles.deviceNameText}
+                          numberOfLines={1}
+                        >
+                          {sess.device_name || sess.deviceName || (isComputer ? 'Desktop / Laptop PC' : 'Mobile Smartphone')}
                         </Text>
+                        {isCurrent ? (
+                          <View style={styles.activeGreenFrontTag}>
+                            <Text style={styles.activeGreenFrontTagText}>Active</Text>
+                          </View>
+                        ) : null}
                       </View>
 
-                      {!isCurrent ? (
-                        <TouchableOpacity
-                          style={styles.revokeIconButton}
-                          onPress={() =>
-                            handleRevokeSession(
-                              sess.id,
-                              sess.device_name || sess.deviceName || 'Selected Device'
-                            )
-                          }
-                        >
-                          <Trash2 size={16} color="#DC2626" />
-                        </TouchableOpacity>
-                      ) : null}
+                      <Text style={styles.sessionMetaText} numberOfLines={1}>
+                        {sess.os || (isComputer ? 'Windows / macOS' : 'Android OS')} • IP: {sess.ip_address || '103.195.202.14'}
+                      </Text>
                     </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
 
-          <View style={styles.sectionDividerInline} />
-
-          {/* SECTION 3: ACCOUNT CREDENTIALS */}
-          <View>
-            <Text style={[styles.sectionTitle, { marginBottom: 10 }]} numberOfLines={1}>
-              Account Credentials
-            </Text>
-
-            {/* Row 1: Change Account Password */}
-            <TouchableOpacity
-              style={styles.iosListRow}
-              onPress={() => {
-                setPasswordError(null);
-                setIsChangePassModalOpen(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Lock size={18} color="#2563EB" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.iosRowTitle}>Change Account Password</Text>
-                <Text style={styles.iosRowSubtitle}>
-                  Update current password using existing account credentials
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#94A3B8" />
-            </TouchableOpacity>
-
-            <View style={styles.iosHairlineDivider} />
-
-            {/* Row 2: Reset Password via Email OTP */}
-            <TouchableOpacity
-              style={styles.iosListRow}
-              onPress={handleDirectForgotPassword}
-              activeOpacity={0.7}
-            >
-              <KeyRound size={18} color="#2563EB" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.iosRowTitle}>Forgot Password? Reset via Email OTP</Text>
-                <Text style={styles.iosRowSubtitle}>
-                  Send a 6-digit verification code to your email address
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#2563EB" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.sectionDividerInline} />
-
-          {/* SECTION 4: MULTI-FACTOR AUTHENTICATION (2FA) */}
-          <View>
-            <View style={styles.cardHeaderBox}>
-              <View style={styles.cardHeaderLeftGroup}>
-                <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.sectionTitle} numberOfLines={1}>
-                    Two-Factor Authentication (2FA)
-                  </Text>
-                  <Text style={styles.sectionSubtitle} numberOfLines={1}>
-                    Extra layer of email OTP login security
-                  </Text>
-                </View>
-              </View>
-
-              <Switch
-                value={twoFactorEnabled}
-                onValueChange={handleToggle2FA}
-                trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
-                thumbColor={twoFactorEnabled ? '#2563EB' : '#94A3B8'}
-              />
+                    {!isCurrent ? (
+                      <TouchableOpacity
+                        style={styles.revokeIconButton}
+                        onPress={() =>
+                          handleRevokeSession(
+                            sess.id,
+                            sess.device_name || sess.deviceName || 'Selected Device'
+                          )
+                        }
+                      >
+                        <Trash2 size={16} color="#DC2626" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                );
+              })}
             </View>
+          )}
+        </View>
 
-            <View style={styles.twoFactorBanner}>
-              <View style={styles.twoFactorBannerHeader}>
-                {twoFactorEnabled ? (
-                  <CheckCircle2 size={18} color="#16A34A" />
-                ) : (
-                  <ShieldAlert size={18} color="#D97706" />
-                )}
-                <Text style={[styles.twoFactorStatusText, { color: twoFactorEnabled ? '#15803D' : '#B45309' }]}>
-                  2FA Security is {twoFactorEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
-                </Text>
-              </View>
-              <Text style={styles.twoFactorBannerDesc}>
-                {twoFactorEnabled
-                  ? 'Every new device login requires a 6-digit verification code sent directly to your registered email address.'
-                  : 'Enable 2FA to protect your enterprise account from unauthorized login attempts across untrusted devices.'}
+        {/* Crisp Section Divider Line */}
+        <View style={styles.slateSectionDivider} />
+
+        {/* CARD BLOCK 2: ACCOUNT CREDENTIALS */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.iconChipBox}>
+              <Lock size={18} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionBlockTitle}>Account Credentials & Recovery</Text>
+              <Text style={styles.sectionBlockSub}>Update password or trigger instant OTP reset</Text>
+            </View>
+          </View>
+
+          {/* Action Row 1: Change Account Password */}
+          <TouchableOpacity
+            style={styles.actionItemRow}
+            onPress={() => {
+              setPasswordError(null);
+              setIsChangePassModalOpen(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconPill}>
+              <Lock size={16} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionRowTitle}>Change Account Password</Text>
+              <Text style={styles.actionRowSub}>
+                Update current password using existing account credentials
               </Text>
             </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <View style={styles.rowDividerLine} />
+
+          {/* Action Row 2: Reset Password via Email OTP */}
+          <TouchableOpacity
+            style={styles.actionItemRow}
+            onPress={handleOpenResetConfirm}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconPill}>
+              <KeyRound size={16} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionRowTitle}>Forgot Password? Reset via Email OTP</Text>
+              <Text style={styles.actionRowSub}>
+                Send a 6-digit verification code to your email address
+              </Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Crisp Section Divider Line */}
+        <View style={styles.slateSectionDivider} />
+
+        {/* CARD BLOCK 3: MULTI-FACTOR AUTHENTICATION (2FA) */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.iconChipBox}>
+              <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionBlockTitle}>Two-Factor Authentication (2FA)</Text>
+              <Text style={styles.sectionBlockSub}>Extra layer of email OTP login security</Text>
+            </View>
+            <Switch
+              value={twoFactorEnabled}
+              onValueChange={handleToggle2FA}
+              trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+              thumbColor={twoFactorEnabled ? COLORS.primary : '#94A3B8'}
+            />
+          </View>
+
+          <View style={[styles.twoFactorBannerBox, twoFactorEnabled ? styles.twoFactorActiveBox : styles.twoFactorDisabledBox]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              {twoFactorEnabled ? (
+                <CheckCircle2 size={16} color="#16A34A" />
+              ) : (
+                <ShieldAlert size={16} color="#D97706" />
+              )}
+              <Text style={[styles.twoFactorStatusText, { color: twoFactorEnabled ? '#15803D' : '#B45309' }]}>
+                2FA Protection is {twoFactorEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
+              </Text>
+            </View>
+            <Text style={styles.twoFactorBannerDesc}>
+              {twoFactorEnabled
+                ? 'Every new device login requires a 6-digit verification code sent directly to your registered email address.'
+                : 'Enable 2FA to protect your account from unauthorized login attempts across untrusted devices.'}
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -574,7 +654,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-                  <Lock size={18} color="#2563EB" />
+                  <Lock size={18} color={COLORS.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitleText}>Change Account Password</Text>
@@ -703,6 +783,78 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </Modal>
 
+      {/* POPUP MODAL SHEET 1.5: CONFIRM PASSWORD RESET EMAIL REQUEST */}
+      <Modal
+        visible={isResetConfirmModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsResetConfirmModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsResetConfirmModalOpen(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.confirmModalSheetContainer}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Top Shield Header */}
+            <View style={styles.confirmModalHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                <KeyRound size={20} color={COLORS.primary} />
+                <Text style={styles.confirmModalTitleText}>Request Password Reset</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsResetConfirmModalOpen(false)} style={{ padding: 4 }}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.confirmModalSubText}>
+              Are you sure you want to request a password reset for your account?
+            </Text>
+
+            {/* Email Address Highlight Box */}
+            <View style={styles.confirmEmailCardBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <Mail size={14} color={COLORS.primary} />
+                <Text style={styles.confirmEmailBoxLabel}>OTP Verification Email Target:</Text>
+              </View>
+              <Text style={styles.confirmEmailHighlightText}>{resetEmail || user?.email}</Text>
+            </View>
+
+            {/* Micro Security Notice */}
+            <View style={styles.confirmSecurityNoticeBox}>
+              <ShieldAlert size={14} color="#D97706" />
+              <Text style={styles.confirmSecurityNoticeText}>
+                For security reasons, this 6-digit verification code will expire in 10 minutes.
+              </Text>
+            </View>
+
+            {/* Action Buttons Row */}
+            <View style={styles.confirmModalActionButtonsRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setIsResetConfirmModalOpen(false)}
+                style={styles.confirmCancelButton}
+              >
+                <Text style={styles.confirmCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleConfirmSendOtp}
+                style={styles.confirmSendOtpButton}
+              >
+                <Mail size={16} color="#FFFFFF" />
+                <Text style={styles.confirmSendOtpButtonText}>Send OTP Code</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* POPUP MODAL SHEET 2: EMAIL OTP RESET PASSWORD */}
       <Modal
         visible={isOtpModalOpen}
@@ -714,7 +866,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity activeOpacity={1} style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <KeyRound size={20} color="#2563EB" />
+                <KeyRound size={20} color={COLORS.primary} />
                 <Text style={styles.modalTitleText}>Email OTP Password Reset</Text>
               </View>
               <TouchableOpacity onPress={() => setIsOtpModalOpen(false)}>
@@ -727,7 +879,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             <View>
               <Text style={styles.modalDescText}>
                 A 6-digit verification code has been dispatched directly to your registered email:{' '}
-                <Text style={{ fontWeight: '800', color: '#2563EB' }}>{resetEmail || user?.email}</Text>
+                <Text style={{ fontWeight: '800', color: COLORS.primary }}>{resetEmail || user?.email}</Text>
               </Text>
 
               <Input
@@ -769,7 +921,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 style={{ marginTop: 12, alignItems: 'center' }}
                 onPress={handleDirectForgotPassword}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#2563EB' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.primary }}>
                   Resend Verification OTP Code
                 </Text>
               </TouchableOpacity>
@@ -784,130 +936,115 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F9FA',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 48,
+  topOverscrollBlueFill: {
+    position: 'absolute',
+    top: -400,
+    left: 0,
+    right: 0,
+    height: 400,
+    backgroundColor: COLORS.primary,
   },
-  groupHeaderLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    paddingLeft: 4,
-    marginBottom: 8,
-    marginTop: 4,
-    textTransform: 'uppercase',
+
+  /* Header Banner */
+  headerBannerContainer: {
+    paddingTop: Platform.OS === 'ios' ? 42 : 18,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
-  singleMasterCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 20,
-    gap: 18,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-    marginBottom: 20,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 16,
-  },
-  sectionDividerInline: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
-  },
-  heroHeaderSection: {
-    marginBottom: 0,
-  },
-  heroIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 0,
-    backgroundColor: '#EFF6FF',
+  headerTitleNavRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    gap: 12,
+    marginBottom: 8,
   },
-  heroTitle: {
-    fontSize: 18,
+  headerTitleText: {
+    fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     letterSpacing: -0.3,
   },
-  heroSubtitle: {
-    fontSize: 12,
-    color: '#475569',
-    lineHeight: 17,
+  topBannerStatsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  statColItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValWhiteText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  statLabelMutedText: {
+    fontSize: 10,
     fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 2,
   },
-  cardHeaderBox: {
+  statColDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  /* Scroll Content & Cards */
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 60,
+  },
+  cardBlock: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 4,
+    padding: 14,
+    gap: 10,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 4,
   },
-  cardHeaderLeftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  cardTitleBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-    marginBottom: 12,
-  },
-  sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 0,
+  iconChipBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
   },
-  sectionTitle: {
-    fontSize: 15,
+  sectionBlockTitle: {
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.2,
   },
-  sectionSubtitle: {
+  sectionBlockSub: {
     fontSize: 11.5,
     color: '#64748B',
     marginTop: 1,
   },
-  logoutOthersBtn: {
-    height: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    paddingHorizontal: 10,
-    borderRadius: 0,
-    flexShrink: 0,
+
+  /* Section Separator Rule */
+  slateSectionDivider: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 6,
   },
-  logoutOthersBtnText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#DC2626',
+  rowDividerLine: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
   },
+
+  /* Active Login Sessions */
   loadingBox: {
     paddingVertical: 16,
     alignItems: 'center',
@@ -918,84 +1055,226 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   sessionList: {
-    gap: 0,
+    gap: 10,
   },
-  sessionCard: {
+  sessionItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 12,
+    paddingVertical: 4,
+    gap: 10,
   },
-  sessionCardCurrent: {
-    backgroundColor: 'transparent',
-    borderBottomWidth: 2,
-    borderBottomColor: '#16A34A',
-  },
-  deviceAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 0,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  deviceAvatarCurrent: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  sessionNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  deviceNameText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  activePillBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  activeGreenFrontTag: {
     backgroundColor: '#DCFCE7',
     borderWidth: 1,
     borderColor: '#86EFAC',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
-  activePulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 0,
-    backgroundColor: '#16A34A',
-  },
-  activePillText: {
-    fontSize: 10,
+  activeGreenFrontTagText: {
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#15803D',
   },
-  sessionMetaText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#475569',
+  sessionIconChip: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sessionIpText: {
-    fontSize: 11.5,
+  deviceNameText: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#15803D',
+    color: '#0F172A',
+  },
+  sessionMetaText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
   },
   revokeIconButton: {
     padding: 6,
-    backgroundColor: 'transparent',
+  },
+
+  /* Action Item Rows */
+  actionItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  actionIconPill: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionRowTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  actionRowSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+
+  /* 2FA Banner Box */
+  twoFactorBannerBox: {
+    borderRadius: 6,
+    borderWidth: 1,
+    padding: 10,
+    marginTop: 2,
+  },
+  twoFactorActiveBox: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  twoFactorDisabledBox: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+  },
+  twoFactorStatusText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  twoFactorBannerDesc: {
+    fontSize: 11.5,
+    color: '#475569',
+    lineHeight: 16,
+  },
+
+  /* Modals */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 20,
+    paddingBottom: 28,
+  },
+  confirmModalSheetContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 20,
+    paddingBottom: 28,
+    gap: 12,
+  },
+  confirmModalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  confirmShieldIconBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmModalTitleText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  confirmModalSubText: {
+    fontSize: 12.5,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  confirmEmailCardBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    padding: 12,
+  },
+  confirmEmailBoxLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  confirmEmailHighlightText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  confirmSecurityNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 6,
+    padding: 10,
+  },
+  confirmSecurityNoticeText: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#B45309',
+    lineHeight: 16,
+  },
+  confirmModalActionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelButtonText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  confirmSendOtpButton: {
+    flex: 1.4,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  confirmSendOtpButtonText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitleText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSubtitleText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  modalDescText: {
+    fontSize: 12,
+    color: '#475569',
+    marginBottom: 14,
+    lineHeight: 17,
   },
   inputLabel: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#334155',
     marginBottom: 4,
@@ -1023,136 +1302,14 @@ const styles = StyleSheet.create({
   meterSegment: {
     flex: 1,
     height: 5,
-    borderRadius: 0,
+    borderRadius: 2,
   },
   meterLabelText: {
     fontSize: 11,
     fontWeight: '800',
   },
-  otpBannerCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    gap: 12,
-  },
-  otpIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    backgroundColor: '#EFF6FF',
+  sectionIconBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  otpTitleText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 2,
-  },
-  otpDescText: {
-    fontSize: 11.5,
-    color: '#475569',
-    lineHeight: 16,
-  },
-  otpActionLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  otpActionText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#2563EB',
-  },
-  twoFactorBanner: {
-    paddingTop: 8,
-    marginTop: 4,
-    gap: 4,
-  },
-  twoFactorBannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  twoFactorStatusText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  twoFactorBannerDesc: {
-    fontSize: 11.5,
-    color: '#475569',
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    padding: 20,
-    paddingBottom: 28,
-    borderTopWidth: 3,
-    borderTopColor: '#2563EB',
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modalTitleText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  modalSubtitleText: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  modalDescText: {
-    fontSize: 12,
-    color: '#475569',
-    marginBottom: 14,
-    lineHeight: 17,
-  },
-  iosListRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  iosRowIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  iosRowTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 2,
-  },
-  iosRowSubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
-    lineHeight: 16,
-  },
-  iosHairlineDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginHorizontal: 16,
-    marginVertical: 0,
   },
 });

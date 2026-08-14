@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Building2 } from 'lucide-react-native';
@@ -66,7 +67,7 @@ export function CompanyLogoAvatar({
 
   return (
     <View style={[styles.defaultBadge, { width: size, height: size, borderRadius }, style]}>
-      <Building2 size={iconSize} color="#2563EB" strokeWidth={2.2} />
+      <Building2 size={iconSize} color={COLORS.primary} strokeWidth={2.2} />
     </View>
   );
 }
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   },
   initialText: {
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   defaultBadge: {
     backgroundColor: '#FFFFFF',
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,

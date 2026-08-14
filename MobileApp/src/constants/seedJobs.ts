@@ -1,3 +1,4 @@
+import { COLORS } from './theme';
 import { Job } from '../types';
 
 export const FALLBACK_SEED_JOBS: Job[] = [
@@ -6,7 +7,7 @@ export const FALLBACK_SEED_JOBS: Job[] = [
     employer_id: 'emp1',
     company: 'Tata AutoComp Systems',
     companyLogo: '',
-    company_color: '#1E3A8A',
+    company_color: COLORS.primary,
     title: 'Senior MIG Welder',
     industry: 'Automotive',
     location: 'Chakan MIDC, Pune',

@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   inputBoxActive: {
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     backgroundColor: '#FFFFFF',
   },
   icon: {

@@ -89,7 +89,7 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
             style={styles.actionBtn}
             onPress={() => Linking.openURL(`tel:${phoneNum}`)}
           >
-            <Phone size={14} color="#2563EB" />
+            <Phone size={14} color={COLORS.primary} />
             <Text style={styles.actionBtnText}>Call</Text>
           </TouchableOpacity>
         )}
@@ -217,6 +217,6 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
 });

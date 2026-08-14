@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React from 'react';
 import {
   Modal,
@@ -135,7 +136,7 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
         {/* In-App PDF Header Bar */}
         <View style={styles.headerBar}>
           <View style={styles.headerLeft}>
-            <FileText size={18} color="#2563EB" />
+            <FileText size={18} color={COLORS.primary} />
             <View>
               <Text style={styles.headerTitle} numberOfLines={1}>
                 {candidateName.replace(/\s+/g, '_')}_Resume{isImage ? '.png' : '.pdf'}
@@ -173,7 +174,7 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
               startInLoadingState={true}
               renderLoading={() => (
                 <View style={styles.loadingBox}>
-                  <ActivityIndicator size="large" color="#2563EB" />
+                  <ActivityIndicator size="large" color={COLORS.primary} />
                   <Text style={styles.loadingText}>Loading Uploaded PDF Document...</Text>
                 </View>
               )}
@@ -251,17 +252,17 @@ const styles = StyleSheet.create({
   },
   singlePrintBtn: {
     height: 44,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: COLORS.primary,
     borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
+    borderBottomColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,

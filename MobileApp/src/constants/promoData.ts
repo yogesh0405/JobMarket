@@ -1,3 +1,4 @@
+import { COLORS } from './theme';
 export interface PromoBanner {
   id: string;
   badge: string;
@@ -18,7 +19,7 @@ export const PROMO_BANNERS: PromoBanner[] = [
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
     tag: 'Chakan MIDC',
     btnText: 'Register Spot Interview',
-    color: '#1E40AF',
+    color: COLORS.primary,
   },
   {
     id: 'banner-2',

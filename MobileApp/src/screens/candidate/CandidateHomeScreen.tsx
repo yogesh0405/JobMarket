@@ -75,7 +75,7 @@ const PROMO_BANNERS = [
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
     tag: 'Chakan MIDC',
     btnText: 'Register Spot Interview',
-    color: '#1E40AF',
+    color: COLORS.primary,
   },
   {
     id: 'banner-2',
@@ -105,7 +105,7 @@ const PROMO_BANNERS = [
     image: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=70',
     tag: 'Apprentice',
     btnText: 'Apply Online',
-    color: '#3B82F6',
+    color: COLORS.primary,
   },
 ];
 
@@ -542,7 +542,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
         <View style={{ zIndex: 999, position: 'relative', marginTop: 14, marginBottom: 14 }}>
@@ -552,7 +552,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.searchIconBadge3D}
               activeOpacity={0.8}
             >
-              <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} strokeWidth={2.2} />
+              <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} strokeWidth={2.2} />
             </TouchableOpacity>
 
             <TextInput
@@ -599,7 +599,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <SlidersHorizontal size={18} color="#2563EB" strokeWidth={2.2} />
+              <SlidersHorizontal size={18} color={COLORS.primary} strokeWidth={2.2} />
             </TouchableOpacity>
           </View>
 
@@ -616,11 +616,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                       handleSearchSubmit();
                     }}
                   >
-                    <Search size={15} color="#2563EB" />
+                    <Search size={15} color={COLORS.primary} />
                     <Text style={styles.suggestionHeaderText} numberOfLines={1}>
-                      Search all jobs matching "<Text style={{ fontWeight: '800', color: '#2563EB' }}>{topSearch.trim()}</Text>"
+                      Search all jobs matching "<Text style={{ fontWeight: '800', color: COLORS.primary }}>{topSearch.trim()}</Text>"
                     </Text>
-                    <ArrowRight size={14} color="#2563EB" />
+                    <ArrowRight size={14} color={COLORS.primary} />
                   </TouchableOpacity>
                 ) : null}
 
@@ -640,7 +640,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                           });
                         }}
                       >
-                        <Briefcase size={16} color="#2563EB" />
+                        <Briefcase size={16} color={COLORS.primary} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
                           <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
@@ -790,7 +790,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* 3. Hero Header Title & Badge Section */}
         <View style={styles.heroTextSection}>
           <View style={styles.heroPillBadge}>
-            <Star size={12} color="#2563EB" />
+            <Star size={12} color={COLORS.primary} />
             <Text style={styles.heroPillBadgeText}>Industrial & Factory Jobs</Text>
           </View>
           <Text style={styles.heroMainTitle}>Discover Factory & Technical Jobs near you</Text>
@@ -807,7 +807,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.heroInputRow}
             onPress={() => setIndustryModalOpen(true)}
           >
-            <Briefcase size={18} color="#2563EB" />
+            <Briefcase size={18} color={COLORS.primary} />
             <Text style={[styles.heroInputText, selectedIndustry !== 'Select Industry' && styles.heroInputTextActive]}>
               {selectedIndustry}
             </Text>
@@ -820,7 +820,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.heroInputRow}
             onPress={() => setEducationModalOpen(true)}
           >
-            <GraduationCap size={18} color="#2563EB" />
+            <GraduationCap size={18} color={COLORS.primary} />
             <Text style={[styles.heroInputText, selectedEducation !== 'Select Education' && styles.heroInputTextActive]}>
               {selectedEducation}
             </Text>
@@ -829,7 +829,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* India (MIDC Zone or City) Input */}
           <View style={styles.heroInputRow}>
-            <MapPin size={18} color="#2563EB" />
+            <MapPin size={18} color={COLORS.primary} />
             <TextInput
               style={styles.heroTextInput}
               placeholder="India (MIDC Zone or City)"
@@ -858,7 +858,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           {/* Header Row */}
           <View style={styles.popularHeaderRow}>
             <View style={styles.popularIconSquare}>
-              <Briefcase size={20} color="#2563EB" />
+              <Briefcase size={20} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -959,8 +959,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                       >
                         <Bookmark
                           size={18}
-                          color={isSaved ? '#2563EB' : '#94A3B8'}
-                          fill={isSaved ? '#2563EB' : 'transparent'}
+                          color={isSaved ? COLORS.primary : '#94A3B8'}
+                          fill={isSaved ? COLORS.primary : 'transparent'}
                         />
                       </TouchableOpacity>
                     </View>
@@ -1042,7 +1042,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           {/* Row 1 */}
           <View style={styles.statsRow}>
             <View style={styles.statSquareCard}>
-              <Text style={[styles.statValueText, { color: '#2563EB' }]}>
+              <Text style={[styles.statValueText, { color: COLORS.primary }]}>
                 {jobs.length > 0 ? `${jobs.length}+` : '15+'}
               </Text>
               <Text style={styles.statLabelText}>Active Listings</Text>
@@ -1098,7 +1098,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => handleQuickTradeSearch(trade.name)}
                 >
                   <View style={styles.tradeIconSquare}>
-                    <IconComp size={18} color="#2563EB" />
+                    <IconComp size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.tradeCardTitle} numberOfLines={1}>{trade.name}</Text>
                   <Text style={styles.tradeCardCount}>{realCount} {realCount === 1 ? 'open position' : 'open positions'}</Text>
@@ -1132,7 +1132,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => handleQuickTradeSearch(qual.name, 'education')}
                 >
                   <View style={styles.qualIconSquare}>
-                    <IconComp size={18} color="#2563EB" />
+                    <IconComp size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{qual.name}</Text>
                   <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
@@ -1165,7 +1165,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => handleQuickTradeSearch(item.name)}
                 >
                   <View style={styles.qualIconSquare}>
-                    <IconComp size={18} color="#2563EB" />
+                    <IconComp size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
@@ -1198,7 +1198,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => handleQuickTradeSearch(item.name)}
                 >
                   <View style={styles.qualIconSquare}>
-                    <IconComp size={18} color="#2563EB" />
+                    <IconComp size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
@@ -1231,7 +1231,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => handleQuickTradeSearch(item.name)}
                 >
                   <View style={styles.qualIconSquare}>
-                    <IconComp size={18} color="#2563EB" />
+                    <IconComp size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.qualCardTitle} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.qualCardCount}>{realCount} {realCount === 1 ? 'Job Opening' : 'Job Openings'}</Text>
@@ -1272,7 +1272,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   }}
                 >
                   <Text style={[styles.pickerItemText, selectedIndustry === ind && styles.pickerItemTextActive]}>{ind}</Text>
-                  {selectedIndustry === ind ? <Check size={16} color="#2563EB" /> : null}
+                  {selectedIndustry === ind ? <Check size={16} color={COLORS.primary} /> : null}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1310,7 +1310,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   }}
                 >
                   <Text style={[styles.pickerItemText, selectedEducation === ed && styles.pickerItemTextActive]}>{ed}</Text>
-                  {selectedEducation === ed ? <Check size={16} color="#2563EB" /> : null}
+                  {selectedEducation === ed ? <Check size={16} color={COLORS.primary} /> : null}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1359,9 +1359,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   topSearchPillRowActive: {
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.16,
     shadowRadius: 10,
     elevation: 4,
@@ -1511,7 +1511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     overflow: 'hidden',
     paddingVertical: 13,
@@ -1599,7 +1599,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
   },
   verifiedBadgeText: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontSize: 10.5,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -1624,9 +1624,9 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   skewedTabPillActive: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   skewedTabPillInactive: {
     backgroundColor: '#FFFFFF',
@@ -1641,7 +1641,7 @@ const styles = StyleSheet.create({
   tabDot: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   tabDotActive: {
     color: '#FFFFFF',
@@ -1674,7 +1674,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   countPillTextInactive: {
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   popularCardsCarousel: {
     flexDirection: 'row',
@@ -1798,7 +1798,7 @@ const styles = StyleSheet.create({
   webPostedByText: {
     fontSize: 10.5,
     fontWeight: '600',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   webDurationText: {
     fontSize: 11,
@@ -1825,7 +1825,7 @@ const styles = StyleSheet.create({
   btnSectionAction: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderRadius: 6,
     paddingHorizontal: 13,
     paddingVertical: 5.5,
@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
   btnSectionActionText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   verifiedJobsBadge: {
     backgroundColor: '#EFF6FF',
@@ -1848,7 +1848,7 @@ const styles = StyleSheet.create({
   verifiedJobsBadgeText: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   sectionSubText: {
     fontSize: 12,
@@ -1975,8 +1975,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   roleTabPillActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   roleTabDot: {
     fontSize: 14,
@@ -2064,7 +2064,7 @@ const styles = StyleSheet.create({
   workPillText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   shiftPillBox: {
     flexDirection: 'row',
@@ -2114,7 +2114,7 @@ const styles = StyleSheet.create({
   },
   postedByText: {
     fontSize: 10,
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '600',
   },
   timestampText: {
@@ -2137,7 +2137,7 @@ const styles = StyleSheet.create({
   exploreAllBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   statsGrid2x2: {
     marginVertical: 10,
@@ -2187,7 +2187,7 @@ const styles = StyleSheet.create({
   popularTradesBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   educationBadge: {
     backgroundColor: '#EFF6FF',
@@ -2202,7 +2202,7 @@ const styles = StyleSheet.create({
   educationBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   standaloneSection: {
     marginVertical: 14,
@@ -2308,7 +2308,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderTopWidth: 3,
-    borderTopColor: '#2563EB',
+    borderTopColor: COLORS.primary,
     padding: 20,
     gap: 8,
   },
@@ -2342,7 +2342,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   pickerItemTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '900',
   },
   promoSliderCard: {
@@ -2438,7 +2438,7 @@ const styles = StyleSheet.create({
   hospitalBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   hotelBadge: {
     backgroundColor: '#EFF6FF',
@@ -2452,7 +2452,7 @@ const styles = StyleSheet.create({
   hotelBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   schoolBadge: {
     backgroundColor: '#EFF6FF',
@@ -2466,7 +2466,7 @@ const styles = StyleSheet.create({
   schoolBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   bannerArrowLeft: {
     position: 'absolute',
@@ -2509,7 +2509,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -2536,7 +2536,7 @@ const styles = StyleSheet.create({
   heroPillBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   heroMainTitle: {
     fontSize: 20,

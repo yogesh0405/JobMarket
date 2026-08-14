@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -163,14 +164,14 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
           {/* SINGLE MASTER CARD FOR ALL DASHBOARD SECTIONS */}
           <View style={styles.singleMasterCard}>
 
             {/* SECTION 1: CANDIDATE ANALYTICS */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <BarChart3 size={16} color="#2563EB" />
+              <BarChart3 size={16} color={COLORS.primary} />
               <Text style={styles.groupHeaderLabel}>CANDIDATE ANALYTICS</Text>
             </View>
 
@@ -180,7 +181,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                 style={styles.statMetricItem}
                 onPress={() => navigation.navigate('CandidateAppliedTab')}
               >
-                <Briefcase size={16} color="#2563EB" />
+                <Briefcase size={16} color={COLORS.primary} />
                 <View style={styles.statTextStack}>
                   <Text style={styles.statNumber}>{appliedJobs.length}</Text>
                   <Text style={styles.statLabel} numberOfLines={1}>Jobs Applied</Text>
@@ -194,7 +195,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                 style={styles.statMetricItem}
                 onPress={() => navigation.navigate('CandidateSavedTab')}
               >
-                <Bookmark size={16} color="#2563EB" />
+                <Bookmark size={16} color={COLORS.primary} />
                 <View style={styles.statTextStack}>
                   <Text style={styles.statNumber}>{savedJobs.length}</Text>
                   <Text style={styles.statLabel} numberOfLines={1}>Saved Jobs</Text>
@@ -206,7 +207,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
 
             <View style={styles.statsQuadGrid}>
               <View style={styles.statMetricItem}>
-                <Eye size={16} color="#2563EB" />
+                <Eye size={16} color={COLORS.primary} />
                 <View style={styles.statTextStack}>
                   <Text style={styles.statNumber}>{profileViews}</Text>
                   <Text style={styles.statLabel} numberOfLines={1}>Profile Views</Text>
@@ -220,7 +221,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                 style={styles.statMetricItem}
                 onPress={() => navigation.navigate('CandidateProfile')}
               >
-                <Award size={16} color="#2563EB" />
+                <Award size={16} color={COLORS.primary} />
                 <View style={styles.statTextStack}>
                   <Text style={styles.statNumber}>{skillsCount}</Text>
                   <Text style={styles.statLabel} numberOfLines={1}>Skills Added</Text>
@@ -234,7 +235,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
             {/* SECTION 2: RECENT APPLICATIONS */}
             <View style={styles.cardHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                <Briefcase size={16} color="#2563EB" />
+                <Briefcase size={16} color={COLORS.primary} />
                 <Text style={styles.cardTitle}>Recent Applications</Text>
               </View>
               <TouchableOpacity
@@ -307,7 +308,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
 
               <View style={styles.cardHeaderRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <Building2 size={16} color="#2563EB" />
+                  <Building2 size={16} color={COLORS.primary} />
                   <Text style={styles.cardTitle}>Recommended Vacancies</Text>
                 </View>
                 <TouchableOpacity onPress={() => navigation.navigate('CandidateJobsTab')}>
@@ -356,7 +357,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                           ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000}
                         </Text>
                       </View>
-                      <ChevronRight size={14} color="#2563EB" />
+                      <ChevronRight size={14} color={COLORS.primary} />
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 0,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -502,7 +503,7 @@ const styles = StyleSheet.create({
   progressPercent: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   progressBarTrack: {
     height: 6,
@@ -513,7 +514,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 0,
   },
   progressHint: {
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 0,
@@ -559,7 +560,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   emptyApplicationsBox: {
     alignItems: 'center',
@@ -581,7 +582,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 0,

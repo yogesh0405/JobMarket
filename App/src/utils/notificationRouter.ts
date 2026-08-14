@@ -16,7 +16,10 @@ export interface AppNotificationPayload {
   metadata?: any;
 }
 
-export const resolveWebNotificationRoute = (item: AppNotificationPayload, userRole: string = 'candidate'): string => {
+export const resolveWebNotificationRoute = (
+  item: AppNotificationPayload,
+  userRole: string = 'candidate'
+): string => {
   const role = userRole.toLowerCase();
   const type = (item.type || '').toUpperCase();
   const title = (item.title || '').toUpperCase();
@@ -24,19 +27,21 @@ export const resolveWebNotificationRoute = (item: AppNotificationPayload, userRo
   const combined = `${type} ${title} ${message}`;
   const linkStr = item.link || '';
 
-  // 1. Extract primary target entity IDs (jobId, applicationId, ticketId)
+  // 1. Extract target Job ID
   let extractedJobId: string | undefined =
     item.entityId ||
     item.entity_id ||
+    (item as any).jobId ||
+    (item as any).job_id ||
     item.metadata?.jobId ||
     item.metadata?.job_id;
 
   if (!extractedJobId && linkStr) {
     const match =
-      linkStr.match(/job[s]?\/([^\/]+)/i) ||
-      linkStr.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i) ||
-      linkStr.match(/(j\d+)/i);
-    if (match && match[1]) {
+      linkStr.match(/job[s]?\/([a-zA-Z0-9_\-]+)/i) ||
+      linkStr.match(/jobId=([a-zA-Z0-9_\-]+)/i) ||
+      linkStr.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+    if (match && match[1] && match[1].toLowerCase() !== 'applied' && match[1].toLowerCase() !== 'my-jobs') {
       extractedJobId = match[1];
     }
   }
@@ -56,7 +61,12 @@ export const resolveWebNotificationRoute = (item: AppNotificationPayload, userRo
   }
 
   // 3. Employer Recruiter Applicant Notifications
-  if (type === 'JOB_APPLICATION' || type === 'NEW_APPLICATION' || combined.includes('APPLIED') || combined.includes('APPLICATION')) {
+  if (
+    type === 'JOB_APPLICATION' ||
+    type === 'NEW_APPLICATION' ||
+    combined.includes('APPLIED') ||
+    combined.includes('APPLICATION')
+  ) {
     if (role === 'employer') {
       return extractedJobId ? `/dashboard?tab=applicants&jobId=${extractedJobId}` : `/dashboard?tab=applicants`;
     }
@@ -72,12 +82,22 @@ export const resolveWebNotificationRoute = (item: AppNotificationPayload, userRo
   }
 
   // 5. Advertisements & Banner Promotions
-  if (type === 'AD_APPROVED' || type === 'AD_REJECTED' || combined.includes('BANNER') || combined.includes('PROMOT')) {
+  if (
+    type === 'AD_APPROVED' ||
+    type === 'AD_REJECTED' ||
+    combined.includes('BANNER') ||
+    combined.includes('PROMOT')
+  ) {
     return role === 'employer' ? `/employer/advertisements` : `/jobs`;
   }
 
   // 6. Security & Account Protection
-  if (type === 'SECURITY' || type === 'SECURITY_ALERT' || combined.includes('SECURITY') || combined.includes('PASSWORD')) {
+  if (
+    type === 'SECURITY' ||
+    type === 'SECURITY_ALERT' ||
+    combined.includes('SECURITY') ||
+    combined.includes('PASSWORD')
+  ) {
     return `/profile`;
   }
 

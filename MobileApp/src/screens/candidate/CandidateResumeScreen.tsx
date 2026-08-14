@@ -145,7 +145,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Status Card */}
         <View style={styles.card3D}>
           <View style={styles.headerRow}>
-            <FileText size={24} color="#2563EB" />
+            <FileText size={24} color={COLORS.primary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>Uploaded Resume Document</Text>
               <Text style={styles.cardSub}>PDF / Image file visible to verified industrial recruiters</Text>
@@ -155,7 +155,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           {resumeUrl ? (
             <View style={styles.resumeBox}>
               <View style={styles.fileIconSquare}>
-                <FileText size={24} color="#2563EB" />
+                <FileText size={24} color={COLORS.primary} />
               </View>
 
               <View style={{ flex: 1 }}>
@@ -164,7 +164,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
               </View>
 
               <TouchableOpacity style={styles.viewBtn} onPress={handleViewResume}>
-                <ExternalLink size={16} color="#2563EB" />
+                <ExternalLink size={16} color={COLORS.primary} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteResume} disabled={deleting}>
@@ -205,7 +205,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.toggleRow}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                {isPublic ? <Eye size={18} color="#2563EB" /> : <EyeOff size={18} color="#64748B" />}
+                {isPublic ? <Eye size={18} color={COLORS.primary} /> : <EyeOff size={18} color="#64748B" />}
                 <Text style={styles.toggleTitle}>Recruiter Search Visibility</Text>
               </View>
               <Text style={styles.toggleDesc}>
@@ -218,7 +218,7 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
               value={isPublic}
               onValueChange={handleToggleVisibility}
               trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={isPublic ? '#2563EB' : '#94A3B8'}
+              thumbColor={isPublic ? COLORS.primary : '#94A3B8'}
             />
           </View>
         </View>
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 0,
@@ -427,6 +427,6 @@ const styles = StyleSheet.create({
   editProfileLinkText: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
 });

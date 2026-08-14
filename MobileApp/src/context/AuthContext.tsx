@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const cleanedServerData: any = {};
         if (fetchedUser && typeof fetchedUser === 'object') {
           Object.keys(fetchedUser).forEach((key) => {
-            if (fetchedUser[key] !== null && fetchedUser[key] !== undefined) {
+            if (fetchedUser[key] !== undefined) {
               cleanedServerData[key] = fetchedUser[key];
             }
           });
@@ -89,6 +89,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
         const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
+
+        if (!fetchedUser.resume && !fetchedUser.resume_url && !fetchedUser.resumeUrl) {
+          mergedUser.resume = null;
+          (mergedUser as any).resume_url = null;
+          (mergedUser as any).resumeUrl = null;
+          (mergedUser as any).resumeName = null;
+        }
+
         setUser(mergedUser);
         await saveStoredUser(mergedUser);
       } else if (storedUser && Object.keys(storedUser).length > 0) {
@@ -276,8 +284,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (data.bio !== undefined) {
       normalizedData.bio = data.bio;
     }
+    if (data.resume === null || (data as any).resume_url === '' || (data as any).resumeUrl === '') {
+      normalizedData.resume = null;
+      normalizedData.resume_url = null;
+      normalizedData.resumeUrl = null;
+      normalizedData.resumeName = null;
+    }
 
     let updatedUser = { ...storedUser, ...user, ...normalizedData } as User;
+    if (normalizedData.resume === null) {
+      updatedUser.resume = null;
+      (updatedUser as any).resume_url = null;
+      (updatedUser as any).resumeUrl = null;
+      (updatedUser as any).resumeName = null;
+    }
 
     // Immediately persist locally so state & AsyncStorage are ALWAYS updated instantly
     setUser(updatedUser);

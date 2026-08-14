@@ -86,7 +86,8 @@
           "cameraPermission": "JobMarket requires access to your camera to take profile photos."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

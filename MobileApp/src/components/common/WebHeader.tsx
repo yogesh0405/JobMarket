@@ -173,7 +173,11 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
             <TouchableOpacity
               activeOpacity={0.7}
               style={styles.bellButton}
-              onPress={() => setNotifModalVisible(true)}
+              onPress={() => {
+                if (navigation && typeof navigation.navigate === 'function') {
+                  navigation.navigate('Notification');
+                }
+              }}
             >
               <Bell size={20} color={COLORS.slate700} />
               {unreadCount > 0 ? (
@@ -623,7 +627,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

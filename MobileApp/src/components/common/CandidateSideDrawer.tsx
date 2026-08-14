@@ -133,7 +133,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
                   <Text style={styles.userName} numberOfLines={1}>
                     {user?.name || 'Candidate User'}
                   </Text>
-                  <ShieldCheck size={14} color="#2563EB" />
+                  <ShieldCheck size={14} color={COLORS.primary} />
                 </View>
                 <Text style={styles.userEmail} numberOfLines={1}>
                   {user?.email || 'candidate@jobmarket.com'}
@@ -161,7 +161,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
                   >
                     <View style={styles.menuItemLeft}>
                       <View style={styles.iconBox}>
-                        <Icon size={17} color="#2563EB" />
+                        <Icon size={17} color={COLORS.primary} />
                       </View>
                       <Text style={styles.menuItemText}>{item.label}</Text>
                     </View>
@@ -185,7 +185,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
                   >
                     <View style={styles.menuItemLeft}>
                       <View style={styles.iconBox}>
-                        <Icon size={17} color="#2563EB" />
+                        <Icon size={17} color={COLORS.primary} />
                       </View>
                       <Text style={styles.menuItemText}>{item.label}</Text>
                     </View>
@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: '#E2E8F0',
     borderWidth: 2,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   avatarPlaceholder: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

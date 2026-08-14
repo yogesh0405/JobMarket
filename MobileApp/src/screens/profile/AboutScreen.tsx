@@ -1,11 +1,16 @@
+import { COLORS } from '../../constants/theme';
 import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
+  ArrowLeft,
   Globe,
   Briefcase,
   CheckCircle2,
@@ -17,8 +22,10 @@ import {
   Compass,
   Award,
   Users,
+  ChevronRight,
+  Info,
+  FileText,
 } from 'lucide-react-native';
-import { Header } from '../../components/common/Header';
 
 interface Props {
   navigation: any;
@@ -27,129 +34,162 @@ interface Props {
 export const AboutScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Header
-        title="About Us"
-        subtitle="Industrial & Factory Job Marketplace"
-        onBack={() => navigation.goBack()}
-      />
+      {/* Top Overscroll Navy Blue Fill */}
+      <View style={styles.topOverscrollBlueFill} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* SINGLE MASTER CARD: ABOUT US PLATFORM OVERVIEW */}
-        <View style={styles.singleMasterCard}>
-          {/* SECTION 1: OVERVIEW & PLATFORM STATS */}
-          <View>
-            <Text style={styles.heroTitle}>About JobMarket</Text>
-            <Text style={styles.heroSubtitle}>
-              India's most trusted industrial and factory job marketplace, connecting skilled professionals with top manufacturing companies.
-            </Text>
+      {/* Top Navy Header Banner with Back & Stats */}
+      <LinearGradient
+        colors={COLORS.employerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={styles.headerBannerContainer}
+      >
+        <View style={styles.headerTitleNavRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ padding: 4 }}
+          >
+            <ArrowLeft size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitleText}>About Us</Text>
+        </View>
 
-            {/* 4 Statistics Items (No icon background boxes) */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statCell}>
-                <Globe size={18} color="#2563EB" />
-                <Text style={styles.statNumber}>10M+</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Active Users</Text>
+        {/* Embedded Top Translucent Stats Card */}
+        <View style={styles.topBannerStatsCard}>
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>10M+</Text>
+            <Text style={styles.statLabelMutedText}>Active Users</Text>
+          </View>
+          <View style={styles.statColDivider} />
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>500K+</Text>
+            <Text style={styles.statLabelMutedText}>Jobs Posted</Text>
+          </View>
+          <View style={styles.statColDivider} />
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>2M+</Text>
+            <Text style={styles.statLabelMutedText}>Hires Made</Text>
+          </View>
+          <View style={styles.statColDivider} />
+          <View style={styles.statColItem}>
+            <Text style={styles.statValWhiteText}>50K+</Text>
+            <Text style={styles.statLabelMutedText}>Companies</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* CARD BLOCK 1: OUR MISSION & VISION */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <Compass size={18} color={COLORS.primary} />
+            <Text style={styles.sectionBlockTitle}>Our Mission & Vision</Text>
+          </View>
+
+          <Text style={styles.bodyText}>
+            JobMarket is India's comprehensive, all-in-one job marketplace built for every career domain. We bridge the gap between job seekers and top enterprise employers across all industries — from IT software engineering, corporate management, finance, healthcare, and sales, to skilled technical trades and industrial operations.
+          </Text>
+        </View>
+
+        {/* Crisp Section Divider Line */}
+        <View style={styles.slateSectionDivider} />
+
+        {/* CARD BLOCK 2: WHY CHOOSE JOBMARKET */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <Award size={18} color={COLORS.primary} />
+            <Text style={styles.sectionBlockTitle}>Why Choose JobMarket?</Text>
+          </View>
+
+          <View style={styles.featuresList}>
+            <View style={styles.featureItemRow}>
+              <Sparkles size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>Multi-Domain Job Matching</Text>
+                <Text style={styles.featureDesc}>
+                  Intelligent matching algorithm that connects your skills and qualifications with opportunities in IT, Corporate, Healthcare, Sales, and Technical fields.
+                </Text>
               </View>
+            </View>
 
-              <View style={styles.statCell}>
-                <Briefcase size={18} color="#0891B2" />
-                <Text style={styles.statNumber}>500K+</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Jobs Posted</Text>
+            <View style={styles.rowDividerLine} />
+
+            <View style={styles.featureItemRow}>
+              <ShieldCheck size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>100% Verified Employers</Text>
+                <Text style={styles.featureDesc}>
+                  Every hiring organisation and company undergoes strict business registration and corporate verification.
+                </Text>
               </View>
+            </View>
 
-              <View style={styles.statCell}>
-                <CheckCircle2 size={18} color="#15803D" />
-                <Text style={styles.statNumber}>2M+</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Hires Made</Text>
+            <View style={styles.rowDividerLine} />
+
+            <View style={styles.featureItemRow}>
+              <Zap size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>Instant 1-Tap Applications</Text>
+                <Text style={styles.featureDesc}>
+                  Apply to job postings instantly across any domain using your structured digital candidate profile and resume.
+                </Text>
               </View>
+            </View>
 
-              <View style={[styles.statCell, { borderRightWidth: 0 }]}>
-                <Building2 size={18} color="#B45309" />
-                <Text style={styles.statNumber}>50K+</Text>
-                <Text style={styles.statLabel} numberOfLines={1}>Companies</Text>
+            <View style={styles.rowDividerLine} />
+
+            <View style={styles.featureItemRow}>
+              <BarChart3 size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>Real-Time Tracking & Direct HR Communication</Text>
+                <Text style={styles.featureDesc}>
+                  Track your application status, interview schedules, and communicate directly with HR recruiters in real-time.
+                </Text>
               </View>
             </View>
           </View>
+        </View>
 
-          <View style={styles.sectionDividerInline} />
+        {/* Crisp Section Divider Line */}
+        <View style={styles.slateSectionDivider} />
 
-          {/* SECTION 2: OUR MISSION */}
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Compass size={18} color="#2563EB" />
-              <Text style={styles.sectionTitle}>Our Mission</Text>
-            </View>
-
-            <Text style={styles.bodyText}>
-              At JobMarket, we believe everyone deserves access to meaningful employment. Our platform bridges the gap between skilled workers and top organizations across India. We leverage direct matching to make hiring fast, transparent, and direct for candidate and recruiter alike.
-            </Text>
+        {/* CARD BLOCK 3: APP INFORMATION & LEGAL */}
+        <View style={styles.cardBlock}>
+          <View style={styles.sectionHeaderRow}>
+            <Info size={18} color={COLORS.primary} />
+            <Text style={styles.sectionBlockTitle}>Application Information</Text>
           </View>
 
-          <View style={styles.sectionDividerInline} />
-
-          {/* SECTION 3: PLATFORM HIGHLIGHTS / WHY CHOOSE JOBMARKET */}
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Award size={18} color="#15803D" />
-              <Text style={styles.sectionTitle}>Why Choose JobMarket?</Text>
-            </View>
-
-            <View style={styles.featuresList}>
-              <View style={styles.featureItemRow}>
-                <Sparkles size={16} color="#2563EB" style={{ marginTop: 2 }} />
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Smart Job Matching</Text>
-                  <Text style={styles.featureDesc}>
-                    AI-powered recommendations that match your trade skills with suitable job opportunities.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.featureItemRow}>
-                <ShieldCheck size={16} color="#2563EB" style={{ marginTop: 2 }} />
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Verified Employers</Text>
-                  <Text style={styles.featureDesc}>
-                    Every manufacturing company on our platform goes through identity and GST verification.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.featureItemRow}>
-                <Zap size={16} color="#2563EB" style={{ marginTop: 2 }} />
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Instant Applications</Text>
-                  <Text style={styles.featureDesc}>
-                    Apply to industrial jobs instantly with a single tap using your saved profile and resume.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.featureItemRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-                <BarChart3 size={16} color="#2563EB" style={{ marginTop: 2 }} />
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>Real-time Tracking</Text>
-                  <Text style={styles.featureDesc}>
-                    Track your application progress, shortlist updates, and scheduled interview status in real-time.
-                  </Text>
-                </View>
-              </View>
-            </View>
+          <View style={styles.infoRowItem}>
+            <Text style={styles.infoRowLabel}>Platform Version</Text>
+            <Text style={styles.infoRowValue}>v2.4.0 (Build 108)</Text>
           </View>
 
-          <View style={styles.sectionDividerInline} />
+          <View style={styles.rowDividerLine} />
 
-          {/* SECTION 4: WORKFORCE COMMITMENT */}
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <Users size={18} color="#B45309" />
-              <Text style={styles.sectionTitle}>Empowering India's Workforce</Text>
-            </View>
+          <TouchableOpacity activeOpacity={0.7} style={styles.actionRowItem}>
+            <FileText size={16} color={COLORS.primary} />
+            <Text style={styles.actionRowText}>Terms of Service & Usage Policies</Text>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
 
-            <Text style={styles.bodyText}>
-              From ITI tradesmen and CNC machinists to plant engineers and production supervisors, JobMarket powers the talent pipeline for India's growing industrial manufacturing ecosystem.
-            </Text>
-          </View>
+          <View style={styles.rowDividerLine} />
+
+          <TouchableOpacity activeOpacity={0.7} style={styles.actionRowItem}>
+            <ShieldCheck size={16} color={COLORS.primary} />
+            <Text style={styles.actionRowText}>Privacy Policy & Data Security</Text>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer Copyright */}
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>© 2026 JobMarket Inc. All rights reserved.</Text>
+          <Text style={styles.footerSubText}>Empowering Job Seekers & Employers Across All Sectors Nationwide.</Text>
         </View>
       </ScrollView>
     </View>
@@ -159,79 +199,92 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F9FA',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 48,
+  topOverscrollBlueFill: {
+    position: 'absolute',
+    top: -400,
+    left: 0,
+    right: 0,
+    height: 400,
+    backgroundColor: COLORS.primary,
   },
-  singleMasterCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 18,
+
+  /* Header Banner */
+  headerBannerContainer: {
+    paddingTop: Platform.OS === 'ios' ? 42 : 18,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  headerTitleNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    marginBottom: 8,
   },
-  heroTitle: {
-    fontSize: 20,
+  headerTitleText: {
+    fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
+    color: '#FFFFFF',
     letterSpacing: -0.3,
   },
-  heroSubtitle: {
-    fontSize: 12.5,
-    color: '#475569',
-    lineHeight: 18,
-    fontWeight: '500',
-    marginBottom: 14,
-  },
-  statsGrid: {
+  topBannerStatsCard: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingTop: 12,
-  },
-  statCell: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 2,
-    borderRightWidth: 1,
-    borderRightColor: '#F1F5F9',
-    gap: 4,
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    marginBottom: 4,
   },
-  statNumber: {
-    fontSize: 15,
+  statColItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValWhiteText: {
+    fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
   },
-  statLabel: {
-    fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '600',
+  statLabelMutedText: {
+    fontSize: 9.5,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 2,
   },
-  sectionDividerInline: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
+  statColDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  /* Scroll Content & Cards */
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 60,
+  },
+  cardBlock: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 4,
+    padding: 14,
+    gap: 10,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 2,
   },
-  sectionTitle: {
-    fontSize: 15,
+  sectionBlockTitle: {
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.2,
   },
   bodyText: {
     fontSize: 12.5,
@@ -239,20 +292,27 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '400',
   },
+
+  /* Section Separator Rule */
+  slateSectionDivider: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 6,
+  },
+  rowDividerLine: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+
+  /* Feature List */
   featuresList: {
-    marginTop: 4,
-    gap: 10,
+    gap: 8,
   },
   featureItemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  featureContent: {
-    flex: 1,
+    paddingVertical: 2,
   },
   featureTitle: {
     fontSize: 13.5,
@@ -263,6 +323,54 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#64748B',
     lineHeight: 16,
+    marginTop: 2,
+  },
+
+  /* Info & Action Rows */
+  infoRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  infoRowLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  infoRowValue: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  actionRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  actionRowText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  /* Footer */
+  footerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  footerText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  footerSubText: {
+    fontSize: 10.5,
+    color: '#94A3B8',
     marginTop: 2,
   },
 });

@@ -555,7 +555,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
             <View style={styles.metaPillRow}>
               <View style={styles.inlineIconTextItem}>
-                <Briefcase size={12} color="#2563EB" />
+                <Briefcase size={12} color={COLORS.primary} />
                 <Text style={styles.candidateMetaTextInline} numberOfLines={1}>
                   {candidateExp}
                 </Text>
@@ -615,7 +615,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                 ? 'All Jobs'
                 : (myJobs.find((j) => j.id === selectedJobId)?.title?.replace(/^job-[\d]+$/i, 'Selected Job') || 'Selected Job')}
             </Text>
-            <ChevronDown size={14} color={selectedJobId !== 'ALL' ? '#2563EB' : '#64748B'} />
+            <ChevronDown size={14} color={selectedJobId !== 'ALL' ? COLORS.primary : '#64748B'} />
           </TouchableOpacity>
 
           {[
@@ -802,7 +802,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => setModalTab('JOB')}
                     style={[styles.menuTabItem, modalTab === 'JOB' && styles.menuTabItemActive]}
                   >
-                    <Briefcase size={14} color={modalTab === 'JOB' ? '#2563EB' : '#64748B'} />
+                    <Briefcase size={14} color={modalTab === 'JOB' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.menuTabText, modalTab === 'JOB' && styles.menuTabTextActive]}>
                       Job Info
                     </Text>
@@ -813,7 +813,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => setModalTab('CANDIDATE')}
                     style={[styles.menuTabItem, modalTab === 'CANDIDATE' && styles.menuTabItemActive]}
                   >
-                    <UserIcon size={14} color={modalTab === 'CANDIDATE' ? '#2563EB' : '#64748B'} />
+                    <UserIcon size={14} color={modalTab === 'CANDIDATE' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.menuTabText, modalTab === 'CANDIDATE' && styles.menuTabTextActive]}>
                       Candidate Info
                     </Text>
@@ -824,7 +824,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => setModalTab('STATUS')}
                     style={[styles.menuTabItem, modalTab === 'STATUS' && styles.menuTabItemActive]}
                   >
-                    <Zap size={14} color={modalTab === 'STATUS' ? '#2563EB' : '#64748B'} />
+                    <Zap size={14} color={modalTab === 'STATUS' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.menuTabText, modalTab === 'STATUS' && styles.menuTabTextActive]}>
                       Status
                     </Text>
@@ -835,7 +835,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => setModalTab('INTERVIEW')}
                     style={[styles.menuTabItem, modalTab === 'INTERVIEW' && styles.menuTabItemActive]}
                   >
-                    <Calendar size={14} color={modalTab === 'INTERVIEW' ? '#2563EB' : '#64748B'} />
+                    <Calendar size={14} color={modalTab === 'INTERVIEW' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.menuTabText, modalTab === 'INTERVIEW' && styles.menuTabTextActive]}>
                       Interview
                     </Text>
@@ -846,7 +846,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     onPress={() => setModalTab('EMAIL')}
                     style={[styles.menuTabItem, modalTab === 'EMAIL' && styles.menuTabItemActive]}
                   >
-                    <Mail size={14} color={modalTab === 'EMAIL' ? '#2563EB' : '#64748B'} />
+                    <Mail size={14} color={modalTab === 'EMAIL' ? COLORS.primary : '#64748B'} />
                     <Text style={[styles.menuTabText, modalTab === 'EMAIL' && styles.menuTabTextActive]}>
                       Send Email
                     </Text>
@@ -879,7 +879,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         {/* Salary Row */}
                         <View style={styles.specRowItem}>
                           <View style={styles.specIconBadge}>
-                            <IndianRupee size={15} color="#2563EB" />
+                            <IndianRupee size={15} color={COLORS.primary} />
                           </View>
                           <View style={styles.specTextCol}>
                             <Text style={styles.specGridLabel}>Salary Offer</Text>
@@ -982,8 +982,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                           else Alert.alert('Notice', 'Phone number not provided.');
                         }}
                       >
-                        <Phone size={15} color="#2563EB" />
-                        <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Call</Text>
+                        <Phone size={15} color={COLORS.primary} />
+                        <Text style={[styles.contactPillText, { color: COLORS.primary }]}>Call</Text>
                       </TouchableOpacity>
 
                       {/* 2. WhatsApp */}
@@ -1016,12 +1016,12 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
                       {/* 4. Resume */}
                       <TouchableOpacity
-                        style={[styles.contactPillBtn, { borderColor: '#2563EB', flex: 1.3 }]}
+                        style={[styles.contactPillBtn, { borderColor: COLORS.primary, flex: 1.3 }]}
                         activeOpacity={0.8}
                         onPress={() => setPdfModalVisible(true)}
                       >
-                        <FileText size={15} color="#2563EB" />
-                        <Text style={[styles.contactPillText, { color: '#2563EB' }]}>Resume</Text>
+                        <FileText size={15} color={COLORS.primary} />
+                        <Text style={[styles.contactPillText, { color: COLORS.primary }]}>Resume</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -1055,7 +1055,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       {/* Work Experience */}
                       <View style={styles.specRowItem}>
                         <View style={styles.specIconBadge}>
-                          <Briefcase size={15} color="#2563EB" />
+                          <Briefcase size={15} color={COLORS.primary} />
                         </View>
                         <View style={styles.specTextCol}>
                           <Text style={styles.specGridLabel}>Work Experience</Text>
@@ -1107,7 +1107,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       {/* Phone Number */}
                       <View style={styles.specRowItem}>
                         <View style={styles.specIconBadge}>
-                          <Phone size={15} color="#2563EB" />
+                          <Phone size={15} color={COLORS.primary} />
                         </View>
                         <View style={styles.specTextCol}>
                           <Text style={styles.specGridLabel}>Phone Number</Text>
@@ -1135,7 +1135,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       {/* Bus & Hostel Facility */}
                       <View style={styles.specRowItem}>
                         <View style={styles.specIconBadge}>
-                          <Zap size={15} color="#2563EB" />
+                          <Zap size={15} color={COLORS.primary} />
                         </View>
                         <View style={styles.specTextCol}>
                           <Text style={styles.specGridLabel}>Bus & Hostel Facility</Text>
@@ -1231,7 +1231,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                               <Text style={styles.cleanStatusOptionDesc}>{item.desc}</Text>
                             </View>
                             {isSelected ? (
-                              <CheckCircle2 size={18} color="#2563EB" />
+                              <CheckCircle2 size={18} color={COLORS.primary} />
                             ) : (
                               <View style={styles.radioDotOutline} />
                             )}
@@ -1272,7 +1272,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                             style={[styles.cleanModePillBtn, isSelected && styles.cleanModePillBtnSelected]}
                             onPress={() => setInterviewMode(item.key)}
                           >
-                            <IconComp size={14} color={isSelected ? '#2563EB' : '#64748B'} />
+                            <IconComp size={14} color={isSelected ? COLORS.primary : '#64748B'} />
                             <Text style={[styles.cleanModePillText, isSelected && styles.cleanModePillTextSelected]}>
                               {item.label}
                             </Text>
@@ -1295,7 +1295,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         onPress={() => setDatePickerVisible(true)}
                         style={styles.cleanDatePickerTriggerBtn}
                       >
-                        <Calendar size={16} color="#2563EB" />
+                        <Calendar size={16} color={COLORS.primary} />
                         <Text style={styles.cleanDatePickerTriggerText}>
                           {interviewDate
                             ? new Date(interviewDate + 'T00:00:00').toDateString()
@@ -1314,7 +1314,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         onPress={() => setTimePickerVisible(true)}
                         style={styles.cleanDatePickerTriggerBtn}
                       >
-                        <Clock size={16} color="#2563EB" />
+                        <Clock size={16} color={COLORS.primary} />
                         <Text style={styles.cleanDatePickerTriggerText}>
                           {interviewTime || 'Tap to Select Interview Time...'}
                         </Text>
@@ -1355,7 +1355,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                     <Text style={styles.sectionHeadingTitle}>EMAIL RECIPIENT</Text>
                     <View style={styles.specRowItem}>
                       <View style={styles.specIconBadge}>
-                        <Mail size={16} color="#2563EB" />
+                        <Mail size={16} color={COLORS.primary} />
                       </View>
                       <View style={styles.specTextCol}>
                         <Text style={styles.specGridLabel}>Target Candidate Email</Text>
@@ -1375,7 +1375,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         onPress={() => setTemplateDropdownVisible(true)}
                         style={styles.cleanDatePickerTriggerBtn}
                       >
-                        <FileText size={16} color="#2563EB" />
+                        <FileText size={16} color={COLORS.primary} />
                         <Text style={styles.cleanDatePickerTriggerText}>
                           {selectedTemplateLabel || 'Tap to Select Email Template...'}
                         </Text>
@@ -1564,7 +1564,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       }}
                     >
                       <View style={styles.dropdownIconBadge}>
-                        <FileText size={16} color={isSelected ? '#2563EB' : '#475569'} />
+                        <FileText size={16} color={isSelected ? COLORS.primary : '#475569'} />
                       </View>
                       <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text
@@ -1578,7 +1578,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                         <Text style={styles.cleanStatusOptionDesc}>{tmpl.desc}</Text>
                       </View>
                       {isSelected ? (
-                        <Check size={18} color="#2563EB" />
+                        <Check size={18} color={COLORS.primary} />
                       ) : (
                         <ChevronRight size={16} color="#CBD5E1" />
                       )}
@@ -1664,7 +1664,7 @@ const styles = StyleSheet.create({
   },
   industryTabPillActive: {
     backgroundColor: 'transparent',
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
   },
   industryTabText: {
     fontSize: 13,
@@ -1672,7 +1672,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   industryTabTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '700',
   },
   tabCountBadge: {
@@ -1693,7 +1693,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   tabCountTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   listContent: {
@@ -1787,7 +1787,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   dotSeparator: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
 
@@ -1870,7 +1870,7 @@ const styles = StyleSheet.create({
   },
   menuTabItemActive: {
     backgroundColor: 'transparent',
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
   },
   menuTabText: {
     fontSize: 13,
@@ -1878,7 +1878,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   menuTabTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '700',
   },
 
@@ -1956,7 +1956,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
   },
   borderlessSkillText: {
     fontSize: 11.5,
@@ -1977,7 +1977,7 @@ const styles = StyleSheet.create({
   inlineViewResumeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   resumeCardBox: {
     flexDirection: 'row',
@@ -2021,7 +2021,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 6,
@@ -2071,7 +2071,7 @@ const styles = StyleSheet.create({
   sectionHeadingTitle: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.8,
     marginBottom: 6,
   },
@@ -2085,7 +2085,7 @@ const styles = StyleSheet.create({
   infoSectionTitle: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.8,
     marginBottom: 6,
   },
@@ -2105,7 +2105,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderBottomWidth: 2.5,
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -2118,7 +2118,7 @@ const styles = StyleSheet.create({
   skillTagText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: COLORS.primary,
   },
   infoGridTwoCol: {
     flexDirection: 'row',
@@ -2209,9 +2209,9 @@ const styles = StyleSheet.create({
   },
   minimalStatusBtnSelected: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderBottomWidth: 3,
-    borderBottomColor: '#1D4ED8',
+    borderBottomColor: COLORS.primary,
   },
   minimalStatusBtnText: {
     fontSize: 13,
@@ -2231,7 +2231,7 @@ const styles = StyleSheet.create({
   },
   cleanStatusOptionRowSelected: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   cleanStatusOptionText: {
     fontSize: 13,
@@ -2239,7 +2239,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   cleanStatusOptionTextSelected: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   cleanStatusOptionDesc: {
@@ -2298,7 +2298,7 @@ const styles = StyleSheet.create({
   templatePillText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   modePillRow: {
     flexDirection: 'row',
@@ -2321,9 +2321,9 @@ const styles = StyleSheet.create({
   },
   cleanModePillBtnSelected: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderWidth: 2,
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 4,
@@ -2335,7 +2335,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   cleanModePillTextSelected: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   cleanDatePickerTriggerBtn: {
@@ -2370,8 +2370,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   cleanTimeSlotGridBtnSelected: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   cleanTimeSlotGridText: {
     fontSize: 12.5,
@@ -2403,7 +2403,7 @@ const styles = StyleSheet.create({
   modePillBtnSelected: {
     backgroundColor: '#EFF6FF',
     borderColor: '#93C5FD',
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
     borderWidth: 1.5,
   },
   modePillText: {
@@ -2412,7 +2412,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   modePillTextSelected: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
 
@@ -2661,11 +2661,11 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   calendarDayCellSelected: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: COLORS.primary,
     borderBottomWidth: 2.5,
-    borderBottomColor: '#1E40AF',
+    borderBottomColor: COLORS.primary,
   },
   calendarDayCellPast: {
     opacity: 0.35,

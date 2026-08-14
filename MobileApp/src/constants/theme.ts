@@ -1,42 +1,74 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Universal Design System — Single Source of Truth
+// ─────────────────────────────────────────────────────────────────────────────
+// Every screen and component in the MobileApp MUST import tokens from this
+// file instead of hardcoding hex values, font sizes, or radii.
+//
+// Usage:
+//   import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../../constants/theme';
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PRIMARY_COLOR = '#1B4980';
+
 export const COLORS = {
-  // Brand Colors
-  primary: '#2563EB',      // Blue 600
-  primaryDark: '#1D4ED8',  // Blue 700
-  primaryLight: '#EFF6FF', // Blue 50
-  
-  // Slate Scale
-  slate900: '#0F172A',
-  slate800: '#1E293B',
-  slate700: '#334155',
-  slate600: '#475569',
-  slate500: '#64748B',
-  slate400: '#94A3B8',
-  slate300: '#CBD5E1',
-  slate200: '#E2E8F0',
-  slate100: '#F1F5F9',
-  slate50: '#F8FAFC',
-  
-  // Status Colors
-  success: '#059669',     // Emerald 600
-  successBg: '#ECFDF5',   // Emerald 50
-  warning: '#D97706',     // Amber 600
-  warningBg: '#FFFBEB',   // Amber 50
-  danger: '#DC2626',      // Red 600
-  dangerBg: '#FEF2F2',    // Red 50
-  info: '#0284C7',        // Sky 600
-  infoBg: '#F0F9FF',      // Sky 50
-  
-  // Surfaces & Borders
-  background: '#FFFFFF',
+  // ── Brand / Primary (Single Source of Truth) ──────────────────────────────
+  primary: PRIMARY_COLOR,           // Executive Primary Color — active state, buttons, links, headers
+  primaryDark: PRIMARY_COLOR,       // Primary Color
+  primaryLight: '#EFF6FF',          // Blue 50  — light tint backgrounds
+  primaryBorder: '#BFDBFE',         // Blue 200 — bordered chips & outlines
+
+  // ── Employer & Section Primary (Single Source of Truth) ──────────────────
+  employerPrimary: PRIMARY_COLOR,                             // Single Source Primary Color
+  employerPrimaryLight: PRIMARY_COLOR,                        // Single Source Primary Color
+  employerGradient: [PRIMARY_COLOR, PRIMARY_COLOR, PRIMARY_COLOR] as [string, string, string], // Single Source Header Gradient
+
+  // ── Button Specific Primary ─────────────────────────────────────────────
+  buttonPrimary: PRIMARY_COLOR,                             // Single Source Primary Color
+  buttonGradient: [PRIMARY_COLOR, PRIMARY_COLOR, PRIMARY_COLOR] as [string, string, string], // Single Source Button Gradient
+
+  // ── Slate Scale (Neutrals) ──────────────────────────────────────────────
+  slate900: '#0F172A',          // Headings, primary text
+  slate800: '#1E293B',          // Sub-headings
+  slate700: '#334155',          // Body text (strong)
+  slate600: '#475569',          // Body text (default), secondary labels
+  slate500: '#64748B',          // Muted labels, placeholders
+  slate400: '#94A3B8',          // Disabled / hint text
+  slate300: '#CBD5E1',          // Borders (strong), dividers (strong)
+  slate200: '#E2E8F0',          // Borders (default), dividers (default)
+  slate100: '#F1F5F9',          // Subtle backgrounds, skeleton base
+  slate50: '#F8FAFC',           // Page background, input fills
+
+  // ── Status Colors ───────────────────────────────────────────────────────
+  success: '#059669',           // Emerald 600
+  successBg: '#ECFDF5',         // Emerald 50
+  warning: '#D97706',           // Amber 600
+  warningBg: '#FFFBEB',         // Amber 50
+  danger: '#DC2626',            // Red 600
+  dangerBg: '#FEF2F2',          // Red 50
+  info: '#0284C7',              // Sky 600
+  infoBg: '#F0F9FF',            // Sky 50
+
+  // ── Surfaces & Borders ──────────────────────────────────────────────────
+  background: '#FFFFFF',        // White
   surface: '#FFFFFF',
   border: '#E2E8F0',
-  borderFocus: '#2563EB',
-  
-  // Text Colors
+  borderFocus: '#1B4980',
+
+  // ── Text Colors ─────────────────────────────────────────────────────────
   textPrimary: '#0F172A',
   textSecondary: '#475569',
   textMuted: '#94A3B8',
   textWhite: '#FFFFFF',
+};
+
+export const FONTS = {
+  regular: 'System',
+  medium: 'System',
+  semibold: 'System',
+  bold: 'System',
+  extraBold: 'System',
+  black: 'System',
+  heavy: 'System',
 };
 
 export const TYPOGRAPHY = {
@@ -119,4 +151,4 @@ export const SHADOWS = {
   },
 };
 
-export default { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS };
+export default { COLORS, FONTS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS };

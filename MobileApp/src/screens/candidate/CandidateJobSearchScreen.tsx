@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -72,7 +73,7 @@ const getInitialsColors = (title: string): [string, string] => {
     ['#BE185D', '#9D174D'],
     ['#C2410C', '#9A3412'],
     ['#9D174D', '#831843'],
-    ['#1D4ED8', '#1E3A8A'],
+    [COLORS.primary, COLORS.primary],
   ];
   let hash = 0;
   for (let i = 0; i < title.length; i++) {
@@ -558,7 +559,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             onPress={() => setViewMode('grid')}
             activeOpacity={0.7}
           >
-            <LayoutGrid size={15} color={viewMode === 'grid' ? '#2563EB' : '#64748B'} />
+            <LayoutGrid size={15} color={viewMode === 'grid' ? COLORS.primary : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'grid' && styles.segmentBtnTextActive]}>Grid</Text>
             {viewMode === 'grid' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
@@ -568,7 +569,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             onPress={() => setViewMode('list')}
             activeOpacity={0.7}
           >
-            <List size={15} color={viewMode === 'list' ? '#2563EB' : '#64748B'} />
+            <List size={15} color={viewMode === 'list' ? COLORS.primary : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'list' && styles.segmentBtnTextActive]}>List</Text>
             {viewMode === 'list' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
@@ -578,7 +579,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             onPress={() => setViewMode('map')}
             activeOpacity={0.7}
           >
-            <Map size={15} color={viewMode === 'map' ? '#2563EB' : '#64748B'} />
+            <Map size={15} color={viewMode === 'map' ? COLORS.primary : '#64748B'} />
             <Text style={[styles.segmentBtnText, viewMode === 'map' && styles.segmentBtnTextActive]}>Map</Text>
             {viewMode === 'map' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
@@ -604,7 +605,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         return (
           <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16, marginBottom: 6 }}>
             <View style={[styles.inputSearchBox, isInputFocused && styles.inputSearchBoxActive]}>
-              <Search size={18} color={isInputFocused ? '#2563EB' : '#64748B'} />
+              <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} />
               <TextInput
                 ref={searchInputRef}
                 style={styles.inputSearchText}
@@ -646,7 +647,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                 activeOpacity={0.8}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <SlidersHorizontal size={18} color={activeFilterCount > 0 ? '#2563EB' : '#475569'} />
+                <SlidersHorizontal size={18} color={activeFilterCount > 0 ? COLORS.primary : '#475569'} />
                 {activeFilterCount > 0 && (
                   <View style={styles.filterBadgePillInline}>
                     <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
@@ -665,9 +666,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                       setShowSuggestions(false);
                     }}
                   >
-                    <Search size={15} color="#2563EB" />
+                    <Search size={15} color={COLORS.primary} />
                     <Text style={styles.suggestionHeaderText} numberOfLines={1}>
-                      Search all jobs matching "<Text style={{ fontWeight: '800', color: '#2563EB' }}>{searchQuery.trim()}</Text>"
+                      Search all jobs matching "<Text style={{ fontWeight: '800', color: COLORS.primary }}>{searchQuery.trim()}</Text>"
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -686,7 +687,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                           setDrawerOpen(true);
                         }}
                       >
-                        <Briefcase size={16} color="#2563EB" />
+                        <Briefcase size={16} color={COLORS.primary} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
                           <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
@@ -764,7 +765,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
           {/* Jobs Stream Skeleton Loading */}
           {loading ? (
@@ -897,8 +898,8 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                         >
                           <Bookmark
                             size={18}
-                            color={isSaved ? '#2563EB' : '#94A3B8'}
-                            fill={isSaved ? '#2563EB' : 'transparent'}
+                            color={isSaved ? COLORS.primary : '#94A3B8'}
+                            fill={isSaved ? COLORS.primary : 'transparent'}
                           />
                         </TouchableOpacity>
                       </View>
@@ -997,14 +998,14 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                   <Text style={styles.loadMoreNextJobsBtnText}>
                     Load Next Vacancies ({visibleCount} of {filteredJobs.length} Shown)
                   </Text>
-                  <ChevronRight size={16} color="#2563EB" />
+                  <ChevronRight size={16} color={COLORS.primary} />
                 </TouchableOpacity>
               )}
 
               {/* Infinite Scroll Bottom Spinner */}
               {loadingMore && (
                 <View style={styles.infiniteScrollContainer}>
-                  <ActivityIndicator size="small" color="#2563EB" />
+                  <ActivityIndicator size="small" color={COLORS.primary} />
                   <Text style={styles.infiniteScrollText}>Loading more vacancies...</Text>
                 </View>
               )}
@@ -1065,7 +1066,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1077,7 +1078,7 @@ const styles = StyleSheet.create({
   brandTitleText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   brandSubtitleText: {
     fontSize: 11,
@@ -1180,7 +1181,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2.5,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
   segmentBtnText: {
@@ -1189,7 +1190,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   segmentBtnTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   categoryCardContainer: {
@@ -1220,8 +1221,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   categoryPillActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#1D4ED8',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryPillText: {
     fontSize: 12.5,
@@ -1266,9 +1267,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputSearchBoxActive: {
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderWidth: 2,
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
@@ -1302,7 +1303,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -3,
     right: -3,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -1406,9 +1407,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   compactListCardActive: {
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#2563EB',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -1697,7 +1698,7 @@ const styles = StyleSheet.create({
   onsiteBadgeText: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   fullTimeBadge: {
     backgroundColor: '#F1F5F9',
@@ -1779,7 +1780,7 @@ const styles = StyleSheet.create({
   resetFilterBtnText: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   loadMoreNextJobsBtn: {
     flexDirection: 'row',
@@ -1797,7 +1798,7 @@ const styles = StyleSheet.create({
   loadMoreNextJobsBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   infiniteScrollContainer: {
     flexDirection: 'row',

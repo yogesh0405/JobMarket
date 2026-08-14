@@ -226,7 +226,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Jobs</Text>
               <View style={[styles.miniIconSquircle, { backgroundColor: '#EFF6FF' }]}>
-                <Briefcase size={14} color="#2563EB" />
+                <Briefcase size={14} color={COLORS.primary} />
               </View>
             </View>
             <Text style={styles.metricValueText}>{loading ? '-' : totalJobs}</Text>
@@ -293,7 +293,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={styles.funnelVal}>{totalApps} (100%)</Text>
                 </View>
                 <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: totalApps > 0 ? '100%' : '0%', backgroundColor: '#2563EB' }]} />
+                  <View style={[styles.progressFill, { width: totalApps > 0 ? '100%' : '0%', backgroundColor: COLORS.primary }]} />
                 </View>
               </View>
 
@@ -350,7 +350,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                       styles.miniBarFill,
                       {
                         width: `${Math.max(item.pct, 8)}%`,
-                        backgroundColor: idx === 0 ? '#2563EB' : idx === 1 ? '#16A34A' : '#D97706',
+                        backgroundColor: idx === 0 ? COLORS.primary : idx === 1 ? '#16A34A' : '#D97706',
                       },
                     ]}
                   />
@@ -377,7 +377,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                       styles.miniBarFill,
                       {
                         width: `${Math.max(item.pct, 8)}%`,
-                        backgroundColor: idx === 0 ? '#2563EB' : idx === 1 ? '#0284C7' : '#16A34A',
+                        backgroundColor: idx === 0 ? COLORS.primary : idx === 1 ? '#0284C7' : '#16A34A',
                       },
                     ]}
                   />
@@ -392,7 +392,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.recentSectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Users size={16} color="#2563EB" />
+            <Users size={16} color={COLORS.primary} />
             <Text style={styles.sectionTitleText}>REAL CANDIDATES IN DATABASE</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('CandidatesTab')}>
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   tradeBadgeText: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontSize: 10.5,
     fontWeight: '700',
   },
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
   candidateTradeText: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#2563EB',
+    color: COLORS.primary,
     marginTop: 1,
   },
   candidateLocationText: {

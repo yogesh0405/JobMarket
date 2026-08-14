@@ -297,7 +297,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
           <View style={styles.metricCard}>
             <View style={styles.metricHeaderRow}>
               <Text style={styles.metricLabelText}>Total Banners</Text>
-              <ImageIcon size={16} color="#2563EB" />
+              <ImageIcon size={16} color={COLORS.primary} />
             </View>
             <Text style={styles.metricValueText}>{analytics?.total_advertisements ?? banners.length}</Text>
           </View>
@@ -334,7 +334,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
 
         {loading && !refreshing ? (
           <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={{ marginTop: 10, color: '#64748B', fontSize: 13, fontWeight: '600' }}>
               Loading banners from live server...
             </Text>
@@ -431,7 +431,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                       style={styles.actionBtnSecondary}
                       onPress={() => openEditModal(banner)}
                     >
-                      <Edit3 size={14} color="#2563EB" />
+                      <Edit3 size={14} color={COLORS.primary} />
                       <Text style={styles.actionBtnSecondaryText}>{isRejected ? 'Resubmit' : 'Edit'}</Text>
                     </TouchableOpacity>
 
@@ -591,7 +591,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
                 activeOpacity={0.8}
                 onPress={handlePickImage}
               >
-                <UploadCloud size={20} color="#2563EB" />
+                <UploadCloud size={20} color={COLORS.primary} />
                 <Text style={styles.imagePickerBtnText}>
                   {bannerImage ? 'Change Image from Photos / Gallery' : 'Select Banner Image from Photos'}
                 </Text>
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
@@ -976,7 +976,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
@@ -1019,7 +1019,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   actionBtnSecondaryText: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontSize: 12,
     fontWeight: '800',
   },
@@ -1069,7 +1069,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 6,
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
   },
   typeChipActive: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   imagePickerBtn: {
     flexDirection: 'row',
@@ -1151,7 +1151,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderStyle: 'dashed',
     borderRadius: 8,
     paddingVertical: 12,
@@ -1161,7 +1161,7 @@ const styles = StyleSheet.create({
   imagePickerBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   typeChipText: {
     fontSize: 11.5,
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   typeChipTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   jobChip: {
     backgroundColor: '#FFFFFF',
@@ -1183,7 +1183,7 @@ const styles = StyleSheet.create({
   },
   jobChipActive: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   jobChipText: {
     fontSize: 11.5,
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   jobChipTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   previewCard: {
     backgroundColor: '#F8FAFC',
@@ -1202,7 +1202,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   previewBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 4,
@@ -1215,7 +1215,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   submitBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

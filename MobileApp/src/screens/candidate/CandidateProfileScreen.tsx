@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import {
   User as UserIcon,
@@ -47,7 +48,12 @@ import {
   IndianRupee,
   ArrowRight,
   Search,
+  Settings,
+  ArrowLeft,
+  Pencil,
+  Edit3,
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { CandidateDashboardScreen } from './CandidateDashboardScreen';
 import { useAuth } from '../../hooks/useAuth';
@@ -109,6 +115,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(true);
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
   const [tradePrefOpen, setTradePrefOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
@@ -552,7 +560,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
           }}
         />
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
           <ProfileSkeleton />
         </ScrollView>
       </View>
@@ -561,417 +569,282 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 
   return (
     <View style={styles.container}>
-      <Header
-        title="JobMarket"
-        subtitle="Industrial & Factory Jobs"
-        showBack={false}
-      />
+      {/* Top Overscroll Blue Fill */}
+      <View style={styles.topOverscrollBlueFill} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} tintColor="#2563EB" />
-        }
+      {/* 1. Top Navy Blue Header Banner */}
+      <LinearGradient
+        colors={COLORS.employerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={styles.profileHeaderBanner}
       >
-        {/* Tabbed Menu Switcher Bar: Profile vs Dashboard (Apple Underline Tab Menu) */}
-        <View style={styles.tabBarContainer}>
+        <View style={styles.bannerTopNavRow}>
           <TouchableOpacity
-            style={[styles.tabSegmentBtn, activeTab === 'PROFILE' && styles.tabSegmentBtnActive]}
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('PROFILE')}
+            onPress={() => {
+              if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
+                navigation.goBack();
+              } else if (navigation) {
+                navigation.navigate('CandidateMain');
+              }
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ padding: 4 }}
           >
-            <UserIcon size={16} color={activeTab === 'PROFILE' ? '#2563EB' : '#64748B'} />
-            <Text style={[styles.tabSegmentText, activeTab === 'PROFILE' && styles.tabSegmentTextActive]}>
-              Profile
-            </Text>
-            {activeTab === 'PROFILE' ? <View style={styles.activeTabIndicator} /> : null}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabSegmentBtn, activeTab === 'DASHBOARD' && styles.tabSegmentBtnActive]}
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('DASHBOARD')}
-          >
-            <LayoutDashboard size={16} color={activeTab === 'DASHBOARD' ? '#2563EB' : '#64748B'} />
-            <Text style={[styles.tabSegmentText, activeTab === 'DASHBOARD' && styles.tabSegmentTextActive]}>
-              Dashboard
-            </Text>
-            {activeTab === 'DASHBOARD' ? <View style={styles.activeTabIndicator} /> : null}
+            <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
+        {/* Centered Overlapping Avatar with Edit Pencil Badge */}
+        <View style={styles.overlappingAvatarContainer}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('CandidateEditProfile')}
+            style={styles.avatarCircleBorderWrapper}
+          >
+            {profilePhotoUrl ? (
+              <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarFallbackLetterBox}>
+                <Text style={styles.avatarFallbackLetterText}>
+                  {(name || 'Y').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+
+            {/* Edit Pencil Icon Badge on Bottom Right Edge */}
+            <View style={styles.editPencilBadgeOnAvatar}>
+              <Pencil size={13} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* Candidate Name Section */}
+      <View style={styles.candidateProfileInfoBox}>
+        <View style={styles.nameRowCentered}>
+          <Text style={styles.candidateNameTitleText}>
+            {name || user?.name || 'Yogesh Dandawalkar'}
+          </Text>
+          <CheckCircle2 size={18} color={COLORS.primary} />
+        </View>
+      </View>
+
+      {/* Tab Menu Bar: About vs Dashboard */}
+      <View style={styles.underlineTabBarRow}>
+        <TouchableOpacity
+          style={styles.underlineTabBtn}
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('PROFILE')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <UserIcon size={16} color={activeTab === 'PROFILE' ? COLORS.primary : '#64748B'} />
+            <Text style={[styles.underlineTabText, activeTab === 'PROFILE' && styles.underlineTabTextActive]}>
+              About
+            </Text>
+          </View>
+          {activeTab === 'PROFILE' ? <View style={styles.underlineActiveIndicator} /> : null}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.underlineTabBtn}
+          activeOpacity={0.7}
+          onPress={() => setActiveTab('DASHBOARD')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <LayoutDashboard size={16} color={activeTab === 'DASHBOARD' ? COLORS.primary : '#64748B'} />
+            <Text style={[styles.underlineTabText, activeTab === 'DASHBOARD' && styles.underlineTabTextActive]}>
+              Dashboard
+            </Text>
+          </View>
+          {activeTab === 'DASHBOARD' ? <View style={styles.underlineActiveIndicator} /> : null}
+        </TouchableOpacity>
+      </View>
+      <View style={styles.underlineTabBarDivider} />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContentBody}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+        }
+      >
         {activeTab === 'PROFILE' ? (
           <>
-            <View style={styles.singleMasterCard}>
-            {/* 1. Profile Avatar Header with Circular Svg Progress Ring */}
-            <View style={styles.avatarHeaderRow}>
-              <View style={styles.circularAvatarWrapper}>
-                {/* SVG Progress Ring */}
-                <Svg width={72} height={72} style={styles.svgRingOverlay}>
-                  {/* Background Track */}
-                  <Circle
-                    cx={36}
-                    cy={36}
-                    r={33}
-                    stroke="#E2E8F0"
-                    strokeWidth={3.5}
-                    fill="transparent"
-                  />
-                  {/* Active Progress Segment */}
-                  <Circle
-                    cx={36}
-                    cy={36}
-                    r={33}
-                    stroke={completenessScore >= 80 ? '#16A34A' : completenessScore >= 50 ? '#F59E0B' : '#2563EB'}
-                    strokeWidth={3.5}
-                    strokeDasharray={207.35}
-                    strokeDashoffset={207.35 * (1 - completenessScore / 100)}
-                    strokeLinecap="round"
-                    fill="transparent"
-                    transform="rotate(-90 36 36)"
-                  />
-                </Svg>
+            {/* MASTER SINGLE PROFILE CONTAINER */}
+            <View style={styles.cardBlockContainer}>
 
-                {/* Avatar Touch Target */}
-                <TouchableOpacity style={styles.avatarCircleBoxInner} onPress={handlePickPhoto} activeOpacity={0.85}>
-                  {profilePhotoUrl ? (
-                    <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImgInner} />
-                  ) : (
-                    <Text style={styles.avatarLetter}>{(name || 'C').charAt(0).toUpperCase()}</Text>
-                  )}
-
-                  <View style={styles.cameraIconBadge}>
-                    {uploadingPhoto ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Camera size={10} color="#FFFFFF" />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ flex: 1, gap: 3 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <Text style={styles.displayName} numberOfLines={1}>
-                    {name || 'Candidate User'}
-                  </Text>
-                  <CheckCircle2 size={16} color="#2563EB" />
+              {/* 1. ABOUT SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <UserIcon size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>About</Text>
                 </View>
 
-                <Text style={styles.displayEmail} numberOfLines={1}>{user?.email}</Text>
-                {headline ? <Text style={styles.displayHeadline} numberOfLines={1}>{headline}</Text> : null}
+                <Text style={styles.aboutBodyText}>
+                  {bio || 'Passionate factory operator & ITI specialist with hands-on precision machining, shop-floor safety protocols, and technical equipment operations.'}
+                </Text>
+              </View>
 
-                {completenessScore < 100 ? (
-                  <View style={styles.headerBadgesRow}>
-                    <View style={[styles.completenessBadgePill, { backgroundColor: completenessScore >= 80 ? '#DCFCE7' : completenessScore >= 50 ? '#FEF3C7' : '#EFF6FF', borderColor: completenessScore >= 80 ? '#86EFAC' : completenessScore >= 50 ? '#FDE68A' : '#BFDBFE' }]}>
-                      <Text style={[styles.completenessBadgeText, { color: completenessScore >= 80 ? '#15803D' : completenessScore >= 50 ? '#B45309' : '#2563EB' }]}>
-                        {completenessScore}% Complete
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
+
+              {/* 2. PERSONAL & CONTACT DETAILS SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <Mail size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Personal & Contact Information</Text>
+                </View>
+
+                <View style={styles.infoRowsList}>
+                  <View style={styles.infoDetailRow}>
+                    <UserIcon size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Full Name</Text>
+                      <Text style={styles.infoDetailValue}>{name || user?.name || 'Yogesh Dandawalkar'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <Briefcase size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Professional Headline</Text>
+                      <Text style={styles.infoDetailValue}>{headline || 'Tool & Die Maker • Junior developer'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <Mail size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Email Address</Text>
+                      <Text style={styles.infoDetailValue}>{user?.email || 'yogeshdand04@gmail.com'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <MapPin size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Current Location / MIDC</Text>
+                      <Text style={styles.infoDetailValue}>{location || 'Mumbai'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <Phone size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Mobile Phone</Text>
+                      <Text style={styles.infoDetailValue}>{phone || '9703346356'}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
+
+              {/* 3. TRADE SPECIALIZATION & PREFERENCES */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <Award size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Trade Specialization & Preferences</Text>
+                </View>
+
+                <View style={styles.infoRowsList}>
+                  <View style={styles.infoDetailRow}>
+                    <Award size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Trade Specialization</Text>
+                      <Text style={styles.infoDetailValue}>
+                        {(isOtherSelected || tradeSpecialization === 'Other') ? (customTrade || 'Other Trade') : tradeSpecialization}
                       </Text>
                     </View>
                   </View>
-                ) : null}
+
+                  <View style={styles.infoDetailRow}>
+                    <Clock size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Preferred Shift</Text>
+                      <Text style={styles.infoDetailValue}>{preferredShift || 'Any Shift'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <Bus size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Bus Transport Facility</Text>
+                      <Text style={styles.infoDetailValue}>{requiresBus ? 'Company Bus Pickup Required' : 'Not Needed'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoDetailRow}>
+                    <Home size={16} color="#64748B" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoDetailLabel}>Hostel Accommodation</Text>
+                      <Text style={styles.infoDetailValue}>{requiresAccommodation ? 'Hostel Stay Required' : 'Not Needed'}</Text>
+                    </View>
+                  </View>
+                </View>
               </View>
-            </View>
 
-            <View style={[styles.sectionDivider, !personalInfoOpen && { marginVertical: 6 }]} />
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
 
-            {/* 4. Personal Info Form (Collapsible Accordion) */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.collapsibleHeaderRow, !personalInfoOpen && { paddingVertical: 2 }]}
-                onPress={() => setPersonalInfoOpen((prev) => !prev)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <UserIcon size={18} color="#2563EB" />
-                  <Text style={styles.sectionTitleNoMargin}>Personal & Contact Details</Text>
+              {/* 4. SKILLS SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <Sparkles size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Skills</Text>
                 </View>
-                <View style={styles.chevronCircleBadge}>
-                  {personalInfoOpen ? (
-                    <ChevronUp size={18} color="#2563EB" />
-                  ) : (
-                    <ChevronDown size={18} color="#64748B" />
-                  )}
-                </View>
-              </TouchableOpacity>
 
-              {personalInfoOpen ? (
-                <View style={{ marginTop: 12 }}>
-                  <Input
-                    label="Full Name *"
-                    required
-                    value={name}
-                    onChangeText={setName}
-                    leftIcon={<UserIcon size={18} color="#64748B" />}
-                  />
-
-                  <Input
-                    label="Professional Headline *"
-                    value={headline}
-                    placeholder="e.g. ITI VMC Operator & CNC Setter"
-                    onChangeText={setHeadline}
-                    leftIcon={<Briefcase size={18} color="#64748B" />}
-                  />
-
-                  <Input
-                    label="Current City / MIDC Location *"
-                    required
-                    value={location}
-                    placeholder="e.g. Waluj MIDC, Chhatrapati Sambhajinagar"
-                    onChangeText={setLocation}
-                    leftIcon={<MapPin size={18} color="#64748B" />}
-                  />
-
-                  <Input
-                    label="Mobile Phone Number *"
-                    required
-                    value={phone}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                    onChangeText={setPhone}
-                    leftIcon={<Phone size={18} color="#64748B" />}
-                  />
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Bio / Career Summary</Text>
-                    <TextInput
-                      style={styles.textArea}
-                      multiline
-                      numberOfLines={3}
-                      placeholder="Brief summary of your factory experience and technical skills..."
-                      placeholderTextColor="#94A3B8"
-                      value={bio}
-                      onChangeText={setBio}
-                    />
-                  </View>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={[styles.sectionDivider, !personalInfoOpen && { marginVertical: 6 }]} />
-
-            {/* 5. Industrial Trade & Work Preferences (Collapsible Accordion) */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.collapsibleHeaderRow, !tradePrefOpen && { paddingVertical: 2 }]}
-                onPress={() => setTradePrefOpen((prev) => !prev)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <Award size={18} color="#2563EB" />
-                  <Text style={styles.sectionTitleNoMargin}>Trade Specialization & Preferences</Text>
-                </View>
-                <View style={styles.chevronCircleBadge}>
-                  {tradePrefOpen ? (
-                    <ChevronUp size={18} color="#2563EB" />
-                  ) : (
-                    <ChevronDown size={18} color="#64748B" />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              {tradePrefOpen ? (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={styles.inputLabel}>Trade Specialization *</Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.dropdownPickerRow}
-                    onPress={() => setTradeModalOpen(true)}
-                  >
-                    <Award size={18} color="#2563EB" />
-                    <Text style={styles.dropdownPickerText}>
-                      {(isOtherSelected || tradeSpecialization === 'Other') ? (customTrade || 'Other (Specify Below)') : tradeSpecialization}
-                    </Text>
-                    <ChevronDown size={18} color="#94A3B8" />
-                  </TouchableOpacity>
-
-                  {(isOtherSelected || tradeSpecialization === 'Other') ? (
-                    <Input
-                      label="Custom Trade Specialization *"
-                      placeholder="e.g. Laser Cutting Operator / PLC Automation Programmer"
-                      value={customTrade}
-                      onChangeText={setCustomTrade}
-                      leftIcon={<Award size={18} color="#64748B" />}
-                    />
-                  ) : null}
-
-                  <Text style={styles.inputLabel}>Preferred Shift *</Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.dropdownPickerRow}
-                    onPress={() => setShiftModalOpen(true)}
-                  >
-                    <Clock size={18} color="#2563EB" />
-                    <Text style={styles.dropdownPickerText}>{preferredShift}</Text>
-                    <ChevronDown size={18} color="#94A3B8" />
-                  </TouchableOpacity>
-
-                  <View style={styles.toggleRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>Requires Bus Transport</Text>
-                      <Text style={styles.toggleDesc}>Company bus pickup/drop facility needed</Text>
+                <View style={styles.skillsTagRow}>
+                  {skills.map((s, idx) => (
+                    <View key={idx} style={styles.skillChip}>
+                      <Text style={styles.skillChipText}>{s}</Text>
                     </View>
-                    <Switch
-                      value={requiresBus}
-                      onValueChange={setRequiresBus}
-                      trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-                      thumbColor={requiresBus ? '#2563EB' : '#94A3B8'}
-                    />
-                  </View>
-
-                  <View style={styles.toggleRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleTitle}>Requires Hostel Stay</Text>
-                      <Text style={styles.toggleDesc}>Accommodation / Hostel room facility needed</Text>
-                    </View>
-                    <Switch
-                      value={requiresAccommodation}
-                      onValueChange={setRequiresAccommodation}
-                      trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-                      thumbColor={requiresAccommodation ? '#2563EB' : '#94A3B8'}
-                    />
-                  </View>
+                  ))}
                 </View>
-              ) : null}
-            </View>
+              </View>
 
-            <View style={[styles.sectionDivider, !tradePrefOpen && { marginVertical: 6 }]} />
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
 
-            {/* 6. Skills Tag Management (Collapsible Dropdown Accordion) */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.collapsibleHeaderRow, !skillsOpen && { paddingVertical: 2 }]}
-                onPress={() => setSkillsOpen((prev) => !prev)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <Sparkles size={18} color="#2563EB" />
-                  <Text style={styles.sectionTitleNoMargin}>Skills & Technical Capabilities</Text>
+              {/* 5. EXPERIENCE SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <Briefcase size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Experience</Text>
                 </View>
-                <View style={styles.chevronCircleBadge}>
-                  {skillsOpen ? (
-                    <ChevronUp size={18} color="#2563EB" />
-                  ) : (
-                    <ChevronDown size={18} color="#64748B" />
-                  )}
-                </View>
-              </TouchableOpacity>
 
-              {skillsOpen ? (
-                <View style={{ marginTop: 12 }}>
-                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    <TextInput
-                      style={[styles.inputField, { flex: 1 }]}
-                      placeholder="e.g. Vernier Caliper, Fanuc Control..."
-                      placeholderTextColor="#94A3B8"
-                      value={skillInput}
-                      onChangeText={setSkillInput}
-                    />
-                    <TouchableOpacity style={styles.addSkillBtn} onPress={handleAddSkill}>
-                      <Plus size={16} color="#FFFFFF" />
-                      <Text style={styles.addSkillBtnText}>Add</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.skillsTagRow}>
-                    {skills.map((s, idx) => (
-                      <View key={idx} style={styles.skillChip}>
-                        <Text style={styles.skillChipText}>{s}</Text>
-                        <TouchableOpacity onPress={() => handleRemoveSkill(s)}>
-                          <X size={13} color="#64748B" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
-            </View>
-
-            <View style={[styles.sectionDivider, !skillsOpen && { marginVertical: 6 }]} />
-
-            {/* 7. Work Experience Section (Collapsible Dropdown Accordion) */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.collapsibleHeaderRow, !experienceOpen && { paddingVertical: 2 }]}
-                onPress={() => setExperienceOpen((prev) => !prev)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <Briefcase size={18} color="#2563EB" />
-                  <Text style={styles.sectionTitleNoMargin}>Work Experience History</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  {experienceOpen ? (
-                    <TouchableOpacity style={styles.addBtnSmall} onPress={() => setExpModalOpen(true)}>
-                      <Plus size={14} color="#2563EB" />
-                      <Text style={styles.addBtnSmallText}>Add</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  <View style={styles.chevronCircleBadge}>
-                    {experienceOpen ? (
-                      <ChevronUp size={18} color="#2563EB" />
-                    ) : (
-                      <ChevronDown size={18} color="#64748B" />
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {experienceOpen ? (
-                <View style={{ marginTop: 12 }}>
+                <View style={{ marginTop: 10 }}>
                   {experience.length === 0 ? (
                     <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
                   ) : (
                     experience.map((item, idx) => (
                       <View key={idx} style={styles.itemRowCard}>
+                        <View style={styles.experienceBlueDot} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.itemRowTitle}>{item.title}</Text>
-                          <Text style={styles.itemRowSub}>{item.company} • {item.duration}</Text>
+                          <Text style={styles.itemRowSub}>{item.company}</Text>
+                          <Text style={styles.itemRowDuration}>{item.duration}</Text>
                           {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
                         </View>
-                        <TouchableOpacity onPress={() => handleRemoveExperience(idx)}>
-                          <Trash2 size={16} color="#DC2626" />
-                        </TouchableOpacity>
                       </View>
                     ))
                   )}
                 </View>
-              ) : null}
-            </View>
+              </View>
 
-            <View style={[styles.sectionDivider, !experienceOpen && { marginVertical: 6 }]} />
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
 
-            {/* 8. Education Section (Collapsible Dropdown Accordion) */}
-            <View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.collapsibleHeaderRow, !educationOpen && { paddingVertical: 2 }]}
-                onPress={() => setEducationOpen((prev) => !prev)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <FileText size={18} color="#2563EB" />
-                  <Text style={styles.sectionTitleNoMargin}>Education & ITI Certification</Text>
+              {/* 6. EDUCATION & CERTIFICATION SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <FileText size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Education & Certification</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  {educationOpen ? (
-                    <TouchableOpacity style={styles.addBtnSmall} onPress={() => setEduModalOpen(true)}>
-                      <Plus size={14} color="#2563EB" />
-                      <Text style={styles.addBtnSmallText}>Add</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  <View style={styles.chevronCircleBadge}>
-                    {educationOpen ? (
-                      <ChevronUp size={18} color="#2563EB" />
-                    ) : (
-                      <ChevronDown size={18} color="#64748B" />
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
 
-              {educationOpen ? (
-                <View style={{ marginTop: 12 }}>
+                <View style={{ marginTop: 10 }}>
                   {education.length === 0 ? (
                     <Text style={styles.emptySubText}>No education or ITI certificate entries added yet.</Text>
                   ) : (
@@ -981,99 +854,53 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
                           <Text style={styles.itemRowTitle}>{item.degree}</Text>
                           <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => handleRemoveEducation(idx)}>
-                          <Trash2 size={16} color="#DC2626" />
-                        </TouchableOpacity>
                       </View>
                     ))
                   )}
                 </View>
-              ) : null}
-            </View>
-
-            <View style={styles.sectionDivider} />
-
-            {/* 9. Resume CV Document Section */}
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <FileText size={18} color="#2563EB" />
-                <Text style={styles.sectionTitleNoMargin}>Resume & Bio-Data Document</Text>
               </View>
-              <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 10 }}>
-                Upload your PDF or Image resume document to auto-attach it to all job applications.
-              </Text>
 
-              {resumeUrl ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 4 }}>
-                  <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-                    <FileText size={20} color="#2563EB" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
-                      {resumeName}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700', marginTop: 1 }}>
-                      ✓ Document Attached & Live in Database
-                    </Text>
-                  </View>
+              {/* SLATE SECTION DIVIDER */}
+              <View style={styles.sectionDividerSlate} />
 
-                  <TouchableOpacity
-                    style={{ padding: 9, backgroundColor: '#EFF6FF', borderRadius: 8, borderWidth: 1, borderColor: '#BFDBFE' }}
-                    onPress={() => setShowPdfModal(true)}
-                  >
-                    <ExternalLink size={16} color="#2563EB" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={{ padding: 9, backgroundColor: '#FEF2F2', borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5' }}
-                    onPress={handleDeleteResumeDoc}
-                    disabled={deletingResume}
-                  >
-                    {deletingResume ? (
-                      <ActivityIndicator size="small" color="#DC2626" />
-                    ) : (
-                      <Trash2 size={16} color="#DC2626" />
-                    )}
-                  </TouchableOpacity>
+              {/* 7. RESUME & BIO-DATA DOCUMENT SECTION */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeaderRow}>
+                  <FileText size={18} color={COLORS.primary} />
+                  <Text style={styles.sectionTitleText}>Resume & Bio-Data Document</Text>
                 </View>
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563EB', paddingVertical: 12, borderRadius: 8 }}
-                  onPress={handlePickResume}
-                  disabled={uploadingResume}
-                >
-                  {uploadingResume ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <UploadCloud size={18} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Upload Resume PDF / Image</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
 
-          {/* Save Profile Changes Action Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.saveProfileBtn}
-            onPress={handleSaveProfile}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Save size={18} color="#FFFFFF" />
-                <Text style={styles.saveProfileBtnText}>Save Profile Changes</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </>
-      ) : (
+                <View style={{ marginTop: 12 }}>
+                  {resumeUrl ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <FileText size={20} color={COLORS.primary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13.5, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>
+                          {resumeName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700', marginTop: 1 }}>
+                          ✓ Document Attached & Live in Database
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={{ padding: 8, backgroundColor: '#EFF6FF', borderRadius: 4, borderWidth: 1, borderColor: '#BFDBFE' }}
+                        onPress={() => setShowPdfModal(true)}
+                      >
+                        <ExternalLink size={16} color={COLORS.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B' }}>
+                      No resume document uploaded yet
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+            </View>
+          </>
+        ) : (
         /* Dashboard Tab View */
         <CandidateDashboardScreen navigation={navigation} hideHeader={true} />
       )}
@@ -1208,22 +1035,322 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
   },
-  scrollContent: {
-    padding: 8,
-    paddingBottom: 100,
-    gap: 8,
-    backgroundColor: '#FFFFFF',
+  topOverscrollBlueFill: {
+    position: 'absolute',
+    top: -500,
+    left: 0,
+    right: 0,
+    height: 500,
+    backgroundColor: COLORS.primary,
   },
-  tabBarContainer: {
+  profileHeaderBanner: {
+    height: 85,
+    paddingTop: Platform.OS === 'ios' ? 10 : 6,
+    paddingHorizontal: 16,
+    position: 'relative',
+    justifyContent: 'flex-start',
+  },
+  bannerTopNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    marginBottom: 6,
-    gap: 24,
-    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+  },
+  verifiedWorkerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  verifiedWorkerPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  bannerEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  bannerEditBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  cardHeaderEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  cardHeaderEditBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  aboutBodyText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#334155',
+    marginTop: 10,
+    fontWeight: '400',
+  },
+  aboutQuickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 12,
+  },
+  aboutGridItem: {
+    width: '47.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 4,
+    padding: 8,
+  },
+  aboutGridIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 4,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aboutGridLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  aboutGridValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  overlappingAvatarContainer: {
+    position: 'absolute',
+    bottom: -46,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  avatarCircleBorderWrapper: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 3.5,
+    borderColor: '#FFFFFF',
+    backgroundColor: COLORS.primary,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 43,
+  },
+  avatarFallbackLetterBox: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 43,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+  },
+  avatarFallbackLetterText: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  editPencilBadgeOnAvatar: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  candidateProfileInfoBox: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 52,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameRowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+  },
+  candidateNameTitleText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  candidateSpecializationSubText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 3,
+    textAlign: 'center',
+  },
+  underlineTabBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    gap: 40,
+    paddingHorizontal: 16,
+  },
+  underlineTabBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    position: 'relative',
+    alignItems: 'center',
+  },
+  underlineTabText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  underlineTabTextActive: {
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+  underlineActiveIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  underlineTabBarDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  scrollContentBody: {
+    paddingTop: 14,
+    paddingBottom: 130,
+  },
+  cardsStackWrapper: {
+    gap: 14,
+  },
+  cardBlockContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 4,
+    padding: 16,
+    marginHorizontal: 16,
+  },
+  cardBlockHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardBlockTitleText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  sectionBlock: {
+    paddingVertical: 4,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  sectionTitleText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  sectionDividerSlate: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 14,
+  },
+  infoRowsList: {
+    gap: 12,
+    marginTop: 6,
+  },
+  infoDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  infoDetailLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  infoDetailValue: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  experienceBlueDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    marginTop: 5,
+  },
+  itemRowDuration: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   tabSegmentBtn: {
     flexDirection: 'row',

@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -111,7 +112,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
           {/* Header summary bar */}
           <View style={styles.summaryBar}>
@@ -120,7 +121,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.summarySub}>Jobs saved for quick reference</Text>
             </View>
             <View style={styles.countBadge}>
-              <Bookmark size={14} color="#2563EB" fill="#2563EB" />
+              <Bookmark size={14} color={COLORS.primary} fill={COLORS.primary} />
               <Text style={styles.countBadgeText}>{savedJobs.length} Saved</Text>
             </View>
           </View>
@@ -160,7 +161,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                           resizeMode="contain"
                         />
                       ) : (
-                        <Building2 size={20} color="#2563EB" />
+                        <Building2 size={20} color={COLORS.primary} />
                       )}
                     </View>
 
@@ -181,14 +182,14 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                         handleUnsave(job.id);
                       }}
                     >
-                      <Bookmark size={18} color="#2563EB" fill="#2563EB" />
+                      <Bookmark size={18} color={COLORS.primary} fill={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
 
                   {/* Metadata Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaBadge}>
-                      <MapPin size={12} color="#2563EB" />
+                      <MapPin size={12} color={COLORS.primary} />
                       <Text style={styles.metaBadgeText}>{job.location || 'MIDC Zone'}</Text>
                     </View>
 
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -375,6 +376,6 @@ const styles = StyleSheet.create({
   applyActionText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
 });

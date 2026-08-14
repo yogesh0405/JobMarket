@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -471,7 +472,7 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
           <View style={styles.sheetHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={styles.briefcaseIconBadge}>
-                <Briefcase size={16} color="#2563EB" />
+                <Briefcase size={16} color={COLORS.primary} />
               </View>
 
               <Text style={styles.sheetTitleText}>Jobs Nearby</Text>
@@ -513,7 +514,7 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
                   {logoUrl ? (
                     <Image source={{ uri: logoUrl }} style={styles.cardLogoImg} resizeMode="contain" />
                   ) : (
-                    <Building2 size={20} color="#2563EB" />
+                    <Building2 size={20} color={COLORS.primary} />
                   )}
                 </View>
 
@@ -535,7 +536,7 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
                   style={styles.viewDetailArrowBtn}
                   onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
                 >
-                  <ExternalLink size={16} color="#2563EB" />
+                  <ExternalLink size={16} color={COLORS.primary} />
                 </TouchableOpacity>
               </TouchableOpacity>
             );
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -728,7 +729,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sheetJobCardActive: {
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     backgroundColor: '#EFF6FF',
   },
   cardLeftLogoSquare: {

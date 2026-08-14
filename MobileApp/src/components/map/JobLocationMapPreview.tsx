@@ -118,7 +118,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         </View>
 
         <TouchableOpacity style={styles.recenterBtn} activeOpacity={0.7} onPress={handleRecenter}>
-          <Target size={13} color="#1D4ED8" />
+          <Target size={13} color={COLORS.primary} />
           <Text style={styles.recenterText}>Recenter</Text>
         </TouchableOpacity>
       </View>
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: COLORS.primary,
   },
   mapWrapper: {
     width: '100%',

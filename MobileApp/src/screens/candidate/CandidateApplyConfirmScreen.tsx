@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState } from 'react';
 import {
   View,
@@ -228,7 +229,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
           {/* SECTION 2: CANDIDATE APPLICATION SPECS (Flat iOS List) */}
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeaderRow}>
-              <ShieldCheck size={18} color="#2563EB" />
+              <ShieldCheck size={18} color={COLORS.primary} />
               <Text style={styles.sectionHeaderTitle}>Candidate Application Specs</Text>
               <Text style={styles.sectionHeaderBadge}>Sent to Employer</Text>
             </View>
@@ -532,7 +533,7 @@ const styles = StyleSheet.create({
   sectionHeaderBadge: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -645,7 +646,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   manageResumeBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 0,
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     height: 48,
     borderRadius: 0,
   },

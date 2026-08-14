@@ -152,16 +152,16 @@ export const NotificationModal: React.FC<Props> = ({
       return <CheckCircle2 size={18} color="#16A34A" />;
     }
     if (combined.includes('APPLIED') || combined.includes('APPLICATION') || combined.includes('APPLY')) {
-      return <Send size={18} color="#2563EB" />;
+      return <Send size={18} color={COLORS.primary} />;
     }
     if (combined.includes('JOB') || combined.includes('VACANCY') || combined.includes('POSTED')) {
-      return <Briefcase size={18} color="#2563EB" />;
+      return <Briefcase size={18} color={COLORS.primary} />;
     }
     if (combined.includes('BANNER') || combined.includes('PROMOT') || combined.includes('ADVERTI')) {
       return <Megaphone size={18} color="#D97706" />;
     }
     if (combined.includes('VERIF') || combined.includes('SECURITY') || combined.includes('SHIELD')) {
-      return <ShieldCheck size={18} color="#2563EB" />;
+      return <ShieldCheck size={18} color={COLORS.primary} />;
     }
     if (combined.includes('RESUME') || combined.includes('DOC') || combined.includes('BIO-DATA')) {
       return <FileText size={18} color="#7C3AED" />;
@@ -173,7 +173,7 @@ export const NotificationModal: React.FC<Props> = ({
       return <HelpCircle size={18} color="#8B5CF6" />;
     }
 
-    return <Bell size={18} color="#2563EB" />;
+    return <Bell size={18} color={COLORS.primary} />;
   };
 
   return (
@@ -208,7 +208,7 @@ export const NotificationModal: React.FC<Props> = ({
                 {isExpanded ? (
                   <ChevronDown size={18} color="#64748B" />
                 ) : (
-                  <ChevronUp size={18} color="#2563EB" />
+                  <ChevronUp size={18} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
 
@@ -243,7 +243,7 @@ export const NotificationModal: React.FC<Props> = ({
             <View style={styles.bulkActionsRow}>
               {unreadCount > 0 ? (
                 <TouchableOpacity style={styles.actionBtn} onPress={onMarkAllAsRead}>
-                  <CheckCheck size={14} color="#2563EB" />
+                  <CheckCheck size={14} color={COLORS.primary} />
                   <Text style={styles.actionBtnText}>Read All</Text>
                 </TouchableOpacity>
               ) : null}
@@ -260,7 +260,7 @@ export const NotificationModal: React.FC<Props> = ({
           {/* Notification Items List */}
           {loading ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#2563EB" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Fetching real-time notifications...</Text>
             </View>
           ) : displayedList.length === 0 ? (
@@ -280,7 +280,7 @@ export const NotificationModal: React.FC<Props> = ({
               style={styles.scrollList}
               contentContainerStyle={{ paddingBottom: 30 }}
               showsVerticalScrollIndicator={false}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
             >
               {displayedList.map((item) => {
                 const isRead = item.read || item.is_read;
@@ -393,13 +393,13 @@ const styles = StyleSheet.create({
   unreadBadgePill: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
   },
   unreadBadgeText: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontSize: 11,
     fontWeight: '800',
   },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   closeBtn: {
     padding: 6,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   filterPillActive: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
   },
   filterPillText: {
     fontSize: 11.5,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   loadingBox: {
     paddingVertical: 40,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   },
   itemCardUnread: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
     borderWidth: 1.5,
   },
   itemIconSquircle: {

@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -452,7 +453,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 18 }}>This job listing is no longer active, has expired, or was removed by the employer.</Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 }}
+              style={{ backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 }}
               onPress={handleBackNavigation}
             >
               <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Back to Jobs</Text>
@@ -509,7 +510,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                 onPress={handleShareJob}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Share2 size={17} color="#2563EB" />
+                <Share2 size={17} color={COLORS.primary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -519,8 +520,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               >
                 <Bookmark
                   size={17}
-                  color={isSaved ? '#2563EB' : '#94A3B8'}
-                  fill={isSaved ? '#2563EB' : 'transparent'}
+                  color={isSaved ? COLORS.primary : '#94A3B8'}
+                  fill={isSaved ? COLORS.primary : 'transparent'}
                 />
               </TouchableOpacity>
             </View>
@@ -531,7 +532,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           {/* Key Quick Highlights */}
           <View style={styles.highlightsGrid}>
             <View style={styles.highlightItem}>
-              <MapPin size={14} color="#2563EB" />
+              <MapPin size={14} color={COLORS.primary} />
               <Text style={styles.highlightText}>{job.location || 'MIDC Zone'}</Text>
             </View>
 
@@ -576,13 +577,13 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             <>
               <View style={styles.sectionDivider} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Sparkles size={16} color="#2563EB" />
+                <Sparkles size={16} color={COLORS.primary} />
                 <Text style={styles.sectionHeaderTitle}>Key Technical Skills & Trade</Text>
               </View>
               <View style={styles.bulletList}>
                 {job.skills.map((skill, idx) => (
                   <View key={idx} style={styles.bulletItem}>
-                    <CheckCircle2 size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <CheckCircle2 size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                     <Text style={styles.bulletText}>{skill}</Text>
                   </View>
                 ))}
@@ -603,7 +604,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               <View style={styles.bulletList}>
                 {job.responsibilities.map((resp, idx) => (
                   <View key={idx} style={styles.bulletItem}>
-                    <CheckCircle2 size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <CheckCircle2 size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                     <Text style={styles.bulletText}>{resp}</Text>
                   </View>
                 ))}
@@ -660,14 +661,14 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             <>
               <View style={styles.sectionDivider} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Calendar size={16} color="#2563EB" />
+                <Calendar size={16} color={COLORS.primary} />
                 <Text style={styles.sectionHeaderTitle}>Interview Schedule & Walk-In Pass</Text>
               </View>
 
               <View style={{ gap: 10 }}>
                 {/* Date & Time */}
                 <View style={styles.interviewRowPlain}>
-                  <Clock size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <Clock size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.interviewLabelPlain}>Date & Time</Text>
                     <Text style={styles.interviewValuePlain}>
@@ -679,7 +680,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
                 {/* Venue Address */}
                 <View style={styles.interviewRowPlain}>
-                  <MapPin size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.interviewLabelPlain}>Interview Venue & Address</Text>
                     <Text style={styles.interviewValuePlain}>
@@ -690,7 +691,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
                 {/* Documents to Carry */}
                 <View style={styles.interviewRowPlain}>
-                  <FileText size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                  <FileText size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.interviewLabelPlain}>Documents to Carry</Text>
                     <Text style={styles.interviewValuePlain}>
@@ -702,7 +703,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                 {/* HR Contact */}
                 {(appliedItem?.hrContactPerson || appliedItem?.hrPhone) ? (
                   <View style={styles.interviewRowPlain}>
-                    <Phone size={15} color="#2563EB" style={{ marginTop: 2 }} />
+                    <Phone size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.interviewLabelPlain}>Recruiter HR Contact</Text>
                       <Text style={styles.interviewValuePlain}>
@@ -723,7 +724,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                         Linking.openURL(mapsUrl);
                       }}
                     >
-                      <MapPin size={14} color="#2563EB" />
+                      <MapPin size={14} color={COLORS.primary} />
                       <Text style={styles.interviewMapBtnTextPlain}>Google Maps Directions</Text>
                     </TouchableOpacity>
                   )}
@@ -767,7 +768,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             const st = (appliedItem?.status || 'applied').toLowerCase();
             let bg = '#F0FDF4';
             let borderColor = '#BBF7D0';
-            let textColor = '#2563EB';
+            let textColor = COLORS.primary;
             let IconComp = Send;
             let statusTitle = 'Applied';
             let statusSub = 'Employer received your candidate profile & CV specs.';
@@ -775,7 +776,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             if (st === 'reviewed' || st === 'under_review') {
               bg = '#EFF6FF';
               borderColor = '#BFDBFE';
-              textColor = '#1D4ED8';
+              textColor = COLORS.primary;
               IconComp = Clock;
               statusTitle = 'Under Review';
               statusSub = 'Employer HR team is reviewing your application.';
@@ -917,7 +918,7 @@ const styles = StyleSheet.create({
   midcText: {
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
     marginTop: 2,
   },
   topRightActionsRow: {
@@ -941,7 +942,7 @@ const styles = StyleSheet.create({
   skillChipText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   bookmarkBtn: {
     padding: 4,
@@ -1075,7 +1076,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 13,
     borderRadius: 0,
   },
@@ -1084,7 +1085,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 13,
     borderRadius: 0,
     width: '100%',
@@ -1159,14 +1160,14 @@ const styles = StyleSheet.create({
   interviewMapBtnTextPlain: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   interviewCallBtnPlain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 9,
     paddingHorizontal: 16,
     borderRadius: 0,
@@ -1252,11 +1253,11 @@ const styles = StyleSheet.create({
   resumeInfoTitle: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: COLORS.primary,
   },
   resumeInfoDesc: {
     fontSize: 11,
-    color: '#3B82F6',
+    color: COLORS.primary,
     marginTop: 1,
   },
   manageResumeBtn: {
@@ -1270,7 +1271,7 @@ const styles = StyleSheet.create({
   manageResumeBtnText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   candidateBioCard: {
     backgroundColor: '#FFFFFF',
@@ -1341,7 +1342,7 @@ const styles = StyleSheet.create({
   bioSectionHeaderTitle: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.5,
   },
   specsGrid: {
@@ -1545,7 +1546,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingVertical: 13,
     borderRadius: 8,
   },

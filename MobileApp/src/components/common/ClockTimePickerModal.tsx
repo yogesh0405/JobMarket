@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -107,7 +108,7 @@ export const ClockTimePickerModal: React.FC<Props> = ({
         <TouchableOpacity activeOpacity={1} style={styles.pickerCard} onPress={(e) => e.stopPropagation()}>
           {/* Header Title */}
           <View style={styles.headerBox}>
-            <Clock size={16} color="#2563EB" />
+            <Clock size={16} color={COLORS.primary} />
             <Text style={styles.headerTitle}>SELECT INTERVIEW TIME</Text>
           </View>
 
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.8,
   },
   digitalBadgeContainer: {
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
   digitalBadgeText: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   columnLabelsRow: {
     flexDirection: 'row',
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   okBtnText: {
     fontSize: 12.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.5,
   },
 });

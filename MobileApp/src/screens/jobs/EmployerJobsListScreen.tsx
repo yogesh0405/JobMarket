@@ -164,7 +164,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             {logoUri ? (
               <Image source={{ uri: logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
             ) : (
-              <Building2 size={20} color="#2563EB" />
+              <Building2 size={20} color={COLORS.primary} />
             )}
           </View>
 
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   industryTabPillActive: {
     backgroundColor: 'transparent',
-    borderBottomColor: '#2563EB',
+    borderBottomColor: COLORS.primary,
   },
   industryTabText: {
     fontSize: 13,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   industryTabTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '700',
   },
   tabCountBadge: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   tabCountTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   listContent: {
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   dotSeparator: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   pendingCardNoticeInline: {
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   metaInline: {
     flexDirection: 'row',

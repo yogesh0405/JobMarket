@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../constants/theme';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
   },
   toastText: {
     ...TYPOGRAPHY.body,
+    fontFamily: FONTS.semibold,
     fontWeight: '600',
     color: COLORS.textWhite,
     flex: 1,

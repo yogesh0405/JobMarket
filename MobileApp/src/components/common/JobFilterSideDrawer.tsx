@@ -1,3 +1,4 @@
+import { COLORS } from '../../constants/theme';
 import React, { useState } from 'react';
 import {
   View,
@@ -38,6 +39,7 @@ export interface FilterOptions {
   minExperience: string;
   salaryMin: number;
   midcZone: string;
+  distance?: string;
   busFacility: boolean;
   canteen: boolean;
   accommodation: boolean;
@@ -163,7 +165,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {ind}
                   </Text>
-                  {isActive && <Check size={18} color="#2563EB" strokeWidth={2.5} />}
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
                 </TouchableOpacity>
               );
             })}
@@ -186,7 +188,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {zone}
                   </Text>
-                  {isActive && <Check size={18} color="#2563EB" strokeWidth={2.5} />}
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
                 </TouchableOpacity>
               );
             })}
@@ -209,7 +211,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {jt}
                   </Text>
-                  {isActive && <Check size={18} color="#2563EB" strokeWidth={2.5} />}
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
                 </TouchableOpacity>
               );
             })}
@@ -232,7 +234,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {wm}
                   </Text>
-                  {isActive && <Check size={18} color="#2563EB" strokeWidth={2.5} />}
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
                 </TouchableOpacity>
               );
             })}
@@ -255,7 +257,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {exp}
                   </Text>
-                  {isActive && <Check size={18} color="#2563EB" strokeWidth={2.5} />}
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
                 </TouchableOpacity>
               );
             })}
@@ -272,7 +274,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
               onPress={() => setFilters({ ...filters, busFacility: !filters.busFacility })}
             >
               <View style={styles.facilityLabelWrap}>
-                <Bus size={18} color="#2563EB" />
+                <Bus size={18} color={COLORS.primary} />
                 <Text style={styles.facilityLabelText}>Bus / Company Transport Facility</Text>
               </View>
               <View style={[styles.checkboxSquare, filters.busFacility && styles.checkboxSquareActive]}>
@@ -381,7 +383,7 @@ const styles = StyleSheet.create({
   headerCountPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   scrollBody: {
     flex: 1,
@@ -408,7 +410,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -431,7 +433,7 @@ const styles = StyleSheet.create({
   cleanOptionTextActive: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   sectionDivider: {
     height: 1.5,
@@ -460,8 +462,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   checkboxSquareActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   fixedFooter: {
     position: 'absolute',
@@ -503,7 +505,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 0,
     height: 48,
   },

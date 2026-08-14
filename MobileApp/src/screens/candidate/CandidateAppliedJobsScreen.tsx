@@ -111,12 +111,12 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderStatusBadge = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
-    let color = '#2563EB';
+    let color = COLORS.primary;
     let label = 'Applied';
     let IconComp = Send;
 
     if (s === 'reviewed' || s === 'under_review') {
-      color = '#1D4ED8';
+      color = COLORS.primary;
       label = 'Under Review';
       IconComp = Clock;
     } else if (s === 'shortlisted') {
@@ -188,7 +188,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
           {/* Header summary bar */}
           <View style={styles.summaryBar}>
@@ -197,7 +197,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.summarySub}>Track status & interview calls</Text>
             </View>
             <View style={styles.countBadge}>
-              <ClipboardList size={14} color="#2563EB" />
+              <ClipboardList size={14} color={COLORS.primary} />
               <Text style={styles.countBadgeText}>{appliedList.length} Total</Text>
             </View>
           </View>
@@ -256,7 +256,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   {/* Metadata Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaInlineItem}>
-                      <MapPin size={12} color="#2563EB" />
+                      <MapPin size={12} color={COLORS.primary} />
                       <Text style={styles.metaInlineText}>{job.location || 'MIDC Zone'}</Text>
                     </View>
 
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   findJobsBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 6,
@@ -576,6 +576,6 @@ const styles = StyleSheet.create({
   viewJobBtnText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
 });
