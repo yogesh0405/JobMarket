@@ -718,7 +718,8 @@ export class JobController {
     try {
       const id = req.params.id as string;
       const userId = req.params.userId as string;
-      const { interviewDate, interviewTime, venueAddress, mapsLink } = req.body;
+      const { interviewDate, interviewTime, venueAddress, interviewLocation, mapsLink } = req.body;
+      const finalVenueAddress = venueAddress || interviewLocation || req.body.interviewAddress || 'Industrial Plant Main Gate';
       const employerId = req.user!.userId;
       const role = req.user!.role;
 
@@ -727,8 +728,8 @@ export class JobController {
         return;
       }
 
-      if (!interviewDate || !interviewTime || !venueAddress) {
-        res.status(400).json({ success: false, message: 'Date, time, and venue address are required' });
+      if (!interviewDate || !interviewTime) {
+        res.status(400).json({ success: false, message: 'Interview date and time are required' });
         return;
       }
 
@@ -745,7 +746,7 @@ export class JobController {
       const data = await JobRepository.scheduleInterview(id, userId, employerId, {
         interviewDate,
         interviewTime,
-        venueAddress,
+        venueAddress: finalVenueAddress,
         mapsLink
       });
 
@@ -877,6 +878,20 @@ export class JobController {
       const employerId = req.user!.userId;
       const analytics = await JobRepository.getEmployerAnalytics(employerId);
       res.status(200).json({ success: true, data: analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/jobs/interviews/my-interviews
+   * Returns { upcoming: [...], past: [...] } interview schedule for authenticated candidate
+   */
+  static async getMyInterviews(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const data = await JobRepository.getInterviewsForCandidate(userId);
+      res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
     }

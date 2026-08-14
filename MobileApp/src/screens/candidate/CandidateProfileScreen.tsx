@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
 import {
   View,
@@ -153,6 +154,16 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
     }
   }, [route?.params]);
 
+  // Reset to About tab every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // Only reset to PROFILE if no explicit DASHBOARD param is passed
+      if (route?.params?.initialTab !== 'DASHBOARD' && route?.params?.tab !== 'DASHBOARD') {
+        setActiveTab('PROFILE');
+      }
+    }, [route?.params])
+  );
+
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoadingDashboard(true);
@@ -185,7 +196,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
     const s = (statusStr || '').toUpperCase();
     let bg = '#EFF6FF';
     let border = '#BFDBFE';
-    let text = '#2563EB';
+    let text = COLORS.primary;
     let label = 'APPLIED';
 
     if (s.includes('SHORTLIST')) {
@@ -971,7 +982,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
                     }}
                   >
                     <Text style={[styles.pickerItemText, isSel && styles.pickerItemTextActive]}>{t}</Text>
-                    {isSel ? <CheckCircle2 size={16} color="#2563EB" /> : null}
+                    {isSel ? <CheckCircle2 size={16} color={COLORS.primary} /> : null}
                   </TouchableOpacity>
                 );
               })}
@@ -1012,7 +1023,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
                     }}
                   >
                     <Text style={[styles.pickerItemText, isSel && styles.pickerItemTextActive]}>{shift}</Text>
-                    {isSel ? <CheckCircle2 size={16} color="#2563EB" /> : null}
+                    {isSel ? <CheckCircle2 size={16} color={COLORS.primary} /> : null}
                   </TouchableOpacity>
                 );
               })}
@@ -1035,7 +1046,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F7F7F7',
   },
   topOverscrollBlueFill: {
     position: 'absolute',
@@ -1273,7 +1284,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   scrollContentBody: {
-    paddingTop: 14,
+    paddingTop: 8,
     paddingBottom: 130,
   },
   cardsStackWrapper: {
@@ -1285,7 +1296,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 4,
     padding: 16,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
   },
   cardBlockHeaderRow: {
     flexDirection: 'row',
@@ -1367,7 +1378,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2.5,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
   tabSegmentText: {
@@ -1377,7 +1388,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   tabSegmentTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
@@ -1422,7 +1433,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -1499,7 +1510,7 @@ const styles = StyleSheet.create({
   verifiedBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
     letterSpacing: 0.3,
   },
   completenessHeaderRow: {
@@ -1615,7 +1626,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   pickerItemTextActive: {
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '800',
   },
   textArea: {
@@ -1638,8 +1649,8 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
   },
   tradePillActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   tradePillText: {
     fontSize: 12,
@@ -1660,8 +1671,8 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
   },
   shiftTabActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   shiftTabText: {
     fontSize: 12,
@@ -1694,7 +1705,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     borderRadius: 0,
     justifyContent: 'center',
@@ -1724,7 +1735,7 @@ const styles = StyleSheet.create({
   skillChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   card3D: {
     backgroundColor: '#FFFFFF',
@@ -1753,7 +1764,7 @@ const styles = StyleSheet.create({
   addBtnSmallText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   emptySubText: {
     fontSize: 12,
@@ -1794,7 +1805,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     borderTopWidth: 3,
-    borderTopColor: '#2563EB',
+    borderTopColor: COLORS.primary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1848,7 +1859,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   emptyApplicationsBox: {
     padding: 20,
@@ -1871,7 +1882,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 0,
@@ -1963,7 +1974,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     height: 48,
     borderRadius: 0,
     marginTop: 4,

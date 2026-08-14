@@ -17,6 +17,8 @@ import { CandidateResumeScreen } from '../screens/candidate/CandidateResumeScree
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
 import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
 import { CandidateJobMapScreen } from '../screens/candidate/CandidateJobMapScreen';
+import { CandidateJobMapViewScreen } from '../screens/candidate/CandidateJobMapViewScreen';
+import { CandidateInterviewsScreen } from '../screens/candidate/CandidateInterviewsScreen';
 import { NotificationScreen } from '../screens/notifications/NotificationScreen';
 
 import { EmployerBannersScreen } from '../screens/advertisements/EmployerBannersScreen';
@@ -54,7 +56,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Notifications" component={NotificationScreen} />
           <Stack.Screen name="CandidateJobMap" component={CandidateJobMapScreen} />
+          <Stack.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
           <Stack.Screen name="CandidateMap" component={CandidateJobMapScreen} />
+          <Stack.Screen name="MyInterviews" component={CandidateInterviewsScreen} />
         </>
       ) : (
         // Employer App Stack (RBAC)

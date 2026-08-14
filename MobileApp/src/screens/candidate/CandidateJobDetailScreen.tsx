@@ -6,48 +6,35 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  TextInput,
-  ActivityIndicator,
   Alert,
-  Image,
   Share,
   Platform,
-  Linking,
 } from 'react-native';
 import {
   MapPin,
   Briefcase,
-  Clock,
-  Building2,
   Bookmark,
   Users,
   CheckCircle2,
   Award,
   Send,
-  X,
   IndianRupee,
   Calendar,
   Layers,
   Sparkles,
   FileText,
-  User,
-  Mail,
-  Phone,
-  Wrench,
-  GraduationCap,
-  AlertTriangle,
-  AlertCircle,
-  Check,
-  ArrowRight,
-  ShieldCheck,
   Share2,
+  ChevronLeft,
+  Clock,
+  Building2,
+  Wrench,
+  Check,
+  Utensils,
 } from 'lucide-react-native';
 import { jobsApi } from '../../api/jobsApi';
 import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
-import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -68,24 +55,15 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     const str = input.trim();
     if (str.includes('/') || str.includes('?')) {
       const queryMatch = str.match(/[?&](?:jobId|id|job_id)=([^&]+)/i);
-      if (queryMatch && queryMatch[1]) {
-        return queryMatch[1];
-      }
-
+      if (queryMatch && queryMatch[1]) return queryMatch[1];
       const uuidMatch = str.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
       if (uuidMatch) return uuidMatch[1];
-
       const urlClean = str.split('?')[0].split('#')[0];
       const matchJobPath = urlClean.match(/job[s]?\/([^\/]+)/i);
-      if (matchJobPath && matchJobPath[1]) {
-        return matchJobPath[1];
-      }
-
+      if (matchJobPath && matchJobPath[1]) return matchJobPath[1];
       const segments = urlClean.split('/').filter(Boolean);
       const lastSeg = segments[segments.length - 1];
-      if (lastSeg && lastSeg !== 'job' && lastSeg !== 'jobs') {
-        return lastSeg;
-      }
+      if (lastSeg && lastSeg !== 'job' && lastSeg !== 'jobs') return lastSeg;
     }
     return str;
   };
@@ -96,12 +74,13 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const findSeedJob = (targetId?: string): Job | undefined => {
     if (!targetId) return undefined;
     const cleanId = String(targetId).trim().toLowerCase();
-    return FALLBACK_SEED_JOBS.find(j =>
-      j.id.toLowerCase() === cleanId ||
-      j.id.toLowerCase() === `j${cleanId}` ||
-      cleanId === `j${j.id.toLowerCase()}` ||
-      cleanId.includes(j.id.toLowerCase()) ||
-      j.title.toLowerCase().includes(cleanId)
+    return FALLBACK_SEED_JOBS.find(
+      (j) =>
+        j.id.toLowerCase() === cleanId ||
+        j.id.toLowerCase() === `j${cleanId}` ||
+        cleanId === `j${j.id.toLowerCase()}` ||
+        cleanId.includes(j.id.toLowerCase()) ||
+        j.title.toLowerCase().includes(cleanId)
     );
   };
 
@@ -117,86 +96,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [appliedItem, setAppliedItem] = useState<any>(null);
-  const [applyModalOpen, setApplyModalOpen] = useState(false);
-  const [expectedSalary, setExpectedSalary] = useState('');
-  const [coverNote, setCoverNote] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  // Extract candidate profile specs matching Web App 100%
-  const skillsList: string[] = Array.isArray(user?.skills)
-    ? user.skills
-    : typeof user?.skills === 'string'
-    ? (user.skills as string).split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  const expList: any[] = Array.isArray(user?.experience)
-    ? user.experience
-    : typeof user?.experience === 'string'
-    ? ((): any[] => { try { return JSON.parse(user.experience); } catch (_) { return []; } })()
-    : [];
-
-  const eduList: any[] = Array.isArray(user?.education)
-    ? user.education
-    : typeof user?.education === 'string'
-    ? ((): any[] => { try { return JSON.parse(user.education); } catch (_) { return []; } })()
-    : [];
-
-  const hasResume = !!(user?.resume_url || user?.resumeUrl || (user as any)?.resume?.url || (user as any)?.resume?.name);
-
-  // Calculate all missing profile sections
-  const missingSections: string[] = [];
-  if (!user?.phone) missingSections.push('Phone Number');
-  if (!user?.location) missingSections.push('Location');
-  if (!user?.tradeSpecialization && !user?.trade_specialization && !user?.headline) missingSections.push('Primary Trade');
-  if (!user?.preferredShift && !user?.preferred_shift) missingSections.push('Preferred Shift');
-  if (skillsList.length < 5) missingSections.push(`Skills (${skillsList.length}/5 min)`);
-  if (expList.length === 0) missingSections.push('Work Experience');
-  if (eduList.length === 0) missingSections.push('Education');
-  if (!hasResume) missingSections.push('Resume CV Document');
-
-  useEffect(() => {
-    const paramId = extractJobIdFromUrl(route?.params?.jobId || route?.params?.id || route?.params?.job_id);
-    if (paramId && paramId !== activeJobId) {
-      setActiveJobId(paramId);
-    }
-  }, [route?.params]);
-
-  useEffect(() => {
-    const handleUrl = (url: string | null) => {
-      if (url) {
-        const foundId = extractJobIdFromUrl(url);
-        if (foundId) setActiveJobId(foundId);
-      }
-    };
-
-    Linking.getInitialURL().then(handleUrl).catch(() => {});
-    const subscription = Linking.addEventListener('url', (event: { url: string }) => {
-      handleUrl(event.url);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    const syncFromStore = () => {
-      if (!activeJobId) return;
-      const allApplied = appliedJobsStore.getAppliedJobs();
-      const match = allApplied.find((a: any) =>
-        (a.jobId || a.job?.id || a.id) === activeJobId ||
-        String(a.jobId) === String(activeJobId)
-      );
-      if (match) {
-        setHasApplied(true);
-        setAppliedItem(match);
-      }
-    };
-
-    syncFromStore();
-    const unsubscribe = appliedJobsStore.subscribe(syncFromStore);
-    return () => unsubscribe();
-  }, [activeJobId]);
 
   useEffect(() => {
     const jobId = activeJobId;
@@ -233,37 +132,42 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         if (mounted) setLoading(false);
       }
 
-      // 2. Fetch saved/applied state in background ONLY if user is logged in
       if (mounted && user) {
-        candidateApi.getSavedJobs().then((savedRes) => {
-          if (mounted && savedRes) {
-            const savedData: any = savedRes;
-            let savedList: any[] = [];
-            if (Array.isArray(savedData)) savedList = savedData;
-            else if (savedData?.data) savedList = savedData.data;
-            const savedIds = savedList.map((j: any) => j.id || j.jobId);
-            setIsSaved(savedIds.includes(jobId));
-          }
-        }).catch(() => {});
-
-        candidateApi.getAppliedJobs().then((appliedRes) => {
-          if (mounted && appliedRes) {
-            const appliedData: any = appliedRes;
-            let appliedList: any[] = [];
-            if (Array.isArray(appliedData)) appliedList = appliedData;
-            else if (appliedData?.data) appliedList = appliedData.data;
-            
-            appliedJobsStore.setAppliedJobs(appliedList);
-            const matchApp = appliedList.find((item: any) =>
-              (item.jobId || item.job?.id || item.id) === jobId ||
-              String(item.jobId) === String(jobId)
-            );
-            if (matchApp) {
-              setHasApplied(true);
-              setAppliedItem(matchApp);
+        candidateApi
+          .getSavedJobs()
+          .then((savedRes) => {
+            if (mounted && savedRes) {
+              const savedData: any = savedRes;
+              let savedList: any[] = [];
+              if (Array.isArray(savedData)) savedList = savedData;
+              else if (savedData?.data) savedList = savedData.data;
+              const savedIds = savedList.map((j: any) => j.id || j.jobId);
+              setIsSaved(savedIds.includes(jobId));
             }
-          }
-        }).catch(() => {});
+          })
+          .catch(() => {});
+
+        candidateApi
+          .getAppliedJobs()
+          .then((appliedRes) => {
+            if (mounted && appliedRes) {
+              const appliedData: any = appliedRes;
+              let appliedList: any[] = [];
+              if (Array.isArray(appliedData)) appliedList = appliedData;
+              else if (appliedData?.data) appliedList = appliedData.data;
+
+              appliedJobsStore.setAppliedJobs(appliedList);
+              const matchApp = appliedList.find(
+                (item: any) =>
+                  (item.jobId || item.job?.id || item.id) === jobId || String(item.jobId) === String(jobId)
+              );
+              if (matchApp) {
+                setHasApplied(true);
+                setAppliedItem(matchApp);
+              }
+            }
+          })
+          .catch(() => {});
       }
     };
 
@@ -277,14 +181,10 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   const handleToggleSave = () => {
     if (!user) {
-      Alert.alert(
-        'Sign In Required',
-        'Please sign in or create an account to save job vacancies.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => navigation.navigate('EmployerLogin') },
-        ]
-      );
+      Alert.alert('Sign In Required', 'Please sign in or create an account to save job vacancies.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => navigation.navigate('EmployerLogin') },
+      ]);
       return;
     }
     if (!jobId) return;
@@ -297,8 +197,12 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const handleShareJob = async () => {
     const targetJob = job || passedJob;
     const jobIdStr = jobId || targetJob?.id || '';
-    const canonicalHttpsUrl = jobIdStr ? `https://job-market-wine.vercel.app/job/${jobIdStr}` : 'https://job-market-wine.vercel.app';
-    const titleStr = targetJob?.title ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}` : 'Industrial Job Vacancy';
+    const canonicalHttpsUrl = jobIdStr
+      ? `https://job-market-wine.vercel.app/job/${jobIdStr}`
+      : 'https://job-market-wine.vercel.app';
+    const titleStr = targetJob?.title
+      ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}`
+      : 'Industrial Job Vacancy';
     const locationStr = targetJob?.location || 'MIDC Industrial Zone';
 
     let salStr = 'Competitive Salary Package';
@@ -324,49 +228,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     }
   };
 
-  const handleApplySubmit = async () => {
-    if (!jobId) return;
-    setSubmitting(true);
-    try {
-      const payload = {
-        coverNote: coverNote.trim() || undefined,
-        expectedSalary: expectedSalary.trim() || undefined,
-        resumeUrl: user?.resume_url || user?.resumeUrl || undefined,
-        candidateName: user?.name || undefined,
-        candidatePhone: user?.phone || undefined,
-        candidateEmail: user?.email || undefined,
-      };
-
-      const res = await candidateApi.applyForJob(jobId, payload);
-      setSubmitting(false);
-      setApplyModalOpen(false);
-
-      if (res && (res.success || (res as any).status === 200 || (res as any).ok)) {
-        setHasApplied(true);
-        Alert.alert(
-          'Application Delivered Successfully! 🎉',
-          `Your application for "${job?.title}" has been transmitted directly to ${job?.company || 'the employer'}.\n\nIt is now listed under your "Applied Jobs" tab.`,
-          [
-            {
-              text: 'View Applied Jobs',
-              onPress: () => navigation.navigate('CandidateAppliedTab'),
-            },
-            { text: 'OK', style: 'cancel' },
-          ]
-        );
-      } else {
-        const errorMsg = res?.message || res?.error || 'Failed to submit application. Please try again.';
-        showToast(errorMsg, 'error');
-        Alert.alert('Application Failed', errorMsg);
-      }
-    } catch (e: any) {
-      setSubmitting(false);
-      const errorMsg = e?.message || 'Failed to submit application. Please check your internet connection.';
-      showToast(errorMsg, 'error');
-      Alert.alert('Application Failed', errorMsg);
-    }
-  };
-
   const handleBackNavigation = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -378,64 +239,13 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="Job Details" onBack={handleBackNavigation} />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.singleMasterCard}>
-            {/* Header Banner Skeleton */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <SkeletonLoader width={46} height={46} style={{ borderRadius: 0 }} />
-              <View style={{ flex: 1, gap: 8 }}>
-                <SkeletonLoader width="70%" height={18} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width="45%" height={13} style={{ borderRadius: 0 }} />
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Quick Highlights Skeleton */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              <SkeletonLoader width={100} height={14} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width={85} height={14} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width={90} height={14} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width={105} height={14} style={{ borderRadius: 0 }} />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Salary Section Skeleton */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <SkeletonLoader width={140} height={14} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width={150} height={16} style={{ borderRadius: 0 }} />
-            </View>
-
-            <View style={styles.sectionDivider} />
-
-            {/* Technical Skills Skeleton */}
-            <SkeletonLoader width={180} height={16} style={{ borderRadius: 0 }} />
-            <View style={{ gap: 8, marginTop: 4 }}>
-              <SkeletonLoader width="90%" height={13} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="75%" height={13} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="80%" height={13} style={{ borderRadius: 0 }} />
-            </View>
-
-            <View style={styles.sectionDivider} />
-
-            {/* Overview Skeleton */}
-            <SkeletonLoader width={160} height={16} style={{ borderRadius: 0 }} />
-            <View style={{ gap: 6, marginTop: 4 }}>
-              <SkeletonLoader width="98%" height={13} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="95%" height={13} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="60%" height={13} style={{ borderRadius: 0 }} />
-            </View>
-
-            <View style={styles.sectionDivider} />
-
-            {/* Responsibilities Skeleton */}
-            <SkeletonLoader width={170} height={16} style={{ borderRadius: 0 }} />
-            <View style={{ gap: 8, marginTop: 4 }}>
-              <SkeletonLoader width="88%" height={13} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="82%" height={13} style={{ borderRadius: 0 }} />
-            </View>
+        <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
+          <View style={styles.profileHeaderMasterCard}>
+            <SkeletonLoader width="100%" height={110} style={{ borderRadius: 0 }} />
+          </View>
+          <View style={styles.cardBlockContainer}>
+            <SkeletonLoader width="70%" height={20} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width="40%" height={14} style={{ borderRadius: 0, marginTop: 8 }} />
           </View>
         </ScrollView>
       </View>
@@ -445,18 +255,41 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (!job) {
     return (
       <View style={styles.container}>
-        <Header title="Job Details" onBack={handleBackNavigation} />
+        <View style={{ paddingTop: Math.max(insets.top, 12), paddingHorizontal: 16 }}>
+          <TouchableOpacity onPress={handleBackNavigation} style={{ padding: 6 }}>
+            <ChevronLeft size={24} color="#0F172A" />
+          </TouchableOpacity>
+        </View>
+
         <View style={{ flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', padding: 24, borderRadius: 0, width: '100%', alignItems: 'center', gap: 12 }}>
-            <AlertCircle size={44} color="#DC2626" />
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Job Vacancy Unavailable</Text>
-            <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 18 }}>This job listing is no longer active, has expired, or was removed by the employer.</Text>
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderWidth: 1,
+              borderColor: '#CBD5E1',
+              padding: 24,
+              borderRadius: 0,
+              width: '100%',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>Job Vacancy Not Found</Text>
+            <Text style={{ fontSize: 12.5, color: '#64748B', textAlign: 'center' }}>
+              The requested job opening may have been filled or expired.
+            </Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              style={{ backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 }}
+              style={{
+                backgroundColor: COLORS.primary,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 0,
+                marginTop: 6,
+              }}
               onPress={handleBackNavigation}
             >
-              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Back to Jobs</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>Browse Other Jobs</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -464,8 +297,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     );
   }
 
-  const logoUrl = job.companyLogo || (job as any).company_logo;
-  const midcZoneVal = (job as any).midcZone || (job as any).midc_zone;
+  const logoUrl = job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo;
 
   const perksList: string[] = job.perks || [];
   if (job.bus_facility || job.busFacility) perksList.push('Bus / Transport Facility');
@@ -476,115 +308,164 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (job.attendance_bonus || job.attendanceBonus) perksList.push('Attendance Bonus');
 
   const uniquePerks = Array.from(new Set(perksList));
+  const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
+  const maxExp = job.max_experience ?? (job as any).maxExperience ?? 3;
+
+  const getPerkMeta = (perk: string) => {
+    const p = perk.toLowerCase();
+    if (p.includes('canteen') || p.includes('food') || p.includes('meal')) {
+      return { icon: Utensils, color: '#059669', bg: '#ECFDF5', tag: 'Canteen Facility' };
+    }
+    if (p.includes('bus') || p.includes('transport') || p.includes('cab')) {
+      return { icon: MapPin, color: COLORS.primary, bg: '#EFF6FF', tag: 'Factory Transport' };
+    }
+    if (p.includes('hostel') || p.includes('accommodation') || p.includes('room')) {
+      return { icon: Building2, color: '#7C3AED', bg: '#F5F3FF', tag: 'Free Residence' };
+    }
+    if (p.includes('overtime') || p.includes('ot')) {
+      return { icon: Clock, color: '#D97706', bg: '#FEF3C7', tag: 'OT Pay 1.5x' };
+    }
+    if (p.includes('bonus') || p.includes('joining') || p.includes('attendance')) {
+      return { icon: Sparkles, color: '#0284C7', bg: '#F0F9FF', tag: 'Monthly Bonus' };
+    }
+    return { icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4', tag: 'Verified Benefit' };
+  };
 
   return (
     <View style={styles.container}>
-      <Header title="Job Details" onBack={handleBackNavigation} />
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Single Master Card Container */}
-        <View style={styles.singleMasterCard}>
-          {/* SECTION 1: Banner & Header */}
-          <View style={styles.bannerTopRow}>
-            {/* Left Company Logo */}
-            <CompanyLogoAvatar
-              logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
-              companyName={job.company}
-              size={46}
-              borderRadius={0}
-            />
-
-            {/* Center Title & Company Stack */}
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={styles.jobTitle}>{job.title}</Text>
-              <Text style={styles.companyName}>{job.company || 'Industrial Enterprise'}</Text>
-              {midcZoneVal ? (
-                <Text style={styles.midcText}>MIDC Zone: {midcZoneVal}</Text>
-              ) : null}
-            </View>
-
-            {/* Right Top Actions (Share + Save) */}
-            <View style={styles.topRightActionsRow}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContentBody}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* FULL SCREEN TOP JOB HEADER MASTER CARD */}
+        <View style={styles.profileHeaderMasterCard}>
+          {/* Top Primary Color Header Band (Includes Back, Share, Save) */}
+          <View style={[styles.topHeaderBandPrimary, { height: 98 + insets.top, paddingTop: Math.max(insets.top + 4, 12) }]}>
+            <View style={styles.headerBandTopActions}>
+              {/* Back Arrow Navigation */}
               <TouchableOpacity
-                style={styles.shareBtnTop}
-                onPress={handleShareJob}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.backBtnHeader}
+                onPress={handleBackNavigation}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Share2 size={17} color={COLORS.primary} />
+                <ChevronLeft size={21} color="#FFFFFF" strokeWidth={2.5} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.bookmarkBtn}
-                onPress={handleToggleSave}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Bookmark
-                  size={17}
-                  color={isSaved ? COLORS.primary : '#94A3B8'}
-                  fill={isSaved ? COLORS.primary : 'transparent'}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
+              {/* Right Actions (Share + Save) */}
+              <View style={styles.topRightActionsRow}>
+                <TouchableOpacity
+                  style={styles.actionBtnHeader}
+                  onPress={handleShareJob}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Share2 size={17} color="#FFFFFF" />
+                </TouchableOpacity>
 
-          <View style={styles.divider} />
-
-          {/* Key Quick Highlights */}
-          <View style={styles.highlightsGrid}>
-            <View style={styles.highlightItem}>
-              <MapPin size={14} color={COLORS.primary} />
-              <Text style={styles.highlightText}>{job.location || 'MIDC Zone'}</Text>
-            </View>
-
-            <View style={styles.highlightItem}>
-              <Briefcase size={14} color="#64748B" />
-              <Text style={styles.highlightText}>{job.job_type || job.jobType || 'Full-time'}</Text>
-            </View>
-
-            <View style={styles.highlightItem}>
-              <Clock size={14} color="#64748B" />
-              <Text style={styles.highlightText}>{job.work_mode || job.workMode || 'On-site'}</Text>
-            </View>
-
-            <View style={styles.highlightItem}>
-              <Users size={14} color="#64748B" />
-              <Text style={styles.highlightText}>{job.openings ?? 1} Vacancies</Text>
-            </View>
-
-            {(job.shift_details || (job as any).shiftDetails) ? (
-              <View style={styles.highlightItem}>
-                <Layers size={14} color="#7C3AED" />
-                <Text style={styles.highlightText}>{job.shift_details || (job as any).shiftDetails}</Text>
+                <TouchableOpacity
+                  style={styles.actionBtnHeader}
+                  onPress={handleToggleSave}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Bookmark
+                    size={17}
+                    color="#FFFFFF"
+                    fill={isSaved ? '#FFFFFF' : 'transparent'}
+                  />
+                </TouchableOpacity>
               </View>
-            ) : null}
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Salary Section */}
-          <View style={styles.salaryRowSection}>
-            <Text style={styles.salaryTitle}>Offered Salary Package:</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <IndianRupee size={14} color="#15803D" />
-              <Text style={styles.salaryValue}>
-                ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000} / year
-              </Text>
             </View>
           </View>
 
-          {/* SECTION 2: Technical Skills */}
+          {/* Overlapping Centered Company Logo Avatar */}
+          <View style={[styles.overlappingAvatarContainer, { top: 52 + insets.top }]}>
+            <CompanyLogoAvatar
+              logoUrl={logoUrl}
+              companyName={job.company}
+              size={84}
+              borderRadius={42}
+            />
+          </View>
+
+          {/* Header Info Below Overlapping Avatar */}
+          <View style={styles.headerInfoContentStack}>
+            <Text style={styles.candidateNameTitleText}>{job.title}</Text>
+            <Text style={styles.candidateSpecializationSubText}>
+              {job.company || 'Industrial Partner'} • {job.location || 'MIDC Zone'}
+            </Text>
+
+            {/* Quick Metrics Row Below Title */}
+            <View style={styles.quickMetricsRowHeader}>
+              <View style={styles.quickMetricItem}>
+                <IndianRupee size={13} color={COLORS.primary} />
+                <Text style={styles.quickMetricValue}>
+                  ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000}
+                </Text>
+              </View>
+
+              <View style={styles.quickMetricDivider} />
+
+              <View style={styles.quickMetricItem}>
+                <Briefcase size={13} color="#64748B" />
+                <Text style={styles.quickMetricValueLabel}>
+                  {job.job_type || job.jobType || 'Full-Time'}
+                </Text>
+              </View>
+
+              <View style={styles.quickMetricDivider} />
+
+              <View style={styles.quickMetricItem}>
+                <Users size={13} color="#64748B" />
+                <Text style={styles.quickMetricValueLabel}>
+                  {job.openings ?? 1} Vacancy
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* FULL SCREEN MASTER BODY CONTAINER */}
+        <View style={styles.cardBlockContainer}>
+          {/* SECTION 1: Key Job Specifications Grid */}
+          <View style={styles.sectionHeaderRow}>
+            <Briefcase size={18} color={COLORS.primary} />
+            <Text style={styles.sectionTitleText}>Key Vacancy Specifications</Text>
+          </View>
+
+          <View style={styles.specGrid2Col}>
+            <View style={styles.specGridItem}>
+              <Text style={styles.specLabelText}>Trade / Role</Text>
+              <Text style={styles.specValueText}>{job.trade || job.title || 'Technical Specialist'}</Text>
+            </View>
+
+            <View style={styles.specGridItem}>
+              <Text style={styles.specLabelText}>Experience Required</Text>
+              <Text style={styles.specValueText}>{minExp} - {maxExp} Years</Text>
+            </View>
+
+            <View style={styles.specGridItem}>
+              <Text style={styles.specLabelText}>Work Mode</Text>
+              <Text style={styles.specValueText}>{job.work_mode || job.workMode || 'On-site (Shop Floor)'}</Text>
+            </View>
+
+            <View style={styles.specGridItem}>
+              <Text style={styles.specLabelText}>Shift Details</Text>
+              <Text style={styles.specValueText}>{job.shift_details || (job as any).shiftDetails || 'Day Shift (8:00 AM - 5:00 PM)'}</Text>
+            </View>
+          </View>
+
+          {/* SECTION 2: Technical Skills & Trade Chips */}
           {Array.isArray(job.skills) && job.skills.length > 0 ? (
             <>
-              <View style={styles.sectionDivider} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Sparkles size={16} color={COLORS.primary} />
-                <Text style={styles.sectionHeaderTitle}>Key Technical Skills & Trade</Text>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <Sparkles size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitleText}>Required Technical Skills</Text>
               </View>
-              <View style={styles.bulletList}>
+
+              <View style={styles.skillChipsRow}>
                 {job.skills.map((skill, idx) => (
-                  <View key={idx} style={styles.bulletItem}>
-                    <CheckCircle2 size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletText}>{skill}</Text>
+                  <View key={idx} style={styles.skillPillBadge}>
+                    <Text style={styles.skillPillText}>{skill}</Text>
                   </View>
                 ))}
               </View>
@@ -592,20 +473,28 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           ) : null}
 
           {/* SECTION 3: Job Overview & Description */}
-          <View style={styles.sectionDivider} />
-          <Text style={styles.sectionHeaderTitle}>Job Overview & Description</Text>
-          <Text style={styles.bodyText}>{job.description || 'No detailed description provided.'}</Text>
+          <View style={styles.sectionDividerSlate} />
+          <View style={styles.sectionHeaderRow}>
+            <FileText size={18} color={COLORS.primary} />
+            <Text style={styles.sectionTitleText}>Job Description & Role Summary</Text>
+          </View>
+          <Text style={styles.bodyTextText}>
+            {job.description || 'No detailed description provided for this industrial opening.'}
+          </Text>
 
           {/* SECTION 4: Key Responsibilities */}
           {Array.isArray(job.responsibilities) && job.responsibilities.length > 0 ? (
             <>
-              <View style={styles.sectionDivider} />
-              <Text style={styles.sectionHeaderTitle}>Key Responsibilities</Text>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <Layers size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitleText}>Key Responsibilities</Text>
+              </View>
               <View style={styles.bulletList}>
                 {job.responsibilities.map((resp, idx) => (
-                  <View key={idx} style={styles.bulletItem}>
+                  <View key={idx} style={styles.bulletItemRow}>
                     <CheckCircle2 size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletText}>{resp}</Text>
+                    <Text style={styles.bulletItemText}>{resp}</Text>
                   </View>
                 ))}
               </View>
@@ -615,142 +504,64 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           {/* SECTION 5: Requirements & ITI Certification */}
           {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
             <>
-              <View style={styles.sectionDivider} />
-              <Text style={styles.sectionHeaderTitle}>Requirements & ITI Certification</Text>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <Award size={18} color="#D97706" />
+                <Text style={styles.sectionTitleText}>Requirements & ITI Certification</Text>
+              </View>
               <View style={styles.bulletList}>
                 {job.requirements.map((req, idx) => (
-                  <View key={idx} style={styles.bulletItem}>
+                  <View key={idx} style={styles.bulletItemRow}>
                     <Award size={15} color="#D97706" style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletText}>{req}</Text>
+                    <Text style={styles.bulletItemText}>{req}</Text>
                   </View>
                 ))}
               </View>
             </>
           ) : null}
 
-          {/* SECTION 6: Walk-in Interview Venue & Address */}
-          {(job.interview_address || (job as any).interviewAddress) ? (
-            <>
-              <View style={styles.sectionDivider} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <Calendar size={16} color="#059669" />
-                <Text style={styles.sectionHeaderTitle}>Interview Venue & Address</Text>
-              </View>
-              <Text style={styles.bodyText}>{job.interview_address || (job as any).interviewAddress}</Text>
-            </>
-          ) : null}
-
-          {/* SECTION 7: Perks & Amenities */}
+          {/* SECTION 6: Perks & Facilities Offered */}
           {uniquePerks.length > 0 ? (
             <>
-              <View style={styles.sectionDivider} />
-              <Text style={styles.sectionHeaderTitle}>Perks & Facilities Offered</Text>
-              <View style={styles.bulletList}>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <CheckCircle2 size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitleText}>Perks & Facilities Offered</Text>
+              </View>
+
+              <View style={styles.perksInlineRow}>
                 {uniquePerks.map((perk, idx) => (
-                  <View key={idx} style={styles.bulletItem}>
-                    <CheckCircle2 size={15} color="#16A34A" style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletText}>{perk}</Text>
+                  <View key={idx} style={styles.perkInlineTag}>
+                    <Check size={13} color={COLORS.primary} strokeWidth={2.5} />
+                    <Text style={styles.perkInlineTagText}>{perk}</Text>
                   </View>
                 ))}
               </View>
             </>
           ) : null}
 
-          {/* SECTION 7.5: Live Interview Schedule & Walk-In Pass */}
-          {(hasApplied && ((appliedItem?.status || '').toLowerCase().includes('interview') || appliedItem?.interviewDate || appliedItem?.venueAddress || (job as any)?.interview_address)) ? (
+          {/* SECTION 7: Interview Venue & Address */}
+          {(job.interview_address || (job as any).interviewAddress) ? (
             <>
-              <View style={styles.sectionDivider} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Calendar size={16} color={COLORS.primary} />
-                <Text style={styles.sectionHeaderTitle}>Interview Schedule & Walk-In Pass</Text>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <Calendar size={18} color="#059669" />
+                <Text style={styles.sectionTitleText}>Interview Venue & Address</Text>
               </View>
-
-              <View style={{ gap: 10 }}>
-                {/* Date & Time */}
-                <View style={styles.interviewRowPlain}>
-                  <Clock size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.interviewLabelPlain}>Date & Time</Text>
-                    <Text style={styles.interviewValuePlain}>
-                      {appliedItem?.interviewDate || (job as any)?.interview_date || 'Date to be confirmed by HR'}
-                      {appliedItem?.interviewTime ? ` (${appliedItem.interviewTime})` : ''}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Venue Address */}
-                <View style={styles.interviewRowPlain}>
-                  <MapPin size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.interviewLabelPlain}>Interview Venue & Address</Text>
-                    <Text style={styles.interviewValuePlain}>
-                      {appliedItem?.venueAddress || appliedItem?.interviewAddress || (job as any)?.interview_address || job.location}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Documents to Carry */}
-                <View style={styles.interviewRowPlain}>
-                  <FileText size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.interviewLabelPlain}>Documents to Carry</Text>
-                    <Text style={styles.interviewValuePlain}>
-                      {appliedItem?.interviewDocuments || (job as any)?.walkInDocuments || 'Aadhaar Card, ITI Trade Certificate, Resume CV, 2 Passport Photos'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* HR Contact */}
-                {(appliedItem?.hrContactPerson || appliedItem?.hrPhone) ? (
-                  <View style={styles.interviewRowPlain}>
-                    <Phone size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.interviewLabelPlain}>Recruiter HR Contact</Text>
-                      <Text style={styles.interviewValuePlain}>
-                        {appliedItem?.hrContactPerson || 'HR Lead'} {appliedItem?.hrPhone ? `(${appliedItem.hrPhone})` : ''}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-
-                {/* Actions */}
-                <View style={styles.interviewActionRowPlain}>
-                  {(job?.google_maps_url || job?.googleMapsUrl || (job?.latitude && job?.longitude)) && (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      style={styles.interviewMapBtnPlain}
-                      onPress={() => {
-                        const mapsUrl = job?.google_maps_url || job?.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job?.location || '')}`;
-                        Linking.openURL(mapsUrl);
-                      }}
-                    >
-                      <MapPin size={14} color={COLORS.primary} />
-                      <Text style={styles.interviewMapBtnTextPlain}>Google Maps Directions</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {appliedItem?.hrPhone && (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      style={styles.interviewCallBtnPlain}
-                      onPress={() => {
-                        Linking.openURL(`tel:${appliedItem.hrPhone}`);
-                      }}
-                    >
-                      <Phone size={14} color="#FFFFFF" />
-                      <Text style={styles.interviewCallBtnTextPlain}>Call HR</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
+              <Text style={styles.bodyTextText}>
+                {job.interview_address || (job as any).interviewAddress}
+              </Text>
             </>
           ) : null}
 
-          {/* SECTION 8: Interactive Google Map Preview */}
+          {/* SECTION 8: Live Map Location Preview */}
           {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
             <>
-              <View style={styles.sectionDivider} />
-              <Text style={styles.sectionHeaderTitle}>Factory Location Map</Text>
+              <View style={styles.sectionDividerSlate} />
+              <View style={styles.sectionHeaderRow}>
+                <MapPin size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitleText}>Factory Location Map</Text>
+              </View>
               <JobLocationMapPreview
                 latitude={job.latitude}
                 longitude={job.longitude}
@@ -761,69 +572,44 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Action Bar */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
+      {/* FULL WIDTH STICKY BOTTOM ACTION BAR */}
+      <View style={[styles.bottomBarSticky, { paddingBottom: Math.max(insets.bottom, 6), paddingTop: 8 }]}>
         {hasApplied ? (
           (() => {
             const st = (appliedItem?.status || 'applied').toLowerCase();
-            let bg = '#F0FDF4';
-            let borderColor = '#BBF7D0';
-            let textColor = COLORS.primary;
-            let IconComp = Send;
-            let statusTitle = 'Applied';
-            let statusSub = 'Employer received your candidate profile & CV specs.';
+            let bg = '#DCFCE7';
+            let border = '#86EFAC';
+            let text = '#16A34A';
+            let label = 'APPLICATION SUBMITTED';
 
-            if (st === 'reviewed' || st === 'under_review') {
-              bg = '#EFF6FF';
-              borderColor = '#BFDBFE';
-              textColor = COLORS.primary;
-              IconComp = Clock;
-              statusTitle = 'Under Review';
-              statusSub = 'Employer HR team is reviewing your application.';
-            } else if (st === 'shortlisted') {
-              bg = '#F0F9FF';
-              borderColor = '#BAE6FD';
-              textColor = '#0284C7';
-              IconComp = Award;
-              statusTitle = 'Shortlisted';
-              statusSub = 'Profile passed initial screening for interview selection.';
-            } else if (st === 'interview' || st === 'interview_scheduled') {
+            if (st === 'shortlisted' || st === 'accepted' || st === 'hired') {
+              bg = '#DCFCE7';
+              border = '#86EFAC';
+              text = '#16A34A';
+              label = st === 'accepted' || st === 'hired' ? 'HIRED' : 'SHORTLISTED FOR INTERVIEW';
+            } else if (st === 'reviewed' || st === 'under_review') {
               bg = '#FEF3C7';
-              borderColor = '#FCD34D';
-              textColor = '#D97706';
-              IconComp = Calendar;
-              statusTitle = 'Interview';
-              statusSub = 'Interview invitation details released by recruiter.';
-            } else if (st === 'hired' || st === 'selected' || st === 'accepted') {
-              bg = '#ECFDF5';
-              borderColor = '#A7F3D0';
-              textColor = '#047857';
-              IconComp = CheckCircle2;
-              statusTitle = 'Hired';
-              statusSub = 'Congratulations! You have been selected for this position.';
+              border = '#FDE68A';
+              text = '#D97706';
+              label = 'APPLICATION UNDER REVIEW';
             } else if (st === 'rejected') {
-              bg = '#F8FAFC';
-              borderColor = '#CBD5E1';
-              textColor = '#DC2626';
-              IconComp = AlertCircle;
-              statusTitle = 'Rejected';
-              statusSub = 'Employer selected another candidate for this opening.';
+              bg = '#FEE2E2';
+              border = '#FCA5A5';
+              text = '#DC2626';
+              label = 'NOT SHORTLISTED';
             }
 
             return (
-              <View style={[styles.appliedBanner, { backgroundColor: bg, borderColor: borderColor }]}>
-                <IconComp size={18} color={textColor} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.appliedBannerText, { color: textColor }]} numberOfLines={1}>{statusTitle}</Text>
-                  <Text style={styles.appliedBannerSubtext} numberOfLines={1}>{statusSub}</Text>
-                </View>
+              <View style={[styles.appliedBannerBox, { backgroundColor: bg, borderColor: border }]}>
+                <CheckCircle2 size={18} color={text} />
+                <Text style={[styles.appliedBannerText, { color: text }]}>{label}</Text>
               </View>
             );
           })()
         ) : (
           <TouchableOpacity
             activeOpacity={0.85}
-            style={styles.applyNowBtn}
+            style={styles.applyNowBtnPrimary}
             onPress={() => {
               if (!user) {
                 Alert.alert(
@@ -845,7 +631,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             }}
           >
             <Send size={16} color="#FFFFFF" />
-            <Text style={styles.applyNowBtnText}>Apply now</Text>
+            <Text style={styles.applyNowBtnTextPrimary}>Apply Now</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -856,703 +642,256 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
-    gap: 16,
+  scrollContentBody: {
+    paddingTop: 0,
+    paddingBottom: 75,
   },
-  singleMasterCard: {
+  profileHeaderMasterCard: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 0,
     borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 16,
-    gap: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  sectionDivider: {
-    height: 1.5,
-    backgroundColor: '#CBD5E1',
-    marginVertical: 14,
-  },
-  bannerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  companyIconSquare: {
-    width: 44,
-    height: 44,
-    borderRadius: 0,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginHorizontal: 0,
+    marginTop: 0,
+    marginBottom: 0,
     overflow: 'hidden',
-    marginTop: 1,
   },
-  companyLogoImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
+  topHeaderBandPrimary: {
+    height: 98,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
-  jobTitle: {
-    fontSize: 16.5,
-    fontWeight: '900',
-    color: '#0F172A',
-    lineHeight: 22,
-  },
-  companyName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
+  headerBandTopActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 2,
   },
-  midcText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginTop: 2,
+  backBtnHeader: {
+    padding: 4,
+    backgroundColor: 'transparent',
   },
   topRightActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 14,
   },
-  skillsGrid: {
+  actionBtnHeader: {
+    padding: 4,
+    backgroundColor: 'transparent',
+  },
+  overlappingAvatarContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  headerInfoContentStack: {
+    paddingTop: 46,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  candidateNameTitleText: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  candidateSpecializationSubText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 3,
+    textAlign: 'center',
+  },
+  quickMetricsRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    width: '100%',
+  },
+  quickMetricItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  quickMetricValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  quickMetricValueLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  quickMetricDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#CBD5E1',
+  },
+  cardBlockContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0,
+    borderRadius: 0,
+    padding: 16,
+    marginHorizontal: 0,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  sectionTitleText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  specGrid2Col: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 12,
+    marginTop: 4,
   },
-  skillChip: {
+  specGridItem: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 10,
+    borderRadius: 0,
+  },
+  specLabelText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  specValueText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  skillChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  skillPillBadge: {
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 0,
   },
-  skillChipText: {
-    fontSize: 12,
+  skillPillText: {
+    fontSize: 11.5,
     fontWeight: '800',
     color: COLORS.primary,
   },
-  bookmarkBtn: {
-    padding: 4,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  highlightsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  highlightItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginRight: 10,
-    marginVertical: 2,
-  },
-  highlightText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  salaryRowSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 12,
-    paddingTop: 4,
-  },
-  salaryTitle: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  salaryValue: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#15803D',
-  },
-  sectionHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  bodyText: {
+  bodyTextText: {
     fontSize: 13,
     color: '#475569',
     lineHeight: 19,
   },
+  sectionDividerSlate: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 14,
+  },
   bulletList: {
     gap: 8,
   },
-  bulletItem: {
+  bulletItemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
   },
-  bulletText: {
+  bulletItemText: {
     fontSize: 12.5,
     color: '#334155',
     lineHeight: 18,
     flex: 1,
   },
-  perksGrid: {
+  perksInlineRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginTop: 4,
   },
-  perkChip: {
+  perkInlineTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 0,
   },
-  perkChipText: {
+  perkInlineTagText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#15803D',
+    color: '#0F172A',
   },
-  bottomBar: {
+  bottomBarSticky: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#CBD5E1',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
     zIndex: 999,
-    elevation: 8,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
   },
-  shareBtnTop: {
-    padding: 4,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomShareBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 0,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  applyNowBtn: {
-    flex: 1,
+  applyNowBtnPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: COLORS.primary,
-    paddingVertical: 13,
-    borderRadius: 0,
-  },
-  applyNowBtnBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 13,
+    paddingVertical: 9,
     borderRadius: 0,
     width: '100%',
   },
-  applyNowBtnText: {
+  applyNowBtnTextPrimary: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '900',
   },
-  appliedBanner: {
-    flex: 1,
+  appliedBannerBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 10,
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
     borderRadius: 0,
+    borderWidth: 1,
+    width: '100%',
   },
   appliedBannerText: {
-    color: '#15803D',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  appliedBannerSubtext: {
-    color: '#475569',
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  interviewRowPlain: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  interviewLabelPlain: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
+    fontSize: 12.5,
+    fontWeight: '800',
     letterSpacing: 0.3,
-  },
-  interviewValuePlain: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  interviewActionRowPlain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  interviewMapBtnPlain: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 0,
-  },
-  interviewMapBtnTextPlain: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  interviewCallBtnPlain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 0,
-  },
-  interviewCallBtnTextPlain: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSheetContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    maxHeight: '85%',
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  closeBtn: {
-    padding: 6,
-  },
-  modalBody: {
-    flex: 1,
-    paddingTop: 14,
-  },
-  targetJobSummaryCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  applyingForLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  applyingForTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  applyingForCompany: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  resumeInfoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  resumeInfoBoxMissing: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
-  },
-  resumeInfoTitle: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  resumeInfoDesc: {
-    fontSize: 11,
-    color: COLORS.primary,
-    marginTop: 1,
-  },
-  manageResumeBtn: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  manageResumeBtnText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  candidateBioCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-    gap: 6,
-  },
-  headerIconSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  incompleteAlertCard: {
-    backgroundColor: '#FFFBE6',
-    borderWidth: 1,
-    borderColor: '#FFE58F',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  incompleteAlertTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#8C6100',
-  },
-  incompleteAlertDesc: {
-    fontSize: 10.5,
-    color: '#B57200',
-    fontWeight: '600',
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  editProfileSmallBtn: {
-    backgroundColor: '#D97706',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  editProfileSmallBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  specsHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 6,
-    marginBottom: 4,
-  },
-  bioSectionHeaderTitle: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  specsGrid: {
-    gap: 6,
-  },
-  specBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 8,
-  },
-  specBoxMissing: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
-  },
-  specBoxLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  specBoxLabel: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  specBoxValue: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 2,
-  },
-  specSectionBlock: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 8,
-    gap: 4,
-    marginTop: 2,
-  },
-  specSectionBlockWarning: {
-    backgroundColor: '#FFFBE6',
-    borderColor: '#FDE68A',
-  },
-  specSectionBlockMissing: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
-  },
-  specSectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  specSectionTitle: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  skillsCountBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  skillsBadgeSuccess: {
-    backgroundColor: '#DCFCE7',
-  },
-  skillsBadgeWarning: {
-    backgroundColor: '#FEF3C7',
-  },
-  skillsCountBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  skillsChipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 4,
-  },
-  specSkillChip: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  specSkillChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  missingWarningText: {
-    fontSize: 11,
-    color: '#D97706',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  missingErrorText: {
-    fontSize: 11,
-    color: '#E11D48',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  expEntryItem: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderLeftWidth: 3,
-    borderLeftColor: '#0284C7',
-    padding: 6,
-    borderRadius: 4,
-  },
-  expEntryTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  expEntrySubtitle: {
-    fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  eduEntryItem: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderLeftWidth: 3,
-    borderLeftColor: '#16A34A',
-    padding: 6,
-    borderRadius: 4,
-  },
-  eduEntryTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  eduEntrySubtitle: {
-    fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  bioDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  bioDetailLabel: {
-    fontSize: 11.5,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  bioDetailValue: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  coverNoteLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
-    marginTop: 4,
-  },
-  salaryInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  coverNoteInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 12.5,
-    color: '#0F172A',
-    minHeight: 65,
-    textAlignVertical: 'top',
-  },
-  modalFooter: {
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 12,
-  },
-  confirmSubmitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 13,
-    borderRadius: 8,
-  },
-  confirmSubmitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
   },
 });

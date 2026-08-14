@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   Linking,
-  Image,
 } from 'react-native';
 import {
   Briefcase,
-  Building2,
   MapPin,
   Clock,
   Calendar,
@@ -28,7 +26,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
@@ -111,36 +109,48 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderStatusBadge = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
+    let bg = '#EFF6FF';
+    let border = '#BFDBFE';
     let color = COLORS.primary;
-    let label = 'Applied';
+    let label = 'APPLIED';
     let IconComp = Send;
 
     if (s === 'reviewed' || s === 'under_review') {
+      bg = '#EFF6FF';
+      border = '#BFDBFE';
       color = COLORS.primary;
-      label = 'Under Review';
+      label = 'UNDER REVIEW';
       IconComp = Clock;
     } else if (s === 'shortlisted') {
+      bg = '#F0F9FF';
+      border = '#BAE6FD';
       color = '#0284C7';
-      label = 'Shortlisted';
+      label = 'SHORTLISTED';
       IconComp = Award;
     } else if (s === 'interview' || s === 'interview_scheduled') {
+      bg = '#FEF3C7';
+      border = '#FCD34D';
       color = '#D97706';
-      label = 'Interview';
+      label = 'INTERVIEW';
       IconComp = Calendar;
     } else if (s === 'hired' || s === 'selected' || s === 'accepted') {
-      color = '#047857';
-      label = 'Hired';
+      bg = '#F0FDF4';
+      border = '#BBF7D0';
+      color = '#16A34A';
+      label = 'HIRED';
       IconComp = CheckCircle2;
     } else if (s === 'rejected') {
+      bg = '#F8FAFC';
+      border = '#CBD5E1';
       color = '#DC2626';
-      label = 'Rejected';
+      label = 'REJECTED';
       IconComp = AlertCircle;
     }
 
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-        <IconComp size={14} color={color} />
-        <Text style={{ fontSize: 13, fontWeight: '800', color }}>{label}</Text>
+      <View style={[styles.statusPillBadge, { backgroundColor: bg, borderColor: border }]}>
+        <IconComp size={12} color={color} />
+        <Text style={[styles.statusPillBadgeText, { color }]}>{label}</Text>
       </View>
     );
   };
@@ -154,32 +164,27 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
           {/* Summary bar skeleton */}
           <View style={styles.summaryBar}>
             <View style={{ flex: 1, gap: 6 }}>
-              <SkeletonLoader width="60%" height={16} style={{ borderRadius: 4 }} />
-              <SkeletonLoader width="85%" height={12} style={{ borderRadius: 4 }} />
+              <SkeletonLoader width="60%" height={16} style={{ borderRadius: 0 }} />
+              <SkeletonLoader width="85%" height={12} style={{ borderRadius: 0 }} />
             </View>
-            <SkeletonLoader width={70} height={24} style={{ borderRadius: 12 }} />
+            <SkeletonLoader width={70} height={24} style={{ borderRadius: 0 }} />
           </View>
 
           {/* 3 Realistic Applied card skeletons */}
           {[1, 2, 3].map((key) => (
-            <View key={key} style={styles.appliedCard3D}>
+            <View key={key} style={styles.appliedCardSquare}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <SkeletonLoader width={40} height={40} style={{ borderRadius: 8 }} />
+                <SkeletonLoader width={40} height={40} style={{ borderRadius: 0 }} />
                 <View style={{ flex: 1, gap: 6 }}>
-                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 0 }} />
+                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 0 }} />
                 </View>
-                <SkeletonLoader width={75} height={22} style={{ borderRadius: 11 }} />
+                <SkeletonLoader width={75} height={22} style={{ borderRadius: 0 }} />
               </View>
 
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                <SkeletonLoader width={95} height={22} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={120} height={22} style={{ borderRadius: 4 }} />
-              </View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                <SkeletonLoader width={100} height={12} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={125} height={24} style={{ borderRadius: 6 }} />
+                <SkeletonLoader width={95} height={22} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={120} height={22} style={{ borderRadius: 0 }} />
               </View>
             </View>
           ))}
@@ -204,13 +209,13 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
           {appliedList.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Briefcase size={44} color="#94A3B8" />
+              <Briefcase size={40} color="#94A3B8" />
               <Text style={styles.emptyTitle}>No Active Applications</Text>
               <Text style={styles.emptyDesc}>
                 You haven't submitted any job applications yet. Browse factory vacancies and apply today!
               </Text>
               <TouchableOpacity
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 style={styles.findJobsBtn}
                 onPress={() => navigation.navigate('CandidateJobsTab')}
               >
@@ -230,7 +235,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity
                   key={targetJobId || `app-${Math.random()}`}
                   activeOpacity={0.88}
-                  style={styles.appliedCard3D}
+                  style={styles.appliedCardSquare}
                   onPress={() => navigation.navigate('CandidateJobDetail', { jobId: targetJobId, id: targetJobId, job })}
                 >
                   {/* Card Top Row */}
@@ -238,10 +243,11 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <CompanyLogoAvatar
                       logoUrl={logoUrl}
                       companyName={job.company}
-                      size={38}
+                      size={40}
+                      borderRadius={0}
                     />
 
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.jobTitle} numberOfLines={1}>
                         {job.title || 'Industrial Vacancy'}
                       </Text>
@@ -253,17 +259,19 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <ChevronRight size={18} color="#94A3B8" />
                   </View>
 
+                  <View style={styles.sectionDividerSlate} />
+
                   {/* Metadata Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaInlineItem}>
-                      <MapPin size={12} color={COLORS.primary} />
+                      <MapPin size={13} color={COLORS.primary} />
                       <Text style={styles.metaInlineText}>{job.location || 'MIDC Zone'}</Text>
                     </View>
 
                     {job.salary_max || job.salaryMax ? (
                       <View style={styles.metaInlineItem}>
-                        <IndianRupee size={12} color="#0F172A" />
-                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '700' }]}>
+                        <IndianRupee size={13} color="#0F172A" />
+                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '800' }]}>
                           ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
                         </Text>
                       </View>
@@ -274,8 +282,8 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   {isShortlisted && (item.interviewDate || item.interview_date) ? (
                     <View style={styles.interviewContainer}>
                       <View style={styles.interviewHeaderRow}>
-                        <Calendar size={16} color="#15803D" />
-                        <Text style={styles.interviewHeaderTitle}>Interview Call Scheduled</Text>
+                        <Calendar size={15} color={COLORS.primary} />
+                        <Text style={styles.interviewHeaderTitle}>Interview Schedule & Walk-In Pass</Text>
                         <View style={styles.actionPill}>
                           <Text style={styles.actionPillText}>CONFIRMED</Text>
                         </View>
@@ -283,17 +291,15 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                       <View style={styles.interviewDetailsGrid}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.detailLabel}>DATE</Text>
-                          <Text style={styles.detailValue}>{item.interviewDate || item.interview_date}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.detailLabel}>TIME</Text>
-                          <Text style={styles.detailValue}>{item.interviewTime || item.interview_time || '10:00 AM'}</Text>
+                          <Text style={styles.detailLabel}>DATE & TIME</Text>
+                          <Text style={styles.detailValue}>
+                            {item.interviewDate || item.interview_date} {item.interviewTime || item.interview_time ? `(${item.interviewTime || item.interview_time})` : ''}
+                          </Text>
                         </View>
                       </View>
 
                       {item.venueAddress || item.venue_address ? (
-                        <View>
+                        <View style={{ marginTop: 2 }}>
                           <Text style={styles.detailLabel}>INTERVIEW VENUE ADDRESS</Text>
                           <Text style={styles.venueAddressText}>{item.venueAddress || item.venue_address}</Text>
                         </View>
@@ -301,14 +307,14 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                       {item.mapsLink || item.maps_link ? (
                         <TouchableOpacity
-                          activeOpacity={0.8}
+                          activeOpacity={0.85}
                           style={styles.openMapsBtn}
                           onPress={(e) => {
                             e.stopPropagation();
                             handleOpenMaps(item.mapsLink || item.maps_link);
                           }}
                         >
-                          <MapPin size={14} color="#FFFFFF" />
+                          <MapPin size={13} color="#FFFFFF" />
                           <Text style={styles.openMapsBtnText}>Open Directions in Google Maps</Text>
                           <ExternalLink size={12} color="#FFFFFF" />
                         </TouchableOpacity>
@@ -337,23 +343,23 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 130,
-    gap: 14,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 110,
+    gap: 12,
   },
   summaryBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 2,
-    paddingVertical: 4,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   summaryTitle: {
-    fontSize: 17.5,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.3,
@@ -366,13 +372,13 @@ const styles = StyleSheet.create({
   countBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EFF6FF',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   countBadgeText: {
     fontSize: 11.5,
@@ -381,94 +387,86 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 36,
+    padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    marginTop: 10,
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
   },
   emptyDesc: {
     fontSize: 12.5,
     color: '#64748B',
     textAlign: 'center',
+    lineHeight: 18,
   },
   findJobsBtn: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 6,
+    paddingVertical: 11,
+    borderRadius: 0,
     marginTop: 6,
   },
   findJobsBtnText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '800',
   },
-  appliedCard3D: {
+  appliedCardSquare: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
     gap: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  companyIconSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  companyLogoImg: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-  },
   jobTitle: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#0F172A',
   },
   companyName: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
   },
-  statusPill: {
+  sectionDividerSlate: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 4,
+  },
+  statusPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 1,
   },
-  statusPillText: {
-    fontSize: 10,
+  statusPillBadgeText: {
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 0.3,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 14,
   },
   metaInlineItem: {
     flexDirection: 'row',
@@ -477,16 +475,17 @@ const styles = StyleSheet.create({
   },
   metaInlineText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#64748B',
+    fontWeight: '700',
+    color: '#475569',
   },
   interviewContainer: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1.5,
-    borderColor: '#86EFAC',
-    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
     padding: 12,
     gap: 8,
+    marginTop: 4,
   },
   interviewHeaderRow: {
     flexDirection: 'row',
@@ -495,30 +494,30 @@ const styles = StyleSheet.create({
   },
   interviewHeaderTitle: {
     fontSize: 13,
-    fontWeight: '900',
-    color: '#15803D',
+    fontWeight: '800',
+    color: '#0F172A',
     flex: 1,
   },
   actionPill: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#86EFAC',
+    borderColor: '#BFDBFE',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 0,
   },
   actionPillText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#15803D',
+    color: COLORS.primary,
   },
   interviewDetailsGrid: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 0,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#E2E8F0',
     gap: 12,
   },
   detailLabel: {
@@ -544,10 +543,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#16A34A',
-    paddingVertical: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 0,
     marginTop: 4,
   },
   openMapsBtnText: {
@@ -567,15 +566,5 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#64748B',
     fontWeight: '600',
-  },
-  viewJobBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewJobBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.primary,
   },
 });

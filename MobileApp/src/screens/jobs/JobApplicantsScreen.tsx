@@ -233,10 +233,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     for (let i = 0; i < firstDayIndex; i++) {
       days.push(null);
     }
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     for (let d = 1; d <= totalDays; d++) {
-      const dayDate = new Date(year, month, d);
-      const dateStr = dayDate.toISOString().split('T')[0];
+      const mStr = String(month + 1).padStart(2, '0');
+      const dStr = String(d).padStart(2, '0');
+      const dateStr = `${year}-${mStr}-${dStr}`;
       const isPast = dateStr < todayStr;
       days.push({ day: d, dateStr, isPast });
     }
@@ -377,7 +380,25 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         if (selectedApplicant && (selectedApplicant.user_id === userId || (selectedApplicant as any).userId === userId)) {
           setSelectedApplicant((prev) => (prev ? { ...prev, status: newStatus } : prev));
         }
-        Alert.alert('Status Updated', `Candidate status changed to "${newStatus.toUpperCase()}" on backend.`);
+
+        const isInterviewStatus = newStatus === 'interview' || newStatus === 'interviewed';
+
+        if (isInterviewStatus) {
+          // Instantly navigate employer to the INTERVIEW modal tab to fill in interview details
+          setModalTab('INTERVIEW');
+          Alert.alert(
+            'Status Updated',
+            'Candidate status changed to INTERVIEW. Fill in the interview date, time, and venue details below.',
+            [
+              {
+                text: 'Set Interview Details',
+                onPress: () => setModalTab('INTERVIEW'),
+              },
+            ]
+          );
+        } else {
+          Alert.alert('Status Updated', `Candidate status changed to "${newStatus.toUpperCase()}".`);
+        }
       } else {
         const errorMsg = res?.message || res?.error || 'Failed to update applicant status on live backend.';
         Alert.alert('Backend Update Failed', errorMsg);
@@ -402,17 +423,32 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
     setModalLoading(true);
     try {
+      const venue = interviewLocation.trim() || 'Industrial Plant Main Gate';
       const res = await applicantsApi.scheduleInterview(targetJobId, selectedApplicant.user_id, {
         interviewDate,
-        interviewTime,
+        interviewTime: interviewTime || '10:00 AM',
+        venueAddress: venue,
+        interviewLocation: venue,
         interviewMode,
-        interviewLocation,
         notes: interviewNotes,
       });
 
       if (res && res.success) {
-        await handleUpdateStatus(selectedApplicant.user_id, 'interview', targetJobId);
-        Alert.alert('Interview Scheduled', 'Interview invite successfully recorded and sent to candidate.');
+        setDetailModalVisible(false);
+        setActiveTab('interviewed');
+        Alert.alert(
+          'Interview Scheduled',
+          'Interview invite successfully recorded and sent to candidate.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setDetailModalVisible(false);
+                setActiveTab('interviewed');
+              },
+            },
+          ]
+        );
       } else {
         const errorMsg = res?.message || res?.error || 'Failed to schedule interview on backend.';
         Alert.alert('Scheduling Error', errorMsg);
@@ -489,6 +525,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       const appStatus = (app.status || 'applied').toLowerCase();
       if (activeTab === 'applied') {
         matchesTab = appStatus === 'applied' || appStatus === 'pending' || appStatus === 'submitted' || appStatus === 'received' || !app.status;
+      } else if (activeTab === 'interviewed') {
+        matchesTab = appStatus === 'interviewed' || appStatus === 'interview' || appStatus === 'interview_scheduled' || appStatus === 'scheduled';
       } else {
         matchesTab = appStatus === activeTab;
       }
@@ -631,7 +669,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               ? applicants.length
               : applicants.filter((a) => {
                   const s = (a.status || 'applied').toLowerCase();
-                  return tab.key === 'applied' ? (s === 'applied' || s === 'pending' || s === 'submitted' || s === 'received' || !a.status) : s === tab.key;
+                  if (tab.key === 'applied') {
+                    return s === 'applied' || s === 'pending' || s === 'submitted' || s === 'received' || !a.status;
+                  }
+                  if (tab.key === 'interviewed') {
+                    return s === 'interviewed' || s === 'interview' || s === 'interview_scheduled' || s === 'scheduled';
+                  }
+                  return s === tab.key;
                 }).length;
             return (
               <TouchableOpacity

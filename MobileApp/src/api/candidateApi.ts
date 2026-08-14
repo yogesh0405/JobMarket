@@ -13,6 +13,34 @@ export interface AppliedJobDetails {
   mapsLink?: string;
 }
 
+export interface InterviewItem {
+  application_id: string;
+  job_id: string;
+  status: 'shortlisted' | 'hired' | 'rejected';
+  applied_at: string;
+  interview_date: string;
+  interview_time?: string;
+  venue_address?: string;
+  maps_link?: string;
+  job_title: string;
+  company: string;
+  company_logo?: string;
+  company_color?: string;
+  job_location: string;
+  industry?: string;
+  job_type?: string;
+  work_mode?: string;
+  salary_min?: number;
+  salary_max?: number;
+  employer_name?: string;
+  company_name?: string;
+}
+
+export interface MyInterviewsResponse {
+  upcoming: InterviewItem[];
+  past: InterviewItem[];
+}
+
 export const candidateApi = {
   // Fetch all public jobs for candidate search
   getAllJobs: async (query?: string): Promise<ApiResponse<Job[]>> => {
@@ -188,4 +216,10 @@ export const candidateApi = {
   getSettings: async (): Promise<ApiResponse<any>> => {
     return apiFetch('/api/v1/public/settings');
   },
+
+  // Fetch candidate's upcoming and past interview schedule
+  getMyInterviews: async (): Promise<ApiResponse<MyInterviewsResponse>> => {
+    return apiFetch('/api/v1/jobs/interviews/my-interviews');
+  },
 };
+

@@ -33,6 +33,7 @@ import {
   Sparkles,
   Image as ImageIcon,
   Megaphone,
+  Calendar,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -294,6 +295,24 @@ export const Header: React.FC<HeaderProps> = ({
                       My Profile & Bio-Data
                     </Text>
                     <ChevronRight size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItemRow}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      closeDrawer(() => {
+                        if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('MyInterviews');
+                        }
+                      });
+                    }}
+                  >
+                    <View style={styles.iconSquircle}>
+                      <Calendar size={17} color="#334155" />
+                    </View>
+                    <Text style={styles.menuItemTitle}>My Interviews</Text>
+                    <ChevronRight size={16} color={COLORS.slate400} />
                   </TouchableOpacity>
 
                   <TouchableOpacity

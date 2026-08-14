@@ -20,6 +20,7 @@ import {
   X,
   ChevronRight,
   LayoutGrid,
+  Calendar,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
@@ -72,6 +73,11 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
       label: 'My Candidate Profile',
       icon: UserIcon,
       action: () => handleNavigate('CandidateProfile'),
+    },
+    {
+      label: 'My Interviews',
+      icon: Calendar,
+      action: () => handleNavigate('MyInterviews'),
     },
     {
       label: 'Resume & Bio-Data',

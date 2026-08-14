@@ -962,4 +962,68 @@ export class JobRepository {
       avgResponseTimeHours: 24,
     };
   }
+
+  /**
+   * GET /api/v1/jobs/interviews/my-interviews
+   * Returns all shortlisted/hired applications with interview_date set for a candidate,
+   * split into { upcoming: [], past: [] } based on today's date.
+   */
+  static async getInterviewsForCandidate(userId: string) {
+    const result = await pool.query(
+      `SELECT
+        ja.id            AS application_id,
+        ja.job_id,
+        ja.status,
+        ja.applied_at,
+        ja.interview_date,
+        ja.interview_time,
+        ja.venue_address,
+        ja.maps_link,
+        j.title          AS job_title,
+        j.company,
+        j.company_logo,
+        j.company_color,
+        j.location       AS job_location,
+        j.industry,
+        j.job_type,
+        j.work_mode,
+        j.salary_min,
+        j.salary_max,
+        u.name           AS employer_name,
+        u.company_name
+      FROM job_applications ja
+      JOIN jobs j          ON ja.job_id::text = j.id::text
+      JOIN users u         ON j.employer_id::text = u.id::text
+      WHERE ja.user_id::text = $1::text
+        AND ja.interview_date IS NOT NULL
+        AND ja.status IN ('shortlisted', 'hired', 'rejected')
+      ORDER BY ja.interview_date DESC, ja.interview_time DESC`,
+      [userId]
+    );
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcoming: any[] = [];
+    const past: any[] = [];
+
+    for (const row of result.rows) {
+      const interviewDate = row.interview_date ? new Date(row.interview_date) : null;
+      if (interviewDate) {
+        interviewDate.setHours(0, 0, 0, 0);
+        if (interviewDate >= today) {
+          upcoming.push(row);
+        } else {
+          past.push(row);
+        }
+      }
+    }
+
+    // Sort upcoming: soonest first
+    upcoming.sort((a, b) => new Date(a.interview_date).getTime() - new Date(b.interview_date).getTime());
+    // Sort past: most recent first
+    past.sort((a, b) => new Date(b.interview_date).getTime() - new Date(a.interview_date).getTime());
+
+    return { upcoming, past };
+  }
 }

@@ -23,6 +23,7 @@ router.get('/applied/my-applications', requireAuth, JobController.getMyAppliedJo
 router.get('/applied/me', requireAuth, JobController.getMyAppliedJobs);
 router.get('/saved/my-saved', requireAuth, JobController.getMySavedJobs);
 router.get('/saved/me', requireAuth, JobController.getMySavedJobs);
+router.get('/interviews/my-interviews', requireAuth, JobController.getMyInterviews);
 router.get('/:id', JobController.getJobById);
 
 // Protected Routes

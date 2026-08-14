@@ -549,39 +549,36 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     <View style={styles.container}>
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
-      {/* Find Jobs Title & View Segmented Controls */}
+      {/* Find Jobs Title Bar with Grid / List / Map View Toggles */}
       <View style={[styles.titleViewRow, { paddingHorizontal: 16 }]}>
         <Text style={styles.screenTitleText}>Find Jobs</Text>
 
-        <View style={styles.viewSegmentBox}>
+        <View style={styles.viewToggleRow}>
+          {/* Grid View */}
           <TouchableOpacity
-            style={[styles.segmentBtn, viewMode === 'grid' && styles.segmentBtnActive]}
+            style={[styles.viewToggleBtn, viewMode === 'grid' && styles.viewToggleBtnActive]}
             onPress={() => setViewMode('grid')}
             activeOpacity={0.7}
           >
             <LayoutGrid size={15} color={viewMode === 'grid' ? COLORS.primary : '#64748B'} />
-            <Text style={[styles.segmentBtnText, viewMode === 'grid' && styles.segmentBtnTextActive]}>Grid</Text>
-            {viewMode === 'grid' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
 
+          {/* List View */}
           <TouchableOpacity
-            style={[styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}
+            style={[styles.viewToggleBtn, viewMode === 'list' && styles.viewToggleBtnActive]}
             onPress={() => setViewMode('list')}
             activeOpacity={0.7}
           >
             <List size={15} color={viewMode === 'list' ? COLORS.primary : '#64748B'} />
-            <Text style={[styles.segmentBtnText, viewMode === 'list' && styles.segmentBtnTextActive]}>List</Text>
-            {viewMode === 'list' ? <View style={styles.activeTabIndicator} /> : null}
           </TouchableOpacity>
 
+          {/* Map View */}
           <TouchableOpacity
-            style={[styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}
-            onPress={() => setViewMode('map')}
+            style={styles.viewToggleBtn}
+            onPress={() => navigation.navigate('CandidateJobMapView', { jobs: filteredJobs })}
             activeOpacity={0.7}
           >
-            <Map size={15} color={viewMode === 'map' ? COLORS.primary : '#64748B'} />
-            <Text style={[styles.segmentBtnText, viewMode === 'map' && styles.segmentBtnTextActive]}>Map</Text>
-            {viewMode === 'map' ? <View style={styles.activeTabIndicator} /> : null}
+            <Map size={15} color="#64748B" />
           </TouchableOpacity>
         </View>
       </View>
@@ -751,22 +748,14 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         );
       })()}
 
-      {/* Dynamic View Mode Switching: Map View vs Scrollable Stream */}
-      {viewMode === 'map' ? (
-        <InteractiveJobMapView
-          jobs={filteredJobs}
-          activeJobId={activeSelectedJobId}
-          onSelectJob={(job) => setActiveSelectedJobId(job.id)}
-          navigation={navigation}
-        />
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-        >
+      {/* Scrollable Stream of Factory & Industrial Vacancies */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+      >
           {/* Jobs Stream Skeleton Loading */}
           {loading ? (
             <View style={{ marginTop: 4 }}>
@@ -1012,7 +1001,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             </>
           )}
         </ScrollView>
-      )}
 
       {/* Filter Side Drawer Modal */}
       <JobFilterSideDrawer
@@ -1174,7 +1162,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     position: 'relative',
   },
-  segmentBtnActive: {},
+  mapPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 0,
+  },
+  mapPillBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
   activeTabIndicator: {
     position: 'absolute',
     bottom: -2,
@@ -1296,8 +1299,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  inlineFilterBtnActive: {
-    backgroundColor: '#EFF6FF',
+  inlineFilterBtnActive: {},
+  viewToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    padding: 3,
+  },
+  viewToggleBtn: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterBadgePillInline: {
     position: 'absolute',

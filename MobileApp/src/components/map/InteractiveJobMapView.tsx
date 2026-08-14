@@ -387,40 +387,6 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Top Filter Pills Row (Identical to Web App Screenshot) */}
-      <View style={styles.topFilterPillsBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillsRow}>
-          <TouchableOpacity
-            style={styles.pillDropdownBtn}
-            onPress={() => setDistanceFilter(distanceFilter === 'All' ? '10km' : 'All')}
-          >
-            <Text style={styles.pillDropdownText}>Distance: {distanceFilter}</Text>
-            <ArrowDownIcon size={12} color="#64748B" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.pillDropdownBtn}
-            onPress={() => setModeFilter(modeFilter === 'All' ? 'On-site' : 'All')}
-          >
-            <Text style={styles.pillDropdownText}>Mode: {modeFilter}</Text>
-            <ArrowDownIcon size={12} color="#64748B" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.pillDropdownBtn}
-            onPress={() => setTypeFilter(typeFilter === 'All' ? 'Full-time' : 'All')}
-          >
-            <Text style={styles.pillDropdownText}>Type: {typeFilter}</Text>
-            <ArrowDownIcon size={12} color="#64748B" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.pillNearbyBtn} activeOpacity={0.85}>
-            <Send size={12} color="#FFFFFF" />
-            <Text style={styles.pillNearbyText}>Nearby</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
       {/* Leaflet Interactive Map Canvas */}
       <View style={styles.mapCanvasWrapper}>
         <WebView

@@ -223,39 +223,6 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Generated Mobile Bio-Data Card */}
-        <View style={styles.card3D}>
-          <Text style={styles.cardTitle}>Generated Mobile Bio-Data Summary</Text>
-          <Text style={styles.bioDesc}>
-            Even without a PDF, your filled profile details (Trade Specialization, Experience, Education, Shift preferences) act as a complete digital bio-data for one-tap job applications.
-          </Text>
-
-          <View style={styles.bioSummaryBox}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>FULL NAME:</Text>
-              <Text style={styles.summaryValue}>{user?.name || 'N/A'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>TRADE SPECIALIZATION:</Text>
-              <Text style={styles.summaryValue}>{user?.tradeSpecialization || user?.trade_specialization || 'VMC / Industrial'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>PREFERRED SHIFT:</Text>
-              <Text style={styles.summaryValue}>{user?.preferredShift || user?.preferred_shift || 'Day Shift'}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>LOCATION:</Text>
-              <Text style={styles.summaryValue}>{user?.location || 'MIDC Zone'}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.editProfileLink}
-            onPress={() => navigation.navigate('CandidateProfileTab')}
-          >
-            <Text style={styles.editProfileLinkText}>Edit Profile Bio-Data Details →</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       {/* Resume Document Viewer Modal */}

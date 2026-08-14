@@ -49,8 +49,9 @@ export const COLORS = {
   infoBg: '#F0F9FF',            // Sky 50
 
   // ── Surfaces & Borders ──────────────────────────────────────────────────
-  background: '#FFFFFF',        // White
-  surface: '#FFFFFF',
+  background: '#F7F7F7',        // Premium Whitish Off-White Page Background (#F7F7F7)
+  offWhite: '#F7F7F7',          // Premium Whitish Off-White Page Background (#F7F7F7)
+  surface: '#FFFFFF',           // Solid White Container Surface
   border: '#E2E8F0',
   borderFocus: '#1B4980',
 

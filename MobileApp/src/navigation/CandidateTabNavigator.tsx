@@ -23,6 +23,7 @@ import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApply
 import { CandidateAppliedJobsScreen } from '../screens/candidate/CandidateAppliedJobsScreen';
 import { CandidateSavedJobsScreen } from '../screens/candidate/CandidateSavedJobsScreen';
 import { CandidateProfileScreen } from '../screens/candidate/CandidateProfileScreen';
+import { CandidateJobMapViewScreen } from '../screens/candidate/CandidateJobMapViewScreen';
 import { useAuth } from '../hooks/useAuth';
 
 const Tab = createBottomTabNavigator();
@@ -31,6 +32,7 @@ const JobsStackNav = createNativeStackNavigator();
 const CandidateJobsStackNavigator = () => (
   <JobsStackNav.Navigator screenOptions={{ headerShown: false }}>
     <JobsStackNav.Screen name="CandidateJobSearch" component={CandidateJobSearchScreen} />
+    <JobsStackNav.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
     <JobsStackNav.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
     <JobsStackNav.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
   </JobsStackNav.Navigator>
@@ -43,6 +45,7 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
   if (
     focusedRouteName === 'CandidateJobDetail' ||
     focusedRouteName === 'CandidateApplyConfirm' ||
+    focusedRouteName === 'CandidateJobMapView' ||
     focusedRouteName === 'JobDetail' ||
     focusedRouteName === 'JobDetails'
   ) {

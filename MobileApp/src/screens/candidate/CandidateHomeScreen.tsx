@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -213,12 +213,20 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePromoIndex, setActivePromoIndex] = useState(0);
+  const bannerFlatListRef = useRef<FlatList>(null);
 
-  // Auto-play promotional banner slider
+  // Auto-play promotional banner slider with smooth scroll animation
   useEffect(() => {
     if (promoBanners.length <= 1) return;
     const timer = setInterval(() => {
-      setActivePromoIndex((prev) => (prev + 1) % promoBanners.length);
+      setActivePromoIndex((prev) => {
+        const next = (prev + 1) % promoBanners.length;
+        bannerFlatListRef.current?.scrollToIndex({
+          index: next,
+          animated: true,
+        });
+        return next;
+      });
     }, 4500);
     return () => clearInterval(timer);
   }, [promoBanners.length]);
@@ -545,7 +553,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
         {/* 1. Top Search Bar Pill with Live Autocomplete Suggestions Overlay */}
-        <View style={{ zIndex: 999, position: 'relative', marginTop: 14, marginBottom: 14 }}>
+        <View style={{ zIndex: 999, position: 'relative', marginTop: 2, marginBottom: 6 }}>
           <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
             <TouchableOpacity
               onPress={handleSearchSubmit}
@@ -715,62 +723,67 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
-        {/* 2. Promotional Banner Slider Carousel (Only shown when active database banners exist) */}
+        {/* 2. Promotional Banner Slider Carousel (Smooth Horizontal Animated Slide) */}
         {promoBanners.length > 0 ? (
-          <View style={styles.promoSliderCard}>
-            <Image
-              source={{
-                uri:
-                  promoBanners[activePromoIndex]?.banner_image ||
-                  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
+          <View style={styles.promoSliderContainer}>
+            <FlatList
+              ref={bannerFlatListRef}
+              data={promoBanners}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item, index) => item.id || `banner-${index}`}
+              getItemLayout={(_, index) => ({
+                length: SCREEN_WIDTH - 32,
+                offset: (SCREEN_WIDTH - 32) * index,
+                index,
+              })}
+              onMomentumScrollEnd={(e) => {
+                const contentOffset = e.nativeEvent.contentOffset.x;
+                const viewSize = e.nativeEvent.layoutMeasurement.width;
+                if (viewSize > 0) {
+                  const pageNum = Math.round(contentOffset / viewSize);
+                  setActivePromoIndex(pageNum);
+                }
               }}
-              style={styles.promoImage}
+              renderItem={({ item }) => (
+                <View style={[styles.promoSliderCard, { width: SCREEN_WIDTH - 32, borderRadius: 12, overflow: 'hidden' }]}>
+                  <Image
+                    source={{
+                      uri:
+                        item.banner_image ||
+                        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
+                    }}
+                    style={styles.promoImage}
+                  />
+
+                  <View style={styles.promoOverlay}>
+                    <View style={styles.promoBadgeOrange}>
+                      <Text style={styles.promoBadgeOrangeText}>
+                        {(item.advertisement_type || 'PROMOTIONAL').replace('_', ' ')}
+                      </Text>
+                    </View>
+                    <Text style={styles.promoTitle}>{item.title}</Text>
+                    {item.description ? (
+                      <Text style={styles.promoDesc} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      style={styles.promoActionBtnBlue}
+                      onPress={() => handleBannerPress(item)}
+                    >
+                      <Text style={styles.promoActionBtnText}>
+                        {item.button_text || 'Apply Now'}
+                      </Text>
+                      <ArrowRight size={14} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             />
-
-            {/* Left Arrow Button */}
-            {promoBanners.length > 1 ? (
-              <TouchableOpacity
-                style={styles.bannerArrowLeft}
-                onPress={() => setActivePromoIndex((prev) => (prev - 1 + promoBanners.length) % promoBanners.length)}
-              >
-                <ChevronLeft size={18} color="#FFFFFF" />
-              </TouchableOpacity>
-            ) : null}
-
-            {/* Right Arrow Button */}
-            {promoBanners.length > 1 ? (
-              <TouchableOpacity
-                style={styles.bannerArrowRight}
-                onPress={() => setActivePromoIndex((prev) => (prev + 1) % promoBanners.length)}
-              >
-                <ChevronRight size={18} color="#FFFFFF" />
-              </TouchableOpacity>
-            ) : null}
-
-            <View style={styles.promoOverlay}>
-              <View style={styles.promoBadgeOrange}>
-                <Text style={styles.promoBadgeOrangeText}>
-                  {(promoBanners[activePromoIndex]?.advertisement_type || 'PROMOTIONAL').replace('_', ' ')}
-                </Text>
-              </View>
-              <Text style={styles.promoTitle}>{promoBanners[activePromoIndex]?.title}</Text>
-              {promoBanners[activePromoIndex]?.description ? (
-                <Text style={styles.promoDesc} numberOfLines={2}>
-                  {promoBanners[activePromoIndex]?.description}
-                </Text>
-              ) : null}
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.promoActionBtnBlue}
-                onPress={() => handleBannerPress(promoBanners[activePromoIndex])}
-              >
-                <Text style={styles.promoActionBtnText}>
-                  {promoBanners[activePromoIndex]?.button_text || 'Apply Now'}
-                </Text>
-                <ArrowRight size={14} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
 
             {/* Dots pagination */}
             {promoBanners.length > 1 ? (
@@ -778,7 +791,10 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                 {promoBanners.map((_, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    onPress={() => setActivePromoIndex(idx)}
+                    onPress={() => {
+                      setActivePromoIndex(idx);
+                      bannerFlatListRef.current?.scrollToIndex({ index: idx, animated: true });
+                    }}
                     style={[styles.dot, activePromoIndex === idx && styles.dotActive]}
                   />
                 ))}
@@ -1030,6 +1046,31 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Explore More Card at the End of Horizontal List */}
+              <TouchableOpacity
+                activeOpacity={0.88}
+                style={styles.exploreMoreEndCard}
+                onPress={() =>
+                  navigation.navigate('CandidateJobsTab', {
+                    screen: 'CandidateJobSearch',
+                    params: { trade: activeRoleTab !== 'All Opportunities' ? activeRoleTab : undefined },
+                  })
+                }
+              >
+                <View style={styles.exploreMoreCircleIcon}>
+                  <ArrowRight size={22} color={COLORS.primary} strokeWidth={2.5} />
+                </View>
+
+                <Text style={styles.exploreMoreTitleText}>Explore More</Text>
+                <Text style={styles.exploreMoreSubText}>
+                  View all {roleFilteredJobs.length}+ vacancies
+                </Text>
+
+                <View style={styles.exploreMoreButtonPill}>
+                  <Text style={styles.exploreMoreButtonPillText}>Browse All →</Text>
+                </View>
+              </TouchableOpacity>
             </ScrollView>
           )}
         </View>
@@ -1334,7 +1375,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -1346,25 +1387,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 50,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 48,
     gap: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
   },
   topSearchPillRowActive: {
     borderColor: COLORS.primary,
     backgroundColor: '#FFFFFF',
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 4,
   },
   searchIconBadge3D: {
     padding: 4,
@@ -1404,7 +1436,7 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     position: 'absolute',
-    top: 54,
+    top: 52,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
@@ -1413,10 +1445,6 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     paddingVertical: 8,
     paddingHorizontal: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
     elevation: 4,
     zIndex: 999,
   },
@@ -1553,21 +1581,16 @@ const styles = StyleSheet.create({
   },
   sectionSeparatorDivider: {
     height: 1,
-    backgroundColor: '#CBD5E1',
-    marginVertical: 20,
+    backgroundColor: '#94A3B8',
+    marginVertical: 14,
   },
   popularSectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,
     gap: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
   },
   popularHeaderRow: {
     flexDirection: 'row',
@@ -1619,13 +1642,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   skewedTabPill: {
-    borderRadius: 6,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   skewedTabPillActive: {
-    backgroundColor: COLORS.primary,
-    borderWidth: 1,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
   },
   skewedTabPillInactive: {
@@ -1641,45 +1664,91 @@ const styles = StyleSheet.create({
   tabDot: {
     fontSize: 14,
     fontWeight: '900',
-    color: COLORS.primary,
+    color: '#94A3B8',
   },
   tabDotActive: {
-    color: '#FFFFFF',
+    color: COLORS.primary,
   },
   tabTitleText: {
     fontSize: 12.5,
-    fontWeight: '800',
-    color: '#334155',
+    fontWeight: '700',
+    color: '#475569',
   },
   tabTitleTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.primary,
+    fontWeight: '800',
   },
   countPillBadge: {
-    borderRadius: 6,
+    borderRadius: 0,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginLeft: 2,
   },
   countPillBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#DBEAFE',
   },
   countPillBadgeInactive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
   },
   countPillText: {
     fontSize: 11,
     fontWeight: '900',
   },
   countPillTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.primary,
   },
   countPillTextInactive: {
-    color: COLORS.primary,
+    color: '#64748B',
   },
   popularCardsCarousel: {
     flexDirection: 'row',
     gap: 12,
     paddingVertical: 4,
+  },
+  exploreMoreEndCard: {
+    width: 170,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderRadius: 0,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  exploreMoreCircleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  exploreMoreTitleText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  exploreMoreSubText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  exploreMoreButtonPill: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 0,
+    marginTop: 6,
+  },
+  exploreMoreButtonPillText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   webPopularJobCard: {
     width: 290,
@@ -2224,27 +2293,21 @@ const styles = StyleSheet.create({
   },
   tradeSquareCard: {
     width: Math.floor((SCREEN_WIDTH - 32 - 16) / 3),
-    height: 118,
+    height: 114,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
-    overflow: 'hidden',
+    borderRadius: 0,
     paddingVertical: 10,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
   },
   tradeIconSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    overflow: 'hidden',
+    width: 34,
+    height: 34,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2262,27 +2325,21 @@ const styles = StyleSheet.create({
   },
   qualSquareCard: {
     width: Math.floor((SCREEN_WIDTH - 32 - 16) / 3),
-    height: 118,
+    height: 114,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
-    overflow: 'hidden',
+    borderRadius: 0,
     paddingVertical: 10,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
   },
   qualIconSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    overflow: 'hidden',
+    width: 34,
+    height: 34,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2345,24 +2402,32 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '900',
   },
+  promoSliderContainer: {
+    position: 'relative',
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   promoSliderCard: {
     height: 185,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#0F172A',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    marginBottom: 4,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   promoImage: {
     width: '100%',
     height: '100%',
     opacity: 0.38,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   promoOverlay: {
     position: 'absolute',
@@ -2374,7 +2439,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(37, 99, 235, 0.95)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 0,
     alignSelf: 'flex-start',
   },
   promoBadgeText: {
@@ -2400,7 +2465,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 8,
+    borderRadius: 0,
     alignSelf: 'flex-start',
     marginTop: 4,
   },
@@ -2468,30 +2533,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.primary,
   },
-  bannerArrowLeft: {
-    position: 'absolute',
-    left: 10,
-    top: '40%',
-    zIndex: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerArrowRight: {
-    position: 'absolute',
-    right: 10,
-    top: '40%',
-    zIndex: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   promoBadgeOrange: {
     backgroundColor: '#F59E0B',
     paddingHorizontal: 8,
@@ -2509,9 +2550,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 8,
     alignSelf: 'flex-start',
     marginTop: 4,
