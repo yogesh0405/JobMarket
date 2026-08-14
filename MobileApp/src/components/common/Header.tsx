@@ -136,6 +136,22 @@ export const Header: React.FC<HeaderProps> = ({
     (user as any)?.logo_url ||
     (user as any)?.logo;
 
+  const completenessPct = React.useMemo(() => {
+    if (!user) return 0;
+    let points = 0;
+    const total = 7;
+
+    if (user.name && user.email && user.phone) points += 1;
+    if (user.profilePictureUrl || (user as any).profile_picture_url || (user as any).profilePhotoUrl) points += 1;
+    if (user.trade_specialization || user.tradeSpecialization || user.industry) points += 1;
+    if ((Array.isArray(user.skills) && user.skills.length > 0) || (typeof user.skills === 'string' && (user.skills as string).trim())) points += 1;
+    if (user.experience || user.education || user.headline) points += 1;
+    if (user.preferred_shift || user.preferredShift || user.midc_zone || user.midcZone || user.location) points += 1;
+    if (user.resumeUrl || (user as any).resume_url || user.resume) points += 1;
+
+    return Math.round((points / total) * 100);
+  }, [user]);
+
   return (
     <>
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -600,8 +616,33 @@ const styles = StyleSheet.create({
   rightSlot: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     marginLeft: 12,
+  },
+  headerCompletenessBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  headerCompletenessRing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCompletenessPctText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  headerCompletenessLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#334155',
   },
   bellButton: {
     padding: 6,

@@ -85,28 +85,19 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
       {loading && !refreshing ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {[1, 2, 3].map((key) => (
-            <View key={key} style={styles.savedCard3D}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <SkeletonLoader width={40} height={40} style={{ borderRadius: 8 }} />
-                <View style={{ flex: 1, gap: 6 }}>
-                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 4 }} />
+          <View style={styles.gridRowContainer}>
+            {[1, 2, 3, 4].map((key) => (
+              <View key={key} style={styles.gridCardSkeleton}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <SkeletonLoader width={36} height={36} style={{ borderRadius: 6 }} />
+                  <SkeletonLoader width={24} height={24} style={{ borderRadius: 12 }} />
                 </View>
-                <SkeletonLoader width={28} height={28} style={{ borderRadius: 14 }} />
+                <SkeletonLoader width="85%" height={15} style={{ borderRadius: 4, marginTop: 8 }} />
+                <SkeletonLoader width="60%" height={12} style={{ borderRadius: 4, marginTop: 4 }} />
+                <SkeletonLoader width="75%" height={12} style={{ borderRadius: 4, marginTop: 10 }} />
               </View>
-
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                <SkeletonLoader width={85} height={22} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={110} height={22} style={{ borderRadius: 4 }} />
-              </View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                <SkeletonLoader width={90} height={12} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={120} height={24} style={{ borderRadius: 6 }} />
-              </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </ScrollView>
       ) : (
         <ScrollView
@@ -143,64 +134,87 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ) : (
-            savedJobs.map((job) => {
-              const logoUrl = job.companyLogo || (job as any).company_logo;
-              return (
-                <TouchableOpacity
-                  key={job.id}
-                  activeOpacity={0.85}
-                  style={styles.savedCard3D}
-                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
-                >
-                  <View style={styles.cardTopRow}>
-                    <View style={styles.companyIconSquare}>
-                      {logoUrl ? (
-                        <Image
-                          source={{ uri: logoUrl }}
-                          style={styles.companyLogoImg}
-                          resizeMode="contain"
-                        />
-                      ) : (
-                        <Building2 size={20} color={COLORS.primary} />
-                      )}
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.jobTitle} numberOfLines={1}>
+            <View style={styles.gridRowContainer}>
+              {savedJobs.map((job) => {
+                const logoUrl = job.companyLogo || (job as any).company_logo;
+                return (
+                  <TouchableOpacity
+                    key={job.id}
+                    activeOpacity={0.88}
+                    style={styles.gridCard}
+                    onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
+                  >
+                    {/* Role Title & Bookmark Row (First Line) */}
+                    <View style={styles.gridCardTitleRow}>
+                      <Text style={styles.jobTitle} numberOfLines={2}>
                         {job.title}
                       </Text>
+
+                      <TouchableOpacity
+                        style={styles.bookmarkBtn}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleUnsave(job.id);
+                        }}
+                      >
+                        <Bookmark size={15} color={COLORS.primary} fill={COLORS.primary} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Company Name with Small Logo */}
+                    <View style={styles.companyRow}>
+                      <View style={styles.smallCompanyIconSquare}>
+                        {logoUrl ? (
+                          <Image
+                            source={{ uri: logoUrl }}
+                            style={styles.smallCompanyLogoImg}
+                            resizeMode="contain"
+                          />
+                        ) : (
+                          <Building2 size={11} color={COLORS.primary} />
+                        )}
+                      </View>
                       <Text style={styles.companyName} numberOfLines={1}>
                         {job.company || 'Industrial Enterprise'}
                       </Text>
                     </View>
 
-                    <TouchableOpacity
-                      style={styles.bookmarkBtn}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleUnsave(job.id);
-                      }}
-                    >
-                      <Bookmark size={18} color={COLORS.primary} fill={COLORS.primary} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Metadata Row */}
-                  <View style={styles.metaRow}>
-                    <View style={styles.metaBadge}>
-                      <MapPin size={12} color={COLORS.primary} />
-                      <Text style={styles.metaBadgeText}>{job.location || 'MIDC Zone'}</Text>
+                    {/* Job Type & Shift Pills Directly Below Company Name */}
+                    <View style={styles.pillBadgeRow}>
+                      <View style={styles.typePill}>
+                        <Briefcase size={10} color="#475569" />
+                        <Text style={styles.typePillText} numberOfLines={1}>{job.job_type || job.jobType || 'Full-time'}</Text>
+                      </View>
+                      {(job as any).shift_type || (job as any).shiftType ? (
+                        <View style={styles.shiftPill}>
+                          <Text style={styles.shiftPillText} numberOfLines={1}>{(job as any).shift_type || (job as any).shiftType}</Text>
+                        </View>
+                      ) : null}
                     </View>
 
-                    <View style={styles.metaBadge}>
-                      <Briefcase size={12} color="#64748B" />
-                      <Text style={styles.metaBadgeText}>{job.job_type || job.jobType || 'Full-time'}</Text>
+                    <View style={styles.gridCardDivider} />
+
+                    {/* Location & Salary Below Divider */}
+                    <View style={styles.gridCardFooterInfo}>
+                      <View style={styles.metaItemRow}>
+                        <MapPin size={11} color={COLORS.primary} />
+                        <Text style={styles.metaText} numberOfLines={1}>{job.location || 'MIDC Industrial Zone'}</Text>
+                      </View>
+
+                      {job.salary_max || job.salaryMax ? (
+                        <View style={styles.metaItemRow}>
+                          <IndianRupee size={11} color="#0F172A" />
+                          <Text style={styles.salaryText} numberOfLines={1}>
+                            ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       )}
@@ -288,94 +302,125 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
   },
-  savedCard3D: {
+  /* 2-Column Grid Layout */
+  gridRowContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  gridCard: {
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 14,
-    gap: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    padding: 12,
+    gap: 8,
+    justifyContent: 'space-between',
   },
-  cardTopRow: {
+  gridCardSkeleton: {
+    width: '48.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+    height: 150,
+  },
+  gridCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  jobTitle: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 18,
+  },
+  companyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 5,
+    marginTop: -2,
   },
-  companyIconSquare: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+  smallCompanyIconSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  companyLogoImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
-  },
-  jobTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.2,
+  smallCompanyLogoImg: {
+    width: 18,
+    height: 18,
+    borderRadius: 3,
   },
   companyName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 1,
-  },
-  bookmarkBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  metaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginRight: 10,
-  },
-  metaBadgeText: {
     fontSize: 11.5,
     fontWeight: '600',
     color: '#64748B',
+    flex: 1,
   },
-  cardFooterRow: {
+  bookmarkBtn: {
+    padding: 2,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridCardDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  gridCardFooterInfo: {
+    gap: 4,
+  },
+  metaItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    gap: 4,
   },
-  applyActionBtn: {
+  metaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    flex: 1,
+  },
+  pillBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginVertical: 2,
+  },
+  typePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    backgroundColor: 'transparent',
   },
-  applyActionText: {
-    fontSize: 12,
+  typePillText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  shiftPill: {
+    backgroundColor: 'transparent',
+  },
+  shiftPillText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  salaryText: {
+    fontSize: 11.5,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#0F172A',
+    flex: 1,
   },
 });

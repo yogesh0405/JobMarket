@@ -333,6 +333,9 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   return (
     <View style={styles.container}>
+      {/* Top Overscroll Blue Fill to eliminate any white space above blue header when scrolling up or down */}
+      <View style={styles.topOverscrollBlueFill} />
+
       <ScrollView
         contentContainerStyle={styles.scrollContentBody}
         showsVerticalScrollIndicator={false}
@@ -643,6 +646,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F7F7',
+  },
+  topOverscrollBlueFill: {
+    position: 'absolute',
+    top: -500,
+    left: 0,
+    right: 0,
+    height: 500,
+    backgroundColor: COLORS.primary,
   },
   scrollContentBody: {
     paddingTop: 0,

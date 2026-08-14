@@ -823,11 +823,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.heroInputRow}
             onPress={() => setIndustryModalOpen(true)}
           >
-            <Briefcase size={18} color={COLORS.primary} />
+            <Briefcase size={16} color={COLORS.primary} />
             <Text style={[styles.heroInputText, selectedIndustry !== 'Select Industry' && styles.heroInputTextActive]}>
               {selectedIndustry}
             </Text>
-            <ChevronDown size={18} color="#94A3B8" />
+            <ChevronDown size={16} color="#94A3B8" />
           </TouchableOpacity>
 
           {/* Select Education Dropdown */}
@@ -836,16 +836,16 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.heroInputRow}
             onPress={() => setEducationModalOpen(true)}
           >
-            <GraduationCap size={18} color={COLORS.primary} />
+            <GraduationCap size={16} color={COLORS.primary} />
             <Text style={[styles.heroInputText, selectedEducation !== 'Select Education' && styles.heroInputTextActive]}>
               {selectedEducation}
             </Text>
-            <ChevronDown size={18} color="#94A3B8" />
+            <ChevronDown size={16} color="#94A3B8" />
           </TouchableOpacity>
 
           {/* India (MIDC Zone or City) Input */}
           <View style={styles.heroInputRow}>
-            <MapPin size={18} color={COLORS.primary} />
+            <MapPin size={16} color={COLORS.primary} />
             <TextInput
               style={styles.heroTextInput}
               placeholder="India (MIDC Zone or City)"
@@ -861,7 +861,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.searchJobsBtn}
             onPress={handleSearchSubmit}
           >
-            <Search size={18} color="#FFFFFF" />
+            <Search size={15} color="#FFFFFF" />
             <Text style={styles.searchJobsBtnText}>Search Jobs</Text>
           </TouchableOpacity>
         </View>
@@ -1497,15 +1497,15 @@ const styles = StyleSheet.create({
   },
   heroSearchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 16,
-    gap: 10,
+    padding: 10,
+    gap: 4,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
     elevation: 1,
   },
   heroInputRow: {
@@ -1515,12 +1515,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
     paddingHorizontal: 4,
-    height: 44,
-    gap: 10,
+    height: 36,
+    gap: 8,
   },
   heroInputText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: '#94A3B8',
     fontWeight: '600',
   },
@@ -1530,7 +1530,7 @@ const styles = StyleSheet.create({
   },
   heroTextInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '600',
   },
@@ -1538,17 +1538,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: 'hidden',
-    paddingVertical: 13,
+    paddingVertical: 9,
     marginTop: 4,
   },
   searchJobsBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 13,
+    fontWeight: '800',
   },
   popularTradesSection: {
     alignItems: 'center',
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   skewedTabPillActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: COLORS.primary,
   },
@@ -1685,7 +1685,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   countPillBadgeActive: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#F1F5F9',
   },
   countPillBadgeInactive: {
     backgroundColor: '#F1F5F9',

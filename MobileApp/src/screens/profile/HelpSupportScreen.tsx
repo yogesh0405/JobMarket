@@ -158,6 +158,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [category, setCategory] = useState('General Inquiry');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -478,13 +479,8 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       {currentView === 'TICKETS' ? (
         <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-          {/* Top Navy Header Banner with Back & Stats */}
-          <LinearGradient
-            colors={COLORS.employerGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={styles.ticketsHeaderBanner}
-          >
+          {/* Top Clean White Header Banner with Back & Stats */}
+          <View style={styles.ticketsHeaderBannerWhite}>
             {/* Title Bar */}
             <View style={styles.headerTitleRowNav}>
               <TouchableOpacity
@@ -492,50 +488,50 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ padding: 4 }}
               >
-                <ArrowLeft size={20} color="#FFFFFF" />
+                <ArrowLeft size={20} color="#0F172A" />
               </TouchableOpacity>
-              <Text style={styles.ticketsHeaderTitleText}>Support Tickets Desk</Text>
+              <Text style={styles.ticketsHeaderTitleTextDark}>Support Tickets Desk</Text>
             </View>
 
             {/* Embedded Top Stats Card */}
-            <View style={styles.topBannerStatsCard}>
+            <View style={styles.topBannerStatsCardWhite}>
               <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>{myTickets.length}</Text>
-                <Text style={styles.statLabelMutedText}>Total Tickets</Text>
+                <Text style={styles.statValDarkText}>{myTickets.length}</Text>
+                <Text style={styles.statLabelMutedTextDark}>Total Tickets</Text>
               </View>
-              <View style={styles.statColDivider} />
+              <View style={styles.statColDividerDark} />
               <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>
+                <Text style={styles.statValDarkText}>
                   {myTickets.filter((t) => t.status !== 'RESOLVED').length || 1}
                 </Text>
-                <Text style={styles.statLabelMutedText}>Active Tickets</Text>
+                <Text style={styles.statLabelMutedTextDark}>Active Tickets</Text>
               </View>
-              <View style={styles.statColDivider} />
+              <View style={styles.statColDividerDark} />
               <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>24/7</Text>
-                <Text style={styles.statLabelMutedText}>Helpdesk Live</Text>
+                <Text style={styles.statValDarkText}>24/7</Text>
+                <Text style={styles.statLabelMutedTextDark}>Helpdesk Live</Text>
               </View>
             </View>
 
-            {/* Underline Tabs Inside Navy Header */}
-            <View style={styles.navyHeaderUnderlineTabs}>
+            {/* Underline Tabs Inside White Header */}
+            <View style={styles.whiteHeaderUnderlineTabs}>
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => setTicketTab('CREATE')}
                 style={styles.navyHeaderTabItem}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Plus size={15} color={ticketTab === 'CREATE' ? '#FFFFFF' : '#94A3B8'} />
+                  <Plus size={15} color={ticketTab === 'CREATE' ? COLORS.primary : '#64748B'} />
                   <Text
                     style={[
-                      styles.navyHeaderTabText,
-                      ticketTab === 'CREATE' && styles.navyHeaderTabTextActive,
+                      styles.whiteHeaderTabText,
+                      ticketTab === 'CREATE' && styles.whiteHeaderTabTextActive,
                     ]}
                   >
                     Create Ticket
                   </Text>
                 </View>
-                {ticketTab === 'CREATE' ? <View style={styles.navyHeaderActiveUnderline} /> : null}
+                {ticketTab === 'CREATE' ? <View style={styles.whiteHeaderActiveUnderline} /> : null}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -544,20 +540,20 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                 style={styles.navyHeaderTabItem}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ticket size={15} color={ticketTab === 'MY_TICKETS' ? '#FFFFFF' : '#94A3B8'} />
+                  <Ticket size={15} color={ticketTab === 'MY_TICKETS' ? COLORS.primary : '#64748B'} />
                   <Text
                     style={[
-                      styles.navyHeaderTabText,
-                      ticketTab === 'MY_TICKETS' && styles.navyHeaderTabTextActive,
+                      styles.whiteHeaderTabText,
+                      ticketTab === 'MY_TICKETS' && styles.whiteHeaderTabTextActive,
                     ]}
                   >
                     My Tickets ({myTickets.length})
                   </Text>
                 </View>
-                {ticketTab === 'MY_TICKETS' ? <View style={styles.navyHeaderActiveUnderline} /> : null}
+                {ticketTab === 'MY_TICKETS' ? <View style={styles.whiteHeaderActiveUnderline} /> : null}
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
 
           <ScrollView
             contentContainerStyle={styles.ticketsScrollContent}
@@ -566,9 +562,9 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
           >
             {/* TAB 1: CREATE SUPPORT TICKET FORM */}
             {ticketTab === 'CREATE' ? (
-              <View style={{ gap: 14 }}>
+              <View style={styles.createTicketCardContainer}>
                 {/* Form Title & Subtitle */}
-                <View style={{ marginBottom: 4 }}>
+                <View style={{ marginBottom: 2 }}>
                   <Text style={styles.formMainHeaderTitle}>Submit Support Ticket</Text>
                   <Text style={styles.formMainHeaderSub}>
                     Fill in your inquiry details below. Our technical support engineering team will respond within 2 hours.
@@ -618,10 +614,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                   <TouchableOpacity
                     activeOpacity={0.8}
                     style={styles.categoryDropdownTrigger}
-                    onPress={() => {
-                      const nextIdx = (CATEGORIES.indexOf(category) + 1) % CATEGORIES.length;
-                      setCategory(CATEGORIES[nextIdx]);
-                    }}
+                    onPress={() => setIsCategoryModalOpen(true)}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                       <HelpCircle size={18} color={COLORS.primary} />
@@ -636,9 +629,9 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={styles.fieldLabelText}>Priority Level *</Text>
                   <View style={styles.priorityCardsRow}>
                     {[
-                      { key: 'low', label: 'Low', sub: 'Normal Inquiry', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0', icon: CheckCircle2 },
-                      { key: 'medium', label: 'Medium', sub: 'Standard', color: '#D97706', bg: '#FFFBEB', border: '#FCD34D', icon: AlertCircle },
-                      { key: 'high', label: 'High', sub: 'Urgent Issue', color: '#DC2626', bg: '#FEF2F2', border: '#FECDD3', icon: Zap },
+                      { key: 'low', label: 'Low', sub: 'Normal Inquiry', color: '#059669', bg: '#FFFFFF', icon: CheckCircle2 },
+                      { key: 'medium', label: 'Medium', sub: 'Standard', color: '#D97706', bg: '#FFFFFF', icon: AlertCircle },
+                      { key: 'high', label: 'High', sub: 'Urgent Issue', color: '#DC2626', bg: '#FFFFFF', icon: Zap },
                     ].map((p) => {
                       const isSel = priority === p.key;
                       const IconC = p.icon;
@@ -649,16 +642,16 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                           onPress={() => setPriority(p.key as any)}
                           style={[
                             styles.priorityCardItem,
-                            isSel && { backgroundColor: p.bg, borderColor: p.border, borderWidth: 1.5 },
+                            isSel && { borderColor: COLORS.primary, borderWidth: 2, backgroundColor: '#EFF6FF' },
                           ]}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <IconC size={13} color={isSel ? p.color : '#64748B'} />
-                            <Text style={[styles.priorityCardTitle, isSel && { color: p.color, fontWeight: '800' }]}>
+                            <IconC size={13} color={isSel ? COLORS.primary : '#64748B'} />
+                            <Text style={[styles.priorityCardTitle, isSel && { color: COLORS.primary, fontWeight: '800' }]}>
                               {p.label}
                             </Text>
                           </View>
-                          <Text style={[styles.priorityCardSub, isSel && { color: p.color }]}>{p.sub}</Text>
+                          <Text style={[styles.priorityCardSub, isSel && { color: COLORS.primary }]}>{p.sub}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -691,7 +684,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                   title="Submit Support Ticket"
                   onPress={handleCreateTicket}
                   loading={isSubmitting}
-                  style={{ marginTop: 4 }}
+                  style={{ marginTop: 6, borderRadius: 0, height: 48 }}
                 />
               </View>
             ) : (
@@ -747,42 +740,19 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
       ) : (
         /* SCREEN 1: MAIN HELP & SUPPORT DESK */
         <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-          {/* Top Navy Header Banner */}
-          <LinearGradient
-            colors={COLORS.employerGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={styles.mainHeaderBanner}
-          >
+          {/* Top Clean White Header Banner */}
+          <View style={styles.mainHeaderBannerWhite}>
             <View style={styles.headerTitleRowNav}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ padding: 4 }}
               >
-                <ArrowLeft size={20} color="#FFFFFF" />
+                <ArrowLeft size={20} color="#0F172A" />
               </TouchableOpacity>
-              <Text style={styles.ticketsHeaderTitleText}>Help & Support Desk</Text>
+              <Text style={styles.ticketsHeaderTitleTextDark}>Help & Support Desk</Text>
             </View>
-
-            {/* Embedded Top Stats Card */}
-            <View style={styles.topBannerStatsCard}>
-              <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>Instant</Text>
-                <Text style={styles.statLabelMutedText}>FAQ Search</Text>
-              </View>
-              <View style={styles.statColDivider} />
-              <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>2 Hours</Text>
-                <Text style={styles.statLabelMutedText}>Response Time</Text>
-              </View>
-              <View style={styles.statColDivider} />
-              <View style={styles.statColItem}>
-                <Text style={styles.statValWhiteText}>Direct</Text>
-                <Text style={styles.statLabelMutedText}>Technical Support</Text>
-              </View>
-            </View>
-          </LinearGradient>
+          </View>
 
           <ScrollView
             contentContainerStyle={styles.mainScrollContent}
@@ -1044,6 +1014,40 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Category Selection Bottom Sheet Modal */}
+      <Modal visible={isCategoryModalOpen} transparent animationType="slide" onRequestClose={() => setIsCategoryModalOpen(false)}>
+        <TouchableOpacity style={styles.categoryModalOverlay} activeOpacity={1} onPress={() => setIsCategoryModalOpen(false)}>
+          <View style={styles.categoryModalSheet}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>Select Inquiry Category</Text>
+              <TouchableOpacity onPress={() => setIsCategoryModalOpen(false)} style={{ padding: 4 }}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.categoryListContainer}>
+              {CATEGORIES.map((cat) => {
+                const isSelected = category === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    activeOpacity={0.7}
+                    style={[styles.categoryOptionItem, isSelected && styles.categoryOptionItemSelected]}
+                    onPress={() => {
+                      setCategory(cat);
+                      setIsCategoryModalOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.categoryOptionText, isSelected && styles.categoryOptionTextSelected]}>{cat}</Text>
+                    {isSelected ? <CheckCircle2 size={18} color={COLORS.primary} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -1055,15 +1059,21 @@ const styles = StyleSheet.create({
   },
 
   /* Screen 1 & Screen 2 Header Navy Banners */
-  mainHeaderBanner: {
+  mainHeaderBannerWhite: {
     paddingTop: Platform.OS === 'ios' ? 42 : 18,
     paddingHorizontal: 16,
     paddingBottom: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  ticketsHeaderBanner: {
+  ticketsHeaderBannerWhite: {
     paddingTop: Platform.OS === 'ios' ? 42 : 18,
     paddingHorizontal: 16,
     paddingBottom: 0,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   headerTitleRowNav: {
     flexDirection: 'row',
@@ -1071,19 +1081,19 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
-  ticketsHeaderTitleText: {
+  ticketsHeaderTitleTextDark: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
-  topBannerStatsCard: {
+  topBannerStatsCardWhite: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 12,
@@ -1093,29 +1103,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  statValWhiteText: {
+  statValDarkText: {
     fontSize: 14.5,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
-  statLabelMutedText: {
+  statLabelMutedTextDark: {
     fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '600',
+    color: '#64748B',
     marginTop: 2,
   },
-  statColDivider: {
+  statColDividerDark: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#E2E8F0',
   },
 
-  /* Navy Header Underline Tab Switcher (Screen 2) */
-  navyHeaderUnderlineTabs: {
+  /* White Header Underline Tab Switcher (Screen 2) */
+  whiteHeaderUnderlineTabs: {
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopColor: '#E2E8F0',
     marginTop: 4,
   },
   navyHeaderTabItem: {
@@ -1125,22 +1135,22 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     position: 'relative',
   },
-  navyHeaderTabText: {
+  whiteHeaderTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#64748B',
   },
-  navyHeaderTabTextActive: {
-    color: '#FFFFFF',
+  whiteHeaderTabTextActive: {
+    color: COLORS.primary,
     fontWeight: '800',
   },
-  navyHeaderActiveUnderline: {
+  whiteHeaderActiveUnderline: {
     position: 'absolute',
     bottom: 0,
     left: 20,
     right: 20,
     height: 2.5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.primary,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
   },
@@ -1259,6 +1269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
+    paddingHorizontal: 12,
   },
   faqAccordionQuestionTitle: {
     flex: 1,
@@ -1274,6 +1285,7 @@ const styles = StyleSheet.create({
   faqAccordionBodyBox: {
     marginTop: 8,
     paddingTop: 4,
+    paddingHorizontal: 12,
   },
   faqAccordionAnswerBodyText: {
     fontSize: 13,
@@ -1294,6 +1306,14 @@ const styles = StyleSheet.create({
   },
 
   /* Form Styling (Screen 2 - Create Support Ticket) */
+  createTicketCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#94A3B8',
+    borderRadius: 0,
+    padding: 16,
+    gap: 14,
+  },
   formMainHeaderTitle: {
     fontSize: 17,
     fontWeight: '800',
@@ -1310,13 +1330,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.primary,
     letterSpacing: 0.5,
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 2,
   },
   formSectionDividerLine: {
     height: 1,
-    backgroundColor: '#CBD5E1',
-    marginVertical: 6,
+    backgroundColor: '#94A3B8',
+    marginVertical: 8,
   },
   fieldLabelText: {
     fontSize: 12,
@@ -1331,9 +1351,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
   },
   categoryDropdownValueText: {
     fontSize: 13.5,
@@ -1349,7 +1369,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingVertical: 10,
     paddingHorizontal: 6,
     alignItems: 'center',
@@ -1370,11 +1390,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 0,
     padding: 12,
-    minHeight: 90,
+    minHeight: 100,
     fontSize: 13.5,
     color: '#0F172A',
+  },
+
+  /* Category Bottom Sheet Modal */
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryModalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '70%',
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#94A3B8',
+    marginBottom: 8,
+  },
+  categoryModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  categoryListContainer: {
+    marginTop: 6,
+    gap: 4,
+  },
+  categoryOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  categoryOptionItemSelected: {
+    backgroundColor: '#EFF6FF',
+  },
+  categoryOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#334155',
+  },
+  categoryOptionTextSelected: {
+    fontWeight: '800',
+    color: COLORS.primary,
   },
 
   /* My Tickets List Styles (Screen 2 Tab 2) */

@@ -41,6 +41,37 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const [appliedList, setAppliedList] = useState<any[]>(appliedJobsStore.getAppliedJobs());
   const [loading, setLoading] = useState(appliedJobsStore.getAppliedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterTab, setFilterTab] = useState<'ALL' | 'INTERVIEW' | 'REVIEW' | 'DECISIONS'>('ALL');
+
+  // Filter application list based on active tab
+  const filteredApplications = appliedList.filter((item: any) => {
+    const s = (item.status || 'applied').toLowerCase();
+    if (filterTab === 'INTERVIEW') {
+      return s === 'shortlisted' || s === 'interview' || s === 'interview_scheduled';
+    }
+    if (filterTab === 'REVIEW') {
+      return s === 'applied' || s === 'reviewed' || s === 'under_review';
+    }
+    if (filterTab === 'DECISIONS') {
+      return s === 'hired' || s === 'selected' || s === 'accepted' || s === 'rejected';
+    }
+    return true;
+  });
+
+  const interviewCount = appliedList.filter((item: any) => {
+    const s = (item.status || 'applied').toLowerCase();
+    return s === 'shortlisted' || s === 'interview' || s === 'interview_scheduled';
+  }).length;
+
+  const reviewCount = appliedList.filter((item: any) => {
+    const s = (item.status || 'applied').toLowerCase();
+    return s === 'applied' || s === 'reviewed' || s === 'under_review';
+  }).length;
+
+  const decisionsCount = appliedList.filter((item: any) => {
+    const s = (item.status || 'applied').toLowerCase();
+    return s === 'hired' || s === 'selected' || s === 'accepted' || s === 'rejected';
+  }).length;
 
   const syncListWithStore = useCallback((apiData?: any[]) => {
     if (apiData && Array.isArray(apiData)) {
@@ -207,12 +238,62 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          {appliedList.length === 0 ? (
+          {/* Status Filter Segment Tabs */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterTabsRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.filterSegmentBtn, filterTab === 'ALL' && styles.filterSegmentBtnActive]}
+              onPress={() => setFilterTab('ALL')}
+            >
+              <Text style={[styles.filterSegmentText, filterTab === 'ALL' && styles.filterSegmentTextActive]}>
+                All ({appliedList.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.filterSegmentBtn, filterTab === 'INTERVIEW' && styles.filterSegmentBtnActive]}
+              onPress={() => setFilterTab('INTERVIEW')}
+            >
+              <Calendar size={12} color={filterTab === 'INTERVIEW' ? '#FFFFFF' : '#475569'} />
+              <Text style={[styles.filterSegmentText, filterTab === 'INTERVIEW' && styles.filterSegmentTextActive]}>
+                Interviews ({interviewCount})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.filterSegmentBtn, filterTab === 'REVIEW' && styles.filterSegmentBtnActive]}
+              onPress={() => setFilterTab('REVIEW')}
+            >
+              <Clock size={12} color={filterTab === 'REVIEW' ? '#FFFFFF' : '#475569'} />
+              <Text style={[styles.filterSegmentText, filterTab === 'REVIEW' && styles.filterSegmentTextActive]}>
+                Under Review ({reviewCount})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.filterSegmentBtn, filterTab === 'DECISIONS' && styles.filterSegmentBtnActive]}
+              onPress={() => setFilterTab('DECISIONS')}
+            >
+              <CheckCircle2 size={12} color={filterTab === 'DECISIONS' ? '#FFFFFF' : '#475569'} />
+              <Text style={[styles.filterSegmentText, filterTab === 'DECISIONS' && styles.filterSegmentTextActive]}>
+                Decisions ({decisionsCount})
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+
+          {filteredApplications.length === 0 ? (
             <View style={styles.emptyCard}>
               <Briefcase size={40} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No Active Applications</Text>
+              <Text style={styles.emptyTitle}>
+                {filterTab === 'ALL' ? 'No Active Applications' : 'No Applications Found'}
+              </Text>
               <Text style={styles.emptyDesc}>
-                You haven't submitted any job applications yet. Browse factory vacancies and apply today!
+                {filterTab === 'ALL'
+                  ? "You haven't submitted any job applications yet. Browse factory vacancies and apply today!"
+                  : `No job applications currently match the "${filterTab.toLowerCase()}" filter.`}
               </Text>
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -223,7 +304,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ) : (
-            appliedList.map((item) => {
+            filteredApplications.map((item: any) => {
               const job = item.job || item;
               const targetJobId = item.jobId || job.id || job._id;
               const status = (item.status || 'applied').toLowerCase();
@@ -238,13 +319,13 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   style={styles.appliedCardSquare}
                   onPress={() => navigation.navigate('CandidateJobDetail', { jobId: targetJobId, id: targetJobId, job })}
                 >
-                  {/* Card Top Row */}
+                  {/* Card Top Header Row */}
                   <View style={styles.cardHeaderRow}>
                     <CompanyLogoAvatar
                       logoUrl={logoUrl}
                       companyName={job.company}
-                      size={40}
-                      borderRadius={0}
+                      size={42}
+                      borderRadius={6}
                     />
 
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -252,16 +333,17 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                         {job.title || 'Industrial Vacancy'}
                       </Text>
                       <Text style={styles.companyName} numberOfLines={1}>
-                        {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC'}
+                        {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC Zone'}
                       </Text>
                     </View>
 
                     <ChevronRight size={18} color="#94A3B8" />
                   </View>
 
+                  {/* Section Separator Rule */}
                   <View style={styles.sectionDividerSlate} />
 
-                  {/* Metadata Row */}
+                  {/* Metadata Info Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaInlineItem}>
                       <MapPin size={13} color={COLORS.primary} />
@@ -278,29 +360,28 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     ) : null}
                   </View>
 
-                  {/* Interview Schedule Details (If Interview Scheduled) */}
+                  {/* Interview Schedule Sub-Layout (No card-in-card nesting) */}
                   {isShortlisted && (item.interviewDate || item.interview_date) ? (
-                    <View style={styles.interviewContainer}>
+                    <View style={styles.interviewSubLayout}>
+                      <View style={styles.sectionDividerSlate} />
                       <View style={styles.interviewHeaderRow}>
-                        <Calendar size={15} color={COLORS.primary} />
-                        <Text style={styles.interviewHeaderTitle}>Interview Schedule & Walk-In Pass</Text>
+                        <Calendar size={14} color={COLORS.primary} />
+                        <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
                         <View style={styles.actionPill}>
                           <Text style={styles.actionPillText}>CONFIRMED</Text>
                         </View>
                       </View>
 
-                      <View style={styles.interviewDetailsGrid}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.detailLabel}>DATE & TIME</Text>
-                          <Text style={styles.detailValue}>
-                            {item.interviewDate || item.interview_date} {item.interviewTime || item.interview_time ? `(${item.interviewTime || item.interview_time})` : ''}
-                          </Text>
-                        </View>
+                      <View style={styles.interviewDetailsRow}>
+                        <Text style={styles.detailLabel}>DATE & TIME:</Text>
+                        <Text style={styles.detailValue}>
+                          {item.interviewDate || item.interview_date} {item.interviewTime || item.interview_time ? `(${item.interviewTime || item.interview_time})` : ''}
+                        </Text>
                       </View>
 
                       {item.venueAddress || item.venue_address ? (
                         <View style={{ marginTop: 2 }}>
-                          <Text style={styles.detailLabel}>INTERVIEW VENUE ADDRESS</Text>
+                          <Text style={styles.venueLabel}>VENUE:</Text>
                           <Text style={styles.venueAddressText}>{item.venueAddress || item.venue_address}</Text>
                         </View>
                       ) : null}
@@ -315,14 +396,14 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                           }}
                         >
                           <MapPin size={13} color="#FFFFFF" />
-                          <Text style={styles.openMapsBtnText}>Open Directions in Google Maps</Text>
+                          <Text style={styles.openMapsBtnText}>Open Directions in Maps</Text>
                           <ExternalLink size={12} color="#FFFFFF" />
                         </TouchableOpacity>
                       ) : null}
                     </View>
                   ) : null}
 
-                  {/* Footer Action Row with Real Live Application Status */}
+                  {/* Footer Action Row with Status Badge */}
                   <View style={styles.cardFooterRow}>
                     <Text style={styles.appliedDateText}>
                       Applied {item.appliedAt ? new Date(item.appliedAt).toLocaleDateString() : 'Recently'}
@@ -368,6 +449,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+  },
+  filterTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 4,
+  },
+  filterSegmentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  filterSegmentBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterSegmentText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  filterSegmentTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   countBadge: {
     flexDirection: 'row',
@@ -421,7 +532,7 @@ const styles = StyleSheet.create({
   },
   appliedCardSquare: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
@@ -454,7 +565,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 0,
+    borderRadius: 4,
     borderWidth: 1,
   },
   statusPillBadgeText: {
@@ -478,14 +589,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#475569',
   },
-  interviewContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 0,
-    padding: 12,
-    gap: 8,
-    marginTop: 4,
+  interviewSubLayout: {
+    gap: 6,
   },
   interviewHeaderRow: {
     flexDirection: 'row',
@@ -504,33 +609,35 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 0,
+    borderRadius: 4,
   },
   actionPillText: {
     fontSize: 9.5,
     fontWeight: '800',
     color: COLORS.primary,
   },
-  interviewDetailsGrid: {
+  interviewDetailsRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 0,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 12,
+    alignItems: 'center',
+    gap: 6,
   },
   detailLabel: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
-    marginBottom: 2,
   },
   detailValue: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
+  },
+  venueLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 1,
   },
   venueAddressText: {
     fontSize: 12,
@@ -544,9 +651,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: COLORS.primary,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 0,
+    borderRadius: 6,
     marginTop: 4,
   },
   openMapsBtnText: {
@@ -560,7 +667,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E2E8F0',
+    marginTop: 2,
   },
   appliedDateText: {
     fontSize: 11.5,

@@ -28,6 +28,7 @@ import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { getRecommendedJobsForCandidate } from '../../utils/recommendationMatcher';
 import { COLORS } from '../../constants/theme';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 
@@ -66,7 +67,8 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
       }
       if (allJobsRes.success && allJobsRes.data) {
         const jobs = allJobsRes.data || [];
-        setRecommendedJobs(jobs.slice(0, 4));
+        const matchedJobs = getRecommendedJobsForCandidate(jobs, user);
+        setRecommendedJobs(matchedJobs.slice(0, 4));
       }
     } catch (e) {
       console.log('Error fetching candidate dashboard data:', e);

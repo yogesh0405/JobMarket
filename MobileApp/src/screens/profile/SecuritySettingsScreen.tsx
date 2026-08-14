@@ -409,45 +409,37 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Top Overscroll Navy Blue Background */}
-      <View style={styles.topOverscrollBlueFill} />
-
-      {/* Top Navy Header Banner with Back Button & Stats */}
-      <LinearGradient
-        colors={COLORS.employerGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={styles.headerBannerContainer}
-      >
+      {/* Top Clean White Header Banner */}
+      <View style={styles.headerBannerWhite}>
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ padding: 4 }}
           >
-            <ArrowLeft size={20} color="#FFFFFF" />
+            <ArrowLeft size={20} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitleText}>Security & Active Sessions</Text>
+          <Text style={styles.headerTitleTextDark}>Security & Active Sessions</Text>
         </View>
 
-        {/* Embedded Top Translucent Stats Card */}
-        <View style={styles.topBannerStatsCard}>
+        {/* Embedded Top Stats Card */}
+        <View style={styles.topBannerStatsCardWhite}>
           <View style={styles.statColItem}>
-            <Text style={styles.statValWhiteText}>{twoFactorEnabled ? 'Active' : 'Off'}</Text>
-            <Text style={styles.statLabelMutedText}>2FA Protection</Text>
+            <Text style={styles.statValDarkText}>{twoFactorEnabled ? 'Active' : 'Off'}</Text>
+            <Text style={styles.statLabelMutedTextDark}>2FA Protection</Text>
           </View>
-          <View style={styles.statColDivider} />
+          <View style={styles.statColDividerDark} />
           <View style={styles.statColItem}>
-            <Text style={styles.statValWhiteText}>{sessions.length || 1}</Text>
-            <Text style={styles.statLabelMutedText}>Device Sessions</Text>
+            <Text style={styles.statValDarkText}>{sessions.length || 1}</Text>
+            <Text style={styles.statLabelMutedTextDark}>Device Sessions</Text>
           </View>
-          <View style={styles.statColDivider} />
+          <View style={styles.statColDividerDark} />
           <View style={styles.statColItem}>
-            <Text style={styles.statValWhiteText}>100%</Text>
-            <Text style={styles.statLabelMutedText}>Encrypted</Text>
+            <Text style={styles.statValDarkText}>100%</Text>
+            <Text style={styles.statLabelMutedTextDark}>Encrypted</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -457,9 +449,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* CARD BLOCK 1: ACTIVE LOGIN SESSIONS */}
         <View style={styles.cardBlock}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.iconChipBox}>
-              <Laptop size={18} color={COLORS.primary} />
-            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.sectionBlockTitle}>Active Login Sessions</Text>
               <Text style={styles.sectionBlockSub}>Currently authenticated devices & IP addresses</Text>
@@ -550,55 +539,51 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* CARD BLOCK 2: ACCOUNT CREDENTIALS */}
         <View style={styles.cardBlock}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.iconChipBox}>
-              <Lock size={18} color={COLORS.primary} />
-            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.sectionBlockTitle}>Account Credentials & Recovery</Text>
               <Text style={styles.sectionBlockSub}>Update password or trigger instant OTP reset</Text>
             </View>
           </View>
 
-          {/* Action Row 1: Change Account Password */}
-          <TouchableOpacity
-            style={styles.actionItemRow}
-            onPress={() => {
-              setPasswordError(null);
-              setIsChangePassModalOpen(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.actionIconPill}>
-              <Lock size={16} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.actionRowTitle}>Change Account Password</Text>
-              <Text style={styles.actionRowSub}>
-                Update current password using existing account credentials
-              </Text>
-            </View>
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
+          <View style={{ gap: 10, paddingLeft: 14 }}>
+            {/* Action Row 1: Change Account Password */}
+            <TouchableOpacity
+              style={styles.actionItemRow}
+              onPress={() => {
+                setPasswordError(null);
+                setIsChangePassModalOpen(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconPill}>
+                <Lock size={16} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionRowTitle}>Change Account Password</Text>
+                <Text style={styles.actionRowSub}>
+                  Update current password using existing account credentials
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#94A3B8" />
+            </TouchableOpacity>
 
-          <View style={styles.rowDividerLine} />
+            <View style={styles.rowDividerLine} />
 
-          {/* Action Row 2: Reset Password via Email OTP */}
-          <TouchableOpacity
-            style={styles.actionItemRow}
-            onPress={handleOpenResetConfirm}
-            activeOpacity={0.7}
-          >
-            <View style={styles.actionIconPill}>
-              <KeyRound size={16} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.actionRowTitle}>Forgot Password? Reset via Email OTP</Text>
-              <Text style={styles.actionRowSub}>
-                Send a 6-digit verification code to your email address
-              </Text>
-            </View>
-            <ChevronRight size={18} color={COLORS.primary} />
-          </TouchableOpacity>
+            {/* Action Row 2: Reset Password via Email OTP */}
+            <TouchableOpacity
+              style={styles.actionItemRow}
+              onPress={handleOpenResetConfirm}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionIconPill}>
+                <KeyRound size={16} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionRowTitle}>Forgot Password?</Text>
+              </View>
+              <ChevronRight size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Crisp Section Divider Line */}
@@ -607,9 +592,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* CARD BLOCK 3: MULTI-FACTOR AUTHENTICATION (2FA) */}
         <View style={styles.cardBlock}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.iconChipBox}>
-              <ShieldCheck size={18} color={twoFactorEnabled ? '#16A34A' : '#D97706'} />
-            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.sectionBlockTitle}>Two-Factor Authentication (2FA)</Text>
               <Text style={styles.sectionBlockSub}>Extra layer of email OTP login security</Text>
@@ -938,20 +920,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  topOverscrollBlueFill: {
-    position: 'absolute',
-    top: -400,
-    left: 0,
-    right: 0,
-    height: 400,
-    backgroundColor: COLORS.primary,
-  },
-
-  /* Header Banner */
-  headerBannerContainer: {
+  /* Header Banner White */
+  headerBannerWhite: {
     paddingTop: Platform.OS === 'ios' ? 42 : 18,
     paddingHorizontal: 16,
     paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   headerTitleNavRow: {
     flexDirection: 'row',
@@ -959,19 +935,19 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
-  headerTitleText: {
+  headerTitleTextDark: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
-  topBannerStatsCard: {
+  topBannerStatsCardWhite: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 12,
@@ -981,21 +957,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  statValWhiteText: {
+  statValDarkText: {
     fontSize: 14.5,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
-  statLabelMutedText: {
+  statLabelMutedTextDark: {
     fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '600',
+    color: '#64748B',
     marginTop: 2,
   },
-  statColDivider: {
+  statColDividerDark: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#E2E8F0',
   },
 
   /* Scroll Content & Cards */
@@ -1056,6 +1032,7 @@ const styles = StyleSheet.create({
   },
   sessionList: {
     gap: 10,
+    paddingLeft: 14,
   },
   sessionItemRow: {
     flexDirection: 'row',

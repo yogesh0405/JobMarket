@@ -48,7 +48,12 @@ const formatDate = (dateStr: string): string => {
   return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const CountdownBadge: React.FC<{ days: number }> = ({ days }) => {
+const CountdownBadge: React.FC<{ days: number; isPast?: boolean }> = ({ days, isPast }) => {
+  if (isPast || days < 0) return (
+    <View style={[badgeStyles.base, badgeStyles.past]}>
+      <Text style={badgeStyles.pastText}>{Math.abs(days)} {Math.abs(days) === 1 ? 'day' : 'days'} ago</Text>
+    </View>
+  );
   if (days === 0) return (
     <View style={[badgeStyles.base, badgeStyles.today]}>
       <Text style={badgeStyles.todayText}>TODAY</Text>
@@ -59,32 +64,14 @@ const CountdownBadge: React.FC<{ days: number }> = ({ days }) => {
       <Text style={badgeStyles.tomorrowText}>TOMORROW</Text>
     </View>
   );
-  if (days <= 7) return (
-    <View style={[badgeStyles.base, badgeStyles.soon]}>
-      <Text style={badgeStyles.soonText}>In {days} days</Text>
-    </View>
-  );
   return (
     <View style={[badgeStyles.base, badgeStyles.upcoming]}>
-      <Text style={badgeStyles.upcomingText}>In {days} days</Text>
+      <Text style={badgeStyles.upcomingText}>{days} days remaining</Text>
     </View>
   );
 };
 
-const StatusChip: React.FC<{ status: string }> = ({ status }) => {
-  const s = status.toLowerCase();
-  if (s === 'hired') return (
-    <View style={chipStyles.hired}><CheckCircle2 size={11} color="#16A34A" /><Text style={chipStyles.hiredText}>HIRED</Text></View>
-  );
-  if (s === 'rejected') return (
-    <View style={chipStyles.rejected}><XCircle size={11} color="#DC2626" /><Text style={chipStyles.rejectedText}>NOT SELECTED</Text></View>
-  );
-  return (
-    <View style={chipStyles.shortlisted}><AlertCircle size={11} color={COLORS.primary} /><Text style={chipStyles.shortlistedText}>SHORTLISTED</Text></View>
-  );
-};
-
-const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean }> = ({ item, isPast }) => {
+const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigation: any }> = ({ item, isPast, navigation }) => {
   const days = getDaysFromToday(item.interview_date);
 
   const handleOpenMap = () => {
@@ -94,9 +81,17 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean }> = ({ it
     if (url) Linking.openURL(url);
   };
 
+  const handleOpenJobDetails = () => {
+    navigation.navigate('CandidateJobDetail', { jobId: item.job_id, job: item });
+  };
+
   return (
-    <View style={[styles.card, isPast && styles.cardPast]}>
-      {/* Company & Status Row */}
+    <TouchableOpacity
+      style={[styles.card, isPast && styles.cardPast]}
+      activeOpacity={0.88}
+      onPress={handleOpenJobDetails}
+    >
+      {/* Company & Days Remaining Row */}
       <View style={styles.cardTopRow}>
         <View style={styles.companyDot}>
           <Building2 size={16} color={isPast ? '#94A3B8' : COLORS.primary} />
@@ -109,7 +104,7 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean }> = ({ it
             {item.job_title}
           </Text>
         </View>
-        <StatusChip status={item.status} />
+        <CountdownBadge days={days} isPast={isPast} />
       </View>
 
       {/* Divider */}
@@ -143,20 +138,7 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean }> = ({ it
           <Navigation2 size={13} color={isPast ? '#CBD5E1' : COLORS.primary} />
         </TouchableOpacity>
       ) : null}
-
-      {/* Countdown (Upcoming only) */}
-      {!isPast && (
-        <View style={styles.cardFooter}>
-          <CountdownBadge days={days} />
-          {item.maps_link ? (
-            <TouchableOpacity style={styles.directionBtn} onPress={handleOpenMap} activeOpacity={0.8}>
-              <ExternalLink size={12} color={COLORS.primary} />
-              <Text style={styles.directionBtnText}>Get Directions</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -274,7 +256,7 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
             <EmptyState tab={activeTab} />
           ) : (
             displayList.map((item) => (
-              <InterviewCard key={item.application_id} item={item} isPast={activeTab === 'past'} />
+              <InterviewCard key={item.application_id} item={item} isPast={activeTab === 'past'} navigation={navigation} />
             ))
           )}
         </ScrollView>
@@ -294,6 +276,8 @@ const badgeStyles = StyleSheet.create({
   soonText: { fontSize: 10, fontWeight: '800', color: '#D97706' },
   upcoming: { backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' },
   upcomingText: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
+  past: { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#CBD5E1' },
+  pastText: { fontSize: 10, fontWeight: '800', color: '#64748B' },
 });
 
 // --- Status chip styles ---
@@ -323,14 +307,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E2E8F0',
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    padding: 4,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 0,
   },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
   headerSub: { fontSize: 12, fontWeight: '500', color: '#64748B', marginTop: 1 },

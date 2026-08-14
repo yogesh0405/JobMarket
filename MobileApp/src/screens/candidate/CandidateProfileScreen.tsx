@@ -61,6 +61,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
 import { jobsApi } from '../../api/jobsApi';
 import { Job } from '../../types';
+import { getRecommendedJobsForCandidate } from '../../utils/recommendationMatcher';
 import { Header } from '../../components/common/Header';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -179,7 +180,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         setSavedJobs(savedRes.data);
       }
       if (jobsRes.success && Array.isArray(jobsRes.data)) {
-        setRecommendedJobs(jobsRes.data.slice(0, 5));
+        const matched = getRecommendedJobsForCandidate(jobsRes.data, user);
+        setRecommendedJobs(matched.slice(0, 5));
       }
     } catch (e) {
       console.log('Error loading dashboard stats:', e);
@@ -604,6 +606,14 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
           >
             <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
+
+          {/* Profile Completeness % Badge in place of Verified Worker */}
+          <View style={styles.verifiedWorkerPill}>
+            <ShieldCheck size={10} color="#FFFFFF" />
+            <Text style={styles.verifiedWorkerPillText}>
+              {completenessScore}% COMPLETE
+            </Text>
+          </View>
         </View>
 
         {/* Centered Overlapping Avatar with Edit Pencil Badge */}
@@ -1057,8 +1067,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   profileHeaderBanner: {
-    height: 85,
-    paddingTop: Platform.OS === 'ios' ? 10 : 6,
+    height: 98,
+    paddingTop: Platform.OS === 'ios' ? 12 : 10,
     paddingHorizontal: 16,
     position: 'relative',
     justifyContent: 'flex-start',
@@ -1071,19 +1081,19 @@ const styles = StyleSheet.create({
   verifiedWorkerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   verifiedWorkerPillText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   bannerEditBtn: {
     flexDirection: 'row',
@@ -1235,13 +1245,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   candidateNameTitleText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.3,
   },
   candidateSpecializationSubText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
     marginTop: 3,
@@ -1262,7 +1272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   underlineTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -1304,7 +1314,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardBlockTitleText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -1319,7 +1329,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitleText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -1339,14 +1349,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   infoDetailLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#94A3B8',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   infoDetailValue: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 1,
@@ -1462,18 +1472,18 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   displayName: {
-    fontSize: 15.5,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
     flex: 1,
   },
   displayEmail: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#64748B',
   },
   displayHeadline: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#334155',
   },
@@ -1491,7 +1501,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   completenessBadgeText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
   },
   verifiedBadgePill: {
@@ -1508,7 +1518,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   verifiedBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '800',
     color: COLORS.primary,
     letterSpacing: 0.3,
@@ -1520,12 +1530,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   completenessTitle: {
-    fontSize: 14.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
   },
   completenessPctText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   progressBgBar: {
@@ -1540,19 +1550,19 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   completenessHintText: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: '#64748B',
     lineHeight: 16,
   },
   sectionTitle: {
-    fontSize: 14.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 6,
     letterSpacing: -0.2,
   },
   sectionTitleNoMargin: {
-    fontSize: 14.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -1574,7 +1584,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#334155',
     marginBottom: 4,
@@ -1586,7 +1596,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     paddingHorizontal: 12,
     height: 44,
-    fontSize: 13.5,
+    fontSize: 12.5,
     color: '#0F172A',
     fontWeight: '600',
   },
@@ -1604,7 +1614,7 @@ const styles = StyleSheet.create({
   },
   dropdownPickerText: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#0F172A',
   },
@@ -1621,7 +1631,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
   },
   pickerItemText: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
   },
@@ -1635,7 +1645,7 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 0,
     padding: 12,
-    fontSize: 13.5,
+    fontSize: 12.5,
     color: '#0F172A',
     minHeight: 74,
     textAlignVertical: 'top',
