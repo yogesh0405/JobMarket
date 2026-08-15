@@ -127,14 +127,14 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* TOP BRAND HEADER SECTION (Navy Blue) */}
+        {/* TOP BRAND HEADER SECTION (Primary Blue) */}
         <View style={[styles.brandHeader, { paddingTop: Math.max(insets.top + 8, 24) }]}>
           {/* Logo & Enterprise Certification Badge + Back / Help Button */}
           <View style={styles.brandTopRow}>

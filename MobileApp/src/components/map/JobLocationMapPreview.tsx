@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { MapPin, Target } from 'lucide-react-native';
+import { MapPin, Target, Navigation2, ExternalLink } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, RADIUS, SHADOWS, SPACING } from '../../constants/theme';
 
 interface JobLocationMapPreviewProps {
@@ -14,7 +14,7 @@ interface JobLocationMapPreviewProps {
 export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
   latitude = 19.8762,
   longitude = 75.3433,
-  locationName = 'Job Location',
+  locationName = 'Industrial Job Location',
   height = 240,
 }) => {
   const webViewRef = useRef<WebView | null>(null);
@@ -22,7 +22,18 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
   const lat = latitude || 19.8762;
   const lng = longitude || 75.3433;
 
-  // HTML content rendering interactive Leaflet Map canvas identical to Web Application
+  const handleOpenGoogleMaps = () => {
+    const queryStr = locationName ? `${locationName}, ${lat},${lng}` : `${lat},${lng}`;
+    const mapsUrl =
+      Platform.OS === 'ios'
+        ? `https://maps.apple.com/?q=${encodeURIComponent(queryStr)}&ll=${lat},${lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryStr)}`;
+
+    Linking.openURL(mapsUrl).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+    });
+  };
+
   const mapHtml = `
     <!DOCTYPE html>
     <html>
@@ -37,6 +48,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
             margin: 0;
             padding: 0;
             background: #e2e8f0;
+            cursor: pointer;
           }
           .custom-pin-marker {
             display: flex;
@@ -50,7 +62,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         <script>
           const lat = ${lat};
           const lng = ${lng};
-          const locName = "${locationName.replace(/"/g, '\\"')}";
+          const locName = "${(locationName || 'Job Location').replace(/"/g, '\\"').replace(/\n/g, ' ')}";
 
           const map = L.map('map', {
             center: [lat, lng],
@@ -68,7 +80,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
 
           const svgPin = \`
             <svg width="34" height="44" viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#344BFD"/>
+              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#2563EB"/>
               <circle cx="12" cy="12" r="5" fill="#FFFFFF"/>
             </svg>
           \`;
@@ -82,7 +94,19 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
           });
 
           const marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-          marker.bindPopup("<strong style='color:#0f172a;'>Job Location</strong><br/><span style='font-size:12px;color:#475569;'>" + locName + "</span>").openPopup();
+          marker.bindPopup("<strong style='color:#0f172a;'>Factory Location</strong><br/><span style='font-size:12px;color:#2563eb;'>Tap to Open Maps 🧭</span>").openPopup();
+
+          marker.on('click', function() {
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage("openMaps");
+            }
+          });
+
+          map.on('click', function() {
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage("openMaps");
+            }
+          });
 
           document.addEventListener("message", function(event) {
             if (event.data === "recenter") {
@@ -111,16 +135,22 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
       <View style={styles.headerBar}>
         <View style={styles.headerTitleBox}>
           <View style={styles.iconBox}>
-            <MapPin size={16} color={COLORS.primary} />
+            <MapPin size={15} color={COLORS.primary} />
           </View>
           <Text style={styles.headerTitle}>Location</Text>
-          <Text style={styles.headerSubtitle}>(View & Zoom Only)</Text>
         </View>
 
-        <TouchableOpacity style={styles.recenterBtn} activeOpacity={0.7} onPress={handleRecenter}>
-          <Target size={13} color={COLORS.primary} />
-          <Text style={styles.recenterText}>Recenter</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity style={styles.recenterBtn} activeOpacity={0.7} onPress={handleRecenter}>
+            <Target size={12} color="#475569" />
+            <Text style={styles.recenterText}>Recenter</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.navigateNavBtn} activeOpacity={0.8} onPress={handleOpenGoogleMaps}>
+            <Navigation2 size={13} color="#FFFFFF" />
+            <Text style={styles.navigateNavText}>Navigate</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Interactive Leaflet WebView Canvas */}
@@ -133,6 +163,11 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
           scrollEnabled={false}
           javaScriptEnabled
           domStorageEnabled
+          onMessage={(event) => {
+            if (event.nativeEvent.data === 'openMaps') {
+              handleOpenGoogleMaps();
+            }
+          }}
         />
       </View>
     </View>
@@ -142,19 +177,18 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
 const styles = StyleSheet.create({
   cardContainer: {
     marginTop: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1.5,
-    borderColor: COLORS.slate300,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#B4C3D4',
     overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    ...SHADOWS.sm,
+    backgroundColor: '#FFFFFF',
   },
   headerBar: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 4,
-    backgroundColor: COLORS.slate50,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.slate200,
+    borderBottomColor: '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -162,7 +196,7 @@ const styles = StyleSheet.create({
   headerTitleBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 8,
   },
   iconBox: {
     width: 26,
@@ -173,35 +207,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.slate900,
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  headerSubtitle: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    color: COLORS.slate500,
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   recenterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: 4,
-    borderRadius: RADIUS.sm - 2,
-    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 4,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: '#CBD5E1',
   },
   recenterText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: '#475569',
+  },
+  navigateNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  navigateNavText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   mapWrapper: {
     width: '100%',
-    backgroundColor: COLORS.slate200,
+    backgroundColor: '#E2E8F0',
+    position: 'relative',
+  },
+  openMapsBottomBar: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    right: 12,
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+  },
+  openMapsBottomText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

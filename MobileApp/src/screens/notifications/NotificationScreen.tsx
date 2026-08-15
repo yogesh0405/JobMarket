@@ -24,6 +24,7 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import { Header } from '../../components/common/Header';
+import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useNotifications } from '../../hooks/useNotifications';
 import { AppNotification } from '../../api/notificationApi';
 import { resolveMobileNotificationRoute } from '../../utils/notificationRouter';
@@ -182,9 +183,17 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Notification Cards List */}
         {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading notifications...</Text>
+          <View style={{ gap: 10, paddingHorizontal: 16, marginTop: 8 }}>
+            {[1, 2, 3, 4, 5].map((key) => (
+              <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' }}>
+                <SkeletonLoader width={36} height={36} style={{ borderRadius: 18 }} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <SkeletonLoader width="65%" height={15} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="85%" height={12} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="35%" height={10} style={{ borderRadius: 4 }} />
+                </View>
+              </View>
+            ))}
           </View>
         ) : displayedList.length === 0 ? (
           <View style={styles.emptyCardContainer}>
@@ -266,12 +275,12 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F7F7F7',
   },
   pageContent: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F7F7F7',
   },
   actionsBarRow: {
     flexDirection: 'row',

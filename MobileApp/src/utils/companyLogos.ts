@@ -2,22 +2,19 @@ import { COLORS } from '../constants/theme';
 
 /**
  * Professional Corporate Logo Generator & Registry
- * Provides high-quality vector corporate logos (SVG Data URIs and database images)
- * for companies across automotive, manufacturing, healthcare, tech, hospitality, etc.
+ * Manages real-time logo caching and fallback resolution for companies
  */
 
-const CORPORATE_PALETTES = [
-  { bg1: '#0F172A', bg2: COLORS.primary, accent: '#60A5FA' },
-  { bg1: '#451A03', bg2: '#B45309', accent: '#FBBF24' },
-  { bg1: '#064E3B', bg2: '#047857', accent: '#34D399' },
-  { bg1: '#3B0764', bg2: '#6D28D9', accent: '#A78BFA' },
-  { bg1: '#7F1D1D', bg2: '#DC2626', accent: '#F87171' },
-  { bg1: '#164E63', bg2: '#0891B2', accent: '#67E8F9' },
-  { bg1: '#14532D', bg2: '#15803D', accent: '#4ADE80' },
-  { bg1: '#831843', bg2: '#BE185D', accent: '#F472B6' },
-  { bg1: '#1E1B4B', bg2: '#4338CA', accent: '#818CF8' },
-  { bg1: '#0C4A6E', bg2: '#0369A1', accent: '#38BDF8' },
-];
+const CORPORATE_LOGO_PLACEHOLDERS: Record<string, string> = {
+  'tata motors': 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=250&q=80',
+  'bajaj auto': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=250&q=80',
+  'endurance technologies': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=250&q=80',
+  'varroc engineering': 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=250&q=80',
+  'siemens': 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=250&q=80',
+  'l&t precision': 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=250&q=80',
+  'perkins engines': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=250&q=80',
+  'default': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=250&q=80',
+};
 
 // Global reactive logo cache for immediate reflection across all screens & job lists
 const GLOBAL_COMPANY_LOGO_CACHE: Record<string, string> = {};
@@ -35,15 +32,7 @@ export function getGlobalCompanyLogo(companyName?: string): string | null {
   return GLOBAL_COMPANY_LOGO_CACHE[key] || null;
 }
 
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash);
-}
-
-export function getCompanyLogoUrl(companyName?: string, existingLogo?: string, customColor?: string): string {
+export function getCompanyLogoUrl(companyName?: string, existingLogo?: string): string | null {
   const normName = companyName && companyName.trim() ? companyName.trim() : '';
 
   // 1. Check live global cache first (ensures updated logos reflect instantly across all lists/cards)
@@ -54,14 +43,23 @@ export function getCompanyLogoUrl(companyName?: string, existingLogo?: string, c
     }
   }
 
-  // 2. Return real database logo image URL if present
+  // 2. Return real database logo image URL if present and valid (must not be SVG Data URI)
   if (
     existingLogo &&
     typeof existingLogo === 'string' &&
     existingLogo.trim().length > 5 &&
     !existingLogo.includes('null') &&
     !existingLogo.includes('undefined') &&
-    (existingLogo.startsWith('http://') || existingLogo.startsWith('https://') || existingLogo.startsWith('data:image/'))
+    !existingLogo.startsWith('data:image/svg+xml') &&
+    (
+      existingLogo.startsWith('http://') ||
+      existingLogo.startsWith('https://') ||
+      existingLogo.startsWith('data:image/') ||
+      existingLogo.startsWith('file://') ||
+      existingLogo.startsWith('content://') ||
+      existingLogo.startsWith('ph://') ||
+      existingLogo.startsWith('blob:')
+    )
   ) {
     const trimmed = existingLogo.trim();
     if (normName) {
@@ -70,20 +68,15 @@ export function getCompanyLogoUrl(companyName?: string, existingLogo?: string, c
     return trimmed;
   }
 
-  // 3. Generate high-quality corporate vector SVG Data URI
-  const name = normName || 'Company';
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'CO';
+  // 3. Match corporate placeholder by name if available
+  if (normName) {
+    const lower = normName.toLowerCase();
+    for (const [key, placeholderUrl] of Object.entries(CORPORATE_LOGO_PLACEHOLDERS)) {
+      if (lower.includes(key)) {
+        return placeholderUrl;
+      }
+    }
+  }
 
-  const hash = hashString(name);
-  const palette = CORPORATE_PALETTES[hash % CORPORATE_PALETTES.length];
-
-  const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${palette.bg1}"/><stop offset="100%" stop-color="${palette.bg2}"/></linearGradient></defs><rect width="100" height="100" rx="24" fill="url(#bg)"/><rect x="3" y="3" width="94" height="94" rx="21" fill="none" stroke="${palette.accent}" stroke-width="2.5" stroke-opacity="0.45"/><text x="50" y="58" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="34" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central" letter-spacing="1">${initials}</text></svg>`;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+  return null;
 }

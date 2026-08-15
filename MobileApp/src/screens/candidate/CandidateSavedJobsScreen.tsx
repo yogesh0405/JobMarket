@@ -24,6 +24,7 @@ import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { useToast } from '../../context/ToastContext';
 
 
@@ -164,17 +165,12 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                     {/* Company Name with Small Logo */}
                     <View style={styles.companyRow}>
-                      <View style={styles.smallCompanyIconSquare}>
-                        {logoUrl ? (
-                          <Image
-                            source={{ uri: logoUrl }}
-                            style={styles.smallCompanyLogoImg}
-                            resizeMode="contain"
-                          />
-                        ) : (
-                          <Building2 size={11} color={COLORS.primary} />
-                        )}
-                      </View>
+                      <CompanyLogoAvatar
+                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                        companyName={job.company || 'Industrial Enterprise'}
+                        size={22}
+                        borderRadius={4}
+                      />
                       <Text style={styles.companyName} numberOfLines={1}>
                         {job.company || 'Industrial Enterprise'}
                       </Text>

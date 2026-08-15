@@ -100,6 +100,7 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!title.trim()) {
       Alert.alert('Required Field', 'Please enter a promotional banner title.');
       return;
@@ -440,7 +441,7 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   scrollContent: {
     paddingHorizontal: 16,

@@ -167,38 +167,39 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
                 resizeMode="contain"
               />
             </ScrollView>
-          ) : targetDocUrl && (targetDocUrl.startsWith('http://') || targetDocUrl.startsWith('https://')) ? (
+          ) : targetDocUrl ? (
             <WebView
-              source={{ uri: googleDocsViewerUrl }}
+              source={{ uri: targetDocUrl.startsWith('http') ? googleDocsViewerUrl : targetDocUrl }}
               style={{ flex: 1 }}
               startInLoadingState={true}
               renderLoading={() => (
                 <View style={styles.loadingBox}>
                   <ActivityIndicator size="large" color={COLORS.primary} />
-                  <Text style={styles.loadingText}>Loading Uploaded PDF Document...</Text>
+                  <Text style={styles.loadingText}>Loading Uploaded Document...</Text>
                 </View>
               )}
             />
           ) : (
-            <WebView
-              source={{ html: simulatedResumeHtml }}
-              style={{ flex: 1 }}
-              originWhitelist={['*']}
-            />
+            <View style={styles.noResumeBox}>
+              <FileText size={48} color="#94A3B8" />
+              <Text style={styles.noResumeTitle}>No Resume Uploaded</Text>
+              <Text style={styles.noResumeSub}>Candidate hasn't uploaded the resume yet.</Text>
+            </View>
           )}
         </View>
 
-        {/* Single Print Button at the End of Resume PDF */}
-        <View style={styles.bottomPrintFooter}>
-          <TouchableOpacity
-            style={styles.singlePrintBtn}
-            activeOpacity={0.85}
-            onPress={handlePrint}
-          >
-            <Printer size={16} color="#FFFFFF" />
-            <Text style={styles.singlePrintBtnText}>Print Document</Text>
-          </TouchableOpacity>
-        </View>
+        {targetDocUrl ? (
+          <View style={styles.bottomPrintFooter}>
+            <TouchableOpacity
+              style={styles.singlePrintBtn}
+              activeOpacity={0.85}
+              onPress={handlePrint}
+            >
+              <Printer size={16} color="#FFFFFF" />
+              <Text style={styles.singlePrintBtnText}>Print Document</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </SafeAreaView>
     </Modal>
   );
@@ -305,5 +306,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#64748B',
+  },
+  noResumeBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#F8FAFC',
+  },
+  noResumeTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 12,
+  },
+  noResumeSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

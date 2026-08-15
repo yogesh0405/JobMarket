@@ -30,14 +30,25 @@ export const Badge: React.FC<BadgeProps> = ({ status, style }) => {
           label: normStatus === 'APPROVED' ? 'Approved' : normStatus === 'ACTIVE' ? 'Active' : 'Hired',
           Icon: CheckCircle2,
         };
+      case 'PENDING_APPROVAL':
       case 'PENDING_REVIEW':
+      case 'UNDER_APPROVAL':
+      case 'IN_REVIEW':
+      case 'SUBMITTED':
+      case 'DRAFT':
       case 'PENDING':
-      case 'APPLIED':
         return {
           bg: COLORS.warningBg,
           text: COLORS.warning,
-          label: normStatus === 'PENDING_REVIEW' ? 'Pending Review' : normStatus === 'PENDING' ? 'Pending' : 'Applied',
-          Icon: normStatus === 'PENDING_REVIEW' || normStatus === 'PENDING' ? Clock : FileText,
+          label: normStatus === 'PENDING_APPROVAL' ? 'Pending Approval' : normStatus === 'PENDING_REVIEW' ? 'Pending Review' : normStatus === 'DRAFT' ? 'Draft' : 'Pending Approval',
+          Icon: Clock,
+        };
+      case 'APPLIED':
+        return {
+          bg: COLORS.infoBg,
+          text: COLORS.info,
+          label: 'Applied',
+          Icon: FileText,
         };
       case 'SHORTLISTED':
         return {

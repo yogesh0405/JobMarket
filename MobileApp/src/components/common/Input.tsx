@@ -46,16 +46,17 @@ export const Input = forwardRef<TextInput, InputProps>(({
       <View
         style={[
           styles.inputContainer,
+          props.multiline && styles.inputContainerMultiline,
           inputContainerStyle,
           isFocused && styles.inputFocused,
           !!error && styles.inputError,
         ]}
       >
-        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
+        {leftIcon ? <View style={[styles.iconLeft, props.multiline && { marginTop: 2 }]}>{leftIcon}</View> : null}
 
         <TextInput
           ref={ref}
-          style={[styles.input, style]}
+          style={[styles.input, props.multiline && styles.inputMultiline, style]}
           placeholderTextColor={COLORS.textMuted}
           secureTextEntry={secureText}
           value={value}
@@ -123,6 +124,12 @@ const styles = StyleSheet.create({
     height: 48,
     minHeight: 48,
   },
+  inputContainerMultiline: {
+    height: undefined,
+    minHeight: 140,
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+  },
   inputFocused: {
     borderColor: COLORS.primary,
     borderWidth: 2,
@@ -135,6 +142,10 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#0F172A',
     paddingVertical: 0,
+  },
+  inputMultiline: {
+    textAlignVertical: 'top',
+    minHeight: 120,
   },
   iconLeft: {
     marginRight: 10,

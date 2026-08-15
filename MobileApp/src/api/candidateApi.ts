@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, isValidId } from './client';
 import { Job, ApiResponse, User } from '../types';
 import { logger } from '../utils/logger';
 
@@ -68,6 +68,9 @@ export const candidateApi = {
 
   // Bookmark / Un-bookmark a job
   toggleSaveJob: async (jobId: string): Promise<ApiResponse<{ saved: boolean }>> => {
+    if (!isValidId(jobId)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
     return apiFetch(`/api/v1/jobs/${jobId}/save`, {
       method: 'POST',
     });
@@ -78,6 +81,9 @@ export const candidateApi = {
     jobId: string,
     payload?: { resumeUrl?: string; coverNote?: string }
   ): Promise<ApiResponse> => {
+    if (!isValidId(jobId)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
     return apiFetch(`/api/v1/jobs/${jobId}/apply`, {
       method: 'POST',
       body: JSON.stringify(payload || {}),

@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, isValidId } from './client';
 import { ApiResponse } from '../types';
 
 export interface AppNotification {
@@ -21,6 +21,9 @@ export const notificationApi = {
   },
 
   markAsRead: async (id: string): Promise<ApiResponse> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Notification ID' } as any;
+    }
     return apiFetch(`/api/v1/notifications/${id}/read`, {
       method: 'PATCH',
     });
@@ -33,6 +36,9 @@ export const notificationApi = {
   },
 
   deleteNotification: async (id: string): Promise<ApiResponse> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Notification ID' } as any;
+    }
     return apiFetch(`/api/v1/notifications/${id}`, {
       method: 'DELETE',
     });

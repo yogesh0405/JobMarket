@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Header } from '../../components/common/Header';
+import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
 import { Advertisement, AdvertisementAnalytics, AdvertisementType, Job } from '../../types';
@@ -303,11 +304,20 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
         </View>
 
         {loading && !refreshing ? (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={{ marginTop: 10, color: '#64748B', fontSize: 13, fontWeight: '600' }}>
-              Loading banners from live server...
-            </Text>
+          <View style={{ gap: 12, marginBottom: 14 }}>
+            {[1, 2].map((key) => (
+              <View key={key} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', padding: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <SkeletonLoader width={90} height={18} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width={80} height={14} style={{ borderRadius: 4 }} />
+                </View>
+                <SkeletonLoader width="100%" height={130} style={{ borderRadius: 8 }} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                  <SkeletonLoader width={100} height={16} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width={110} height={26} style={{ borderRadius: 6 }} />
+                </View>
+              </View>
+            ))}
           </View>
         ) : banners.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -370,7 +380,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   scrollContent: {
     paddingHorizontal: 16,

@@ -155,7 +155,9 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title })}
+        onPress={() => {
+          navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
+        }}
         style={styles.jobCard3D}
       >
         {/* Header Row with Logo */}
@@ -182,6 +184,22 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
+        {pending ? (
+          <View style={styles.pendingNoticeBanner}>
+            <Clock size={13} color="#D97706" />
+            <Text style={styles.pendingNoticeBannerText}>
+              Pending Admin Approval — Under review by JobMarket team. Will go live once verified.
+            </Text>
+          </View>
+        ) : isRejectedStatus(item.status) ? (
+          <View style={styles.rejectedNoticeBanner}>
+            <XCircle size={13} color="#DC2626" />
+            <Text style={styles.rejectedNoticeBannerText}>
+              Job Rejected — {(item as any).rejectReason || (item as any).reject_reason || 'Does not meet posting requirements.'}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.cardRowDivider} />
 
         {/* Action Footer Bar - Single Card Sub-Layout (NO CARDS IN CARDS) */}
@@ -189,7 +207,9 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.applicantBtnInline}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title })}
+            onPress={() => {
+              navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
+            }}
           >
             <Users size={14} color="#0F172A" />
             <Text style={styles.applicantBtnTextInline}>
@@ -312,7 +332,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   addHeaderBtn: {
     backgroundColor: COLORS.primary,
@@ -464,16 +484,41 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '800',
   },
-  pendingCardNoticeInline: {
+  pendingNoticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 6,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 0,
+    marginTop: 8,
   },
-  pendingNoticeTextInline: {
+  pendingNoticeBannerText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#D97706',
+    fontWeight: '700',
+    color: '#B45309',
+    flex: 1,
+  },
+  rejectedNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 0,
+    marginTop: 8,
+  },
+  rejectedNoticeBannerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B91C1C',
+    flex: 1,
   },
   cardRowDivider: {
     height: 1,

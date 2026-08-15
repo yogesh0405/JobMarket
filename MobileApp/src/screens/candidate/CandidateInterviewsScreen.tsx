@@ -26,6 +26,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { candidateApi, InterviewItem } from '../../api/candidateApi';
+import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS } from '../../constants/theme';
 
 interface Props {
@@ -242,9 +243,21 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Content */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading interviews...</Text>
+        <View style={{ padding: 16, gap: 12 }}>
+          {[1, 2, 3].map((key) => (
+            <View key={key} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', padding: 14 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <SkeletonLoader width={120} height={16} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={70} height={18} style={{ borderRadius: 4 }} />
+              </View>
+              <SkeletonLoader width="80%" height={18} style={{ borderRadius: 4, marginBottom: 8 }} />
+              <SkeletonLoader width="60%" height={14} style={{ borderRadius: 4, marginBottom: 12 }} />
+              <View style={{ paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <SkeletonLoader width={100} height={14} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={80} height={14} style={{ borderRadius: 4 }} />
+              </View>
+            </View>
+          ))}
         </View>
       ) : (
         <ScrollView

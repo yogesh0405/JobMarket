@@ -1,12 +1,22 @@
+import { Platform } from 'react-native';
 import { getAccessToken, getRefreshToken, getSessionId, saveTokens, clearAuthSession } from '../utils/secureStorage';
 
 // CANONICAL BACKEND API URL (defaults to live Render backend: https://jobmarket-ongn.onrender.com)
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || 'https://jobmarket-ongn.onrender.com';
 
+const MOBILE_USER_AGENT = `JobMarketApp/1.0 (${Platform.OS === 'android' ? 'Android Mobile' : Platform.OS === 'ios' ? 'iOS Mobile' : 'Mobile App'})`;
+
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
 let onUnauthenticatedCallback: (() => void) | null = null;
+
+export function isValidId(id: any): boolean {
+  if (id === null || id === undefined) return false;
+  const str = String(id).trim();
+  if (!str || str === 'undefined' || str === 'null' || str === 'NaN') return false;
+  return true;
+}
 
 export const setOnUnauthenticated = (callback: () => void) => {
   onUnauthenticatedCallback = callback;
@@ -36,6 +46,9 @@ const isAuthEndpoint = (endpoint: string): boolean => {
 };
 
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if (endpoint.includes('/undefined') || endpoint.includes('/null') || endpoint.includes('/NaN')) {
+    throw new Error('Invalid resource identifier in request URL.');
+  }
   const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   
@@ -43,6 +56,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    'User-Agent': MOBILE_USER_AGENT,
     ...(options.headers as Record<string, string>),
   };
 

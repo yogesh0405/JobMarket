@@ -12,34 +12,25 @@ import {
   PlusCircle,
   Briefcase,
   Users,
-  CheckCircle2,
-  Clock,
   Building2,
   ChevronRight,
   ShieldCheck,
   MapPin,
-  TrendingUp,
-  UserCheck,
-  BarChart3,
-  PieChart,
-  Target,
   Zap,
-  Award,
-  Calendar,
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { jobsApi } from '../../api/jobsApi';
 import { apiFetch } from '../../api/client';
 import { Job } from '../../types';
 import { Badge } from '../../components/common/Badge';
-import { Skeleton, JobCardSkeleton, DashboardSkeleton } from '../../components/common/SkeletonLoader';
+import { Skeleton, JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { EmployerDashboardHeader } from './components/EmployerDashboardHeader';
 
 interface Props {
   navigation: any;
@@ -118,217 +109,84 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   const totalJobs = jobs.length;
   const activeJobs = jobs.filter((j) => (j.status || '').toUpperCase() === 'APPROVED').length;
-  const pendingJobs = jobs.filter((j) => (j.status || '').toUpperCase() === 'PENDING_REVIEW' || (j.status || '').toUpperCase() === 'PENDING').length;
+  const pendingJobs = jobs.filter((j) => (j.status || '').toUpperCase() === 'PENDING').length;
+
+  const companyName = user?.companyName || user?.company_name || user?.name || 'Industrial Enterprise';
+  const companyLogo =
+    user?.companyLogo ||
+    user?.company_logo ||
+    user?.profilePictureUrl ||
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=150&q=80';
+
   const totalApplicants = jobs.reduce((acc, j) => acc + (j.applicants_count || 0), 0);
 
-  const companyName = user?.companyName || user?.company_name || 'Industrial Enterprise';
-  const companyLogo = user?.companyLogo || user?.company_logo;
-
-  // 1. Dynamic Regional Location Breakdown from Employer's actual jobs in DB
-  const locationMap: { [key: string]: number } = {};
-  jobs.forEach((j) => {
-    if (j.location) {
-      const cleanLoc = j.location.split(',')[0].trim();
-      locationMap[cleanLoc] = (locationMap[cleanLoc] || 0) + (j.applicants_count || 1);
+  const dynamicLocations = React.useMemo(() => {
+    if (jobs.length === 0) {
+      return [
+        { name: 'Waluj MIDC', pct: 60 },
+        { name: 'Chakan MIDC', pct: 40 },
+      ];
     }
-  });
-  const sortedLocs = Object.entries(locationMap).sort((a, b) => b[1] - a[1]);
-  const totalLocVolume = Object.values(locationMap).reduce((a, b) => a + b, 0) || 1;
-  const dynamicLocations = sortedLocs.length > 0 ? sortedLocs.slice(0, 3).map(([locName, val]) => ({
-    name: locName,
-    pct: Math.round((val / totalLocVolume) * 100),
-  })) : [
-    { name: 'No Active Locations', pct: 0 },
-  ];
+    const counts: Record<string, number> = {};
+    jobs.forEach((j) => {
+      const loc = (j.location || ' Waluj MIDC').split(',')[0].trim();
+      counts[loc] = (counts[loc] || 0) + 1;
+    });
 
-  // 2. Dynamic Technical Trade Demand Breakdown from Employer's actual jobs in DB
-  const tradeMap: { [key: string]: number } = {};
-  jobs.forEach((j) => {
-    const cleanTrade = j.trade || j.industry;
-    if (cleanTrade) {
-      tradeMap[cleanTrade] = (tradeMap[cleanTrade] || 0) + (j.applicants_count || 1);
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 2);
+    const sumTop = top.reduce((a, b) => a + b[1], 0) || 1;
+
+    return top.map(([name, count]) => ({
+      name,
+      pct: Math.round((count / sumTop) * 100),
+    }));
+  }, [jobs]);
+
+  const dynamicTrades = React.useMemo(() => {
+    if (jobs.length === 0) {
+      return [
+        { name: 'VMC Operating', pct: 55 },
+        { name: 'CNC Turning', pct: 45 },
+      ];
     }
-  });
-  const sortedTrades = Object.entries(tradeMap).sort((a, b) => b[1] - a[1]);
-  const totalTradeVolume = Object.values(tradeMap).reduce((a, b) => a + b, 0) || 1;
-  const dynamicTrades = sortedTrades.length > 0 ? sortedTrades.slice(0, 3).map(([tName, val]) => ({
-    name: tName,
-    pct: Math.round((val / totalTradeVolume) * 100),
-  })) : [
-    { name: 'No Active Trades', pct: 0 },
-  ];
+    const counts: Record<string, number> = {};
+    jobs.forEach((j) => {
+      const trd = j.trade || j.industry || j.title || 'CNC Operating';
+      counts[trd] = (counts[trd] || 0) + 1;
+    });
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.container}>
-        <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <DashboardSkeleton />
-        </ScrollView>
-      </View>
-    );
-  }
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 2);
+    const sumTop = top.reduce((a, b) => a + b[1], 0) || 1;
+
+    return top.map(([name, count]) => ({
+      name,
+      pct: Math.round((count / sumTop) * 100),
+    }));
+  }, [jobs]);
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="Employer Dashboard" subtitle="Overview of jobs & candidates" showBack={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
-        {/* iPhone Clean Hero Card with Quick Post Job Action */}
-        <View style={styles.minimalHeroCard}>
-          <View style={styles.heroRow}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('CompanyProfile')}
-            >
-              <View style={styles.companyLogoBox}>
-                {companyLogo ? (
-                  <Image source={{ uri: companyLogo }} style={styles.companyLogoImage} />
-                ) : (
-                  <Building2 size={20} color={COLORS.primary} />
-                )}
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <View style={styles.nameVerifiedRow}>
-                  <Text style={styles.companyNameText} numberOfLines={1}>
-                    {companyName}
-                  </Text>
-                  <View style={styles.verifiedPill}>
-                    <ShieldCheck size={11} color="#16A34A" />
-                  </View>
-                </View>
-                <Text style={styles.companySubtitleText}>
-                  {totalJobs} Active Jobs • {totalApplicants} Candidates
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.compactPostBtn}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('PostJob')}
-            >
-              <PlusCircle size={14} color="#FFFFFF" />
-              <Text style={styles.compactPostBtnText}>Post Job</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 4 Metric Cards Grid - Structured 2-Row Layout with Perfect iPhone Alignment */}
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Total Jobs</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#EFF6FF' }]}>
-                <Briefcase size={14} color={COLORS.primary} />
-              </View>
-            </View>
-            <Text style={styles.metricValueText}>{loading ? '-' : totalJobs}</Text>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Approved Active</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0FDF4' }]}>
-                <CheckCircle2 size={14} color="#16A34A" />
-              </View>
-            </View>
-            <Text style={styles.metricValueText}>{loading ? '-' : activeJobs}</Text>
-          </View>
-        </View>
-
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Pending Review</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#FFFBEB' }]}>
-                <Clock size={14} color="#D97706" />
-              </View>
-            </View>
-            <Text style={styles.metricValueText}>{loading ? '-' : pendingJobs}</Text>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Candidates</Text>
-              <View style={[styles.miniIconSquircle, { backgroundColor: '#F0F9FF' }]}>
-                <Users size={14} color="#0284C7" />
-              </View>
-            </View>
-            <Text style={styles.metricValueText}>{loading ? '-' : totalApplicants}</Text>
-          </View>
-        </View>
-
-        {/* Analytics Pipeline Card - 100% Real Database Analytics */}
-        {(() => {
-          const totalApps = analytics.totalApplications || jobs.reduce((acc, j) => acc + (j.applicants_count || 0), 0) || 0;
-          const totalAppsSafe = totalApps || 1;
-          const shortlistedPct = Math.min(100, Math.round((analytics.shortlisted / totalAppsSafe) * 100));
-          const interviewedPct = Math.min(100, Math.round((analytics.interviewed / totalAppsSafe) * 100));
-          const hiredPct = Math.min(100, Math.round((analytics.hired / totalAppsSafe) * 100));
-
-          return (
-            <View style={styles.analyticsCard}>
-              <View style={styles.cardHeaderRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <BarChart3 size={16} color={COLORS.primary} />
-                  <Text style={styles.cardSectionTitle}>Jobs & Candidate Analytics</Text>
-                </View>
-                <View style={styles.liveMetricsBadge}>
-                  <TrendingUp size={10} color="#15803D" />
-                  <Text style={styles.liveMetricsText}>Real-Time</Text>
-                </View>
-              </View>
-
-              {/* Real-Time Conversion Pipeline */}
-              <View style={styles.funnelItem}>
-                <View style={styles.funnelLabelRow}>
-                  <Text style={styles.funnelTitle}>1. Total Applications Received</Text>
-                  <Text style={styles.funnelVal}>{totalApps} (100%)</Text>
-                </View>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: totalApps > 0 ? '100%' : '0%', backgroundColor: COLORS.primary }]} />
-                </View>
-              </View>
-
-              <View style={styles.funnelItem}>
-                <View style={styles.funnelLabelRow}>
-                  <Text style={styles.funnelTitle}>2. Shortlisted Candidates</Text>
-                  <Text style={styles.funnelVal}>{analytics.shortlisted} ({totalApps > 0 ? shortlistedPct : 0}%)</Text>
-                </View>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? shortlistedPct : 0}%`, backgroundColor: '#0284C7' }]} />
-                </View>
-              </View>
-
-              <View style={styles.funnelItem}>
-                <View style={styles.funnelLabelRow}>
-                  <Text style={styles.funnelTitle}>3. Interview Scheduled</Text>
-                  <Text style={styles.funnelVal}>{analytics.interviewed} ({totalApps > 0 ? interviewedPct : 0}%)</Text>
-                </View>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? interviewedPct : 0}%`, backgroundColor: '#D97706' }]} />
-                </View>
-              </View>
-
-              <View style={styles.funnelItem}>
-                <View style={styles.funnelLabelRow}>
-                  <Text style={styles.funnelTitle}>4. Hired / Offered</Text>
-                  <Text style={styles.funnelVal}>{analytics.hired} ({totalApps > 0 ? hiredPct : 0}%)</Text>
-                </View>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: `${totalApps > 0 ? hiredPct : 0}%`, backgroundColor: '#16A34A' }]} />
-                </View>
-              </View>
-            </View>
-          );
-        })()}
+        <EmployerDashboardHeader
+          companyName={companyName}
+          companyLogo={companyLogo}
+          totalJobs={totalJobs}
+          activeJobs={activeJobs}
+          pendingJobs={pendingJobs}
+          totalApplicants={totalApplicants}
+          loading={loading}
+          analytics={analytics}
+          onPostJobPress={() => navigation.navigate('PostJob')}
+          onCompanyPress={() => navigation.navigate('EmployerProfileTab')}
+        />
 
         {/* Dynamic Regional & Trade Breakdown */}
         <View style={styles.analyticsTwoColRow}>
@@ -387,9 +245,9 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Real Candidates from Database Section */}
-        <View style={{ height: 1, backgroundColor: '#94A3B8', marginTop: 16, marginBottom: 24 }} />
+        <View style={styles.sectionDividerSlate} />
 
+        {/* Candidates Section */}
         <View style={styles.recentSectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Users size={16} color={COLORS.primary} />
@@ -466,7 +324,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
-        <View style={{ height: 1, backgroundColor: '#94A3B8', marginTop: 24, marginBottom: 24 }} />
+        <View style={styles.sectionDividerSlate} />
 
         {/* Recent Jobs Section */}
         <View style={styles.recentSectionHeader}>
@@ -495,10 +353,9 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
               <TouchableOpacity
                 key={job.id}
                 activeOpacity={0.9}
-                onPress={() => navigation.navigate('JobApplicants', { jobId: job.id, jobTitle: job.title })}
+                onPress={() => navigation.navigate('ApplicantsTab', { jobId: job.id, jobTitle: job.title })}
                 style={styles.recentJobCard}
               >
-                {/* Header Row: Company Logo + Title + Status Badge + Meta */}
                 <View style={styles.jobCardHeaderRow}>
                   <View style={styles.companyLogoBox}>
                     {logoUri ? (
@@ -537,7 +394,6 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   </View>
                 </View>
 
-                {/* Details Bar: Salary Tag + Openings Tag */}
                 <View style={styles.detailsRow}>
                   <View style={styles.salaryTag}>
                     <Text style={styles.salaryLabel}>SALARY</Text>
@@ -558,12 +414,11 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Footer Bar: Applicants Count Button + Adjust Vacancies Button */}
                 <View style={styles.cardFooter}>
                   <TouchableOpacity
                     style={styles.applicantBtn}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate('JobApplicants', { jobId: job.id, jobTitle: job.title })}
+                    onPress={() => navigation.navigate('ApplicantsTab', { jobId: job.id, jobTitle: job.title })}
                   >
                     <Users size={14} color={COLORS.primary} />
                     <Text style={styles.applicantBtnText}>
@@ -602,226 +457,31 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F7F7',
   },
   scrollContent: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: 10,
-    paddingBottom: 130,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 120,
   },
-  /* iPhone Clean Hero Card */
-  minimalHeroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  heroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  companyLogoBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  companyLogoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  nameVerifiedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  companyNameText: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  verifiedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-  },
-  verifiedPillText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: '#15803D',
-  },
-  companySubtitleText: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  compactPostBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  compactPostBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* Metrics Grid (Structured 2-Row Layout) */
-  metricsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    justifyContent: 'space-between',
-    minHeight: 76,
-  },
-  metricHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  metricLabelText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  miniIconSquircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metricValueText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-
-  /* Minimal Analytics Card */
-  analyticsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  cardSectionTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  liveMetricsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  liveMetricsText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#15803D',
-  },
-  funnelItem: {
-    marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
-  },
-  funnelLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  funnelTitle: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  funnelVal: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  progressBg: {
-    height: 6,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-
-  /* 2-Column Analytics Sub Cards */
   analyticsTwoColRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 8,
   },
   subAnalyticsCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: '#CBD5E1',
+    padding: 10,
   },
   subHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   subHeaderTitle: {
     fontSize: 12,
@@ -832,42 +492,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
-    marginBottom: 3,
   },
   miniMetricLabel: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#475569',
+    fontWeight: '600',
+    flex: 1,
   },
   miniMetricVal: {
-    fontSize: 10.5,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#0F172A',
   },
   miniBarBg: {
-    height: 5,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 2.5,
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
     overflow: 'hidden',
+    marginTop: 2,
   },
   miniBarFill: {
     height: '100%',
-    borderRadius: 2.5,
+    borderRadius: 2,
   },
-
-  /* Recent Jobs Header */
+  sectionDividerSlate: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 16,
+  },
   recentSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    marginTop: 4,
+    marginBottom: 10,
   },
   sectionTitleText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: COLORS.primary,
     letterSpacing: 0.6,
   },
   viewAllText: {
@@ -875,23 +537,92 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  candidatesSingleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+  },
+  candidateRowItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  candidateNameText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  verifiedPill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  candidateTradeText: {
+    fontSize: 11.5,
+    color: '#0284C7',
+    fontWeight: '600',
+  },
+  candidateLocationText: {
+    fontSize: 10.5,
+    color: '#64748B',
+  },
+  emptyCandidatesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyCandidatesTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 8,
+  },
+  emptyCandidatesSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   recentJobCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#CBD5E1',
+    padding: 12,
     marginBottom: 10,
   },
   jobCardHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    gap: 10,
     marginBottom: 10,
+  },
+  companyLogoBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  companyLogoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   headerTextCol: {
     flex: 1,
-    marginLeft: 10,
+    minWidth: 0,
   },
   titleBadgeRow: {
     flexDirection: 'row',
@@ -900,102 +631,85 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   jobTitleText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
     flex: 1,
-    letterSpacing: -0.2,
   },
   recentCompanyNameText: {
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 1,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
+    gap: 6,
+    marginTop: 4,
   },
   tradeBadge: {
     backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 4,
-    paddingHorizontal: 7,
+    paddingHorizontal: 6,
     paddingVertical: 2,
+    borderRadius: 4,
   },
   tradeBadgeText: {
-    color: COLORS.primary,
     fontSize: 10.5,
     fontWeight: '700',
+    color: COLORS.primary,
   },
   locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    flex: 1,
+    gap: 3,
   },
   locationText: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: '#64748B',
-    fontWeight: '500',
   },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    marginTop: 4,
-    marginBottom: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 10,
   },
-  salaryTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  salaryTag: {},
   salaryLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#64748B',
-    letterSpacing: 0.5,
   },
   salaryText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#0F172A',
   },
   openingsTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
   },
   openingsText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#334155',
+    color: COLORS.primary,
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    paddingTop: 8,
   },
   applicantBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   applicantBtnText: {
     fontSize: 12,
@@ -1005,78 +719,15 @@ const styles = StyleSheet.create({
   adjustVacanciesBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 4,
   },
   adjustVacanciesBtnText: {
     fontSize: 11.5,
     fontWeight: '700',
     color: '#0284C7',
-  },
-  /* Real Database Candidates Single Card Container */
-  candidatesSingleCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 10,
-    marginBottom: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  candidateRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 10,
-  },
-  candidateNameText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  candidateTradeText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginTop: 1,
-  },
-  candidateLocationText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  emptyCandidatesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  emptyCandidatesTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 8,
-  },
-  emptyCandidatesSubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 4,
-    textAlign: 'center',
   },
 });

@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, isValidId } from './client';
 import { User, ApiResponse } from '../types';
 import { getAccessToken } from '../utils/secureStorage';
 
@@ -56,6 +56,9 @@ export const authApi = {
   },
 
   revokeSession: async (sessionId: string): Promise<ApiResponse> => {
+    if (!isValidId(sessionId)) {
+      return { success: false, error: 'Invalid Session ID' } as any;
+    }
     return apiFetch(`/api/v1/auth/sessions/${sessionId}`, {
       method: 'DELETE',
     });

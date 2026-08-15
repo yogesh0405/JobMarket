@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, isValidId } from './client';
 import { Job, ApiResponse } from '../types';
 
 export const jobsApi = {
@@ -7,6 +7,9 @@ export const jobsApi = {
   },
 
   getJobById: async (id: string): Promise<ApiResponse<Job>> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
     return apiFetch(`/api/v1/jobs/${id}`);
   },
 
@@ -18,6 +21,9 @@ export const jobsApi = {
   },
 
   updateJob: async (id: string, jobData: Partial<Job>): Promise<ApiResponse<Job>> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
     return apiFetch(`/api/v1/jobs/${id}`, {
       method: 'PUT',
       body: JSON.stringify(jobData),
@@ -25,6 +31,9 @@ export const jobsApi = {
   },
 
   deleteJob: async (id: string): Promise<ApiResponse> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
     return apiFetch(`/api/v1/jobs/${id}`, {
       method: 'DELETE',
     });
