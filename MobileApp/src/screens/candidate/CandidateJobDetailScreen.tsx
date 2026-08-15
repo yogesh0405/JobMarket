@@ -9,6 +9,7 @@ import {
   Alert,
   Share,
   Platform,
+  StatusBar,
 } from 'react-native';
 import {
   MapPin,
@@ -30,6 +31,7 @@ import {
   Wrench,
   Check,
   Utensils,
+  Globe,
 } from 'lucide-react-native';
 import { jobsApi } from '../../api/jobsApi';
 import { candidateApi } from '../../api/candidateApi';
@@ -331,247 +333,318 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     return { icon: CheckCircle2, color: '#16A34A', bg: '#F0FDF4', tag: 'Verified Benefit' };
   };
 
+  const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
+
   return (
     <View style={styles.container}>
-      {/* Top Overscroll Blue Fill to eliminate any white space above blue header when scrolling up or down */}
-      <View style={styles.topOverscrollBlueFill} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContentBody}
         showsVerticalScrollIndicator={false}
       >
-        {/* FULL SCREEN TOP JOB HEADER MASTER CARD */}
+        {/* TOP COMPANY & JOB HEADER MASTER CARD */}
         <View style={styles.profileHeaderMasterCard}>
-          {/* Top Primary Color Header Band (Includes Back, Share, Save) */}
-          <View style={[styles.topHeaderBandPrimary, { height: 98 + insets.top, paddingTop: Math.max(insets.top + 4, 12) }]}>
+          {/* Top Blue Banner: Exact Element Placement */}
+          <View style={[styles.topHeaderBandPrimary, { height: 100 + Math.max(insets.top, 6), paddingTop: Math.max(insets.top + 6, 12) }]}>
             <View style={styles.headerBandTopActions}>
-              {/* Back Arrow Navigation */}
+              {/* Back Navigation Arrow */}
               <TouchableOpacity
                 style={styles.backBtnHeader}
                 onPress={handleBackNavigation}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <ChevronLeft size={21} color="#FFFFFF" strokeWidth={2.5} />
+                <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
               </TouchableOpacity>
 
-              {/* Right Actions (Share + Save) */}
+              {/* Top Right Actions: Compact Share & Save Icons */}
               <View style={styles.topRightActionsRow}>
                 <TouchableOpacity
-                  style={styles.actionBtnHeader}
+                  style={styles.transparentIconBtn}
                   onPress={handleShareJob}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Share2 size={17} color="#FFFFFF" />
+                  <Share2 size={16} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.actionBtnHeader}
+                  style={styles.transparentIconBtn}
                   onPress={handleToggleSave}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Bookmark
-                    size={17}
+                    size={16}
                     color="#FFFFFF"
                     fill={isSaved ? '#FFFFFF' : 'transparent'}
                   />
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Avatar + Company Name & Job Role Stack inside Blue Section */}
+            <View style={styles.bannerHeaderFlexRow}>
+              {/* Circular Company Avatar */}
+              <View style={styles.bannerAvatarBox}>
+                <CompanyLogoAvatar
+                  logoUrl={logoUrl}
+                  companyName={job.company}
+                  size={64}
+                  borderRadius={32}
+                />
+              </View>
+
+              {/* Both Company Name & Job Role Title inside Blue Header Stack */}
+              <View style={styles.bannerTitleTextStack}>
+                <View style={styles.bannerCompanyRow}>
+                  <Text style={styles.bannerCompanyNameText} numberOfLines={1}>
+                    {job.company || 'Company'}
+                  </Text>
+                  <CheckCircle2 size={15} color="#FFFFFF" strokeWidth={2} />
+                </View>
+
+                {/* Job Role Title included inside Blue Header */}
+                <Text style={styles.bannerJobRoleSubText} numberOfLines={1}>
+                  {job.title}
+                </Text>
+
+                {(job as any).handle ? (
+                  <Text style={styles.bannerCompanyHandleText}>@{(job as any).handle}</Text>
+                ) : null}
+              </View>
+            </View>
           </View>
 
-          {/* Overlapping Centered Company Logo Avatar */}
-          <View style={[styles.overlappingAvatarContainer, { top: 52 + insets.top }]}>
-            <CompanyLogoAvatar
-              logoUrl={logoUrl}
-              companyName={job.company}
-              size={84}
-              borderRadius={42}
-            />
-          </View>
+          {/* White Body Header Area */}
+          <View style={styles.whiteHeaderCardBody}>
+            {/* Top Right Openings Count Badge directly below Blue Section */}
+            <View style={styles.openingsBadgeTopRight}>
+              <Users size={11} color={COLORS.primary} />
+              <Text style={styles.openingsBadgeText}>
+                {job.openings ? `${job.openings} Openings` : '1 Vacancy'}
+              </Text>
+            </View>
 
-          {/* Header Info Below Overlapping Avatar */}
-          <View style={styles.headerInfoContentStack}>
-            <Text style={styles.candidateNameTitleText}>{job.title}</Text>
-            <Text style={styles.candidateSpecializationSubText}>
-              {job.company || 'Industrial Partner'} • {job.location || 'MIDC Zone'}
-            </Text>
+            {/* Authentic Metadata Stack (Location, Website, Industry) */}
+            <View style={styles.refMetaStack}>
+              {/* Row 1: Map Pin & Website */}
+              {job.location || (job as any).website ? (
+                <View style={styles.refMetaRow}>
+                  {job.location ? (
+                    <>
+                      <MapPin size={13} color="#64748B" />
+                      <Text style={styles.refMetaText}>{job.location}</Text>
+                    </>
+                  ) : null}
+                  {(job as any).website ? (
+                    <>
+                      <Globe size={13} color={COLORS.primary} style={{ marginLeft: job.location ? 12 : 0 }} />
+                      <Text style={styles.refMetaLink}>{(job as any).website}</Text>
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
 
-            {/* Quick Metrics Row Below Title */}
-            <View style={styles.quickMetricsRowHeader}>
-              <View style={styles.quickMetricItem}>
-                <IndianRupee size={13} color={COLORS.primary} />
-                <Text style={styles.quickMetricValue}>
-                  ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax || 25000}
+              {/* Row 2: Industry */}
+              {job.industry || job.trade ? (
+                <View style={styles.refMetaRow}>
+                  <Building2 size={13} color="#64748B" />
+                  <Text style={styles.refMetaText}>Industry : {job.industry || job.trade}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Segmented Underline Tab Bar */}
+            <View style={styles.segmentedTabBar}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.segmentedTabBtn, activeTab === 'job_overview' && styles.segmentedTabBtnActive]}
+                onPress={() => setActiveTab('job_overview')}
+              >
+                <Briefcase size={14} color={activeTab === 'job_overview' ? COLORS.primary : '#64748B'} />
+                <Text style={[styles.segmentedTabText, activeTab === 'job_overview' && styles.segmentedTabTextActive]}>
+                  Job Overview
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.quickMetricDivider} />
-
-              <View style={styles.quickMetricItem}>
-                <Briefcase size={13} color="#64748B" />
-                <Text style={styles.quickMetricValueLabel}>
-                  {job.job_type || job.jobType || 'Full-Time'}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.segmentedTabBtn, activeTab === 'company_info' && styles.segmentedTabBtnActive]}
+                onPress={() => setActiveTab('company_info')}
+              >
+                <Award size={14} color={activeTab === 'company_info' ? COLORS.primary : '#64748B'} />
+                <Text style={[styles.segmentedTabText, activeTab === 'company_info' && styles.segmentedTabTextActive]}>
+                  Requirements & Perks
                 </Text>
-              </View>
-
-              <View style={styles.quickMetricDivider} />
-
-              <View style={styles.quickMetricItem}>
-                <Users size={13} color="#64748B" />
-                <Text style={styles.quickMetricValueLabel}>
-                  {job.openings ?? 1} Vacancy
-                </Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* FULL SCREEN MASTER BODY CONTAINER */}
+        {/* GREY SECTION SEPARATOR LINE TO SEPARATE HEADER FROM BELOW SECTION */}
+        <View style={styles.headerBodySeparatorSlate} />
+
+        {/* CLASSIFIED BODY CONTENT CONTAINER (CLEAN & VISUALLY CALM) */}
         <View style={styles.cardBlockContainer}>
-          {/* SECTION 1: Key Job Specifications Grid */}
-          <View style={styles.sectionHeaderRow}>
-            <Briefcase size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitleText}>Key Vacancy Specifications</Text>
-          </View>
-
-          <View style={styles.specGrid2Col}>
-            <View style={styles.specGridItem}>
-              <Text style={styles.specLabelText}>Trade / Role</Text>
-              <Text style={styles.specValueText}>{job.trade || job.title || 'Technical Specialist'}</Text>
-            </View>
-
-            <View style={styles.specGridItem}>
-              <Text style={styles.specLabelText}>Experience Required</Text>
-              <Text style={styles.specValueText}>{minExp} - {maxExp} Years</Text>
-            </View>
-
-            <View style={styles.specGridItem}>
-              <Text style={styles.specLabelText}>Work Mode</Text>
-              <Text style={styles.specValueText}>{job.work_mode || job.workMode || 'On-site (Shop Floor)'}</Text>
-            </View>
-
-            <View style={styles.specGridItem}>
-              <Text style={styles.specLabelText}>Shift Details</Text>
-              <Text style={styles.specValueText}>{job.shift_details || (job as any).shiftDetails || 'Day Shift (8:00 AM - 5:00 PM)'}</Text>
-            </View>
-          </View>
-
-          {/* SECTION 2: Technical Skills & Trade Chips */}
-          {Array.isArray(job.skills) && job.skills.length > 0 ? (
+          {activeTab === 'job_overview' ? (
+            /* PART 1: JOB OVERVIEW & ROLE DETAILS */
             <>
-              <View style={styles.sectionDividerSlate} />
+              {/* SECTION 1: Key Job Specifications Grid */}
               <View style={styles.sectionHeaderRow}>
-                <Sparkles size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitleText}>Required Technical Skills</Text>
+                <Text style={styles.sectionTitleText}>Key Specifications</Text>
               </View>
 
-              <View style={styles.skillChipsRow}>
-                {job.skills.map((skill, idx) => (
-                  <View key={idx} style={styles.skillPillBadge}>
-                    <Text style={styles.skillPillText}>{skill}</Text>
+              <View style={styles.specGrid2Col}>
+                <View style={styles.specGridItem}>
+                  <Text style={styles.specLabelText}>Trade / Role</Text>
+                  <Text style={styles.specValueText} numberOfLines={1}>{job.trade || job.title}</Text>
+                </View>
+
+                {/* Salary Package */}
+                {(job.salary_min || job.salaryMin || job.salary_max || job.salaryMax) ? (
+                  <View style={styles.specGridItem}>
+                    <Text style={styles.specLabelText}>Salary Package</Text>
+                    <Text style={styles.specValueText} numberOfLines={1}>
+                      ₹{job.salary_min || job.salaryMin || 0} - ₹{job.salary_max || job.salaryMax || 0} / mo
+                    </Text>
                   </View>
-                ))}
-              </View>
-            </>
-          ) : null}
+                ) : null}
 
-          {/* SECTION 3: Job Overview & Description */}
-          <View style={styles.sectionDividerSlate} />
-          <View style={styles.sectionHeaderRow}>
-            <FileText size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitleText}>Job Description & Role Summary</Text>
-          </View>
-          <Text style={styles.bodyTextText}>
-            {job.description || 'No detailed description provided for this industrial opening.'}
-          </Text>
+                <View style={styles.specGridItem}>
+                  <Text style={styles.specLabelText}>Experience Required</Text>
+                  <Text style={styles.specValueText} numberOfLines={1}>{minExp} - {maxExp} Years</Text>
+                </View>
 
-          {/* SECTION 4: Key Responsibilities */}
-          {Array.isArray(job.responsibilities) && job.responsibilities.length > 0 ? (
-            <>
-              <View style={styles.sectionDividerSlate} />
-              <View style={styles.sectionHeaderRow}>
-                <Layers size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitleText}>Key Responsibilities</Text>
-              </View>
-              <View style={styles.bulletList}>
-                {job.responsibilities.map((resp, idx) => (
-                  <View key={idx} style={styles.bulletItemRow}>
-                    <CheckCircle2 size={15} color={COLORS.primary} style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletItemText}>{resp}</Text>
+                {(job.work_mode || job.workMode || job.job_type || job.jobType) ? (
+                  <View style={styles.specGridItem}>
+                    <Text style={styles.specLabelText}>Work Mode</Text>
+                    <Text style={styles.specValueText} numberOfLines={1}>{job.work_mode || job.workMode || job.job_type || job.jobType}</Text>
                   </View>
-                ))}
-              </View>
-            </>
-          ) : null}
+                ) : null}
 
-          {/* SECTION 5: Requirements & ITI Certification */}
-          {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
-            <>
-              <View style={styles.sectionDividerSlate} />
-              <View style={styles.sectionHeaderRow}>
-                <Award size={18} color="#D97706" />
-                <Text style={styles.sectionTitleText}>Requirements & ITI Certification</Text>
-              </View>
-              <View style={styles.bulletList}>
-                {job.requirements.map((req, idx) => (
-                  <View key={idx} style={styles.bulletItemRow}>
-                    <Award size={15} color="#D97706" style={{ marginTop: 2 }} />
-                    <Text style={styles.bulletItemText}>{req}</Text>
+                {(job.shift_details || (job as any).shiftDetails) ? (
+                  <View style={styles.specGridItem}>
+                    <Text style={styles.specLabelText}>Shift Details</Text>
+                    <Text style={styles.specValueText} numberOfLines={1}>{job.shift_details || (job as any).shiftDetails}</Text>
                   </View>
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {/* SECTION 6: Perks & Facilities Offered */}
-          {uniquePerks.length > 0 ? (
-            <>
-              <View style={styles.sectionDividerSlate} />
-              <View style={styles.sectionHeaderRow}>
-                <CheckCircle2 size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitleText}>Perks & Facilities Offered</Text>
+                ) : null}
               </View>
 
-              <View style={styles.perksInlineRow}>
-                {uniquePerks.map((perk, idx) => (
-                  <View key={idx} style={styles.perkInlineTag}>
-                    <Check size={13} color={COLORS.primary} strokeWidth={2.5} />
-                    <Text style={styles.perkInlineTagText}>{perk}</Text>
+              {/* SECTION 2: Technical Skills & Trade List */}
+              {Array.isArray(job.skills) && job.skills.length > 0 ? (
+                <>
+                  <View style={styles.sectionDividerSlate} />
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Required Technical Skills</Text>
                   </View>
-                ))}
-              </View>
-            </>
-          ) : null}
 
-          {/* SECTION 7: Interview Venue & Address */}
-          {(job.interview_address || (job as any).interviewAddress) ? (
-            <>
+                  <View style={styles.bulletList}>
+                    {job.skills.map((skill, idx) => (
+                      <View key={idx} style={styles.bulletItemRow}>
+                        <Text style={styles.bulletDotText}>•</Text>
+                        <Text style={styles.bulletItemText}>{skill}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              {/* SECTION 3: Job Overview & Description */}
               <View style={styles.sectionDividerSlate} />
               <View style={styles.sectionHeaderRow}>
-                <Calendar size={18} color="#059669" />
-                <Text style={styles.sectionTitleText}>Interview Venue & Address</Text>
+                <Text style={styles.sectionTitleText}>Role Description</Text>
               </View>
               <Text style={styles.bodyTextText}>
-                {job.interview_address || (job as any).interviewAddress}
+                {job.description || 'No detailed description provided for this industrial opening.'}
               </Text>
-            </>
-          ) : null}
 
-          {/* SECTION 8: Live Map Location Preview */}
-          {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
-            <>
-              <View style={styles.sectionDividerSlate} />
-              <View style={styles.sectionHeaderRow}>
-                <MapPin size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitleText}>Factory Location Map</Text>
-              </View>
-              <JobLocationMapPreview
-                latitude={job.latitude}
-                longitude={job.longitude}
-                locationName={job.location}
-              />
+              {/* SECTION 4: Key Responsibilities */}
+              {Array.isArray(job.responsibilities) && job.responsibilities.length > 0 ? (
+                <>
+                  <View style={styles.sectionDividerSlate} />
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Key Responsibilities</Text>
+                  </View>
+                  <View style={styles.bulletList}>
+                    {job.responsibilities.map((resp, idx) => (
+                      <View key={idx} style={styles.bulletItemRow}>
+                        <Text style={styles.bulletDotText}>•</Text>
+                        <Text style={styles.bulletItemText}>{resp}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : null}
             </>
-          ) : null}
+          ) : (
+            /* PART 2: REQUIREMENTS, PERKS & VENUE DETAILS */
+            <>
+              {/* SECTION 1: Requirements & ITI Certification */}
+              {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
+                <View style={{ marginBottom: 12 }}>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Requirements & Eligibility</Text>
+                  </View>
+                  <View style={styles.bulletList}>
+                    {job.requirements.map((req, idx) => (
+                      <View key={idx} style={styles.bulletItemRow}>
+                        <Text style={styles.bulletDotText}>•</Text>
+                        <Text style={styles.bulletItemText}>{req}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* SECTION 2: Perks & Facilities Offered */}
+              {uniquePerks.length > 0 ? (
+                <View style={{ marginBottom: 12 }}>
+                  {Array.isArray(job.requirements) && job.requirements.length > 0 ? (
+                    <View style={styles.sectionDividerSlate} />
+                  ) : null}
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Perks & Facilities Offered</Text>
+                  </View>
+
+                  <View style={styles.bulletList}>
+                    {uniquePerks.map((perk, idx) => (
+                      <View key={idx} style={styles.bulletItemRow}>
+                        <Text style={styles.bulletDotText}>•</Text>
+                        <Text style={styles.bulletItemText}>{perk}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* SECTION 3: Interview Venue & Address */}
+              {(job.interview_address || (job as any).interviewAddress) ? (
+                <View style={{ marginBottom: 12 }}>
+                  <View style={styles.sectionDividerSlate} />
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Interview Venue & Address</Text>
+                  </View>
+                  <Text style={styles.bodyTextText}>
+                    {job.interview_address || (job as any).interviewAddress}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* SECTION 4: Live Map Location Preview */}
+              {job.google_maps_url || job.googleMapsUrl || (job.latitude && job.longitude) ? (
+                <View>
+                  <View style={styles.sectionDividerSlate} />
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleText}>Factory Location Map</Text>
+                  </View>
+                  <JobLocationMapPreview
+                    latitude={job.latitude}
+                    longitude={job.longitude}
+                    locationName={job.location}
+                  />
+                </View>
+              ) : null}
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -645,15 +718,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
-  },
-  topOverscrollBlueFill: {
-    position: 'absolute',
-    top: -500,
-    left: 0,
-    right: 0,
-    height: 500,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#FFFFFF',
   },
   scrollContentBody: {
     paddingTop: 0,
@@ -666,19 +731,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     marginTop: 0,
     marginBottom: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
+    zIndex: 10,
+    position: 'relative',
   },
   topHeaderBandPrimary: {
-    height: 98,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
+    position: 'relative',
+    zIndex: 20,
+    elevation: 4,
   },
   headerBandTopActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
+    zIndex: 40,
   },
   backBtnHeader: {
     padding: 4,
@@ -687,70 +756,167 @@ const styles = StyleSheet.create({
   topRightActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 16,
   },
-  actionBtnHeader: {
+  transparentIconBtn: {
     padding: 4,
     backgroundColor: 'transparent',
   },
-  overlappingAvatarContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+  bannerHeaderFlexRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 10,
+    marginTop: 10,
+    gap: 12,
+    zIndex: 30,
+    position: 'relative',
   },
-  headerInfoContentStack: {
-    paddingTop: 46,
-    paddingBottom: 16,
+  bannerAvatarBox: {
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+    borderRadius: 34,
+    backgroundColor: '#FFFFFF',
+    transform: [{ translateY: 12 }],
+    zIndex: 99,
+    elevation: 10,
+  },
+  bannerTitleTextStack: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bannerCompanyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+  },
+  bannerCompanyNameText: {
+    fontSize: 16.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  bannerJobRoleSubText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#DBEAFE',
+    marginTop: 2,
+    marginBottom: 6,
+    letterSpacing: -0.1,
+  },
+  bannerCompanyHandleText: {
+    fontSize: 11.5,
+    color: '#93C5FD',
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  whiteHeaderCardBody: {
     paddingHorizontal: 16,
-    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 0,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
   },
-  candidateNameTitleText: {
-    fontSize: 19,
+  openingsBadgeTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  openingsBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  roleBelowCompanyBox: {
+    paddingLeft: 73,
+    paddingTop: 0,
+    paddingBottom: 8,
+  },
+  jobTitleMainHeadline: {
+    fontSize: 15.5,
     fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.3,
-    textAlign: 'center',
+    letterSpacing: -0.2,
+    lineHeight: 21,
   },
-  candidateSpecializationSubText: {
-    fontSize: 12.5,
+  refMetaStack: {
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    marginBottom: 4,
+  },
+  refMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  refMetaText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  refMetaLink: {
+    fontSize: 12,
+    color: COLORS.primary,
     fontWeight: '600',
-    color: '#64748B',
-    marginTop: 3,
-    textAlign: 'center',
   },
-  quickMetricsRowHeader: {
+  refBoldMetricText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  refMutedMetricText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+
+  segmentedTabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    marginTop: 14,
+    width: '100%',
+  },
+  segmentedTabBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    gap: 6,
+    paddingVertical: 11,
+    borderBottomWidth: 3.5,
+    borderBottomColor: 'transparent',
+  },
+  segmentedTabBtnActive: {
+    borderBottomColor: COLORS.primary,
+  },
+  segmentedTabText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  segmentedTabTextActive: {
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+  headerBodySeparatorSlate: {
+    height: 1,
+    backgroundColor: '#CBD5E1',
     width: '100%',
   },
-  quickMetricItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  quickMetricValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  quickMetricValueLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  quickMetricDivider: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#CBD5E1',
-  },
+
   cardBlockContainer: {
     backgroundColor: '#FFFFFF',
     borderWidth: 0,
@@ -761,11 +927,11 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   sectionTitleText: {
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
@@ -773,58 +939,57 @@ const styles = StyleSheet.create({
   specGrid2Col: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    rowGap: 12,
+    columnGap: 16,
     marginTop: 4,
   },
   specGridItem: {
-    width: '48%',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 10,
-    borderRadius: 0,
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
   },
   specLabelText: {
-    fontSize: 10.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    marginBottom: 2,
   },
   specValueText: {
     fontSize: 12.5,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0F172A',
-    marginTop: 2,
   },
   skillChipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     marginTop: 4,
   },
   skillPillBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 0,
+    paddingVertical: 5,
+    borderRadius: 4,
   },
   skillPillText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
   },
   bodyTextText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#475569',
     lineHeight: 19,
   },
   sectionDividerSlate: {
     height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 14,
+    backgroundColor: '#CBD5E1',
+    marginVertical: 12,
   },
   bulletList: {
     gap: 8,
@@ -832,7 +997,13 @@ const styles = StyleSheet.create({
   bulletItemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 6,
+  },
+  bulletDotText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '700',
+    lineHeight: 18,
   },
   bulletItemText: {
     fontSize: 12.5,

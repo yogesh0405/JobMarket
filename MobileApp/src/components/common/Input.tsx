@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
 import { Eye, EyeOff, XCircle } from 'lucide-react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
-interface InputProps extends TextInputProps {
+export interface InputProps extends TextInputProps {
   label?: string;
   required?: boolean;
   error?: string;
@@ -12,9 +12,10 @@ interface InputProps extends TextInputProps {
   allowClear?: boolean;
   onClear?: () => void;
   containerStyle?: ViewStyle;
+  inputContainerStyle?: ViewStyle;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = forwardRef<TextInput, InputProps>(({
   label,
   required = false,
   error,
@@ -24,9 +25,12 @@ export const Input: React.FC<InputProps> = ({
   onClear,
   value,
   containerStyle,
+  inputContainerStyle,
   style,
+  onFocus,
+  onBlur,
   ...props
-}) => {
+}, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   const [secureText, setSecureText] = useState(isPassword);
 
@@ -34,14 +38,15 @@ export const Input: React.FC<InputProps> = ({
     <View style={[styles.wrapper, containerStyle]}>
       {label ? (
         <View style={styles.labelContainer}>
-          <Text style={styles.label}>{label}</Text>
-          {required && <Text style={styles.required}> *</Text>}
+          <Text style={styles.label}>{label.endsWith('*') ? label.slice(0, -1).trim() : label}</Text>
+          {(required || label.endsWith('*')) && <Text style={styles.required}> *</Text>}
         </View>
       ) : null}
 
       <View
         style={[
           styles.inputContainer,
+          inputContainerStyle,
           isFocused && styles.inputFocused,
           !!error && styles.inputError,
         ]}
@@ -49,12 +54,19 @@ export const Input: React.FC<InputProps> = ({
         {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
 
         <TextInput
+          ref={ref}
           style={[styles.input, style]}
           placeholderTextColor={COLORS.textMuted}
           secureTextEntry={secureText}
           value={value}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={(e) => {
+            setIsFocused(true);
+            if (onFocus) onFocus(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            if (onBlur) onBlur(e);
+          }}
           {...props}
         />
 
@@ -78,21 +90,23 @@ export const Input: React.FC<InputProps> = ({
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
-};
+});
+
+Input.displayName = 'Input';
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: SPACING.md,
+    marginBottom: 16,
   },
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: 6,
   },
   label: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: '#334155',
+    color: '#0F172A',
   },
   required: {
     color: COLORS.danger,
@@ -101,30 +115,32 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    minHeight: 46,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    height: 48,
+    minHeight: 48,
   },
   inputFocused: {
-    borderColor: COLORS.borderFocus,
+    borderColor: COLORS.primary,
+    borderWidth: 2,
   },
   inputError: {
     borderColor: COLORS.danger,
   },
   input: {
     flex: 1,
-    ...TYPOGRAPHY.body,
-    color: COLORS.textPrimary,
-    paddingVertical: SPACING.sm,
+    fontSize: 13.5,
+    color: '#0F172A',
+    paddingVertical: 0,
   },
   iconLeft: {
-    marginRight: SPACING.sm,
+    marginRight: 10,
   },
   iconRight: {
-    marginLeft: SPACING.sm,
+    marginLeft: 10,
     padding: SPACING.xs,
   },
   errorText: {

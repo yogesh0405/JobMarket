@@ -241,6 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
               styles.drawerPanel,
               {
                 paddingTop: Math.max(insets.top + 2, 10),
+                paddingBottom: Math.max(insets.bottom + 12, 24),
               },
             ]}
           >
@@ -348,47 +349,9 @@ export const Header: React.FC<HeaderProps> = ({
                     <Text style={styles.menuItemTitle}>My Resume Document</Text>
                     <ChevronRight size={16} color={COLORS.slate400} />
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItemRow}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      closeDrawer(() => {
-                        if (navigation && typeof navigation.navigate === 'function') {
-                          navigation.navigate('CandidateMain', {
-                            screen: 'CandidateProfileTab',
-                            params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
-                          });
-                        }
-                      });
-                    }}
-                  >
-                    <View style={styles.iconSquircle}>
-                      <LayoutGrid size={17} color="#334155" />
-                    </View>
-                    <Text style={styles.menuItemTitle}>Dashboard & Analytics</Text>
-                    <ChevronRight size={16} color={COLORS.slate400} />
-                  </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <TouchableOpacity
-                    style={styles.menuItemRow}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      closeDrawer(() => {
-                        if (navigation && typeof navigation.navigate === 'function') {
-                          navigation.navigate('EmployerDashboard');
-                        }
-                      });
-                    }}
-                  >
-                    <View style={styles.iconSquircle}>
-                      <LayoutGrid size={17} color="#334155" />
-                    </View>
-                    <Text style={styles.menuItemTitle}>Dashboard & Analytics</Text>
-                    <ChevronRight size={16} color={COLORS.slate400} />
-                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.menuItemRow}

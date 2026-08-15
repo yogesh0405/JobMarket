@@ -33,12 +33,14 @@ import {
   Wifi,
   CheckCircle2,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../../constants/theme';
 
 interface Props {
@@ -46,6 +48,7 @@ interface Props {
 }
 
 export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   // Active Device Sessions State
@@ -441,7 +444,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -622,7 +625,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* POPUP MODAL SHEET 1: CHANGE PASSWORD */}
       <Modal
@@ -632,7 +635,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         onRequestClose={() => setIsChangePassModalOpen(false)}
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsChangePassModalOpen(false)}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom + 16, 28) }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -779,7 +782,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         >
           <TouchableOpacity
             activeOpacity={1}
-            style={styles.confirmModalSheetContainer}
+            style={[styles.confirmModalSheetContainer, { paddingBottom: Math.max(insets.bottom + 16, 28) }]}
             onPress={(e) => e.stopPropagation()}
           >
             {/* Top Shield Header */}
@@ -845,7 +848,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         onRequestClose={() => setIsOtpModalOpen(false)}
       >
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsOtpModalOpen(false)}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom + 16, 28) }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <KeyRound size={20} color={COLORS.primary} />

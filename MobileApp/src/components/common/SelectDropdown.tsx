@@ -12,6 +12,9 @@ import {
 import { ChevronDown, Check, X, Search } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ViewStyle } from 'react-native';
+
 export interface DropdownOption {
   label: string;
   value: string;
@@ -27,6 +30,7 @@ interface SelectDropdownProps {
   onSelect: (value: string) => void;
   disabled?: boolean;
   leftIcon?: React.ReactNode;
+  triggerStyle?: ViewStyle;
 }
 
 export const SelectDropdown: React.FC<SelectDropdownProps> = ({
@@ -39,7 +43,9 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
   onSelect,
   disabled = false,
   leftIcon,
+  triggerStyle,
 }) => {
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -76,6 +82,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
         disabled={disabled}
         style={[
           styles.triggerBox,
+          triggerStyle,
           disabled && styles.triggerDisabled,
           !!value && styles.triggerActive,
         ]}
@@ -116,7 +123,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
             <View style={styles.backdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={styles.sheetPanel}>
+          <View style={[styles.sheetPanel, { paddingBottom: Math.max(insets.bottom + 16, 28) }]}>
             {/* Sheet Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label || 'Select Option'}</Text>
@@ -179,18 +186,17 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: SPACING.md,
+    marginBottom: 16,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: 6,
   },
   label: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
     fontSize: 13.5,
-    color: COLORS.slate700,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   required: {
     color: COLORS.danger,
@@ -199,30 +205,30 @@ const styles = StyleSheet.create({
   triggerBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.slate300,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 14,
     height: 48,
   },
   triggerDisabled: {
-    backgroundColor: COLORS.slate100,
-    borderColor: COLORS.slate200,
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
     opacity: 0.7,
   },
   triggerActive: {
     borderColor: COLORS.primary,
+    borderWidth: 2,
   },
   leftIconSlot: {
-    marginRight: SPACING.sm,
+    marginRight: 10,
   },
   triggerText: {
     flex: 1,
-    ...TYPOGRAPHY.body,
-    fontSize: 14,
-    color: COLORS.slate900,
-    fontWeight: '600',
+    fontSize: 13.5,
+    color: '#0F172A',
+    fontWeight: '500',
   },
   triggerTextDisabled: {
     color: COLORS.slate400,

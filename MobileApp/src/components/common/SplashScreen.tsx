@@ -236,7 +236,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <Animated.View style={[styles.container, { opacity: rootOpacity }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" translucent />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Decorative Ambient Background Gradients */}
       <View style={styles.bgWrapper} pointerEvents="none">

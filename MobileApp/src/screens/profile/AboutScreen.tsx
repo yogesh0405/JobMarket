@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Header } from '../../components/common/Header';
+import { WhyChooseJobMarket } from '../../components/profile/WhyChooseJobMarket';
 import {
   ArrowLeft,
   Globe,
@@ -34,28 +35,20 @@ interface Props {
 export const AboutScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      {/* Top Overscroll Navy Blue Fill */}
-      <View style={styles.topOverscrollBlueFill} />
-
-      {/* Top Navy Header Banner with Back & Stats */}
-      <LinearGradient
-        colors={COLORS.employerGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={styles.headerBannerContainer}
-      >
+      {/* Top Header Banner with Back & Stats (Pure White / Slate - No Blue Color) */}
+      <View style={styles.headerBannerContainer}>
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ padding: 4 }}
           >
-            <ArrowLeft size={20} color="#FFFFFF" />
+            <ArrowLeft size={20} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitleText}>About Us</Text>
         </View>
 
-        {/* Embedded Top Translucent Stats Card */}
+        {/* Top Stats Card in Pure White / Slate */}
         <View style={styles.topBannerStatsCard}>
           <View style={styles.statColItem}>
             <Text style={styles.statValWhiteText}>10M+</Text>
@@ -77,7 +70,7 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.statLabelMutedText}>Companies</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -98,61 +91,8 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
         {/* Crisp Section Divider Line */}
         <View style={styles.slateSectionDivider} />
 
-        {/* CARD BLOCK 2: WHY CHOOSE JOBMARKET */}
-        <View style={styles.cardBlock}>
-          <View style={styles.sectionHeaderRow}>
-            <Award size={18} color={COLORS.primary} />
-            <Text style={styles.sectionBlockTitle}>Why Choose JobMarket?</Text>
-          </View>
-
-          <View style={styles.featuresList}>
-            <View style={styles.featureItemRow}>
-              <Sparkles size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>Multi-Domain Job Matching</Text>
-                <Text style={styles.featureDesc}>
-                  Intelligent matching algorithm that connects your skills and qualifications with opportunities in IT, Corporate, Healthcare, Sales, and Technical fields.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.rowDividerLine} />
-
-            <View style={styles.featureItemRow}>
-              <ShieldCheck size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>100% Verified Employers</Text>
-                <Text style={styles.featureDesc}>
-                  Every hiring organisation and company undergoes strict business registration and corporate verification.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.rowDividerLine} />
-
-            <View style={styles.featureItemRow}>
-              <Zap size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>Instant 1-Tap Applications</Text>
-                <Text style={styles.featureDesc}>
-                  Apply to job postings instantly across any domain using your structured digital candidate profile and resume.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.rowDividerLine} />
-
-            <View style={styles.featureItemRow}>
-              <BarChart3 size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>Real-Time Tracking & Direct HR Communication</Text>
-                <Text style={styles.featureDesc}>
-                  Track your application status, interview schedules, and communicate directly with HR recruiters in real-time.
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        {/* CARD BLOCK 2: WHY CHOOSE JOBMARKET (REDESIGNED V2) */}
+        <WhyChooseJobMarket />
 
         {/* Crisp Section Divider Line */}
         <View style={styles.slateSectionDivider} />
@@ -207,38 +147,40 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 400,
-    backgroundColor: COLORS.primary,
   },
 
-  /* Header Banner */
+  /* Header Banner (Pure White Background - No Blue Color) */
   headerBannerContainer: {
-    paddingTop: Platform.OS === 'ios' ? 42 : 18,
+    paddingTop: Platform.OS === 'ios' ? 48 : 20,
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#CBD5E1',
   },
   headerTitleNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   headerTitleText: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
   topBannerStatsCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#CBD5E1',
     borderRadius: 8,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 10,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statColItem: {
     alignItems: 'center',
@@ -247,18 +189,18 @@ const styles = StyleSheet.create({
   statValWhiteText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   statLabelMutedText: {
     fontSize: 9.5,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '600',
+    color: '#64748B',
     marginTop: 2,
   },
   statColDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#CBD5E1',
   },
 
   /* Scroll Content & Cards */

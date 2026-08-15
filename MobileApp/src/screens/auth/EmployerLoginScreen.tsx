@@ -143,7 +143,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#10386E" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -415,16 +415,16 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
   },
 
-  // Brand Header (Navy Blue)
+  // Brand Header (Primary Blue)
   brandHeader: {
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingBottom: 28,
   },
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   roleSegmentTabActive: {
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
   },
   roleSegmentTabText: {
     fontSize: 13.5,
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
   forgotLinkText: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#10386E',
+    color: COLORS.primary,
   },
   inputBox: {
     flexDirection: 'row',
@@ -647,8 +647,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   checkboxSquareActive: {
-    backgroundColor: '#10386E',
-    borderColor: '#10386E',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   checkboxLabelText: {
     fontSize: 13,
@@ -662,10 +662,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
     height: 50,
     borderRadius: 12,
-    shadowColor: '#10386E',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   footerLinkBold: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: '#10386E',
+    color: COLORS.primary,
   },
 
   // 2FA Modal
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
   mfaSubmitBtn: {
-    backgroundColor: '#10386E',
+    backgroundColor: COLORS.primary,
     height: 46,
     borderRadius: 10,
     alignItems: 'center',

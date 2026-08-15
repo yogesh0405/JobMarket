@@ -59,17 +59,6 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
 
   const coreMenuItems = [
     {
-      label: 'Dashboard & Analytics',
-      icon: LayoutGrid,
-      action: () => {
-        onClose();
-        navigation.navigate('CandidateMain', {
-          screen: 'CandidateProfileTab',
-          params: { initialTab: 'DASHBOARD', tab: 'DASHBOARD' },
-        });
-      },
-    },
-    {
       label: 'My Candidate Profile',
       icon: UserIcon,
       action: () => handleNavigate('CandidateProfile'),
@@ -116,7 +105,7 @@ export const CandidateSideDrawer: React.FC<CandidateSideDrawerProps> = ({
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
 
-        <View style={[styles.drawerContainer, { paddingTop: Math.max(insets.top + 8, 20) }]}>
+        <View style={[styles.drawerContainer, { paddingTop: Math.max(insets.top + 8, 20), paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
           <View style={styles.profileHeaderCard}>
             <View style={styles.headerInfo}>
               <View style={styles.avatarContainer}>

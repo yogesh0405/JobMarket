@@ -34,6 +34,7 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
+import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
@@ -187,12 +188,11 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     <View style={styles.container}>
       <Header title="Confirm Application" subtitle="Review candidate specs before submitting" showBack={true} />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAwareScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
           {/* Missing Profile Alert Banner (Only shown if essential fields are missing) */}
           {missingSections.length > 0 && (
             <>
@@ -431,11 +431,10 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
               />
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       {/* Fixed Bottom Action Bar */}
-      <View style={[styles.fixedBottomBar, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
+      <View style={[styles.fixedBottomBar, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.confirmSubmitBtn}

@@ -5,6 +5,7 @@ import { EmployerLoginScreen } from '../screens/auth/EmployerLoginScreen';
 import { EmployerSignupScreen } from '../screens/auth/EmployerSignupScreen';
 import { VerifyOTPScreen } from '../screens/auth/VerifyOTPScreen';
 import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
+import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerTabNavigator } from './EmployerTabNavigator';
 import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
 import { SecuritySettingsScreen } from '../screens/profile/SecuritySettingsScreen';
@@ -64,6 +65,8 @@ export const AppNavigator: React.FC = () => {
         // Employer App Stack (RBAC)
         <>
           <Stack.Screen name="EmployerMain" component={EmployerTabNavigator} />
+          <Stack.Screen name="JobPost" component={JobPostScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PostTab" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
           <Stack.Screen name="EmployerBanners" component={EmployerBannersScreen} />
           <Stack.Screen name="CreateBanner" component={CreateBannerScreen} />

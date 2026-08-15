@@ -22,6 +22,7 @@ import { Header } from '../../components/common/Header';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
 import { Advertisement, AdvertisementType, Job } from '../../types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePickerField } from '../../components/common/DatePickerField';
 import { COLORS, FONTS } from '../../constants/theme';
 
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const initialBanner: Advertisement | undefined = route?.params?.banner;
 
   const [editingBanner, setEditingBanner] = useState<Advertisement | null>(initialBanner || null);
@@ -174,7 +176,7 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 50) }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Section 1: Campaign Details */}

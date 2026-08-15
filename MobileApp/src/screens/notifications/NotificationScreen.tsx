@@ -155,7 +155,7 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => setFilter('UNREAD')}
             >
               <Text style={[styles.filterPillText, filter === 'UNREAD' && styles.filterPillTextActive]}>
-                Unread ({unreadCount})
+                Unread ({unreadCount > 9 ? '9+' : unreadCount})
               </Text>
             </TouchableOpacity>
           </View>

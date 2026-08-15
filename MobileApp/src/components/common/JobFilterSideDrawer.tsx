@@ -327,7 +327,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
         </ScrollView>
 
         {/* Fixed Bottom Action Bar */}
-        <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
+        <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
           <TouchableOpacity style={styles.resetFooterBtn} onPress={handleReset} activeOpacity={0.8}>
             <RotateCcw size={16} color="#475569" />
             <Text style={styles.resetFooterBtnText}>Clear All</Text>

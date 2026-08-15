@@ -9,6 +9,7 @@ import {
   getAccessToken,
   clearAuthSession,
 } from '../utils/secureStorage';
+import { setGlobalCompanyLogo } from '../utils/companyLogos';
 
 interface AuthContextType {
   user: User | null;
@@ -74,7 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user?.profile_picture_url ||
           user?.profilePictureUrl;
 
-        const activePhotoUri = serverPhotoUri || localPhotoUri;
+        // Preserve locally uploaded photo URI if valid so profile picture / company logo never reverts on refresh
+        const activePhotoUri = (localPhotoUri && localPhotoUri.length > 5) ? localPhotoUri : (serverPhotoUri || localPhotoUri);
 
         const photoNormalizedData = activePhotoUri
           ? {
@@ -82,10 +84,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               profilePictureUrl: activePhotoUri,
               avatar_url: activePhotoUri,
               avatarUrl: activePhotoUri,
+              avatar: activePhotoUri,
               companyLogo: activePhotoUri,
               company_logo: activePhotoUri,
+              logoUrl: activePhotoUri,
+              logo_url: activePhotoUri,
             }
           : {};
+
+        const companyName = fetchedUser?.companyName || fetchedUser?.company_name || (storedUser as any)?.companyName || user?.companyName;
+        if (companyName && activePhotoUri) {
+          setGlobalCompanyLogo(companyName, activePhotoUri);
+        }
 
         // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
         const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
@@ -297,6 +307,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (updatedUser as any).resume_url = null;
       (updatedUser as any).resumeUrl = null;
       (updatedUser as any).resumeName = null;
+    }
+
+    const companyName = normalizedData.companyName || normalizedData.company_name || (storedUser as any)?.companyName || user?.companyName;
+    if (companyName && photoUri) {
+      setGlobalCompanyLogo(companyName, photoUri);
     }
 
     // Immediately persist locally so state & AsyncStorage are ALWAYS updated instantly

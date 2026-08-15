@@ -47,10 +47,12 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 
 interface Props {
   navigation: any;
@@ -63,7 +65,7 @@ export interface SupportTicket {
   subject: string;
   description: string;
   priority: 'low' | 'medium' | 'high';
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   createdAt: string;
 }
 
@@ -129,6 +131,7 @@ const CATEGORIES = [
 ];
 
 export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
   // Navigation Sub-View State: 'MAIN' (Help Desk & Option) vs 'TICKETS' (New Support Tickets Page)
@@ -555,7 +558,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.ticketsScrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -735,7 +738,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
                 )}
               </View>
             )}
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       ) : (
         /* SCREEN 1: MAIN HELP & SUPPORT DESK */
@@ -982,7 +985,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
 
           {/* Fixed iPhone iMessage Style Input Bar at Bottom */}
-          <View style={styles.chatInputBarContainer}>
+          <View style={[styles.chatInputBarContainer, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
             <TextInput
               style={styles.chatTextInput}
               placeholder="Message Support..."
@@ -1018,7 +1021,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
       {/* Category Selection Bottom Sheet Modal */}
       <Modal visible={isCategoryModalOpen} transparent animationType="slide" onRequestClose={() => setIsCategoryModalOpen(false)}>
         <TouchableOpacity style={styles.categoryModalOverlay} activeOpacity={1} onPress={() => setIsCategoryModalOpen(false)}>
-          <View style={styles.categoryModalSheet}>
+          <View style={[styles.categoryModalSheet, { paddingBottom: Math.max(insets.bottom + 16, 28) }]}>
             <View style={styles.categoryModalHeader}>
               <Text style={styles.categoryModalTitle}>Select Inquiry Category</Text>
               <TouchableOpacity onPress={() => setIsCategoryModalOpen(false)} style={{ padding: 4 }}>

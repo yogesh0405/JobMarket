@@ -53,6 +53,7 @@ import { Button } from '../../components/common/Button';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { SelectDropdown } from '../../components/common/SelectDropdown';
+import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { ProfileSkeleton, AnalyticsSkeleton } from '../../components/common/SkeletonLoader';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../../constants/theme';
 
@@ -319,15 +320,14 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FFFFFF']} tintColor="#FFFFFF" />
-          }
-        >
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FFFFFF']} tintColor="#FFFFFF" />
+        }
+      >
           {/* Top overscroll blue fill */}
           <View style={styles.topOverscrollBlueFill} />
 
@@ -514,8 +514,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             </>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
     </View>
   );
 };
@@ -693,11 +692,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 4,
+    borderRadius: 0,
     padding: 16,
     marginHorizontal: 16,
-    marginTop: 12,
-    gap: 12,
+    marginTop: 10,
+    gap: 10,
   },
   cardHeaderRowCustom: {
     flexDirection: 'row',
@@ -712,9 +711,8 @@ const styles = StyleSheet.create({
   },
   cardHeaderTitleText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#0F172A',
-    letterSpacing: -0.2,
   },
   contactListStack: {
     gap: 10,
@@ -739,7 +737,7 @@ const styles = StyleSheet.create({
   },
   contactValueText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#0F172A',
     marginTop: 1,
   },
@@ -816,17 +814,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
+    height: 44,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   saveProfileBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 13.5,
+    fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
   // Stubs for legacy properties if needed
   card: { backgroundColor: '#FFFFFF' },

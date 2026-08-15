@@ -1,4 +1,5 @@
 import { COLORS } from '../constants/theme';
+
 /**
  * Professional Corporate Logo Generator & Registry
  * Provides high-quality vector corporate logos (SVG Data URIs and database images)
@@ -18,6 +19,22 @@ const CORPORATE_PALETTES = [
   { bg1: '#0C4A6E', bg2: '#0369A1', accent: '#38BDF8' },
 ];
 
+// Global reactive logo cache for immediate reflection across all screens & job lists
+const GLOBAL_COMPANY_LOGO_CACHE: Record<string, string> = {};
+
+export function setGlobalCompanyLogo(companyName: string, logoUrl: string) {
+  if (companyName && logoUrl && typeof logoUrl === 'string' && logoUrl.trim().length > 5) {
+    const key = companyName.trim().toLowerCase();
+    GLOBAL_COMPANY_LOGO_CACHE[key] = logoUrl.trim();
+  }
+}
+
+export function getGlobalCompanyLogo(companyName?: string): string | null {
+  if (!companyName) return null;
+  const key = companyName.trim().toLowerCase();
+  return GLOBAL_COMPANY_LOGO_CACHE[key] || null;
+}
+
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -27,7 +44,17 @@ function hashString(str: string): number {
 }
 
 export function getCompanyLogoUrl(companyName?: string, existingLogo?: string, customColor?: string): string {
-  // 1. Return real database logo image URL if present
+  const normName = companyName && companyName.trim() ? companyName.trim() : '';
+
+  // 1. Check live global cache first (ensures updated logos reflect instantly across all lists/cards)
+  if (normName) {
+    const cached = GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()];
+    if (cached) {
+      return cached;
+    }
+  }
+
+  // 2. Return real database logo image URL if present
   if (
     existingLogo &&
     typeof existingLogo === 'string' &&
@@ -36,11 +63,15 @@ export function getCompanyLogoUrl(companyName?: string, existingLogo?: string, c
     !existingLogo.includes('undefined') &&
     (existingLogo.startsWith('http://') || existingLogo.startsWith('https://') || existingLogo.startsWith('data:image/'))
   ) {
-    return existingLogo.trim();
+    const trimmed = existingLogo.trim();
+    if (normName) {
+      GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()] = trimmed;
+    }
+    return trimmed;
   }
 
-  // 2. Generate high-quality corporate vector SVG Data URI
-  const name = companyName && companyName.trim() ? companyName.trim() : 'Company';
+  // 3. Generate high-quality corporate vector SVG Data URI
+  const name = normName || 'Company';
   const initials = name
     .split(' ')
     .filter(Boolean)

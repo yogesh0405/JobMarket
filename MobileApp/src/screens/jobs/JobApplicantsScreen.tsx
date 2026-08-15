@@ -1112,7 +1112,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                       {/* Education / Trade */}
                       <View style={styles.specRowItem}>
                         <View style={styles.specIconBadge}>
-                          <Award size={15} color="#16A34A" />
+                          <Award size={15} color={COLORS.primary} />
                         </View>
                         <View style={styles.specTextCol}>
                           <Text style={styles.specGridLabel}>Education & Trade</Text>

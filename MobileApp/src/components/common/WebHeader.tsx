@@ -284,24 +284,6 @@ export const WebHeader: React.FC<WebHeaderProps> = ({
                 onPress={() => {
                   closeDrawer(() => {
                     if (navigation && typeof navigation.navigate === 'function') {
-                      navigation.navigate('EmployerDashboard');
-                    }
-                  });
-                }}
-              >
-                <View style={styles.iconSquircle}>
-                  <LayoutGrid size={17} color="#334155" />
-                </View>
-                <Text style={styles.menuItemTitle}>Dashboard & Analytics</Text>
-                <ChevronRight size={16} color={COLORS.slate400} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItemRow}
-                activeOpacity={0.7}
-                onPress={() => {
-                  closeDrawer(() => {
-                    if (navigation && typeof navigation.navigate === 'function') {
                       navigation.navigate('CompanyProfile');
                     }
                   });

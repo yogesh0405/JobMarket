@@ -195,7 +195,7 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 0) }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Header */}
       <View style={styles.headerBar}>

@@ -62,6 +62,7 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
+import { ApplicantAdvantageSection } from '../../components/candidate/ApplicantAdvantageSection';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -1114,6 +1115,12 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </View>
+
+        {/* Soft Divider Separator */}
+        <View style={styles.sectionSeparatorDivider} />
+
+        {/* Applicant Advantage Section (Staggered Offset Card Grid) */}
+        <ApplicantAdvantageSection />
 
         {/* 5. Browse by ITI Trade / Specialty Section */}
         <View style={styles.standaloneSection}>

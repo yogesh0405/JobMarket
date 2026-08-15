@@ -35,6 +35,7 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
@@ -43,6 +44,7 @@ import { DatePickerField } from '../../components/common/DatePickerField';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [banners, setBanners] = useState<Advertisement[]>([]);
   const [analytics, setAnalytics] = useState<AdvertisementAnalytics | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -453,7 +455,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
       {/* Modal Form for Creating / Editing Banner */}
       <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom + 16, 28) }]} onPress={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalTitle}>{editingBanner ? 'Edit Banner Advertisement' : 'Create Promotional Banner'}</Text>

@@ -171,7 +171,7 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Top Search Bar Header (100% Exact Match to Grid & List View Search Bar) */}
       <View style={[styles.searchHeaderBar, { paddingTop: Math.max(insets.top + 4, 10) }]}>

@@ -13,10 +13,16 @@ export const useNotifications = () => {
   const hasUser = !!user;
   const hasFetchedRef = useRef(false);
 
+  // Persistence refs to prevent backend refresh from overriding local clear / read actions
+  const isClearedAllRef = useRef(false);
+  const allMarkedReadRef = useRef(false);
+  const deletedIdsRef = useRef<Set<string>>(new Set());
+  const readIdsRef = useRef<Set<string>>(new Set());
+
   const fetchNotifications = useCallback(async (showLoading = false) => {
     if (!hasUser) return;
     
-    // Only show the loading state spinner on the very first initial load if we don't have notifications yet
+    // Only show loading spinner on initial load
     if (showLoading && !hasFetchedRef.current) {
       setLoading(true);
     }
@@ -24,13 +30,30 @@ export const useNotifications = () => {
     try {
       const res = await notificationApi.getNotifications();
       if (res.success && isMounted.current) {
-        const rawList = Array.isArray(res.data)
+        if (isClearedAllRef.current) {
+          setNotifications([]);
+          hasFetchedRef.current = true;
+          return;
+        }
+
+        let rawList: AppNotification[] = Array.isArray(res.data)
           ? res.data
           : Array.isArray((res as any)?.notifications)
           ? (res as any).notifications
           : Array.isArray((res as any)?.data?.notifications)
           ? (res as any).data.notifications
           : [];
+
+        // Apply local mutations (deleted IDs, read IDs, all marked read)
+        rawList = rawList
+          .filter((n) => !deletedIdsRef.current.has(n.id))
+          .map((n) => {
+            if (allMarkedReadRef.current || readIdsRef.current.has(n.id)) {
+              return { ...n, read: true, is_read: true };
+            }
+            return n;
+          });
+
         setNotifications(rawList);
         hasFetchedRef.current = true;
       }
@@ -46,12 +69,16 @@ export const useNotifications = () => {
 
   useEffect(() => {
     isMounted.current = true;
-    hasFetchedRef.current = false; // Reset when user logging state changes
+    hasFetchedRef.current = false;
+    isClearedAllRef.current = false;
+    allMarkedReadRef.current = false;
+    deletedIdsRef.current.clear();
+    readIdsRef.current.clear();
 
     if (hasUser) {
       fetchNotifications(true);
 
-      // Live polling interval every 30 seconds for background updates (avoid continuous updates and server rate limits)
+      // Live polling interval every 30 seconds
       const intervalId = setInterval(() => {
         fetchNotifications(false);
       }, 30000);
@@ -61,7 +88,7 @@ export const useNotifications = () => {
         clearInterval(intervalId);
       };
     }
-  }, [hasUser, fetchNotifications]);
+  }, [hasUser, userId]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -69,6 +96,7 @@ export const useNotifications = () => {
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
+    readIdsRef.current.add(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n))
     );
@@ -80,8 +108,12 @@ export const useNotifications = () => {
   }, []);
 
   const markAllAsRead = useCallback(async () => {
+    allMarkedReadRef.current = true;
     setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true, is_read: true }))
+      prev.map((n) => {
+        readIdsRef.current.add(n.id);
+        return { ...n, read: true, is_read: true };
+      })
     );
     try {
       await notificationApi.markAllAsRead();
@@ -91,6 +123,7 @@ export const useNotifications = () => {
   }, []);
 
   const removeNotification = useCallback(async (id: string) => {
+    deletedIdsRef.current.add(id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       await notificationApi.deleteNotification(id);
@@ -100,6 +133,7 @@ export const useNotifications = () => {
   }, []);
 
   const clearAll = useCallback(async () => {
+    isClearedAllRef.current = true;
     setNotifications([]);
     try {
       await notificationApi.clearAll();
@@ -112,9 +146,12 @@ export const useNotifications = () => {
     (n) => !(n.read || n.is_read)
   ).length;
 
+  const formattedUnreadCount = unreadCount > 9 ? '9+' : unreadCount.toString();
+
   return {
     notifications,
     unreadCount,
+    formattedUnreadCount,
     loading,
     refreshing,
     fetchNotifications,

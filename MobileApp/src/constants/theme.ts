@@ -8,7 +8,7 @@
 //   import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../../constants/theme';
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PRIMARY_COLOR = '#1B4980';
+const PRIMARY_COLOR = '#1B4FDF';
 
 export const COLORS = {
   // ── Brand / Primary (Single Source of Truth) ──────────────────────────────
@@ -53,7 +53,7 @@ export const COLORS = {
   offWhite: '#F7F7F7',          // Premium Whitish Off-White Page Background (#F7F7F7)
   surface: '#FFFFFF',           // Solid White Container Surface
   border: '#E2E8F0',
-  borderFocus: '#1B4980',
+  borderFocus: PRIMARY_COLOR,
 
   // ── Text Colors ─────────────────────────────────────────────────────────
   textPrimary: '#0F172A',

@@ -31,6 +31,7 @@ import {
   FileText,
   XCircle,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppNotification } from '../../api/notificationApi';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../constants/theme';
 
@@ -79,6 +80,7 @@ export const NotificationModal: React.FC<Props> = ({
   onClearAll,
   onNavigateItem,
 }) => {
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -278,7 +280,7 @@ export const NotificationModal: React.FC<Props> = ({
           ) : (
             <ScrollView
               style={styles.scrollList}
-              contentContainerStyle={{ paddingBottom: 30 }}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 20, 40) }}
               showsVerticalScrollIndicator={false}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
             >

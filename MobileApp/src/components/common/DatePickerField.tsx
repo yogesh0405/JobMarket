@@ -270,12 +270,12 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.md,
+    marginBottom: 16,
   },
   label: {
     fontSize: 13.5,
     fontWeight: '700',
-    color: COLORS.slate800,
+    color: '#0F172A',
     marginBottom: 6,
   },
   inputBox: {
@@ -284,12 +284,13 @@ const styles = StyleSheet.create({
     height: 48,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.slate300,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 14,
   },
   inputBoxActive: {
     borderColor: COLORS.primary,
+    borderWidth: 2,
     backgroundColor: '#FFFFFF',
   },
   icon: {
@@ -297,9 +298,9 @@ const styles = StyleSheet.create({
   },
   inputText: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.slate900,
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: '#0F172A',
   },
   placeholderText: {
     color: COLORS.slate400,
