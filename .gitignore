@@ -14,5 +14,8 @@ backend/dist/
 
 # Environment variables
 .env
-.env.*
-backend/.env
+.env.local
+.env.production
+.env.staging
+!.env.example
+
