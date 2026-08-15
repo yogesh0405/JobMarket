@@ -1,35 +1,36 @@
-import { fork } from 'child_process';
-import path from 'path';
+import authApp from './services/auth-service/src/app';
+import userApp from './services/user-service/src/app';
+import jobApp from './services/job-service/src/app';
+import applicationApp from './services/application-service/src/app';
+import notificationApp from './services/notification-service/src/app';
+import supportApp from './services/support-service/src/app';
+import adApp from './services/ad-service/src/app';
+import adminApp from './services/admin-service/src/app';
+import gatewayApp from './services/api-gateway/src/app';
+import { checkDatabaseConnection } from './shared/database/pool';
+import { connectRedis } from './shared/config/redis';
+
+const gatewayPort = parseInt(process.env.PORT || '5000', 10);
 
 const services = [
-  { name: 'Auth Service', path: path.join(__dirname, 'services/auth-service/src/server.ts'), port: 5001 },
-  { name: 'User Service', path: path.join(__dirname, 'services/user-service/src/server.ts'), port: 5002 },
-  { name: 'Job Service', path: path.join(__dirname, 'services/job-service/src/server.ts'), port: 5003 },
-  { name: 'Application Service', path: path.join(__dirname, 'services/application-service/src/server.ts'), port: 5004 },
-  { name: 'Notification Service', path: path.join(__dirname, 'services/notification-service/src/server.ts'), port: 5005 },
-  { name: 'Support Service', path: path.join(__dirname, 'services/support-service/src/server.ts'), port: 5006 },
-  { name: 'Ad Service', path: path.join(__dirname, 'services/ad-service/src/server.ts'), port: 5007 },
-  { name: 'Admin Service', path: path.join(__dirname, 'services/admin-service/src/server.ts'), port: 5008 },
-  { name: 'API Gateway', path: path.join(__dirname, 'services/api-gateway/src/server.ts'), port: 5000 },
+  { name: 'Auth Service', app: authApp, port: 5001 },
+  { name: 'User Service', app: userApp, port: 5002 },
+  { name: 'Job Service', app: jobApp, port: 5003 },
+  { name: 'Application Service', app: applicationApp, port: 5004 },
+  { name: 'Notification Service', app: notificationApp, port: 5005 },
+  { name: 'Support Service', app: supportApp, port: 5006 },
+  { name: 'Ad Service', app: adApp, port: 5007 },
+  { name: 'Admin Service', app: adminApp, port: 5008 },
+  { name: 'API Gateway', app: gatewayApp, port: gatewayPort },
 ];
 
-console.log('🚀 Launching JobMarket Microservices Architecture Cluster...');
+console.log('🚀 Launching JobMarket Microservices Architecture Cluster (Memory-Optimized Mode)...');
+
+checkDatabaseConnection().catch(err => console.error('DB Conn Warning:', err));
+connectRedis().catch(err => console.warn('Redis Conn Warning:', err));
 
 services.forEach((service) => {
-  const isGateway = service.name === 'API Gateway';
-  const targetPort = isGateway ? (process.env.PORT || service.port) : service.port;
-  const child = fork(service.path, [], {
-    execArgv: ['--import', 'tsx'],
-    env: { ...process.env, PORT: String(targetPort) },
-  });
-
-  child.on('error', (err) => {
-    console.error(`❌ [${service.name}] Process Error:`, err);
-  });
-
-  child.on('exit', (code) => {
-    if (code !== 0) {
-      console.warn(`⚠️ [${service.name}] exited with code ${code}`);
-    }
+  service.app.listen(service.port, () => {
+    console.log(`✅ [${service.name}] running on port ${service.port}`);
   });
 });
