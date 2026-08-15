@@ -18,6 +18,7 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
+  MapPin,
 } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { Job } from '../../../types';
@@ -130,6 +131,12 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
               onPress={() => setViewMode('list')}
             >
               <List size={16} color={viewMode === 'list' ? COLORS.primary : '#64748B'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.toggleBtn}
+              onPress={() => navigation.navigate('CandidateJobMapView')}
+            >
+              <MapPin size={16} color="#059669" />
             </TouchableOpacity>
           </View>
         </View>

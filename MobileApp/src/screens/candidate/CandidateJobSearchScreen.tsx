@@ -479,12 +479,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   listContainer: {
-    gap: 10,
+    gap: 8,
   },
   loadMoreBtn: {
     backgroundColor: '#FFFFFF',
