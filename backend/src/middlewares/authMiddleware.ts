@@ -19,7 +19,7 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
     const decoded = verifyAccessToken(token);
     req.user = decoded;
 
-    const sessionId = (req.headers['x-session-id'] || req.headers['x-session-token']) as string;
+    const sessionId = (decoded.sessionId || req.headers['x-session-id'] || req.headers['x-session-token']) as string;
     if (sessionId) {
       req.sessionId = sessionId;
       const activeSession = await SessionRepository.findActiveSession(sessionId);

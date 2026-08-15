@@ -53,21 +53,22 @@ export class VerifyOTPService {
         status: 'ACTIVE' // Insert as ACTIVE directly
       }, client);
 
-      // Generate Tokens
-      const { accessToken, refreshToken } = generateTokens({ userId: newUser.id, role: newUser.role });
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-
       // Create Session
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
       const session = await SessionRepository.createSession(
         newUser.id, 
-        refreshTokenHash, 
+        'temp_hash', 
         expiresAt, 
         ipAddress || payload.ipAddress, 
         userAgent || payload.userAgent, 
         'Web',
         client
       );
+
+      // Generate Tokens with embedded sessionId
+      const { accessToken, refreshToken } = generateTokens({ userId: newUser.id, role: newUser.role, sessionId: session.id });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      await client.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, session.id]);
 
       await AuditRepository.logAction(
         'USER_REGISTERED_AND_VERIFIED',

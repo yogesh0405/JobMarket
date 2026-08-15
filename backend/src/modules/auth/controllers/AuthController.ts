@@ -384,44 +384,51 @@ export class AuthController {
 
       const sessions = rawSessions.map(s => {
         const ua = s.user_agent || '';
-        let browser = 'Chrome';
-        let os = 'macOS';
-        let deviceType = 'Desktop';
+        let browser = 'App';
+        let os = 'Android';
+        let deviceType = 'Mobile';
 
-        // 1. Detect Browser
+        if (/android|okhttp|dalvik/i.test(ua)) {
+          os = 'Android';
+          deviceType = 'Mobile';
+          browser = /okhttp|dalvik/i.test(ua) ? 'Android App' : 'Mobile Browser';
+        } else if (/iphone|ipod|cfnetwork|darwin/i.test(ua)) {
+          os = 'iOS';
+          deviceType = 'Mobile';
+          browser = 'iOS App';
+        } else if (/ipad/i.test(ua)) {
+          os = 'iPadOS';
+          deviceType = 'Tablet';
+          browser = 'iPad App';
+        } else if (/macintosh|mac os x/i.test(ua)) {
+          os = 'macOS';
+          deviceType = 'Desktop';
+          browser = 'Safari';
+        } else if (/windows/i.test(ua)) {
+          os = 'Windows';
+          deviceType = 'Desktop';
+          browser = 'Chrome';
+        } else if (/linux/i.test(ua)) {
+          os = 'Linux';
+          deviceType = 'Desktop';
+          browser = 'Chrome';
+        }
+
         if (/edg|edge/i.test(ua)) browser = 'Edge';
         else if (/opera|opr/i.test(ua)) browser = 'Opera';
         else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
         else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
-        else if (/safari/i.test(ua)) browser = 'Safari';
-
-        // 2. Detect OS & Device Type
-        if (/android/i.test(ua)) {
-          os = 'Android';
-          deviceType = 'Mobile';
-        } else if (/ipad/i.test(ua)) {
-          os = 'iPadOS';
-          deviceType = 'Tablet';
-        } else if (/iphone|ipod/i.test(ua)) {
-          os = 'iOS';
-          deviceType = 'Mobile';
-        } else if (/macintosh|mac os x/i.test(ua)) {
-          os = 'macOS';
-          deviceType = 'Desktop';
-        } else if (/windows/i.test(ua)) {
-          os = 'Windows';
-          deviceType = 'Desktop';
-        } else if (/linux/i.test(ua)) {
-          os = 'Linux';
-          deviceType = 'Desktop';
-        }
+        else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+        else if (/jobmarket|mobileapp/i.test(ua)) browser = 'JobMarket Mobile App';
 
         let cleanIp = s.ip_address || '127.0.0.1';
         if (cleanIp === '::1' || cleanIp === '::ffff:127.0.0.1') {
-          cleanIp = '127.0.0.1 (Current IP)';
+          cleanIp = '127.0.0.1';
         }
 
-        const deviceName = `${os} (${browser})`;
+        const deviceName = s.device_name && s.device_name !== 'Web' 
+          ? s.device_name 
+          : `${os} (${browser})`;
         const location = 'Maharashtra, India';
         const isCurrent = currentSessionId ? s.id === currentSessionId : false;
 
@@ -728,13 +735,14 @@ export class AuthController {
       }
 
       const safeUser = sanitizeUserForResponse(user);
-      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role });
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
       const ip = req.ip || '127.0.0.1';
       const userAgent = (req.headers['user-agent'] as string) || 'Google OAuth Device';
-      const session = await SessionRepository.createSession(user.id, refreshTokenHash, expiresAt, ip, userAgent);
+
+      const session = await SessionRepository.createSession(user.id, 'temp_hash', expiresAt, ip, userAgent);
+      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role, sessionId: session.id });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      await pool.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, session.id]);
 
       res.status(200).json({
         success: true,

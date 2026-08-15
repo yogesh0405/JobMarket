@@ -39,5 +39,7 @@ router.patch('/:id/applicants/:userId/status', requireAuth, actionLimiter, JobCo
 router.post('/:id/applicants/:userId/interview', requireAuth, actionLimiter, JobController.scheduleInterview);
 router.post('/:id/applicants/:userId/email', requireAuth, actionLimiter, JobController.sendCustomEmail);
 router.get('/workers/all', requireAuth, JobController.getAllCandidates);
+router.get('/candidates/all', requireAuth, JobController.getAllCandidates);
+router.get('/candidates', requireAuth, JobController.getAllCandidates);
 
 export default router;

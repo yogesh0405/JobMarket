@@ -177,9 +177,12 @@ export class UserRepository {
       profilePictureUrl: 'profile_picture_url'
     };
 
+    const updatedColumns = new Set<string>();
+
     for (const [key, value] of Object.entries(profileData)) {
       const dbColumn = fieldMap[key];
-      if (dbColumn && value !== undefined) {
+      if (dbColumn && value !== undefined && !updatedColumns.has(dbColumn)) {
+        updatedColumns.add(dbColumn);
         if (dbColumn === 'resume' || dbColumn === 'experience' || dbColumn === 'education') {
           fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}::jsonb`);
           const jsonVal = typeof value === 'string' ? value : JSON.stringify(value);

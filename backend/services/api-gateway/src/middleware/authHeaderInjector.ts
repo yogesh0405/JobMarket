@@ -11,6 +11,9 @@ export const authHeaderInjector = (req: Request, res: Response, next: NextFuncti
       if (decoded && decoded.userId) {
         req.headers['x-user-id'] = decoded.userId;
         req.headers['x-user-role'] = decoded.role || 'candidate';
+        if (decoded.sessionId) {
+          req.headers['x-session-id'] = decoded.sessionId;
+        }
       }
     } catch {
       // Downstream microservices will handle unauthorized errors when auth is enforced

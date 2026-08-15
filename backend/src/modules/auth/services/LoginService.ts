@@ -63,19 +63,20 @@ export class LoginService {
     try {
       await client.query('BEGIN');
 
-      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role });
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
       const session = await SessionRepository.createSession(
         user.id, 
-        refreshTokenHash, 
+        'temp_hash', 
         expiresAt, 
         ipAddress, 
         userAgent, 
         'Web',
         client
       );
+
+      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role, sessionId: session.id });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      await client.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, session.id]);
 
       await AuditRepository.logAction(
         'LOGIN_SUCCESS',

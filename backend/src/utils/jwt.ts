@@ -4,6 +4,7 @@ import { env } from '../config/env';
 export interface TokenPayload {
   userId: string;
   role: string;
+  sessionId?: string;
 }
 
 export const generateTokens = (payload: TokenPayload) => {

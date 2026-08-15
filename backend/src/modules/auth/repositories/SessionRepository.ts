@@ -55,7 +55,7 @@ export class SessionRepository {
     const query = `
       SELECT id, user_id, ip_address, user_agent, device_name, expires_at, revoked, created_at, last_used_at
       FROM sessions
-      WHERE user_id = $1 AND revoked = FALSE
+      WHERE user_id = $1 AND revoked = FALSE AND expires_at > CURRENT_TIMESTAMP
       ORDER BY last_used_at DESC;
     `;
     const result = await pool.query(query, [userId]);

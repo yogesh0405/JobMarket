@@ -96,25 +96,45 @@ export class AuthController {
 
       const sessions = rawSessions.map(s => {
         const ua = s.user_agent || '';
-        let browser = 'Chrome';
-        let os = 'macOS';
-        let deviceType = 'Desktop';
+        let browser = 'App';
+        let os = 'Android';
+        let deviceType = 'Mobile';
+
+        if (/android|okhttp|dalvik/i.test(ua)) {
+          os = 'Android';
+          deviceType = 'Mobile';
+          browser = /okhttp|dalvik/i.test(ua) ? 'Android App' : 'Mobile Browser';
+        } else if (/iphone|ipod|cfnetwork|darwin/i.test(ua)) {
+          os = 'iOS';
+          deviceType = 'Mobile';
+          browser = 'iOS App';
+        } else if (/ipad/i.test(ua)) {
+          os = 'iPadOS';
+          deviceType = 'Tablet';
+          browser = 'iPad App';
+        } else if (/macintosh|mac os x/i.test(ua)) {
+          os = 'macOS';
+          deviceType = 'Desktop';
+          browser = 'Safari';
+        } else if (/windows/i.test(ua)) {
+          os = 'Windows';
+          deviceType = 'Desktop';
+          browser = 'Chrome';
+        } else if (/linux/i.test(ua)) {
+          os = 'Linux';
+          deviceType = 'Desktop';
+          browser = 'Chrome';
+        }
 
         if (/edg|edge/i.test(ua)) browser = 'Edge';
         else if (/opera|opr/i.test(ua)) browser = 'Opera';
         else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
         else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
-        else if (/safari/i.test(ua)) browser = 'Safari';
-
-        if (/android/i.test(ua)) { os = 'Android'; deviceType = 'Mobile'; }
-        else if (/ipad/i.test(ua)) { os = 'iPadOS'; deviceType = 'Tablet'; }
-        else if (/iphone|ipod/i.test(ua)) { os = 'iOS'; deviceType = 'Mobile'; }
-        else if (/macintosh|mac os x/i.test(ua)) { os = 'macOS'; deviceType = 'Desktop'; }
-        else if (/windows/i.test(ua)) { os = 'Windows'; deviceType = 'Desktop'; }
-        else if (/linux/i.test(ua)) { os = 'Linux'; deviceType = 'Desktop'; }
+        else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+        else if (/jobmarket|mobileapp/i.test(ua)) browser = 'JobMarket Mobile App';
 
         let cleanIp = s.ip_address || '127.0.0.1';
-        if (cleanIp === '::1' || cleanIp === '::ffff:127.0.0.1') cleanIp = '127.0.0.1 (Current IP)';
+        if (cleanIp === '::1' || cleanIp === '::ffff:127.0.0.1') cleanIp = '127.0.0.1';
 
         const isCurrent = currentSessionId ? s.id === currentSessionId : false;
         return {
@@ -129,12 +149,7 @@ export class AuthController {
         };
       });
 
-      const uniqueSessionsMap = new Map<string, any>();
-      for (const sess of sessions) {
-        const key = (sess.ipAddress || '').toString().split(' ')[0].toLowerCase();
-        if (!uniqueSessionsMap.has(key) || sess.isCurrent) uniqueSessionsMap.set(key, sess);
-      }
-      res.status(200).json({ success: true, data: Array.from(uniqueSessionsMap.values()) });
+      res.status(200).json({ success: true, data: sessions });
     } catch (error) {
       next(error);
     }
