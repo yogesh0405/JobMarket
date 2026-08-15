@@ -132,6 +132,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!title.trim()) {
       showToast('Please enter an advertisement title', 'warning');

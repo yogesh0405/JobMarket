@@ -24,9 +24,9 @@ export class AdminRepository {
       const jobsCountQuery = `
         SELECT 
           COUNT(*) as total_jobs,
-          COUNT(CASE WHEN status = 'PENDING_REVIEW' THEN 1 END) as pending_jobs,
-          COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved_jobs,
-          COUNT(CASE WHEN status = 'REJECTED' THEN 1 END) as rejected_jobs
+          COUNT(CASE WHEN UPPER(status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT') THEN 1 END) as pending_jobs,
+          COUNT(CASE WHEN UPPER(status) IN ('APPROVED', 'ACTIVE') THEN 1 END) as approved_jobs,
+          COUNT(CASE WHEN UPPER(status) IN ('REJECTED', 'CLOSED') THEN 1 END) as rejected_jobs
         FROM jobs;
       `;
 
@@ -270,9 +270,18 @@ export class AdminRepository {
     }
 
     if (status) {
-      queryParts.push(`status = $${paramIndex}`);
-      values.push(status);
-      paramIndex++;
+      const s = status.toUpperCase();
+      if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 'PENDING_APPROVAL') {
+        queryParts.push(`UPPER(status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT')`);
+      } else if (s === 'APPROVED' || s === 'ACTIVE') {
+        queryParts.push(`UPPER(status) IN ('APPROVED', 'ACTIVE')`);
+      } else if (s === 'REJECTED' || s === 'CLOSED') {
+        queryParts.push(`UPPER(status) IN ('REJECTED', 'CLOSED')`);
+      } else {
+        queryParts.push(`UPPER(status) = $${paramIndex}`);
+        values.push(s);
+        paramIndex++;
+      }
     }
 
     const whereClause = queryParts.length > 0 ? `WHERE ${queryParts.join(' AND ')}` : '';

@@ -45,7 +45,8 @@ export const JobApprovalPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await AdminApiService.getPendingJobs();
-      setJobs(res.data || []);
+      const jobList = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+      setJobs(jobList);
     } catch (err: any) {
       showToast(err.message || 'Failed to fetch pending jobs', 'error');
     } finally {

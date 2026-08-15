@@ -194,8 +194,9 @@ export const AdminAdvertisementPage: React.FC = () => {
     setCreateModalOpen(true);
   };
 
-  const handleAdminCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateAdminBanner = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingActionKey === 'create-banner') return;
 
     if (!title.trim()) { showToast('Title required', 'warning'); return; }
     if (!bannerImage) { showToast('Banner image required', 'warning'); return; }
@@ -227,6 +228,10 @@ export const AdminAdvertisementPage: React.FC = () => {
         showToast('Admin announcement banner published live!', 'success');
         window.dispatchEvent(new CustomEvent('notifications-updated'));
         setCreateModalOpen(false);
+        setTitle('');
+        setDescription('');
+        setBannerImage('');
+        setRedirectUrl('');
         loadData();
       } else {
         showToast(json.message || 'Failed to create banner', 'error');
@@ -717,8 +722,27 @@ export const AdminAdvertisementPage: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setCreateModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 'bold' }}>Cancel</button>
-                <button type="submit" disabled={isSubmittingAction} style={{ padding: '10px 24px', borderRadius: '8px', background: '#2563eb', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-                  {isSubmittingAction ? 'Publishing...' : 'Publish Banner to Homepage'}
+                <button
+                  type="submit"
+                  disabled={submittingActionKey === 'create-banner'}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '8px',
+                    background: submittingActionKey === 'create-banner' ? '#94a3b8' : '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: 'bold',
+                    cursor: submittingActionKey === 'create-banner' ? 'not-allowed' : 'pointer',
+                    opacity: submittingActionKey === 'create-banner' ? 0.7 : 1,
+                  }}
+                >
+                  {submittingActionKey === 'create-banner' ? (
+                    <>
+                      {renderSpinner('#ffffff')} Publishing Banner...
+                    </>
+                  ) : (
+                    'Publish Banner to Homepage'
+                  )}
                 </button>
               </div>
             </form>
