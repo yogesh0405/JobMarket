@@ -790,6 +790,8 @@ export class JobRepository {
     return result.rows.map((row) => ({
       ...this.mapDbJobToApi(row),
       applicationStatus: row.applicationStatus,
+      status: row.applicationStatus || 'applied',
+      jobStatus: row.status,
       appliedAt: row.appliedAt,
       interviewDate: row.interviewDate,
       interviewTime: row.interviewTime,
@@ -809,7 +811,11 @@ export class JobRepository {
       ORDER BY sj.created_at DESC
     `;
     const result = await pool.query(query, [userId]);
-    return result.rows.map((row) => this.mapDbJobToApi(row));
+    return result.rows.map((row) => ({
+      ...this.mapDbJobToApi(row),
+      isSaved: true,
+      saved: true
+    }));
   }
 
   static async applyToJob(jobId: string, userId: string): Promise<any> {

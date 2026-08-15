@@ -134,12 +134,34 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true,
       });
 
       if (!result.canceled && result.assets?.[0]) {
         setUploadingPhoto(true);
-        const asset = result.assets[0];
-        const photoUri = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+        const file = result.assets[0];
+        let photoUri = '';
+        if (file.base64) {
+          const mime = file.mimeType || 'image/jpeg';
+          photoUri = file.base64.startsWith('data:') ? file.base64 : `data:${mime};base64,${file.base64}`;
+        } else if (file.uri && file.uri.startsWith('data:')) {
+          photoUri = file.uri;
+        } else if (file.uri) {
+          try {
+            const resp = await fetch(file.uri);
+            const blob = await resp.blob();
+            photoUri = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            photoUri = file.uri;
+          }
+        }
+
+        if (!photoUri) return;
         setProfilePhotoUrl(photoUri);
         await updateUserProfile({
           avatarUrl: photoUri,
@@ -148,6 +170,22 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
           profilePictureUrl: photoUri,
           avatar: photoUri,
         } as any);
+
+        try {
+          const res = await candidateApi.uploadProfilePicture(photoUri);
+          const finalUrl = res.data?.url || (res as any)?.url;
+          if (finalUrl) {
+            setProfilePhotoUrl(finalUrl);
+            await updateUserProfile({
+              avatarUrl: finalUrl,
+              avatar_url: finalUrl,
+              profile_picture_url: finalUrl,
+              profilePictureUrl: finalUrl,
+              avatar: finalUrl,
+            } as any);
+          }
+        } catch (e) {}
+
         showToast('Profile photo updated successfully!', 'success');
       }
     } catch (err: any) {

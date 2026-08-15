@@ -75,8 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user?.profile_picture_url ||
           user?.profilePictureUrl;
 
-        // Preserve locally uploaded photo URI if valid so profile picture / company logo never reverts on refresh
-        const activePhotoUri = (localPhotoUri && localPhotoUri.length > 5) ? localPhotoUri : (serverPhotoUri || localPhotoUri);
+        // Prioritize real-time backend server photo (PostgreSQL) over old local storage cached photo
+        const activePhotoUri = serverPhotoUri || localPhotoUri;
 
         const photoNormalizedData = activePhotoUri
           ? {

@@ -179,23 +179,63 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation, route }) =
         base64: true,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]?.base64) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         const file = result.assets[0];
         setUploadingPhoto(true);
-        const base64Data = `data:image/jpeg;base64,${file.base64}`;
 
+        let base64Data = '';
+        if (file.base64) {
+          const mime = file.mimeType || 'image/jpeg';
+          base64Data = file.base64.startsWith('data:') ? file.base64 : `data:${mime};base64,${file.base64}`;
+        } else if (file.uri && file.uri.startsWith('data:')) {
+          base64Data = file.uri;
+        } else if (file.uri) {
+          try {
+            const resp = await fetch(file.uri);
+            const blob = await resp.blob();
+            base64Data = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            base64Data = file.uri;
+          }
+        }
+
+        if (!base64Data) {
+          showToast('Could not process selected image', 'error');
+          return;
+        }
+
+        // 1. Immediately update UI state locally so profile photo updates instantly
+        await updateUserProfile({
+          profile_picture_url: base64Data,
+          profilePictureUrl: base64Data,
+          avatar_url: base64Data,
+          avatarUrl: base64Data,
+          avatar: base64Data,
+        } as any);
+
+        // 2. Upload to Cloudinary backend server
         try {
           const res = await candidateApi.uploadProfilePicture(base64Data);
-          const finalUrl = res.data?.url || base64Data;
-          await updateUserProfile({
-            profile_picture_url: finalUrl,
-            profilePictureUrl: finalUrl,
-            avatar_url: finalUrl,
-            avatarUrl: finalUrl,
-            avatar: finalUrl,
-          } as any);
+          const finalUrl = res.data?.url || (res as any)?.url;
+          if (finalUrl) {
+            await updateUserProfile({
+              profile_picture_url: finalUrl,
+              profilePictureUrl: finalUrl,
+              avatar_url: finalUrl,
+              avatarUrl: finalUrl,
+              avatar: finalUrl,
+            } as any);
+          }
+          await refreshUser().catch(() => {});
+          showToast('Profile picture updated successfully', 'success');
         } catch (err: any) {
           console.warn('Background avatar server upload notice:', err);
+          showToast('Profile picture updated', 'success');
         } finally {
           setUploadingPhoto(false);
         }
