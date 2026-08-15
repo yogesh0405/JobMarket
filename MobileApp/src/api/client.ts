@@ -103,8 +103,8 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
         }
 
         const refreshData = await refreshRes.json();
-        const newAccessToken = refreshData?.data?.accessToken;
-        const newRefreshToken = refreshData?.data?.refreshToken;
+        const newAccessToken = refreshData?.data?.accessToken || refreshData?.tokens?.accessToken || refreshData?.accessToken;
+        const newRefreshToken = refreshData?.data?.refreshToken || refreshData?.tokens?.refreshToken || refreshData?.refreshToken;
 
         if (!newAccessToken) {
           throw new Error('Invalid token refresh response');

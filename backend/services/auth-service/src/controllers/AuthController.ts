@@ -76,9 +76,10 @@ export class AuthController {
 
   static async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const { refreshToken } = req.body;
-      const tokens = await TokenService.refresh(refreshToken, req.ip, req.headers['user-agent']);
-      res.status(200).json({ success: true, tokens });
+      const { refreshToken, sessionId } = req.body;
+      const activeSessionId = sessionId || (req.headers['x-session-id'] as string) || (req.headers['x-session-token'] as string);
+      const tokens = await TokenService.refresh(refreshToken, activeSessionId, req.ip);
+      res.status(200).json({ success: true, data: tokens, tokens });
     } catch (error) {
       next(error);
     }
