@@ -10,6 +10,28 @@ import { sanitizeUserForResponse } from '../controllers/AuthController';
 import { OtpStore } from '../../../utils/redisCache';
 import { EmailService } from './EmailService';
 
+export function isRoleCompatible(userRole: string, requestedRole?: string): boolean {
+  if (!requestedRole) return true;
+
+  const uRole = (userRole || '').toLowerCase().trim();
+  const rRole = (requestedRole || '').toLowerCase().trim();
+
+  if (uRole === rRole) return true;
+
+  const candidateRoles = ['candidate', 'employee', 'worker', 'jobseeker'];
+  const employerRoles = ['employer', 'recruiter', 'company', 'admin', 'superadmin', 'super_admin'];
+
+  if (candidateRoles.includes(uRole) && candidateRoles.includes(rRole)) {
+    return true;
+  }
+
+  if (employerRoles.includes(uRole) && employerRoles.includes(rRole)) {
+    return true;
+  }
+
+  return false;
+}
+
 export class LoginService {
   static async execute(email: string, passwordPlain: string, role?: string, ipAddress?: string, userAgent?: string) {
     const normalizedEmail = email.toLowerCase().trim();
@@ -23,7 +45,7 @@ export class LoginService {
       throw new ForbiddenError('Account is not verified. Please verify your OTP.');
     }
 
-    if (role && user.role !== role) {
+    if (role && !isRoleCompatible(user.role, role)) {
       throw new ForbiddenError('This user does not belong to this role, please change the role');
     }
 

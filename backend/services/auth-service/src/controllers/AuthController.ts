@@ -53,8 +53,8 @@ export class AuthController {
 
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
-      const result = await LoginService.execute(email, password, req.ip, req.headers['user-agent']);
+      const { email, password, role } = req.body;
+      const result = await LoginService.execute(email, password, role, req.ip, req.headers['user-agent']);
       if (result.requires2FA) {
         return res.status(200).json({
           success: true,
