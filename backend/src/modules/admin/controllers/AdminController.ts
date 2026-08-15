@@ -2,6 +2,12 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../middlewares/authMiddleware';
 import { AdminService } from '../services/AdminService';
 
+function safeInt(val: any, defaultVal: number): number {
+  if (val === null || val === undefined) return defaultVal;
+  const num = parseInt(String(val).trim(), 10);
+  return isNaN(num) || num < 1 ? defaultVal : num;
+}
+
 export class AdminController {
   // Dashboard statistics
   static async getDashboard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -16,8 +22,8 @@ export class AdminController {
   // Users management
   static async listUsers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
       const search = req.query.search as string;
       const role = req.query.role as string;
       const status = req.query.status as string;
@@ -98,8 +104,8 @@ export class AdminController {
   // Employers & Workers List helpers
   static async listEmployers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
       const search = req.query.search as string;
       const status = req.query.status as string;
 
@@ -119,8 +125,8 @@ export class AdminController {
 
   static async listWorkers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
       const search = req.query.search as string;
       const status = req.query.status as string;
 
@@ -141,8 +147,8 @@ export class AdminController {
   // Job management
   static async listJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
       const search = req.query.search as string;
       const status = req.query.status as string;
       const sortBy = req.query.sortBy as string;
@@ -165,8 +171,8 @@ export class AdminController {
 
   static async listPendingJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
 
       const result = await AdminService.listJobs({
         page,
@@ -392,8 +398,8 @@ export class AdminController {
   // Reports
   static async listReports(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
 
       const result = await AdminService.listReports({ page, limit });
       res.status(200).json({ success: true, data: result });
@@ -420,8 +426,8 @@ export class AdminController {
   // Audit logs
   static async listAuditLogs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string || '1', 10);
-      const limit = parseInt(req.query.limit as string || '10', 10);
+      const page = safeInt(req.query.page, 1);
+      const limit = safeInt(req.query.limit, 10);
       const search = req.query.search as string;
 
       const result = await AdminService.listAuditLogs({ page, limit, search });

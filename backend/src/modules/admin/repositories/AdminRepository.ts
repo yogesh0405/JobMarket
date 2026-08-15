@@ -148,7 +148,9 @@ export class AdminRepository {
     sortOrder?: 'ASC' | 'DESC';
   }): Promise<PaginatedResult<any>> {
     const { page, limit, search, role, status, verified, sortBy = 'created_at', sortOrder = 'DESC' } = filters;
-    const offset = (page - 1) * limit;
+    const safePage = isNaN(Number(page)) || Number(page) < 1 ? 1 : Math.floor(Number(page));
+    const safeLimit = isNaN(Number(limit)) || Number(limit) < 1 ? 10 : Math.floor(Number(limit));
+    const offset = (safePage - 1) * safeLimit;
 
     const queryParts: string[] = [];
     const values: any[] = [];
@@ -197,13 +199,13 @@ export class AdminRepository {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
 
-    const dataRes = await pool.query(dataQuery, [...values, limit, offset]);
+    const dataRes = await pool.query(dataQuery, [...values, safeLimit, offset]);
 
     return {
       data: dataRes.rows,
       total,
-      page,
-      limit
+      page: safePage,
+      limit: safeLimit
     };
   }
 
@@ -253,7 +255,9 @@ export class AdminRepository {
     sortOrder?: 'ASC' | 'DESC';
   }): Promise<PaginatedResult<any>> {
     const { page, limit, search, status, sortBy = 'posted_at', sortOrder = 'DESC' } = filters;
-    const offset = (page - 1) * limit;
+    const safePage = isNaN(Number(page)) || Number(page) < 1 ? 1 : Math.floor(Number(page));
+    const safeLimit = isNaN(Number(limit)) || Number(limit) < 1 ? 10 : Math.floor(Number(limit));
+    const offset = (safePage - 1) * safeLimit;
 
     const queryParts: string[] = [];
     const values: any[] = [];
@@ -292,13 +296,13 @@ export class AdminRepository {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
 
-    const dataRes = await pool.query(dataQuery, [...values, limit, offset]);
+    const dataRes = await pool.query(dataQuery, [...values, safeLimit, offset]);
 
     return {
       data: dataRes.rows,
       total,
-      page,
-      limit
+      page: safePage,
+      limit: safeLimit
     };
   }
 
@@ -432,7 +436,9 @@ export class AdminRepository {
   // 7. User Reports
   static async getReports(filters: { page: number; limit: number }): Promise<PaginatedResult<any>> {
     const { page, limit } = filters;
-    const offset = (page - 1) * limit;
+    const safePage = isNaN(Number(page)) || Number(page) < 1 ? 1 : Math.floor(Number(page));
+    const safeLimit = isNaN(Number(limit)) || Number(limit) < 1 ? 10 : Math.floor(Number(limit));
+    const offset = (safePage - 1) * safeLimit;
 
     const countQuery = 'SELECT COUNT(*) FROM reports;';
     const countRes = await pool.query(countQuery);
@@ -449,13 +455,13 @@ export class AdminRepository {
       LIMIT $1 OFFSET $2;
     `;
 
-    const dataRes = await pool.query(dataQuery, [limit, offset]);
+    const dataRes = await pool.query(dataQuery, [safeLimit, offset]);
 
     return {
       data: dataRes.rows,
       total,
-      page,
-      limit
+      page: safePage,
+      limit: safeLimit
     };
   }
 
@@ -473,7 +479,9 @@ export class AdminRepository {
   // 8. Audit Logs List
   static async getAuditLogs(filters: { page: number; limit: number; search?: string }): Promise<PaginatedResult<any>> {
     const { page, limit, search } = filters;
-    const offset = (page - 1) * limit;
+    const safePage = isNaN(Number(page)) || Number(page) < 1 ? 1 : Math.floor(Number(page));
+    const safeLimit = isNaN(Number(limit)) || Number(limit) < 1 ? 10 : Math.floor(Number(limit));
+    const offset = (safePage - 1) * safeLimit;
 
     const queryParts: string[] = [];
     const values: any[] = [];
@@ -505,13 +513,13 @@ export class AdminRepository {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
 
-    const dataRes = await pool.query(dataQuery, [...values, limit, offset]);
+    const dataRes = await pool.query(dataQuery, [...values, safeLimit, offset]);
 
     return {
       data: dataRes.rows,
       total,
-      page,
-      limit
+      page: safePage,
+      limit: safeLimit
     };
   }
 }
