@@ -156,21 +156,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         : { email: emailOrPayload, password, authMethod, ...payload };
 
       const res = await authApi.login(loginData);
-      if (res.success && res.data) {
-        const { user: userData, token, accessToken, refreshToken, sessionId, isMFAEnabled } = res.data;
-
+      if (res.success && (res.data || (res as any).tokens)) {
+        const isMFAEnabled = (res as any).requires2FA || res.data?.requires2FA || res.data?.isMFAEnabled;
         if (isMFAEnabled) {
-          return { isMFAEnabled: true, mfaToken: (res.data as any).mfaToken };
+          return { require2FA: true, requires2FA: true, isMFAEnabled: true, mfaToken: (res as any).mfaToken || res.data?.mfaToken };
         }
 
-        const validToken = token || accessToken;
-        if (!validToken) {
+        const tokenObj = (res as any).tokens || res.data?.tokens || res.data;
+        const validAccessToken = res.data?.accessToken || res.data?.token || (res as any).token || tokenObj?.accessToken || tokenObj?.token;
+        const validRefreshToken = res.data?.refreshToken || tokenObj?.refreshToken;
+        const validSessionId = res.data?.sessionId || tokenObj?.sessionId || (res as any).sessionId;
+        const userData = res.data?.user || (res.data?.id ? res.data : (res as any).user);
+
+        if (!validAccessToken) {
           throw new Error('Invalid authentication tokens from server');
         }
 
-        await saveTokens({ accessToken: validToken, refreshToken }, sessionId);
-        await saveStoredUser(userData);
-        setUser(userData);
+        await saveTokens({ accessToken: validAccessToken, refreshToken: validRefreshToken }, validSessionId);
+        if (userData) {
+          await saveStoredUser(userData);
+          setUser(userData);
+        }
         return { success: true };
       } else {
         throw new Error(res.message || res.error || 'Login failed. Please check credentials.');

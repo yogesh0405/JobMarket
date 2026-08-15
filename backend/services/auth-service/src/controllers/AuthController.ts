@@ -66,8 +66,18 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Login successful',
-        data: sanitizeUserForResponse(result.user),
-        tokens: result.tokens
+        data: {
+          user: sanitizeUserForResponse(result.user),
+          ...(sanitizeUserForResponse(result.user) || {}),
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          sessionId: result.sessionId,
+        },
+        tokens: result.tokens || {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          sessionId: result.sessionId,
+        }
       });
     } catch (error) {
       next(error);
