@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { SignupService } from '../../../../src/modules/auth/services/SignupService';
 import { VerifyOTPService } from '../../../../src/modules/auth/services/VerifyOTPService';
 import { LoginService } from '../../../../src/modules/auth/services/LoginService';
@@ -16,7 +17,7 @@ import { AuthenticatedRequest } from '../../../../shared/types';
 
 export function sanitizeUserForResponse(user: any) {
   if (!user) return user;
-  const { password_hash, ...safeUser } = user;
+  const { password_hash, two_factor_secret, reset_token, refresh_token_hash, ...safeUser } = user;
   return safeUser;
 }
 
@@ -39,7 +40,12 @@ export class AuthController {
     try {
       const { email, otpCode } = req.body;
       const result = await VerifyOTPService.execute(email, otpCode, req.ip, req.headers['user-agent']);
-      res.status(200).json({ success: true, data: result });
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.user ? sanitizeUserForResponse(result.user) : null,
+        tokens: result.tokens
+      });
     } catch (error) {
       next(error);
     }
@@ -47,19 +53,32 @@ export class AuthController {
 
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password, role } = req.body;
-      const result = await LoginService.execute(email, password, role, req.ip, req.headers['user-agent']);
-      res.status(200).json({ success: true, data: result });
+      const { email, password } = req.body;
+      const result = await LoginService.execute(email, password, req.ip, req.headers['user-agent']);
+      if (result.requires2FA) {
+        return res.status(200).json({
+          success: true,
+          message: result.message,
+          requires2FA: true,
+          mfaToken: result.mfaToken
+        });
+      }
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: sanitizeUserForResponse(result.user),
+        tokens: result.tokens
+      });
     } catch (error) {
       next(error);
     }
   }
 
-  static async refresh(req: Request, res: Response, next: NextFunction) {
+  static async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const { refreshToken, sessionId } = req.body;
-      const result = await TokenService.refresh(refreshToken, sessionId, req.ip);
-      res.status(200).json({ success: true, data: result });
+      const { refreshToken } = req.body;
+      const tokens = await TokenService.refresh(refreshToken, req.ip, req.headers['user-agent']);
+      res.status(200).json({ success: true, tokens });
     } catch (error) {
       next(error);
     }
@@ -67,22 +86,26 @@ export class AuthController {
 
   static async logout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { sessionId } = req.body;
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
-      if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
-      await LogoutService.execute(sessionId, userId, req.ip, req.headers['user-agent']);
+      const sessionId = req.headers['x-session-id'] as string || req.sessionId;
+      if (sessionId) {
+        await LogoutService.execute(sessionId);
+      }
       res.status(200).json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
       next(error);
     }
   }
 
-  static async logoutAll(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  static async me(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { currentSessionId } = req.body;
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
-      await LogoutService.logoutAll(userId, currentSessionId, req.ip, req.headers['user-agent']);
-      res.status(200).json({ success: true, message: 'Logged out from all devices successfully' });
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const user = await UserRepository.findById(userId);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      res.status(200).json({ success: true, data: sanitizeUserForResponse(user) });
     } catch (error) {
       next(error);
     }
@@ -91,64 +114,9 @@ export class AuthController {
   static async getSessions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
-      const currentSessionId = req.sessionId || (req.headers['x-session-id'] as string);
-      const rawSessions = await SessionRepository.findActiveUserSessions(userId);
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const sessions = rawSessions.map(s => {
-        const ua = s.user_agent || '';
-        let browser = 'App';
-        let os = 'Android';
-        let deviceType = 'Mobile';
-
-        if (/android|okhttp|dalvik/i.test(ua)) {
-          os = 'Android';
-          deviceType = 'Mobile';
-          browser = /okhttp|dalvik/i.test(ua) ? 'Android App' : 'Mobile Browser';
-        } else if (/iphone|ipod|cfnetwork|darwin/i.test(ua)) {
-          os = 'iOS';
-          deviceType = 'Mobile';
-          browser = 'iOS App';
-        } else if (/ipad/i.test(ua)) {
-          os = 'iPadOS';
-          deviceType = 'Tablet';
-          browser = 'iPad App';
-        } else if (/macintosh|mac os x/i.test(ua)) {
-          os = 'macOS';
-          deviceType = 'Desktop';
-          browser = 'Safari';
-        } else if (/windows/i.test(ua)) {
-          os = 'Windows';
-          deviceType = 'Desktop';
-          browser = 'Chrome';
-        } else if (/linux/i.test(ua)) {
-          os = 'Linux';
-          deviceType = 'Desktop';
-          browser = 'Chrome';
-        }
-
-        if (/edg|edge/i.test(ua)) browser = 'Edge';
-        else if (/opera|opr/i.test(ua)) browser = 'Opera';
-        else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
-        else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
-        else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
-        else if (/jobmarket|mobileapp/i.test(ua)) browser = 'JobMarket Mobile App';
-
-        let cleanIp = s.ip_address || '127.0.0.1';
-        if (cleanIp === '::1' || cleanIp === '::ffff:127.0.0.1') cleanIp = '127.0.0.1';
-
-        const isCurrent = currentSessionId ? s.id === currentSessionId : false;
-        return {
-          id: s.id,
-          ipAddress: cleanIp,
-          deviceName: `${os} (${browser})`,
-          browser, os, deviceType,
-          location: 'Maharashtra, India',
-          isCurrent,
-          createdAt: s.created_at,
-          lastUsedAt: s.last_used_at,
-        };
-      });
-
+      const sessions = await SessionRepository.findActiveByUserId(userId);
       res.status(200).json({ success: true, data: sessions });
     } catch (error) {
       next(error);
@@ -157,8 +125,11 @@ export class AuthController {
 
   static async revokeSession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const sessionId = req.params.sessionId as string;
-      await SessionRepository.revokeSession(sessionId);
+      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const { sessionId } = req.params;
+      if (!userId || !sessionId) return res.status(400).json({ error: 'Bad Request' });
+
+      await SessionRepository.revoke(sessionId);
       res.status(200).json({ success: true, message: 'Session revoked successfully' });
     } catch (error) {
       next(error);
@@ -169,18 +140,17 @@ export class AuthController {
     try {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
       const { currentPassword, newPassword } = req.body;
-      if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Current password and new password are required' });
-      if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
       const user = await UserRepository.findById(userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-      if (!isMatch) return res.status(400).json({ error: 'Incorrect current password' });
+      if (!isMatch) return res.status(400).json({ error: 'Current password is incorrect' });
 
       const newHash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
-      res.status(200).json({ success: true, message: 'Password changed successfully' });
+      res.status(200).json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
       next(error);
     }
@@ -194,7 +164,7 @@ export class AuthController {
       const user = await UserRepository.findByEmail(normalizedEmail);
       if (!user) return res.status(404).json({ error: 'No account found with this email address.' });
 
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpCode = crypto.randomInt(100000, 1000000).toString();
       const redisKey = `reset:OTP:${normalizedEmail}`;
       await OtpStore.setEx(redisKey, 600, JSON.stringify({ otp: otpCode, attempts: 0 }));
 

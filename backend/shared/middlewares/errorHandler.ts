@@ -38,10 +38,13 @@ export const errorHandler = (
 
   logger.error('Unhandled Error:', err);
 
+  const isProd = process.env.NODE_ENV === 'production';
   const status = (err as any).status || 500;
+  const message = isProd ? 'An unexpected server error occurred. Please try again later.' : (err.message || 'Internal Server Error');
+
   return res.status(status).json({
     success: false,
-    message: err.message || 'Internal Server Error',
+    message,
     data: null,
     errors: [err.name || 'INTERNAL_ERROR']
   });

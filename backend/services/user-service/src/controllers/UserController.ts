@@ -94,6 +94,13 @@ export class UserController {
       const fileTitle = fileName || name || 'Resume_BioData.jpg';
 
       let finalUrl = url;
+      if (finalUrl && typeof finalUrl === 'string') {
+        const lowerUrl = finalUrl.toLowerCase().trim();
+        if (!lowerUrl.startsWith('http://') && !lowerUrl.startsWith('https://')) {
+          return res.status(400).json({ error: 'Invalid URL format. Resume URL must use http:// or https://' });
+        }
+      }
+
       if (!finalUrl && base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {
         const publicId = `resume_${userId}_${Date.now()}`;
         const isPdf = (type && type.includes('pdf')) || (fileTitle && fileTitle.toLowerCase().endsWith('.pdf'));

@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import { logger } from '../../../../shared/utils/logger';
 
+// Persistent High-Throughput HTTP Keep-Alive Agent for Microservice Inter-Service Socket Reuse
+const keepAliveAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsec: 10000,
+  maxSockets: 100,
+  maxFreeSockets: 20,
+  timeout: 30000,
+});
+
 export const createServiceProxy = (targetPort: number, fallbackHandler?: (req: Request, res: Response, next: NextFunction) => void) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const options: http.RequestOptions = {
@@ -9,6 +18,7 @@ export const createServiceProxy = (targetPort: number, fallbackHandler?: (req: R
       port: targetPort,
       path: req.originalUrl,
       method: req.method,
+      agent: keepAliveAgent,
       headers: {
         ...req.headers,
         host: `127.0.0.1:${targetPort}`,

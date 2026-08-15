@@ -32,6 +32,10 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     headers['x-session-id'] = sessionId;
   }
 
+  // Ensure Web App never sends identity override headers
+  delete headers['x-user-id'];
+  delete headers['x-user-role'];
+
   // Set content-type to application/json by default unless it's FormData (for file uploads)
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';

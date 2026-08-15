@@ -60,6 +60,11 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     ...(options.headers as Record<string, string>),
   };
 
+  // Ensure client never sends identity override headers
+  delete headers['x-user-id'];
+  delete headers['x-user-role'];
+  delete headers['x-session-id'];
+
   if (isFormData && (options.headers as Record<string, string>)?.[ 'Content-Type' ] === undefined) {
     delete headers['Content-Type'];
   }

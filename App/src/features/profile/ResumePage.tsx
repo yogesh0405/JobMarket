@@ -302,7 +302,7 @@ export const ResumePage: React.FC = () => {
             onDrop={onDrop}
           >
             <div className="upload-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
@@ -311,7 +311,7 @@ export const ResumePage: React.FC = () => {
             <div className="upload-text">
               <h3>Upload Your Resume</h3>
               <p>Drag & drop your file here, or <span className="browse-link">browse</span></p>
-              <p style={{ marginTop: 'var(--space-2)', fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>
+              <p style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8' }}>
                 Supports PDF, DOC, DOCX, JPG, PNG (Max 5MB)
               </p>
             </div>

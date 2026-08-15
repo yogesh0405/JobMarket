@@ -119,21 +119,22 @@ router.get(['/job/:id', '/jobs/:id'], async (req: Request, res: Response, next: 
   try {
     if (fs.existsSync(indexPath)) {
       let indexHtml = fs.readFileSync(indexPath, 'utf8');
+      const safeJobId = JSON.stringify(jobId);
       const injectionScript = `
-        <meta property="og:title" content="${title}" />
-        <meta property="og:description" content="${description}" />
-        ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+        <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+        <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
+        ${formattedLogo ? `<meta property="og:image" content="${formattedLogo.replace(/"/g, '&quot;')}" />` : ''}
         <script>
           window.addEventListener('DOMContentLoaded', function() {
             var isAndroid = /Android/i.test(navigator.userAgent);
             var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            var jobId = "${jobId}";
+            var jobId = ${safeJobId};
             if (isAndroid || isIOS) {
               setTimeout(function() {
                 try {
                   var iframe = document.createElement('iframe');
                   iframe.style.display = 'none';
-                  iframe.src = "jobmarket://job/" + jobId;
+                  iframe.src = "jobmarket://job/" + encodeURIComponent(jobId);
                   document.body.appendChild(iframe);
                 } catch (e) {}
               }, 400);
