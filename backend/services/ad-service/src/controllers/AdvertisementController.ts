@@ -105,7 +105,7 @@ export class AdvertisementController {
 
   static async getAllAdminAdvertisements(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const data = await AdvertisementService.getAllAdminAdvertisements();
+      const data = await AdvertisementService.getAllAdminAdvertisements(req.query.status as string);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -132,7 +132,8 @@ export class AdvertisementController {
 
   static async createAdminAdvertisement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const data = await AdvertisementService.createAdminAdvertisement(req.body);
+      const adminId = req.headers['x-user-id'] as string || req.user?.userId || 'admin';
+      const data = await AdvertisementService.createAdminAdvertisement(adminId, req.body);
       res.status(201).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -142,8 +143,8 @@ export class AdvertisementController {
   static async approveAdvertisement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const adminId = req.headers['x-user-id'] as string || req.user?.userId;
-      const { notes } = req.body;
+      const adminId = req.headers['x-user-id'] as string || req.user?.userId || 'admin';
+      const { notes } = req.body || {};
       const data = await AdvertisementService.approveAdvertisement(id, adminId, notes);
       res.status(200).json({ success: true, data });
     } catch (error) {
@@ -154,8 +155,8 @@ export class AdvertisementController {
   static async rejectAdvertisement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const adminId = req.headers['x-user-id'] as string || req.user?.userId;
-      const { rejectionReason, notes } = req.body;
+      const adminId = req.headers['x-user-id'] as string || req.user?.userId || 'admin';
+      const { rejectionReason, notes } = req.body || {};
       const data = await AdvertisementService.rejectAdvertisement(id, adminId, rejectionReason || notes);
       res.status(200).json({ success: true, data });
     } catch (error) {
