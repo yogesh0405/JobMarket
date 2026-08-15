@@ -84,6 +84,10 @@ export class AuthController {
     }
   }
 
+  static async refresh(req: Request, res: Response, next: NextFunction) {
+    return AuthController.refreshToken(req, res, next);
+  }
+
   static async logout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
@@ -92,6 +96,19 @@ export class AuthController {
         await LogoutService.execute(sessionId);
       }
       res.status(200).json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async logoutAll(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const currentSessionId = req.headers['x-session-id'] as string || req.sessionId;
+      if (userId) {
+        await SessionRepository.revokeAllUserSessions(userId, currentSessionId);
+      }
+      res.status(200).json({ success: true, message: 'Logged out from all devices successfully' });
     } catch (error) {
       next(error);
     }
