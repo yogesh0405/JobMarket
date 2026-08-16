@@ -72,23 +72,51 @@ export const PROMO_BANNERS = [
 
 export const INDUSTRIES = [
   'Select Industry',
-  'Manufacturing & Assembly',
+  'Automotive & Auto Components',
+  'Industrial Manufacturing & Assembly',
   'CNC Machining & Tooling',
   'Welding & Metal Fabrication',
-  'Electricals & Electronics',
+  'Electronics & Electricals',
   'Quality & Inspection',
-  'Logistics & Warehouse',
-  'Pharma & Healthcare',
-  'Automotive & Engineering',
+  'Logistics & Warehousing',
+  'Pharmaceuticals & Chemicals',
+  'Textiles & Garments',
+  'Construction & Infrastructure',
+  'Services & General Engineering',
 ];
 
 export const EDUCATIONS = [
   'Select Education',
   '10th Pass',
   '12th Pass',
-  'ITI Certificate',
-  'Diploma',
-  'Graduate (BE / B.Tech / BA / B.Com)',
+  'ITI Certificate (Fitter / Welder / Electrician / CNC / Turner)',
+  'Diploma (Mechanical / Electrical / Civil / Automobile)',
+  'B.E. / B.Tech (Mechanical / Production / Electrical / ECE)',
+  'Graduate (BA / B.Com / B.Sc / BCA / BBA)',
+  'Post Graduate (M.Tech / MBA / MCA)',
+];
+
+export const MIDC_ZONES = [
+  'Chakan MIDC (Pune)',
+  'Bhosari MIDC (PCMC Pune)',
+  'Ranjangaon MIDC (Pune)',
+  'Talegaon MIDC (Pune)',
+  'Hadapsar Industrial Estate',
+  'Waluj MIDC (Chhatrapati Sambhajinagar)',
+  'Shendra MIDC (Chhatrapati Sambhajinagar)',
+  'Taloja MIDC (Navi Mumbai)',
+  'Rabale MIDC (Navi Mumbai)',
+  'Thane Belapur Industrial Area',
+  'Tarapur MIDC (Palghar)',
+  'Additional Ambernath MIDC (Thane)',
+  'Satpur MIDC (Nashik)',
+  'Ambad MIDC (Nashik)',
+  'Kagal Five Star MIDC (Kolhapur)',
+  'Gokul Shirgaon MIDC (Kolhapur)',
+  'Butibori MIDC (Nagpur)',
+  'Roha MIDC (Raigad)',
+  'Pimpri Industrial Zone',
+  'Khed City MIDC',
 ];
 
 export const DEFAULT_ROLE_TABS_DATA: RoleTabItem[] = [

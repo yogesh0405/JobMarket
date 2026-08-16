@@ -9,9 +9,11 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  SafeAreaView,
 } from 'react-native';
-import { X, User, Paperclip, Send } from 'lucide-react-native';
+import { X, User, Paperclip, Send, Headphones, CheckCheck } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
+import { useAuth } from '../../../hooks/useAuth';
 import { SupportTicket, TicketMessage } from './HelpSupportConstants';
 
 interface HelpSupportChatModalProps {
@@ -41,31 +43,41 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   onRemoveAttachment,
   onSendReply,
 }) => {
+  const { user } = useAuth();
+  const userPhotoUri =
+    user?.profilePictureUrl ||
+    (user as any)?.profile_picture_url ||
+    (user as any)?.companyLogo ||
+    (user as any)?.company_logo;
+
   if (!ticket) return null;
+
+  const canSend = (replyMessage.trim().length > 0 || !!selectedAttachment) && !sendingReply;
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <View style={styles.modalRootContainer}>
-        {/* Header Bar */}
+      <SafeAreaView style={styles.modalRootContainer}>
+        {/* Instagram DM Style Header Bar */}
         <View style={styles.chatHeaderBar}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.chatTicketNumText}>{ticket.ticketNumber}</Text>
+          <TouchableOpacity onPress={onClose} style={styles.chatCloseBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <X size={22} color="#0F172A" />
+          </TouchableOpacity>
+
+          <View style={styles.headerInfoCol}>
+            <View style={styles.headerTitleRow}>
+              <Text style={styles.chatHeaderNameText} numberOfLines={1}>Support Ticket #{ticket.ticketNumber}</Text>
               <View style={[styles.chatStatusBadge, ticket.status === 'RESOLVED' ? styles.statusBadgeResolved : styles.statusBadgeOpen]}>
                 <Text style={styles.chatStatusBadgeText}>{ticket.status}</Text>
               </View>
             </View>
-            <Text style={styles.chatTicketSubjectText} numberOfLines={1}>{ticket.subject}</Text>
+            <Text style={styles.chatHeaderSubText} numberOfLines={1}>{ticket.subject}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.chatCloseBtn}>
-            <X size={20} color="#0F172A" />
-          </TouchableOpacity>
         </View>
 
         {/* Message Thread List */}
-        <ScrollView contentContainerStyle={styles.chatMessagesScrollContent}>
+        <ScrollView contentContainerStyle={styles.chatMessagesScrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.systemInfoNoticeBox}>
-            <Text style={styles.systemInfoNoticeTitle}>Support Ticket #{ticket.ticketNumber}</Text>
+            <Text style={styles.systemInfoNoticeTitle}>Technical Inquiry Thread</Text>
             <Text style={styles.systemInfoNoticeSub}>Category: {ticket.category} • Priority: {ticket.priority.toUpperCase()}</Text>
           </View>
 
@@ -73,53 +85,66 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
             const isUser = msg.sender === 'user';
             return (
               <View key={msg.id} style={[styles.chatMsgRow, isUser ? styles.chatMsgRowUser : styles.chatMsgRowSupport]}>
-                {!isUser && (
-                  <View style={styles.chatAvatarSupport}>
-                    <Text style={styles.chatAvatarSupportText}>ST</Text>
-                  </View>
-                )}
                 <View style={[styles.chatBubble, isUser ? styles.chatBubbleUser : styles.chatBubbleSupport]}>
-                  <Text style={[styles.chatSenderNameText, isUser ? styles.chatSenderNameUser : styles.chatSenderNameSupport]}>
-                    {msg.senderName}
-                  </Text>
+                  {/* Inside Avatar & Sender Name Header */}
+                  <View style={styles.chatBubbleHeaderRow}>
+                    {isUser ? (
+                      <View style={styles.chatAvatarUserInside}>
+                        {userPhotoUri ? (
+                          <Image source={{ uri: userPhotoUri }} style={styles.avatarImageInside} />
+                        ) : (
+                          <User size={9} color="#FFFFFF" />
+                        )}
+                      </View>
+                    ) : (
+                      <View style={styles.chatAvatarSupportInside}>
+                        <Headphones size={9} color={COLORS.primary} />
+                      </View>
+                    )}
+                    <Text style={[styles.chatSenderNameText, isUser ? styles.chatSenderNameUser : styles.chatSenderNameSupport]}>
+                      {isUser ? 'Me' : msg.senderName}
+                    </Text>
+                  </View>
+
                   <Text style={[styles.chatMsgBodyText, isUser ? styles.chatMsgBodyUser : styles.chatMsgBodySupport]}>
                     {msg.text}
                   </Text>
+
                   {msg.attachment ? (
                     <Image source={{ uri: msg.attachment }} style={styles.chatAttachmentImg} />
                   ) : null}
-                  <Text style={[styles.chatMsgTimeText, isUser ? styles.chatMsgTimeUser : styles.chatMsgTimeSupport]}>
-                    {msg.createdAt}
-                  </Text>
-                </View>
-                {isUser && (
-                  <View style={styles.chatAvatarUser}>
-                    <User size={12} color="#FFFFFF" />
+
+                  <View style={styles.msgFooterRow}>
+                    <Text style={[styles.chatMsgTimeText, isUser ? styles.chatMsgTimeUser : styles.chatMsgTimeSupport]}>
+                      {msg.createdAt}
+                    </Text>
+                    {isUser && <CheckCheck size={12} color="#93C5FD" style={{ marginLeft: 3 }} />}
                   </View>
-                )}
+                </View>
               </View>
             );
           })}
         </ScrollView>
 
-        {/* Input Bar */}
+        {/* Instagram DM Floating Input Bar */}
         <View style={styles.chatInputBarContainer}>
           {selectedAttachment ? (
             <View style={styles.attachmentPreviewStrip}>
               <Text style={styles.attachmentPreviewName} numberOfLines={1}>{selectedAttachment.name}</Text>
-              <TouchableOpacity onPress={onRemoveAttachment}>
+              <TouchableOpacity onPress={onRemoveAttachment} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                 <X size={14} color="#DC2626" />
               </TouchableOpacity>
             </View>
           ) : null}
+
           <View style={styles.chatInputRowWrap}>
-            <TouchableOpacity style={styles.attachBtnCircle} onPress={onPickAttachment}>
+            <TouchableOpacity style={styles.attachBtnCircle} onPress={onPickAttachment} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Paperclip size={18} color="#64748B" />
             </TouchableOpacity>
 
             <TextInput
               style={styles.chatInputField}
-              placeholder="Type your message reply..."
+              placeholder="Message..."
               placeholderTextColor="#94A3B8"
               value={replyMessage}
               onChangeText={setReplyMessage}
@@ -127,19 +152,19 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
             />
 
             <TouchableOpacity
-              style={[styles.chatSendBtnCircle, sendingReply && { opacity: 0.6 }]}
+              style={[styles.chatSendBtnCircle, !canSend && styles.chatSendBtnDisabled]}
               onPress={onSendReply}
-              disabled={sendingReply}
+              disabled={!canSend}
             >
               {sendingReply ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Send size={16} color="#FFFFFF" />
+                <Send size={15} color={canSend ? '#FFFFFF' : '#94A3B8'} />
               )}
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -147,22 +172,58 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
 const styles = StyleSheet.create({
   modalRootContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   chatHeaderBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    gap: 12,
   },
-  chatTicketNumText: {
-    fontSize: 13,
+  chatCloseBtn: {
+    padding: 2,
+  },
+  headerInfoCol: {
+    flex: 1,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  chatHeaderNameText: {
+    fontSize: 14,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#0F172A',
+  },
+  chatHeaderSubText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  headerAvatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  onlinePulseDotSmall: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#22C55E',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   chatStatusBadge: {
     paddingHorizontal: 6,
@@ -176,47 +237,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
   },
   chatStatusBadgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#92400E',
   },
-  chatTicketSubjectText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 2,
-  },
-  chatCloseBtn: {
-    padding: 6,
-  },
   chatMessagesScrollContent: {
-    padding: 16,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
   },
   systemInfoNoticeBox: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   systemInfoNoticeTitle: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: '#1E40AF',
+    color: '#475569',
   },
   systemInfoNoticeSub: {
-    fontSize: 11,
-    color: '#3B82F6',
+    fontSize: 10.5,
+    color: '#64748B',
     marginTop: 2,
   },
   chatMsgRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    marginVertical: 2,
+    marginVertical: 1,
   },
   chatMsgRowUser: {
     justifyContent: 'flex-end',
@@ -224,57 +275,61 @@ const styles = StyleSheet.create({
   chatMsgRowSupport: {
     justifyContent: 'flex-start',
   },
-  chatAvatarSupport: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chatAvatarSupportText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  chatAvatarUser: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   chatBubble: {
-    maxWidth: '78%',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    maxWidth: '80%',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   chatBubbleUser: {
-    backgroundColor: COLORS.primary,
-    borderBottomRightRadius: 2,
+    backgroundColor: '#2563EB',
+    borderBottomRightRadius: 4,
   },
   chatBubbleSupport: {
+    backgroundColor: '#F1F5F9',
+    borderBottomLeftRadius: 4,
+  },
+  chatBubbleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 4,
+  },
+  chatAvatarUserInside: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  chatAvatarSupportInside: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomLeftRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImageInside: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
   chatSenderNameText: {
     fontSize: 10.5,
     fontWeight: '700',
-    marginBottom: 2,
   },
   chatSenderNameUser: {
-    color: '#E0F2FE',
+    color: '#EFF6FF',
   },
   chatSenderNameSupport: {
-    color: '#64748B',
+    color: '#475569',
   },
   chatMsgBodyText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 19,
   },
   chatMsgBodyUser: {
     color: '#FFFFFF',
@@ -283,18 +338,22 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   chatAttachmentImg: {
-    width: 160,
-    height: 120,
-    borderRadius: 8,
+    width: 180,
+    height: 135,
+    borderRadius: 12,
     marginTop: 6,
+  },
+  msgFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
   },
   chatMsgTimeText: {
     fontSize: 9.5,
-    marginTop: 4,
-    alignSelf: 'flex-end',
   },
   chatMsgTimeUser: {
-    color: '#DBEAFE',
+    color: '#BFDBFE',
   },
   chatMsgTimeSupport: {
     color: '#94A3B8',
@@ -302,8 +361,8 @@ const styles = StyleSheet.create({
   chatInputBarContainer: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingHorizontal: 12,
+    borderTopColor: '#F1F5F9',
+    paddingHorizontal: 14,
     paddingVertical: 10,
   },
   attachmentPreviewStrip: {
@@ -324,27 +383,33 @@ const styles = StyleSheet.create({
   chatInputRowWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   attachBtnCircle: {
-    padding: 8,
+    padding: 6,
   },
   chatInputField: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     paddingVertical: 8,
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#0F172A',
     maxHeight: 80,
   },
   chatSendBtnCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  chatSendBtnDisabled: {
+    backgroundColor: '#E2E8F0',
   },
 });

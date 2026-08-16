@@ -282,40 +282,56 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const getRealJobCount = useCallback((keyword: string) => {
     if (!keyword) return jobs.length;
     const cleanKw = keyword.replace(/^\d+\.\s*/, '').toLowerCase().trim();
-    if (!cleanKw || cleanKw === 'all opportunities') return jobs.length;
+    if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs.length;
 
-    const count = jobs.filter((j) => {
-      const norm = cleanKw;
+    return jobs.filter((j) => {
       const title = (j.title || '').toLowerCase();
       const trade = (j.trade || '').toLowerCase();
       const industry = (j.industry || '').toLowerCase();
       const desc = (j.description || '').toLowerCase();
+      const category = ((j as any).category || '').toLowerCase();
 
       return (
-        title.includes(norm) ||
-        trade.includes(norm) ||
-        industry.includes(norm) ||
-        (cleanKw.length > 1 && (title.includes(cleanKw) || trade.includes(cleanKw) || industry.includes(cleanKw) || desc.includes(cleanKw)))
+        title.includes(cleanKw) ||
+        trade.includes(cleanKw) ||
+        industry.includes(cleanKw) ||
+        category.includes(cleanKw) ||
+        desc.includes(cleanKw)
       );
     }).length;
-
-    return count;
   }, [jobs]);
 
   const getRoleJobCount = useCallback((tabId: string, keyword: string) => {
-    if (tabId === 'All Opportunities') return jobs.length;
+    const isAll = tabId === 'All Opportunities' || tabId.toLowerCase() === 'all' || (keyword && keyword.toLowerCase() === 'all');
+    if (isAll) return jobs.length;
     return getRealJobCount(keyword || tabId);
   }, [jobs, getRealJobCount]);
 
-  const roleFilteredJobs = jobs.filter((j) => {
-    if (activeRoleTab === 'All Opportunities') return true;
+  const roleFilteredJobs = useMemo(() => {
+    const isAll = activeRoleTab === 'All Opportunities' || activeRoleTab.toLowerCase() === 'all';
+    if (isAll) return jobs;
+
     const tabObj = roleTabsList.find((t) => t.id === activeRoleTab);
-    const kw = tabObj ? tabObj.keyword : activeRoleTab.toLowerCase();
-    const titleMatch = j.title && j.title.toLowerCase().includes(kw);
-    const tradeMatch = j.trade && j.trade.toLowerCase().includes(kw);
-    const indMatch = j.industry && j.industry.toLowerCase().includes(kw);
-    return titleMatch || tradeMatch || indMatch;
-  });
+    const rawKw = tabObj?.keyword || tabObj?.label || activeRoleTab;
+    const cleanKw = rawKw.replace(/^\d+\.\s*/, '').toLowerCase().trim();
+    if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs;
+
+    return jobs.filter((j) => {
+      const title = (j.title || '').toLowerCase();
+      const trade = (j.trade || '').toLowerCase();
+      const industry = (j.industry || '').toLowerCase();
+      const desc = (j.description || '').toLowerCase();
+      const category = ((j as any).category || '').toLowerCase();
+
+      return (
+        title.includes(cleanKw) ||
+        trade.includes(cleanKw) ||
+        industry.includes(cleanKw) ||
+        category.includes(cleanKw) ||
+        desc.includes(cleanKw)
+      );
+    });
+  }, [jobs, activeRoleTab, roleTabsList]);
 
   const handleBannerPress = (banner?: Advertisement) => {
     if (!banner) return;
@@ -502,7 +518,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         <CandidateHomePromoSlider promoBanners={promoBanners} onBannerPress={handleBannerPress} />
 
         {/* Hero Search Card */}
-        <View style={{ marginTop: 14, marginBottom: 14 }}>
+        <View style={{ marginTop: 16, marginBottom: 16 }}>
           <CandidateHomeSearchCard
             selectedIndustry={selectedIndustry}
             setSelectedIndustry={setSelectedIndustry}

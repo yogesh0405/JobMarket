@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { Job } from '../../types';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
+import { CompanyLogoAvatar } from '../common/CompanyLogoAvatar';
 
 interface InteractiveJobMapViewProps {
   jobs: Job[];
@@ -60,7 +61,11 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
     const baseLng = 75.3433 + ((((idx * 23) % 50) - 25) * 0.0042);
 
     const rawLogo = job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo;
-    const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
+    const resolvedLogo = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
+    const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563EB'/%3E%3Cpath d='M30 75 V40 L50 25 L70 40 V75 Z' fill='none' stroke='%23FFFFFF' stroke-width='6'/%3E%3Crect x='42' y='55' width='16' height='20' fill='%23FFFFFF'/%3E%3C/svg%3E";
+    const logoUrl = (resolvedLogo && typeof resolvedLogo === 'string' && resolvedLogo.trim().length > 5 && resolvedLogo !== 'null')
+      ? resolvedLogo.trim()
+      : fallbackSvg;
 
     return {
       id: job.id,
@@ -117,17 +122,17 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
             text-align: center;
           }
 
-          /* Single Pin Dot (No text labels) */
+          /* Single Pin Vector Badge */
           .custom-single-pin-wrapper {
             background: transparent;
           }
           .custom-single-pin {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: #ffffff;
             border: 2.5px solid #2563eb;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -135,15 +140,16 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
             transition: transform 0.2s ease;
           }
           .custom-single-pin.selected {
-            transform: scale(1.2);
+            transform: scale(1.25);
             border-color: #facc15;
             box-shadow: 0 6px 18px rgba(250, 204, 21, 0.6);
           }
           .single-pin-logo {
-            width: 26px;
-            height: 26px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             object-fit: cover;
+            display: block;
           }
 
           /* Leaflet Popup Override - Identical to Web App Popup Card */
@@ -171,9 +177,8 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
             width: 38px;
             height: 38px;
             border-radius: 8px;
+            object-fit: cover;
             border: 1px solid #e2e8f0;
-            object-fit: contain;
-            background: #ffffff;
           }
           .popup-title {
             font-size: 13.5px;
@@ -249,17 +254,16 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
           });
 
           const markersMap = {};
-          const fallbackBadgeSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><path d='M30 75 V40 L50 25 L70 40 V75 Z' fill='none' stroke='%23FFFFFF' stroke-width='6'/><rect x='42' y='55' width='16' height='20' fill='%23FFFFFF'/></svg>";
 
           jobsData.forEach(job => {
-            const logoUrl = (job.logoUrl && job.logoUrl.trim().length > 5) ? job.logoUrl.trim() : fallbackBadgeSvg;
-            const pinHtml = '<div id="pin-' + job.id + '" class="custom-single-pin"><img class="single-pin-logo" src="' + logoUrl + '" onError="this.src=\\' font-size:0; ' + fallbackBadgeSvg + '\\'" /></div>';
+            const logoUrl = job.logoUrl;
+            const pinHtml = '<div id="pin-' + job.id + '" class="custom-single-pin"><img class="single-pin-logo" src="' + logoUrl + '" /></div>';
 
             const customIcon = L.divIcon({
               html: pinHtml,
               className: 'custom-single-pin-wrapper',
-              iconSize: [34, 34],
-              iconAnchor: [17, 17]
+              iconSize: [36, 36],
+              iconAnchor: [18, 18]
             });
 
             const marker = L.marker([job.latitude, job.longitude], { icon: customIcon });
@@ -352,7 +356,11 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
           if (onSelectJob) onSelectJob(found);
         }
       } else if (data.type === 'NAVIGATE_JOB') {
-        navigation.navigate('CandidateJobDetail', { jobId: data.jobId });
+        const foundJob = jobs.find((j) => String(j.id) === String(data.jobId));
+        navigation.navigate('CandidateJobsTab', {
+          screen: 'CandidateJobDetail',
+          params: { jobId: data.jobId, job: foundJob },
+        });
       }
     } catch (err) {}
   };
@@ -397,6 +405,9 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
           onMessage={handleWebViewMessage}
           javaScriptEnabled
           domStorageEnabled
+          mixedContentMode="always"
+          allowFileAccessFromFileURLs
+          allowUniversalAccessFromFileURLs
         />
 
         {/* Left Map Controls (+ / - Zoom Buttons) */}
@@ -476,13 +487,12 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
                 style={[styles.sheetJobCard, isSelected && styles.sheetJobCardActive]}
                 onPress={() => handleSelectJobFromSheet(job)}
               >
-                <View style={styles.cardLeftLogoSquare}>
-                  {logoUrl ? (
-                    <Image source={{ uri: logoUrl }} style={styles.cardLogoImg} resizeMode="contain" />
-                  ) : (
-                    <Building2 size={20} color={COLORS.primary} />
-                  )}
-                </View>
+                <CompanyLogoAvatar
+                  logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                  companyName={job.company || 'Enterprise'}
+                  size={40}
+                  borderRadius={6}
+                />
 
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.cardJobTitle} numberOfLines={1}>
@@ -500,7 +510,12 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
 
                 <TouchableOpacity
                   style={styles.viewDetailArrowBtn}
-                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                  onPress={() =>
+                    navigation.navigate('CandidateJobsTab', {
+                      screen: 'CandidateJobDetail',
+                      params: { jobId: job.id, job: job },
+                    })
+                  }
                 >
                   <ExternalLink size={16} color={COLORS.primary} />
                 </TouchableOpacity>

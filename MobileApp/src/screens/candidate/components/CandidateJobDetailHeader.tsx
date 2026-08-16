@@ -94,15 +94,6 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
             <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
               {job.title}
             </Text>
-
-            {job.location ? (
-              <View style={styles.bannerLocationRow}>
-                <MapPin size={12} color="#BAE6FD" />
-                <Text style={styles.bannerLocationText} numberOfLines={1}>
-                  {job.location}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </View>
       </View>

@@ -190,9 +190,9 @@ const styles = StyleSheet.create({
   naukriJobCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#94A3B8',
+    borderColor: '#B4C3D4',
     marginBottom: 8,
     overflow: 'hidden',
   },

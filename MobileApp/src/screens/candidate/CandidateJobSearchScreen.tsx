@@ -19,11 +19,11 @@ import { Job } from '../../types';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useToast } from '../../context/ToastContext';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
-import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
+import { getCompanyLogoUrl } from '../../utils/companyLogos';
 import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 
-const FALLBACK_JOBS: Job[] = FALLBACK_SEED_JOBS;
+const FALLBACK_JOBS: Job[] = [];
 
 interface Props {
   navigation: any;
@@ -71,10 +71,25 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   useEffect(() => {
-    if (route?.params?.keyword) setSearchQuery(route.params.keyword);
-    if (route?.params?.location) setActiveFilters((prev) => ({ ...prev, midcZone: route.params.location }));
-    if (route?.params?.industry) setActiveFilters((prev) => ({ ...prev, industry: route.params.industry }));
-    if (route?.params?.homeFilters) setActiveFilters(route.params.homeFilters);
+    if (!route?.params) return;
+    const { keyword, location, industry, education, homeFilters } = route.params;
+
+    if (homeFilters) {
+      setActiveFilters(homeFilters);
+    }
+    if (keyword) {
+      setSearchQuery(keyword);
+    }
+    if (location) {
+      setActiveFilters((prev) => ({ ...prev, midcZone: location }));
+    }
+    if (industry) {
+      setActiveFilters((prev) => ({ ...prev, industry }));
+    }
+    if (education && !keyword) {
+      const cleanEdu = education.replace(/\s*\([^)]*\)/g, '').trim();
+      setSearchQuery(cleanEdu);
+    }
   }, [route?.params]);
 
   const matchedSuggestions = useMemo(() => {
@@ -126,6 +141,18 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const refreshOffsetRef = useRef(0);
 
+  const ensureJobLogos = (rawJobs: Job[]): Job[] => {
+    return (rawJobs || []).map((j) => {
+      const rawLogo = j.companyLogo || (j as any).company_logo || (j as any).logoUrl || (j as any).logo_url || (j as any).logo;
+      const finalLogo = getCompanyLogoUrl(j.company || 'Industrial Partner', rawLogo);
+      return {
+        ...j,
+        companyLogo: finalLogo,
+        company_logo: finalLogo,
+      };
+    });
+  };
+
   const loadJobsData = useCallback(async (isRefresh: boolean = false) => {
     try {
       const [jobsRes, savedRes] = await Promise.all([
@@ -134,7 +161,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       ]);
 
       if (jobsRes.success && jobsRes.data) {
-        const rawJobs = jobsRes.data || [];
+        const rawJobs = ensureJobLogos(jobsRes.data || []);
         if (isRefresh && rawJobs.length > 0) {
           refreshOffsetRef.current = (refreshOffsetRef.current + 3) % rawJobs.length;
         }
@@ -142,7 +169,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         const rotated = rawJobs.length > 0 ? [...rawJobs.slice(offset), ...rawJobs.slice(0, offset)] : rawJobs;
         setJobs(rotated);
       } else {
-        const rawJobs = FALLBACK_JOBS;
+        const rawJobs = ensureJobLogos(FALLBACK_JOBS);
         if (isRefresh && rawJobs.length > 0) {
           refreshOffsetRef.current = (refreshOffsetRef.current + 3) % rawJobs.length;
         }
@@ -156,7 +183,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         setSavedJobIds(savedIds);
       }
     } catch (err) {
-      setJobs(FALLBACK_JOBS);
+      setJobs(ensureJobLogos(FALLBACK_JOBS));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -190,100 +217,134 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     candidateApi.toggleSaveJob(jobId).catch(() => {});
   }, [showToast]);
 
-  const filteredJobs = jobs.filter((job) => {
-    const titleMatch = job.title && job.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const companyMatch = job.company && job.company.toLowerCase().includes(searchQuery.toLowerCase());
-    const locationMatch = job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const queryMatch = titleMatch || companyMatch || locationMatch;
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      // 1. Text Search Query Match
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const title = (job.title || '').toLowerCase();
+        const company = (job.company || '').toLowerCase();
+        const location = (job.location || '').toLowerCase();
+        const trade = (job.trade || '').toLowerCase();
+        const industry = (job.industry || '').toLowerCase();
+        const desc = (job.description || '').toLowerCase();
+        const skills = Array.isArray(job.skills) ? job.skills.join(' ').toLowerCase() : '';
 
-    const catMatch =
-      selectedCategory === 'All Jobs' ||
-      (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-      (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-      (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-      (selectedCategory === 'HR Jobs' && (job.title.includes('HR') || job.industry.includes('HR'))) ||
-      (selectedCategory === 'Marketing Jobs' && (job.title.includes('Marketing') || job.industry.includes('Marketing'))) ||
-      (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
-      (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
+        const matchesQuery =
+          title.includes(q) ||
+          company.includes(q) ||
+          location.includes(q) ||
+          trade.includes(q) ||
+          industry.includes(q) ||
+          desc.includes(q) ||
+          skills.includes(q);
 
-    if (!queryMatch || !catMatch) return false;
+        if (!matchesQuery) return false;
+      }
 
-    if (activeFilters.industry !== 'All Industries') {
-      const indKey = activeFilters.industry.toLowerCase();
-      const jobInd = (job.industry || '').toLowerCase();
-      const jobTitle = (job.title || '').toLowerCase();
-      if (!jobInd.includes(indKey) && !jobTitle.includes(indKey)) return false;
-    }
+      // 2. Category Match
+      const catMatch =
+        selectedCategory === 'All Jobs' ||
+        (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+        (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+        (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+        (selectedCategory === 'HR Jobs' && (job.title.includes('HR') || job.industry.includes('HR'))) ||
+        (selectedCategory === 'Marketing Jobs' && (job.title.includes('Marketing') || job.industry.includes('Marketing'))) ||
+        (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
+        (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
 
-    if (activeFilters.midcZone !== 'All MIDC Zones') {
-      const zoneKey = activeFilters.midcZone.toLowerCase();
-      const jobLoc = (job.location || '').toLowerCase();
-      if (!jobLoc.includes(zoneKey)) return false;
-    }
+      if (!catMatch) return false;
 
-    if (activeFilters.jobType !== 'All Types') {
-      const typeKey = activeFilters.jobType.toLowerCase();
-      const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
-      if (!jType.includes(typeKey)) return false;
-    }
+      // 3. Industry Filter Match (Token Matching)
+      if (activeFilters.industry && activeFilters.industry !== 'All Industries') {
+        const rawInd = activeFilters.industry.toLowerCase();
+        const indTokens = rawInd.split(/[\s&,/()]+/).filter((t) => t.length > 3);
+        const jobInd = (job.industry || '').toLowerCase();
+        const jobTitle = (job.title || '').toLowerCase();
+        const jobTrade = (job.trade || '').toLowerCase();
+        const jobDesc = (job.description || '').toLowerCase();
 
-    if (activeFilters.workMode !== 'All Modes') {
-      const modeKey = activeFilters.workMode.toLowerCase();
-      const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
-      if (!jMode.includes(modeKey)) return false;
-    }
+        const matchesInd = indTokens.length === 0 || indTokens.some(
+          (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
+        );
 
-    if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility)) return false;
-    if (activeFilters.canteen && !(job.canteen || (job as any).canteen)) return false;
-    if (activeFilters.accommodation && !(job.accommodation || (job as any).accommodation)) return false;
-    if (activeFilters.overtime && !(job.overtime || (job as any).overtime)) return false;
+        if (!matchesInd) return false;
+      }
 
-    return true;
-  });
+      // 4. MIDC Zone Filter Match (Token Matching)
+      if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
+        const rawZone = activeFilters.midcZone.toLowerCase();
+        const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
+        const jobLoc = (job.location || '').toLowerCase();
+        const jobDesc = (job.description || '').toLowerCase();
+
+        const matchesZone = zoneTokens.length === 0 || zoneTokens.some(
+          (t) => jobLoc.includes(t) || jobDesc.includes(t)
+        );
+
+        if (!matchesZone) return false;
+      }
+
+      // 5. Job Type Filter Match
+      if (activeFilters.jobType && activeFilters.jobType !== 'All Types') {
+        const typeKey = activeFilters.jobType.toLowerCase();
+        const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
+        if (!jType.includes(typeKey)) return false;
+      }
+
+      // 6. Work Mode Filter Match
+      if (activeFilters.workMode && activeFilters.workMode !== 'All Modes') {
+        const modeKey = activeFilters.workMode.toLowerCase();
+        const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
+        if (!jMode.includes(modeKey)) return false;
+      }
+
+      // 7. Amenities Filters
+      if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
+      if (activeFilters.canteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
+
+      return true;
+    });
+  }, [jobs, searchQuery, selectedCategory, activeFilters]);
 
   const getMatchingCountForDraft = useCallback(
     (draftFilters: FilterOptions) => {
       return jobs.filter((job) => {
-        const titleMatch = job.title && job.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const companyMatch = job.company && job.company.toLowerCase().includes(searchQuery.toLowerCase());
-        const locationMatch = job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase());
-        const queryMatch = titleMatch || companyMatch || locationMatch;
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const title = (job.title || '').toLowerCase();
+          const company = (job.company || '').toLowerCase();
+          const location = (job.location || '').toLowerCase();
+          const trade = (job.trade || '').toLowerCase();
+          const industry = (job.industry || '').toLowerCase();
+          const desc = (job.description || '').toLowerCase();
+          const matchesQuery = title.includes(q) || company.includes(q) || location.includes(q) || trade.includes(q) || industry.includes(q) || desc.includes(q);
+          if (!matchesQuery) return false;
+        }
 
         const catMatch =
           selectedCategory === 'All Jobs' ||
           (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
           (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-          (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-          (selectedCategory === 'HR Jobs' && (job.title.includes('HR') || job.industry.includes('HR'))) ||
-          (selectedCategory === 'Marketing Jobs' && (job.title.includes('Marketing') || job.industry.includes('Marketing'))) ||
-          (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
-          (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
+          (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase()));
 
-        if (!queryMatch || !catMatch) return false;
+        if (!catMatch) return false;
 
-        if (draftFilters.industry !== 'All Industries') {
-          const indKey = draftFilters.industry.toLowerCase();
+        if (draftFilters.industry && draftFilters.industry !== 'All Industries') {
+          const rawInd = draftFilters.industry.toLowerCase();
+          const indTokens = rawInd.split(/[\s&,/()]+/).filter((t) => t.length > 3);
           const jobInd = (job.industry || '').toLowerCase();
           const jobTitle = (job.title || '').toLowerCase();
-          if (!jobInd.includes(indKey) && !jobTitle.includes(indKey)) return false;
+          const matchesInd = indTokens.length === 0 || indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t));
+          if (!matchesInd) return false;
         }
 
-        if (draftFilters.midcZone !== 'All MIDC Zones') {
-          const zoneKey = draftFilters.midcZone.toLowerCase();
+        if (draftFilters.midcZone && draftFilters.midcZone !== 'All MIDC Zones') {
+          const rawZone = draftFilters.midcZone.toLowerCase();
+          const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
           const jobLoc = (job.location || '').toLowerCase();
-          if (!jobLoc.includes(zoneKey)) return false;
-        }
-
-        if (draftFilters.jobType !== 'All Types') {
-          const typeKey = draftFilters.jobType.toLowerCase();
-          const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
-          if (!jType.includes(typeKey)) return false;
-        }
-
-        if (draftFilters.workMode !== 'All Modes') {
-          const modeKey = draftFilters.workMode.toLowerCase();
-          const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
-          if (!jMode.includes(modeKey)) return false;
+          const matchesZone = zoneTokens.length === 0 || zoneTokens.some((t) => jobLoc.includes(t));
+          if (!matchesZone) return false;
         }
 
         return true;

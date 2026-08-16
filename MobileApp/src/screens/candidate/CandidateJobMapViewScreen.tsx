@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Search, X, SlidersHorizontal } from 'lucide-react-native';
 import { InteractiveJobMapView } from '../../components/map/InteractiveJobMapView';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
@@ -68,11 +69,11 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
     }
   }, []);
 
-  useEffect(() => {
-    if (initialJobs.length === 0) {
+  useFocusEffect(
+    useCallback(() => {
       fetchJobs();
-    }
-  }, [fetchJobs, initialJobs.length]);
+    }, [fetchJobs])
+  );
 
   const activeFilterCount = useMemo(() => {
     return [

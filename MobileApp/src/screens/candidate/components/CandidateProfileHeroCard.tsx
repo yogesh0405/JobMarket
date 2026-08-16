@@ -51,15 +51,17 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
 
         <View style={styles.blueHeroRow}>
           <TouchableOpacity activeOpacity={0.88} onPress={onPickPhoto} style={styles.heroAvatarWrapper}>
-            {profilePhotoUrl ? (
-              <Image source={{ uri: profilePhotoUrl }} style={styles.heroAvatarImage} />
-            ) : (
-              <View style={styles.heroAvatarFallback}>
-                <Text style={styles.heroAvatarText}>
-                  {(name || 'Y').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <View style={styles.heroAvatarFallback}>
+              <Text style={styles.heroAvatarText}>
+                {(name || user?.name || 'C').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            {profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim().length > 5 ? (
+              <Image
+                source={{ uri: profilePhotoUrl.trim() }}
+                style={[styles.heroAvatarImage, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+              />
+            ) : null}
             <View style={styles.heroCameraBadge}>
               <Camera size={10} color={COLORS.primary} />
             </View>

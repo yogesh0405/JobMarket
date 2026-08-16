@@ -19,7 +19,6 @@ import { ContactPage } from './features/static/ContactPage';
 import { useAuth } from './hooks/useAuth';
 import { apiFetch } from './utils/api';
 import { useStore } from './store/useStore';
-import { initialJobs } from './store/seedData';
 
 // Admin imports
 import { AdminLayout } from './modules/admin/layouts/AdminLayout';
@@ -67,14 +66,13 @@ export const App: React.FC = () => {
       })
       .then((json: any) => {
         const rawJobs = Array.isArray(json) ? json : (json.data || json.jobs || []);
-        if (Array.isArray(rawJobs) && rawJobs.length > 0) {
-          const dbIds = new Set(rawJobs.map((j: any) => j.id));
-          const merged = [...rawJobs, ...initialJobs.filter((j: any) => !dbIds.has(j.id))];
-          dispatch({ type: 'SET_JOBS', payload: merged });
+        if (Array.isArray(rawJobs)) {
+          dispatch({ type: 'SET_JOBS', payload: rawJobs });
         }
       })
       .catch((err: any) => {
         console.error('Error fetching database jobs:', err);
+        dispatch({ type: 'SET_JOBS', payload: [] });
       });
   }, []);
 

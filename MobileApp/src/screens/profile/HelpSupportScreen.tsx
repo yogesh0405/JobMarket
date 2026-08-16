@@ -6,6 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Linking,
+  BackHandler,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -13,6 +15,7 @@ import {
   Mail,
   Phone,
   MessageSquare,
+  Ticket,
 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
@@ -99,6 +102,24 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     fetchMyTickets();
   }, [fetchMyTickets]);
 
+  // Intercept back navigation when viewing TICKETS section
+  useEffect(() => {
+    const handleBack = () => {
+      if (selectedTicket) {
+        setSelectedTicket(null);
+        return true;
+      }
+      if (currentView === 'TICKETS') {
+        setCurrentView('MAIN');
+        return true;
+      }
+      return false;
+    };
+
+    const backSubscription = BackHandler.addEventListener('hardwareBackPress', handleBack);
+    return () => backSubscription.remove();
+  }, [currentView, selectedTicket]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchMyTickets();
@@ -148,101 +169,82 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
               text: m.message || m.text || '',
               attachment: m.attachment || m.attachment_url || undefined,
               createdAt: m.created_at
-                ? new Date(m.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-                : 'Just now',
+                ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'Recent',
             };
           });
           setChatMessages(mappedMsgs);
         }
       }
-    } catch (err) {
-      // Keep baseline
-    }
+    } catch (_) {}
   };
 
   const handlePickAttachment = async () => {
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Permission Required', 'Gallery access is needed to attach screenshots.');
-        return;
-      }
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
-        allowsEditing: false,
-        quality: 0.8,
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
         base64: true,
       });
 
-      if (!res.canceled && res.assets[0]) {
-        const asset = res.assets[0];
-        const fileName = asset.fileName || `attachment-${Date.now()}.jpg`;
-        const base64Data = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const filename = asset.fileName || `Attachment_${Date.now()}.jpg`;
         setSelectedAttachment({
           uri: asset.uri,
-          name: fileName,
-          base64: base64Data,
+          name: filename,
+          base64: asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : undefined,
         });
       }
-    } catch (e) {
-      // ignore cancel
-    }
+    } catch (_) {}
   };
 
   const handleSendReply = async () => {
-    if (!selectedTicket || (!replyMessage.trim() && !selectedAttachment)) return;
+    if (!replyMessage.trim() && !selectedAttachment) return;
+    if (!selectedTicket) return;
 
-    const textToSend = replyMessage.trim();
-    const attachmentObj = selectedAttachment;
-
-    setReplyMessage('');
-    setSelectedAttachment(null);
+    setSendingReply(true);
 
     const userMsg: TicketMessage = {
-      id: String(Date.now()),
+      id: `local-${Date.now()}`,
       sender: 'user',
       senderName: user?.name || 'You',
-      text: textToSend,
-      attachment: attachmentObj?.uri || attachmentObj?.base64,
-      createdAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      text: replyMessage.trim(),
+      attachment: selectedAttachment?.uri,
+      createdAt: 'Just now',
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
-    setSendingReply(true);
+    setReplyMessage('');
+    const sentAttachment = selectedAttachment;
+    setSelectedAttachment(null);
 
     try {
       await apiFetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
         body: JSON.stringify({
-          message: textToSend || 'Sent an attachment',
-          attachmentBase64: attachmentObj?.base64 || undefined,
-          attachmentName: attachmentObj?.name || undefined,
+          message: userMsg.text,
+          attachment: sentAttachment?.base64 || sentAttachment?.uri,
         }),
       });
-      fetchMyTickets();
-    } catch (err) {
-      // Handled in state
+    } catch (_) {
+      // Chat state updated locally
     } finally {
       setSendingReply(false);
     }
   };
 
   const handleCreateTicket = async () => {
-    setFormError(null);
-
     if (!fullName.trim() || !email.trim() || !subject.trim() || !description.trim()) {
-      setFormError('Please fill in all mandatory fields (Name, Email, Subject, Description).');
+      setFormError('Please complete all required fields (*)');
       return;
     }
-
-    if (phone.trim() && phone.trim().length !== 10) {
-      setFormError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-
+    setFormError(null);
     setIsSubmitting(true);
 
-    const generatedNum = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const generatedNum = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const newTicket: SupportTicket = {
       id: String(Date.now()),
       ticketNumber: generatedNum,
@@ -335,8 +337,8 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
       ) : (
         <>
           <Header
-            title="Help & Support Desk"
-            subtitle="Industrial workforce portal assistance & FAQs"
+            title="Help & Support Center"
+            subtitle="Knowledgebase, verified FAQs & support ticket desk"
             onBack={() => navigation.goBack()}
             hideRightActions={true}
           />
@@ -348,20 +350,14 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
           >
             {/* SUPPORT DESK BANNER CARD */}
             <View style={styles.supportDeskBannerCard}>
-              <View style={styles.bannerBadgeHeaderRow}>
+              <View style={styles.bannerTitleIconRow}>
                 <View style={styles.liveBadgeIconCircle}>
-                  <Headphones size={22} color={COLORS.primary} />
+                  <Headphones size={20} color={COLORS.primary} />
                 </View>
-
-                <View style={styles.onlineBadgePill}>
-                  <View style={styles.onlinePulseDot} />
-                  <Text style={styles.onlineBadgeText}>Helpdesk Active</Text>
-                </View>
+                <Text style={styles.bannerMainTitle}>How can we assist you today?</Text>
               </View>
-
-              <Text style={styles.bannerMainTitle}>How can we assist you today?</Text>
               <Text style={styles.bannerSubDescription}>
-                Search our knowledgebase below or raise a priority ticket to connect directly with our MIDC Waluj operations team.
+                Search our knowledgebase below or log a priority ticket to connect directly with our Chhatrapati Sambhajinagar desk.
               </Text>
 
               <TouchableOpacity
@@ -391,27 +387,35 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* HELPLINE & EMAIL CONTACT SECTION */}
             <View style={styles.contactDetailsSectionCard}>
-              <Text style={styles.contactSectionHeaderTitle}>Direct Contact Channels</Text>
-              <Text style={styles.contactSectionHeaderSub}>Reach out directly to our Chhatrapati Sambhajinagar desk</Text>
+              <Text style={styles.contactSectionHeaderTitle}>Direct Assistance Channels</Text>
+              <Text style={styles.contactSectionHeaderSub}>Reach out directly to our Chhatrapati Sambhajinagar operations desk</Text>
 
               <View style={styles.contactItemsGridRow}>
-                <View style={styles.contactChannelItemCard}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.contactChannelItemCard}
+                  onPress={() => Linking.openURL('tel:18002098800')}
+                >
                   <View style={styles.contactIconPillCircle}>
                     <Phone size={18} color={COLORS.primary} />
                   </View>
                   <Text style={styles.contactChannelLabelText}>Toll-Free Helpline</Text>
                   <Text style={styles.contactChannelValueText}>1800-209-8800</Text>
                   <Text style={styles.contactChannelTimeText}>Mon-Sat (9 AM - 7 PM)</Text>
-                </View>
+                </TouchableOpacity>
 
-                <View style={styles.contactChannelItemCard}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.contactChannelItemCard}
+                  onPress={() => Linking.openURL('mailto:support@jobmarket.com')}
+                >
                   <View style={styles.contactIconPillCircle}>
                     <Mail size={18} color={COLORS.primary} />
                   </View>
-                  <Text style={styles.contactChannelLabelText}>Email Support</Text>
+                  <Text style={styles.contactChannelLabelText}>Email Desk</Text>
                   <Text style={styles.contactChannelValueText}>support@jobmarket.com</Text>
                   <Text style={styles.contactChannelTimeText}>24/7 Inbox Response</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
@@ -455,45 +459,25 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     padding: 16,
   },
-  bannerBadgeHeaderRow: {
+  bannerTitleIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: 10,
   },
   liveBadgeIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onlineBadgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  onlinePulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#16A34A',
-  },
-  onlineBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#15803D',
-  },
   bannerMainTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 6,
   },
   bannerSubDescription: {
     fontSize: 12.5,
@@ -518,7 +502,7 @@ const styles = StyleSheet.create({
   sectionDividerSlate: {
     height: 1,
     backgroundColor: '#94A3B8',
-    marginVertical: 16,
+    marginVertical: 14,
   },
   contactDetailsSectionCard: {
     backgroundColor: '#FFFFFF',

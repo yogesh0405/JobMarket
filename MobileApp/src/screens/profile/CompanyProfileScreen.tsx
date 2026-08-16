@@ -351,7 +351,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
         )}
 
         {profileTab === 'PROFILE' && (
-          <View style={{ marginVertical: 16 }}>
+          <View style={{ marginTop: 16, marginBottom: 28 }}>
             <Button
               title="Save Company Profile"
               onPress={handleSaveProfile}
@@ -402,6 +402,7 @@ const styles = StyleSheet.create({
   },
   scrollContentBody: {
     padding: 16,
+    paddingBottom: 120,
   },
   logoutBtnRow: {
     flexDirection: 'row',

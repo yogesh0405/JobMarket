@@ -20,7 +20,7 @@ import {
   Star,
 } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
-import { INDUSTRIES, EDUCATIONS } from './CandidateHomeConstants';
+import { INDUSTRIES, EDUCATIONS, MIDC_ZONES } from './CandidateHomeConstants';
 
 interface CandidateHomeSearchCardProps {
   selectedIndustry: string;
@@ -43,6 +43,14 @@ export const CandidateHomeSearchCard: React.FC<CandidateHomeSearchCardProps> = (
 }) => {
   const [industryModalOpen, setIndustryModalOpen] = React.useState(false);
   const [educationModalOpen, setEducationModalOpen] = React.useState(false);
+  const [showMidcSuggestions, setShowMidcSuggestions] = React.useState(false);
+  const [isLocationFocused, setIsLocationFocused] = React.useState(false);
+
+  const matchingMidcZones = React.useMemo(() => {
+    const query = locationQuery.trim().toLowerCase();
+    if (!query) return MIDC_ZONES.slice(0, 4);
+    return MIDC_ZONES.filter((zone) => zone.toLowerCase().includes(query)).slice(0, 5);
+  }, [locationQuery]);
 
   return (
     <>
@@ -61,44 +69,99 @@ export const CandidateHomeSearchCard: React.FC<CandidateHomeSearchCardProps> = (
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.heroInputRow}
-          onPress={() => setIndustryModalOpen(true)}
+          onPress={() => {
+            setShowMidcSuggestions(false);
+            setIndustryModalOpen(true);
+          }}
         >
-          <Briefcase size={16} color={COLORS.primary} />
+          <Briefcase size={15} color={COLORS.primary} />
           <Text style={[styles.heroInputText, selectedIndustry !== 'Select Industry' && styles.heroInputTextActive]}>
             {selectedIndustry}
           </Text>
-          <ChevronDown size={16} color="#94A3B8" />
+          <ChevronDown size={15} color="#94A3B8" />
         </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.heroInputRow}
-          onPress={() => setEducationModalOpen(true)}
+          onPress={() => {
+            setShowMidcSuggestions(false);
+            setEducationModalOpen(true);
+          }}
         >
-          <GraduationCap size={16} color={COLORS.primary} />
+          <GraduationCap size={15} color={COLORS.primary} />
           <Text style={[styles.heroInputText, selectedEducation !== 'Select Education' && styles.heroInputTextActive]}>
             {selectedEducation}
           </Text>
-          <ChevronDown size={16} color="#94A3B8" />
+          <ChevronDown size={15} color="#94A3B8" />
         </TouchableOpacity>
 
-        <View style={styles.heroInputRow}>
-          <MapPin size={16} color={COLORS.primary} />
-          <TextInput
-            style={styles.heroTextInput}
-            placeholder="India (MIDC Zone or City)"
-            placeholderTextColor="#94A3B8"
-            value={locationQuery}
-            onChangeText={setLocationQuery}
-          />
+        <View style={{ position: 'relative', zIndex: 10 }}>
+          <View style={[styles.heroInputRow, isLocationFocused && styles.heroInputRowActive]}>
+            <MapPin size={15} color={COLORS.primary} />
+            <TextInput
+              style={styles.heroTextInput}
+              placeholder="Search MIDC Zone or City (e.g. Chakan, Waluj)"
+              placeholderTextColor="#94A3B8"
+              value={locationQuery}
+              onChangeText={(txt) => {
+                setLocationQuery(txt);
+                setShowMidcSuggestions(true);
+              }}
+              onFocus={() => {
+                setIsLocationFocused(true);
+                setShowMidcSuggestions(true);
+              }}
+              onBlur={() => setIsLocationFocused(false)}
+            />
+            {locationQuery.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setLocationQuery('');
+                  setShowMidcSuggestions(false);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={14} color="#94A3B8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* MIDC Autocomplete Suggestions Dropdown */}
+          {showMidcSuggestions && matchingMidcZones.length > 0 ? (
+            <View style={styles.midcSuggestionsBox}>
+              <View style={styles.midcHeaderRow}>
+                <MapPin size={11} color={COLORS.primary} />
+                <Text style={styles.midcHeaderTitle}>SUGGESTED MIDC CLUSTERS</Text>
+              </View>
+              {matchingMidcZones.map((zone) => (
+                <TouchableOpacity
+                  key={zone}
+                  style={styles.midcSuggestionItem}
+                  onPress={() => {
+                    setLocationQuery(zone);
+                    setShowMidcSuggestions(false);
+                  }}
+                >
+                  <MapPin size={13} color="#64748B" />
+                  <Text style={styles.midcSuggestionText} numberOfLines={1}>
+                    {zone}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
         </View>
 
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.searchJobsBtn}
-          onPress={onSearchSubmit}
+          onPress={() => {
+            setShowMidcSuggestions(false);
+            onSearchSubmit();
+          }}
         >
-          <Search size={15} color="#FFFFFF" />
+          <Search size={14} color="#FFFFFF" />
           <Text style={styles.searchJobsBtnText}>Search Jobs</Text>
         </TouchableOpacity>
       </View>
@@ -185,8 +248,8 @@ export const CandidateHomeSearchCard: React.FC<CandidateHomeSearchCardProps> = (
 const styles = StyleSheet.create({
   heroTextSection: {
     alignItems: 'center',
-    paddingTop: 4,
-    paddingBottom: 2,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   heroPillBadge: {
     flexDirection: 'row',
@@ -212,7 +275,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     lineHeight: 23,
     textAlign: 'center',
-    marginBottom: 3,
+    marginBottom: 4,
   },
   heroMainSubtitle: {
     fontSize: 12,
@@ -220,15 +283,15 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 16,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   heroSearchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#B4C3D4',
-    padding: 10,
-    gap: 8,
+    borderColor: '#CBD5E1',
+    padding: 8,
+    gap: 6,
   },
   heroInputRow: {
     flexDirection: 'row',
@@ -238,12 +301,66 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 6,
     paddingHorizontal: 10,
-    height: 38,
+    height: 34,
+    gap: 6,
+  },
+  heroInputRowActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  midcSuggestionsBox: {
+    position: 'absolute',
+    top: 38,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    elevation: 4,
+    zIndex: 999,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  midcHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 4,
+  },
+  midcHeaderTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  midcSuggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    backgroundColor: '#F8FAFC',
+    marginBottom: 3,
+  },
+  midcSuggestionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
   },
   heroInputText: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '600',
     color: '#94A3B8',
   },
@@ -254,7 +371,7 @@ const styles = StyleSheet.create({
   heroTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '600',
     color: '#0F172A',
     paddingVertical: 0,
@@ -265,12 +382,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: COLORS.primary,
-    height: 38,
+    height: 34,
     borderRadius: 6,
     marginTop: 2,
   },
   searchJobsBtnText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
   },

@@ -18,7 +18,6 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-  MapPin,
 } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { Job } from '../../../types';

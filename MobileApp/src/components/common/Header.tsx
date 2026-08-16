@@ -273,12 +273,14 @@ export const Header: React.FC<HeaderProps> = ({
               }}
             >
               <View style={styles.avatarRow}>
-                <View style={styles.avatarCircle}>
-                  {userPhotoUri ? (
-                    <Image source={{ uri: userPhotoUri }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.avatarLetter}>{initialLetter}</Text>
-                  )}
+                <View style={[styles.avatarCircle, { overflow: 'hidden', position: 'relative' }]}>
+                  <Text style={styles.avatarLetter}>{initialLetter}</Text>
+                  {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
+                    <Image
+                      source={{ uri: userPhotoUri.trim() }}
+                      style={[styles.avatarImage, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+                    />
+                  ) : null}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.profileNameText} numberOfLines={1}>{displayName}</Text>

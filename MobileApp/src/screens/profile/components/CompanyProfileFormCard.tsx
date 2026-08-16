@@ -16,9 +16,12 @@ import {
   MapPin,
   FileText,
   ShieldCheck,
+  UserCheck,
+  Briefcase,
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
+import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 import { COLORS } from '../../../constants/theme';
 
 interface CompanyProfileFormCardProps {
@@ -77,13 +80,7 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
       {/* Enterprise Avatar Header */}
       <View style={styles.logoEditContainer}>
         <TouchableOpacity activeOpacity={0.85} onPress={onPickLogo} style={styles.logoBorderWrapper}>
-          {logoUri ? (
-            <Image source={{ uri: logoUri }} style={styles.logoImg} />
-          ) : (
-            <View style={styles.logoFallbackBox}>
-              <Building2 size={36} color="#FFFFFF" />
-            </View>
-          )}
+          <CompanyLogoAvatar logoUrl={logoUri} companyName={companyName || 'Enterprise'} size={76} borderRadius={38} />
           <View style={styles.cameraIconBadge}>
             <Camera size={12} color="#FFFFFF" />
           </View>
@@ -118,6 +115,7 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
         value={industry}
         options={industryList}
         onSelect={setIndustry}
+        leftIcon={<Briefcase size={18} color="#64748B" />}
       />
 
       <SelectDropdown
@@ -125,6 +123,7 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
         value={midcZone}
         options={midcList}
         onSelect={setMidcZone}
+        leftIcon={<MapPin size={18} color="#64748B" />}
       />
 
       <View style={styles.sectionDividerSlate} />
@@ -136,6 +135,7 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
         placeholder="HR Manager / Factory Representative"
         value={contactPerson}
         onChangeText={setContactPerson}
+        leftIcon={<UserCheck size={18} color="#64748B" />}
       />
 
       <Input
@@ -173,18 +173,14 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
         leftIcon={<MapPin size={18} color="#64748B" />}
       />
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabelText}>Company Overview / Description</Text>
-        <TextInput
-          style={styles.textAreaField}
-          placeholder="Brief description of products manufactured and plant facilities..."
-          placeholderTextColor="#94A3B8"
-          multiline
-          numberOfLines={4}
-          value={description}
-          onChangeText={setDescription}
-        />
-      </View>
+      <Input
+        label="Company Overview / Description"
+        placeholder="Brief description of products manufactured and plant facilities..."
+        value={description}
+        onChangeText={setDescription}
+        multiline={true}
+        leftIcon={<FileText size={18} color="#64748B" />}
+      />
     </View>
   );
 };
@@ -228,16 +224,21 @@ const styles = StyleSheet.create({
   },
   cameraIconBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: -2,
+    right: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
   tapToChangeLogoText: {
     fontSize: 11,

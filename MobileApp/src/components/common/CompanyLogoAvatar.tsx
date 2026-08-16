@@ -38,38 +38,6 @@ export function CompanyLogoAvatar({
 }: Props) {
   const [imageError, setImageError] = useState(false);
 
-  const resolvedUrl = getCompanyLogoUrl(companyName, logoUrl || undefined);
-
-  const cleanUrl =
-    resolvedUrl &&
-    typeof resolvedUrl === 'string' &&
-    resolvedUrl.trim().length > 5 &&
-    !resolvedUrl.startsWith('data:image/svg+xml') &&
-    (
-      resolvedUrl.startsWith('http://') ||
-      resolvedUrl.startsWith('https://') ||
-      resolvedUrl.startsWith('file://') ||
-      resolvedUrl.startsWith('content://') ||
-      resolvedUrl.startsWith('ph://') ||
-      resolvedUrl.startsWith('data:image/') ||
-      resolvedUrl.startsWith('blob:')
-    )
-      ? resolvedUrl.trim()
-      : null;
-
-  if (cleanUrl && !imageError) {
-    return (
-      <View style={[styles.imageContainer, { width: size, height: size, borderRadius }, style]}>
-        <Image
-          source={{ uri: cleanUrl }}
-          style={styles.logoImage}
-          resizeMode="cover"
-          onError={() => setImageError(true)}
-        />
-      </View>
-    );
-  }
-
   const normName = companyName && companyName.trim() ? companyName.trim() : '';
   const initialLetters = normName
     ? normName
@@ -79,38 +47,59 @@ export function CompanyLogoAvatar({
         .slice(0, 2)
         .join('')
         .toUpperCase()
-    : '';
+    : 'JM';
 
-  if (initialLetters) {
-    const palette = BRAND_PALETTES[hashString(normName) % BRAND_PALETTES.length];
-    const fontSize = Math.max(11, Math.floor(size * (initialLetters.length > 1 ? 0.36 : 0.44)));
-    return (
-      <View
-        style={[
-          styles.initialBadge,
-          {
-            width: size,
-            height: size,
-            borderRadius,
-            backgroundColor: palette.bg,
-            borderColor: palette.border,
-          },
-          style,
-        ]}
-      >
-        <Text style={[styles.initialText, { fontSize, color: palette.text }]}>
-          {initialLetters}
-        </Text>
-      </View>
-    );
-  }
+  const palette = BRAND_PALETTES[hashString(normName || 'default') % BRAND_PALETTES.length];
+  const fontSize = Math.max(11, Math.floor(size * (initialLetters.length > 1 ? 0.36 : 0.44)));
 
-  // Fallback icon for un-named companies
-  const iconSize = Math.max(16, Math.floor(size * 0.5));
+  const rawUrl = getCompanyLogoUrl(normName, logoUrl || undefined);
+
+  const cleanUrl =
+    !imageError &&
+    rawUrl &&
+    typeof rawUrl === 'string' &&
+    rawUrl.trim().length > 5 &&
+    (
+      rawUrl.startsWith('http://') ||
+      rawUrl.startsWith('https://') ||
+      rawUrl.startsWith('data:image/') ||
+      rawUrl.startsWith('file://') ||
+      rawUrl.startsWith('content://')
+    )
+      ? rawUrl.trim()
+      : null;
 
   return (
-    <View style={[styles.defaultBadge, { width: size, height: size, borderRadius }, style]}>
-      <Building2 size={iconSize} color={COLORS.primary} strokeWidth={2.2} />
+    <View
+      style={[
+        styles.initialBadge,
+        {
+          width: size,
+          height: size,
+          borderRadius,
+          backgroundColor: palette.bg,
+          borderColor: palette.border,
+          position: 'relative',
+          overflow: 'hidden',
+        },
+        style,
+      ]}
+    >
+      <Text style={[styles.initialText, { fontSize, color: palette.text }]}>
+        {initialLetters}
+      </Text>
+
+      {cleanUrl ? (
+        <Image
+          source={{ uri: cleanUrl }}
+          style={[
+            StyleSheet.absoluteFill,
+            { width: '100%', height: '100%', borderRadius },
+          ]}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
+      ) : null}
     </View>
   );
 }

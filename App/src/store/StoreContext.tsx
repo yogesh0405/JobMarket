@@ -24,9 +24,8 @@ const getInitialState = (): StoreState => {
       if (!parsed.qualifications) parsed.qualifications = initialQualifications;
       
       const storedJobs = Array.isArray(parsed.jobs) ? parsed.jobs.filter(Boolean) : [];
-      const storedIds = new Set(storedJobs.map((j: any) => j.id));
-      const mergedJobs = [...storedJobs, ...initialJobs.filter(j => !storedIds.has(j.id))];
-      parsed.jobs = mergedJobs.length > 0 ? mergedJobs : initialJobs;
+      // Filter out leftover mock seed jobs (j1..j80)
+      parsed.jobs = storedJobs.filter((j: any) => j && j.id && !(typeof j.id === 'string' && /^j\d+$/.test(j.id)));
 
       return parsed;
     } catch (e) {

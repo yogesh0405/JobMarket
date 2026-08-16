@@ -15,10 +15,18 @@ import {
   Plus,
   Ticket,
   ChevronRight,
+  Briefcase,
+  HelpCircle,
+  FileText,
+  AlertCircle,
+  MessageSquare,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../../constants/theme';
 import { Input } from '../../../components/common/Input';
+import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { Button } from '../../../components/common/Button';
 import { ErrorBanner } from '../../../components/common/ErrorBanner';
 import { KeyboardAwareScrollView } from '../../../components/common/KeyboardAwareScrollView';
@@ -86,7 +94,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   onOpenTicketChat,
 }) => {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       {/* Top Clean Header Banner */}
       <View style={styles.ticketsHeaderBannerWhite}>
         <View style={styles.headerTitleRowNav}>
@@ -108,14 +116,14 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
           <View style={styles.statColDividerDark} />
           <View style={styles.statColItem}>
             <Text style={styles.statValDarkText}>
-              {myTickets.filter((t) => t.status !== 'RESOLVED').length || 1}
+              {myTickets.filter((t) => t.status !== 'RESOLVED' && t.status !== 'CLOSED').length}
             </Text>
             <Text style={styles.statLabelMutedTextDark}>Active Tickets</Text>
           </View>
           <View style={styles.statColDividerDark} />
           <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>24/7</Text>
-            <Text style={styles.statLabelMutedTextDark}>Helpdesk Live</Text>
+            <Text style={styles.statValDarkText}>&lt;2 Hrs</Text>
+            <Text style={styles.statLabelMutedTextDark}>Avg SLA</Text>
           </View>
         </View>
 
@@ -168,9 +176,9 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
         {ticketTab === 'CREATE' ? (
           <View style={styles.createTicketCardContainer}>
             <View style={{ marginBottom: 2 }}>
-              <Text style={styles.formMainHeaderTitle}>Submit Support Ticket</Text>
+              <Text style={styles.formMainHeaderTitle}>Log Technical Support Ticket</Text>
               <Text style={styles.formMainHeaderSub}>
-                Fill in your inquiry details below. Our technical support engineering team will respond within 2 hours.
+                Provide your details below. Our Chhatrapati Sambhajinagar desk will inspect and respond shortly.
               </Text>
             </View>
 
@@ -196,7 +204,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
             />
 
             <Input
-              label="Mobile Number (Optional)"
+              label="Mobile Phone Number (Optional)"
               placeholder="10-digit mobile number"
               keyboardType="phone-pad"
               value={phone}
@@ -208,51 +216,70 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
 
             <Text style={styles.formSectionCategoryTitle}>INQUIRY DETAILS</Text>
 
-            <Text style={styles.selectCategoryLabelText}>Issue Category *</Text>
-            <View style={styles.categoryRadioWrap}>
-              {categoryOptions.map((catOption) => {
-                const isSelected = category === catOption;
-                return (
-                  <TouchableOpacity
-                    key={catOption}
-                    activeOpacity={0.8}
-                    style={[styles.categoryOptionChip, isSelected && styles.categoryOptionChipSelected]}
-                    onPress={() => setCategory(catOption)}
-                  >
-                    <View style={[styles.radioCircleOuter, isSelected && styles.radioCircleOuterSelected]}>
-                      {isSelected ? <View style={styles.radioDotInner} /> : null}
-                    </View>
-                    <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
-                      {catOption}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <SelectDropdown
+              label="Inquiry Category *"
+              value={category}
+              options={categoryOptions}
+              onSelect={setCategory}
+              leftIcon={<Briefcase size={18} color="#64748B" />}
+            />
+
+            {/* Priority Selector */}
+            <View style={styles.prioritySelectorGroup}>
+              <Text style={styles.inputLabelText}>Ticket Priority Level</Text>
+              <View style={styles.priorityPillRow}>
+                {(['low', 'medium', 'high'] as const).map((pLevel) => {
+                  const isSelected = priority === pLevel;
+                  const labelCap = pLevel.toUpperCase();
+                  return (
+                    <TouchableOpacity
+                      key={pLevel}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.priorityPillBtn,
+                        isSelected && pLevel === 'low' && styles.priorityPillLowActive,
+                        isSelected && pLevel === 'medium' && styles.priorityPillMediumActive,
+                        isSelected && pLevel === 'high' && styles.priorityPillHighActive,
+                      ]}
+                      onPress={() => setPriority(pLevel)}
+                    >
+                      <Text
+                        style={[
+                          styles.priorityPillText,
+                          isSelected && styles.priorityPillTextActive,
+                        ]}
+                      >
+                        {labelCap} PRIORITY
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             <Input
               label="Subject / Topic Title *"
-              placeholder="Brief title summarizing your issue"
+              placeholder="Brief summary of your query or technical issue"
               value={subject}
               onChangeText={setSubject}
+              leftIcon={<HelpCircle size={18} color="#64748B" />}
             />
 
-            <View style={styles.textAreaInputGroup}>
-              <Text style={styles.textAreaLabelText}>Detailed Explanation *</Text>
-              <Input
-                placeholder="Describe your issue or request in detail..."
-                multiline
-                numberOfLines={4}
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
+            <Input
+              label="Detailed Explanation *"
+              placeholder="Describe your request, steps to reproduce, or issue details..."
+              multiline={true}
+              value={description}
+              onChangeText={setDescription}
+              leftIcon={<FileText size={18} color="#64748B" />}
+            />
 
             <Button
               title="Submit Support Ticket"
               onPress={onCreateTicket}
               loading={isSubmitting}
-              style={{ marginTop: 8 }}
+              icon={<MessageSquare size={16} color="#FFFFFF" />}
+              style={{ marginTop: 8, borderRadius: 6, height: 46 }}
             />
           </View>
         ) : (
@@ -263,38 +290,64 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
             {myTickets.length === 0 ? (
               <View style={styles.emptyTicketsStateCard}>
                 <Ticket size={36} color="#94A3B8" />
-                <Text style={styles.emptyTicketsTitleText}>No Tickets Submitted Yet</Text>
+                <Text style={styles.emptyTicketsTitleText}>No Support Tickets Found</Text>
                 <Text style={styles.emptyTicketsSubText}>
-                  You haven't logged any technical support tickets. Tap 'Create Ticket' above to reach our helpdesk.
+                  You haven't submitted any technical tickets yet. Tap 'Create Ticket' above to log an inquiry.
                 </Text>
               </View>
             ) : (
-              myTickets.map((t) => (
-                <TouchableOpacity
-                  key={t.id}
-                  activeOpacity={0.85}
-                  style={styles.ticketListItemCard}
-                  onPress={() => onOpenTicketChat(t)}
-                >
-                  <View style={styles.ticketCardHeaderRow}>
-                    <Text style={styles.ticketCardNumberText}>{t.ticketNumber}</Text>
-                    <View style={[styles.ticketCardStatusPill, t.status === 'RESOLVED' ? styles.statusPillResolved : styles.statusPillOpen]}>
-                      <Text style={styles.ticketCardStatusText}>{t.status}</Text>
+              myTickets.map((t) => {
+                const isResolved = t.status === 'RESOLVED' || t.status === 'CLOSED';
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    activeOpacity={0.88}
+                    style={styles.ticketListItemCard}
+                    onPress={() => onOpenTicketChat(t)}
+                  >
+                    <View style={styles.ticketCardHeaderRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ticket size={14} color={COLORS.primary} />
+                        <Text style={styles.ticketCardNumberText}>{t.ticketNumber}</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.ticketCardStatusPill,
+                          isResolved ? styles.statusPillResolved : styles.statusPillOpen,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.ticketCardStatusText,
+                            isResolved ? styles.statusTextResolved : styles.statusTextOpen,
+                          ]}
+                        >
+                          {t.status}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  <Text style={styles.ticketCardSubjectText} numberOfLines={1}>{t.subject}</Text>
-                  <Text style={styles.ticketCardDescSnippetText} numberOfLines={2}>{t.description}</Text>
+                    <Text style={styles.ticketCardSubjectText} numberOfLines={1}>
+                      {t.subject}
+                    </Text>
+                    <Text style={styles.ticketCardDescSnippetText} numberOfLines={2}>
+                      {t.description}
+                    </Text>
 
-                  <View style={styles.ticketCardFooterRow}>
-                    <Text style={styles.ticketCardMetaText}>Category: {t.category}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={styles.ticketCardMetaText}>{t.createdAt}</Text>
-                      <ChevronRight size={14} color="#94A3B8" />
+                    <View style={styles.ticketCardFooterRow}>
+                      <View style={styles.categoryPillTag}>
+                        <Text style={styles.categoryPillTagText}>{t.category}</Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Clock size={12} color="#94A3B8" />
+                        <Text style={styles.ticketCardMetaText}>{t.createdAt}</Text>
+                        <ChevronRight size={14} color={COLORS.primary} style={{ marginLeft: 4 }} />
+                      </View>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))
+                  </TouchableOpacity>
+                );
+              })
             )}
           </ScrollView>
         )}
@@ -409,72 +462,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
     marginVertical: 4,
   },
-  selectCategoryLabelText: {
+  inputLabelText: {
     fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
+    marginBottom: 6,
   },
-  categoryRadioWrap: {
-    gap: 6,
+  prioritySelectorGroup: {
+    marginVertical: 2,
   },
-  categoryOptionChip: {
+  priorityPillRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 8,
   },
-  categoryOptionChipSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  radioCircleOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#94A3B8',
+  priorityPillBtn: {
+    flex: 1,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  radioCircleOuterSelected: {
-    borderColor: COLORS.primary,
+  priorityPillLowActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
   },
-  radioDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
+  priorityPillMediumActive: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
-  categoryChipText: {
-    fontSize: 12.5,
-    color: '#334155',
-    fontWeight: '500',
+  priorityPillHighActive: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#EF4444',
   },
-  categoryChipTextSelected: {
-    color: COLORS.primary,
+  priorityPillText: {
+    fontSize: 11,
     fontWeight: '700',
+    color: '#64748B',
   },
-  textAreaInputGroup: {
-    gap: 6,
-  },
-  textAreaLabelText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#334155',
+  priorityPillTextActive: {
+    color: '#0F172A',
+    fontWeight: '800',
   },
   emptyTicketsStateCard: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     gap: 8,
     marginTop: 10,
   },
@@ -492,7 +531,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 14,
     gap: 6,
   },
@@ -508,19 +547,28 @@ const styles = StyleSheet.create({
   },
   ticketCardStatusPill: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   statusPillOpen: {
     backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   statusPillResolved: {
     backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   ticketCardStatusText: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#92400E',
+  },
+  statusTextOpen: {
+    color: '#B45309',
+  },
+  statusTextResolved: {
+    color: '#15803D',
   },
   ticketCardSubjectText: {
     fontSize: 14,
@@ -540,6 +588,17 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+  },
+  categoryPillTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryPillTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
   },
   ticketCardMetaText: {
     fontSize: 11,

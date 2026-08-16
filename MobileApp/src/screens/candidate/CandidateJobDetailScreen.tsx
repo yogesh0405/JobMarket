@@ -55,7 +55,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   };
 
   const rawParamId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
-  const initialJobId = extractJobIdFromUrl(rawParamId);
+  const passedJob = route?.params?.job as Job | undefined;
+  const initialJobId = extractJobIdFromUrl(rawParamId) || passedJob?.id;
 
   const findSeedJob = (targetId?: string): Job | undefined => {
     if (!targetId) return undefined;
@@ -64,24 +65,43 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       (j) =>
         j.id.toLowerCase() === cleanId ||
         j.id.toLowerCase() === `j${cleanId}` ||
-        cleanId === `j${j.id.toLowerCase()}` ||
-        cleanId.includes(j.id.toLowerCase()) ||
-        j.title.toLowerCase().includes(cleanId)
+        cleanId === `j${j.id.toLowerCase()}`
     );
   };
 
   const [activeJobId, setActiveJobId] = useState<string | undefined>(initialJobId);
-  const passedJob = route?.params?.job as Job | undefined;
   const { user } = useAuth();
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
-  const initialFallbackJob = passedJob || findSeedJob(activeJobId);
+  const initialFallbackJob = passedJob || findSeedJob(initialJobId);
   const [job, setJob] = useState<Job | null>(initialFallbackJob || null);
   const [loading, setLoading] = useState(!initialFallbackJob);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [appliedItem, setAppliedItem] = useState<any>(null);
+
+  // Synchronize state whenever screen receives new navigation parameters
+  useEffect(() => {
+    const pId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
+    const pJob = route?.params?.job as Job | undefined;
+    const resolvedId = extractJobIdFromUrl(pId) || pJob?.id;
+
+    if (pJob) {
+      setJob(pJob);
+      setActiveJobId(pJob.id);
+      setLoading(false);
+    } else if (resolvedId) {
+      setActiveJobId(resolvedId);
+      const seed = findSeedJob(resolvedId);
+      if (seed) {
+        setJob(seed);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    }
+  }, [route?.params]);
 
   useEffect(() => {
     if (!isValidId(activeJobId)) return;
@@ -184,7 +204,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     }
   };
 
-  const handleApply = async () => {
+  const handleApply = () => {
     const targetJob = job || passedJob;
     const jobId = targetJob?.id || activeJobId;
     if (!jobId) return;
@@ -206,50 +226,22 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       return;
     }
 
-    Alert.alert(
-      'Submit Application',
-      `Are you sure you want to apply for "${targetJob?.title || 'this job'}" at ${targetJob?.company || 'Company'}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit Application',
-          onPress: async () => {
-            try {
-              const res = await candidateApi.applyForJob(jobId);
-              if (res.success || res.data) {
-                const newAppliedObj = {
-                  id: res.data?.id || `applied-${Date.now()}`,
-                  job_id: jobId,
-                  jobId: jobId,
-                  job: targetJob,
-                  status: 'APPLIED',
-                  created_at: new Date().toISOString(),
-                };
-                setHasApplied(true);
-                setAppliedItem(newAppliedObj);
-                (appliedJobsStore as any).addAppliedJob?.(newAppliedObj);
-                showToast('Application submitted successfully!', 'success');
-              } else {
-                showToast(res.message || 'Failed to submit application', 'error');
-              }
-            } catch (err: any) {
-              const localObj = {
-                id: `applied-${Date.now()}`,
-                job_id: jobId,
-                jobId: jobId,
-                job: targetJob,
-                status: 'APPLIED',
-                created_at: new Date().toISOString(),
-              };
-              setHasApplied(true);
-              setAppliedItem(localObj);
-              (appliedJobsStore as any).addAppliedJob?.(localObj);
-              showToast('Application submitted!', 'success');
-            }
-          },
-        },
-      ]
-    );
+    navigation.navigate('CandidateApplyConfirm', {
+      job: targetJob,
+      onAppliedSuccess: (appliedJob: Job) => {
+        const newAppliedObj = {
+          id: `applied-${Date.now()}`,
+          job_id: jobId,
+          jobId: jobId,
+          job: appliedJob || targetJob,
+          status: 'APPLIED',
+          created_at: new Date().toISOString(),
+        };
+        setHasApplied(true);
+        setAppliedItem(newAppliedObj);
+        (appliedJobsStore as any).addAppliedJob?.(newAppliedObj);
+      },
+    });
   };
 
   const handleShareJob = async () => {
