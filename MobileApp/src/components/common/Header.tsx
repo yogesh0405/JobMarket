@@ -152,9 +152,11 @@ export const Header: React.FC<HeaderProps> = ({
     return Math.round((points / total) * 100);
   }, [user]);
 
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <>
-      <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.content}>
           {/* Back propagation arrow */}
           {isBackAvailable ? (

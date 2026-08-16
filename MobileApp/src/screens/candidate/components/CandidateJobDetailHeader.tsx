@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
 import {
   ChevronLeft,
   Share2,
@@ -37,6 +37,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   onToggleSave,
 }) => {
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const logoUrl =
     job.companyLogo ||
     (job as any).company_logo ||
@@ -47,7 +48,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   return (
     <View style={styles.profileHeaderMasterCard}>
       {/* Primary Blue Top Banner Section */}
-      <View style={[styles.topHeaderBandPrimary, { paddingTop: Math.max(insets.top + 6, 12), paddingBottom: 16 }]}>
+      <View style={[styles.topHeaderBandPrimary, { paddingTop: topInset + (Platform.OS === 'android' ? 10 : 8), paddingBottom: 16 }]}>
         {/* Navigation Action Buttons Row */}
         <View style={styles.headerBandTopActions}>
           <TouchableOpacity

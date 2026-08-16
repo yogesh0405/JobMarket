@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   Switch,
+  StatusBar,
 } from 'react-native';
 import {
   ArrowLeft,
@@ -259,10 +260,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <View style={styles.container}>
       {/* Top Header Banner */}
-      <View style={styles.headerBannerWhite}>
+      <View style={[styles.headerBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}

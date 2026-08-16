@@ -10,7 +10,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, User, Paperclip, Send, Headphones, CheckCheck } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { useAuth } from '../../../hooks/useAuth';
@@ -50,6 +53,9 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
     (user as any)?.companyLogo ||
     (user as any)?.company_logo;
 
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   if (!ticket) return null;
 
   const canSend = (replyMessage.trim().length > 0 || !!selectedAttachment) && !sendingReply;
@@ -58,7 +64,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.modalRootContainer}>
         {/* Instagram DM Style Header Bar */}
-        <View style={styles.chatHeaderBar}>
+        <View style={[styles.chatHeaderBar, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
           <TouchableOpacity onPress={onClose} style={styles.chatCloseBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <X size={22} color="#0F172A" />
           </TouchableOpacity>

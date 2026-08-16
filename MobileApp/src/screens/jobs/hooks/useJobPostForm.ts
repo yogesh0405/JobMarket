@@ -695,5 +695,6 @@ export const useJobPostForm = (navigation: any, route: any) => {
     error,
     setError,
     handleSubmitJob,
+    isSubmittedRef,
   };
 };

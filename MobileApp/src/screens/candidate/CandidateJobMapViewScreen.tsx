@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Search, X, SlidersHorizontal } from 'lucide-react-native';
@@ -170,12 +171,14 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
     [jobs, searchQuery]
   );
 
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Top Search Bar Header (100% Exact Match to Grid & List View Search Bar) */}
-      <View style={[styles.searchHeaderBar, { paddingTop: Math.max(insets.top + 4, 10) }]}>
+      <View style={[styles.searchHeaderBar, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
         <View style={[styles.inputSearchBox, isInputFocused && styles.inputSearchBoxActive]}>
           <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} />
           <TextInput

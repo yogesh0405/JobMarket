@@ -189,23 +189,17 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topHeaderBar}>
-        <TouchableOpacity
-          onPress={() => {
-            if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
-              navigation.goBack();
-            } else if (navigation) {
-              navigation.navigate('CandidateMain');
-            }
-          }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{ padding: 4 }}
-        >
-          <ArrowLeft size={20} color="#0F172A" />
-        </TouchableOpacity>
-        <Text style={styles.topHeaderTitle}>My Profile</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <Header
+        title="My Profile"
+        showBack={true}
+        onBack={() => {
+          if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
+            navigation.goBack();
+          } else if (navigation) {
+            navigation.navigate('CandidateMain');
+          }
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContentBody}

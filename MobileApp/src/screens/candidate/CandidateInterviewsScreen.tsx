@@ -9,6 +9,7 @@ import {
   Linking,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from 'react-native';
 import {
   Calendar,
@@ -193,9 +194,10 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const displayList = activeTab === 'upcoming' ? upcoming : past;
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
 
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 0) }]}>
+    <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Header */}

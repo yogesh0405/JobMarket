@@ -1,10 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Platform,
+  StatusBar,
+  Alert,
 } from 'react-native';
 import { Check, ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +33,37 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const form = useJobPostForm(navigation, route);
+
+  // Intercept back navigation & show user confirmation modal dialog
+  useEffect(() => {
+    if (!navigation || typeof navigation.addListener !== 'function') return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      // Allow navigation if form was successfully submitted
+      if (form.isSubmittedRef && form.isSubmittedRef.current) {
+        return;
+      }
+
+      // Prevent default exit action
+      e.preventDefault();
+
+      // Prompt confirmation alert dialog
+      Alert.alert(
+        'Discard Job Post Draft?',
+        'Are you sure you want to go back? Any unsubmitted job details will be lost.',
+        [
+          { text: 'Stay & Continue', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Discard & Exit',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, form.isSubmittedRef]);
 
   const STEPS = [
     { id: 1, title: 'Basic Details' },
@@ -100,8 +134,10 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
       {/* Stepper Header Bar */}
       <View style={styles.stepperHeaderCard}>
         <View style={styles.stepTrack}>

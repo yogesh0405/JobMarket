@@ -6,6 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import {
   ArrowLeft,
@@ -23,7 +25,7 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../../constants/theme';
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
@@ -93,10 +95,13 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   onRefresh,
   onOpenTicketChat,
 }) => {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       {/* Top Clean Header Banner */}
-      <View style={styles.ticketsHeaderBannerWhite}>
+      <View style={[styles.ticketsHeaderBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
         <View style={styles.headerTitleRowNav}>
           <TouchableOpacity
             onPress={onBackToMain}

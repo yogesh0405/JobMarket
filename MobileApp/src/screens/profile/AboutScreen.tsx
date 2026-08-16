@@ -7,7 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
 import { WhyChooseJobMarket } from '../../components/profile/WhyChooseJobMarket';
 import {
@@ -33,10 +35,13 @@ interface Props {
 }
 
 export const AboutScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   return (
     <View style={styles.container}>
       {/* Top Header Banner with Back & Stats (Pure White / Slate - No Blue Color) */}
-      <View style={styles.headerBannerContainer}>
+      <View style={[styles.headerBannerContainer, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
