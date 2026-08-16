@@ -43,11 +43,8 @@ const allowedOriginsList = (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.t
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || env.NODE_ENV === 'development' || allowedOriginsList.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS policy'));
-    }
+    // Allow requests from all origins (localhost, onrender.com, vercel, mobile app) without CORS blocking
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
