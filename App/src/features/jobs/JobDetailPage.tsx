@@ -322,7 +322,6 @@ export const JobDetailPage: React.FC = () => {
                         <span style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>{job.company || 'Industrial Partner'}</span>
                         <ExternalLink size={12} color="#93C5FD" />
                       </Link>
-                      <CheckCircle2 size={14} color="#38BDF8" strokeWidth={2.2} />
                     </div>
 
                     <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25' }}>{job.title}</h1>
@@ -358,29 +357,30 @@ export const JobDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Segmented Tab Navigation Control */}
+          {/* Segmented Tab Navigation Control (Proportional Flex & Single Line Fit) */}
           <div style={{ display: 'flex', backgroundColor: '#F1F5F9', padding: '4px', gap: '4px', borderTop: '1px solid #CBD5E1' }}>
             <button
               onClick={() => setActiveTab('job_overview')}
               style={{
-                flex: 1,
-                padding: '8px 12px',
+                flex: '0 0 38%',
+                padding: '8px 6px',
                 border: 'none',
                 borderRadius: '6px',
                 backgroundColor: activeTab === 'job_overview' ? '#FFFFFF' : 'transparent',
                 color: activeTab === 'job_overview' ? '#2563EB' : '#64748B',
                 fontWeight: '700',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '5px',
+                whiteSpace: 'nowrap',
                 boxShadow: activeTab === 'job_overview' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Briefcase size={14} color={activeTab === 'job_overview' ? '#2563EB' : '#64748B'} />
+              <Briefcase size={14} color={activeTab === 'job_overview' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
               <span>Job Overview</span>
             </button>
 
@@ -388,23 +388,24 @@ export const JobDetailPage: React.FC = () => {
               onClick={() => setActiveTab('company_info')}
               style={{
                 flex: 1,
-                padding: '8px 12px',
+                padding: '8px 6px',
                 border: 'none',
                 borderRadius: '6px',
                 backgroundColor: activeTab === 'company_info' ? '#FFFFFF' : 'transparent',
                 color: activeTab === 'company_info' ? '#2563EB' : '#64748B',
                 fontWeight: '700',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '5px',
+                whiteSpace: 'nowrap',
                 boxShadow: activeTab === 'company_info' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Award size={14} color={activeTab === 'company_info' ? '#2563EB' : '#64748B'} />
+              <Award size={14} color={activeTab === 'company_info' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
               <span>Requirements & Perks</span>
             </button>
           </div>
