@@ -18,6 +18,7 @@ import unifiedNotificationRoutes from './modules/notifications/routes/notificati
 import { errorHandler } from './middlewares/errorHandler';
 
 import publicSettingsRouter from './modules/admin/routes/publicSettingsRoutes';
+import companyRoutes from './modules/companies/routes/companyRoutes';
 import { JobRepository } from './modules/jobs/repositories/JobRepository';
 
 const app = express();
@@ -112,6 +113,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/v1/companies', companyRoutes);
+app.use('/api/companies', companyRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/admin/support', adminSupportRouter);
 app.use('/api/v1/home', homeAdvertisementRouter);

@@ -576,19 +576,25 @@ export const JobDetailPage: React.FC = () => {
                       size={44} 
                       borderRadius="4px"
                     />
-                    <span style={{
-                      fontSize: '15px',
-                      fontWeight: '700',
-                      color: '#1E293B',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}>
+                    <Link
+                      to={`/company/${encodeURIComponent(job.companyId || (job as any).employer_id || (job as any).employerId || job.company)}`}
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: '700',
+                        color: '#1E293B',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        textDecoration: 'none'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#1E293B')}
+                    >
                       {job.company}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="#2563eb" stroke="#ffffff" strokeWidth="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                       </svg>
-                    </span>
+                    </Link>
                   </div>
 
                   {/* Work Mode & Job Type & Hiring Method Badges */}

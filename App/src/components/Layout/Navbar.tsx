@@ -77,10 +77,10 @@ export const Navbar: React.FC = () => {
       <div className="navbar-inner">
         <div className="navbar-header-row">
           <Link to="/" className="navbar-brand">
-            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '32px', height: '32px', objectFit: 'contain', marginRight: '6px' }} />
+            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '40px', height: '40px', objectFit: 'contain', marginRight: '8px' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t.brand}</span>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '-2px', fontWeight: 'bold' }}>{t.tagline}</span>
+              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '22px', lineHeight: 1.1 }}>{t.brand}</span>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '0', fontWeight: 'bold' }}>{t.tagline}</span>
             </div>
           </Link>
 
@@ -146,12 +146,6 @@ export const Navbar: React.FC = () => {
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                         </svg>
                         Company Profile
-                      </Link>
-                      <Link to="/post-job" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        {t.postJob}
                       </Link>
                     </>
                   )}
@@ -252,6 +246,14 @@ export const Navbar: React.FC = () => {
                   </Link>
 
 
+                  {/* Companies */}
+                  <Link to="/companies" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/><path d="M1 21h22"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M9 15h1"/><path d="M14 7h1"/><path d="M14 11h1"/><path d="M14 15h1"/>
+                    </svg>
+                    Companies
+                  </Link>
+
                   {/* About Us */}
                   <Link to="/about" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
@@ -295,13 +297,8 @@ export const Navbar: React.FC = () => {
             <>
               <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
               <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
+              <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
             </>
-          )}
-          {(!currentUser || currentUser.role !== 'candidate') && (
-            <Link to="/post-job" className={`nav-link ${isActive('/post-job') ? 'active' : ''}`}>{t.postJob}</Link>
-          )}
-          {currentUser && currentUser.role !== 'employer' && (
-            <Link to="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>{t.dashboard}</Link>
           )}
         </div>
 
@@ -316,7 +313,7 @@ export const Navbar: React.FC = () => {
               style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center' }}
               title="Dashboard Overview"
             >
-              <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
+              <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
                 {currentUser.profilePictureUrl ? (
                   <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -360,14 +357,7 @@ export const Navbar: React.FC = () => {
                         {t.savedJobs}
                       </button>
                     </>
-                  ) : (
-                    <button className="dropdown-item mobile-hide-nav" onClick={() => navigate('/post-job')}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                      </svg>
-                      {t.postJob}
-                    </button>
-                  )}
+                  ) : null}
                   <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=security')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />

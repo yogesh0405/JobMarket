@@ -16,6 +16,8 @@ import { PublicProfilePage } from './features/profile/PublicProfilePage';
 import { ResumePage } from './features/profile/ResumePage';
 import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
+import { CompanyProfilePage } from './features/company/CompanyProfilePage';
+import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
 import { useAuth } from './hooks/useAuth';
 import { apiFetch } from './utils/api';
 import { useStore } from './store/useStore';
@@ -122,6 +124,9 @@ export const App: React.FC = () => {
           <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/companies" element={<CompaniesDirectoryPage />} />
+          <Route path="/company/:companyId" element={<CompanyProfilePage />} />
+          <Route path="/companies/:companyId" element={<CompanyProfilePage />} />
         </Route>
 
         {/* 4. Fallback Catch-All */}

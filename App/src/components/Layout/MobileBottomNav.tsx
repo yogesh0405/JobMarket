@@ -12,10 +12,21 @@ export const MobileBottomNav: React.FC = () => {
 
   const isEmployer = currentUser?.role === 'employer';
 
+  // Do not render bottom navigation bar on dedicated candidate profile & post-job pages
+  if (
+    location.pathname.startsWith('/profile/') ||
+    location.pathname.startsWith('/candidate/') ||
+    location.pathname.startsWith('/p/') ||
+    location.pathname.startsWith('/post-job') ||
+    location.pathname.startsWith('/edit-job')
+  ) {
+    return null;
+  }
+
   const isTabActive = (targetPath: string) => {
     if (targetPath.includes('?tab=')) {
       const searchParams = new URLSearchParams(location.search);
-      const defaultTab = isEmployer ? 'candidates' : 'overview';
+      const defaultTab = isEmployer ? 'candidates' : 'profile';
       const currentTab = searchParams.get('tab') || defaultTab;
       const targetTab = new URLSearchParams(targetPath.split('?')[1]).get('tab');
       
@@ -105,7 +116,21 @@ export const MobileBottomNav: React.FC = () => {
             <span>{t.findJobs}</span>
           </NavLink>
 
-          {/* 3. Applied Jobs (if logged in) */}
+          {/* 3. Companies */}
+          <NavLink to="/companies" className={() => `mobile-bottom-item ${isTabActive('/companies') ? 'active' : ''}`}>
+            <div className="mobile-bottom-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                <path d="M9 22v-4h6v4"/>
+                <path d="M8 6h.01"/><path d="M16 6h.01"/>
+                <path d="M8 10h.01"/><path d="M16 10h.01"/>
+                <path d="M8 14h.01"/><path d="M16 14h.01"/>
+              </svg>
+            </div>
+            <span>Companies</span>
+          </NavLink>
+
+          {/* 4. Applied Jobs (if logged in) */}
           {currentUser && (
             <NavLink to="/dashboard?tab=applied" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}>
               <div className="mobile-bottom-icon-wrap">
@@ -116,18 +141,6 @@ export const MobileBottomNav: React.FC = () => {
                 </svg>
               </div>
               <span>Applied</span>
-            </NavLink>
-          )}
-
-          {/* 4. Saved Jobs (if logged in) */}
-          {currentUser && (
-            <NavLink to="/dashboard?tab=saved" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=saved') ? 'active' : ''}`}>
-              <div className="mobile-bottom-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </div>
-              <span>Saved</span>
             </NavLink>
           )}
         </>

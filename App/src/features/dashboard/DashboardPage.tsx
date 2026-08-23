@@ -14,6 +14,8 @@ import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo'
 import { JobCard } from '../../components/job/JobCard';
 import { Job } from '../../types';
 import { ProfilePage } from '../profile/ProfilePage';
+import { CandidateEditProfileModal } from '../profile/CandidateEditProfileModal';
+import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
 import { ResumePage } from '../profile/ResumePage';
 import { JobPostPage } from '../jobs/JobPostPage';
 import { AboutPage } from '../static/AboutPage';
@@ -51,11 +53,17 @@ import {
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentUser, updateUser, syncUser } = useAuth();
+  const { currentUser, updateUser, syncUser, logout } = useAuth();
   const { getAppliedJobs, getSavedJobs, getJobsByEmployer, deleteJob, updateApplicantStatus, fetchEmployerJobs, fetchCandidateAppliedJobs, fetchCandidateSavedJobs, toggleSaveJob } = useJobs();
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
+
+  const handleLogout = () => {
+    logout();
+    showToast('Logged out successfully', 'success');
+    navigate('/');
+  };
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -72,7 +80,7 @@ export const DashboardPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const rawTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab') || (currentUser?.role === 'employer' ? 'profile' : 'profile');
   const tab = rawTab === 'candidate' ? 'candidates' : rawTab;
 
   const [isLoading, setIsLoading] = useState(!currentUser);
@@ -313,14 +321,14 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <div className="dashboard-profile-title">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <h3>{currentUser.companyName || currentUser.name}</h3>
+                      <h3>{currentUser.companyName || currentUser.name || 'User Profile'}</h3>
                       {(isEmployer || currentUser.aadhaarVerified) && (
                         <svg viewBox="0 0 24 24" fill="currentColor" className="verified-badge">
                           <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                         </svg>
                       )}
                     </div>
-                    <p className="profile-handle">@{ (currentUser.companyName || currentUser.name).toLowerCase().replace(/\s+/g, '') }</p>
+                    <p className="profile-handle">@{ (currentUser.companyName || currentUser.name || 'user').toLowerCase().replace(/\s+/g, '') }</p>
                   </div>
                 </div>
 
@@ -358,17 +366,28 @@ export const DashboardPage: React.FC = () => {
             </div>
             
             <nav className="dashboard-nav">
-              <button
-                className={`dashboard-nav-item tab-overview ${tab === 'overview' ? 'active' : ''}`}
-                onClick={() => setTab('overview')}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-                <span className="desktop-only-text">Overview</span>
-                <span className="mobile-only-text">Dashboard</span>
-              </button>
+              {isEmployer ? (
+                <button
+                  className={`dashboard-nav-item tab-profile ${tab === 'profile' ? 'active' : ''}`}
+                  onClick={() => setTab('profile')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Company Profile
+                </button>
+              ) : (
+                <button
+                  className={`dashboard-nav-item tab-profile ${tab === 'profile' ? 'active' : ''}`}
+                  onClick={() => setTab('profile')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <span className="desktop-only-text">My Profile</span>
+                  <span className="mobile-only-text">About</span>
+                </button>
+              )}
 
               {isEmployer && (
                 <>
@@ -502,6 +521,17 @@ export const DashboardPage: React.FC = () => {
                 </svg>
                 Help & Support
               </button>
+              <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
+              <button
+                className="dashboard-nav-item danger"
+                onClick={handleLogout}
+                style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '10px' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                {t.logout || 'Log Out'}
+              </button>
             </nav>
           </aside>
 
@@ -550,177 +580,20 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
     </div>
-      {editModalOpen && createPortal(
-        <div className="modal-backdrop" onClick={() => setEditModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Edit Profile</h3>
-              <button className="modal-close" onClick={() => setEditModalOpen(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <form id="edit-profile-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {/* Image Upload section */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-3)' }}>
-                  <div 
-                    style={{ 
-                      width: '80px', 
-                      height: '80px', 
-                      borderRadius: '50%', 
-                      background: 'var(--gradient-accent)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      position: 'relative', 
-                      cursor: 'pointer',
-                      overflow: 'hidden'
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {currentUser.profilePictureUrl ? (
-                      <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'white' }}>
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                      </svg>
-                    )}
-                    {isUploading && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                          <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click to upload profile photo</span>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    accept="image/*" 
-                    style={{ display: 'none' }} 
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">{currentUser.role === 'employer' ? 'Contact Person / Full Name' : 'Full Name'}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-
-                {currentUser.role === 'employer' && (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">Company Name</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">GST Number (Optional)</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={gstNumber}
-                        maxLength={15}
-                        placeholder="15-digit GSTIN"
-                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Headline</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={headline}
-                    placeholder="e.g. ITI Welder Apprentice"
-                    onChange={(e) => setHeadline(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Location</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={location}
-                    placeholder="e.g. Chakan MIDC, Pune"
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    maxLength={10}
-                    placeholder="10-digit mobile number"
-                    value={phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      if (val.length <= 10) setPhone(val);
-                    }}
-                  />
-                </div>
-
-                {currentUser.role === 'candidate' && (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">Trade Specialty</label>
-                      <select className="form-select" value={tradeSpecialization} onChange={(e) => setTradeSpecialization(e.target.value)}>
-                        <option value="">Select Specialty</option>
-                        {tradesList.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Preferred Shift</label>
-                      <select className="form-select" value={preferredShift} onChange={(e) => setPreferredShift(e.target.value)}>
-                        <option value="">Any Shift</option>
-                        <option value="Day Shift (8 AM - 5 PM)">Day Shift (8 AM - 5 PM)</option>
-                        <option value="Night Shift (8 PM - 5 AM)">Night Shift (8 PM - 5 AM)</option>
-                        <option value="Rotational (Shift A / B)">Rotational (Shift A / B)</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-2" style={{ gap: 'var(--space-4)', margin: 'var(--space-2) 0' }}>
-                      <label className="form-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)' }}>
-                        <input type="checkbox" checked={requiresBus} onChange={(e) => setRequiresBus(e.target.checked)} />
-                        Requires Bus Transport
-                      </label>
-                      <label className="form-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)' }}>
-                        <input type="checkbox" checked={requiresAccommodation} onChange={(e) => setRequiresAccommodation(e.target.checked)} />
-                        Requires Hostel Stay
-                      </label>
-                    </div>
-                  </>
-                )}
-
-                <button type="submit" className="btn btn-primary" style={{ marginTop: 'var(--space-2)' }} disabled={isSaving}>
-                  {isSaving ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                      <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                        <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                      </svg>
-                      Saving...
-                    </span>
-                  ) : 'Save Changes'}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* Edit Profile Modal (Candidate 4-Step Stepper or Employer Profile Modal) */}
+      {currentUser.role !== 'employer' ? (
+        <CandidateEditProfileModal 
+          isOpen={editModalOpen} 
+          onClose={() => setEditModalOpen(false)} 
+          onSuccess={() => syncUser()} 
+        />
+      ) : (
+        <EditCompanyProfileModal 
+          isOpen={editModalOpen} 
+          onClose={() => setEditModalOpen(false)} 
+          company={currentUser} 
+          onSaveSuccess={() => syncUser()} 
+        />
       )}
     </>
   );
@@ -779,7 +652,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{(currentUser.skills || []).length}</h3><p>Skills / Trades</p></div>
+              <div className="stat-info"><h3>{(Array.isArray(currentUser.skills) ? currentUser.skills : (typeof currentUser.skills === 'string' ? safeJsonParse(currentUser.skills, []) : [])).length}</h3><p>Skills / Trades</p></div>
             </div>
           </div>
 
@@ -1166,12 +1039,14 @@ const CandidatesTab: React.FC<{
   showToast: any;
   handleOpenDetails: (applicant: any, jobId: string, jobTitle: string) => void;
 }> = ({ showToast, handleOpenDetails }) => {
+  const navigate = useNavigate();
   const { getAllCandidates } = useJobs();
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTrade, setSelectedTrade] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -1206,19 +1081,29 @@ const CandidatesTab: React.FC<{
       ? c.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
       : [];
 
-    const matchesSearch = searchQuery === '' || 
-      (c.name && String(c.name).toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (c.headline && String(c.headline).toLowerCase().includes(searchQuery.toLowerCase())) ||
-      skillsList.some((s: string) => String(s).toLowerCase().includes(searchQuery.toLowerCase()));
+    const query = searchQuery.trim().toLowerCase();
 
-    const matchesTrade = selectedTrade === '' || c.tradeSpecialization === selectedTrade;
-    const matchesLocation = selectedLocation === '' || (c.location && String(c.location).toLowerCase().includes(selectedLocation.toLowerCase()));
+    const matchesSearch = query === '' || 
+      (c.name && String(c.name).toLowerCase().includes(query)) ||
+      (c.headline && String(c.headline).toLowerCase().includes(query)) ||
+      (c.tradeSpecialization && String(c.tradeSpecialization).toLowerCase().includes(query)) ||
+      (c.location && String(c.location).toLowerCase().includes(query)) ||
+      (c.city && String(c.city).toLowerCase().includes(query)) ||
+      (c.midc_zone && String(c.midc_zone).toLowerCase().includes(query)) ||
+      skillsList.some((s: string) => String(s).toLowerCase().includes(query));
+
+    const matchesTrade = selectedTrade === '' || c.tradeSpecialization === selectedTrade || c.headline === selectedTrade;
+    const matchesLocation = selectedLocation === '' || 
+      (c.location && String(c.location).toLowerCase().includes(selectedLocation.toLowerCase())) ||
+      (c.city && String(c.city).toLowerCase().includes(selectedLocation.toLowerCase()));
 
     return matchesSearch && matchesTrade && matchesLocation;
   });
 
-  const uniqueTrades = Array.from(new Set((candidates || []).map(c => c?.tradeSpecialization).filter(Boolean)));
-  const uniqueLocations = Array.from(new Set((candidates || []).map(c => c?.location).filter(Boolean)));
+  const uniqueTrades = Array.from(new Set((candidates || []).map(c => c?.tradeSpecialization || c?.headline).filter(Boolean)));
+  const uniqueLocations = Array.from(new Set((candidates || []).map(c => c?.location || c?.city).filter(Boolean)));
+
+  const hasActiveFilters = searchQuery !== '' || selectedTrade !== '' || selectedLocation !== '';
 
   return (
     <div style={{ width: '100%', boxSizing: 'border-box' }}>
@@ -1229,69 +1114,135 @@ const CandidatesTab: React.FC<{
         </p>
       </div>
 
-      {/* Filter Card */}
+      {/* Search & Filter Bar (Matching Mobile App Screenshot) */}
       <div style={{ 
         background: '#ffffff', 
-        padding: '12px', 
-        borderRadius: '6px', 
-        border: '1.5px solid #cbd5e1', 
-        marginBottom: '16px',
-        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)',
+        padding: '8px 12px', 
+        borderRadius: '12px', 
+        border: showFilterPanel || hasActiveFilters ? '1.5px solid #2563EB' : '1.5px solid #cbd5e1', 
+        marginBottom: '10px',
+        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
         gap: '10px',
         width: '100%',
         boxSizing: 'border-box'
       }}>
-        <div style={{ position: 'relative', width: '100%' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" style={{ position: 'absolute', left: '8px', pointerEvents: 'none', zIndex: 2 }}>
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input 
             type="text" 
-            placeholder="Search by worker name, role, skills..."
-            className="form-input"
+            placeholder="Search by location (e.g. MIDC)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%', paddingLeft: '34px', fontSize: '13px', height: '38px', borderRadius: '4px' }}
+            style={{ width: '100%', paddingLeft: '34px', fontSize: '13px', height: '38px', borderRadius: '8px', border: 'none', outline: 'none', background: 'transparent', color: '#0f172a' }}
           />
           {searchQuery && (
             <button 
               type="button" 
               onClick={() => setSearchQuery('')}
-              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', padding: '2px' }}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', padding: '2px' }}
             >
               ✕
             </button>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-          <select 
-            className="form-select"
-            value={selectedTrade}
-            onChange={(e) => setSelectedTrade(e.target.value)}
-            style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '4px' }}
-          >
-            <option value="">All Specializations</option>
-            {uniqueTrades.map(trade => (
-              <option key={trade} value={trade}>{trade}</option>
-            ))}
-          </select>
+        <div style={{ width: '1px', height: '24px', backgroundColor: '#CBD5E1' }} />
 
-          <select 
-            className="form-select"
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '4px' }}
-          >
-            <option value="">All Locations</option>
-            {uniqueLocations.map(loc => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
+        {/* Filter Sliders Action Icon Toggle */}
+        <div 
+          onClick={() => setShowFilterPanel(prev => !prev)}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            cursor: 'pointer', 
+            padding: '4px',
+            color: showFilterPanel || hasActiveFilters ? '#2563EB' : '#64748B',
+            position: 'relative'
+          }} 
+          title="Toggle Filters"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          {hasActiveFilters && (
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#2563EB', position: 'absolute', top: '2px', right: '2px' }} />
+          )}
         </div>
       </div>
+
+      {/* Expandable Filter Drawer Panel */}
+      {showFilterPanel && (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1.5px solid #CBD5E1',
+          borderRadius: '10px',
+          padding: '12px',
+          marginBottom: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)'
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '4px' }}>Trade Specialization</label>
+              <select 
+                className="form-select"
+                value={selectedTrade}
+                onChange={(e) => setSelectedTrade(e.target.value)}
+                style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '6px', border: '1px solid #CBD5E1' }}
+              >
+                <option value="">All Specializations</option>
+                {uniqueTrades.map(trade => (
+                  <option key={trade} value={trade}>{trade}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '4px' }}>Location / MIDC Zone</label>
+              <select 
+                className="form-select"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '6px', border: '1px solid #CBD5E1' }}
+              >
+                <option value="">All Locations</option>
+                {uniqueLocations.map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {hasActiveFilters && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTrade('');
+                  setSelectedLocation('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563EB',
+                  fontWeight: '700',
+                  fontSize: '11.5px',
+                  cursor: 'pointer',
+                  padding: '2px 6px'
+                }}
+              >
+                Reset Filters ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px 16px', background: '#ffffff', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
@@ -1302,7 +1253,7 @@ const CandidatesTab: React.FC<{
           <p style={{ margin: 0, fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Fetching verified industrial workers and ITI technicians</p>
         </div>
       ) : filteredCandidates.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
+        <div className="candidates-grid-responsive">
           {filteredCandidates.map(c => {
             const skillsList: string[] = Array.isArray(c.skills)
               ? c.skills
@@ -1310,102 +1261,177 @@ const CandidatesTab: React.FC<{
               ? c.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
               : [];
 
-            const expItem = Array.isArray(c.experience) && c.experience.length > 0 ? c.experience[0] : null;
-            const expText = expItem ? (expItem.duration || expItem.years || '1') : (typeof c.experience === 'string' ? c.experience : null);
+            const initials = getInitials(c.name || 'Candidate');
 
             return (
               <div 
                 key={c.id || c.email} 
-                onClick={() => handleOpenDetails({ ...c, userId: c.id }, '', '')}
                 style={{ 
-                  background: '#ffffff', 
-                  border: '1.5px solid #cbd5e1', 
-                  borderRadius: '6px', 
-                  padding: '14px', 
-                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)', 
+                  backgroundColor: '#FFFFFF', 
+                  border: '1.5px solid #CBD5E1', 
+                  borderRadius: '12px', 
+                  padding: '12px 8px 10px 8px', 
                   display: 'flex', 
                   flexDirection: 'column', 
-                  gap: '10px', 
+                  alignItems: 'center', 
+                  textAlign: 'center',
+                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                  position: 'relative',
                   width: '100%', 
+                  minWidth: 0,
+                  maxWidth: '100%',
                   boxSizing: 'border-box',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                  overflow: 'hidden'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '46px', height: '46px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                    {c.profilePictureUrl ? (
-                      <img src={c.profilePictureUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontSize: '18px', fontWeight: '800', color: '#344BFD' }}>
-                        {(c.name || 'C').charAt(0).toUpperCase()}
+                {/* Circular Candidate Avatar */}
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1E3A8A',
+                  color: '#FFFFFF',
+                  border: '2px solid #FFFFFF',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 8px auto',
+                  flexShrink: 0
+                }}>
+                  {c.profilePictureUrl ? (
+                    <img src={c.profilePictureUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.5px' }}>
+                      {initials}
+                    </span>
+                  )}
+                </div>
+
+                {/* Candidate Name */}
+                <h4 style={{
+                  margin: '0 0 2px 0',
+                  fontSize: '13.5px',
+                  fontWeight: '700',
+                  color: '#0F172A',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  width: '100%',
+                  textAlign: 'center',
+                  lineHeight: '1.2'
+                }}>
+                  {c.name}
+                </h4>
+
+                {/* Role / Specialization */}
+                <div style={{
+                  fontSize: '11.5px',
+                  fontWeight: '700',
+                  color: '#2563EB',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  width: '100%',
+                  textAlign: 'center',
+                  marginBottom: '3px',
+                  lineHeight: '1.2'
+                }}>
+                  {c.headline || c.tradeSpecialization || 'Industrial Worker'}
+                </div>
+
+                {/* Location Address */}
+                <div style={{
+                  fontSize: '10.5px',
+                  color: '#64748B',
+                  fontWeight: '500',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  width: '100%',
+                  textAlign: 'center',
+                  marginBottom: '8px',
+                  lineHeight: '1.2'
+                }}>
+                  {c.location || 'Waluj MIDC, Chhatrapati Sambhajinagar'}
+                </div>
+
+                {/* Skill Badges Row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  width: '100%',
+                  marginBottom: '10px',
+                  minHeight: '22px',
+                  overflow: 'hidden'
+                }}>
+                  {skillsList.length > 0 ? (
+                    <>
+                      <span style={{
+                        backgroundColor: '#F1F5F9',
+                        color: '#334155',
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '75%'
+                      }}>
+                        {skillsList[0]}
                       </span>
-                    )}
-                  </div>
-                  
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</h4>
-                      {c.aadhaarVerified && (
-                        <span style={{ padding: '2px 8px', borderRadius: '9999px', background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', fontSize: '10.5px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            <path d="m9 12 2 2 4-4"/>
-                          </svg>
-                          <span>Verified</span>
+                      {skillsList.length > 1 && (
+                        <span style={{
+                          backgroundColor: '#EFF6FF',
+                          color: '#2563EB',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          flexShrink: 0
+                        }}>
+                          +{skillsList.length - 1}
                         </span>
                       )}
-                    </div>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.headline || c.tradeSpecialization || 'Industrial Specialist'}
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', padding: '8px 10px', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span style={{ color: '#334155', fontWeight: '600' }}>{c.location || 'Maharashtra, India'}</span>
-                  </div>
-
-                  {c.preferredShift && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <span>{c.preferredShift} Shift</span>
-                    </div>
-                  )}
-
-                  {expText && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                        <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                      </svg>
-                      <span>({expText} yrs)</span>
-                    </div>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '500' }}>No skills listed</span>
                   )}
                 </div>
 
-                {skillsList.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                    {skillsList.slice(0, 4).map((skill: string, index: number) => (
-                      <span key={index} style={{ padding: '3px 8px', borderRadius: '4px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11px', fontWeight: '600' }}>
-                        {skill}
-                      </span>
-                    ))}
-                    {skillsList.length > 4 && (
-                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', padding: '2px 4px' }}>
-                        +{skillsList.length - 4} more
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* View Profile Action Button */}
+                <button
+                  onClick={() => {
+                    const targetId = c.id || c.userId || c._id;
+                    if (targetId) {
+                      navigate(`/profile/${targetId}`);
+                    } else {
+                      handleOpenDetails({ ...c, userId: c.id }, '', '');
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '32px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #2563EB',
+                    borderRadius: '6px',
+                    color: '#2563EB',
+                    fontWeight: '700',
+                    fontSize: '11.5px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    marginTop: 'auto'
+                  }}
+                >
+                  View Profile
+                </button>
               </div>
             );
           })}
@@ -1842,24 +1868,6 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
             </div>
           )}
 
-          {/* Candidate Discovery Feature Highlight */}
-          <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', borderRadius: '6px', border: '1px solid #312e81', padding: '16px 18px', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', boxShadow: '0 6px 18px rgba(30, 27, 75, 0.22)' }}>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <UserCheck size={13} style={{ color: '#a5b4fc' }} />
-                <span>Verified Candidate Pool</span>
-              </div>
-              <h4 style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: '800', color: '#ffffff' }}>Directly Contact Factory & Industrial Specialists</h4>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#e0e7ff', fontWeight: '500' }}>Browse fitters, welders, CNC operators, and electricians in your MIDC zone.</p>
-            </div>
-            <button 
-              onClick={() => setTab('candidates')}
-              style={{ background: '#ffffff', color: '#312e81', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '12.5px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <span>Browse Candidates</span>
-              <ArrowRight size={14} />
-            </button>
-          </div>
 
           {/* Recent Applicants Feed */}
           <div className="activity-card">
@@ -2342,16 +2350,16 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
           <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ flex: '1 1 180px', position: 'relative' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', zIndex: 2 }}>
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input input-has-icon-left"
                   placeholder="Search candidate name, email, job..."
                   value={appSearchQuery}
                   onChange={(e) => setAppSearchQuery(e.target.value)}
-                  style={{ width: '100%', paddingLeft: '30px', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  style={{ width: '100%', paddingLeft: '38px', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 />
               </div>
               <div style={{ flex: '1 1 160px' }}>

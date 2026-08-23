@@ -4,11 +4,12 @@ import 'leaflet/dist/leaflet.css';
 import { MapPin, Target, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface JobLocationMapPreviewProps {
-  latitude: number;
-  longitude: number;
+  latitude?: number | null;
+  longitude?: number | null;
   locationName?: string;
   height?: string;
   readOnly?: boolean;
+  onLocationSelect?: (lat: number, lng: number) => void;
 }
 
 export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
@@ -16,11 +17,15 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
   longitude,
   locationName = 'Job Location',
   height = '280px',
-  readOnly = true
+  readOnly = false,
+  onLocationSelect
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+
+  const safeLat = (typeof latitude === 'number' && !isNaN(latitude) && latitude !== 0) ? latitude : 19.8762;
+  const safeLng = (typeof longitude === 'number' && !isNaN(longitude) && longitude !== 0) ? longitude : 75.3433;
 
   // Custom Pin Marker Icon (Clean Vector SVG)
   const createPinIcon = () => {
@@ -43,9 +48,9 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      // Initialize map instance centered at [latitude, longitude]
+      // Initialize map instance centered at [safeLat, safeLng]
       const map = L.map(mapContainerRef.current, {
-        center: [latitude, longitude],
+        center: [safeLat, safeLng],
         zoom: 15,
         zoomControl: false,
         scrollWheelZoom: true,
@@ -60,16 +65,36 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         maxZoom: 19
       }).addTo(map);
 
-      // Add fixed, non-changeable marker pin
-      const marker = L.marker([latitude, longitude], {
+      // Add marker pin (draggable if not readOnly or onLocationSelect provided)
+      const isDraggable = !readOnly || !!onLocationSelect;
+      const marker = L.marker([safeLat, safeLng], {
         icon: createPinIcon(),
-        draggable: false // Read-only marked location
+        draggable: isDraggable
       }).addTo(map);
 
+      if (isDraggable) {
+        marker.on('dragend', () => {
+          const latLng = marker.getLatLng();
+          if (onLocationSelect) {
+            onLocationSelect(latLng.lat, latLng.lng);
+          }
+        });
+
+        map.on('click', (e: L.LeafletMouseEvent) => {
+          marker.setLatLng(e.latlng);
+          if (onLocationSelect) {
+            onLocationSelect(e.latlng.lat, e.latlng.lng);
+          }
+        });
+      }
+
       marker.bindPopup(`
-        <div style="font-family: inherit; padding: 4px; text-align: center;">
-          <strong style="color: #0f172a; font-size: 13px;">Location</strong>
-          <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">${locationName}</div>
+        <div style="font-family: inherit; padding: 6px 8px; text-align: center; min-width: 140px;">
+          <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 2px;">Pinned Location</strong>
+          <div style="font-size: 12px; color: #334155; font-weight: 600; margin-bottom: 4px;">${locationName}</div>
+          <div style="font-size: 11px; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 3px 6px; borderRadius: 4px; display: inline-block;">
+            📍 ${safeLat.toFixed(6)}, ${safeLng.toFixed(6)}
+          </div>
         </div>
       `);
 
@@ -90,19 +115,22 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
     } else {
       // Update existing map and marker position smoothly
       const map = mapInstanceRef.current;
-      map.setView([latitude, longitude], map.getZoom());
+      map.setView([safeLat, safeLng], map.getZoom());
       if (markerRef.current) {
-        markerRef.current.setLatLng([latitude, longitude]);
+        markerRef.current.setLatLng([safeLat, safeLng]);
         markerRef.current.getPopup()?.setContent(`
-          <div style="font-family: inherit; padding: 4px; text-align: center;">
-            <strong style="color: #0f172a; font-size: 13px;">Location</strong>
-            <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">${locationName}</div>
+          <div style="font-family: inherit; padding: 6px 8px; text-align: center; min-width: 140px;">
+            <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 2px;">Pinned Location</strong>
+            <div style="font-size: 12px; color: #334155; font-weight: 600; margin-bottom: 4px;">${locationName}</div>
+            <div style="font-size: 11px; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 3px 6px; borderRadius: 4px; display: inline-block;">
+              📍 ${safeLat.toFixed(6)}, ${safeLng.toFixed(6)}
+            </div>
           </div>
         `);
       }
       map.invalidateSize();
     }
-  }, [latitude, longitude, locationName]);
+  }, [safeLat, safeLng, locationName, readOnly, onLocationSelect]);
 
   const handleRecenter = () => {
     if (mapInstanceRef.current) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Job } from '../../types';
 import { formatSalary, timeAgo, shareContent } from '../../utils/helpers';
 import { useJobs } from '../../hooks/useJobs';
@@ -22,6 +22,8 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
   const { showToast } = useToast();
   const { state } = useStore();
   const t = useTranslation(state.language);
+
+  if (!job || !job.id) return null;
 
   const [localSavedOverride, setLocalSavedOverride] = React.useState<boolean | null>(null);
   const storeSaved = isJobSaved(job.id);
@@ -358,16 +360,23 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-            <div style={{
-              fontSize: '12.5px',
-              fontWeight: '700',
-              color: '#1E293B',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
+            <Link
+              to={`/company/${encodeURIComponent((job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company)}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontSize: '12.5px',
+                fontWeight: '700',
+                color: '#1E293B',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#1E293B')}
+            >
               {job.company}
-            </div>
+            </Link>
             <div style={{ fontSize: '11px', color: '#0284C7', fontWeight: '600' }}>
               Posted by {job.company}
             </div>

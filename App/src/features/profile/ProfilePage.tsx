@@ -2,19 +2,43 @@ import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useJobs } from '../../hooks/useJobs';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
 import { getInitials, formatDate, capitalize, shareContent } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
+import { CandidateEditProfileModal } from './CandidateEditProfileModal';
+import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+import { 
+  Camera, 
+  Mail, 
+  Edit3, 
+  CheckCircle, 
+  Building2, 
+  MapPin, 
+  Phone, 
+  Globe, 
+  ShieldCheck, 
+  Briefcase, 
+  PlusCircle, 
+  Share2, 
+  FileText, 
+  Users,
+  BarChart3
+} from 'lucide-react';
 import { Resume } from '../../types';
+
+const TRADES_LIST = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, updateUser, deleteResume, syncUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
+  const { getJobsByEmployer } = useJobs();
   const t = useTranslation(state.language);
 
   const handleShare = () => {
@@ -29,12 +53,61 @@ export const ProfilePage: React.FC = () => {
     );
   };
 
+  // Modals & Uploading States
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [previewResume, setPreviewResume] = useState<Resume | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Skill Modal & States
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
+
+  // Experience & Education Modal States
+  const [expModalOpen, setExpModalOpen] = useState(false);
+  const [eduModalOpen, setEduModalOpen] = useState(false);
+  const [expTitle, setExpTitle] = useState('');
+  const [expCompany, setExpCompany] = useState('');
+  const [expDuration, setExpDuration] = useState('');
+  const [expDesc, setExpDesc] = useState('');
+  const [eduDegree, setEduDegree] = useState('');
+  const [eduInstitution, setEduInstitution] = useState('');
+  const [eduYear, setEduYear] = useState('');
+
+  // About Modal States
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [tempHeadline, setTempHeadline] = useState('');
+  const [tempLocation, setTempLocation] = useState('');
+  const [tempPhone, setTempPhone] = useState('');
+
+  // Preferences Modal States
+  const [prefModalOpen, setPrefModalOpen] = useState(false);
+  const [tempTrade, setTempTrade] = useState('');
+  const [customTrade, setCustomTrade] = useState('');
+  const [tempShift, setTempShift] = useState('');
+  const [tempBus, setTempBus] = useState(false);
+  const [tempAccommodation, setTempAccommodation] = useState(false);
+
+  // Profile Form Edit Fields
+  const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [headline, setHeadline] = useState('');
+  const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState('');
+  const [skills, setSkills] = useState('');
+  const [tradeSpecialization, setTradeSpecialization] = useState('');
+  const [preferredShift, setPreferredShift] = useState('');
+  const [requiresBus, setRequiresBus] = useState(false);
+  const [requiresAccommodation, setRequiresAccommodation] = useState(false);
+  const [customTradeEdit, setCustomTradeEdit] = useState('');
+  const [activeEditPart, setActiveEditPart] = useState<1 | 2 | 3>(1);
+
+  // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -208,9 +281,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
-  const [newSkill, setNewSkill] = useState('');
-
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -258,20 +328,6 @@ export const ProfilePage: React.FC = () => {
       setIsSaving(false);
     }
   };
-
-  const [expModalOpen, setExpModalOpen] = useState(false);
-  const [eduModalOpen, setEduModalOpen] = useState(false);
-
-  // States for adding new experience
-  const [expTitle, setExpTitle] = useState('');
-  const [expCompany, setExpCompany] = useState('');
-  const [expDuration, setExpDuration] = useState('');
-  const [expDesc, setExpDesc] = useState('');
-
-  // States for adding new education
-  const [eduDegree, setEduDegree] = useState('');
-  const [eduInstitution, setEduInstitution] = useState('');
-  const [eduYear, setEduYear] = useState('');
 
   const handleAddExperience = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -407,12 +463,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const [aboutModalOpen, setAboutModalOpen] = useState(false);
-  const [tempName, setTempName] = useState('');
-  const [tempHeadline, setTempHeadline] = useState('');
-  const [tempLocation, setTempLocation] = useState('');
-  const [tempPhone, setTempPhone] = useState('');
-
   const openAboutModal = () => {
     if (!currentUser) return;
     setTempName(currentUser.name);
@@ -454,17 +504,10 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const [prefModalOpen, setPrefModalOpen] = useState(false);
-  const [tempTrade, setTempTrade] = useState('');
-  const [customTrade, setCustomTrade] = useState('');
-  const [tempShift, setTempShift] = useState('');
-  const [tempBus, setTempBus] = useState(false);
-  const [tempAccommodation, setTempAccommodation] = useState(false);
-
   const openPrefModal = () => {
     if (!currentUser) return;
     const currentSpecialty = currentUser.tradeSpecialization || '';
-    if (currentSpecialty && !tradesList.includes(currentSpecialty)) {
+    if (currentSpecialty && !TRADES_LIST.includes(currentSpecialty)) {
       setTempTrade('Other');
       setCustomTrade(currentSpecialty);
     } else {
@@ -508,22 +551,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const [name, setName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
-  const [headline, setHeadline] = useState('');
-  const [location, setLocation] = useState('');
-  const [phone, setPhone] = useState('');
-  const [skills, setSkills] = useState('');
-
-  // Industrial fields
-  const [tradeSpecialization, setTradeSpecialization] = useState('');
-  const [preferredShift, setPreferredShift] = useState('');
-  const [requiresBus, setRequiresBus] = useState(false);
-  const [requiresAccommodation, setRequiresAccommodation] = useState(false);
-  const [customTradeEdit, setCustomTradeEdit] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
   if (!currentUser) {
     return (
       <div className="container" style={{ padding: '100px 0', textAlign: 'center' }}>
@@ -542,7 +569,7 @@ export const ProfilePage: React.FC = () => {
   }
 
   const openEditModal = () => {
-    setName(currentUser.name);
+    setName(currentUser.name || '');
     setCompanyName(currentUser.companyName || '');
     setGstNumber(currentUser.gstNumber || '');
     setHeadline(currentUser.headline || '');
@@ -551,7 +578,7 @@ export const ProfilePage: React.FC = () => {
     setSkills((currentUser.skills || []).join(', '));
     
     const currentSpecialty = currentUser.tradeSpecialization || '';
-    if (currentSpecialty && !tradesList.includes(currentSpecialty)) {
+    if (currentSpecialty && !TRADES_LIST.includes(currentSpecialty)) {
       setTradeSpecialization('Other');
       setCustomTradeEdit(currentSpecialty);
     } else {
@@ -562,6 +589,7 @@ export const ProfilePage: React.FC = () => {
     setPreferredShift(currentUser.preferredShift || '');
     setRequiresBus(!!currentUser.requiresBus);
     setRequiresAccommodation(!!currentUser.requiresAccommodation);
+    setActiveEditPart(1);
     setEditModalOpen(true);
   };
 
@@ -620,167 +648,434 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  if (!currentUser) {
-    return null;
+  let experienceList: any[] = currentUser.experience || [];
+  if (typeof experienceList === 'string') {
+    try { experienceList = JSON.parse(experienceList); } catch (_) { experienceList = []; }
   }
+  if (!Array.isArray(experienceList)) experienceList = [];
 
-  const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
+  let educationList: any[] = currentUser.education || [];
+  if (typeof educationList === 'string') {
+    try { educationList = JSON.parse(educationList); } catch (_) { educationList = []; }
+  }
+  if (!Array.isArray(educationList)) educationList = [];
+
+  let skillsList: string[] = currentUser.skills || [];
+  if (typeof skillsList === 'string') {
+    try { skillsList = JSON.parse(skillsList); } catch (_) { skillsList = []; }
+  }
+  if (!Array.isArray(skillsList)) skillsList = [];
+
+  if (currentUser.role === 'employer') {
+    const myJobs = getJobsByEmployer(currentUser.id) || [];
+    const activeJobs = myJobs.filter((j: any) => !j.status || j.status.toLowerCase() === 'active' || j.status.toLowerCase() === 'approved');
+    const totalApplicants = myJobs.reduce((sum: number, j: any) => sum + (j.applicants?.length || 0), 0);
+    const totalViews = myJobs.reduce((sum: number, j: any) => sum + (j.views || j.viewsCount || 0), 0);
+
+    return (
+      <div className="profile-page">
+        <div className="container">
+          {/* Company Hero Card */}
+          <div className="company-hero-card">
+            {/* Top-Right Circular Share Icon */}
+            <button
+              onClick={handleShare}
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                padding: 0
+              }}
+              title="Share Profile"
+            >
+              <Share2 size={16} />
+            </button>
+
+            <div className="company-hero-flex">
+              <div className="company-hero-info">
+                {/* Company Logo Avatar with Edit Badge */}
+                <div 
+                  className="company-logo-wrap"
+                  onClick={openEditModal}
+                  title="Click to edit company profile"
+                >
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '12px',
+                    backgroundColor: '#FFFFFF',
+                    border: '3px solid #FFFFFF',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {currentUser.profilePictureUrl ? (
+                      <img 
+                        src={currentUser.profilePictureUrl} 
+                        alt={currentUser.companyName || currentUser.name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                    ) : (
+                      <CompanyDefaultLogo logoUrl={null} companyName={currentUser.companyName || currentUser.name} size={54} />
+                    )}
+                  </div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #2563EB',
+                    color: '#2563EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                    zIndex: 10
+                  }}>
+                    <Edit3 size={13} strokeWidth={2.5} />
+                  </div>
+                </div>
+
+                {/* Company Name & Details */}
+                <div style={{ flex: 1, minWidth: 0, paddingRight: '40px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
+                      {currentUser.companyName || currentUser.name}
+                    </h1>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#DBEAFE', marginTop: '6px', flexWrap: 'wrap' }}>
+                    {currentUser.industry && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Building2 size={14} color="#DBEAFE" />
+                        <span>{currentUser.industry}</span>
+                      </div>
+                    )}
+                    {(currentUser.location || currentUser.midcZone) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <MapPin size={14} color="#DBEAFE" />
+                        <span>{currentUser.midcZone || currentUser.location}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <Mail size={14} color="#DBEAFE" />
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser.email}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+            />
+          </div>
+
+          {/* Quick Metrics Cards */}
+          <div className="company-metrics-grid">
+            <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+                {currentUser.gstNumber ? 'Verified GST' : 'Registered'}
+              </div>
+              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                GST Verification
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+                {currentUser.midcZone ? 'MIDC Zone' : (currentUser.location || 'Maharashtra')}
+              </div>
+              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                Industrial Region
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+                100% Active
+              </div>
+              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                Account Status
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 1: COMPANY OVERVIEW & CORE DETAILS */}
+          <div className="profile-section">
+            <div className="profile-section-header">
+              <div className="profile-section-title-wrap">
+                <div className="icon-box-head icon-box-blue">
+                  <Building2 size={20} />
+                </div>
+                <h2>Company Profile Details</h2>
+              </div>
+            </div>
+
+            <div className="profile-section-body">
+              <div className="profile-details-grid">
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Official Company Name</span>
+                  <p className="profile-detail-value" style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
+                    {currentUser.companyName || currentUser.name}
+                  </p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">GSTIN / Tax Registration</span>
+                  <p className="profile-detail-value">{currentUser.gstNumber || 'Not provided'}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Industrial Sector / Industry</span>
+                  <p className="profile-detail-value">{currentUser.industry || 'Industrial Manufacturing'}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">MIDC Zone / Location</span>
+                  <p className="profile-detail-value">{currentUser.midcZone || currentUser.location || 'Not provided'}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Company Workforce Size</span>
+                  <p className="profile-detail-value">{currentUser.employeeCount || currentUser.size || '50-200 employees'}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Contact Person / HR Lead</span>
+                  <p className="profile-detail-value">{currentUser.name}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Official Contact Email</span>
+                  <p className="profile-detail-value">{currentUser.email}</p>
+                </div>
+                <div className="profile-detail-tile">
+                  <span className="profile-detail-label">Official Contact Phone</span>
+                  <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
+                </div>
+                {currentUser.website && (
+                  <div className="profile-detail-tile">
+                    <span className="profile-detail-label">Official Website / Portal</span>
+                    <p className="profile-detail-value">
+                      <a href={currentUser.website.startsWith('http') ? currentUser.website : `https://${currentUser.website}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>
+                        {currentUser.website}
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: OVERVIEW & RECRUITMENT ACTIVITY */}
+          <div className="profile-section" style={{ marginTop: '20px' }}>
+            <div className="profile-section-header">
+              <div className="profile-section-title-wrap">
+                <div className="icon-box-head icon-box-emerald">
+                  <BarChart3 size={20} />
+                </div>
+                <h2>Overview & Recruitment Activity</h2>
+              </div>
+            </div>
+
+            <div className="profile-section-body">
+              {/* Stats Grid */}
+              <div className="company-metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
+                    {activeJobs.length}
+                  </div>
+                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                    Active Jobs
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
+                    {totalApplicants}
+                  </div>
+                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                    Total Applicants
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
+                    {totalViews}
+                  </div>
+                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                    Total Views
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
+                    {myJobs.length}
+                  </div>
+                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+                    Total Posted
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Edit Company Profile Modal */}
+        <EditCompanyProfileModal 
+          isOpen={editModalOpen} 
+          onClose={() => setEditModalOpen(false)} 
+          company={currentUser} 
+          onSaveSuccess={() => syncUser()} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
       <div className="container">
-        {/* Profile Header Hero Card */}
-        <div className="profile-header-card">
-          <div className="profile-top">
-            <div 
-              className="profile-avatar-large"
-              onClick={triggerFileInput}
-              title="Click to change profile picture"
-            >
-              {currentUser.profilePictureUrl ? (
-                <img 
-                  src={currentUser.profilePictureUrl} 
-                  alt={currentUser.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-              ) : (
-                getInitials(currentUser.name)
-              )}
-              
-              {/* Hover upload overlay */}
-              <div className="avatar-upload-overlay">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ marginBottom: 2 }}>
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-                <span>{currentUser.profilePictureUrl ? 'Change' : 'Upload'}</span>
-              </div>
-              
-              {/* Loading overlay */}
-              {isUploading && (
-                <div 
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(0, 0, 0, 0.75)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 4
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg className="animate-spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                    <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                  </svg>
-                </div>
-              )}
-              
-              {/* Camera upload badge */}
+        {/* Profile Header Hero Card (Exact Match to Reference UI) */}
+        <div style={{
+          backgroundColor: '#2563EB',
+          borderRadius: '12px',
+          padding: '20px',
+          color: '#FFFFFF',
+          position: 'relative',
+          marginBottom: '14px',
+          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+              {/* Circular Profile Picture Avatar with Camera Overlay Badge */}
               <div 
+                onClick={triggerFileInput}
                 style={{
-                  position: 'absolute',
-                  bottom: '4px',
-                  right: '4px',
-                  background: '#2563eb',
-                  color: '#ffffff',
-                  width: '24px',
-                  height: '24px',
+                  position: 'relative',
+                  width: '74px',
+                  height: '74px',
+                  flexShrink: 0,
+                  cursor: 'pointer'
+                }}
+                title="Click to update photo"
+              >
+                {/* Image Circle (overflow: hidden) */}
+                <div style={{
+                  width: '100%',
+                  height: '100%',
                   borderRadius: '50%',
+                  backgroundColor: '#FFFFFF',
+                  border: '3px solid #FFFFFF',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                  overflow: 'hidden',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: '2px solid #ffffff',
+                  color: '#2563EB',
+                  fontSize: '24px',
+                  fontWeight: '800'
+                }}>
+                  {currentUser.profilePictureUrl ? (
+                    <img 
+                      src={currentUser.profilePictureUrl} 
+                      alt={currentUser.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : (
+                    getInitials(currentUser.name)
+                  )}
+                </div>
+
+                {/* Camera Badge Icon Overlay (In front, zIndex 10, not clipped) */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-2px',
+                  right: '-2px',
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFFFFF',
+                  border: '1.5px solid #2563EB',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  zIndex: 3,
-                  pointerEvents: 'none'
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </div>
-            </div>
-            
-            <div className="profile-info">
-              <div className="profile-info-title-row">
-                <h1>{currentUser.companyName || currentUser.name}</h1>
-                <span className="role-badge-pill">
-                  {currentUser.role === 'employer' ? 'Verified Employer' : 'Industrial Candidate'}
-                </span>
+                  zIndex: 10
+                }}>
+                  <Camera size={13} strokeWidth={2.5} />
+                </div>
+
+                {/* Loading overlay */}
+                {isUploading && (
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 11
+                  }}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+                )}
               </div>
 
-              <p className="profile-subtitle">
-                {currentUser.role === 'employer' 
-                  ? (currentUser.name ? `Recruiter: ${currentUser.name}` : 'Industrial Employer Account') 
-                  : (currentUser.headline || 'ITI Industrial Worker / Apprentice')}
-              </p>
-              
-              <div className="profile-meta-bar">
-                {currentUser.location && (
-                  <div className="profile-meta-item">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span>{currentUser.location}</span>
-                  </div>
-                )}
-                {currentUser.phone && (
-                  <div className="profile-meta-item">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    <span>+91 {currentUser.phone}</span>
-                  </div>
-                )}
-                <div className="profile-meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  <span>Member since {formatDate(currentUser.createdAt)}</span>
+              {/* Identity Name & Verified Email Details */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
+                    {currentUser.companyName || currentUser.name}
+                  </h1>
+                  <CheckCircle size={18} color="#FFFFFF" fill="#3B82F6" />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#DBEAFE', marginTop: '6px' }}>
+                  <Mail size={14} color="#DBEAFE" />
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentUser.email}
+                  </span>
                 </div>
               </div>
-
-              {/* Hero Action Buttons */}
-              <div className="profile-hero-actions">
-                <button onClick={openEditModal} className="glass-action-btn primary-glass">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  <span>Edit Profile</span>
-                </button>
-
-                <button onClick={handleShare} className="glass-action-btn">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                  </svg>
-                  <span>Share Profile</span>
-                </button>
-
-                <Link to={`/profile/${currentUser.id}`} className="glass-action-btn">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <span>View Public Page</span>
-                </Link>
-
-                <Link to="/dashboard?tab=security" className="glass-action-btn">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                  <span>Security & 2FA</span>
-                </Link>
-              </div>
             </div>
+
+            {/* Top-Right Circular Pencil Edit Button */}
+            <button
+              onClick={openEditModal}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+              title="Edit Profile"
+            >
+              <Edit3 size={18} />
+            </button>
           </div>
           <input 
             type="file" 
@@ -791,195 +1086,47 @@ export const ProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* Profile Completeness Status Card */}
-        {(() => {
-          const isCand = currentUser.role === 'candidate' || !currentUser.role;
-          
-          const photoOk = !!currentUser.profilePictureUrl;
-          const locOk = !!currentUser.location;
-          let basicPct = 10;
-          if (photoOk) basicPct += 5;
-          if (locOk) basicPct += 5;
-
-          const tradeOk = !!currentUser.tradeSpecialization;
-          const shiftOk = !!currentUser.preferredShift;
-          let prefPct = 0;
-          if (isCand) {
-            if (tradeOk) prefPct += 10;
-            if (shiftOk) prefPct += 10;
-          } else {
-            const compOk = !!currentUser.companyName;
-            const gstOk = !!currentUser.gstNumber;
-            if (compOk) prefPct += 10;
-            if (gstOk) prefPct += 10;
-          }
-
-          const skillsArr = Array.isArray(currentUser.skills) ? currentUser.skills : [];
-          const skillsCount = skillsArr.length;
-          const skillsPct = Math.min(20, skillsCount * 4);
-
-          const expArr = Array.isArray(currentUser.experience) ? currentUser.experience : [];
-          const expPct = expArr.length >= 1 ? 20 : 0;
-
-          const resumeOk = !!(currentUser.resume && (currentUser.resume.url || currentUser.resume.name));
-          const resumePct = resumeOk ? 20 : 0;
-
-          const totalPct = Math.min(100, basicPct + prefPct + skillsPct + expPct + resumePct);
-
-          return (
-            <div 
-              className="profile-section profile-completeness-card" 
-              style={{
-                background: '#ffffff',
-                borderRadius: '18px',
-                border: '1px solid #e2e8f0',
-                padding: '24px',
-                marginBottom: '24px',
-                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                      Profile Strength & Recruiter Visibility
-                    </h3>
-                    <span 
-                      style={{
-                        background: totalPct === 100 ? '#dcfce7' : (totalPct >= 60 ? '#eff6ff' : '#fef3c7'),
-                        color: totalPct === 100 ? '#15803d' : (totalPct >= 60 ? '#1d4ed8' : '#b45309'),
-                        padding: '4px 12px',
-                        borderRadius: '999px',
-                        fontSize: '11.5px',
-                        fontWeight: '800',
-                        border: `1px solid ${totalPct === 100 ? '#bbf7d0' : (totalPct >= 60 ? '#bfdbfe' : '#fde68a')}`
-                      }}
-                    >
-                      {totalPct === 100 ? 'All-Star Profile ⭐' : (totalPct >= 60 ? 'Intermediate Strength' : 'Basic Profile')}
-                    </span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                    Complete all 5 profile sections for 100% profile strength and 5x priority ranking in employer candidate searches.
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '34px', fontWeight: '900', color: '#2563eb', lineHeight: 1 }}>
-                      {totalPct}%
-                    </div>
-                    <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b' }}>Completed</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Animated Progress Bar */}
-              <div style={{ width: '100%', height: '10px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                <div 
-                  style={{
-                    width: `${totalPct}%`,
-                    height: '100%',
-                    background: totalPct === 100 ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)' : 'linear-gradient(90deg, #2563eb 0%, #3b82f6 100%)',
-                    borderRadius: '10px',
-                    transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                />
-              </div>
-
-              {/* Section Breakdown Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-                
-                {/* 1. Basic Info & Photo */}
-                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Basic Info & Photo</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: basicPct === 20 ? '#16a34a' : '#0f172a' }}>
-                      {basicPct} / 20%
-                    </div>
-                  </div>
-                  {basicPct === 20 ? (
-                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
-                  ) : (
-                    <button onClick={triggerFileInput} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      Add Photo
-                    </button>
-                  )}
-                </div>
-
-                {/* 2. Job Preferences / Company */}
-                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>{isCand ? 'Trade & Preferences' : 'Company Details'}</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: prefPct === 20 ? '#16a34a' : '#0f172a' }}>
-                      {prefPct} / 20%
-                    </div>
-                  </div>
-                  {prefPct === 20 ? (
-                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
-                  ) : (
-                    <button onClick={openPrefModal} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      Edit
-                    </button>
-                  )}
-                </div>
-
-                {/* 3. Skills */}
-                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>
-                      Skills ({skillsCount}/5 min)
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: skillsPct === 20 ? '#16a34a' : '#0f172a' }}>
-                      {skillsPct} / 20%
-                    </div>
-                  </div>
-                  {skillsPct === 20 ? (
-                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
-                  ) : (
-                    <button onClick={() => setSkillsModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      {skillsCount === 0 ? 'Add Skills' : `Add ${5 - skillsCount} More`}
-                    </button>
-                  )}
-                </div>
-
-                {/* 4. Experience */}
-                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Work Experience</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: expPct === 20 ? '#16a34a' : '#0f172a' }}>
-                      {expPct} / 20%
-                    </div>
-                  </div>
-                  {expPct === 20 ? (
-                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
-                  ) : (
-                    <button onClick={() => setExpModalOpen(true)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      Add Work
-                    </button>
-                  )}
-                </div>
-
-                {/* 5. Resume */}
-                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '700', marginBottom: '2px' }}>Resume / CV</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: resumePct === 20 ? '#16a34a' : '#0f172a' }}>
-                      {resumePct} / 20%
-                    </div>
-                  </div>
-                  {resumePct === 20 ? (
-                    <span style={{ color: '#16a34a', fontWeight: '800', fontSize: '16px' }}>✓</span>
-                  ) : (
-                    <button onClick={() => navigate('/resume')} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                      Upload
-                    </button>
-                  )}
-                </div>
-
-              </div>
+        {/* 3-Stat Metric Bar Below Blue Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px',
+          marginBottom: '20px',
+          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+        }}>
+          <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+              {currentUser.role === 'employer' ? '1' : (experienceList.length || 1)}
             </div>
-          );
-        })()}
+            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+              {currentUser.role === 'employer' ? 'Company' : 'Work Exp'}
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+              100%
+            </div>
+            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+              Verified
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+              {currentUser.role === 'employer' ? (currentUser.gstNumber ? 'Verified' : 'Active') : (skillsList.length || 1)}
+            </div>
+            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+              {currentUser.role === 'employer' ? 'Status' : 'Key Skills'}
+            </div>
+          </div>
+        </div>
+
+
 
         {/* SECTION 1: ABOUT ME & PERSONAL INFORMATION */}
         <div className="profile-section">
@@ -992,16 +1139,6 @@ export const ProfilePage: React.FC = () => {
               </div>
               <h2>Personal Info & Contact</h2>
             </div>
-            
-            <button 
-              onClick={openAboutModal}
-              className="btn-section-action"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              <span>Edit Details</span>
-            </button>
           </div>
           
           <div className="profile-section-body">
@@ -1046,16 +1183,6 @@ export const ProfilePage: React.FC = () => {
                 </div>
                 <h2>Job & Shift Preferences</h2>
               </div>
-
-              <button 
-                onClick={openPrefModal}
-                className="btn-section-action"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                <span>Edit Preferences</span>
-              </button>
             </div>
             
             <div className="profile-section-body">
@@ -1092,16 +1219,6 @@ export const ProfilePage: React.FC = () => {
                 </div>
                 <h2>Company Details</h2>
               </div>
-
-              <button 
-                onClick={openEditModal}
-                className="btn-section-action"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                <span>Edit Details</span>
-              </button>
             </div>
 
             <div className="profile-section-body">
@@ -1140,22 +1257,12 @@ export const ProfilePage: React.FC = () => {
                   </div>
                   <h2>Work Experience</h2>
                 </div>
-
-                <button 
-                  onClick={() => setExpModalOpen(true)}
-                  className="btn-section-action"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                  <span>Add / Manage</span>
-                </button>
               </div>
 
               <div className="profile-section-body">
-                {currentUser.experience && currentUser.experience.length > 0 ? (
+                {experienceList && experienceList.length > 0 ? (
                   <div className="timeline-list">
-                    {currentUser.experience.map((exp: any, index: number) => (
+                    {experienceList.map((exp: any, index: number) => (
                       <div key={index} className="timeline-item">
                         <div className="timeline-dot-col">
                           <div className="timeline-dot" />
@@ -1197,22 +1304,12 @@ export const ProfilePage: React.FC = () => {
                   </div>
                   <h2>Education & Trade Certs</h2>
                 </div>
-
-                <button 
-                  onClick={() => setEduModalOpen(true)}
-                  className="btn-section-action"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                  <span>Add / Manage</span>
-                </button>
               </div>
 
               <div className="profile-section-body">
-                {currentUser.education && currentUser.education.length > 0 ? (
+                {educationList && educationList.length > 0 ? (
                   <div className="timeline-list">
-                    {currentUser.education.map((edu: any, index: number) => (
+                    {educationList.map((edu: any, index: number) => (
                       <div key={index} className="timeline-item">
                         <div className="timeline-dot-col">
                           <div className="timeline-dot" style={{ background: '#9333ea', borderColor: '#f3e8ff', boxShadow: '0 0 0 2px #9333ea' }} />
@@ -1252,22 +1349,12 @@ export const ProfilePage: React.FC = () => {
                   </div>
                   <h2>Skills & Competencies</h2>
                 </div>
-
-                <button 
-                  onClick={() => setSkillsModalOpen(true)}
-                  className="btn-section-action"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                  <span>Add / Manage</span>
-                </button>
               </div>
 
               <div className="profile-section-body">
-                {currentUser.skills && currentUser.skills.length > 0 ? (
+                {skillsList && skillsList.length > 0 ? (
                   <div className="skills-grid">
-                    {currentUser.skills.map(s => (
+                    {skillsList.map(s => (
                       <span key={s} className="skill-chip">
                         <span>⚡</span>
                         <span>{s}</span>
@@ -1297,16 +1384,6 @@ export const ProfilePage: React.FC = () => {
                   </div>
                   <h2>Resume / CV Document</h2>
                 </div>
-
-                <button 
-                  onClick={() => setResumeModalOpen(true)}
-                  className="btn-section-action"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  <span>Upload / Manage</span>
-                </button>
               </div>
 
               <div className="profile-section-body">
@@ -1501,165 +1578,20 @@ export const ProfilePage: React.FC = () => {
         document.body
       )}
 
-      {/* Edit Profile Modal */}
-      {editModalOpen && createPortal(
-        <div className="modal-backdrop" onClick={() => setEditModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Edit Profile</h3>
-              <button className="modal-close" onClick={() => setEditModalOpen(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <form id="edit-profile-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {currentUser.role === 'employer' ? (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">Company Name <span style={{ color: '#dc2626' }}>*</span></label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        required
-                        value={companyName}
-                        placeholder="e.g. InsightForge Precision Industries"
-                        onChange={(e) => setCompanyName(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">GST / Tax Registration Number</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={gstNumber}
-                        placeholder="e.g. 27AAAAA0000A1Z5"
-                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Recruiter / Contact Person Name <span style={{ color: '#dc2626' }}>*</span></label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        required
-                        value={name}
-                        placeholder="e.g. Yogesh Dandawalkar"
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="form-group">
-                    <label className="form-label">Full Name</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Headline</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={headline}
-                    placeholder="e.g. ITI Welder Apprentice"
-                    onChange={(e) => setHeadline(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Location</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={location}
-                    placeholder="e.g. Chakan MIDC, Pune"
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    maxLength={10}
-                    placeholder="10-digit mobile number"
-                    value={phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      if (val.length <= 10) setPhone(val);
-                    }}
-                  />
-                </div>
-
-                {currentUser.role === 'candidate' && (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label">Trade Specialty</label>
-                      <select className="form-select" value={tradeSpecialization} onChange={(e) => setTradeSpecialization(e.target.value)}>
-                        <option value="">Select Specialty</option>
-                        {tradesList.map(t => <option key={t} value={t}>{t}</option>)}
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    {tradeSpecialization === 'Other' && (
-                      <div className="form-group" style={{ marginTop: 'var(--space-2)' }}>
-                        <label className="form-label">Specify Specialty *</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          required
-                          placeholder="e.g. Lathe Operator"
-                          value={customTradeEdit}
-                          onChange={(e) => setCustomTradeEdit(e.target.value)}
-                        />
-                      </div>
-                    )}
-
-                    <div className="form-group">
-                      <label className="form-label">Preferred Shift</label>
-                      <select className="form-select" value={preferredShift} onChange={(e) => setPreferredShift(e.target.value)}>
-                        <option value="">Any Shift</option>
-                        <option value="Day Shift (8 AM - 5 PM)">Day Shift (8 AM - 5 PM)</option>
-                        <option value="Night Shift (8 PM - 5 AM)">Night Shift (8 PM - 5 AM)</option>
-                        <option value="Rotational (Shift A / B)">Rotational (Shift A / B)</option>
-                      </select>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', margin: 'var(--space-2) 0' }}>
-                      <label className="form-checkbox">
-                        <input type="checkbox" checked={requiresBus} onChange={(e) => setRequiresBus(e.target.checked)} />
-                        Requires Bus Transport
-                      </label>
-                      <label className="form-checkbox">
-                        <input type="checkbox" checked={requiresAccommodation} onChange={(e) => setRequiresAccommodation(e.target.checked)} />
-                        Requires Hostel Stay
-                      </label>
-                    </div>
-
-                  </>
-                )}
-                
-                <div className="modal-footer" style={{ borderTop: 'none', padding: 0, marginTop: 'var(--space-2)' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setEditModalOpen(false)} disabled={isSaving}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                    {isSaving ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                          <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                        </svg>
-                        Saving...
-                      </span>
-                    ) : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* Edit Profile Modal (Candidate 4-Step Stepper or Employer Profile Modal) */}
+      {currentUser.role !== 'employer' ? (
+        <CandidateEditProfileModal 
+          isOpen={editModalOpen} 
+          onClose={() => setEditModalOpen(false)} 
+          onSuccess={() => syncUser()} 
+        />
+      ) : (
+        <EditCompanyProfileModal 
+          isOpen={editModalOpen} 
+          onClose={() => setEditModalOpen(false)} 
+          company={currentUser} 
+          onSaveSuccess={() => syncUser()} 
+        />
       )}
 
       {/* Experience Modal */}
@@ -1705,9 +1637,9 @@ export const ProfilePage: React.FC = () => {
 
               <div>
                 <h4 style={{ margin: 'var(--space-4) 0 var(--space-2)' }}>Current Work Experience</h4>
-                {currentUser.experience && currentUser.experience.length > 0 ? (
+                {experienceList && experienceList.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    {currentUser.experience.map((exp: any, index: number) => (
+                    {experienceList.map((exp: any, index: number) => (
                       <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: 'var(--space-3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
                         <div>
                           <h5 style={{ fontWeight: '600' }}>{exp.title}</h5>
@@ -1775,9 +1707,9 @@ export const ProfilePage: React.FC = () => {
 
               <div>
                 <h4 style={{ margin: 'var(--space-4) 0 var(--space-2)' }}>Current Education Details</h4>
-                {currentUser.education && currentUser.education.length > 0 ? (
+                {educationList && educationList.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    {currentUser.education.map((edu: any, index: number) => (
+                    {educationList.map((edu: any, index: number) => (
                       <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: 'var(--space-3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
                         <div>
                           <h5 style={{ fontWeight: '600' }}>{edu.degree}</h5>
@@ -1838,9 +1770,9 @@ export const ProfilePage: React.FC = () => {
 
               <div>
                 <h4 style={{ marginBottom: 'var(--space-3)', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Current Skills</h4>
-                {currentUser.skills && currentUser.skills.length > 0 ? (
+                {skillsList && skillsList.length > 0 ? (
                   <div className="skills-list" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                    {currentUser.skills.map((s) => (
+                    {skillsList.map((s) => (
                       <span 
                         key={s} 
                         className="skill-tag" 
@@ -1957,7 +1889,7 @@ export const ProfilePage: React.FC = () => {
                   <label className="form-label">Trade Specialty</label>
                   <select className="form-select" value={tempTrade} onChange={(e) => setTempTrade(e.target.value)}>
                     <option value="">Select Specialty</option>
-                    {tradesList.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TRADES_LIST.map(t => <option key={t} value={t}>{t}</option>)}
                     <option value="Other">Other</option>
                   </select>
                 </div>
@@ -2020,4 +1952,3 @@ export const ProfilePage: React.FC = () => {
     </div>
   );
 };
-export default ProfilePage;

@@ -49,7 +49,7 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
 
   const hasResume = !!(user.resume && (user.resume.url || user.resume.name));
 
-  // Determine all missing sections
+  // Determine missing profile sections
   const missingSections: string[] = [];
   if (!user.phone) missingSections.push('Phone Number');
   if (!user.location) missingSections.push('Location');
@@ -71,56 +71,56 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
         className="modal"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '580px',
+          maxWidth: '560px',
           width: '100%',
-          maxHeight: '92vh',
+          maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          borderRadius: '16px',
-          boxShadow: '0 20px 48px rgba(15, 23, 42, 0.18)',
-          background: '#ffffff',
-          border: '1px solid #cbd5e1'
+          borderRadius: '0px',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.15)',
+          background: '#FFFFFF',
+          border: '1px solid #CBD5E1'
         }}
       >
-        {/* Top Gradient Bar */}
-        <div style={{ height: '4px', background: 'linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #06b6d4 100%)', flexShrink: 0 }} />
+        {/* Top Active Indicator Line */}
+        <div style={{ height: '3px', background: '#2563EB', flexShrink: 0 }} />
 
-        {/* Clean Light Header */}
+        {/* Modal Header */}
         <div
           style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #e2e8f0',
+            padding: '14px 18px',
+            borderBottom: '1px solid #CBD5E1',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: '#ffffff',
+            background: '#FFFFFF',
             flexShrink: 0
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
+                width: '36px',
+                height: '36px',
+                borderRadius: '0px',
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#2563eb',
+                color: '#2563EB',
                 flexShrink: 0
               }}
             >
-              <ShieldCheck size={22} />
+              <ShieldCheck size={20} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.2px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.2px' }}>
                 Confirm Job Application
               </h3>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-                Review candidate profile specs before submitting to <strong style={{ color: '#0f172a' }}>{job.company || 'Employer'}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                Review specifications before submitting to <strong style={{ color: '#0F172A' }}>{job.company || 'Employer'}</strong>
               </p>
             </div>
           </div>
@@ -129,12 +129,12 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
             type="button"
             onClick={onClose}
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              background: '#f8fafc',
-              color: '#64748b',
+              width: '30px',
+              height: '30px',
+              borderRadius: '0px',
+              border: '1px solid #CBD5E1',
+              background: '#FFFFFF',
+              color: '#475569',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -142,7 +142,7 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
               flexShrink: 0
             }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -151,37 +151,36 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '16px 20px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
-            background: '#f8fafc'
+            background: '#FFFFFF'
           }}
         >
-          {/* Missing Profile Alert Box */}
+          {/* Missing Profile Alert Banner */}
           {missingSections.length > 0 && (
             <div
               style={{
-                background: '#fffbe6',
-                border: '1px solid #ffe58f',
-                borderRadius: '10px',
-                padding: '12px 14px',
+                background: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderRadius: '0px',
+                padding: '10px 14px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
-                gap: '10px',
-                boxShadow: '0 2px 8px rgba(250, 173, 20, 0.08)'
+                gap: '10px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: '1 1 240px' }}>
-                <AlertTriangle size={18} style={{ color: '#d48806', flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 220px' }}>
+                <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#8c6100' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#B45309' }}>
                     Incomplete Profile ({missingSections.length} Missing)
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#b57200', marginTop: '2px', fontWeight: '600', lineHeight: 1.35 }}>
-                    Missing: {missingSections.join(', ')}. Complete profile for 5x response rate!
+                  <div style={{ fontSize: '11.5px', color: '#92400E', marginTop: '1px', fontWeight: '600' }}>
+                    Missing: {missingSections.join(', ')}
                   </div>
                 </div>
               </div>
@@ -190,13 +189,13 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
                 type="button"
                 onClick={handleUpdateProfile}
                 style={{
-                  background: '#d97706',
-                  color: '#ffffff',
+                  background: '#2563EB',
+                  color: '#FFFFFF',
                   border: 'none',
-                  borderRadius: '6px',
-                  padding: '6px 12px',
+                  borderRadius: '0px',
+                  padding: '5px 12px',
                   fontSize: '11.5px',
-                  fontWeight: '800',
+                  fontWeight: '700',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   display: 'inline-flex',
@@ -210,13 +209,13 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
             </div>
           )}
 
-          {/* Target Job Summary */}
+          {/* Job Target Summary */}
           <div
             style={{
-              background: '#ffffff',
-              padding: '14px 16px',
-              borderRadius: '10px',
-              border: '1px solid #e2e8f0',
+              background: '#F8FAFC',
+              padding: '12px 14px',
+              borderRadius: '0px',
+              border: '1px solid #CBD5E1',
               display: 'flex',
               alignItems: 'center',
               gap: '12px'
@@ -224,256 +223,240 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
           >
             <div
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '8px',
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
+                width: '38px',
+                height: '38px',
+                borderRadius: '0px',
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#2563eb',
+                color: '#2563EB',
                 flexShrink: 0
               }}
             >
-              <Briefcase size={20} />
+              <Briefcase size={18} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {job.title}
               </h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Building2 size={13} style={{ color: '#64748b' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Building2 size={13} style={{ color: '#64748B' }} />
                   {job.company}
                 </span>
-                <span style={{ color: '#cbd5e1' }}>•</span>
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <MapPin size={12} style={{ color: '#0284c7' }} />
+                <span style={{ color: '#94A3B8' }}>•</span>
+                <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <MapPin size={12} style={{ color: '#2563EB' }} />
                   {job.location || 'Maharashtra'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Candidate Profile Specifications Card */}
+          {/* Candidate Profile Specifications (Clean Key-Value Rows, No Nested Cards) */}
           <div
             style={{
-              background: '#ffffff',
-              padding: '16px',
-              borderRadius: '10px',
-              border: '1px solid #e2e8f0',
+              background: '#FFFFFF',
+              padding: '14px',
+              borderRadius: '0px',
+              border: '1px solid #CBD5E1',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px'
             }}
           >
-            <div style={{ fontSize: '11.5px', fontWeight: '800', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <User size={14} style={{ color: '#2563eb' }} />
-                Candidate Application Specs
+                <User size={13} style={{ color: '#2563EB' }} />
+                CANDIDATE APPLICATION SPECS
               </span>
-              <span style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600', textTransform: 'none' }}>
-                Sent to employer
+              <span style={{ fontSize: '10.5px', color: '#16A34A', fontWeight: '700', textTransform: 'none' }}>
+                ✓ Official Record
               </span>
             </div>
 
-            {/* 1. Basic Information Grid (Aligned for Mobile & Desktop) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px' }}>
+            {/* 2-Column Key-Value Details Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px 16px' }}>
               
               {/* Full Name */}
-              <div style={{ background: '#ffffff', padding: '9px 11px', borderRadius: '6px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <User size={11} style={{ color: '#2563eb' }} />
-                  <span>FULL NAME</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <User size={11} style={{ color: '#2563EB' }} />
+                  <span>Full Name</span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: '800', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '13px', color: '#0F172A', fontWeight: '700', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.name}
                 </div>
               </div>
 
               {/* Email Address */}
-              <div style={{ background: '#ffffff', padding: '9px 11px', borderRadius: '6px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Mail size={11} style={{ color: '#0284c7' }} />
-                  <span>EMAIL ADDRESS</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Mail size={11} style={{ color: '#2563EB' }} />
+                  <span>Email</span>
                 </div>
-                <div style={{ fontSize: '12.5px', color: '#0f172a', fontWeight: '800', marginTop: '2px', wordBreak: 'break-all', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '12.5px', color: '#0F172A', fontWeight: '700', marginTop: '2px', wordBreak: 'break-all', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.email}
                 </div>
               </div>
 
               {/* Phone Number */}
-              <div style={{ background: user.phone ? '#ffffff' : '#fff1f2', padding: '9px 11px', borderRadius: '6px', border: user.phone ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: user.phone ? '#64748b' : '#e11d48', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Phone size={11} style={{ color: user.phone ? '#16a34a' : '#e11d48' }} />
-                  <span>PHONE NUMBER</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Phone size={11} style={{ color: '#2563EB' }} />
+                  <span>Mobile Phone</span>
                 </div>
-                <div style={{ fontSize: '12.5px', color: user.phone ? '#0f172a' : '#e11d48', fontWeight: '800', marginTop: '2px' }}>
-                  {user.phone || '⚠️ Missing'}
+                <div style={{ fontSize: '12.5px', color: user.phone ? '#0F172A' : '#DC2626', fontWeight: '700', marginTop: '2px' }}>
+                  {user.phone ? `+91 ${user.phone}` : '⚠️ Not provided'}
                 </div>
               </div>
 
               {/* Location */}
-              <div style={{ background: user.location ? '#ffffff' : '#fff1f2', padding: '9px 11px', borderRadius: '6px', border: user.location ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: user.location ? '#64748b' : '#e11d48', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={11} style={{ color: '#e11d48' }} />
-                  <span>LOCATION</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <MapPin size={11} style={{ color: '#2563EB' }} />
+                  <span>Location</span>
                 </div>
-                <div style={{ fontSize: '12.5px', color: user.location ? '#0f172a' : '#e11d48', fontWeight: '800', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.location || '⚠️ Missing'}
+                <div style={{ fontSize: '12.5px', color: user.location ? '#0F172A' : '#DC2626', fontWeight: '700', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.location || '⚠️ Not provided'}
                 </div>
               </div>
 
               {/* Primary Trade */}
-              <div style={{ background: user.tradeSpecialization ? '#ffffff' : '#fff1f2', padding: '9px 11px', borderRadius: '6px', border: user.tradeSpecialization ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: user.tradeSpecialization ? '#64748b' : '#e11d48', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Wrench size={11} style={{ color: '#2563eb' }} />
-                  <span>PRIMARY TRADE</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Wrench size={11} style={{ color: '#2563EB' }} />
+                  <span>Primary Trade</span>
                 </div>
-                <div style={{ fontSize: '12.5px', color: user.tradeSpecialization ? '#2563eb' : '#e11d48', fontWeight: '800', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.tradeSpecialization || user.headline || '⚠️ Missing'}
+                <div style={{ fontSize: '12.5px', color: user.tradeSpecialization ? '#2563EB' : '#DC2626', fontWeight: '700', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.tradeSpecialization || user.headline || '⚠️ Not specified'}
                 </div>
               </div>
 
               {/* Preferred Shift */}
-              <div style={{ background: user.preferredShift ? '#ffffff' : '#fff1f2', padding: '9px 11px', borderRadius: '6px', border: user.preferredShift ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <div style={{ fontSize: '10px', color: user.preferredShift ? '#64748b' : '#e11d48', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={11} style={{ color: '#d97706' }} />
-                  <span>PREFERRED SHIFT</span>
+              <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={11} style={{ color: '#2563EB' }} />
+                  <span>Preferred Shift</span>
                 </div>
-                <div style={{ fontSize: '12.5px', color: user.preferredShift ? '#0f172a' : '#e11d48', fontWeight: '800', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.preferredShift || '⚠️ Missing'}
+                <div style={{ fontSize: '12.5px', color: user.preferredShift ? '#0F172A' : '#DC2626', fontWeight: '700', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.preferredShift || 'Any Shift'}
                 </div>
               </div>
 
             </div>
 
-            {/* 2. Skills & Technical Expertise */}
-            <div style={{ background: skillsList.length >= 5 ? '#ffffff' : '#fffbe6', padding: '12px', borderRadius: '6px', border: skillsList.length >= 5 ? '1px solid #cbd5e1' : '1px solid #fde68a', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-              <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            {/* Section Separator */}
+            <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '4px 0' }} />
+
+            {/* Technical Skills */}
+            <div>
+              <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Award size={12} style={{ color: '#2563eb' }} />
-                  <span>SKILLS & EXPERTISE</span>
+                  <Award size={12} style={{ color: '#2563EB' }} />
+                  <span>Skills & Competencies</span>
                 </div>
-                <span style={{ fontSize: '10.5px', fontWeight: '800', color: skillsList.length >= 5 ? '#16a34a' : '#d97706', background: skillsList.length >= 5 ? '#dcfce7' : '#fef3c7', padding: '2px 6px', borderRadius: '10px' }}>
-                  {skillsList.length}/5 Skills Added
+                <span style={{ fontSize: '10.5px', fontWeight: '700', color: skillsList.length >= 5 ? '#16A34A' : '#D97706' }}>
+                  {skillsList.length}/5 Added
                 </span>
               </div>
+
               {skillsList.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {skillsList.map((skill, idx) => (
                     <span
                       key={idx}
                       style={{
-                        background: '#f8fafc',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '4px',
+                        background: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        borderRadius: '0px',
                         padding: '3px 8px',
                         fontSize: '11.5px',
                         fontWeight: '700',
-                        color: '#1e293b'
+                        color: '#1D4ED8'
                       }}
                     >
-                      {skill}
+                      ⚡ {skill}
                     </span>
                   ))}
-                  {skillsList.length < 5 && (
-                    <span style={{ fontSize: '11px', color: '#d97706', fontWeight: '700', alignSelf: 'center', marginLeft: '2px' }}>
-                      ⚠️ Add {5 - skillsList.length} more skill{5 - skillsList.length > 1 ? 's' : ''}
-                    </span>
-                  )}
                 </div>
               ) : (
-                <div style={{ fontSize: '12px', color: '#d97706', fontWeight: '700' }}>
-                  ⚠️ Missing — No skills added yet (Minimum 5 required)
+                <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '600' }}>
+                  No skills specified
                 </div>
               )}
             </div>
 
-            {/* 3. Work Experience History */}
-            <div style={{ background: expList.length > 0 ? '#ffffff' : '#fff1f2', padding: '12px', borderRadius: '6px', border: expList.length > 0 ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-              <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                <Briefcase size={12} style={{ color: '#0284c7' }} />
-                <span>WORK EXPERIENCE HISTORY</span>
+            {/* Work Experience */}
+            <div>
+              <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                <Briefcase size={12} style={{ color: '#2563EB' }} />
+                <span>Work Experience History</span>
               </div>
               {expList.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {expList.map((exp: any, idx: number) => (
-                    <div key={idx} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderLeft: '3px solid #0284c7', padding: '8px 10px', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a' }}>
-                        {exp.title} {exp.company ? `at ${exp.company}` : ''}
+                    <div key={idx} style={{ padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0F172A' }}>
+                        {exp.title} {exp.company ? `— ${exp.company}` : ''}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '1px' }}>
+                      <div style={{ fontSize: '11px', color: '#64748B', fontWeight: '600' }}>
                         {exp.duration || exp.years || '1 Year'} {exp.description ? `• ${exp.description}` : ''}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: '12px', color: '#e11d48', fontWeight: '700' }}>
-                  ⚠️ Missing — No work experience entries added
+                <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                  No work experience entries added
                 </div>
               )}
             </div>
 
-            {/* 4. Education History */}
-            <div style={{ background: eduList.length > 0 ? '#ffffff' : '#fff1f2', padding: '12px', borderRadius: '6px', border: eduList.length > 0 ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-              <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                <GraduationCap size={12} style={{ color: '#16a34a' }} />
-                <span>EDUCATION HISTORY</span>
+            {/* Education */}
+            <div>
+              <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                <GraduationCap size={12} style={{ color: '#2563EB' }} />
+                <span>Education & Trade Certs</span>
               </div>
               {eduList.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {eduList.map((edu: any, idx: number) => (
-                    <div key={idx} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderLeft: '3px solid #16a34a', padding: '8px 10px', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a' }}>
+                    <div key={idx} style={{ padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0F172A' }}>
                         {edu.degree} {edu.institution ? `— ${edu.institution}` : ''}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '1px' }}>
+                      <div style={{ fontSize: '11px', color: '#64748B', fontWeight: '600' }}>
                         Passing Year: {edu.year || 'N/A'}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: '12px', color: '#e11d48', fontWeight: '700' }}>
-                  ⚠️ Missing — No education details added
+                <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                  No education entries added
                 </div>
               )}
             </div>
 
-            {/* 5. Resume Attachment Status */}
-            <div style={{ background: hasResume ? '#ffffff' : '#fff1f2', padding: '12px', borderRadius: '6px', border: hasResume ? '1px solid #cbd5e1' : '1px solid #fecdd3', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            {/* Resume Attachment Status */}
+            <div style={{ background: '#F8FAFC', padding: '10px 12px', borderRadius: '0px', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 200px' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '6px',
-                    background: hasResume ? '#eff6ff' : '#ffe4e6',
-                    border: hasResume ? '1px solid #bfdbfe' : '1px solid #fecdd3',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: hasResume ? '#2563eb' : '#e11d48',
-                    flexShrink: 0
-                  }}
-                >
-                  <FileText size={18} />
-                </div>
+                <FileText size={18} style={{ color: hasResume ? '#2563EB' : '#DC2626', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '800', color: hasResume ? '#0f172a' : '#e11d48' }}>
-                    {hasResume ? (user.resume?.name || 'Candidate Resume Attachment') : '⚠️ Missing — No Resume Uploaded'}
+                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: hasResume ? '#0F172A' : '#DC2626' }}>
+                    {hasResume ? (user.resume?.name || 'Resume Attachment PDF') : 'No Resume Uploaded'}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>
-                    {hasResume ? 'Document attached & sent to employer' : 'Upload your resume in profile before applying'}
+                  <div style={{ fontSize: '11px', color: '#64748B', fontWeight: '600' }}>
+                    {hasResume ? 'Document will be attached to application' : 'Upload CV in profile to share with employer'}
                   </div>
                 </div>
               </div>
 
               {hasResume ? (
-                <span style={{ fontSize: '11px', padding: '3px 8px', background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '4px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0', borderRadius: '0px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Check size={13} />
                   Attached
                 </span>
@@ -481,7 +464,7 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
                 <button
                   type="button"
                   onClick={handleUpdateProfile}
-                  style={{ fontSize: '11.5px', padding: '5px 10px', background: '#e11d48', color: '#ffffff', border: 'none', borderRadius: '4px', fontWeight: '800', cursor: 'pointer' }}
+                  style={{ fontSize: '11.5px', padding: '4px 10px', background: '#2563EB', color: '#FFFFFF', border: 'none', borderRadius: '0px', fontWeight: '700', cursor: 'pointer' }}
                 >
                   Upload CV
                 </button>
@@ -491,12 +474,12 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Modal Footer */}
         <div
           style={{
-            padding: '14px 20px',
-            borderTop: '1px solid #e2e8f0',
-            background: '#ffffff',
+            padding: '12px 18px',
+            borderTop: '1px solid #CBD5E1',
+            background: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -509,13 +492,13 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
             onClick={onClose}
             disabled={isApplying}
             style={{
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              background: '#f8fafc',
-              color: '#334155',
+              padding: '9px 16px',
+              borderRadius: '0px',
+              border: '1px solid #CBD5E1',
+              background: '#FFFFFF',
+              color: '#475569',
               fontWeight: '700',
-              fontSize: '13px',
+              fontSize: '12.5px',
               cursor: 'pointer'
             }}
           >
@@ -528,30 +511,29 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
             disabled={isApplying}
             style={{
               flex: 1,
-              maxWidth: '280px',
-              padding: '11px 20px',
-              borderRadius: '8px',
+              maxWidth: '260px',
+              padding: '10px 18px',
+              borderRadius: '0px',
               border: 'none',
-              background: '#2563eb',
-              color: '#ffffff',
-              fontWeight: '800',
-              fontSize: '13.5px',
+              background: '#2563EB',
+              color: '#FFFFFF',
+              fontWeight: '700',
+              fontSize: '13px',
               cursor: isApplying ? 'not-allowed' : 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+              gap: '8px'
             }}
           >
             {isApplying ? (
               <>
-                <div className="spinner-sm" style={{ width: '16px', height: '16px', border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
+                <div className="spinner-sm" style={{ width: '15px', height: '15px', border: '2px solid #FFFFFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
                 <span>Submitting...</span>
               </>
             ) : (
               <>
-                <CheckCircle2 size={17} />
+                <CheckCircle2 size={16} />
                 <span>Confirm & Submit</span>
               </>
             )}

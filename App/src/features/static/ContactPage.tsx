@@ -111,11 +111,6 @@ const FAQ_DATA = [
     category: 'Technical',
     question: 'The website is not loading properly on my mobile phone. What should I do?',
     answer: 'JobMarket is fully responsive. Clear your browser cache or open the website in a private/incognito window. Supported browsers include Google Chrome, Safari, and Firefox.'
-  },
-  {
-    category: 'Feature Requests',
-    question: 'Can I request custom features for my factory operations?',
-    answer: 'Yes! Create a support ticket choosing the "Feature Request" category, and describe the tools or workflow improvements you would like to see in our industrial marketplace.'
   }
 ];
 
@@ -392,15 +387,15 @@ export const ContactPage: React.FC = () => {
   const uniqueCategories = Array.from(new Set(FAQ_DATA.map(f => f.category)));
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '40px' }}>
+    <div className="support-page-wrapper">
       {/* Sleek Banner Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '14px 16px', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)' }}>
-        <div style={{ width: '42px', height: '42px', borderRadius: '6px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#344BFD', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#FFFFFF', padding: '16px 20px', borderRadius: '0px', border: '1px solid #CBD5E1', boxShadow: '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '6px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#344BFD', flexShrink: 0 }}>
           <Headphones size={22} />
         </div>
         <div>
-          <h2 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#0f172a' }}>Help & Support Center</h2>
-          <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '12px' }}>Search FAQs, create support tickets, or contact our 24/7 customer care team</p>
+          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#0F172A' }}>Help & Support Center</h2>
+          <p style={{ margin: '3px 0 0', color: '#64748B', fontSize: '12.5px' }}>Search FAQs, create support tickets, or contact our 24/7 customer care team</p>
         </div>
       </div>
 
@@ -409,9 +404,9 @@ export const ContactPage: React.FC = () => {
         
         {/* FAQ Search Section */}
         <div className="card support-card">
-          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '15.5px', fontWeight: 800, color: '#0F172A', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Search size={18} style={{ color: '#344BFD' }} />
-            <span>Search Help Articles</span>
+            <span>Search Help Articles & FAQs</span>
           </h3>
           
           <div style={{ position: 'relative', width: '100%', marginBottom: '14px' }}>
@@ -420,12 +415,12 @@ export const ContactPage: React.FC = () => {
               placeholder="Search FAQs, common issues, jobs, payments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: '100%', paddingLeft: '38px', height: '38px', fontSize: '13px', borderRadius: '4px', border: '1px solid #cbd5e1', outline: 'none' }}
+              style={{ width: '100%', paddingLeft: '38px', height: '40px', fontSize: '13px', borderRadius: '0px', border: '1px solid #CBD5E1', outline: 'none', backgroundColor: '#FFFFFF', color: '#0F172A' }}
             />
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '11px', color: '#94a3b8' }} />
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94A3B8' }} />
           </div>
 
-          {/* Category selection - hide if search active */}
+          {/* Category selection - horizontal scroll on mobile */}
           {!searchQuery && (
             <div className="support-faq-categories">
               {uniqueCategories.map(cat => (
@@ -436,15 +431,15 @@ export const ContactPage: React.FC = () => {
                     setExpandedFAQIndex(null);
                   }}
                   style={{
-                    padding: '5px 12px',
+                    padding: '6px 14px',
                     borderRadius: '4px',
-                    border: '1px solid #cbd5e1',
-                    background: activeFAQCategory === cat ? '#344BFD' : '#ffffff',
-                    color: activeFAQCategory === cat ? '#ffffff' : '#475569',
+                    border: '1px solid #CBD5E1',
+                    background: activeFAQCategory === cat ? '#344BFD' : '#FFFFFF',
+                    color: activeFAQCategory === cat ? '#FFFFFF' : '#475569',
                     fontWeight: '700',
                     cursor: 'pointer',
                     fontSize: '12px',
-                    transition: 'all 0.15s'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   {cat}
@@ -474,7 +469,7 @@ export const ContactPage: React.FC = () => {
                         textAlign: 'left',
                         fontSize: '13.5px',
                         fontWeight: '700',
-                        color: '#0f172a',
+                        color: '#0F172A',
                         gap: '10px'
                       }}
                     >
@@ -485,7 +480,7 @@ export const ContactPage: React.FC = () => {
                     </button>
                     
                     {isExpanded && (
-                      <div style={{ padding: '12px 14px', background: '#f8fafc', borderTop: '1px solid #cbd5e1', color: '#475569', fontSize: '13px', lineHeight: 1.5 }}>
+                      <div style={{ padding: '12px 14px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0', color: '#475569', fontSize: '13px', lineHeight: 1.55 }}>
                         {faq.answer}
                       </div>
                     )}
@@ -493,7 +488,7 @@ export const ContactPage: React.FC = () => {
                 );
               })
             ) : (
-              <div style={{ textAlign: 'center', color: '#64748b', padding: '16px 0', fontSize: '13px' }}>
+              <div style={{ textAlign: 'center', color: '#64748B', padding: '20px 0', fontSize: '13px' }}>
                 No help articles found matching your query.
               </div>
             )}
@@ -504,55 +499,57 @@ export const ContactPage: React.FC = () => {
         <div className="support-main-grid">
           
           {/* Left Column - Contact Details & My Support Tickets */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* Support Information Card */}
             <div className="card support-info-card">
-              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Mail size={18} style={{ color: '#344BFD' }} />
-                <span>Support Information</span>
+              <h3 style={{ fontSize: '15.5px', fontWeight: 800, color: '#0F172A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Mail size={18} style={{ color: '#2563eb' }} />
+                <span>Support Channels</span>
               </h3>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#eef2ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div className="support-contact-grid">
+                <div className="support-contact-item">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#EFF6FF', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Mail size={18} />
                   </div>
-                  <div>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Support Email</h4>
-                    <a href="mailto:support@jobmarket.com" style={{ color: '#2563eb', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>support@jobmarket.com</a>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0F172A' }}>Support Email</h4>
+                    <a href="mailto:support@jobmarket.com" style={{ color: '#2563eb', fontWeight: 600, fontSize: '13px', textDecoration: 'none', wordBreak: 'break-all', display: 'block' }}>support@jobmarket.com</a>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#fff7ed', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="support-contact-item">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#FFF7ED', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Phone size={18} />
                   </div>
-                  <div>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Customer Care</h4>
-                    <p style={{ color: '#475569', fontSize: '13px', margin: 0, fontWeight: 600 }}>+91 98765 43210</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0F172A' }}>Customer Care</h4>
+                    <a href="tel:+919876543210" style={{ color: '#0F172A', fontSize: '13px', margin: 0, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'block' }}>+91 98765 43210</a>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#f0fdf4', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="support-contact-item">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#F0FDF4', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <MapPin size={18} />
                   </div>
-                  <div>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Office Address</h4>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0F172A' }}>Office Address</h4>
                     <p style={{ color: '#475569', fontSize: '12.5px', margin: 0, lineHeight: 1.4 }}>
-                      123 Innovation Drive, Koramangala, Bangalore 560034
+                      Innovation Hub, Koramangala, Bangalore 560034
                     </p>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="support-contact-item">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#FAF5FF', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Clock size={18} />
                   </div>
-                  <div>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0f172a' }}>Business Hours & SLA</h4>
-                    <p style={{ color: '#475569', fontSize: '12.5px', margin: 0 }}>Mon–Fri • 9 AM – 6 PM (Avg reply &lt; 24h)</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{ fontSize: '12.5px', fontWeight: 700, margin: '0 0 2px', color: '#0F172A' }}>Business Hours & SLA</h4>
+                    <p style={{ color: '#475569', fontSize: '12.5px', margin: 0, lineHeight: 1.4 }}>
+                      Mon–Fri • 9 AM – 6 PM <span style={{ color: '#16A34A', fontWeight: 600 }}>(Reply &lt; 2h)</span>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -733,7 +730,6 @@ export const ContactPage: React.FC = () => {
                     <option value="Technical Issue">Technical Issue</option>
                     <option value="Payment">Payment</option>
                     <option value="Bug Report">Bug Report</option>
-                    <option value="Feature Request">Feature Request</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>

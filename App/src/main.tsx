@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { StoreProvider } from './store/StoreContext';
 import { ToastProvider } from './hooks/useToast';
 import { App } from './App';
+import { applyThemeToCssVariables } from './constants/theme';
 
 // Import CSS
 import './styles/index.css';
@@ -14,6 +15,9 @@ import './styles/jobs.css';
 import './styles/dashboard.css';
 import './styles/profile.css';
 import './styles/support.css';
+
+// Initialize single source of truth theme configuration site-wide
+applyThemeToCssVariables();
 
 // Global enforcement to prevent negative numbers site-wide across all number/tel inputs
 if (typeof window !== 'undefined') {

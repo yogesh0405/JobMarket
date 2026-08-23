@@ -13,7 +13,7 @@ export const CompanyDefaultLogo: React.FC<CompanyDefaultLogoProps> = ({
   logoUrl,
   companyName = 'Company',
   size = 28,
-  borderRadius = '6px',
+  borderRadius = '50%',
   companyColor
 }) => {
   const [imgError, setImgError] = React.useState(false);

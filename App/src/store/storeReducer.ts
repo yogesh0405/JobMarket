@@ -18,7 +18,8 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
   switch (action.type) {
     case 'SET_JOBS': {
       const incoming = action.payload || [];
-      const jobsMap = new Map(state.jobs.map(j => [j.id, j]));
+      const currentJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const jobsMap = new Map(currentJobs.map(j => [j.id, j]));
       incoming.forEach(j => {
         if (j && j.id) {
           const prev = jobsMap.get(j.id);
@@ -39,7 +40,9 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
 
     case 'LOGIN': {
       const incomingUser = action.payload;
-      const existingUser = state.currentUser?.id === incomingUser.id ? state.currentUser : state.users.find(u => u.id === incomingUser.id);
+      const safeUsers = Array.isArray(state.users) ? state.users : [];
+      const safeJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const existingUser = state.currentUser?.id === incomingUser.id ? state.currentUser : safeUsers.find(u => u.id === incomingUser.id);
 
       const mergedSavedJobs = Array.isArray(incomingUser.savedJobs) && incomingUser.savedJobs.length > 0
         ? incomingUser.savedJobs
@@ -60,12 +63,12 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         appliedJobsWithStatus: mergedAppliedJobsWithStatus
       };
 
-      const updatedUsers = state.users.map(u => u.id === userWithSavedJobs.id ? userWithSavedJobs : u);
-      if (!state.users.some(u => u.id === userWithSavedJobs.id)) {
+      const updatedUsers = safeUsers.map(u => u.id === userWithSavedJobs.id ? userWithSavedJobs : u);
+      if (!safeUsers.some(u => u.id === userWithSavedJobs.id)) {
         updatedUsers.push(userWithSavedJobs);
       }
 
-      const updatedJobs = state.jobs.map(j => {
+      const updatedJobs = safeJobs.map(j => {
         if (!j.applicants || j.applicants.length === 0) return j;
         const updatedApplicants = j.applicants.map(app => {
           if (app.userId === userWithSavedJobs.id || app.id === userWithSavedJobs.id) {
@@ -99,36 +102,36 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
     case 'SIGNUP':
       return {
         ...state,
-        users: [...state.users, action.payload],
+        users: [...(Array.isArray(state.users) ? state.users : []), action.payload],
         currentUser: action.payload
       };
 
     case 'CREATE_JOB':
       return {
         ...state,
-        jobs: [action.payload, ...state.jobs]
+        jobs: [action.payload, ...(Array.isArray(state.jobs) ? state.jobs : [])]
       };
 
     case 'UPDATE_JOB':
       return {
         ...state,
-        jobs: state.jobs.map(j => j.id === action.payload.id ? action.payload : j)
+        jobs: (Array.isArray(state.jobs) ? state.jobs : []).map(j => j.id === action.payload.id ? action.payload : j)
       };
 
     case 'DELETE_JOB':
       return {
         ...state,
-        jobs: state.jobs.filter(j => j.id !== action.payload)
+        jobs: (Array.isArray(state.jobs) ? state.jobs : []).filter(j => j.id !== action.payload)
       };
 
     case 'APPLY_JOB': {
       const { jobId, applicant } = action.payload;
       if (!state.currentUser) return state;
 
-      const appliedJobs = state.currentUser.appliedJobs || [];
+      const appliedJobs = Array.isArray(state.currentUser.appliedJobs) ? state.currentUser.appliedJobs : [];
       const updatedAppliedJobs = appliedJobs.includes(jobId) ? appliedJobs : [...appliedJobs, jobId];
 
-      const appliedWithStatus = state.currentUser.appliedJobsWithStatus || [];
+      const appliedWithStatus = Array.isArray(state.currentUser.appliedJobsWithStatus) ? state.currentUser.appliedJobsWithStatus : [];
       const updatedAppliedWithStatus = appliedWithStatus.some((a: any) => a.jobId === jobId)
         ? appliedWithStatus
         : [...appliedWithStatus, { jobId, status: 'applied', appliedAt: applicant.appliedAt || new Date().toISOString() }];
@@ -139,9 +142,10 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         appliedJobsWithStatus: updatedAppliedWithStatus
       };
 
-      const updatedJobs = state.jobs.map(j => {
+      const safeJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const updatedJobs = safeJobs.map(j => {
         if (j.id === jobId) {
-          const existingApps = j.applicants || [];
+          const existingApps = Array.isArray(j.applicants) ? j.applicants : [];
           const hasApp = existingApps.some(app => app.userId === applicant.userId || app.id === applicant.userId);
           const updatedApplicants = hasApp ? existingApps : [...existingApps, applicant];
           return {
@@ -152,7 +156,8 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         return j;
       });
 
-      const updatedUsers = state.users.map(u => u.id === state.currentUser?.id ? updatedUser : u);
+      const safeUsers = Array.isArray(state.users) ? state.users : [];
+      const updatedUsers = safeUsers.map(u => u.id === state.currentUser?.id ? updatedUser : u);
 
       return {
         ...state,
@@ -166,7 +171,7 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       const { jobId } = action.payload;
       if (!state.currentUser) return state;
 
-      const savedJobs = state.currentUser.savedJobs || [];
+      const savedJobs = Array.isArray(state.currentUser.savedJobs) ? state.currentUser.savedJobs : [];
       const isSaved = savedJobs.includes(jobId);
       const newSavedJobs = isSaved
         ? savedJobs.filter(id => id !== jobId)
@@ -177,7 +182,8 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         savedJobs: newSavedJobs
       };
 
-      const updatedUsers = state.users.map(u => u.id === state.currentUser?.id ? updatedUser : u);
+      const safeUsers = Array.isArray(state.users) ? state.users : [];
+      const updatedUsers = safeUsers.map(u => u.id === state.currentUser?.id ? updatedUser : u);
 
       return {
         ...state,
@@ -190,20 +196,22 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       const targetUserId = action.payload.id || state.currentUser?.id;
       if (!targetUserId) return state;
 
-      const baseUser = state.currentUser?.id === targetUserId ? state.currentUser : state.users.find(u => u.id === targetUserId);
+      const safeUsers = Array.isArray(state.users) ? state.users : [];
+      const safeJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const baseUser = state.currentUser?.id === targetUserId ? state.currentUser : safeUsers.find(u => u.id === targetUserId);
       const updatedUser = {
         ...(baseUser || {}),
         ...action.payload
       } as User;
 
-      const updatedUsers = state.users.map(u => u.id === targetUserId ? updatedUser : u);
-      if (!state.users.some(u => u.id === targetUserId)) {
+      const updatedUsers = safeUsers.map(u => u.id === targetUserId ? updatedUser : u);
+      if (!safeUsers.some(u => u.id === targetUserId)) {
         updatedUsers.push(updatedUser);
       }
 
-      const updatedJobs = state.jobs.map(j => {
+      const updatedJobs = safeJobs.map(j => {
         if (!j.applicants || j.applicants.length === 0) return j;
-        const updatedApplicants = j.applicants.map(app => {
+        const updatedApplicants = (Array.isArray(j.applicants) ? j.applicants : []).map(app => {
           if (app.userId === targetUserId || app.id === targetUserId) {
             return {
               ...app,

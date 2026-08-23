@@ -17,25 +17,14 @@
 /* ---- Hero Section ---- */
 .hero {
   position: relative;
-  background: linear-gradient(135deg, #f8faff 0%, #eef4ff 40%, #f0f9ff 70%, #faf5ff 100%);
+  background-color: var(--bg-page, #F8FAFC) !important;
+  background: var(--bg-page, #F8FAFC) !important;
   padding: var(--space-16) 0 var(--space-12);
   overflow: visible;
 }
 
 .hero-mesh-overlay {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  opacity: 1;
-  background: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%), 
-    radial-gradient(at 50% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 45%), 
-    radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 100%, rgba(244, 114, 182, 0.08) 0px, transparent 40%);
+  display: none !important;
 }
 
 .hero-particles {
@@ -1400,4 +1389,16 @@
   .featured-section {
     padding: var(--space-6) 0 !important;
   }
+}
+
+/* Single Source Off-White #F7F7F7 Background Enforcement across HomePage & All Sections */
+.homepage-wrapper,
+.categories-section,
+.qualifications-section,
+.featured-section,
+.how-it-works-section,
+.cta-section,
+.tabbed-jobs-section,
+.banner-slider-container {
+  background-color: var(--bg-offwhite, #F7F7F7) !important;
 }

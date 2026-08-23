@@ -537,11 +537,6 @@ export const SecuritySettings: React.FC = () => {
             <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '12.5px' }}>Device sessions, password authentication & activity governance</p>
           </div>
         </div>
-
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '5px 10px', borderRadius: '12px', color: '#16a34a', fontSize: '12px', fontWeight: '700' }}>
-          <CheckCircle2 size={15} />
-          <span>Active Protection</span>
-        </div>
       </div>
 
 
@@ -911,25 +906,27 @@ export const SecuritySettings: React.FC = () => {
             <div
               key={sess.id || idx}
               style={{
-                background: '#ffffff',
-                border: sess.isCurrent ? '1.5px solid #344BFD' : '1px solid #e2e8f0',
-                borderRadius: '10px',
+                background: '#FFFFFF',
+                border: sess.isCurrent ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                borderRadius: '8px',
                 padding: '14px 16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02)'
+                gap: '8px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                boxSizing: 'border-box',
+                width: '100%'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
                     width: '36px',
                     height: '36px',
-                    borderRadius: '8px',
-                    background: sess.isCurrent ? '#eff6ff' : '#f8fafc',
-                    color: sess.isCurrent ? '#344BFD' : '#64748b',
-                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    background: sess.isCurrent ? '#EFF6FF' : '#F8FAFC',
+                    color: sess.isCurrent ? '#2563EB' : '#64748B',
+                    border: '1px solid #E2E8F0',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -938,51 +935,45 @@ export const SecuritySettings: React.FC = () => {
                     {sess.type === 'mobile' ? <Smartphone size={18} /> : <Laptop size={18} />}
                   </div>
                   <div>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{sess.device}</span>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>{sess.browser}</div>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>{sess.device}</h4>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '1px' }}>{sess.browser}</div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  {sess.isCurrent ? (
-                    <span style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '12px' }}>
-                      ● Current Active Device
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => handleRevokeSession(sess.id)}
-                      disabled={revokingSessionId === sess.id}
-                      style={{
-                        background: '#fef2f2',
-                        color: '#dc2626',
-                        border: '1px solid #fca5a5',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontWeight: '700',
-                        fontSize: '12px',
-                        cursor: revokingSessionId === sess.id ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                    >
-                      <LogOut size={13} />
-                      <span>{revokingSessionId === sess.id ? 'Logging out...' : 'Logout Device'}</span>
-                    </button>
-                  )}
-                </div>
+                {!sess.isCurrent && (
+                  <button
+                    onClick={() => handleRevokeSession(sess.id)}
+                    disabled={revokingSessionId === sess.id}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#DC2626',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      cursor: revokingSessionId === sess.id ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: 0
+                    }}
+                  >
+                    <LogOut size={13} />
+                    <span>{revokingSessionId === sess.id ? 'Logging out...' : 'Logout'}</span>
+                  </button>
+                )}
               </div>
 
-              {/* Bottom Details Pills */}
-              <div className="sec-meta-pills" style={{ marginTop: '0' }}>
-                <span className="sec-pill">
-                  <MapPin size={12} style={{ color: '#2563eb' }} />
+              {/* Clean Typography Metadata Line (No Chips / No Containers) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#64748B', marginTop: '2px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <MapPin size={13} style={{ color: '#64748B' }} />
                   <span>{sess.location}</span>
-                </span>
-                <span className="sec-pill">
-                  <Clock size={12} style={{ color: '#16a34a' }} />
-                  <span>Last active: {sess.lastActive}</span>
-                </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: sess.isCurrent ? '#16A34A' : '#64748B', fontWeight: sess.isCurrent ? '700' : '500' }}>
+                  <Clock size={13} style={{ color: sess.isCurrent ? '#16A34A' : '#64748B' }} />
+                  <span>{sess.isCurrent ? '● Active now' : `Last active: ${sess.lastActive}`}</span>
+                </div>
               </div>
             </div>
           ))}

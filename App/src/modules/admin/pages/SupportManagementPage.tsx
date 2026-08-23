@@ -491,9 +491,7 @@ export const SupportManagementPage: React.FC = () => {
                 <option value="Job Application Issue">Job Application Issue</option>
                 <option value="Verification">Verification</option>
                 <option value="Technical Issue">Technical Issue</option>
-                <option value="Payment">Payment</option>
                 <option value="Bug Report">Bug Report</option>
-                <option value="Feature Request">Feature Request</option>
               </select>
 
               <select className="form-input" value={assigneeFilter} onChange={(e) => { setAssigneeFilter(e.target.value); setPage(1); }} style={{ background: 'var(--surface)', fontSize: '13px' }}>

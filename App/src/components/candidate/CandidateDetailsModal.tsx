@@ -48,7 +48,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
   showToast,
   myJobs = []
 }) => {
-  const hasJobContext = Boolean(viewWorker?.jobId || viewWorker?.job_id || viewWorker?.job || viewWorker?.status || viewWorker?.jobTitle);
+  const hasJobContext = Boolean(viewWorker?.jobId || viewWorker?.job_id || viewWorker?.job || viewWorker?.applicationStatus || viewWorker?.applicantStatus);
   
   const rawSkills = tryParseJson(viewWorker?.skills);
   const skillsList: string[] = Array.isArray(rawSkills)

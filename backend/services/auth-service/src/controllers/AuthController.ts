@@ -144,7 +144,7 @@ export class AuthController {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const sessions = await SessionRepository.findActiveByUserId(userId);
+      const sessions = await SessionRepository.findActiveUserSessions(userId);
       res.status(200).json({ success: true, data: sessions });
     } catch (error) {
       next(error);
@@ -157,7 +157,7 @@ export class AuthController {
       const { sessionId } = req.params;
       if (!userId || !sessionId) return res.status(400).json({ error: 'Bad Request' });
 
-      await SessionRepository.revoke(sessionId);
+      await SessionRepository.revokeSession(sessionId);
       res.status(200).json({ success: true, message: 'Session revoked successfully' });
     } catch (error) {
       next(error);

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import userRoutes from './routes/userRoutes';
+import companyRoutes from '../../../src/modules/companies/routes/companyRoutes';
 import { errorHandler } from '../../../shared/middlewares/errorHandler';
 
 const app = express();
@@ -16,6 +17,8 @@ app.get(['/health', '/api/v1/auth/health'], (req, res) => {
 });
 
 app.use('/api/v1/auth', userRoutes);
+app.use('/api/v1/companies', companyRoutes);
+app.use('/api/companies', companyRoutes);
 
 app.use(errorHandler);
 

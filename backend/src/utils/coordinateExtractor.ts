@@ -39,10 +39,61 @@ const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; accuracy: 'CIT
   'nashik': { lat: 20.0059, lng: 73.7898, accuracy: 'CITY' },
   'aurangabad': { lat: 19.8762, lng: 75.3433, accuracy: 'CITY' },
   'chhatrapati sambhajinagar': { lat: 19.8762, lng: 75.3433, accuracy: 'CITY' },
+  'waluj': { lat: 19.8512, lng: 75.2536, accuracy: 'EXACT' },
+  'waluj midc': { lat: 19.8512, lng: 75.2536, accuracy: 'EXACT' },
+  'ranjangaon': { lat: 18.8472, lng: 74.2255, accuracy: 'EXACT' },
+  'ranjangaon midc': { lat: 18.8472, lng: 74.2255, accuracy: 'EXACT' },
+  'taloja': { lat: 19.0531, lng: 73.1190, accuracy: 'EXACT' },
+  'taloja midc': { lat: 19.0531, lng: 73.1190, accuracy: 'EXACT' },
+  'butibori': { lat: 20.9234, lng: 78.9863, accuracy: 'EXACT' },
+  'butibori midc': { lat: 20.9234, lng: 78.9863, accuracy: 'EXACT' },
+  'shendra': { lat: 19.8661, lng: 75.4674, accuracy: 'EXACT' },
+  'chikalthana': { lat: 19.8797, lng: 75.3986, accuracy: 'EXACT' },
+  'kurkumbh': { lat: 18.2831, lng: 74.5422, accuracy: 'EXACT' },
+  'tarapur': { lat: 19.8055, lng: 72.7092, accuracy: 'EXACT' },
+  'supa': { lat: 18.9664, lng: 74.4552, accuracy: 'EXACT' },
+  'sinnar': { lat: 19.8458, lng: 73.9961, accuracy: 'EXACT' },
+  'ambad': { lat: 19.9535, lng: 73.7431, accuracy: 'EXACT' },
+  'satpur': { lat: 19.9972, lng: 73.7381, accuracy: 'EXACT' },
   'nagpur': { lat: 21.1458, lng: 79.0882, accuracy: 'CITY' },
   'kolhapur': { lat: 16.7050, lng: 74.2433, accuracy: 'CITY' },
   'solapur': { lat: 17.6599, lng: 75.9064, accuracy: 'CITY' }
 };
+
+/**
+ * Fallback geocodes location text or city names via OpenStreetMap Nominatim when link parsing fails.
+ */
+export async function geocodeLocationText(query: string): Promise<ExtractedCoordinates | null> {
+  if (!query || typeof query !== 'string') return null;
+  const cleaned = query.replace(/https?:\/\/[^\s]+/g, '').replace(/[^\w\s,]/g, ' ').trim();
+  if (!cleaned || cleaned.length < 2) return null;
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(cleaned)}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'JobMarketApp/1.0' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        if (isValidCoordinate(lat, lon)) {
+          return {
+            latitude: lat,
+            longitude: lon,
+            accuracy: 'CITY',
+            source: 'KNOWN_LOCATION_LOOKUP'
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Geocoding fallback failed:', err);
+  }
+
+  return null;
+}
 
 export function isValidCoordinate(lat: number, lng: number): boolean {
   return (

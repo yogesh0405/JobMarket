@@ -95,6 +95,14 @@ export class JobController {
         }
       }
 
+      if (!extracted) {
+        const { geocodeLocationText } = await import('../../../utils/coordinateExtractor');
+        extracted = await geocodeLocationText(inputUrl);
+        if (!extracted && req.body.city) {
+          extracted = await geocodeLocationText(req.body.city);
+        }
+      }
+
       if (extracted) {
         return res.status(200).json({
           success: true,

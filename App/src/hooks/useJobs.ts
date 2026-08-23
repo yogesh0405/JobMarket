@@ -18,7 +18,8 @@ export const useJobs = () => {
   const { state, dispatch } = useStore();
 
   const getJobs = useCallback((filters: JobFilters = {}) => {
-    let jobs = [...state.jobs].filter(j => j.status === 'active' || !j.status || (j.status as string) === 'approved');
+    const rawJobs = Array.isArray(state?.jobs) ? state.jobs : [];
+    let jobs = [...rawJobs].filter(j => j && (j.status === 'active' || !j.status || (j.status as string) === 'approved'));
 
     if (filters.keyword && filters.keyword.trim()) {
       const kwTokens = filters.keyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -328,18 +329,18 @@ export const useJobs = () => {
   const getAppliedJobs = useCallback(() => {
     const user = state.currentUser;
     if (!user) return [];
-    const appliedIds = user.appliedJobs || [];
-    const appliedWithStatus = user.appliedJobsWithStatus || [];
+    const appliedIds = Array.isArray(user.appliedJobs) ? user.appliedJobs : [];
+    const appliedWithStatus = Array.isArray(user.appliedJobsWithStatus) ? user.appliedJobsWithStatus : [];
     const allAppliedIds = Array.from(new Set([
       ...appliedIds,
-      ...appliedWithStatus.map((a: any) => a.jobId)
+      ...appliedWithStatus.map((a: any) => a?.jobId).filter(Boolean)
     ]));
     return allAppliedIds.map(id => getJobById(id)).filter(Boolean) as Job[];
   }, [state.currentUser, getJobById]);
 
   const getSavedJobs = useCallback(() => {
     const user = state.currentUser;
-    if (!user || !user.savedJobs) return [];
+    if (!user || !Array.isArray(user.savedJobs)) return [];
     return user.savedJobs.map(id => getJobById(id)).filter(Boolean) as Job[];
   }, [state.currentUser, getJobById]);
 

@@ -86,4 +86,12 @@ export class SessionRepository {
     await client.query(query, params);
     await CacheService.invalidatePattern('session:active:*');
   }
+
+  static async findActiveByUserId(userId: string): Promise<Session[]> {
+    return this.findActiveUserSessions(userId);
+  }
+
+  static async revoke(sessionId: string, client: any = pool): Promise<void> {
+    return this.revokeSession(sessionId, client);
+  }
 }

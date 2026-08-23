@@ -1,0 +1,363 @@
+/* ============================================
+   COMPANY PROFILE PAGE — EXECUTIVE DESKTOP STANDARD
+   ============================================ */
+
+.company-profile-wrapper {
+  background-color: var(--bg-page) !important;
+  min-height: 100vh;
+  padding-bottom: 64px;
+  font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0F172A;
+}
+
+.company-breadcrumb-bar {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #CBD5E1;
+  padding: 10px 0;
+}
+
+.company-breadcrumb-content {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #64748B;
+}
+
+.company-main-container {
+  max-width: 1140px;
+  margin: 20px auto 0;
+  padding: 0 20px;
+}
+
+/* Single Executive Hero Header Card */
+.company-hero-card {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 0px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  margin-bottom: 20px;
+}
+
+/* Top Solid Primary Blue Header Banner */
+.company-cover-banner {
+  background-color: #2563EB;
+  padding: 24px 24px 20px 24px;
+  color: #FFFFFF;
+  width: 100%;
+  position: relative;
+}
+
+.company-cover-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.company-hero-card-body {
+  padding: 16px 24px 20px 24px;
+}
+
+.company-hero-left-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex: 1;
+  min-width: 0;
+}
+
+.company-logo-avatar {
+  width: 54px;
+  height: 54px;
+  background: transparent;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-hero-text-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.company-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.company-hero-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.company-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 8px;
+  background-color: #DCFCE7;
+  border: 1px solid #BBF7D0;
+  color: #15803D;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 0px;
+}
+
+.company-tagline {
+  font-size: 13.5px;
+  color: #DBEAFE;
+  font-weight: 500;
+  margin: 0 0 6px 0;
+}
+
+.company-hero-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: #EFF6FF;
+  font-weight: 600;
+}
+
+.company-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.company-btn-action {
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 0px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.company-btn-white {
+  background-color: #FFFFFF;
+  border: 1px solid #FFFFFF;
+  color: #2563EB;
+}
+
+.company-btn-white:hover {
+  background-color: #EFF6FF;
+}
+
+.company-btn-outline-white {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #FFFFFF;
+}
+
+.company-btn-outline-white:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: #FFFFFF;
+}
+
+.company-btn-secondary {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #334155;
+}
+
+.company-btn-secondary:hover {
+  background-color: #F8FAFC;
+  border-color: #94A3B8;
+}
+
+.company-btn-primary {
+  background-color: #2563EB;
+  border: 1px solid #2563EB;
+  color: #FFFFFF;
+}
+
+.company-btn-primary:hover {
+  background-color: #1D4ED8;
+}
+
+/* Integrated Stats Row inside Single Hero Card */
+.company-hero-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.company-hero-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.company-stat-icon {
+  width: 36px;
+  height: 36px;
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563EB;
+  flex-shrink: 0;
+}
+
+.company-stat-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.company-stat-value {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-top: 1px;
+}
+
+/* 2-Column Main Content Grid */
+.company-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.company-card-surface {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 0px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.company-section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-slate-divider {
+  height: 1px;
+  background-color: #94A3B8;
+  margin: 14px 0;
+}
+
+.company-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 12.5px;
+}
+
+.company-kv-row:last-child {
+  border-bottom: none;
+}
+
+.company-kv-key {
+  color: #64748B;
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.company-kv-value {
+  color: #0F172A;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 840px) {
+  .company-main-container {
+    padding: 0 16px 96px 16px;
+    margin-top: 14px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .company-content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .company-cover-banner {
+    padding: 16px;
+  }
+
+  .company-cover-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .company-hero-left-info {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .company-logo-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .company-hero-title {
+    font-size: 19px;
+  }
+
+  .company-hero-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .company-btn-action {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 12px;
+    justify-content: center;
+  }
+
+  .company-hero-card-body {
+    padding: 14px;
+  }
+
+  .company-hero-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}

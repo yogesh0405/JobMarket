@@ -15,6 +15,19 @@ export interface StoreState {
 
 const LOCAL_STORAGE_KEY = 'jobMarketplace_react';
 
+const ensureArray = (val: any): any[] => {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {
+      return val.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
 const getInitialState = (): StoreState => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (saved) {
@@ -26,6 +39,15 @@ const getInitialState = (): StoreState => {
       const storedJobs = Array.isArray(parsed.jobs) ? parsed.jobs.filter(Boolean) : [];
       // Filter out leftover mock seed jobs (j1..j80)
       parsed.jobs = storedJobs.filter((j: any) => j && j.id && !(typeof j.id === 'string' && /^j\d+$/.test(j.id)));
+
+      if (parsed.currentUser) {
+        parsed.currentUser.skills = ensureArray(parsed.currentUser.skills);
+        parsed.currentUser.experience = ensureArray(parsed.currentUser.experience);
+        parsed.currentUser.education = ensureArray(parsed.currentUser.education);
+        parsed.currentUser.savedJobs = ensureArray(parsed.currentUser.savedJobs);
+        parsed.currentUser.appliedJobs = ensureArray(parsed.currentUser.appliedJobs);
+        parsed.currentUser.appliedJobsWithStatus = ensureArray(parsed.currentUser.appliedJobsWithStatus);
+      }
 
       return parsed;
     } catch (e) {

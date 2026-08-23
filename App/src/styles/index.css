@@ -4,60 +4,69 @@
 
 /* Google Font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import './company.css';
 
 /* ---- CSS Custom Properties ---- */
+/* ---- CSS Custom Properties (Universal Design System Theme) ---- */
 :root {
-  /* Colors */
-  --primary: #344BFD;
-  --primary-light: #5C72FE;
-  --primary-dark: #1A2EB8;
-  --primary-50: #EEF1FF;
-  --primary-100: #E0E4FF;
-  --primary-200: #C7CEFE;
+  /* Page & Surface Backgrounds (Single central configuration for entire Web App) */
+  --bg-page: #F8FAFC;
+  --bg: #F8FAFC;
+  --bg-offwhite: #F8FAFC;
+  --bg-secondary: #F1F5F9;
+  --bg-dark: #0F172A;
+  --surface: #FFFFFF;
+  --surface-hover: #F8FAFC;
 
+  /* Brand Colors & Primary Actions */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-light: #EFF6FF;
+  --primary-dark: #1E3A8A;
+  --primary-50: #EFF6FF;
+  --primary-100: #DBEAFE;
+  --primary-200: #BFDBFE;
+
+  /* Accent & Semantic Colors */
   --accent: #06B6D4;
   --accent-light: #22D3EE;
   --accent-dark: #0891B2;
 
-  --success: #10B981;
-  --success-light: #D1FAE5;
-  --warning: #F59E0B;
-  --warning-light: #FEF3C7;
-  --danger: #EF4444;
-  --danger-light: #FEE2E2;
+  --success: #059669;
+  --success-light: #ECFDF5;
+  --warning: #D97706;
+  --warning-light: #FFFBEB;
+  --danger: #DC2626;
+  --danger-light: #FEF2F2;
 
-  --bg: #F8FAFC;
-  --bg-secondary: #ffffff;
-  --bg-dark: #0F172A;
-  --surface: #FFFFFF;
-  --surface-hover: #F1F5F9;
-
+  /* Text Colors & Hierarchy */
   --text-primary: #0F172A;
   --text-secondary: #64748B;
   --text-tertiary: #94A3B8;
   --text-inverse: #FFFFFF;
 
-  --border: #E2E8F0;
-  --border-light: #F1F5F9;
+  /* Borders & Dividers */
+  --border: #CBD5E1;
+  --border-light: #E2E8F0;
 
   /* Gradients */
-  --gradient-primary: #344BFD;
-  --gradient-hero: #1A2EB8;
-  --gradient-card: #f2f2f2;
-  --gradient-accent: #344BFD;
+  --gradient-primary: #2563EB;
+  --gradient-hero: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #1D4ED8 100%);
+  --gradient-card: #FFFFFF;
+  --gradient-accent: #2563EB;
 
-  /* Typography */
-  --font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --fs-xs: 0.75rem;
-  --fs-sm: 0.875rem;
-  --fs-base: 1rem;
-  --fs-lg: 1.125rem;
-  --fs-xl: 1.25rem;
-  --fs-2xl: 1.5rem;
-  --fs-3xl: 1.875rem;
-  --fs-4xl: 2.25rem;
-  --fs-5xl: 3rem;
-  --fs-6xl: 3.75rem;
+  /* Typography Scale */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fs-xs: 0.75rem;     /* 12px */
+  --fs-sm: 0.875rem;    /* 14px */
+  --fs-base: 1rem;      /* 16px */
+  --fs-lg: 1.125rem;    /* 18px */
+  --fs-xl: 1.25rem;     /* 20px */
+  --fs-2xl: 1.5rem;     /* 24px */
+  --fs-3xl: 1.875rem;   /* 30px */
+  --fs-4xl: 2.25rem;    /* 36px */
+  --fs-5xl: 3rem;       /* 48px */
+  --fs-6xl: 3.75rem;    /* 60px */
 
   --fw-light: 300;
   --fw-regular: 400;
@@ -86,31 +95,27 @@
 
   /* Border Radius */
   --radius-sm: 4px;
-  --radius-md: 4px;
-  --radius-lg: 4px;
-  --radius-xl: 4px;
-  --radius-2xl: 4px;
-  --radius-full: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.15);
-  --shadow-glow: 0 0 20px rgba(79,70,229,0.3);
-  --shadow-glow-accent: 0 0 20px rgba(6,182,212,0.3);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08);
 
   /* Glass */
-  --glass-bg: rgba(255,255,255,0.7);
-  --glass-border: rgba(255,255,255,0.3);
+  --glass-bg: rgba(255,255,255,0.85);
+  --glass-border: rgba(255,255,255,0.4);
   --glass-blur: 12px;
 
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 400ms ease;
-  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Z-index */
   --z-dropdown: 100;
@@ -121,8 +126,8 @@
   --z-toast: 999999;
 
   /* Layout */
-  --container-max: 1280px;
-  --navbar-height: 64px;
+  --container-max: 1140px;
+  --navbar-height: 76px;
   --sidebar-width: 280px;
 }
 
@@ -139,6 +144,7 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   font-size: 16px;
+  background-color: var(--bg-page);
 }
 
 body {
@@ -146,11 +152,16 @@ body {
   font-size: var(--fs-base);
   line-height: var(--lh-normal);
   color: var(--text-primary);
-  background-color: var(--bg);
+  background-color: var(--bg-page) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+#app,
+#page-content {
+  background-color: var(--bg-page) !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -411,6 +422,14 @@ h1, h2, h3, h4, h5, h6 {
 .delay-6 { animation-delay: 600ms; }
 
 /* ---- Scrollbar ---- */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -479,10 +498,13 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 768px) {
   :root {
-    --navbar-height: 66px;
+    --navbar-height: 72px;
   }
   #page-content {
     padding-top: calc(var(--navbar-height) + max(10px, env(safe-area-inset-top, 10px)));
+  }
+  #page-content.no-navbar-padding {
+    padding-top: 0 !important;
   }
   .navbar.has-search-strip + #page-content,
   body:has(.mobile-search-strip) #page-content {
@@ -494,4 +516,38 @@ h1, h2, h3, h4, h5, h6 {
   .grid-2 { grid-template-columns: 1fr; }
   .hide-mobile { display: none !important; }
   .container { padding: 0 var(--space-4); }
+}
+
+/* Candidates Responsive Grid: Strictly 2-Column for Mobile View ONLY */
+.candidates-grid-responsive {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 769px) {
+  .candidates-grid-responsive {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .candidates-grid-responsive {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Ensure fixed floating bottom docks stay pinned to browser viewport */
+#page-content.page-enter:has(.post-job-page),
+#page-content.page-enter:has(.post-job-form),
+.post-job-page,
+.post-job-form {
+  transform: none !important;
+  perspective: none !important;
+  filter: none !important;
 }

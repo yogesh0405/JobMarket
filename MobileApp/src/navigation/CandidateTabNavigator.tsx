@@ -10,7 +10,7 @@ import {
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import { Home, Search, Bookmark, ClipboardCheck, User } from 'lucide-react-native';
+import { Home, Search, Building2, ClipboardCheck, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -133,9 +133,9 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
             } else if (route.name === 'CandidateAppliedTab') {
               IconComponent = ClipboardCheck;
               labelText = 'Applied';
-            } else if (route.name === 'CandidateSavedTab') {
-              IconComponent = Bookmark;
-              labelText = 'Saved';
+            } else if (route.name === 'CandidateSavedTab' || route.name === 'CandidateCompaniesTab') {
+              IconComponent = Building2;
+              labelText = 'Companies';
             } else if (route.name === 'CandidateProfileTab') {
               IconComponent = User;
               labelText = 'Profile';
@@ -197,9 +197,9 @@ export const CandidateTabNavigator: React.FC = () => {
       }}
     >
       <Tab.Screen name="CandidateHomeTab" component={CandidateHomeScreen} />
-      <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
-      <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
       <Tab.Screen name="CandidateSavedTab" component={CandidateSavedJobsScreen} />
+      <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
+      <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
       <Tab.Screen name="CandidateProfileTab" component={CandidateProfileScreen} />
     </Tab.Navigator>
   );

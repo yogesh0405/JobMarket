@@ -75,32 +75,34 @@
 
 .banner-actions {
   position: absolute;
-  top: var(--space-2);
-  right: var(--space-3);
+  top: 10px;
+  right: 12px;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px !important;
   z-index: 10;
 }
 
 .banner-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  display: flex;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #FFFFFF !important;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all var(--transition-fast);
-  padding: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none !important;
 }
 
 .banner-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
-  transform: scale(1.05);
+  background: transparent !important;
+  opacity: 0.8;
+  transform: scale(1.15);
 }
 
 .dashboard-profile-body {

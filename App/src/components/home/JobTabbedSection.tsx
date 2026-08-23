@@ -19,7 +19,7 @@ interface DynamicCategory {
   filterFn: (job: Job) => boolean;
 }
 
-export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
+export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs = [] }) => {
   const navigate = useNavigate();
   const [activeTabId, setActiveTabId] = useState<string>('all');
   const scrollRowRef = useRef<HTMLDivElement>(null);
@@ -59,7 +59,8 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
 
   // Active jobs in DB
   const activeJobs = useMemo(() => {
-    return jobs.filter(j => j.status === 'active' || !j.status);
+    const safeJobs = Array.isArray(jobs) ? jobs : [];
+    return safeJobs.filter(j => j && (j.status === 'active' || !j.status));
   }, [jobs]);
 
   // Dynamically extract and order categories strictly according to Admin Tab Settings!
@@ -336,7 +337,11 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs }) => {
               gap: '14px',
               overflowX: 'auto',
               scrollSnapType: 'x mandatory',
+              paddingTop: '10px',
               paddingBottom: '10px',
+              paddingLeft: '4px',
+              paddingRight: '4px',
+              marginTop: '14px',
               marginBottom: '12px',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',

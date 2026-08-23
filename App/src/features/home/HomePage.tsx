@@ -9,6 +9,7 @@ import { useTranslation } from '../../utils/translations';
 import { initialHospitalCategories, initialHotelCategories, initialSchoolCategories } from '../../store/seedData';
 import { BannerSlider } from '../../components/home/BannerSlider';
 import { JobTabbedSection } from '../../components/home/JobTabbedSection';
+import THEME from '../../constants/theme';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -104,6 +105,9 @@ export const HomePage: React.FC = () => {
   const [educationDropdownOpen, setEducationDropdownOpen] = useState(false);
   const educationRef = useRef<HTMLDivElement>(null);
 
+  const [midcDropdownOpen, setMidcDropdownOpen] = useState(false);
+  const midcRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (industryRef.current && !industryRef.current.contains(e.target as Node)) {
@@ -111,6 +115,9 @@ export const HomePage: React.FC = () => {
       }
       if (educationRef.current && !educationRef.current.contains(e.target as Node)) {
         setEducationDropdownOpen(false);
+      }
+      if (midcRef.current && !midcRef.current.contains(e.target as Node)) {
+        setMidcDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -141,6 +148,16 @@ export const HomePage: React.FC = () => {
     "ITI",
     "Diploma",
     "Graduate"
+  ];
+
+  const midcZones = [
+    "Waluj MIDC",
+    "Shendra MIDC",
+    "Chakan MIDC",
+    "Bhosari MIDC",
+    "Chikalthana MIDC",
+    "Waluj Industrial Area",
+    "Chhatrapati Sambhajinagar"
   ];
 
   const featuredJobs = getJobs().filter(j => j.featured).slice(0, 6);
@@ -177,7 +194,7 @@ export const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="homepage-wrapper">
+    <div className="homepage-wrapper" style={{ backgroundColor: THEME.colors.offWhite }}>
       {/* Enterprise Promotional Banner Carousel Slider - Immediately below Header */}
       <div style={{ paddingTop: '0.5rem' }}>
         <BannerSlider />
@@ -209,17 +226,7 @@ export const HomePage: React.FC = () => {
 
             <div className="hero-search">
               <form className="search-bar" onSubmit={handleSearch}>
-                <div className="search-field keyword-field">
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder={t.searchPlaceholder}
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                  />
-                </div>
+                {/* 1. Industry Select Field */}
                 <div className="search-field select-field industry-field" ref={industryRef}>
                   <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
@@ -270,6 +277,8 @@ export const HomePage: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* 2. Education Select Field */}
                 <div className="search-field select-field education-field" ref={educationRef}>
                   <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
@@ -320,17 +329,58 @@ export const HomePage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="search-field location-field">
+
+                {/* 3. MIDC Zone Location Select Field */}
+                <div className="search-field select-field location-field" ref={midcRef}>
                   <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
-                  <input
-                    type="text"
-                    placeholder={t.locationPlaceholder}
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
+                  <div className="select-container">
+                    <div
+                      onClick={() => setMidcDropdownOpen(!midcDropdownOpen)}
+                      className="custom-select-trigger"
+                    >
+                      <span className={location ? "select-value" : "select-placeholder"}>
+                        {location || 'Select MIDC Zone'}
+                      </span>
+                      <svg 
+                        className={`select-arrow ${midcDropdownOpen ? 'open' : ''}`}
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                      >
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                    {midcDropdownOpen && (
+                      <div className="custom-select-dropdown">
+                        <div
+                          onClick={() => {
+                            setLocation('');
+                            setMidcDropdownOpen(false);
+                          }}
+                          className={`custom-select-option ${location === '' ? 'active' : ''}`}
+                        >
+                          Select MIDC Zone
+                        </div>
+                        {midcZones.map((zone) => (
+                          <div
+                            key={zone}
+                            onClick={() => {
+                              setLocation(zone);
+                              setMidcDropdownOpen(false);
+                            }}
+                            className={`custom-select-option ${location === zone ? 'active' : ''}`}
+                          >
+                            {zone}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
+
                 <button type="submit" className="search-btn">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -355,7 +405,7 @@ export const HomePage: React.FC = () => {
       <JobTabbedSection jobs={getJobs()} />
 
       {/* Stats Section */}
-      <StatsSection totalJobs={state.jobs.length} totalCompanies={state.companies.length} totalCandidates={state.users.length} t={t} />
+      <StatsSection totalJobs={Array.isArray(state.jobs) ? state.jobs.length : 0} totalCompanies={Array.isArray(state.companies) ? state.companies.length : 0} totalCandidates={Array.isArray(state.users) ? state.users.length : 0} t={t} />
 
       <hr className="section-divider" />
 
@@ -368,7 +418,7 @@ export const HomePage: React.FC = () => {
             <p className="section-subtitle">{t.categoriesSubtitle}</p>
           </div>
           <div className="grid grid-4" style={{ gap: 'var(--space-6)' }}>
-            {state.categories.map((cat) => (
+            {(Array.isArray(state.categories) ? state.categories : []).map((cat) => (
               <div
                 key={cat.name}
                 className="category-card"

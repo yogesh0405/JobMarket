@@ -101,6 +101,7 @@ app.use(['/api/v1/jobs', '/api/jobs'], (req, res, next) => {
   return jobServiceProxy(req, res, next);
 });
 
+app.use(['/api/v1/companies', '/api/companies'], userServiceProxy);
 app.use('/api/v1/notifications', createServiceProxy(env.NOTIFICATION_SERVICE_PORT));
 app.use('/api/support', createServiceProxy(env.SUPPORT_SERVICE_PORT));
 app.use('/api/admin/support', createServiceProxy(env.SUPPORT_SERVICE_PORT));

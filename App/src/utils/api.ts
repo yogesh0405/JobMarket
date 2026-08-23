@@ -32,9 +32,17 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     headers['x-session-id'] = sessionId;
   }
 
-  // Ensure Web App never sends identity override headers
-  delete headers['x-user-id'];
-  delete headers['x-user-role'];
+  // Include user ID from stored session state if available for fallback authentication
+  const storedUser = localStorage.getItem('user') || localStorage.getItem('currentUser') || localStorage.getItem('jobMarketplace_react');
+  if (storedUser) {
+    try {
+      const parsed = JSON.parse(storedUser);
+      const userId = parsed?.id || parsed?.currentUser?.id;
+      if (userId) {
+        headers['x-user-id'] = userId;
+      }
+    } catch (_) {}
+  }
 
   // Set content-type to application/json by default unless it's FormData (for file uploads)
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {

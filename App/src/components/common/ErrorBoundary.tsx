@@ -69,7 +69,10 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
                 style={{
                   background: '#2563EB',
                   color: '#FFFFFF',

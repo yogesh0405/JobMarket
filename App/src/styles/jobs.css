@@ -879,36 +879,50 @@
 
 /* Mobile Responsiveness for Logo Upload Card */
 @media (max-width: 540px) {
+  .post-job-form {
+    padding-bottom: 90px;
+  }
+
   .logo-upload-card {
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 12px;
-    gap: 12px;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 12px 14px !important;
+    gap: 12px !important;
   }
 
   .logo-preview-box {
-    width: 60px;
-    height: 60px;
-    margin-top: 2px;
+    width: 60px !important;
+    height: 60px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .logo-upload-info {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .logo-upload-actions {
-    width: 100%;
-    gap: 8px;
+    width: 100% !important;
+    gap: 6px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
   }
 
   .logo-btn-upload,
   .logo-btn-remove {
-    flex: 1 1 auto;
-    min-width: 110px;
-    justify-content: center;
-    font-size: 12.5px;
-    padding: 6px 10px;
-    height: 36px;
+    flex: 1 !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
+    height: 36px !important;
+    white-space: nowrap !important;
   }
 
   .logo-upload-hint {
-    font-size: 11.5px;
+    font-size: 11px !important;
+    margin-top: 2px !important;
   }
 }
 
@@ -1741,39 +1755,39 @@
   }
 
   .post-job-header {
-    margin-bottom: 16px;
-    padding: 0 4px;
+    margin-bottom: 14px;
+    padding: 0 2px;
   }
 
   .post-job-header h2,
   .post-job-header h1 {
-    font-size: 20px !important;
+    font-size: 17px !important;
     line-height: 1.3 !important;
   }
 
   .post-job-header p {
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
 
   .post-job-form {
-    gap: 16px;
+    gap: 12px;
   }
 
   .form-section {
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
-    border: 1px solid #e2e8f0;
+    border-radius: 0px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    border: 1px solid #cbd5e1;
   }
 
   .form-section-header {
-    padding: 14px 16px;
-    font-size: 14.5px;
+    padding: 10px 12px;
+    font-size: 13.5px;
     font-weight: 700;
   }
 
   .form-section-body {
-    padding: 16px 14px;
-    gap: 16px;
+    padding: 12px 10px;
+    gap: 12px;
   }
 
   .form-group {
@@ -1781,17 +1795,18 @@
   }
 
   .form-label {
-    font-size: 13px;
-    margin-bottom: 6px;
+    font-size: 12px;
+    margin-bottom: 4px;
   }
 
   .form-input,
   .form-select,
   .form-textarea {
-    font-size: 14px !important;
-    min-height: 44px;
-    border-radius: 8px;
-    padding: 10px 12px;
+    font-size: 13px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    border-radius: 0px;
+    padding: 6px 10px;
   }
 
   .salary-row {
@@ -1801,27 +1816,130 @@
   }
 
   .post-job-actions {
-    margin-top: 20px !important;
-    margin-bottom: 40px !important;
-    gap: 10px !important;
+    margin-top: 16px !important;
+    margin-bottom: 30px !important;
+    gap: 8px !important;
   }
 
   .post-job-actions .btn {
-    height: 48px !important;
-    font-size: 14.5px !important;
-    border-radius: 8px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    border-radius: 0px !important;
     font-weight: 700 !important;
   }
 
   .suggested-skills-container {
-    padding: 12px !important;
-    border-radius: 8px !important;
+    padding: 10px !important;
+    border-radius: 0px !important;
   }
 
   .hiring-method-grid {
     grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
+}
+
+/* ============================================
+   POST JOB SECTION — COMPACT FONT SCALING (MATCH BROWSE CANDIDATES)
+   ============================================ */
+
+.post-job-header h2,
+.post-job-header h1 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0F172A !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+}
+
+.post-job-header p {
+  font-size: 12.5px !important;
+  color: #64748B !important;
+  margin-top: 3px !important;
+}
+
+.post-job-form {
+  gap: 14px !important;
+}
+
+.form-section {
+  border-radius: 0px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  border: 1px solid #CBD5E1 !important;
+  background: #FFFFFF !important;
+}
+
+.form-section-header {
+  padding: 10px 14px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+  background: #F8FAFC !important;
+  border-bottom: 1px solid #CBD5E1 !important;
+}
+
+.form-section-body {
+  padding: 14px !important;
+  gap: 12px !important;
+}
+
+.form-label {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #0F172A !important;
+  margin-bottom: 4px !important;
+  display: block;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  font-size: 13px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 0px !important;
+  border: 1px solid #CBD5E1 !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  padding-right: 10px !important;
+  padding-left: 10px;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+}
+
+.input-has-icon-left,
+.form-input.input-has-icon-left {
+  padding-left: 38px !important;
+}
+
+.form-textarea {
+  height: auto !important;
+  min-height: 80px !important;
+}
+
+.form-group {
+  margin-bottom: 10px !important;
+}
+
+.hiring-card-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.hiring-card-subtitle {
+  font-size: 11.5px !important;
+}
+
+.hiring-card-desc {
+  font-size: 12px !important;
+}
+
+.post-job-actions .btn {
+  height: 38px !important;
+  font-size: 13px !important;
+  border-radius: 0px !important;
+  font-weight: 700 !important;
+  padding: 0 16px !important;
 }
 
 

@@ -3,6 +3,19 @@ import { useStore } from '../store/useStore';
 import { User, UserRole } from '../types';
 import { apiFetch } from '../utils/api';
 
+const parseArrayField = (val: any): any[] => {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {
+      return val.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
 export const useAuth = () => {
   const { state, dispatch } = useStore();
 
@@ -66,12 +79,12 @@ export const useAuth = () => {
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
         resume: apiUser.resume || null,
-        experience: apiUser.experience || [],
-        education: apiUser.education || [],
-        skills: apiUser.skills || [],
-        savedJobs: apiUser.savedJobs || apiUser.saved_jobs || [],
-        appliedJobs: apiUser.appliedJobs || apiUser.applied_jobs || [],
-        appliedJobsWithStatus: apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || [],
+        experience: parseArrayField(apiUser.experience),
+        education: parseArrayField(apiUser.education),
+        skills: parseArrayField(apiUser.skills),
+        savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs),
+        appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs),
+        appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status),
         headline: apiUser.headline || '',
         location: apiUser.location || '',
         tradeSpecialization: apiUser.trade_specialization || '',
@@ -237,12 +250,12 @@ export const useAuth = () => {
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
         resume: apiUser.resume || null,
-        experience: apiUser.experience || [],
-        education: apiUser.education || [],
-        skills: apiUser.skills || [],
-        savedJobs: apiUser.savedJobs || apiUser.saved_jobs || state.currentUser?.savedJobs || [],
-        appliedJobs: apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs || [],
-        appliedJobsWithStatus: apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus || [],
+        experience: parseArrayField(apiUser.experience),
+        education: parseArrayField(apiUser.education),
+        skills: parseArrayField(apiUser.skills),
+        savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs || state.currentUser?.savedJobs),
+        appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs),
+        appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus),
         headline: apiUser.headline || '',
         location: apiUser.location || '',
         tradeSpecialization: apiUser.trade_specialization || '',
@@ -308,12 +321,12 @@ export const useAuth = () => {
             createdAt: apiUser.created_at || new Date().toISOString(),
             profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
             resume: apiUser.resume || null,
-            experience: apiUser.experience || [],
-            education: apiUser.education || [],
-            skills: apiUser.skills || [],
-            savedJobs: apiUser.savedJobs || state.currentUser?.savedJobs || [],
-            appliedJobs: apiUser.appliedJobs || [],
-            appliedJobsWithStatus: apiUser.appliedJobsWithStatus || [],
+            experience: parseArrayField(apiUser.experience),
+            education: parseArrayField(apiUser.education),
+            skills: parseArrayField(apiUser.skills),
+            savedJobs: parseArrayField(apiUser.savedJobs || state.currentUser?.savedJobs),
+            appliedJobs: parseArrayField(apiUser.appliedJobs),
+            appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus),
             headline: apiUser.headline || '',
             location: apiUser.location || '',
             tradeSpecialization: apiUser.trade_specialization || '',

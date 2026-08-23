@@ -8,7 +8,7 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { Job, JobType, WorkMode } from '../../types';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
-import { extractCoordinatesFromMapInput, resolveShortMapUrl } from '../../utils/mapUrlParser';
+import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../utils/mapUrlParser';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { 
   Building2, 
@@ -36,7 +36,8 @@ import {
   Phone,
   UserCheck,
   Zap,
-  Lightbulb
+  Lightbulb,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   INDUSTRY_LIST, 
@@ -64,7 +65,60 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const existingJob = id ? getJobById(id) : undefined;
 
   // Enterprise Governance & Form States
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const STEPS = [
+    { id: 1, title: 'Basic Details' },
+    { id: 2, title: 'Location' },
+    { id: 3, title: 'Work & Pay' },
+    { id: 4, title: 'Role & Skills' },
+  ];
+
+  const handleNextStep = () => {
+    setErrorMsg(null);
+    if (currentStep === 1) {
+      const activeInd = industry === 'Other' ? customIndustry.trim() : industry.trim();
+      const activeRole = title === 'Other' ? customTitle.trim() : title.trim();
+      if (!activeInd) {
+        setErrorMsg('Please select or specify an Industry Sector.');
+        showToast('Please select or specify an Industry Sector.', 'error');
+        return;
+      }
+      if (!activeRole) {
+        setErrorMsg('Please select or specify a Job Role.');
+        showToast('Please select or specify a Job Role.', 'error');
+        return;
+      }
+      if (!openingsInput || parseInt(openingsInput, 10) < 1) {
+        setErrorMsg('Please enter a valid number of vacancies (minimum 1).');
+        showToast('Please enter a valid number of vacancies (minimum 1).', 'error');
+        return;
+      }
+      setCurrentStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (currentStep === 2) {
+      if (!location.trim()) {
+        setErrorMsg('Please enter a City Location / Factory Address.');
+        showToast('Please enter a City Location / Factory Address.', 'error');
+        return;
+      }
+      setCurrentStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (currentStep === 3) {
+      setCurrentStep(4);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePrevStep = () => {
+    setErrorMsg(null);
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // 1. Resume Acceptance (Default: Enabled)
   const [acceptResume, setAcceptResume] = useState<boolean>(true);
@@ -167,7 +221,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [workType, setWorkType] = useState<JobType>('Full-Time');
   const [workMode, setWorkMode] = useState<WorkMode>('Onsite');
   const [selectedPerks, setSelectedPerks] = useState<string[]>([]);
-  const [companyLogo, setCompanyLogo] = useState('');
+  const defaultEmployerLogo = currentUser?.profilePictureUrl || (currentUser as any)?.companyLogo || (currentUser as any)?.logoUrl || '';
+  const [companyLogo, setCompanyLogo] = useState(defaultEmployerLogo);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -233,6 +288,39 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [isParsingMapUrl, setIsParsingMapUrl] = useState(false);
   const [mapUrlStatusMsg, setMapUrlStatusMsg] = useState('');
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
+
+  // Intercept Mobile/Laptop Browser Back Button & Unsaved Tab Close
+  useEffect(() => {
+    window.history.pushState({ postJobExitGuard: true }, '');
+
+    const handlePopState = () => {
+      window.history.pushState({ postJobExitGuard: true }, '');
+      setShowExitConfirmModal(true);
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  const handleConfirmExit = () => {
+    setShowExitConfirmModal(false);
+    if (isEmbedded && onComplete) {
+      onComplete();
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   // Load Categories on mount
   useEffect(() => {
@@ -325,7 +413,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
-  // Google Maps Handler
+  // Google Maps & Location Geocoding Handler
   const handleGoogleMapsUrlChange = async (inputUrl: string) => {
     setGoogleMapsUrl(inputUrl);
     if (!inputUrl.trim()) {
@@ -339,26 +427,42 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     if (coords) {
       setLatitude(coords.latitude);
       setLongitude(coords.longitude);
-      setMapUrlStatusMsg('SUCCESS:Job location marked on map');
+      setMapUrlStatusMsg(`SUCCESS:Exact location pinned on map (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`);
       return;
     }
 
-    if (inputUrl.includes('http')) {
-      setIsParsingMapUrl(true);
-      setMapUrlStatusMsg('LOADING:Loading location from map link...');
-      const resolved = await resolveShortMapUrl(inputUrl);
-      setIsParsingMapUrl(false);
-      if (resolved) {
-        setLatitude(resolved.latitude);
-        setLongitude(resolved.longitude);
-        setMapUrlStatusMsg('SUCCESS:Job location marked on map');
-      } else {
-        setMapUrlStatusMsg('WARN:Location could not be loaded from map link. City location will be used.');
-      }
+    setIsParsingMapUrl(true);
+    setMapUrlStatusMsg('LOADING:Extracting location coordinates from map link...');
+
+    const resolved = await resolveShortMapUrl(inputUrl, location);
+    setIsParsingMapUrl(false);
+
+    if (resolved) {
+      setLatitude(resolved.latitude);
+      setLongitude(resolved.longitude);
+      setMapUrlStatusMsg(`SUCCESS:Exact location pinned on map (${resolved.latitude.toFixed(4)}, ${resolved.longitude.toFixed(4)})`);
     } else {
-      setMapUrlStatusMsg('WARN:Invalid Google Maps link format.');
+      const geoFallback = await geocodeQueryOnClient(inputUrl);
+      if (geoFallback) {
+        setLatitude(geoFallback.latitude);
+        setLongitude(geoFallback.longitude);
+        setMapUrlStatusMsg(`SUCCESS:Exact location pinned on map (${geoFallback.latitude.toFixed(4)}, ${geoFallback.longitude.toFixed(4)})`);
+      } else if (location && location.trim()) {
+        const cityGeo = await geocodeQueryOnClient(location);
+        if (cityGeo) {
+          setLatitude(cityGeo.latitude);
+          setLongitude(cityGeo.longitude);
+          setMapUrlStatusMsg(`SUCCESS:Location pinned on map (${cityGeo.latitude.toFixed(4)}, ${cityGeo.longitude.toFixed(4)})`);
+        } else {
+          setMapUrlStatusMsg('WARN:Could not extract exact coordinates from link. Please verify link format.');
+        }
+      } else {
+        setMapUrlStatusMsg('WARN:Could not extract exact coordinates from link. Please verify link format.');
+      }
     }
   };
+
+  // Remove auto-resolve effect that set lat/lng without link input
 
   // Shift Timing Effect
   useEffect(() => {
@@ -532,9 +636,11 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         }
       }
 
-      setCompanyLogo(existingJob.companyLogo || '');
+      setCompanyLogo(existingJob.companyLogo || defaultEmployerLogo);
+    } else if (!isEdit) {
+      setCompanyLogo(defaultEmployerLogo);
     }
-  }, [isEdit, existingJob]);
+  }, [isEdit, existingJob, defaultEmployerLogo]);
 
   const midcList = [
     'Waluj MIDC (Chhatrapati Sambhajinagar)',
@@ -821,9 +927,121 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         </div>
       )}
 
-      <form className="post-job-form" onSubmit={handleSubmit}>
-        {/* Governance & Logo Section */}
-        <div className="form-section">
+      {/* 4-Step Stepper Header Bar (Exact Mobile App Flow Parity) */}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #CBD5E1',
+        borderRadius: '8px',
+        padding: '14px 10px',
+        marginBottom: '20px',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+        overflowX: 'auto'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          minWidth: '280px'
+        }}>
+          {STEPS.map((step, idx) => {
+            const stepNumber = idx + 1;
+            const isCompleted = currentStep > stepNumber;
+            const isActive = currentStep === stepNumber;
+            const isLast = idx === STEPS.length - 1;
+
+            return (
+              <React.Fragment key={step.id}>
+                <div
+                  onClick={() => {
+                    if (stepNumber < currentStep) {
+                      setErrorMsg(null);
+                      setCurrentStep(stepNumber);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: stepNumber < currentStep ? 'pointer' : 'default',
+                    zIndex: 2,
+                    flex: '1 1 0px',
+                    minWidth: 0
+                  }}
+                >
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    border: isActive ? '2px solid #1B4FDF' : isCompleted ? '1.5px solid #1B4FDF' : '1.5px solid #CBD5E1',
+                    backgroundColor: isCompleted ? '#1B4FDF' : '#FFFFFF',
+                    color: isCompleted ? '#FFFFFF' : isActive ? '#1B4FDF' : '#64748B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0
+                  }}>
+                    {isCompleted ? <CheckCircle2 size={15} color="#FFFFFF" /> : stepNumber}
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: isActive ? '700' : '600',
+                    color: isActive ? '#0F172A' : '#64748B',
+                    marginTop: '4px',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%'
+                  }}>
+                    {step.title}
+                  </span>
+                </div>
+
+                {!isLast && (
+                  <div style={{
+                    flex: '0 0 10px',
+                    height: '2px',
+                    backgroundColor: currentStep > stepNumber ? '#1B4FDF' : '#E2E8F0',
+                    margin: '0 2px',
+                    marginTop: '-16px',
+                    transition: 'all 0.2s ease'
+                  }} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div style={{
+          backgroundColor: '#FEF2F2',
+          border: '1.5px solid #FCA5A5',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          color: '#991B1B',
+          fontSize: '13.5px',
+          fontWeight: '600'
+        }}>
+          <AlertCircle size={18} style={{ color: '#DC2626', flexShrink: 0 }} />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+        {/* STEP 1: BASIC DETAILS */}
+        {currentStep === 1 && (
+          <>
+            {/* Governance & Logo Section */}
+            <div className="form-section">
           <div className="form-section-header">
             <ShieldCheck size={20} style={{ color: '#344BFD' }} />
             Company Logo & Settings
@@ -972,14 +1190,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     type="button"
                     onClick={handleOpeningsDecrement}
                     style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '8px 0 0 8px',
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '0',
                       border: '1px solid #cbd5e1',
                       borderRight: 'none',
                       background: '#f8fafc',
                       color: '#1e293b',
-                      fontSize: '18px',
+                      fontSize: '14px',
                       fontWeight: '700',
                       cursor: 'pointer',
                       display: 'flex',
@@ -989,7 +1207,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     }}
                     title="Decrease vacancy count"
                   >
-                    <Minus size={16} />
+                    <Minus size={15} />
                   </button>
                   <input
                     type="number"
@@ -1003,8 +1221,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       borderRadius: 0,
                       textAlign: 'center',
                       fontWeight: '700',
-                      fontSize: '15px',
-                      height: '42px',
+                      fontSize: '13px',
+                      height: '38px',
                       flex: 1
                     }}
                   />
@@ -1012,14 +1230,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     type="button"
                     onClick={handleOpeningsIncrement}
                     style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '0 8px 8px 0',
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '0',
                       border: '1px solid #cbd5e1',
                       borderLeft: 'none',
                       background: '#f8fafc',
                       color: '#1e293b',
-                      fontSize: '18px',
+                      fontSize: '14px',
                       fontWeight: '700',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1029,7 +1247,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     }}
                     title="Increase vacancy count"
                   >
-                    <Plus size={16} />
+                    <Plus size={15} />
                   </button>
                 </div>
               </div>
@@ -1124,14 +1342,101 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             </div>
           </div>
         </div>
+        </>
+        )}
 
-        {/* Experience & Salary Requirements */}
-        <div className="form-section">
-          <div className="form-section-header">
-            <IndianRupee size={20} style={{ color: '#344BFD' }} />
-            Experience & Salary Preferences
+        {/* STEP 2: LOCATION */}
+        {currentStep === 2 && (
+          <div className="form-section">
+            <div className="form-section-header">
+              <MapPin size={20} style={{ color: '#344BFD' }} />
+              Location & Factory Address
+            </div>
+            <div className="form-section-body">
+              <div className="form-row">
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">City Location / Factory Address <span className="required">*</span></label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Chhatrapati Sambhajinagar, Pune, Mumbai"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Google Maps Location Link Input */}
+              <div className="form-row" style={{ marginTop: '12px', marginBottom: '12px' }}>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label" style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <MapPin size={18} style={{ color: '#344BFD' }} />
+                    <span>Google Maps Location Link (For Interactive Map View)</span>
+                  </label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="Paste Google Maps link e.g. https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
+                    value={googleMapsUrl}
+                    onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
+                    style={{
+                      borderColor: latitude && longitude ? '#10b981' : isParsingMapUrl ? '#344BFD' : undefined,
+                      boxShadow: latitude && longitude ? '0 0 0 2px rgba(16, 185, 129, 0.15)' : undefined
+                    }}
+                  />
+                  {mapUrlStatusMsg && (
+                    <div style={{
+                      marginTop: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: mapUrlStatusMsg.startsWith('SUCCESS:') ? '#059669' : mapUrlStatusMsg.startsWith('LOADING:') ? '#1D4ED8' : '#B45309',
+                      background: mapUrlStatusMsg.startsWith('SUCCESS:') ? '#ECFDF5' : mapUrlStatusMsg.startsWith('LOADING:') ? '#EFF6FF' : '#FFFBEB',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${mapUrlStatusMsg.startsWith('SUCCESS:') ? '#A7F3D0' : mapUrlStatusMsg.startsWith('LOADING:') ? '#BFDBFE' : '#FDE68A'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      {mapUrlStatusMsg.startsWith('LOADING:') && <Loader2 size={16} style={{ color: '#344BFD', animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
+                      {mapUrlStatusMsg.startsWith('SUCCESS:') && <CheckCircle2 size={16} style={{ color: '#059669', flexShrink: 0 }} />}
+                      {mapUrlStatusMsg.startsWith('WARN:') && <AlertCircle size={16} style={{ color: '#D97706', flexShrink: 0 }} />}
+                      <span>{mapUrlStatusMsg.replace(/^(SUCCESS:|LOADING:|WARN:)/, '')}</span>
+                    </div>
+                  )}
+
+                  {/* Render Map ONLY AFTER Inserting Link and Coordinates are fetched */}
+                  {googleMapsUrl.trim() !== '' && latitude !== null && longitude !== null && (
+                    <JobLocationMapPreview
+                      latitude={latitude}
+                      longitude={longitude}
+                      locationName={location || title || 'Job Location'}
+                      height="280px"
+                      readOnly={false}
+                      onLocationSelect={(lat, lng) => {
+                        setLatitude(lat);
+                        setLongitude(lng);
+                        setMapUrlStatusMsg(`SUCCESS:Location pinned on map (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="form-section-body">
+        )}
+
+        {/* STEP 3: WORK & PAY */}
+        {currentStep === 3 && (
+          <>
+            {/* Experience & Salary Requirements */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <IndianRupee size={20} style={{ color: '#344BFD' }} />
+                Experience & Salary Preferences
+              </div>
+              <div className="form-section-body">
             <div className="form-row">
               {/* Experience Requirement Checkbox & Selector */}
               <div className="form-group">
@@ -1429,68 +1734,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">City Location <span className="required">*</span></label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Chhatrapati Sambhajinagar, Pune, Mumbai"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
 
-            {/* Google Maps Location Link Input */}
-            <div className="form-row" style={{ marginTop: '12px', marginBottom: '12px' }}>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label" style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <MapPin size={18} style={{ color: '#344BFD' }} />
-                  <span>Google Maps Location Link (For Interactive Map View)</span>
-                </label>
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="Paste Google Maps link e.g. https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
-                  value={googleMapsUrl}
-                  onChange={(e) => handleGoogleMapsUrlChange(e.target.value)}
-                  style={{
-                    borderColor: latitude && longitude ? '#10b981' : isParsingMapUrl ? '#344BFD' : undefined,
-                    boxShadow: latitude && longitude ? '0 0 0 2px rgba(16, 185, 129, 0.15)' : undefined
-                  }}
-                />
-                {mapUrlStatusMsg && !mapUrlStatusMsg.startsWith('SUCCESS:') && (
-                  <div style={{
-                    marginTop: '8px',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: mapUrlStatusMsg.startsWith('LOADING:') ? '#1D4ED8' : '#B45309',
-                    background: mapUrlStatusMsg.startsWith('LOADING:') ? '#EFF6FF' : '#FFFBEB',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: `1px solid ${mapUrlStatusMsg.startsWith('LOADING:') ? '#BFDBFE' : '#FDE68A'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    {mapUrlStatusMsg.startsWith('LOADING:') && <Loader2 size={16} style={{ color: '#344BFD', animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
-                    {mapUrlStatusMsg.startsWith('WARN:') && <AlertCircle size={16} style={{ color: '#D97706', flexShrink: 0 }} />}
-                    <span>{mapUrlStatusMsg.replace(/^(SUCCESS:|LOADING:|WARN:)/, '')}</span>
-                  </div>
-                )}
-
-                {latitude !== null && longitude !== null && (
-                  <JobLocationMapPreview
-                    latitude={latitude}
-                    longitude={longitude}
-                    locationName={location || title || 'Job Location'}
-                    height="280px"
-                  />
-                )}
-              </div>
-            </div>
 
             <div className="form-row">
               <div className="form-group">
@@ -1722,9 +1966,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             </div>
           </div>
         </div>
+        </>
+        )}
 
-        {/* Application Preferences & Governance */}
-        <div className="form-section">
+        {/* STEP 4: ROLE & SKILLS */}
+        {currentStep === 4 && (
+          <>
+            {/* Application Preferences & Governance */}
+            <div className="form-section">
           <div className="form-section-header">
             <ShieldCheck size={20} style={{ color: '#344BFD' }} />
             Application Preferences & Governance
@@ -2272,114 +2521,277 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             </div>
           </div>
         </div>
+        </>
+        )}
 
-        {/* Actions */}
-        <div
-          className="post-job-actions"
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            width: '100%',
-            boxSizing: 'border-box',
-            marginTop: '24px',
-            marginBottom: '36px'
-          }}
-        >
-          <button
-            type="button"
-            disabled={isSubmitting}
-            className="btn btn-secondary btn-lg"
-            onClick={() => isEmbedded ? (onComplete ? onComplete() : navigate('/dashboard')) : navigate(-1)}
-            style={{
-              flex: '1 1 50%',
-              minWidth: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '46px',
-              padding: '0 16px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '14px',
-              boxSizing: 'border-box',
-              border: '1.5px solid #cbd5e1',
-              background: '#ffffff',
-              color: '#334155',
-              cursor: 'pointer'
-            }}
-          >
-            Cancel
-          </button>
-          
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn btn-primary btn-lg"
-            style={{
-              flex: '1 1 50%',
-              minWidth: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              height: '46px',
-              padding: '0 16px',
-              borderRadius: '8px',
-              background: '#344BFD',
-              color: '#ffffff',
-              fontWeight: '700',
-              fontSize: '14px',
-              border: 'none',
-              boxSizing: 'border-box',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting ? 0.85 : 1,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  style={{ animation: 'spin 0.8s linear infinite' }}
-                >
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                <span>
-                  {isEdit 
-                    ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmitting...' : 'Updating...') 
-                    : 'Posting...'}
-                </span>
-              </>
-            ) : (
-              <span>
-                {isEdit 
-                  ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmit' : 'Update Job') 
-                  : 'Post Job'}
-              </span>
-            )}
-          </button>
-        </div>
-      </form>
     </>
   );
 
-  if (isEmbedded) {
-    return <div style={{ padding: '0 0 var(--space-12) 0' }}>{content}</div>;
-  }
-
   return (
-    <div className="post-job-page">
-      <div className="container">
-        {content}
-      </div>
+    <div 
+      className="post-job-viewport-wrapper" 
+      style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: isEmbedded ? '100%' : '100dvh', 
+        maxHeight: '100dvh', 
+        overflow: 'hidden',
+        width: '100%',
+        boxSizing: 'border-box',
+        backgroundColor: '#F8FAFC'
+      }}
+    >
+      <form 
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '100%',
+          overflow: 'hidden',
+          margin: 0,
+          padding: 0
+        }}
+      >
+        {/* AREA 1: Independent Scrollable Form Content Area */}
+        <div 
+          className="post-job-scroll-container"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            padding: '16px 12px 32px 12px',
+            boxSizing: 'border-box',
+            width: '100%'
+          }}
+        >
+          <div style={{ maxWidth: '720px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+            {content}
+          </div>
+        </div>
+
+        {/* AREA 2: Permanently Anchored Fixed Action Footer Bar */}
+        <div 
+          className="post-job-fixed-footer"
+          style={{
+            flexShrink: 0,
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #CBD5E1',
+            padding: '12px 16px',
+            boxShadow: '0 -4px 16px rgba(15, 23, 42, 0.08)',
+            width: '100%',
+            boxSizing: 'border-box',
+            zIndex: 100
+          }}
+        >
+          <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            {currentStep === 1 ? (
+              <button
+                type="button"
+                onClick={() => setShowExitConfirmModal(true)}
+                style={{
+                  flex: 1,
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePrevStep}
+                style={{
+                  flex: 1,
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #2563EB',
+                  backgroundColor: '#EFF6FF',
+                  color: '#2563EB',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>← Back</span>
+              </button>
+            )}
+
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                style={{
+                  flex: 1.5,
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#344BFD',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(52, 75, 253, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Next Step →
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  flex: 1.5,
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#344BFD',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: '800',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.75 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 8px rgba(52, 75, 253, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    <span>
+                      {isEdit 
+                        ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmitting...' : 'Updating...') 
+                        : 'Posting...'}
+                    </span>
+                  </>
+                ) : (
+                  <span>
+                    {isEdit 
+                      ? (existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) ? 'Resubmit' : 'Update Job Posting') 
+                      : 'Submit & Post Job'}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      </form>
+
+      {/* Exit Confirmation Dialog Modal */}
+      {showExitConfirmModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '24px 20px',
+            maxWidth: '420px',
+            width: '100%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center',
+            boxSizing: 'border-box',
+            animation: 'fadeInUp 200ms ease forwards'
+          }}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              backgroundColor: '#FEF3C7',
+              color: '#D97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 14px auto'
+            }}>
+              <AlertTriangle size={26} />
+            </div>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>
+              Discard Job Listing?
+            </h3>
+
+            <p style={{ margin: '0 0 24px 0', fontSize: '13.5px', color: '#64748B', lineHeight: '1.5', fontWeight: '500' }}>
+              You have unsaved changes in this job post form. Are you sure you want to exit? All progress entered so far will be lost.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+              <button
+                type="button"
+                onClick={() => setShowExitConfirmModal(false)}
+                style={{
+                  flex: 1,
+                  height: '42px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  color: '#334155',
+                  fontSize: '13.5px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Keep Editing
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                style={{
+                  flex: 1,
+                  height: '42px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '13.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Discard & Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
