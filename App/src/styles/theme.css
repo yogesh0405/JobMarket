@@ -1,0 +1,103 @@
+/* ============================================
+   JOBMARKET UNIFIED THEME & TYPOGRAPHY SYSTEM
+   ============================================ */
+
+/* CSS Variables for Uniform Typography Scale */
+:root {
+  --font-family-base: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Font Sizes */
+  --font-hero-title: 15px;
+  --font-section-title: 14px;
+  --font-subtitle: 12px;
+  --font-body: 12px;
+  --font-value: 12px;
+  --font-badge-cta: 11px;
+  --font-label-caps: 9.5px;
+
+  /* Font Weights */
+  --weight-extrabold: 800;
+  --weight-bold: 700;
+  --weight-semibold: 600;
+  --weight-medium: 500;
+  --weight-regular: 400;
+
+  /* Color System */
+  --color-primary-blue: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-text-dark: #0F172A;
+  --color-text-body: #334155;
+  --color-text-muted: #64748B;
+  --color-text-blue-sub: #DBEAFE;
+  --color-border-slate: #CBD5E1;
+  --color-border-light: #F1F5F9;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F8FAFC;
+}
+
+/* Universal Typography Utility Classes */
+.text-hero-title {
+  font-size: var(--font-hero-title) !important;
+  font-weight: var(--weight-extrabold) !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.2px !important;
+}
+
+.text-section-title {
+  font-size: var(--font-section-title) !important;
+  font-weight: var(--weight-extrabold) !important;
+  line-height: 1.3 !important;
+  color: var(--color-text-dark);
+}
+
+.text-subtitle {
+  font-size: var(--font-subtitle) !important;
+  font-weight: var(--weight-semibold) !important;
+  line-height: 1.35 !important;
+}
+
+.text-body-para {
+  font-size: var(--font-body) !important;
+  font-weight: var(--weight-medium) !important;
+  line-height: 1.6 !important;
+  color: var(--color-text-body);
+}
+
+.text-value {
+  font-size: var(--font-value) !important;
+  font-weight: var(--weight-bold) !important;
+  color: var(--color-text-dark);
+}
+
+.text-badge-cta {
+  font-size: var(--font-badge-cta) !important;
+  font-weight: var(--weight-bold) !important;
+  line-height: 1.2 !important;
+}
+
+.text-label-caps {
+  font-size: var(--font-label-caps) !important;
+  font-weight: var(--weight-bold) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+  color: var(--color-text-muted);
+}
+
+/* Card Surface Standard (Zero Nested Cards, Clean Square/8px Surface) */
+.ui-card-surface {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-slate);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Section Separator Standard */
+.ui-section-divider {
+  height: 1px;
+  background-color: #94A3B8;
+  margin: 10px 0;
+  border: none;
+}
