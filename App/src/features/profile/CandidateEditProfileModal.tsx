@@ -109,10 +109,12 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const prevIsOpenRef = useRef(false);
 
   // Intercept Mobile/Laptop Browser Back Button & Unsaved Tab Close when Modal is Open
   useEffect(() => {
@@ -144,41 +146,44 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     onClose();
   };
 
-  // Reset or Sync State when Modal Opens
+  // Reset or Sync State ONLY when Modal transitions from closed to open
   useEffect(() => {
-    setName(currentUser.name || '');
-    setHeadline(currentUser.headline || '');
-    setLocation(currentUser.location || '');
-    setPhone(currentUser.phone || '');
-    setBio(currentUser.bio || '');
-    setProfilePhotoUrl(currentUser.profilePictureUrl || (currentUser as any).avatar || '');
-    
-    const currTrade = currentUser.tradeSpecialization || 'Tool & Die Maker';
-    if (!TRADES_LIST.includes(currTrade)) {
-      setTradeSpecialization('Other');
-      setCustomTrade(currTrade);
-    } else {
-      setTradeSpecialization(currTrade);
-      setCustomTrade('');
-    }
+    if (isOpen && !prevIsOpenRef.current) {
+      setName(currentUser?.name || '');
+      setHeadline(currentUser?.headline || '');
+      setLocation(currentUser?.location || '');
+      setPhone(currentUser?.phone || '');
+      setBio(currentUser?.bio || '');
+      setProfilePhotoUrl(currentUser?.profilePictureUrl || (currentUser as any)?.avatar || '');
+      
+      const currTrade = currentUser?.tradeSpecialization || 'Tool & Die Maker';
+      if (!TRADES_LIST.includes(currTrade)) {
+        setTradeSpecialization('Other');
+        setCustomTrade(currTrade);
+      } else {
+        setTradeSpecialization(currTrade);
+        setCustomTrade('');
+      }
 
-    setEducationList(Array.isArray(currentUser.education) ? currentUser.education : []);
-    setExperienceList(Array.isArray(currentUser.experience) ? currentUser.experience : []);
-    setPreferredShift(currentUser.preferredShift || 'Rotational Shift (Shift A / B)');
-    setRequiresBus(!!currentUser.requiresBus);
-    setRequiresAccommodation(!!currentUser.requiresAccommodation);
-    
-    if (Array.isArray(currentUser.skills) && currentUser.skills.length > 0) {
-      setSkillsList(currentUser.skills);
-    } else {
-      setSkillsList(['Welding', 'Machining', 'Fanuc Control', 'Vernier Caliper']);
-    }
+      setEducationList(Array.isArray(currentUser?.education) ? currentUser.education : []);
+      setExperienceList(Array.isArray(currentUser?.experience) ? currentUser.experience : []);
+      setPreferredShift(currentUser?.preferredShift || 'Rotational Shift (Shift A / B)');
+      setRequiresBus(!!currentUser?.requiresBus);
+      setRequiresAccommodation(!!currentUser?.requiresAccommodation);
+      
+      if (Array.isArray(currentUser?.skills) && currentUser.skills.length > 0) {
+        setSkillsList(currentUser.skills);
+      } else {
+        setSkillsList(['Welding', 'Machining', 'Fanuc Control', 'Vernier Caliper']);
+      }
 
-    setResumeUrl(currentUser.resumeUrl || '');
-    setResumeName(currentUser.resumeName || 'Candidate_Resume.pdf');
-    setIsResumePublic(currentUser.isResumePublic !== false);
-    setCurrentStep(1);
-  }, [isOpen, currentUser]);
+      setResumeUrl(currentUser?.resumeUrl || '');
+      setResumeName(currentUser?.resumeName || 'Candidate_Resume.pdf');
+      setIsResumePublic(currentUser?.isResumePublic !== false);
+      setCurrentStep(1);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   // Image Avatar File Handler
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,24 +212,40 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     reader.readAsDataURL(file);
   };
 
-  // PDF Resume Handler
+  // PDF / Document Resume Handler with File Size Validation (Max 5MB) & Animated Progress Bar
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      showToast('Please upload a valid PDF document.', 'error');
+    const allowedExtensions = ['pdf', 'doc', 'docx'];
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+    if (!allowedExtensions.includes(ext) && !file.type.includes('pdf') && !file.type.includes('word')) {
+      showToast('Please upload a valid PDF or Word document (.pdf, .doc, .docx).', 'error');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('PDF file size should be less than 10MB.', 'error');
+    // Strict 5MB File Size Validation
+    const MAX_RESUME_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_RESUME_SIZE) {
+      showToast('File size exceeds 5MB limit. Please upload a smaller resume document.', 'error');
       return;
     }
 
     setIsUploadingPdf(true);
+    setUploadProgress(10);
+
     const reader = new FileReader();
+
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.min(99, Math.max(10, Math.round((event.loaded / event.total) * 100)));
+        setUploadProgress(percent);
+      }
+    };
+
     reader.onloadend = async () => {
+      setUploadProgress(100);
       const base64Pdf = reader.result as string;
       setResumeUrl(base64Pdf);
       setResumeName(file.name);
@@ -1280,16 +1301,28 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                     </div>
 
                     <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
-                      {isUploadingPdf ? 'Uploading PDF Document...' : 'Tap to Upload PDF Resume'}
+                      {isUploadingPdf ? 'Uploading Resume Document...' : 'Tap to Upload PDF / Word Resume'}
                     </h4>
                     <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                      Supports PDF documents up to 10MB
+                      Supports PDF & Word documents (.pdf, .doc, .docx) up to 5MB
                     </p>
+
+                    {isUploadingPdf && (
+                      <div style={{ marginTop: '14px', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#2563EB', marginBottom: '4px' }}>
+                          <span>Uploading Resume...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '7px', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: '#2563EB', transition: 'width 0.15s ease-out' }} />
+                        </div>
+                      </div>
+                    )}
 
                     <input
                       type="file"
                       ref={pdfInputRef}
-                      accept="application/pdf"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       onChange={handlePdfUpload}
                       style={{ display: 'none' }}
                     />
@@ -1323,7 +1356,9 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
           backgroundColor: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '12px',
+          boxShadow: '0 -4px 12px rgba(15, 23, 42, 0.05)',
+          flexShrink: 0
         }}>
           {currentStep === 1 ? (
             <button
