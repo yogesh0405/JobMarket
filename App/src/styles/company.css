@@ -166,11 +166,11 @@
   border-color: #FFFFFF;
 }
 
-/* Integrated Compact Stats Grid inside Blue Hero Card (3 items: EMPLOYEES, FOUNDED, HEADQUARTERS) */
+/* Integrated Compact Stats Grid inside Blue Hero Card (EMPLOYEES & FOUNDED in Row 1, HEADQUARTERS in Row 2) */
 .company-hero-stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 14px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -178,8 +178,14 @@
 .company-hero-stat-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
+}
+
+.company-hero-stat-item:nth-child(3),
+.company-hero-stat-item.full-width-stat {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .company-stat-icon {
@@ -342,8 +348,8 @@
   }
 
   .company-hero-stats-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
   }
 
   .company-stat-icon {

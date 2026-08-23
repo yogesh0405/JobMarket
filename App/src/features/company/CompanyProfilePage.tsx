@@ -523,7 +523,7 @@ export const CompanyProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="company-hero-stat-item">
+              <div className="company-hero-stat-item full-width-stat">
                 <div className="company-stat-icon">
                   <MapPin size={16} />
                 </div>
