@@ -506,10 +506,14 @@ export const CompanyProfilePage: React.FC = () => {
                 About {displayCompanyName}
               </h2>
               {(() => {
-                const rawAboutText = company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`;
-                const MAX_ABOUT_CHARS = 180;
-                const isExceedingCapacity = rawAboutText.length > MAX_ABOUT_CHARS;
-                const displayedAboutText = isExceedingCapacity ? `${rawAboutText.slice(0, MAX_ABOUT_CHARS).trim()}...` : rawAboutText;
+                const cleanRawText = (company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`).trim();
+                const MAX_ABOUT_CHARS = 110;
+                const endsWithEllipsis = cleanRawText.endsWith('...') || cleanRawText.endsWith('…');
+                const isExceedingCapacity = cleanRawText.length > MAX_ABOUT_CHARS || endsWithEllipsis;
+                const baseText = cleanRawText.replace(/(\.\.\.|\…)$/, '').trim();
+                const displayedAboutText = isExceedingCapacity 
+                  ? `${baseText.slice(0, MAX_ABOUT_CHARS).trim()}...` 
+                  : cleanRawText;
 
                 return (
                   <p className="company-description-text" style={{ margin: 0, whiteSpace: 'pre-line' }}>
@@ -522,7 +526,7 @@ export const CompanyProfilePage: React.FC = () => {
                           border: 'none',
                           color: '#2563EB',
                           fontWeight: '700',
-                          fontSize: '13px',
+                          fontSize: '12px',
                           cursor: 'pointer',
                           padding: '0 0 0 6px',
                           textDecoration: 'underline'
