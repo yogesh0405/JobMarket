@@ -25,7 +25,8 @@ import {
   MapPin,
   Briefcase,
   Award,
-  Send
+  Send,
+  ExternalLink
 } from 'lucide-react';
 
 const ensureArray = (val: any): string[] => {
@@ -275,32 +276,60 @@ export const JobDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Avatar & Title Stack */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                border: '2.5px solid #FFFFFF',
-                boxShadow: '0 3px 8px rgba(0,0,0,0.18)',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).logo} companyName={job.company} size={46} borderRadius="50%" />
-              </div>
+            {/* Avatar & Title Stack (Clickable Company Profile Link) */}
+            {(() => {
+              const companyTargetId = (job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company;
+              const companyUrl = `/company/${encodeURIComponent(companyTargetId)}`;
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#DBEAFE' }}>{job.company || 'Industrial Partner'}</span>
-                  <CheckCircle2 size={14} color="#38BDF8" strokeWidth={2.2} />
+              return (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <Link
+                    to={companyUrl}
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      border: '2.5px solid #FFFFFF',
+                      boxShadow: '0 3px 8px rgba(0,0,0,0.18)',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      textDecoration: 'none'
+                    }}
+                    title={`View ${job.company} Profile`}
+                  >
+                    <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).logo} companyName={job.company} size={46} borderRadius="50%" />
+                  </Link>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                      <Link
+                        to={companyUrl}
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          color: '#DBEAFE',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title={`View ${job.company} Profile`}
+                      >
+                        <span style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>{job.company || 'Industrial Partner'}</span>
+                        <ExternalLink size={12} color="#93C5FD" />
+                      </Link>
+                      <CheckCircle2 size={14} color="#38BDF8" strokeWidth={2.2} />
+                    </div>
+
+                    <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25' }}>{job.title}</h1>
+                  </div>
                 </div>
-                <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25' }}>{job.title}</h1>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* White Secondary Body Metadata */}

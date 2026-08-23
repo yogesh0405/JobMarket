@@ -83,8 +83,11 @@ export const CompanyProfilePage: React.FC = () => {
       j && (
         j.id === companyId ||
         (j as any).employer_id === companyId ||
+        (j as any).employerId === companyId ||
+        (j as any).companyId === companyId ||
         (j.company || '').toLowerCase().trim() === decoded ||
-        decoded.includes((j.company || '').toLowerCase().trim())
+        decoded.includes((j.company || '').toLowerCase().trim()) ||
+        (j.company || '').toLowerCase().trim().includes(decoded)
       )
     );
 
