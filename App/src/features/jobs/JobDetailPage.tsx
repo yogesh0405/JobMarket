@@ -10,7 +10,7 @@ import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { JobApplyModal } from '../../components/jobs/JobApplyModal';
-import { Zap, Calendar, FileText, CheckCircle2, Phone, Smartphone } from 'lucide-react';
+import { Zap, Calendar, FileText, CheckCircle2, Phone, Smartphone, ArrowLeft, Share2 } from 'lucide-react';
 
 const ensureArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.filter(Boolean).map(String);
@@ -429,6 +429,55 @@ export const JobDetailPage: React.FC = () => {
           }
         }
       `}</style>
+        {/* Mobile Top Sticky Navigation Bar */}
+        <div 
+          className="company-mobile-top-bar"
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #CBD5E1',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            height: '50px',
+            boxSizing: 'border-box',
+            margin: '-16px -16px 16px -16px'
+          }}
+        >
+          <button
+            onClick={handleBackToJobs}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#0F172A',
+              fontSize: '13.5px',
+              fontWeight: '700',
+              padding: '4px'
+            }}
+          >
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </button>
+
+          <span style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {job.title}
+          </span>
+
+          <button
+            onClick={() => shareContent(job.title, `View job position for ${job.title} at ${job.company}`, window.location.href)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0F172A', padding: '4px' }}
+          >
+            <Share2 size={18} />
+          </button>
+        </div>
+
         {/* Back Link */}
         <button
           onClick={handleBackToJobs}

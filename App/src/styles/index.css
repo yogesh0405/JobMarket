@@ -515,6 +515,8 @@ h1, h2, h3, h4, h5, h6 {
   .grid-3,
   .grid-2 { grid-template-columns: 1fr; }
   .hide-mobile { display: none !important; }
+  .navbar.hide-navbar-mobile { display: none !important; }
+  body:has(.navbar.hide-navbar-mobile) #page-content { padding-top: 0 !important; }
   .container { padding: 0 var(--space-4); }
 }
 

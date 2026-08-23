@@ -184,6 +184,28 @@ export const CompanyProfilePage: React.FC = () => {
     }
   };
 
+  // Robust Company Name Resolution (Filters out raw UUIDs)
+  const displayCompanyName = React.useMemo(() => {
+    if (!company) return 'Company Profile';
+    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+
+    const candidates = [
+      company.company_name,
+      company.companyName,
+      company.name,
+      company.title,
+      company.company
+    ];
+
+    for (const c of candidates) {
+      if (typeof c === 'string' && c.trim() && !isUUID(c.trim())) {
+        return c.trim();
+      }
+    }
+
+    return 'Industrial Manufacturing Plant';
+  }, [company]);
+
   // Smart Location Formatting without repeating city names
   const formattedLocation = React.useMemo(() => {
     if (!company) return '';
@@ -267,6 +289,54 @@ export const CompanyProfilePage: React.FC = () => {
 
   return (
     <div className="company-profile-wrapper">
+      {/* Mobile Top Sticky Navigation Bar */}
+      <div 
+        className="company-mobile-top-bar"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #CBD5E1',
+          padding: '10px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: '50px',
+          boxSizing: 'border-box'
+        }}
+      >
+        <button
+          onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/companies')}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: '#0F172A',
+            fontSize: '13.5px',
+            fontWeight: '700',
+            padding: '4px'
+          }}
+        >
+          <ArrowLeft size={18} />
+          <span>Back</span>
+        </button>
+
+        <span style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {displayCompanyName}
+        </span>
+
+        <button
+          onClick={handleShare}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0F172A', padding: '4px' }}
+        >
+          {copiedLink ? <Check size={18} color="#16A34A" /> : <Share2 size={18} />}
+        </button>
+      </div>
+
       {/* Breadcrumb Header Bar */}
       <div className="company-breadcrumb-bar">
         <div className="company-breadcrumb-content">
@@ -274,7 +344,7 @@ export const CompanyProfilePage: React.FC = () => {
           <ChevronRight size={13} color="#94A3B8" />
           <Link to="/companies" style={{ color: '#64748B', textDecoration: 'none' }}>Companies</Link>
           <ChevronRight size={13} color="#94A3B8" />
-          <span style={{ color: '#0F172A', fontWeight: '700' }}>{company.name}</span>
+          <span style={{ color: '#0F172A', fontWeight: '700' }}>{displayCompanyName}</span>
         </div>
       </div>
 
@@ -322,7 +392,7 @@ export const CompanyProfilePage: React.FC = () => {
                     flexShrink: 0,
                     cursor: isOwner ? 'pointer' : 'default'
                   }}
-                  title={isOwner ? "Click to update logo" : company.name}
+                  title={isOwner ? "Click to update logo" : displayCompanyName}
                 >
                   {/* Inner Circular Logo Container (overflow: hidden) */}
                   <div style={{
@@ -339,7 +409,7 @@ export const CompanyProfilePage: React.FC = () => {
                   }}>
                     <CompanyDefaultLogo
                       logoUrl={company.logo}
-                      companyName={company.name}
+                      companyName={displayCompanyName}
                       size={58}
                       borderRadius="50%"
                     />
@@ -370,7 +440,7 @@ export const CompanyProfilePage: React.FC = () => {
 
                 <div className="company-hero-text-block">
                   <div className="company-hero-title-row">
-                    <h1 className="company-hero-title">{company.name}</h1>
+                    <h1 className="company-hero-title">{displayCompanyName}</h1>
                   </div>
 
                   <p className="company-tagline">

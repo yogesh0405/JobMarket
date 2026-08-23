@@ -12,13 +12,18 @@ export const MobileBottomNav: React.FC = () => {
 
   const isEmployer = currentUser?.role === 'employer';
 
-  // Do not render bottom navigation bar on dedicated candidate profile & post-job pages
+  const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
+  const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
+
+  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail & company profile pages
   if (
     location.pathname.startsWith('/profile/') ||
     location.pathname.startsWith('/candidate/') ||
     location.pathname.startsWith('/p/') ||
     location.pathname.startsWith('/post-job') ||
-    location.pathname.startsWith('/edit-job')
+    location.pathname.startsWith('/edit-job') ||
+    isJobDetailRoute ||
+    isCompanyProfileRoute
   ) {
     return null;
   }
