@@ -293,25 +293,18 @@ export const CompanyProfilePage: React.FC = () => {
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                background: 'transparent',
-                border: 'none',
-                padding: '6px',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'transform 0.15s ease, opacity 0.15s ease',
-                zIndex: 15,
-                opacity: 0.9
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'scale(1.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.9';
-                e.currentTarget.style.transform = 'scale(1)';
+                transition: 'all 0.15s ease',
+                zIndex: 15
               }}
             >
               {copiedLink ? <Check size={16} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={16} strokeWidth={2.2} />}
@@ -324,8 +317,8 @@ export const CompanyProfilePage: React.FC = () => {
                   onClick={() => isOwner && setIsEditModalOpen(true)}
                   style={{
                     position: 'relative',
-                    width: '58px',
-                    height: '58px',
+                    width: '64px',
+                    height: '64px',
                     flexShrink: 0,
                     cursor: isOwner ? 'pointer' : 'default'
                   }}
@@ -337,8 +330,8 @@ export const CompanyProfilePage: React.FC = () => {
                     height: '100%',
                     borderRadius: '50%',
                     backgroundColor: '#FFFFFF',
-                    border: '2px solid #FFFFFF',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                    border: '2.5px solid #FFFFFF',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
@@ -347,7 +340,7 @@ export const CompanyProfilePage: React.FC = () => {
                     <CompanyDefaultLogo
                       logoUrl={company.logo}
                       companyName={company.name}
-                      size={52}
+                      size={58}
                       borderRadius="50%"
                     />
                   </div>
@@ -432,15 +425,13 @@ export const CompanyProfilePage: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="company-hero-card-body">
             {/* Employer Owner Profile Completion Banner */}
             {isOwner && (
               <div style={{
-                marginBottom: '16px',
-                paddingBottom: '14px',
-                borderBottom: '1px solid #E2E8F0',
+                marginTop: '16px',
+                paddingTop: '14px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -448,15 +439,15 @@ export const CompanyProfilePage: React.FC = () => {
                 flexWrap: 'wrap'
               }}>
                 <div style={{ flex: 1, minWidth: '240px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#1E293B', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#FFFFFF', marginBottom: '4px' }}>
                     <span>Employer Profile Completion</span>
-                    <span style={{ color: '#2563EB' }}>{completionPct}%</span>
+                    <span style={{ color: '#93C5FD' }}>{completionPct}%</span>
                   </div>
-                  <div style={{ width: '100%', height: '5px', backgroundColor: '#E2E8F0', borderRadius: '0px', overflow: 'hidden' }}>
-                    <div style={{ width: `${completionPct}%`, height: '100%', backgroundColor: '#2563EB', transition: 'width 0.3s ease' }} />
+                  <div style={{ width: '100%', height: '5px', backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: '0px', overflow: 'hidden' }}>
+                    <div style={{ width: `${completionPct}%`, height: '100%', backgroundColor: '#FFFFFF', transition: 'width 0.3s ease' }} />
                   </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ fontSize: '11.5px', color: '#DBEAFE', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span>✓ Logo & Name</span>
                   <span>✓ Industry & Location</span>
                   <span>{company.website ? '✓ Website' : '○ Website'}</span>
@@ -464,13 +455,16 @@ export const CompanyProfilePage: React.FC = () => {
               </div>
             )}
 
-            {/* Integrated Stats Row inside Single Hero Card */}
+            {/* Subtle Divider Line */}
+            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '18px 0 16px 0' }} />
+
+            {/* Integrated Stats Row inside Single Blue Hero Card */}
             <div className="company-hero-stats-row">
               <div className="company-hero-stat-item">
                 <div className="company-stat-icon">
                   <Users size={18} />
                 </div>
-                <div>
+                <div className="company-stat-text-container">
                   <div className="company-stat-label">EMPLOYEES</div>
                   <div className="company-stat-value">{company.company_size || '100–500'}</div>
                 </div>
@@ -480,45 +474,44 @@ export const CompanyProfilePage: React.FC = () => {
                 <div className="company-stat-icon">
                   <Calendar size={18} />
                 </div>
-                <div>
+                <div className="company-stat-text-container">
                   <div className="company-stat-label">FOUNDED</div>
                   <div className="company-stat-value">{company.founded_year || '2010'}</div>
                 </div>
               </div>
 
-              <div className="company-hero-stat-item">
+              <div className="company-hero-stat-item full-width-mobile">
                 <div className="company-stat-icon">
                   <MapPin size={18} />
                 </div>
-                <div>
+                <div className="company-stat-text-container">
                   <div className="company-stat-label">HEADQUARTERS</div>
                   <div className="company-stat-value">{company.city || 'Chhatrapati Sambhajinagar'}</div>
                 </div>
               </div>
 
-              <div className="company-hero-stat-item">
-                <div className="company-stat-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+              <div className="company-hero-stat-item full-width-mobile">
+                <div className="company-stat-icon" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', border: '1px solid rgba(255, 255, 255, 0.4)' }}>
                   <Briefcase size={18} />
                 </div>
-                <div>
+                <div className="company-stat-text-container">
                   <div className="company-stat-label">OPEN JOBS</div>
-                  <div className="company-stat-value" style={{ color: '#2563EB', fontWeight: '800' }}>
+                  <div className="company-stat-value" style={{ color: '#FFFFFF', fontWeight: '800' }}>
                     {jobs.length} Active Position{jobs.length === 1 ? '' : 's'}
                   </div>
                 </div>
               </div>
 
-              <div className="company-hero-stat-item">
+              <div className="company-hero-stat-item full-width-mobile">
                 <div className="company-stat-icon">
                   <Building2 size={18} />
                 </div>
-                <div>
+                <div className="company-stat-text-container">
                   <div className="company-stat-label">INDUSTRY</div>
                   <div className="company-stat-value">{company.industry || 'Industrial Manufacturing'}</div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
