@@ -66,7 +66,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-refresh-token', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-session-token', 'x-refresh-token', 'x-user-id', 'x-device-id', 'x-client-version', 'X-Requested-With', 'Accept', 'Origin'],
 }));
 
 // Body parsing

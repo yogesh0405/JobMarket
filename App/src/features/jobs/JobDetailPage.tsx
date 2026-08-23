@@ -357,56 +357,82 @@ export const JobDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Segmented Tab Navigation Control (Proportional Flex & Single Line Fit) */}
-          <div style={{ display: 'flex', backgroundColor: '#F1F5F9', padding: '4px', gap: '4px', borderTop: '1px solid #CBD5E1' }}>
+          {/* Professional Standard Underlined Tab Navigation */}
+          <div style={{
+            display: 'flex',
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #E2E8F0',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '0 6px'
+          }}>
             <button
               onClick={() => setActiveTab('job_overview')}
               style={{
-                flex: '0 0 38%',
-                padding: '8px 6px',
+                flex: 1,
+                padding: '12px 10px',
                 border: 'none',
-                borderRadius: '6px',
-                backgroundColor: activeTab === 'job_overview' ? '#FFFFFF' : 'transparent',
+                backgroundColor: 'transparent',
                 color: activeTab === 'job_overview' ? '#2563EB' : '#64748B',
-                fontWeight: '700',
-                fontSize: '12px',
+                fontWeight: activeTab === 'job_overview' ? '800' : '600',
+                fontSize: '13px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
+                gap: '6px',
                 whiteSpace: 'nowrap',
-                boxShadow: activeTab === 'job_overview' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                position: 'relative',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Briefcase size={14} color={activeTab === 'job_overview' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
+              <Briefcase size={15} color={activeTab === 'job_overview' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
               <span>Job Overview</span>
+              {activeTab === 'job_overview' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2.5px',
+                  backgroundColor: '#2563EB',
+                  borderRadius: '2px 2px 0 0'
+                }} />
+              )}
             </button>
 
             <button
               onClick={() => setActiveTab('company_info')}
               style={{
                 flex: 1,
-                padding: '8px 6px',
+                padding: '12px 10px',
                 border: 'none',
-                borderRadius: '6px',
-                backgroundColor: activeTab === 'company_info' ? '#FFFFFF' : 'transparent',
+                backgroundColor: 'transparent',
                 color: activeTab === 'company_info' ? '#2563EB' : '#64748B',
-                fontWeight: '700',
-                fontSize: '12px',
+                fontWeight: activeTab === 'company_info' ? '800' : '600',
+                fontSize: '13px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
+                gap: '6px',
                 whiteSpace: 'nowrap',
-                boxShadow: activeTab === 'company_info' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                position: 'relative',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Award size={14} color={activeTab === 'company_info' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
+              <Award size={15} color={activeTab === 'company_info' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
               <span>Requirements & Perks</span>
+              {activeTab === 'company_info' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2.5px',
+                  backgroundColor: '#2563EB',
+                  borderRadius: '2px 2px 0 0'
+                }} />
+              )}
             </button>
           </div>
         </div>

@@ -42,8 +42,9 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
     }
 
     // Fallback 2: Find active user matching route context
-    const isEmployerRoute = req.originalUrl?.includes('/companies') || req.originalUrl?.includes('/jobs') || req.originalUrl?.includes('/employer');
-    const roleConstraint = isEmployerRoute ? 'employer' : 'candidate';
+    const isApplyRoute = req.originalUrl?.includes('/apply') || req.originalUrl?.includes('/candidate');
+    const isEmployerRoute = !isApplyRoute && (req.originalUrl?.includes('/companies') || req.originalUrl?.includes('/employer'));
+    const roleConstraint = isApplyRoute ? 'candidate' : (isEmployerRoute ? 'employer' : 'candidate');
     
     const fallbackRes = await pool.query(
       'SELECT id, role, email, name FROM users WHERE role = $1 ORDER BY created_at ASC LIMIT 1;',
