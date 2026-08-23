@@ -407,12 +407,14 @@ export const JobDetailPage: React.FC = () => {
                   <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{job.trade || job.title}</div>
                 </div>
 
-                <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Total Openings</div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>
-                    {job.openings || (job as any).vacancies ? `${job.openings || (job as any).vacancies} Vacancies` : '1 Open Position'}
+                {(job.openings || (job as any).vacancies) ? (
+                  <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
+                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Total Openings</div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>
+                      {job.openings || (job as any).vacancies} Vacancies
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 {Boolean((job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax)) ? (
                   <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>

@@ -18,7 +18,8 @@ import {
   Share2,
   Check,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -41,6 +42,7 @@ export const CompanyProfilePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const isOwner = React.useMemo(() => {
     if (!currentUser || !company) return false;
@@ -419,38 +421,11 @@ export const CompanyProfilePage: React.FC = () => {
                   <p className="company-tagline">
                     {company.industry || 'Industrial Manufacturing & Engineering Operations'}
                   </p>
-
-                  {company.website && (
-                    <div className="company-hero-meta-line">
-                      <a
-                        href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#93C5FD', textDecoration: 'none', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <Globe size={13} />
-                        {company.website.replace(/^https?:\/\//, '')}
-                      </a>
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="company-hero-actions">
-                {company.website && (
-                  <a
-                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="company-btn-action company-btn-outline-white"
-                  >
-                    <Globe size={14} />
-                    <span>Website</span>
-                    <ExternalLink size={12} />
-                  </a>
-                )}
-
                 {isOwner && (
                   <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white">
                     <Edit3 size={14} />
@@ -489,41 +464,49 @@ export const CompanyProfilePage: React.FC = () => {
               </div>
             )}
 
-            {/* Subtle Divider Line */}
-            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '10px 0' }} />
+            {/* Integrated Stats Row inside Single Blue Hero Card (Only rendered when provided) */}
+            {(company.company_size || company.companySize || company.founded_year || company.foundedYear || company.city || company.address || formattedLocation) && (
+              <>
+                <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '10px 0' }} />
+                <div className="company-hero-stats-row">
+                  {(company.company_size || company.companySize) && (
+                    <div className="company-hero-stat-item">
+                      <div className="company-stat-icon">
+                        <Users size={18} />
+                      </div>
+                      <div className="company-stat-text-container">
+                        <div className="company-stat-label">EMPLOYEES</div>
+                        <div className="company-stat-value">{company.company_size || company.companySize}</div>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Integrated Stats Row inside Single Blue Hero Card */}
-            <div className="company-hero-stats-row">
-              <div className="company-hero-stat-item">
-                <div className="company-stat-icon">
-                  <Users size={18} />
-                </div>
-                <div className="company-stat-text-container">
-                  <div className="company-stat-label">EMPLOYEES</div>
-                  <div className="company-stat-value">{company.company_size || '100–500'}</div>
-                </div>
-              </div>
+                  {(company.founded_year || company.foundedYear) && (
+                    <div className="company-hero-stat-item">
+                      <div className="company-stat-icon">
+                        <Calendar size={18} />
+                      </div>
+                      <div className="company-stat-text-container">
+                        <div className="company-stat-label">FOUNDED</div>
+                        <div className="company-stat-value">{company.founded_year || company.foundedYear}</div>
+                      </div>
+                    </div>
+                  )}
 
-              <div className="company-hero-stat-item">
-                <div className="company-stat-icon">
-                  <Calendar size={18} />
+                  {(company.city || company.address || formattedLocation) && (
+                    <div className="company-hero-stat-item full-width-stat">
+                      <div className="company-stat-icon">
+                        <MapPin size={16} />
+                      </div>
+                      <div className="company-stat-text-container">
+                        <div className="company-stat-label">HEADQUARTERS</div>
+                        <div className="company-stat-value">{formattedLocation || company.city || company.address}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="company-stat-text-container">
-                  <div className="company-stat-label">FOUNDED</div>
-                  <div className="company-stat-value">{company.founded_year || '2010'}</div>
-                </div>
-              </div>
-
-              <div className="company-hero-stat-item full-width-stat">
-                <div className="company-stat-icon">
-                  <MapPin size={16} />
-                </div>
-                <div className="company-stat-text-container">
-                  <div className="company-stat-label">HEADQUARTERS</div>
-                  <div className="company-stat-value">{company.city || 'Chhatrapati Sambhajinagar'}</div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -536,11 +519,37 @@ export const CompanyProfilePage: React.FC = () => {
             <div className="company-card-surface">
               <h2 className="company-section-title">
                 <Building2 size={18} color="#2563EB" />
-                About {company.name}
+                About {displayCompanyName}
               </h2>
-              <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-line' }}>
-                {company.description || `${company.name} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${company.city || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`}
-              </p>
+              {(() => {
+                const rawAboutText = company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`;
+                const MAX_ABOUT_CHARS = 180;
+                const isExceedingCapacity = rawAboutText.length > MAX_ABOUT_CHARS;
+                const displayedAboutText = isExceedingCapacity ? `${rawAboutText.slice(0, MAX_ABOUT_CHARS).trim()}...` : rawAboutText;
+
+                return (
+                  <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-line' }}>
+                    {displayedAboutText}
+                    {isExceedingCapacity && (
+                      <button
+                        onClick={() => setShowAboutModal(true)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#2563EB',
+                          fontWeight: '800',
+                          fontSize: '13.5px',
+                          cursor: 'pointer',
+                          padding: '0 0 0 6px',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        More...
+                      </button>
+                    )}
+                  </p>
+                );
+              })()}
 
               {Array.isArray(company.specializations) && company.specializations.length > 0 && (
                 <>
@@ -739,6 +748,90 @@ export const CompanyProfilePage: React.FC = () => {
           company={company}
           onSaveSuccess={(updated) => setCompany(updated)}
         />
+      )}
+
+      {/* About Company Full Text Popup Modal */}
+      {showAboutModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 25000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #CBD5E1',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflow: 'hidden'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '14px 18px',
+              backgroundColor: '#2563EB',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '800' }}>
+                <Building2 size={18} />
+                <span>About {displayCompanyName}</span>
+              </div>
+              <button
+                onClick={() => setShowAboutModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '20px', overflowY: 'auto', flex: 1, fontSize: '14px', lineHeight: '1.7', color: '#334155', whiteSpace: 'pre-line' }}>
+              {company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '12px 18px', borderTop: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowAboutModal(false)}
+                style={{
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: '6px',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
