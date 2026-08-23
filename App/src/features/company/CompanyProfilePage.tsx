@@ -95,7 +95,7 @@ export const CompanyProfilePage: React.FC = () => {
       name: compName,
       logo: matchingJob?.companyLogo || (matchingJob as any)?.logo,
       industry: matchingJob?.industry || 'Industrial Manufacturing',
-      description: matchingJob?.description ? matchingJob.description.slice(0, 160) + '...' : 'Leading industrial manufacturing and production plant.',
+      description: matchingJob?.description || 'Leading industrial manufacturing and production plant specializing in high-quality engineering operations and career opportunities.',
       city: matchingJob?.location || 'Chhatrapati Sambhajinagar',
       midc_zone: matchingJob?.midcZone || 'Waluj MIDC',
       company_size: '500+ employees',
@@ -506,14 +506,12 @@ export const CompanyProfilePage: React.FC = () => {
                 About {displayCompanyName}
               </h2>
               {(() => {
-                const cleanRawText = (company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`).trim();
+                const fullText = (company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`).trim();
                 const MAX_ABOUT_CHARS = 110;
-                const endsWithEllipsis = cleanRawText.endsWith('...') || cleanRawText.endsWith('…');
-                const isExceedingCapacity = cleanRawText.length > MAX_ABOUT_CHARS || endsWithEllipsis;
-                const baseText = cleanRawText.replace(/(\.\.\.|\…)$/, '').trim();
+                const isExceedingCapacity = fullText.length > MAX_ABOUT_CHARS;
                 const displayedAboutText = isExceedingCapacity 
-                  ? `${baseText.slice(0, MAX_ABOUT_CHARS).trim()}...` 
-                  : cleanRawText;
+                  ? `${fullText.slice(0, MAX_ABOUT_CHARS).trim()}...` 
+                  : fullText;
 
                 return (
                   <p className="company-description-text" style={{ margin: 0, whiteSpace: 'pre-line' }}>
