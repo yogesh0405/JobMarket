@@ -420,28 +420,19 @@ export const CompanyProfilePage: React.FC = () => {
                     {company.industry || 'Industrial Manufacturing & Engineering Operations'}
                   </p>
 
-                  <div className="company-hero-meta-line">
-                    {formattedLocation && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#EFF6FF' }}>
-                        <MapPin size={13} color="#93C5FD" />
-                        {formattedLocation}
-                      </span>
-                    )}
-                    {company.website && (
-                      <>
-                        <span style={{ color: '#93C5FD' }}>•</span>
-                        <a
-                          href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#93C5FD', textDecoration: 'none', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                        >
-                          <Globe size={13} />
-                          {company.website.replace(/^https?:\/\//, '')}
-                        </a>
-                      </>
-                    )}
-                  </div>
+                  {company.website && (
+                    <div className="company-hero-meta-line">
+                      <a
+                        href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#93C5FD', textDecoration: 'none', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Globe size={13} />
+                        {company.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 
