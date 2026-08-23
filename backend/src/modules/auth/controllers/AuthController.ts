@@ -255,7 +255,16 @@ export class AuthController {
       const { name, fileName, size, type, url, base64, file } = req.body;
 
       const base64Data = base64 || file;
-      const fileTitle = fileName || name || 'Resume_BioData.jpg';
+      const fileTitle = fileName || name || 'Resume_BioData.pdf';
+
+      if (base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {
+        const base64Length = base64Data.length - (base64Data.indexOf(',') + 1);
+        const sizeInBytes = Math.round((base64Length * 3) / 4);
+
+        if (sizeInBytes > 5 * 1024 * 1024) {
+          return res.status(400).json({ success: false, error: 'Resume file size exceeds the maximum allowed 5MB limit.' });
+        }
+      }
 
       let finalUrl = url;
       if (!finalUrl && base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {

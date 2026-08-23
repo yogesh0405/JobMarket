@@ -43,6 +43,40 @@ export class UpdateProfileService {
       }
     }
 
+    // Support root-level resumeUrl / resumeName parameters if passed
+    if ((profileData as any).resumeUrl && !profileData.resume) {
+      profileData.resume = {
+        url: (profileData as any).resumeUrl,
+        name: (profileData as any).resumeName || 'Candidate_Resume.pdf',
+        isPublic: (profileData as any).isResumePublic !== false
+      };
+    }
+
+    // Mandatory Backend Resume Validation (Size Max 5MB & Format Validation)
+    if (profileData.resume && profileData.resume.url && typeof profileData.resume.url === 'string') {
+      const resumeUrlStr = profileData.resume.url;
+      if (resumeUrlStr.startsWith('data:')) {
+        // Calculate exact byte size from base64 string
+        const base64Length = resumeUrlStr.length - (resumeUrlStr.indexOf(',') + 1);
+        const sizeInBytes = Math.round((base64Length * 3) / 4);
+
+        if (sizeInBytes > 5 * 1024 * 1024) {
+          throw new BadRequestError('Resume file size exceeds the maximum allowed 5MB limit. Please upload a smaller document.');
+        }
+
+        const mimeMatch = resumeUrlStr.match(/^data:([^;]+);base64,/);
+        const mimeType = mimeMatch ? mimeMatch[1].toLowerCase() : '';
+        const fileName = (profileData.resume.name || (profileData as any).resumeName || '').toLowerCase();
+
+        const isAllowedMime = mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('msword') || mimeType.includes('officedocument') || mimeType.includes('octet-stream');
+        const isAllowedExt = fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx');
+
+        if (mimeType && !isAllowedMime && fileName && !isAllowedExt) {
+          throw new BadRequestError('Invalid resume file format. Only PDF and Word documents (.pdf, .doc, .docx) are accepted.');
+        }
+      }
+    }
+
     // Check if new resume base64 data is uploaded
     if (profileData.resume && profileData.resume.url && profileData.resume.url.startsWith('data:')) {
       // Clean up old resume from Cloudinary first if it exists

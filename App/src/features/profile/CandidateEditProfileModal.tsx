@@ -109,7 +109,9 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadingState, setUploadingState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -177,9 +179,15 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         setSkillsList(['Welding', 'Machining', 'Fanuc Control', 'Vernier Caliper']);
       }
 
-      setResumeUrl(currentUser?.resumeUrl || '');
-      setResumeName(currentUser?.resumeName || 'Candidate_Resume.pdf');
+      const existingResumeUrl = currentUser?.resumeUrl || (currentUser?.resume as any)?.url || '';
+      const existingResumeName = currentUser?.resumeName || (currentUser?.resume as any)?.name || 'Candidate_Resume.pdf';
+
+      setResumeUrl(existingResumeUrl);
+      setResumeName(existingResumeName);
       setIsResumePublic(currentUser?.isResumePublic !== false);
+      setUploadingState(existingResumeUrl ? 'success' : 'idle');
+      setUploadProgress(0);
+      setUploadError(null);
       setCurrentStep(1);
     }
     prevIsOpenRef.current = isOpen;
@@ -212,10 +220,12 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     reader.readAsDataURL(file);
   };
 
-  // PDF / Document Resume Handler with File Size Validation (Max 5MB) & Animated Progress Bar
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // PDF / Document Resume Handler with File Size Validation (Max 5MB) & Single Animated Progress Bar
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (e.target) e.target.value = '';
 
     const allowedExtensions = ['pdf', 'doc', 'docx'];
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -225,40 +235,56 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
       return;
     }
 
-    // Strict 5MB File Size Validation
+    // Strict 5MB File Size Validation (Frontend Pre-Check)
     const MAX_RESUME_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_RESUME_SIZE) {
-      showToast('File size exceeds 5MB limit. Please upload a smaller resume document.', 'error');
+      showToast('File size exceeds 5MB limit. Please upload a document up to 5MB.', 'error');
       return;
     }
 
+    if (uploadingState === 'uploading') return;
+
     setIsUploadingPdf(true);
-    setUploadProgress(10);
+    setUploadingState('uploading');
+    setUploadProgress(15);
+    setUploadError(null);
 
     const reader = new FileReader();
 
     reader.onprogress = (event) => {
       if (event.lengthComputable) {
-        const percent = Math.min(99, Math.max(10, Math.round((event.loaded / event.total) * 100)));
+        const percent = Math.min(98, Math.max(15, Math.round((event.loaded / event.total) * 100)));
         setUploadProgress(percent);
       }
     };
 
-    reader.onloadend = async () => {
-      setUploadProgress(100);
+    reader.onloadend = () => {
       const base64Pdf = reader.result as string;
       setResumeUrl(base64Pdf);
       setResumeName(file.name);
-      try {
-        await updateUser({ resumeUrl: base64Pdf, resumeName: file.name, isResumePublic });
-        showToast('Resume attached successfully!', 'success');
-      } catch (err) {
-        showToast('Failed to attach resume.', 'error');
-      } finally {
-        setIsUploadingPdf(false);
-      }
+      setUploadProgress(100);
+      setUploadingState('success');
+      setIsUploadingPdf(false);
+      showToast('Resume attached! Click Save Profile at the bottom to complete update.', 'success');
     };
+
+    reader.onerror = () => {
+      setUploadingState('error');
+      setUploadError('Failed to read document file. Please try again.');
+      setIsUploadingPdf(false);
+      showToast('Failed to read document file.', 'error');
+    };
+
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveResume = () => {
+    setResumeUrl('');
+    setResumeName('');
+    setUploadingState('idle');
+    setUploadProgress(0);
+    setUploadError(null);
+    showToast('Attached resume removed.', 'info');
   };
 
   // Add Skill Handler
@@ -365,18 +391,31 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     }
   };
 
-  // Final Save Handler
+  // Final Save Handler on Step 4
   const handleFinalSave = async () => {
     const finalTrade = tradeSpecialization === 'Other' ? customTrade.trim() : tradeSpecialization;
     
+    if (!name.trim()) {
+      showToast('Candidate name is required', 'error');
+      setCurrentStep(1);
+      return;
+    }
+
+    if (!finalTrade) {
+      showToast('Please specify your trade specialization', 'error');
+      setCurrentStep(2);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const res = await updateUser({
+      const payload: any = {
         name: name.trim(),
         headline: headline.trim(),
         location: location.trim(),
         phone: phone.trim(),
         bio: bio.trim(),
+        profilePictureUrl,
         tradeSpecialization: finalTrade,
         trade_specialization: finalTrade,
         education: educationList,
@@ -390,18 +429,22 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         skills: skillsList,
         resumeUrl,
         resumeName,
-        isResumePublic
-      });
+        isResumePublic,
+        resume: resumeUrl ? { url: resumeUrl, name: resumeName, isPublic: isResumePublic } : null
+      };
+
+      const res = await updateUser(payload);
 
       if (res.success) {
-        showToast('Profile updated successfully!', 'success');
+        showToast('Profile updated and saved successfully!', 'success');
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        showToast(res.error || 'Failed to update profile', 'error');
+        showToast(res.error || 'Failed to update profile. Please retry.', 'error');
       }
-    } catch (err) {
-      showToast('An unexpected error occurred while saving', 'error');
+    } catch (err: any) {
+      console.error('Profile save error:', err);
+      showToast(err?.message || 'An unexpected error occurred while saving profile.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1271,76 +1314,131 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                 {/* Attach Resume PDF Document Section */}
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
-                    Attach Resume PDF Document
+                    Attach Resume Document (Max 5MB)
                   </label>
 
-                  <div
-                    onClick={() => pdfInputRef.current?.click()}
-                    style={{
-                      border: '2px dashed #CBD5E1',
-                      borderRadius: '0px',
-                      padding: '24px 16px',
-                      textAlign: 'center',
-                      backgroundColor: '#F8FAFC',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      backgroundColor: '#EFF6FF',
-                      color: '#2563EB',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 10px'
-                    }}>
-                      <UploadCloud size={24} />
-                    </div>
-
-                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
-                      {isUploadingPdf ? 'Uploading Resume Document...' : 'Tap to Upload PDF / Word Resume'}
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
-                      Supports PDF & Word documents (.pdf, .doc, .docx) up to 5MB
-                    </p>
-
-                    {isUploadingPdf && (
-                      <div style={{ marginTop: '14px', width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#2563EB', marginBottom: '4px' }}>
-                          <span>Uploading Resume...</span>
+                  {uploadingState === 'uploading' ? (
+                    <div
+                      style={{
+                        border: '2px solid #2563EB',
+                        borderRadius: '0px',
+                        padding: '20px 16px',
+                        backgroundColor: '#EFF6FF',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#2563EB', marginBottom: '10px' }}>
+                        <UploadCloud size={24} />
+                        <span style={{ fontSize: '14px', fontWeight: '800' }}>Reading & Validating Resume...</span>
+                      </div>
+                      
+                      {/* SINGLE PROGRESS BAR */}
+                      <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#2563EB', marginBottom: '6px' }}>
+                          <span>Upload Progress</span>
                           <span>{uploadProgress}%</span>
                         </div>
-                        <div style={{ width: '100%', height: '7px', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: '#2563EB', transition: 'width 0.15s ease-out' }} />
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#DBEAFE', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: '#2563EB', transition: 'width 0.2s ease-out' }} />
                         </div>
                       </div>
-                    )}
-
-                    <input
-                      type="file"
-                      ref={pdfInputRef}
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      onChange={handlePdfUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </div>
-
-                  {resumeUrl && (
-                    <div style={{ marginTop: '10px', padding: '10px 12px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FileText size={18} color="#166534" />
-                        <span style={{ fontSize: '12.5px', fontWeight: '700', color: '#166534' }}>
-                          {resumeName}
-                        </span>
+                    </div>
+                  ) : resumeUrl ? (
+                    <div style={{ padding: '14px 16px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FileText size={22} color="#166534" />
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#166534' }}>
+                            {resumeName}
+                          </div>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803D', marginTop: '2px' }}>
+                            Document Attached ✓ (Click "Save Profile" below to persist)
+                          </div>
+                        </div>
                       </div>
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px' }}>
-                        Attached ✓
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => pdfInputRef.current?.click()}
+                          style={{
+                            padding: '5px 10px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #86EFAC',
+                            color: '#15803D',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveResume}
+                          style={{
+                            padding: '5px 10px',
+                            backgroundColor: '#FEF2F2',
+                            border: '1px solid #FCA5A5',
+                            color: '#DC2626',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => pdfInputRef.current?.click()}
+                      style={{
+                        border: '2px dashed #CBD5E1',
+                        borderRadius: '0px',
+                        padding: '24px 16px',
+                        textAlign: 'center',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '50%',
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 10px'
+                      }}>
+                        <UploadCloud size={24} />
+                      </div>
+
+                      <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
+                        Tap to Select Resume Document (.pdf, .doc, .docx)
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
+                        Strict 5MB file size limit enforced
+                      </p>
                     </div>
                   )}
+
+                  {uploadError && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#DC2626', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={14} />
+                      <span>{uploadError}</span>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={pdfInputRef}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handlePdfUpload}
+                    style={{ display: 'none' }}
+                  />
                 </div>
 
               </div>
