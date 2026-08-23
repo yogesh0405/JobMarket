@@ -383,10 +383,10 @@ export const CompanyProfilePage: React.FC = () => {
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <h1 className="company-hero-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {displayCompanyName}
                   </h1>
-                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#DBEAFE', margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <p className="company-tagline" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {company.industry || 'Industrial Manufacturing & Engineering Operations'}
                   </p>
                 </div>
@@ -395,7 +395,7 @@ export const CompanyProfilePage: React.FC = () => {
               {/* Right Side: Share Icon (& Edit Profile button if owner) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 {isOwner && (
-                  <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white" style={{ padding: '4px 8px', fontSize: '11px' }}>
+                  <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white" style={{ padding: '4px 8px', fontSize: '12px' }}>
                     <Edit3 size={13} />
                     <span>Edit</span>
                   </button>
@@ -440,7 +440,7 @@ export const CompanyProfilePage: React.FC = () => {
                     <div style={{ width: `${completionPct}%`, height: '100%', backgroundColor: '#FFFFFF', transition: 'width 0.3s ease' }} />
                   </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#DBEAFE', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ fontSize: '12px', color: '#DBEAFE', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '600' }}>
                   <span>✓ Logo & Name</span>
                   <span>✓ Industry & Location</span>
                   <span>{company.website ? '✓ Website' : '○ Website'}</span>
@@ -512,7 +512,7 @@ export const CompanyProfilePage: React.FC = () => {
                 const displayedAboutText = isExceedingCapacity ? `${rawAboutText.slice(0, MAX_ABOUT_CHARS).trim()}...` : rawAboutText;
 
                 return (
-                  <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-line' }}>
+                  <p className="company-description-text" style={{ margin: 0, whiteSpace: 'pre-line' }}>
                     {displayedAboutText}
                     {isExceedingCapacity && (
                       <button
@@ -521,8 +521,8 @@ export const CompanyProfilePage: React.FC = () => {
                           background: 'transparent',
                           border: 'none',
                           color: '#2563EB',
-                          fontWeight: '800',
-                          fontSize: '13.5px',
+                          fontWeight: '700',
+                          fontSize: '13px',
                           cursor: 'pointer',
                           padding: '0 0 0 6px',
                           textDecoration: 'underline'
@@ -539,7 +539,7 @@ export const CompanyProfilePage: React.FC = () => {
                 <>
                   <div className="company-slate-divider" />
                   <div>
-                    <h4 style={{ fontSize: '12.5px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: '8px' }}>Key Specializations</h4>
+                    <h4 style={{ fontSize: '10.5px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Key Specializations</h4>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {company.specializations.map((spec: string, idx: number) => (
                         <span key={idx} style={{
@@ -565,7 +565,7 @@ export const CompanyProfilePage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: jobs.length > 0 ? '12px' : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Briefcase size={20} color="#2563EB" />
-                    <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                    <h2 className="company-section-title" style={{ margin: 0 }}>
                       Active Job Openings
                     </h2>
                     <span style={{
