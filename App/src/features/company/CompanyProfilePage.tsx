@@ -306,77 +306,47 @@ export const CompanyProfilePage: React.FC = () => {
                 border: 'none',
                 padding: 0,
                 color: '#FFFFFF',
-                fontSize: '13.5px',
+                fontSize: '12px',
                 fontWeight: '700',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '4px',
                 cursor: 'pointer',
-                marginBottom: '10px',
+                marginTop: '-4px',
+                marginLeft: '-4px',
+                marginBottom: '24px',
                 opacity: 0.9,
                 transition: 'opacity 0.15s ease'
               }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.9')}
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={15} />
               <span>Back</span>
             </button>
 
-            {/* Top-Right Clean Share Icon (No Background) */}
-            <button
-              onClick={handleShare}
-              title={copiedLink ? 'Link Copied!' : 'Share Profile'}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'transparent',
-                border: 'none',
-                padding: '4px',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'transform 0.15s ease, opacity 0.15s ease',
-                zIndex: 15,
-                opacity: 0.9
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'scale(1.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.9';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              {copiedLink ? <Check size={18} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={18} strokeWidth={2.2} />}
-            </button>
-
-            <div className="company-cover-content">
-              <div className="company-hero-left-info">
+            {/* Top Single Row Header: Logo + Title/Type (Left) | Actions/Share (Right) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%', marginBottom: '6px' }}>
+              {/* Left Side: Logo + Title & Industry/Type */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                 <div 
-                  className="company-logo-avatar"
-                  onClick={() => isOwner && setIsEditModalOpen(true)}
+                  onClick={isOwner ? triggerFileInput : undefined}
                   style={{
                     position: 'relative',
-                    width: '52px',
-                    height: '52px',
+                    width: '44px',
+                    height: '44px',
                     flexShrink: 0,
                     cursor: isOwner ? 'pointer' : 'default'
                   }}
                   title={isOwner ? "Click to update logo" : displayCompanyName}
                 >
-                  {/* Inner Circular Logo Container (overflow: hidden) */}
                   <div style={{
                     width: '100%',
                     height: '100%',
                     borderRadius: '50%',
                     backgroundColor: '#FFFFFF',
-                    border: '2px solid #FFFFFF',
-                    boxShadow: '0 3px 8px rgba(0,0,0,0.18)',
+                    border: '1.5px solid #FFFFFF',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
@@ -385,53 +355,67 @@ export const CompanyProfilePage: React.FC = () => {
                     <CompanyDefaultLogo
                       logoUrl={company.logo}
                       companyName={displayCompanyName}
-                      size={46}
+                      size={40}
                       borderRadius="50%"
                     />
                   </div>
 
-                  {/* Camera Icon Overlay Badge (In front, zIndex 10, not clipped) */}
                   {isOwner && (
                     <div style={{
                       position: 'absolute',
                       bottom: '-2px',
                       right: '-2px',
-                      width: '22px',
-                      height: '22px',
+                      width: '18px',
+                      height: '18px',
                       borderRadius: '50%',
                       backgroundColor: '#FFFFFF',
-                      border: '1.5px solid #2563EB',
+                      border: '1px solid #2563EB',
                       color: '#2563EB',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
                       zIndex: 10
                     }}>
-                      <Camera size={11} strokeWidth={2.5} />
+                      <Camera size={10} strokeWidth={2.5} />
                     </div>
                   )}
                 </div>
 
-                <div className="company-hero-text-block">
-                  <div className="company-hero-title-row">
-                    <h1 className="company-hero-title">{displayCompanyName}</h1>
-                  </div>
-
-                  <p className="company-tagline">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {displayCompanyName}
+                  </h1>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#DBEAFE', margin: '2px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {company.industry || 'Industrial Manufacturing & Engineering Operations'}
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="company-hero-actions">
+              {/* Right Side: Share Icon (& Edit Profile button if owner) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 {isOwner && (
-                  <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white">
-                    <Edit3 size={14} />
-                    <span>Edit Profile</span>
+                  <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white" style={{ padding: '4px 8px', fontSize: '11px' }}>
+                    <Edit3 size={13} />
+                    <span>Edit</span>
                   </button>
                 )}
+                <button
+                  onClick={handleShare}
+                  title={copiedLink ? 'Link Copied!' : 'Share Profile'}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '4px',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {copiedLink ? <Check size={18} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={18} strokeWidth={2.2} />}
+                </button>
               </div>
             </div>
 
