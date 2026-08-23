@@ -1,5 +1,5 @@
 /* ============================================
-   COMPANY PROFILE PAGE — EXECUTIVE DESIGN SYSTEM
+   COMPANY PROFILE PAGE — COMPACT SLIM TYPOGRAPHY
    ============================================ */
 
 .company-profile-wrapper {
@@ -8,48 +8,32 @@
   padding-bottom: 64px;
   font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #0F172A;
-}
-
-.company-breadcrumb-bar {
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #CBD5E1;
-  padding: 10px 0;
-}
-
-.company-breadcrumb-content {
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #64748B;
+  font-size: 12px;
 }
 
 .company-main-container {
-  max-width: 1140px;
-  margin: 20px auto 0;
-  padding: 0 20px;
+  max-width: 1100px;
+  margin: 12px auto 0;
+  padding: 0 14px;
   box-sizing: border-box;
 }
 
-/* Executive Hero Header Card */
+/* Compact Executive Hero Header Card */
 .company-hero-card {
   background-color: #2563EB;
   border: 1px solid #1D4ED8;
-  border-radius: 12px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
-  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+  margin-bottom: 14px;
   color: #FFFFFF;
 }
 
 /* Top Primary Blue Header Banner */
 .company-cover-banner {
   background-color: #2563EB;
-  padding: 24px;
+  padding: 14px 16px 12px 16px;
   color: #FFFFFF;
   width: 100%;
   position: relative;
@@ -60,25 +44,25 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .company-hero-card-body {
-  padding: 16px 24px 20px 24px;
+  padding: 10px 16px 12px 16px;
 }
 
 .company-hero-left-info {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
 
 .company-logo-avatar {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   background: transparent;
   border-radius: 50%;
   flex-shrink: 0;
@@ -95,46 +79,47 @@
 .company-hero-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .company-hero-title {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 16px !important;
+  font-weight: 800 !important;
   color: #FFFFFF !important;
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
   line-height: 1.2;
 }
 
 .company-verified-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3.5px 10px;
+  gap: 3px;
+  padding: 2px 6px;
   background-color: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.35);
   color: #FFFFFF;
-  font-size: 11.5px;
+  font-size: 10px;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .company-tagline {
-  font-size: 13.5px;
+  font-size: 11.5px !important;
   color: #DBEAFE !important;
   font-weight: 500;
-  margin: 0 0 8px 0;
+  margin: 2px 0 4px 0;
+  line-height: 1.25;
 }
 
 .company-hero-meta-line {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
-  font-size: 12.5px;
+  font-size: 11px !important;
   color: #EFF6FF !important;
   font-weight: 600;
 }
@@ -142,20 +127,20 @@
 .company-hero-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .company-btn-action {
-  padding: 8px 16px;
-  font-size: 12.5px;
+  padding: 5px 12px !important;
+  font-size: 11.5px !important;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: 8px;
+  gap: 4px;
+  border-radius: 5px;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
@@ -181,11 +166,11 @@
   border-color: #FFFFFF;
 }
 
-/* Integrated Stats Grid inside Blue Hero Card */
+/* Integrated Compact Stats Grid inside Blue Hero Card (3 items: EMPLOYEES, FOUNDED, HEADQUARTERS) */
 .company-hero-stats-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -193,16 +178,16 @@
 .company-hero-stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 7px;
   min-width: 0;
 }
 
 .company-stat-icon {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   background-color: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 8px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,62 +201,68 @@
 }
 
 .company-stat-label {
-  font-size: 10.5px;
+  font-size: 9px !important;
   font-weight: 700;
   color: #DBEAFE !important;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .company-stat-value {
-  font-size: 13.5px;
+  font-size: 11.5px !important;
   font-weight: 800;
   color: #FFFFFF !important;
-  margin-top: 2px;
-  line-height: 1.3;
+  margin-top: 1px;
+  line-height: 1.15;
   word-break: break-word;
 }
 
 /* 2-Column Main Content Grid */
 .company-content-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
   align-items: start;
 }
 
 .company-card-surface {
   background-color: #FFFFFF;
   border: 1px solid #CBD5E1;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 14px 16px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .company-section-title {
-  font-size: 15px;
+  font-size: 13.5px !important;
   font-weight: 800;
   color: #0F172A;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.company-description-text {
+  font-size: 12px !important;
+  line-height: 1.5;
+  color: #334155;
 }
 
 .company-slate-divider {
   height: 1px;
   background-color: #94A3B8;
-  margin: 14px 0;
+  margin: 10px 0;
 }
 
 .company-kv-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 9px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #F1F5F9;
-  font-size: 12.5px;
+  font-size: 11.5px;
 }
 
 .company-kv-row:last-child {
@@ -281,93 +272,90 @@
 .company-kv-key {
   color: #64748B;
   font-weight: 700;
-  font-size: 10.5px;
+  font-size: 9.5px !important;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .company-kv-value {
   color: #0F172A;
   font-weight: 700;
+  font-size: 11.5px !important;
   text-align: right;
 }
 
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
   .company-main-container {
-    padding: 0 16px 96px 16px;
-    margin-top: 14px;
+    padding: 0 10px 60px 10px;
+    margin-top: 8px;
     box-sizing: border-box;
     width: 100%;
   }
 
   .company-content-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 
   .company-cover-banner {
-    padding: 18px 16px;
+    padding: 12px 10px 10px 10px;
   }
 
   .company-cover-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 8px;
   }
 
   .company-hero-left-info {
     flex-direction: row;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
   }
 
   .company-logo-avatar {
-    width: 58px;
-    height: 58px;
+    width: 44px;
+    height: 44px;
   }
 
   .company-hero-title {
-    font-size: 20px !important;
+    font-size: 15px !important;
   }
 
   .company-hero-actions {
     width: 100%;
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
 
   .company-btn-action {
     flex: 1;
-    padding: 9px 8px;
-    font-size: 12.5px;
+    padding: 5px;
+    font-size: 11px !important;
     justify-content: center;
   }
 
   .company-hero-card-body {
-    padding: 14px;
+    padding: 8px 10px;
   }
 
   .company-hero-stats-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px 12px;
-  }
-
-  .company-hero-stat-item.full-width-mobile {
-    grid-column: span 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 4px;
   }
 
   .company-stat-icon {
-    width: 36px;
-    height: 36px;
+    width: 26px;
+    height: 26px;
   }
 
   .company-stat-label {
-    font-size: 10px;
+    font-size: 8.5px !important;
   }
 
   .company-stat-value {
-    font-size: 13px !important;
+    font-size: 11px !important;
   }
 }

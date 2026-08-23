@@ -289,65 +289,6 @@ export const CompanyProfilePage: React.FC = () => {
 
   return (
     <div className="company-profile-wrapper">
-      {/* Mobile Top Sticky Navigation Bar */}
-      <div 
-        className="company-mobile-top-bar"
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #CBD5E1',
-          padding: '10px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: '50px',
-          boxSizing: 'border-box'
-        }}
-      >
-        <button
-          onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/companies')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            color: '#0F172A',
-            fontSize: '13.5px',
-            fontWeight: '700',
-            padding: '4px'
-          }}
-        >
-          <ArrowLeft size={18} />
-          <span>Back</span>
-        </button>
-
-        <span style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {displayCompanyName}
-        </span>
-
-        <button
-          onClick={handleShare}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0F172A', padding: '4px' }}
-        >
-          {copiedLink ? <Check size={18} color="#16A34A" /> : <Share2 size={18} />}
-        </button>
-      </div>
-
-      {/* Breadcrumb Header Bar */}
-      <div className="company-breadcrumb-bar">
-        <div className="company-breadcrumb-content">
-          <Link to="/" style={{ color: '#64748B', textDecoration: 'none' }}>Home</Link>
-          <ChevronRight size={13} color="#94A3B8" />
-          <Link to="/companies" style={{ color: '#64748B', textDecoration: 'none' }}>Companies</Link>
-          <ChevronRight size={13} color="#94A3B8" />
-          <span style={{ color: '#0F172A', fontWeight: '700' }}>{displayCompanyName}</span>
-        </div>
-      </div>
-
       {/* Main Container */}
       <div className="company-main-container">
 
@@ -355,6 +296,31 @@ export const CompanyProfilePage: React.FC = () => {
         <div className="company-hero-card">
           {/* Top Solid Blue Cover Banner */}
           <div className="company-cover-banner">
+            {/* Top-Left Back Button inside Blue Section (No Background Box) */}
+            <button
+              onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/companies')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                color: '#FFFFFF',
+                fontSize: '13.5px',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                marginBottom: '10px',
+                opacity: 0.9,
+                transition: 'opacity 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.9')}
+            >
+              <ArrowLeft size={18} />
+              <span>Back</span>
+            </button>
+
             {/* Top-Right Clean Share Icon (No Background) */}
             <button
               onClick={handleShare}
@@ -363,21 +329,28 @@ export const CompanyProfilePage: React.FC = () => {
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: '50%',
-                width: '34px',
-                height: '34px',
+                background: 'transparent',
+                border: 'none',
+                padding: '4px',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                zIndex: 15
+                transition: 'transform 0.15s ease, opacity 0.15s ease',
+                zIndex: 15,
+                opacity: 0.9
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {copiedLink ? <Check size={16} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={16} strokeWidth={2.2} />}
+              {copiedLink ? <Check size={18} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={18} strokeWidth={2.2} />}
             </button>
 
             <div className="company-cover-content">
@@ -387,8 +360,8 @@ export const CompanyProfilePage: React.FC = () => {
                   onClick={() => isOwner && setIsEditModalOpen(true)}
                   style={{
                     position: 'relative',
-                    width: '64px',
-                    height: '64px',
+                    width: '52px',
+                    height: '52px',
                     flexShrink: 0,
                     cursor: isOwner ? 'pointer' : 'default'
                   }}
@@ -400,8 +373,8 @@ export const CompanyProfilePage: React.FC = () => {
                     height: '100%',
                     borderRadius: '50%',
                     backgroundColor: '#FFFFFF',
-                    border: '2.5px solid #FFFFFF',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    border: '2px solid #FFFFFF',
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.18)',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
@@ -410,7 +383,7 @@ export const CompanyProfilePage: React.FC = () => {
                     <CompanyDefaultLogo
                       logoUrl={company.logo}
                       companyName={displayCompanyName}
-                      size={58}
+                      size={46}
                       borderRadius="50%"
                     />
                   </div>
@@ -526,7 +499,7 @@ export const CompanyProfilePage: React.FC = () => {
             )}
 
             {/* Subtle Divider Line */}
-            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '18px 0 16px 0' }} />
+            <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '10px 0' }} />
 
             {/* Integrated Stats Row inside Single Blue Hero Card */}
             <div className="company-hero-stats-row">
@@ -550,35 +523,13 @@ export const CompanyProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="company-hero-stat-item full-width-mobile">
+              <div className="company-hero-stat-item">
                 <div className="company-stat-icon">
-                  <MapPin size={18} />
+                  <MapPin size={16} />
                 </div>
                 <div className="company-stat-text-container">
                   <div className="company-stat-label">HEADQUARTERS</div>
                   <div className="company-stat-value">{company.city || 'Chhatrapati Sambhajinagar'}</div>
-                </div>
-              </div>
-
-              <div className="company-hero-stat-item full-width-mobile">
-                <div className="company-stat-icon" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', border: '1px solid rgba(255, 255, 255, 0.4)' }}>
-                  <Briefcase size={18} />
-                </div>
-                <div className="company-stat-text-container">
-                  <div className="company-stat-label">OPEN JOBS</div>
-                  <div className="company-stat-value" style={{ color: '#FFFFFF', fontWeight: '800' }}>
-                    {jobs.length} Active Position{jobs.length === 1 ? '' : 's'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="company-hero-stat-item full-width-mobile">
-                <div className="company-stat-icon">
-                  <Building2 size={18} />
-                </div>
-                <div className="company-stat-text-container">
-                  <div className="company-stat-label">INDUSTRY</div>
-                  <div className="company-stat-value">{company.industry || 'Industrial Manufacturing'}</div>
                 </div>
               </div>
             </div>

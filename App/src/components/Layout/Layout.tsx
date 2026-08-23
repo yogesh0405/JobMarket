@@ -51,7 +51,11 @@ export const Layout: React.FC = () => {
   const isPostJobRoute = location.pathname.startsWith('/post-job') ||
                          location.pathname.startsWith('/edit-job');
 
-  const hideNavbar = isCandidateProfileRoute || isPostJobRoute;
+  const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
+
+  const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
+
+  const hideNavbar = isCandidateProfileRoute || isPostJobRoute || isJobDetailRoute || isCompanyProfileRoute;
 
   return (
     <>

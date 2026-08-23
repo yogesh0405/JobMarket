@@ -948,8 +948,8 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="profile-page">
-      <div className="container">
+    <div className="profile-page" style={{ paddingTop: 0 }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         {/* Profile Header Hero Card (Exact Match to Reference UI) */}
         <div style={{
           backgroundColor: '#2563EB',
@@ -1312,16 +1312,16 @@ export const ProfilePage: React.FC = () => {
                     {educationList.map((edu: any, index: number) => (
                       <div key={index} className="timeline-item">
                         <div className="timeline-dot-col">
-                          <div className="timeline-dot" style={{ background: '#9333ea', borderColor: '#f3e8ff', boxShadow: '0 0 0 2px #9333ea' }} />
+                          <div className="timeline-dot" />
                           <div className="timeline-line" />
                         </div>
                         <div className="timeline-card">
                           <div className="timeline-title-row">
                             <div>
                               <h4 className="timeline-title">{edu.degree}</h4>
-                              <div className="timeline-subtitle" style={{ color: '#9333ea' }}>{edu.institution}</div>
+                              <div className="timeline-subtitle">{edu.institution}</div>
                             </div>
-                            <span className="timeline-date-pill" style={{ background: '#f3e8ff', color: '#6b21a8' }}>{edu.year}</span>
+                            <span className="timeline-date-pill">{edu.year}</span>
                           </div>
                         </div>
                       </div>
@@ -1342,7 +1342,7 @@ export const ProfilePage: React.FC = () => {
             <div className="profile-section">
               <div className="profile-section-header">
                 <div className="profile-section-title-wrap">
-                  <div className="icon-box-head icon-box-indigo">
+                  <div className="icon-box-head">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                     </svg>
@@ -1356,7 +1356,6 @@ export const ProfilePage: React.FC = () => {
                   <div className="skills-grid">
                     {skillsList.map(s => (
                       <span key={s} className="skill-chip">
-                        <span>⚡</span>
                         <span>{s}</span>
                       </span>
                     ))}

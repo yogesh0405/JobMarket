@@ -369,16 +369,16 @@ export const JobApplyModal: React.FC<JobApplyModalProps> = ({
                     <span
                       key={idx}
                       style={{
-                        background: '#EFF6FF',
-                        border: '1px solid #BFDBFE',
-                        borderRadius: '0px',
+                        background: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '4px',
                         padding: '3px 8px',
                         fontSize: '11.5px',
-                        fontWeight: '700',
-                        color: '#1D4ED8'
+                        fontWeight: '600',
+                        color: '#0F172A'
                       }}
                     >
-                      ⚡ {skill}
+                      {skill}
                     </span>
                   ))}
                 </div>

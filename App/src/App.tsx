@@ -8,6 +8,7 @@ import { VerifyOTPPage } from './features/auth/VerifyOTPPage';
 import { JobSearchPage } from './features/jobs/JobSearchPage';
 import { JobMapPage } from './features/jobs/JobMapPage';
 import { JobDetailPage } from './features/jobs/JobDetailPage';
+import { JobApplyPage } from './features/jobs/JobApplyPage';
 import { JobPostPage } from './features/jobs/JobPostPage';
 import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
@@ -114,6 +115,8 @@ export const App: React.FC = () => {
           <Route path="/jobs/map" element={<JobMapPage />} />
           <Route path="/job/:id" element={<JobDetailPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/job/:id/apply" element={<JobApplyPage />} />
+          <Route path="/jobs/:id/apply" element={<JobApplyPage />} />
           <Route path="/post-job" element={<JobPostPage />} />
           <Route path="/edit-job/:id" element={<JobPostPage />} />
           <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
