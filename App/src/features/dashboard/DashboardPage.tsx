@@ -450,16 +450,6 @@ export const DashboardPage: React.FC = () => {
               {!isEmployer && (
                 <>
                   <button
-                    className={`dashboard-nav-item tab-profile ${tab === 'profile' ? 'active' : ''}`}
-                    onClick={() => setTab('profile')}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    <span className="desktop-only-text">My Profile</span>
-                    <span className="mobile-only-text">About</span>
-                  </button>
-                  <button
                     className={`dashboard-nav-item tab-saved ${tab === 'saved' ? 'active' : ''}`}
                     onClick={() => setTab('saved')}
                   >

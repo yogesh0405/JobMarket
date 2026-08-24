@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx tsx start_microservices.ts",
+    "dev": "npx tsx watch start_microservices.ts",
     "dev:monolith": "npx tsx watch src/server.ts",
-    "dev:microservices": "npx tsx start_microservices.ts",
+    "dev:microservices": "npx tsx watch start_microservices.ts",
     "build": "cd ../App && npm install --include=dev && npm run build && cd ../backend && npx tsc -b tsconfig.json",
     "start": "npx tsx start_microservices.ts",
     "migrate": "npx tsx src/database/scripts/migrate.ts",
