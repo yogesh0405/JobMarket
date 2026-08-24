@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Eye, Lock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
@@ -75,11 +76,13 @@ export const ResumePage: React.FC = () => {
   }
 
   if (currentUser.resume && (currentUser.resume.name || currentUser.resume.url)) {
-    const uploadDate = new Date(currentUser.resume.uploadedAt).toLocaleDateString(undefined, {
+    const rawDate = currentUser.resume.uploadedAt || (currentUser as any).updated_at || (currentUser as any).updatedAt || (currentUser as any).created_at || (currentUser as any).createdAt;
+    const parsedDate = rawDate && !isNaN(new Date(rawDate).getTime()) ? new Date(rawDate) : null;
+    const uploadDate = parsedDate ? parsedDate.toLocaleDateString('en-IN', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
-    });
+    }) : 'Recently';
 
     return (
       <div className="resume-page">
@@ -121,13 +124,6 @@ export const ResumePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Active Badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '4px', border: '1px solid #86efac', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-                <span>Active</span>
-              </div>
             </div>
             
             {/* Actions Row */}
@@ -181,7 +177,11 @@ export const ResumePage: React.FC = () => {
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{ fontSize: '16px' }}>{isPublic ? '👁️' : '🔒'}</span>
+                {isPublic ? (
+                  <Eye size={18} color="#2563EB" style={{ flexShrink: 0 }} />
+                ) : (
+                  <Lock size={18} color="#64748B" style={{ flexShrink: 0 }} />
+                )}
                 <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
                   Public Resume Visibility
                 </h4>

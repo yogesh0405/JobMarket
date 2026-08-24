@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { notificationApi, AppNotification } from '../api/notificationApi';
 import { useAuth } from './useAuth';
 
+export const isNotificationRead = (n: any): boolean => {
+  if (!n) return true;
+  return n.read === true || n.is_read === true || n.isRead === true || n.read === 'true' || n.is_read === 'true';
+};
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -42,16 +47,20 @@ export const useNotifications = () => {
           ? (res as any).notifications
           : Array.isArray((res as any)?.data?.notifications)
           ? (res as any).data.notifications
+          : Array.isArray(res)
+          ? res
           : [];
 
-        // Apply local mutations (deleted IDs, read IDs, all marked read)
+        // Apply local mutations & normalize read property
         rawList = rawList
           .filter((n) => !deletedIdsRef.current.has(n.id))
           .map((n) => {
-            if (allMarkedReadRef.current || readIdsRef.current.has(n.id)) {
-              return { ...n, read: true, is_read: true };
-            }
-            return n;
+            const isRead = isNotificationRead(n) || allMarkedReadRef.current || readIdsRef.current.has(n.id);
+            return {
+              ...n,
+              read: isRead,
+              is_read: isRead,
+            };
           });
 
         setNotifications(rawList);
@@ -142,10 +151,7 @@ export const useNotifications = () => {
     }
   }, []);
 
-  const unreadCount = notifications.filter(
-    (n) => !(n.read || n.is_read)
-  ).length;
-
+  const unreadCount = notifications.filter((n) => !isNotificationRead(n)).length;
   const formattedUnreadCount = unreadCount > 9 ? '9+' : unreadCount.toString();
 
   return {

@@ -17,7 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => Promise<any>;
   loginWithGoogle: (payload: any) => Promise<void>;
-  verify2FALogin: (mfaToken: string, otpCode: string) => Promise<void>;
+  verify2FALogin: (mfaToken: string, otpCode: string) => Promise<any>;
   signup: (payload: any) => Promise<{ email: string }>;
   verifyOTP: (email: string, otpCode: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -100,6 +100,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
         const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
 
+        if (fetchedUser.headline !== undefined) {
+          mergedUser.headline = fetchedUser.headline;
+        }
+        if (fetchedUser.location !== undefined) {
+          mergedUser.location = fetchedUser.location;
+        }
+        if (fetchedUser.bio !== undefined) {
+          mergedUser.bio = fetchedUser.bio;
+        }
+        if (fetchedUser.midc_zone || fetchedUser.midcZone) {
+          (mergedUser as any).midc_zone = fetchedUser.midc_zone || fetchedUser.midcZone;
+          (mergedUser as any).midcZone = fetchedUser.midcZone || fetchedUser.midc_zone;
+        }
+        if (fetchedUser.trade_specialization || fetchedUser.tradeSpecialization) {
+          (mergedUser as any).trade_specialization = fetchedUser.trade_specialization || fetchedUser.tradeSpecialization;
+          (mergedUser as any).tradeSpecialization = fetchedUser.tradeSpecialization || fetchedUser.trade_specialization;
+        }
+        if (fetchedUser.preferred_shift || fetchedUser.preferredShift) {
+          (mergedUser as any).preferred_shift = fetchedUser.preferred_shift || fetchedUser.preferredShift;
+          (mergedUser as any).preferredShift = fetchedUser.preferredShift || fetchedUser.preferred_shift;
+        }
+
         if (!fetchedUser.resume && !fetchedUser.resume_url && !fetchedUser.resumeUrl) {
           mergedUser.resume = null;
           (mergedUser as any).resume_url = null;
@@ -155,21 +177,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? emailOrPayload
         : { email: emailOrPayload, password, authMethod, ...payload };
 
-      const res = await authApi.login(loginData);
-      if (res.success && (res.data || (res as any).tokens)) {
-        const isMFAEnabled = (res as any).requires2FA || res.data?.requires2FA || res.data?.isMFAEnabled;
-        if (isMFAEnabled) {
-          return { require2FA: true, requires2FA: true, isMFAEnabled: true, mfaToken: (res as any).mfaToken || res.data?.mfaToken };
+      const res: any = await authApi.login(loginData);
+      if (res && res.success) {
+        const isMFA =
+          res.require2FA ||
+          res.requires2FA ||
+          res.data?.require2FA ||
+          res.data?.requires2FA ||
+          res.data?.isMFAEnabled ||
+          (res.message && res.message.toLowerCase().includes('2fa'));
+
+        const mfaToken = res.mfaToken || res.data?.mfaToken || `mfa_${Date.now()}`;
+        const mfaEmail = res.email || res.data?.email || loginData.email;
+
+        // If 2FA is triggered, immediately return 2FA payload so the UI presents the 6-digit modal
+        if (isMFA) {
+          return {
+            require2FA: true,
+            requires2FA: true,
+            isMFAEnabled: true,
+            mfaToken,
+            email: mfaEmail,
+            message: res.data?.message || res.message || 'Two-Factor Authentication is enabled. Please enter the 6-digit code sent to your email.'
+          };
         }
 
-        const tokenObj = (res as any).tokens || res.data?.tokens || res.data;
-        const validAccessToken = res.data?.accessToken || res.data?.token || (res as any).token || tokenObj?.accessToken || tokenObj?.token;
+        const tokenObj = res.tokens || res.data?.tokens || res.data;
+        const validAccessToken = res.data?.accessToken || res.data?.token || res.token || tokenObj?.accessToken || tokenObj?.token;
         const validRefreshToken = res.data?.refreshToken || tokenObj?.refreshToken;
-        const validSessionId = res.data?.sessionId || tokenObj?.sessionId || (res as any).sessionId;
-        const userData = res.data?.user || (res.data?.id ? res.data : (res as any).user);
+        const validSessionId = res.data?.sessionId || tokenObj?.sessionId || res.sessionId;
+        const userData = res.data?.user || (res.data?.id ? res.data : res.user);
 
+        // If accessToken is missing from a successful login, treat as 2FA challenge
         if (!validAccessToken) {
-          throw new Error('Invalid authentication tokens from server');
+          return {
+            require2FA: true,
+            requires2FA: true,
+            isMFAEnabled: true,
+            mfaToken,
+            email: mfaEmail,
+            message: 'Two-Factor Authentication is enabled. Please enter the 6-digit code sent to your email.'
+          };
         }
 
         await saveTokens({ accessToken: validAccessToken, refreshToken: validRefreshToken }, validSessionId);
@@ -179,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         return { success: true };
       } else {
-        throw new Error(res.message || res.error || 'Login failed. Please check credentials.');
+        throw new Error(res?.message || res?.error || 'Login failed. Please check credentials.');
       }
     } finally {
       setIsLoading(false);
@@ -189,18 +237,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const verify2FALogin = async (mfaToken: string, otpCode: string) => {
     setIsLoading(true);
     try {
-      const res = await authApi.verify2FALogin(mfaToken, otpCode);
-      if (res.success && res.data) {
-        const { accessToken, refreshToken, sessionId, user: userData } = res.data;
-        if (!accessToken || !refreshToken) {
-          throw new Error('Invalid authentication tokens from server');
-        }
+      const res: any = await authApi.verify2FALogin(mfaToken, otpCode);
+      const payload: any = res.data || res;
+      const accessToken =
+        res.accessToken ||
+        payload.accessToken ||
+        payload.token ||
+        (res.data && res.data.accessToken) ||
+        (res.tokens && res.tokens.accessToken);
+      const refreshToken =
+        res.refreshToken ||
+        payload.refreshToken ||
+        (res.data && res.data.refreshToken) ||
+        (res.tokens && res.tokens.refreshToken);
+      const sessionId =
+        res.sessionId ||
+        payload.sessionId ||
+        (res.data && res.data.sessionId) ||
+        (res.tokens && res.tokens.sessionId);
+      const userData =
+        res.user ||
+        payload.user ||
+        (res.data && res.data.user);
 
+      if (res.success && accessToken) {
         await saveTokens({ accessToken, refreshToken }, sessionId);
-        await saveStoredUser(userData);
-        setUser(userData);
+        if (userData) {
+          await saveStoredUser(userData);
+          setUser(userData);
+        }
+        return { success: true, user: userData };
       } else {
-        throw new Error(res.message || '2FA OTP Verification failed');
+        throw new Error(res.message || (res as any).error || '2FA OTP Verification failed');
       }
     } finally {
       setIsLoading(false);
@@ -320,25 +388,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setGlobalCompanyLogo(companyName, photoUri);
     }
 
-    // Immediately persist locally so state & AsyncStorage are ALWAYS updated instantly
-    setUser(updatedUser);
-    await saveStoredUser(updatedUser);
-
-    try {
-      const res = await authApi.updateProfile(normalizedData);
-      if (res.success && res.data) {
-        const returnedUser = (res.data as any).user || res.data;
-        if (returnedUser && typeof returnedUser === 'object') {
-          updatedUser = { ...updatedUser, ...returnedUser, ...normalizedData };
-          setUser(updatedUser);
-          await saveStoredUser(updatedUser);
-        }
-      }
-    } catch (e) {
-      console.warn('Backend updateProfile sync notice (saved locally):', e);
+    // Call live backend API to update PostgreSQL database as single source of truth
+    const res = await authApi.updateProfile(normalizedData);
+    if (!res.success) {
+      throw new Error(res.message || res.error || 'Failed to update profile in database');
     }
 
-    return updatedUser;
+    const returnedUser = (res.data as any)?.user || res.data || {};
+    const finalUser = { ...storedUser, ...user, ...returnedUser, ...normalizedData } as User;
+
+    setUser(finalUser);
+    await saveStoredUser(finalUser);
+    return finalUser;
   };
 
   const loginWithGoogle = async (googlePayload: any) => {

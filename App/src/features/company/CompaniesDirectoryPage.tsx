@@ -88,117 +88,8 @@ export const CompaniesDirectoryPage: React.FC = () => {
   }, [state.jobs]);
 
   const deriveCompaniesFromStore = React.useCallback((): CompanyItem[] => {
-    const companyMap = new Map<string, CompanyItem>();
-
-    // 1. Process active jobs in store
-    allStoreJobs.forEach((job, idx) => {
-      const companyName = (job.company || 'Industrial Employer').trim();
-      const key = companyName.toLowerCase();
-
-      if (!companyMap.has(key)) {
-        companyMap.set(key, {
-          id: job.id || `comp-${idx}`,
-          name: companyName,
-          logo: job.companyLogo || (job as any).logo,
-          industry: job.industry || 'Industrial Manufacturing',
-          description: job.description ? job.description.slice(0, 140) + '...' : 'Leading industrial manufacturing plant and employer.',
-          city: job.location || 'Chhatrapati Sambhajinagar',
-          midc_zone: job.midcZone || 'Waluj MIDC',
-          company_size: '500+ employees',
-          founded_year: 1998,
-          open_jobs_count: 1,
-          verified: true,
-          realJobs: [job]
-        });
-      } else {
-        const existing = companyMap.get(key)!;
-        existing.realJobs = [...(existing.realJobs || []), job];
-        existing.open_jobs_count = existing.realJobs.length;
-      }
-    });
-
-    // 2. Process registered users (including logged in user or accounts in store)
-    const userList = [
-      state.currentUser,
-      ...(Array.isArray(state.users) ? state.users : [])
-    ].filter(Boolean);
-
-    userList.forEach(u => {
-      if (!u) return;
-      const compName = (u.companyName || u.company || u.name || '').trim();
-      const isEmployer = u.role === 'employer' || u.role === 'recruiter' || (u.email && u.email.toLowerCase().includes('noreply'));
-      
-      if (compName && isEmployer) {
-        const key = compName.toLowerCase();
-        if (!companyMap.has(key)) {
-          const matchingJobs = allStoreJobs.filter(j => j && (j.company || '').toLowerCase().trim() === key);
-          companyMap.set(key, {
-            id: u.id || `user-comp-${u.email}`,
-            name: compName,
-            logo: u.companyLogo || (u as any).avatar,
-            industry: 'Industrial Manufacturing',
-            description: 'Registered employer enterprise on JobMarket platform.',
-            city: u.city || 'Chhatrapati Sambhajinagar',
-            midc_zone: (u as any).midcZone || 'Waluj MIDC',
-            company_size: '100+ employees',
-            founded_year: 2020,
-            verified: true,
-            email: u.email,
-            open_jobs_count: matchingJobs.length,
-            realJobs: matchingJobs
-          });
-        }
-      }
-    });
-
-    // 3. Include full list of real industrial companies on platform
-    const REAL_INDUSTRIAL_COMPANIES = [
-      { name: 'Bajaj Auto Ltd', logo: 'https://logo.clearbit.com/bajajauto.com', industry: 'Automotive Manufacturing', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '10,000+ employees', year: 1945 },
-      { name: 'Škoda Auto Volkswagen India', logo: 'https://logo.clearbit.com/skoda-auto.com', industry: 'Automotive Manufacturing', midcZone: 'Shendra MIDC', city: 'Chhatrapati Sambhajinagar', size: '5,000+ employees', year: 2001 },
-      { name: 'Siemens India Ltd', logo: 'https://logo.clearbit.com/siemens.com', industry: 'Electronics & Electricals', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '5,000+ employees', year: 1957 },
-      { name: 'Tata Motors Ltd', logo: 'https://logo.clearbit.com/tatamotors.com', industry: 'Automotive Manufacturing', midcZone: 'Chakan MIDC', city: 'Pune', size: '10,000+ employees', year: 1945 },
-      { name: 'Larsen & Toubro Heavy Engineering', logo: 'https://logo.clearbit.com/larsentoubro.com', industry: 'Engineering & Machinery', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '10,000+ employees', year: 1938 },
-      { name: 'Kirloskar Oil Engines Ltd', logo: 'https://logo.clearbit.com/kirloskar.com', industry: 'Engineering & Machinery', midcZone: 'Kagal MIDC', city: 'Kolhapur', size: '2,500+ employees', year: 1946 },
-      { name: 'Endress+Hauser Wetzer India', logo: 'https://logo.clearbit.com/endress.com', industry: 'Electronics & Electricals', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '1,000+ employees', year: 1953 },
-      { name: 'NRB Bearings Ltd', logo: 'https://logo.clearbit.com/nrbbearings.com', industry: 'Engineering & Machinery', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '2,000+ employees', year: 1965 },
-      { name: 'Varroc Engineering Ltd', logo: 'https://logo.clearbit.com/varroc.com', industry: 'Automotive Manufacturing', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '5,000+ employees', year: 1990 },
-      { name: 'Endurance Technologies Ltd', logo: 'https://logo.clearbit.com/endurancegroup.com', industry: 'Automotive Manufacturing', midcZone: 'Shendra MIDC', city: 'Chhatrapati Sambhajinagar', size: '5,000+ employees', year: 1985 },
-      { name: 'Sterlite Technologies Ltd', logo: 'https://logo.clearbit.com/stl.tech', industry: 'Electronics & Electricals', midcZone: 'Waluj MIDC', city: 'Chhatrapati Sambhajinagar', size: '3,000+ employees', year: 1988 },
-      { name: 'Perkins India Pvt Ltd', logo: 'https://logo.clearbit.com/perkins.com', industry: 'Engineering & Machinery', midcZone: 'Shendra MIDC', city: 'Chhatrapati Sambhajinagar', size: '1,500+ employees', year: 1932 },
-      { name: 'Foxconn Industrial Internet', logo: 'https://logo.clearbit.com/foxconn.com', industry: 'Electronics & Electricals', midcZone: 'Chakan MIDC', city: 'Pune', size: '10,000+ employees', year: 1974 },
-      { name: 'Bosch Chassis Systems', logo: 'https://logo.clearbit.com/bosch.in', industry: 'Automotive Manufacturing', midcZone: 'Bhosari MIDC', city: 'Pune', size: '5,000+ employees', year: 1886 }
-    ];
-
-    REAL_INDUSTRIAL_COMPANIES.forEach((seed, idx) => {
-      const compName = seed.name.trim();
-      const key = compName.toLowerCase();
-
-      if (!companyMap.has(key)) {
-        const matchingJobs = allStoreJobs.filter(j => {
-          if (!j) return false;
-          const jComp = (j.company || '').toLowerCase();
-          return jComp.includes(key) || key.includes(jComp);
-        });
-
-        companyMap.set(key, {
-          id: `csn-comp-${idx + 1}`,
-          name: compName,
-          logo: seed.logo,
-          industry: seed.industry,
-          description: `Leading ${seed.industry.toLowerCase()} plant operating in ${seed.midcZone}.`,
-          city: seed.city,
-          midc_zone: seed.midcZone,
-          company_size: seed.size,
-          founded_year: seed.year,
-          verified: true,
-          open_jobs_count: matchingJobs.length,
-          realJobs: matchingJobs
-        });
-      }
-    });
-
-    return Array.from(companyMap.values());
-  }, [allStoreJobs, state.currentUser, state.users]);
+    return [];
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -217,19 +108,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
           }
         }
 
-        // Merge backend list with store derived entries to ensure all companies are visible
-        const derivedList = deriveCompaniesFromStore();
-        const compMap = new Map<string, CompanyItem>();
-
-        fetchedList.forEach(c => compMap.set(c.name.toLowerCase().trim(), c));
-        derivedList.forEach(c => {
-          const k = c.name.toLowerCase().trim();
-          if (!compMap.has(k)) {
-            compMap.set(k, c);
-          }
-        });
-
-        fetchedList = Array.from(compMap.values()).map(comp => {
+        fetchedList = fetchedList.map(comp => {
           const compName = (comp.name || '').toLowerCase().trim();
           const cleanComp = compName.replace(/[^a-z0-9]/g, '');
 
@@ -259,9 +138,9 @@ export const CompaniesDirectoryPage: React.FC = () => {
         }
       })
       .catch(err => {
-        console.error('Failed to fetch backend companies, falling back:', err);
+        console.error('Failed to fetch backend companies:', err);
         if (isMounted) {
-          setCompanies(deriveCompaniesFromStore());
+          setCompanies([]);
           setLoading(false);
         }
       });

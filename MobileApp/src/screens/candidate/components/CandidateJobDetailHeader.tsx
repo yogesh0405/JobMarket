@@ -4,7 +4,7 @@ import {
   ChevronLeft,
   Share2,
   Bookmark,
-  CheckCircle2,
+  ExternalLink,
   Users,
   MapPin,
   Globe,
@@ -25,6 +25,7 @@ interface CandidateJobDetailHeaderProps {
   onBack: () => void;
   onShare: () => void;
   onToggleSave: () => void;
+  onCompanyPress?: () => void;
 }
 
 export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> = ({
@@ -35,6 +36,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   onBack,
   onShare,
   onToggleSave,
+  onCompanyPress,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
@@ -48,7 +50,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   return (
     <View style={styles.profileHeaderMasterCard}>
       {/* Primary Blue Top Banner Section */}
-      <View style={[styles.topHeaderBandPrimary, { paddingTop: topInset + (Platform.OS === 'android' ? 10 : 8), paddingBottom: 16 }]}>
+      <View style={styles.topHeaderBandPrimary}>
         {/* Navigation Action Buttons Row */}
         <View style={styles.headerBandTopActions}>
           <TouchableOpacity
@@ -80,17 +82,25 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
 
         {/* Company Avatar & Main Job Title Stack */}
         <View style={styles.bannerHeaderFlexRow}>
-          <View style={styles.bannerAvatarBox}>
+          <TouchableOpacity
+            activeOpacity={onCompanyPress ? 0.8 : 1}
+            onPress={onCompanyPress}
+            style={styles.bannerAvatarBox}
+          >
             <CompanyLogoAvatar logoUrl={logoUrl} companyName={job.company} size={58} borderRadius={29} />
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.bannerTitleTextStack}>
-            <View style={styles.bannerCompanyRow}>
-              <Text style={styles.bannerCompanyNameText} numberOfLines={1}>
+            <TouchableOpacity
+              activeOpacity={onCompanyPress ? 0.8 : 1}
+              onPress={onCompanyPress}
+              style={styles.bannerCompanyRow}
+            >
+              <Text style={[styles.bannerCompanyNameText, { textDecorationLine: 'underline' }]} numberOfLines={1}>
                 {job.company || 'Industrial Partner'}
               </Text>
-              <CheckCircle2 size={14} color="#38BDF8" strokeWidth={2.2} />
-            </View>
+              <ExternalLink size={12} color="#93C5FD" strokeWidth={2.2} />
+            </TouchableOpacity>
 
             <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
               {job.title}
@@ -168,6 +178,8 @@ const styles = StyleSheet.create({
   topHeaderBandPrimary: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
   headerBandTopActions: {
     flexDirection: 'row',
@@ -176,10 +188,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   backBtnHeader: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -189,10 +198,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   transparentIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

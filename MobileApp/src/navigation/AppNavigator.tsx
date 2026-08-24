@@ -60,6 +60,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
           <Stack.Screen name="CandidateMap" component={CandidateJobMapScreen} />
           <Stack.Screen name="MyInterviews" component={CandidateInterviewsScreen} />
+          <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
         </>
       ) : (
         // Employer App Stack (RBAC)
@@ -67,6 +68,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="EmployerMain" component={EmployerTabNavigator} />
           <Stack.Screen name="JobPost" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="PostTab" component={JobPostScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="EmployerPostJob" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
           <Stack.Screen name="EmployerBanners" component={EmployerBannersScreen} />
           <Stack.Screen name="CreateBanner" component={CreateBannerScreen} />

@@ -2,11 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   Briefcase,
-  Zap,
+  CalendarCheck,
   Users,
   CheckCircle2,
 } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
 
 interface CompanyProfileAnalyticsTabProps {
   analyticsData: {
@@ -28,46 +27,51 @@ export const CompanyProfileAnalyticsTab: React.FC<CompanyProfileAnalyticsTabProp
     <View style={styles.tabContainer}>
       <Text style={styles.sectionHeadingTitle}>LIVE RECRUITMENT METRICS</Text>
 
-      <View style={styles.metricsGrid2x2}>
-        <View style={styles.metricCardItem}>
-          <View style={styles.metricHeaderRow}>
+      <View style={styles.rowsList}>
+        {/* Row 1: Total Job Posts */}
+        <View style={styles.metricRowCard}>
+          <View style={styles.metricIconBadge}>
+            <Briefcase size={18} color="#0F172A" />
+          </View>
+          <View style={styles.metricTextWrap}>
             <Text style={styles.metricLabelText}>Total Job Posts</Text>
-            <View style={[styles.metricIconBadge, { backgroundColor: '#EFF6FF' }]}>
-              <Briefcase size={16} color={COLORS.primary} />
-            </View>
+            <Text style={styles.metricSubText}>{analyticsData.activeJobs} Currently Active Openings</Text>
           </View>
           <Text style={styles.metricValueText}>{analyticsData.totalJobs}</Text>
-          <Text style={styles.metricSubText}>{analyticsData.activeJobs} Currently Active</Text>
         </View>
 
-        <View style={styles.metricCardItem}>
-          <View style={styles.metricHeaderRow}>
-            <Text style={styles.metricLabelText}>Total Applicants</Text>
-            <View style={[styles.metricIconBadge, { backgroundColor: '#F0FDF4' }]}>
-              <Users size={16} color="#16A34A" />
-            </View>
+        {/* Row 2: Total Applicants */}
+        <View style={styles.metricRowCard}>
+          <View style={styles.metricIconBadge}>
+            <Users size={18} color="#0F172A" />
+          </View>
+          <View style={styles.metricTextWrap}>
+            <Text style={styles.metricLabelText}>Total Candidate Applications</Text>
+            <Text style={styles.metricSubText}>{analyticsData.shortlisted} Shortlisted Candidates</Text>
           </View>
           <Text style={styles.metricValueText}>{analyticsData.totalApplications}</Text>
-          <Text style={styles.metricSubText}>{analyticsData.shortlisted} Shortlisted</Text>
         </View>
 
-        <View style={styles.metricCardItem}>
-          <View style={styles.metricHeaderRow}>
-            <Text style={styles.metricLabelText}>Interviews Held</Text>
-            <View style={[styles.metricIconBadge, { backgroundColor: '#FEF3C7' }]}>
-              <Zap size={16} color="#D97706" />
-            </View>
+        {/* Row 3: Interviews Held */}
+        <View style={styles.metricRowCard}>
+          <View style={styles.metricIconBadge}>
+            <CalendarCheck size={18} color="#0F172A" />
+          </View>
+          <View style={styles.metricTextWrap}>
+            <Text style={styles.metricLabelText}>Interviews & Screening Drives</Text>
+            <Text style={styles.metricSubText}>Walk-in, Telephonic & Video Drives</Text>
           </View>
           <Text style={styles.metricValueText}>{analyticsData.interviewed}</Text>
-          <Text style={styles.metricSubText}>Walk-in & Video Drives</Text>
         </View>
 
-        <View style={styles.metricCardItem}>
-          <View style={styles.metricHeaderRow}>
-            <Text style={styles.metricLabelText}>Successful Hires</Text>
-            <View style={[styles.metricIconBadge, { backgroundColor: '#F3E8FF' }]}>
-              <CheckCircle2 size={16} color="#9333EA" />
-            </View>
+        {/* Row 4: Successful Hires */}
+        <View style={styles.metricRowCard}>
+          <View style={styles.metricIconBadge}>
+            <CheckCircle2 size={18} color="#0F172A" />
+          </View>
+          <View style={styles.metricTextWrap}>
+            <Text style={styles.metricLabelText}>Successful Plant Hires</Text>
+            <Text style={styles.metricSubText}>Onboarded Industrial Workers</Text>
           </View>
           <Text style={styles.metricValueText}>{analyticsData.hired}</Text>
         </View>
@@ -78,54 +82,61 @@ export const CompanyProfileAnalyticsTab: React.FC<CompanyProfileAnalyticsTabProp
 
 const styles = StyleSheet.create({
   tabContainer: {
-    gap: 12,
+    gap: 10,
+    marginBottom: 16,
   },
   sectionHeadingTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: '#64748B',
     letterSpacing: 0.8,
     marginTop: 4,
+    marginBottom: 2,
   },
-  metricsGrid2x2: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  rowsList: {
     gap: 12,
   },
-  metricCardItem: {
-    width: '48%',
+  metricRowCard: {
+    width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 14,
-  },
-  metricHeaderRow: {
+    borderRadius: 0,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  metricLabelText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    gap: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   metricIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricValueText: {
-    fontSize: 22,
-    fontWeight: '800',
+  metricTextWrap: {
+    flex: 1,
+  },
+  metricLabelText: {
+    fontSize: 13.5,
+    fontWeight: '700',
     color: '#0F172A',
-    marginTop: 8,
   },
   metricSubText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
+    fontWeight: '500',
     color: '#64748B',
     marginTop: 2,
+  },
+  metricValueText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 });

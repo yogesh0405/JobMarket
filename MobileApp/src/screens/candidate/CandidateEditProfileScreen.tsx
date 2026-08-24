@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { Button } from '../../components/common/Button';
-import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
+import { KeyboardAwareScrollView, handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 import { COLORS } from '../../constants/theme';
 import { TRADES, STEPS } from './components/CandidateEditConstants';
 import { CandidateEditStep1Basic } from './components/CandidateEditStep1Basic';
@@ -25,10 +26,13 @@ import { CandidateEditStep3Experience } from './components/CandidateEditStep3Exp
 import { CandidateEditStep4SkillsResume } from './components/CandidateEditStep4SkillsResume';
 import { CandidateEditModals } from './components/CandidateEditModals';
 
-export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { user, updateUserProfile } = useAuth();
   const { showToast } = useToast();
+
+  const routeStep = route?.params?.step || route?.params?.initialStep;
+  const initialStepNum = routeStep && Number(routeStep) >= 1 && Number(routeStep) <= 4 ? Number(routeStep) : 1;
 
   const initialTrade = user?.tradeSpecialization || user?.trade_specialization || 'VMC Operator';
   const initialIsOther = !TRADES.filter((t) => t !== 'Other').includes(initialTrade);
@@ -64,8 +68,14 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
   const [deletingResume, setDeletingResume] = useState(false);
 
   // Stepper Wizard State
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(initialStepNum);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (routeStep && Number(routeStep) >= 1 && Number(routeStep) <= 4) {
+      setCurrentStep(Number(routeStep));
+    }
+  }, [routeStep]);
 
   // Modal States
   const [skillInput, setSkillInput] = useState('');
@@ -115,17 +125,22 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
         mediaTypes: 'images',
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
         base64: true,
       });
 
       if (!res.canceled && res.assets[0]) {
         setUploadingPhoto(true);
         const asset = res.assets[0];
-        const base64Data = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+        if (!asset.base64) {
+          Alert.alert('Upload Error', 'Could not read image data. Please select a different photo.');
+          return;
+        }
 
-        const uploadRes = await (candidateApi as any).uploadAvatar?.(base64Data);
-        const finalUrl = uploadRes?.data?.avatarUrl || uploadRes?.data?.url || base64Data;
+        const base64Data = `data:image/webp;base64,${asset.base64}`;
+        const uploadRes = await candidateApi.uploadProfilePicture(base64Data);
+        const finalUrl = uploadRes?.data?.url || base64Data;
+
         setProfilePhotoUrl(finalUrl);
         await updateUserProfile({
           profile_picture_url: finalUrl,
@@ -136,8 +151,9 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
         } as any);
         showToast('Profile photo updated successfully!', 'success');
       }
-    } catch (err) {
-      Alert.alert('Upload Error', 'Failed to upload profile photo.');
+    } catch (err: any) {
+      console.error('Photo upload error:', err);
+      Alert.alert('Upload Error', err?.message || 'Failed to upload profile photo.');
     } finally {
       setUploadingPhoto(false);
     }
@@ -145,33 +161,52 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
 
   const handlePickResume = async () => {
     try {
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
-        allowsEditing: false,
-        quality: 0.8,
-        base64: true,
+      setUploadingResume(true);
+
+      // Primary: DocumentPicker allowing PDF documents and Image files (*/* or pdf & images)
+      const docRes = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
       });
 
-      if (!res.canceled && res.assets[0]) {
-        setUploadingResume(true);
-        const asset = res.assets[0];
-        const fileName = asset.fileName || 'Candidate_Resume.pdf';
-        const base64Data = asset.base64 ? `data:${asset.mimeType || 'application/pdf'};base64,${asset.base64}` : asset.uri;
+      if (!docRes.canceled && docRes.assets && docRes.assets[0]) {
+        const asset = docRes.assets[0];
+        const fileName = asset.name || 'Candidate_Resume.pdf';
+        const fileUri = asset.uri;
 
-        const uploadRes = await candidateApi.uploadResume(base64Data, fileName);
-        const returnedUrl = (uploadRes as any)?.data?.resumeUrl || (uploadRes as any)?.data?.url;
-        if (uploadRes?.success && returnedUrl) {
+        const uploadRes = await candidateApi.uploadResume(fileUri, fileName);
+        const returnedUrl = (uploadRes as any)?.data?.resumeUrl || (uploadRes as any)?.data?.url || fileUri;
+
+        setResumeUrl(returnedUrl);
+        setResumeName(fileName);
+        showToast('Resume file attached successfully!', 'success');
+        return;
+      }
+    } catch (docErr) {
+      console.warn('DocumentPicker notice, trying ImagePicker fallback:', docErr);
+      try {
+        const imgRes = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: 'images',
+          allowsEditing: false,
+          quality: 0.8,
+          base64: true,
+        });
+
+        if (!imgRes.canceled && imgRes.assets[0]) {
+          const asset = imgRes.assets[0];
+          const fileName = asset.fileName || 'Candidate_Resume_Photo.jpg';
+          const base64Data = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+
+          const uploadRes = await candidateApi.uploadResume(base64Data, fileName);
+          const returnedUrl = (uploadRes as any)?.data?.resumeUrl || (uploadRes as any)?.data?.url || base64Data;
+
           setResumeUrl(returnedUrl);
           setResumeName(fileName);
-          showToast('Resume document attached successfully!', 'success');
-        } else {
-          setResumeUrl(base64Data);
-          setResumeName(fileName);
-          showToast('Resume attached!', 'success');
+          showToast('Resume image attached!', 'success');
         }
+      } catch (imgErr) {
+        Alert.alert('Upload Error', 'Failed to attach resume document or image.');
       }
-    } catch (err) {
-      Alert.alert('Upload Error', 'Failed to attach resume file.');
     } finally {
       setUploadingResume(false);
     }
@@ -299,6 +334,10 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
 
     try {
       setSaving(true);
+      const cleanSkills = Array.isArray(skills) ? skills.map((s) => String(s).trim()).filter(Boolean) : [];
+      const cleanExp = Array.isArray(experience) ? experience : [];
+      const cleanEdu = Array.isArray(education) ? education : [];
+
       const updateData: any = {
         name: name.trim(),
         headline: headline.trim(),
@@ -306,30 +345,43 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
         phone: phone.trim(),
         bio: bio.trim(),
         tradeSpecialization: finalTrade,
+        trade_specialization: finalTrade,
         preferredShift,
+        preferred_shift: preferredShift,
         requiresBus,
+        requires_bus: requiresBus,
         requiresAccommodation,
-        skills,
-        experience,
-        education,
-        resumeUrl,
-        resumeName,
-        profilePhotoUrl,
+        requires_accommodation: requiresAccommodation,
+        skills: cleanSkills,
+        experience: cleanExp,
+        education: cleanEdu,
       };
 
-      await candidateApi.updateProfile(updateData);
-      await updateUserProfile({
-        ...updateData,
-        trade_specialization: finalTrade,
-        preferred_shift: preferredShift,
-        requires_bus: requiresBus,
-        requires_accommodation: requiresAccommodation,
-      });
+      if (resumeUrl && typeof resumeUrl === 'string' && resumeUrl.trim()) {
+        const trimmedUrl = resumeUrl.trim();
+        updateData.resumeUrl = trimmedUrl;
+        updateData.resumeName = resumeName || 'Candidate_Resume.pdf';
+        updateData.resume = {
+          url: trimmedUrl,
+          name: resumeName || 'Candidate_Resume.pdf',
+          uploadedAt: new Date().toISOString(),
+        };
+      }
 
-      showToast('Candidate profile updated successfully!', 'success');
+      if (profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim()) {
+        const trimmedPhoto = profilePhotoUrl.trim();
+        updateData.profilePhotoUrl = trimmedPhoto;
+        updateData.profile_picture_url = trimmedPhoto;
+        updateData.avatar = trimmedPhoto;
+      }
+
+      await updateUserProfile(updateData);
+
+      showToast('Candidate profile updated successfully in database!', 'success');
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Save Failed', err?.message || 'Failed to update profile. Please try again.');
+      console.error('Update profile save error:', err);
+      Alert.alert('Save Failed', err?.message || 'Failed to update profile in database. Please check your connection.');
     } finally {
       setSaving(false);
     }
@@ -453,6 +505,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any }> = ({ navi
             onPickResume={handlePickResume}
             onDeleteResume={handleDeleteResume}
             onOpenPdfModal={() => setShowPdfModal(true)}
+            onFocusSkillInput={(e) => handleFocusInput(e, scrollViewRef, 140)}
           />
         ) : null}
       </KeyboardAwareScrollView>

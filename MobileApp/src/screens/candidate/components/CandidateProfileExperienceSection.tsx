@@ -149,7 +149,7 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
 
       <View style={styles.sectionDividerSlate} />
 
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, { marginBottom: 24 }]}>
         <View style={styles.sectionCardHeader}>
           <Text style={styles.sectionCardTitle}>Resume & Bio-Data Document</Text>
         </View>

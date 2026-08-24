@@ -30,6 +30,7 @@ interface CandidateEditStep4SkillsResumeProps {
   onPickResume: () => void;
   onDeleteResume: () => void;
   onOpenPdfModal: () => void;
+  onFocusSkillInput?: (event: any) => void;
 }
 
 export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsResumeProps> = ({
@@ -45,6 +46,7 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
   onPickResume,
   onDeleteResume,
   onOpenPdfModal,
+  onFocusSkillInput,
 }) => {
   return (
     <View style={styles.masterEditCard}>
@@ -68,6 +70,7 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
               placeholderTextColor="#94A3B8"
               value={skillInput}
               onChangeText={setSkillInput}
+              onFocus={onFocusSkillInput}
             />
             <TouchableOpacity style={styles.addSkillBtn} onPress={onAddSkill}>
               <Plus size={16} color="#FFFFFF" />
@@ -92,7 +95,7 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
 
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitleText}>Attach Resume PDF Document</Text>
+          <Text style={styles.sectionTitleText}>Attach Resume (PDF Document or Image Photo)</Text>
         </View>
 
         {resumeUrl ? (
@@ -100,7 +103,7 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
             <FileText size={24} color={COLORS.primary} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.resumeAttachedName} numberOfLines={1}>{resumeName}</Text>
-              <Text style={styles.resumeAttachedSub}>PDF Document Attached</Text>
+              <Text style={styles.resumeAttachedSub}>Resume File Attached & Live</Text>
             </View>
 
             <TouchableOpacity style={styles.viewPdfBtn} onPress={onOpenPdfModal}>
@@ -118,8 +121,8 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
             ) : (
               <>
                 <UploadCloud size={24} color={COLORS.primary} />
-                <Text style={styles.uploadResumeTitle}>Tap to Upload PDF Resume</Text>
-                <Text style={styles.uploadResumeSub}>Supports PDF documents up to 10MB</Text>
+                <Text style={styles.uploadResumeTitle}>Tap to Upload PDF Document or Resume Photo</Text>
+                <Text style={styles.uploadResumeSub}>Supports PDF documents & JPG / PNG images up to 10MB</Text>
               </>
             )}
           </TouchableOpacity>

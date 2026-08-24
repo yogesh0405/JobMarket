@@ -13,7 +13,8 @@ import {
   Building2,
   Calendar,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -107,6 +108,8 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
   const [expDesc, setExpDesc] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState<number>(0);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [uploadingState, setUploadingState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -188,6 +191,8 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
       setUploadingState(existingResumeUrl ? 'success' : 'idle');
       setUploadProgress(0);
       setUploadError(null);
+      setInlineError(null);
+      setSaveProgress(0);
       setCurrentStep(1);
     }
     prevIsOpenRef.current = isOpen;
@@ -199,7 +204,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast('Profile picture size should be less than 5MB.', 'error');
+      setInlineError('Profile picture size should be less than 5MB.');
       return;
     }
 
@@ -212,7 +217,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         await updateUser({ profilePictureUrl: base64 });
         showToast('Profile photo updated!', 'success');
       } catch (err) {
-        showToast('Failed to save profile photo.', 'error');
+        setInlineError('Failed to save profile photo.');
       } finally {
         setIsUploadingPhoto(false);
       }
@@ -220,25 +225,26 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
     reader.readAsDataURL(file);
   };
 
-  // PDF / Document Resume Handler with File Size Validation (Max 5MB) & Single Animated Progress Bar
+  // PDF / Word / PNG / JPG Resume Handler with File Size Validation (Max 5MB) & Animated Progress Bar
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInlineError(null);
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (e.target) e.target.value = '';
 
-    const allowedExtensions = ['pdf', 'doc', 'docx'];
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp'];
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
-    if (!allowedExtensions.includes(ext) && !file.type.includes('pdf') && !file.type.includes('word')) {
-      showToast('Please upload a valid PDF or Word document (.pdf, .doc, .docx).', 'error');
+    if (!allowedExtensions.includes(ext) && !file.type.includes('pdf') && !file.type.includes('word') && !file.type.includes('image')) {
+      setInlineError('Please select a valid document (.pdf, .doc, .docx) or image (.png, .jpg, .jpeg).');
       return;
     }
 
     // Strict 5MB File Size Validation (Frontend Pre-Check)
     const MAX_RESUME_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_RESUME_SIZE) {
-      showToast('File size exceeds 5MB limit. Please upload a document up to 5MB.', 'error');
+      setInlineError('File size exceeds 5MB limit. Please upload a smaller document or image.');
       return;
     }
 
@@ -246,33 +252,33 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
 
     setIsUploadingPdf(true);
     setUploadingState('uploading');
-    setUploadProgress(15);
+    setUploadProgress(20);
     setUploadError(null);
 
     const reader = new FileReader();
 
     reader.onprogress = (event) => {
       if (event.lengthComputable) {
-        const percent = Math.min(98, Math.max(15, Math.round((event.loaded / event.total) * 100)));
+        const percent = Math.min(98, Math.max(20, Math.round((event.loaded / event.total) * 100)));
         setUploadProgress(percent);
       }
     };
 
     reader.onloadend = () => {
-      const base64Pdf = reader.result as string;
-      setResumeUrl(base64Pdf);
+      const base64Data = reader.result as string;
+      setResumeUrl(base64Data);
       setResumeName(file.name);
       setUploadProgress(100);
       setUploadingState('success');
       setIsUploadingPdf(false);
-      showToast('Resume attached! Click Save Profile at the bottom to complete update.', 'success');
+      showToast('Resume attached! Click "Save Profile" below to complete.', 'success');
     };
 
     reader.onerror = () => {
       setUploadingState('error');
-      setUploadError('Failed to read document file. Please try again.');
+      setUploadError('Failed to read file document. Please try again.');
+      setInlineError('Failed to read file document. Please try again.');
       setIsUploadingPdf(false);
-      showToast('Failed to read document file.', 'error');
     };
 
     reader.readAsDataURL(file);
@@ -393,21 +399,28 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
 
   // Final Save Handler on Step 4
   const handleFinalSave = async () => {
+    setInlineError(null);
     const finalTrade = tradeSpecialization === 'Other' ? customTrade.trim() : tradeSpecialization;
     
     if (!name.trim()) {
-      showToast('Candidate name is required', 'error');
+      setInlineError('Candidate name is required');
       setCurrentStep(1);
       return;
     }
 
     if (!finalTrade) {
-      showToast('Please specify your trade specialization', 'error');
+      setInlineError('Please specify your trade specialization');
       setCurrentStep(2);
       return;
     }
 
     setIsSaving(true);
+    setSaveProgress(15);
+
+    const progressInterval = setInterval(() => {
+      setSaveProgress((prev) => (prev >= 90 ? prev : prev + 15));
+    }, 180);
+
     try {
       const payload: any = {
         name: name.trim(),
@@ -415,7 +428,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         location: location.trim(),
         phone: phone.trim(),
         bio: bio.trim(),
-        profilePictureUrl,
+        profilePictureUrl: profilePhotoUrl,
         tradeSpecialization: finalTrade,
         trade_specialization: finalTrade,
         education: educationList,
@@ -429,22 +442,31 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         skills: skillsList,
         resumeUrl,
         resumeName,
-        isResumePublic,
-        resume: resumeUrl ? { url: resumeUrl, name: resumeName, isPublic: isResumePublic } : null
+        resume: resumeUrl ? {
+          url: resumeUrl,
+          name: resumeName,
+          isPublic: isResumePublic,
+          uploadedAt: (currentUser?.resume as any)?.uploadedAt || new Date().toISOString()
+        } : null
       };
 
       const res = await updateUser(payload);
+      clearInterval(progressInterval);
 
       if (res.success) {
+        setSaveProgress(100);
         showToast('Profile updated and saved successfully!', 'success');
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        showToast(res.error || 'Failed to update profile. Please retry.', 'error');
+        setSaveProgress(0);
+        setInlineError(res.error || 'Failed to save profile changes. Please retry.');
       }
     } catch (err: any) {
+      clearInterval(progressInterval);
+      setSaveProgress(0);
       console.error('Profile save error:', err);
-      showToast(err?.message || 'An unexpected error occurred while saving profile.', 'error');
+      setInlineError(err?.message || 'An unexpected error occurred while saving profile.');
     } finally {
       setIsSaving(false);
     }
@@ -671,6 +693,84 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
 
         {/* Scrollable Form Body */}
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1, backgroundColor: '#F8FAFC' }}>
+
+          {/* Inline Error Notification Banner inside screen */}
+          {inlineError && (
+            <div
+              style={{
+                padding: '12px 14px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '8px',
+                color: '#991B1B',
+                fontSize: '13px',
+                fontWeight: '700',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 2px 6px rgba(220, 38, 38, 0.08)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={18} color="#DC2626" />
+                <span>{inlineError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInlineError(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#991B1B',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  padding: '0 4px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Saving Profile Linear Progress Bar (Reference Design) */}
+          {isSaving && (
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                marginBottom: '16px',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.1)'
+              }}
+            >
+              <div style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '4px' }}>
+                LINEAR PROGRESS BAR
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#64748B', marginBottom: '12px' }}>
+                Saving profile changes to database...
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                <span>Saving profile...</span>
+                <span>{saveProgress}%</span>
+              </div>
+
+              <div style={{ width: '100%', height: '10px', backgroundColor: '#F1F5F9', borderRadius: '9999px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${saveProgress}%`,
+                    height: '100%',
+                    backgroundColor: '#2563EB',
+                    borderRadius: '9999px',
+                    transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* STEP 1: BASIC DETAILS */}
           {currentStep === 1 && (
@@ -1320,54 +1420,66 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                   {uploadingState === 'uploading' ? (
                     <div
                       style={{
-                        border: '2px solid #2563EB',
-                        borderRadius: '0px',
-                        padding: '20px 16px',
-                        backgroundColor: '#EFF6FF',
-                        textAlign: 'center'
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '12px',
+                        padding: '16px 20px',
+                        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.1)'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#2563EB', marginBottom: '10px' }}>
-                        <UploadCloud size={24} />
-                        <span style={{ fontSize: '14px', fontWeight: '800' }}>Reading & Validating Resume...</span>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '4px' }}>
+                        LINEAR PROGRESS BAR
                       </div>
-                      
-                      {/* SINGLE PROGRESS BAR */}
-                      <div style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#2563EB', marginBottom: '6px' }}>
-                          <span>Upload Progress</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', backgroundColor: '#DBEAFE', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ width: `${uploadProgress}%`, height: '100%', backgroundColor: '#2563EB', transition: 'width 0.2s ease-out' }} />
-                        </div>
+                      <div style={{ fontSize: '12.5px', color: '#64748B', marginBottom: '12px' }}>
+                        Reading and preparing resume document...
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>
+                        <span>Uploading...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+
+                      <div style={{ width: '100%', height: '10px', backgroundColor: '#F1F5F9', borderRadius: '9999px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${uploadProgress}%`,
+                            height: '100%',
+                            backgroundColor: '#2563EB',
+                            borderRadius: '9999px',
+                            transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                          }}
+                        />
                       </div>
                     </div>
                   ) : resumeUrl ? (
-                    <div style={{ padding: '14px 16px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FileText size={22} color="#166534" />
-                        <div>
-                          <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#166534' }}>
+                    <div style={{ padding: '14px 16px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', display: 'flex', flexDirection: 'column', gap: '12px', borderRadius: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <FileText size={24} color="#166534" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#166534', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                             {resumeName}
                           </div>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803D', marginTop: '2px' }}>
-                            Document Attached ✓ (Click "Save Profile" below to persist)
+                          <div style={{ fontSize: '11.5px', fontWeight: '600', color: '#15803D', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={13} color="#166534" />
+                            <span>Attached (Click "Save Profile" below to persist)</span>
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+                      {/* Action Buttons Row - Perfectly Aligned for Mobile & Web */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px', borderTop: '1px dashed #A7F3D0' }}>
                         <button
                           type="button"
                           onClick={() => pdfInputRef.current?.click()}
                           style={{
-                            padding: '5px 10px',
+                            padding: '6px 14px',
                             backgroundColor: '#FFFFFF',
                             border: '1px solid #86EFAC',
                             color: '#15803D',
-                            fontSize: '11.5px',
+                            fontSize: '12px',
                             fontWeight: '700',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            borderRadius: '4px'
                           }}
                         >
                           Change
@@ -1376,13 +1488,14 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                           type="button"
                           onClick={handleRemoveResume}
                           style={{
-                            padding: '5px 10px',
+                            padding: '6px 14px',
                             backgroundColor: '#FEF2F2',
                             border: '1px solid #FCA5A5',
                             color: '#DC2626',
-                            fontSize: '11.5px',
+                            fontSize: '12px',
                             fontWeight: '700',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            borderRadius: '4px'
                           }}
                         >
                           Remove
@@ -1417,7 +1530,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                       </div>
 
                       <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>
-                        Tap to Select Resume Document (.pdf, .doc, .docx)
+                        Tap to Upload Resume Document or Image (.pdf, .doc, .docx, .png, .jpg, .jpeg)
                       </h4>
                       <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>
                         Strict 5MB file size limit enforced
@@ -1425,17 +1538,10 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                     </div>
                   )}
 
-                  {uploadError && (
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#DC2626', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <AlertCircle size={14} />
-                      <span>{uploadError}</span>
-                    </div>
-                  )}
-
                   <input
                     type="file"
                     ref={pdfInputRef}
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"
                     onChange={handlePdfUpload}
                     style={{ display: 'none' }}
                   />

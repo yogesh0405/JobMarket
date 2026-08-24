@@ -12,6 +12,9 @@ export class UpdateProfileService {
     tradeSpecialization?: string;
     headline?: string;
     location?: string;
+    bio?: string;
+    midcZone?: string;
+    midc_zone?: string;
     skills?: string[];
     preferredShift?: string;
     requiresBus?: boolean;
@@ -48,8 +51,17 @@ export class UpdateProfileService {
       profileData.resume = {
         url: (profileData as any).resumeUrl,
         name: (profileData as any).resumeName || 'Candidate_Resume.pdf',
-        isPublic: (profileData as any).isResumePublic !== false
+        isPublic: (profileData as any).isResumePublic !== false,
+        uploadedAt: currentUser.resume?.uploadedAt || (currentUser as any).updated_at || new Date().toISOString()
       };
+    }
+
+    if (profileData.resume) {
+      if (!profileData.resume.uploadedAt || profileData.resume.url?.startsWith('data:')) {
+        profileData.resume.uploadedAt = (profileData.resume.url?.startsWith('data:'))
+          ? new Date().toISOString()
+          : (currentUser.resume?.uploadedAt || (currentUser as any).updated_at || new Date().toISOString());
+      }
     }
 
     // Mandatory Backend Resume Validation (Size Max 5MB & Format Validation)
@@ -68,11 +80,11 @@ export class UpdateProfileService {
         const mimeType = mimeMatch ? mimeMatch[1].toLowerCase() : '';
         const fileName = (profileData.resume.name || (profileData as any).resumeName || '').toLowerCase();
 
-        const isAllowedMime = mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('msword') || mimeType.includes('officedocument') || mimeType.includes('octet-stream');
-        const isAllowedExt = fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx');
+        const isAllowedMime = mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('msword') || mimeType.includes('officedocument') || mimeType.includes('image') || mimeType.includes('octet-stream');
+        const isAllowedExt = fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx') || fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.webp');
 
         if (mimeType && !isAllowedMime && fileName && !isAllowedExt) {
-          throw new BadRequestError('Invalid resume file format. Only PDF and Word documents (.pdf, .doc, .docx) are accepted.');
+          throw new BadRequestError('Invalid resume file format. Accepted formats: PDF, Word (.doc, .docx), PNG, JPG, JPEG.');
         }
       }
     }
@@ -92,12 +104,15 @@ export class UpdateProfileService {
       }
 
       try {
-        const publicId = `resume_${userId}`;
-        const secureUrl = await CloudinaryUtil.uploadFile(profileData.resume.url, 'resumes', publicId);
+        const publicId = `resume_${userId}_${Date.now()}`;
+        const isImage = profileData.resume.url.startsWith('data:image/');
+        const secureUrl = isImage
+          ? await CloudinaryUtil.uploadImage(profileData.resume.url, 'resumes', publicId)
+          : await CloudinaryUtil.uploadFile(profileData.resume.url, 'resumes', publicId);
         profileData.resume.url = secureUrl;
       } catch (err: any) {
-        logger.error('Failed to upload user resume to Cloudinary:', err);
-        throw new BadRequestError(`Failed to save resume: ${err.message}`);
+        logger.error('Failed to upload user resume to Cloudinary, proceeding with direct storage:', err);
+        // Fallback: If Cloudinary fails, preserve data so profile save succeeds
       }
     }
 

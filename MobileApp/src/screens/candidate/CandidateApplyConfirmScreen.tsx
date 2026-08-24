@@ -1,4 +1,3 @@
-import { COLORS } from '../../constants/theme';
 import React, { useState } from 'react';
 import {
   View,
@@ -6,41 +5,27 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import {
   MapPin,
   Briefcase,
   Clock,
-  Building2,
-  Users,
-  CheckCircle2,
-  Send,
-  IndianRupee,
-  Calendar,
-  FileText,
   User,
-  Mail,
-  Phone,
-  Wrench,
-  GraduationCap,
+  FileText,
   AlertTriangle,
-  ArrowRight,
-  ShieldCheck,
-  Award,
+  Pencil,
+  Send,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/common/Header';
-import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
-import { Job } from '../../types';
-
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
+import { Job } from '../../types';
 
 interface Props {
   navigation: any;
@@ -55,12 +40,9 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const job = route.params?.job as Job;
   const onAppliedSuccess = route.params?.onAppliedSuccess;
 
-  const [currentSalary, setCurrentSalary] = useState<string>((user as any)?.currentSalary || (user as any)?.current_salary || '');
-  const [expectedSalary, setExpectedSalary] = useState('');
-  const [coverNote, setCoverNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Strict Resume Parser
+  // Resume Parser Helper
   const getResumeInfo = (u: any) => {
     if (!u) return { hasResume: false, url: null, name: null };
 
@@ -86,7 +68,9 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
       parsedObj?.path ||
       (typeof rawResume === 'object' && rawResume?.url ? rawResume.url : null);
 
-    const hasResume = Boolean(url && typeof url === 'string' && url.trim().length > 3 && !url.includes('null') && !url.includes('undefined'));
+    const hasResume = Boolean(
+      url && typeof url === 'string' && url.trim().length > 3 && !url.includes('null') && !url.includes('undefined')
+    );
 
     let name =
       u.resumeName ||
@@ -108,69 +92,106 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     };
   };
 
-  const { hasResume, url: resumeUrl, name: resumeFileName } = getResumeInfo(user);
+  const { hasResume, name: resumeFileName } = getResumeInfo(user);
 
-  // Candidate Specs Verification
+  // Candidate Profile Data Parsing
+  const nameVal = user?.name || (user as any)?.full_name || 'Workforce Applicant';
+  const emailVal = user?.email || '';
+  const phoneVal = user?.phone || (user as any)?.mobile || (user as any)?.phone_number || '';
+  const locationVal = user?.location || user?.address || (user as any)?.city || '';
+  const tradeVal = user?.tradeSpecialization || (user as any)?.trade_specialization || user?.headline || (user as any)?.trade || '';
+  
+  // Experience Parser & Safe Text Formatter
+  const expList: any[] = Array.isArray(user?.experience)
+    ? user.experience
+    : typeof user?.experience === 'string'
+    ? ((): any[] => { try { return JSON.parse(user.experience as string); } catch (_) { return []; } })()
+    : Array.isArray((user as any)?.work_experience)
+    ? (user as any).work_experience
+    : [];
+
+  const formatExpVal = (): string | null => {
+    const raw = (user as any)?.totalExperience || (user as any)?.total_experience || (user as any)?.experienceYears || (user as any)?.experience_years;
+    if (raw && typeof raw !== 'object') {
+      return typeof raw === 'number' ? `${raw} Years Exp` : String(raw);
+    }
+    if (Array.isArray(expList) && expList.length > 0) {
+      const first = expList[0];
+      if (typeof first === 'string' && first.trim()) return first.trim();
+      if (first && typeof first === 'object') {
+        const role = first.designation || first.title || first.role || first.company || first.companyName;
+        const duration = first.years || first.duration || first.experience;
+        if (role && duration) return `${role} (${duration})`;
+        if (role) return role;
+        if (duration) return `${duration}`;
+      }
+      return `${expList.length} Work Experience Record(s)`;
+    }
+    return null;
+  };
+
+  const expVal = formatExpVal();
+
+  // Technical Skills List
   const skillsList: string[] = Array.isArray(user?.skills)
     ? user.skills
     : typeof user?.skills === 'string'
     ? (user.skills as string).split(',').map((s) => s.trim()).filter(Boolean)
     : [];
 
-  const workExpList = Array.isArray(user?.experience)
-    ? user.experience
-    : Array.isArray((user as any)?.work_experience)
-    ? (user as any).work_experience
-    : [];
+  // Missing Info Items
+  const missingItems: { label: string; detail: string }[] = [];
+  if (!phoneVal) missingItems.push({ label: 'Phone Contact', detail: 'Phone Contact number missing' });
+  if (!locationVal) missingItems.push({ label: 'Location / City', detail: 'Location / City not specified' });
+  if (!tradeVal) missingItems.push({ label: 'Primary Trade', detail: 'Primary Trade specialization not configured' });
+  if (skillsList.length < 5) missingItems.push({ label: 'Technical Skills', detail: `Technical Skills (${skillsList.length}/5 minimum recommended)` });
+  if (!expVal && expList.length === 0) missingItems.push({ label: 'Work Experience', detail: 'Work Experience History not added' });
+  if (!hasResume) missingItems.push({ label: 'Resume Document', detail: 'Resume Document not uploaded' });
 
-  const educationList = Array.isArray(user?.education)
-    ? user.education
-    : Array.isArray((user as any)?.education)
-    ? (user as any).education
-    : [];
+  const getTargetStepForMissingInfo = () => {
+    if (!phoneVal || !locationVal || !tradeVal) {
+      return 1; // Step 1: Basic Info (Phone, Location, Trade)
+    }
+    if (!expVal && expList.length === 0) {
+      return 3; // Step 3: Work Experience
+    }
+    if (skillsList.length < 5 || !hasResume) {
+      return 4; // Step 4: Technical Skills & Resume
+    }
+    return 1;
+  };
 
-  const phoneVal = user?.phone || (user as any)?.mobile || (user as any)?.phone_number;
-  const locationVal = user?.location || user?.address || (user as any)?.city;
-  const tradeVal = user?.tradeSpecialization || (user as any)?.trade_specialization || user?.headline || (user as any)?.trade;
-  const shiftVal = user?.preferredShift || (user as any)?.preferred_shift;
+  const handleNavigateToMissingStep = () => {
+    const targetStep = getTargetStepForMissingInfo();
+    navigation.navigate('CandidateEditProfile', {
+      step: targetStep,
+      initialStep: targetStep,
+    });
+  };
 
-  // Missing profile fields (Excludes optional Current Salary and Total Experience)
-  const missingSections: string[] = [];
-  if (!phoneVal) missingSections.push('Phone Number');
-  if (!locationVal) missingSections.push('Location');
-  if (!tradeVal) missingSections.push('Trade Specialization');
-  if (skillsList.length === 0) missingSections.push('Technical Skills');
-  if (!hasResume) missingSections.push('Resume Document');
-
-  const handleApplySubmit = async () => {
+  // Handle Application Submit (0ms Instant Optimistic UX matching Web App)
+  const handleApplySubmit = () => {
     if (!job?.id) {
       showToast('Invalid job details', 'error');
       return;
     }
 
     setSubmitting(true);
-    try {
-      const payload: any = {};
-      if (currentSalary) payload.currentSalary = currentSalary;
-      if (expectedSalary) payload.expectedSalary = expectedSalary;
-      if (coverNote) payload.coverNote = coverNote;
 
-      const res = await candidateApi.applyForJob(job.id, payload);
-      if (res.success) {
-        appliedJobsStore.addAppliedJob(job);
-        showToast('Your application has been submitted to the recruiter.', 'success');
-        if (onAppliedSuccess) onAppliedSuccess(job);
-        navigation.goBack();
-      } else {
-        const errorMsg = res.message || res.error || 'Failed to submit application. Please try again.';
-        showToast(errorMsg, 'error');
-      }
-    } catch (err: any) {
-      console.log('Error applying for job:', err);
-      showToast(err.message || 'Failed to submit application. Please check your network connection.', 'error');
-    } finally {
+    // 1. Instantly record application in local store
+    appliedJobsStore.addAppliedJob(job);
+    showToast('Your application has been submitted to the recruiter.', 'success');
+
+    // 2. Fire background API sync to live backend
+    candidateApi.applyForJob(job.id, {}).catch((err) => {
+      console.warn('Background application sync note:', err);
+    });
+
+    // 3. Return to previous screen instantly
+    setTimeout(() => {
       setSubmitting(false);
-    }
+      navigation.goBack();
+    }, 150);
   };
 
   if (!job) {
@@ -184,260 +205,207 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     );
   }
 
+  // Format Salary Range
+  const salaryText = job.salaryMin && job.salaryMax
+    ? `₹${job.salaryMin} - ₹${job.salaryMax} / mo`
+    : job.salaryMin
+    ? `₹${job.salaryMin} / mo`
+    : 'Salary Negotiable';
+
+  // Format Experience Range
+  const expReqText = job.minExperience !== undefined && job.maxExperience !== undefined
+    ? `${job.minExperience} - ${job.maxExperience} Years Exp`
+    : '0 - 3 Years Exp';
+
   return (
     <View style={styles.container}>
-      <Header title="Confirm Application" subtitle="Review candidate specs before submitting" showBack={true} />
+      {/* Top Header */}
+      <Header
+        title="Confirm Job Application"
+        subtitle="Review candidate details before submitting to recruiter"
+        showBack={true}
+      />
 
-      <KeyboardAwareScrollView
+      <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
-          {/* Missing Profile Alert Banner (Only shown if essential fields are missing) */}
-          {missingSections.length > 0 && (
-            <>
-              <View style={styles.incompleteAlertCard}>
-                <View style={styles.incompleteAlertLeft}>
-                  <AlertTriangle size={16} color="#B45309" />
-                  <Text style={styles.incompleteAlertTitle} numberOfLines={1}>
-                    Incomplete Profile ({missingSections.length} {missingSections.length === 1 ? 'field' : 'fields'} missing)
+        {/* 1. TOP JOB DETAILS CARD */}
+        <View style={styles.jobCardContainer}>
+          {/* Solid Blue Top Banner */}
+          <View style={styles.jobBannerHeader}>
+            <CompanyLogoAvatar
+              logoUrl={job.companyLogo || (job as any)?.logo}
+              companyName={job.company || 'Employer'}
+              size={46}
+              borderRadius={23}
+            />
+            <View style={styles.jobBannerTextWrap}>
+              <Text style={styles.companyNameText} numberOfLines={1}>
+                {job.company || 'Enterprise Employer'}
+              </Text>
+              <Text style={styles.jobTitleText} numberOfLines={2}>
+                {job.title}
+              </Text>
+            </View>
+          </View>
+
+          {/* Bottom Details Row */}
+          <View style={styles.jobBannerBody}>
+            {/* Location */}
+            <View style={styles.jobMetaRow}>
+              <MapPin size={15} color="#64748B" />
+              <Text style={styles.jobMetaLocationText} numberOfLines={2}>
+                {job.location || job.midc_zone || (job as any).midcZone || 'Chhatrapati Sambhajinagar, Maharashtra'}
+              </Text>
+            </View>
+
+            {/* Salary & Exp Stats */}
+            <View style={styles.jobStatsRow}>
+              <View style={styles.statItem}>
+                <Briefcase size={14} color="#2563EB" />
+                <Text style={styles.statItemText}>{salaryText}</Text>
+              </View>
+
+              <View style={styles.statItem}>
+                <Clock size={14} color="#64748B" />
+                <Text style={styles.statItemText}>{expReqText}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* 2. CANDIDATE PROFILE CARD (Only Available Fields) */}
+        <View style={styles.profileCardContainer}>
+          {/* Card Header */}
+          <View style={styles.profileCardTitleRow}>
+            <User size={18} color="#2563EB" />
+            <Text style={styles.profileCardTitle}>Candidate Profile</Text>
+          </View>
+
+          <View style={styles.fieldBlocksList}>
+            {/* Full Name */}
+            {nameVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>FULL NAME</Text>
+                <Text style={styles.fieldBlockValue}>{nameVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Email Address */}
+            {emailVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>EMAIL ADDRESS</Text>
+                <Text style={styles.fieldBlockValue}>{emailVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Phone Contact */}
+            {phoneVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>PHONE CONTACT</Text>
+                <Text style={styles.fieldBlockValue}>{phoneVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Location / City */}
+            {locationVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>LOCATION / CITY</Text>
+                <Text style={styles.fieldBlockValue}>{locationVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Primary Trade */}
+            {tradeVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>PRIMARY TRADE</Text>
+                <Text style={styles.fieldBlockValue}>{tradeVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Experience */}
+            {expVal ? (
+              <View style={styles.fieldBlock}>
+                <Text style={styles.fieldBlockLabel}>EXPERIENCE</Text>
+                <Text style={styles.fieldBlockValue}>{expVal}</Text>
+              </View>
+            ) : null}
+
+            {/* Resume Document Box */}
+            {hasResume ? (
+              <View style={styles.resumeGreenBox}>
+                <View style={styles.resumeGreenHeader}>
+                  <FileText size={18} color="#16A34A" />
+                  <Text style={styles.resumeFileNameText} numberOfLines={1}>
+                    {resumeFileName}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.editProfileSmallBtn}
-                  onPress={() => navigation.navigate('CandidateProfile')}
-                >
-                  <Text style={styles.editProfileSmallBtnText}>Complete</Text>
-                  <ArrowRight size={12} color="#FFFFFF" />
-                </TouchableOpacity>
+                <Text style={styles.resumeSubtext}>
+                  This document will be automatically transmitted to the employer
+                </Text>
               </View>
-              <View style={styles.sectionDivider} />
-            </>
-          )}
-
-          {/* SECTION 1: TARGET POSITION */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>TARGET POSITION</Text>
-            <Text style={styles.targetJobTitle}>{job.title}</Text>
-            <Text style={styles.targetJobSub}>
-              {job.company || 'Enterprise Employer'} • {job.location || 'MIDC Zone'}
-            </Text>
+            ) : null}
           </View>
-          <View style={styles.sectionDivider} />
+        </View>
 
-          {/* SECTION 2: CANDIDATE APPLICATION SPECS (Flat iOS List) */}
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeaderRow}>
-              <ShieldCheck size={18} color={COLORS.primary} />
-              <Text style={styles.sectionHeaderTitle}>Candidate Application Specs</Text>
-              <Text style={styles.sectionHeaderBadge}>Sent to Employer</Text>
-            </View>
+        {/* 3. MISSING INFORMATION CARD (Only shown if missing fields exist) */}
+        {missingItems.length > 0 && (
+          <>
+            <View style={styles.sectionSeparator} />
 
-            {/* 1. Full Name */}
-            <View style={[styles.cleanSpecRow, styles.cleanRowBorder]}>
-              <View style={styles.specLabelWrap}>
-                <CheckCircle2 size={16} color="#16A34A" />
-                <Text style={styles.cleanSpecLabel}>Full Name</Text>
+            <View style={styles.missingCardContainer}>
+              {/* Missing Header Row */}
+              <View style={styles.missingHeaderRow}>
+                <View style={styles.missingTitleLeft}>
+                  <AlertTriangle size={18} color="#D97706" />
+                  <Text style={styles.missingTitleText}>Information Not Provided in Profile</Text>
+                </View>
+                <View style={styles.missingBadge}>
+                  <Text style={styles.missingBadgeText}>
+                    {missingItems.length} Missing {missingItems.length === 1 ? 'Field' : 'Fields'}
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.cleanSpecValue}>{user?.name || 'Workforce Applicant'}</Text>
-            </View>
 
-            {/* 2. Email Address */}
-            <View style={[styles.cleanSpecRow, styles.cleanRowBorder]}>
-              <View style={styles.specLabelWrap}>
-                <CheckCircle2 size={16} color="#16A34A" />
-                <Text style={styles.cleanSpecLabel}>Email Address</Text>
+              {/* Inner Amber Callout Box */}
+              <View style={styles.amberCalloutBox}>
+                <Text style={styles.amberCalloutSubhead}>
+                  The following candidate profile details are currently empty or not configured:
+                </Text>
+                <View style={styles.amberBulletsList}>
+                  {missingItems.map((item, idx) => (
+                    <Text key={idx} style={styles.amberBulletItem}>
+                      • {item.detail}
+                    </Text>
+                  ))}
+                </View>
               </View>
-              <Text style={styles.cleanSpecValue} numberOfLines={1}>
-                {user?.email || 'N/A'}
+
+              <Text style={styles.missingFooterNote}>
+                You can still submit your application now or edit your candidate profile first.
               </Text>
+
+              {/* Update Profile Action CTA */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.updateProfileBtn}
+                onPress={handleNavigateToMissingStep}
+              >
+                <Pencil size={15} color="#2563EB" />
+                <Text style={styles.updateProfileBtnText}>Update Profile Details</Text>
+              </TouchableOpacity>
             </View>
+          </>
+        )}
+      </ScrollView>
 
-            {/* 3. Phone Number */}
-            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !phoneVal && styles.missingRowHighlight]}>
-              <View style={styles.specLabelWrap}>
-                {phoneVal ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={[styles.cleanSpecLabel, !phoneVal && styles.missingLabelText]}>Phone Number</Text>
-              </View>
-              <Text style={[styles.cleanSpecValue, !phoneVal && styles.missingValueText]}>
-                {phoneVal || '⚠️ Missing'}
-              </Text>
-            </View>
-
-            {/* 4. Location */}
-            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !locationVal && styles.missingRowHighlight]}>
-              <View style={styles.specLabelWrap}>
-                {locationVal ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={[styles.cleanSpecLabel, !locationVal && styles.missingLabelText]}>Location</Text>
-              </View>
-              <Text style={[styles.cleanSpecValue, !locationVal && styles.missingValueText]}>
-                {locationVal || '⚠️ Missing'}
-              </Text>
-            </View>
-
-            {/* 5. Primary Trade */}
-            <View style={[styles.cleanSpecRow, styles.cleanRowBorder, !tradeVal && styles.missingRowHighlight]}>
-              <View style={styles.specLabelWrap}>
-                {tradeVal ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={[styles.cleanSpecLabel, !tradeVal && styles.missingLabelText]}>Primary Trade</Text>
-              </View>
-              <Text style={[styles.cleanSpecValue, !tradeVal && styles.missingValueText]}>
-                {tradeVal || '⚠️ Missing'}
-              </Text>
-            </View>
-
-            {/* 6. Preferred Shift */}
-            <View style={[styles.cleanSpecRow, !shiftVal && styles.missingRowHighlight]}>
-              <View style={styles.specLabelWrap}>
-                {shiftVal ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={[styles.cleanSpecLabel, !shiftVal && styles.missingLabelText]}>Preferred Shift</Text>
-              </View>
-              <Text style={[styles.cleanSpecValue, !shiftVal && styles.missingValueText]}>
-                {shiftVal || '⚠️ Missing'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.sectionDivider} />
-
-          {/* SECTION 3: QUALIFICATIONS & SKILLS */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>QUALIFICATIONS & SKILLS</Text>
-
-            {/* Technical Skills */}
-            <View style={styles.cleanSpecRow}>
-              <View style={styles.specLabelWrap}>
-                {skillsList.length > 0 ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={styles.cleanSpecLabel}>Technical Skills ({skillsList.length})</Text>
-              </View>
-              <Text style={styles.cleanSpecValue}>
-                {skillsList.length > 0 ? skillsList.join(', ') : '⚠️ None Listed'}
-              </Text>
-            </View>
-
-            <View style={styles.innerSoftDivider} />
-
-            {/* Education History */}
-            <View style={styles.cleanSpecRow}>
-              <View style={styles.specLabelWrap}>
-                {educationList.length > 0 ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={styles.cleanSpecLabel}>Education Qualifications ({educationList.length})</Text>
-              </View>
-              <Text style={styles.cleanSpecValue}>
-                {educationList.length > 0 ? educationList.map((e: any) => e.degree || e.degree_name || e.institution || 'Certified').join(' • ') : '⚠️ Not Provided'}
-              </Text>
-            </View>
-
-            <View style={styles.innerSoftDivider} />
-
-            {/* Experience History */}
-            <View style={styles.cleanSpecRow}>
-              <View style={styles.specLabelWrap}>
-                {workExpList.length > 0 ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={styles.cleanSpecLabel}>Work Experience ({workExpList.length})</Text>
-              </View>
-              <Text style={styles.cleanSpecValue}>
-                {workExpList.length > 0 ? workExpList.map((w: any) => `${w.title || 'Role'} at ${w.company || 'Company'}`).join(' • ') : '⚠️ Fresh Applicant'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.sectionDivider} />
-
-          {/* SECTION 4: RESUME DOCUMENT */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>RESUME DOCUMENT</Text>
-            <View style={styles.cleanSpecRow}>
-              <View style={styles.specLabelWrap}>
-                {hasResume ? (
-                  <CheckCircle2 size={16} color="#16A34A" />
-                ) : (
-                  <AlertTriangle size={16} color="#E11D48" />
-                )}
-                <Text style={styles.cleanSpecLabel}>BioData / Resume PDF</Text>
-              </View>
-              <Text style={styles.cleanSpecValue} numberOfLines={1}>
-                {hasResume ? resumeFileName : '⚠️ Missing Resume File'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.sectionDivider} />
-
-          {/* SECTION 5: APPLICATION FORM INPUTS */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>APPLICATION INPUTS</Text>
-
-            <View style={styles.inputGroupField}>
-              <Text style={styles.inputLabel}>Current Monthly Salary (₹) (Optional):</Text>
-              <TextInput
-                style={styles.salaryInput}
-                keyboardType="number-pad"
-                placeholder="e.g. 20000"
-                placeholderTextColor="#94A3B8"
-                value={currentSalary}
-                onChangeText={setCurrentSalary}
-              />
-            </View>
-
-            <View style={styles.inputGroupField}>
-              <Text style={styles.inputLabel}>Expected Monthly Salary (₹) (Optional):</Text>
-              <TextInput
-                style={styles.salaryInput}
-                keyboardType="number-pad"
-                placeholder="e.g. 25000"
-                placeholderTextColor="#94A3B8"
-                value={expectedSalary}
-                onChangeText={setExpectedSalary}
-              />
-            </View>
-
-            <View style={styles.inputGroupField}>
-              <Text style={styles.inputLabel}>Note / Message for Employer (Optional):</Text>
-              <TextInput
-                style={styles.coverNoteInput}
-                multiline
-                numberOfLines={3}
-                placeholder="e.g. I have 2 years VMC setting experience and can join immediately..."
-                placeholderTextColor="#94A3B8"
-                value={coverNote}
-                onChangeText={setCoverNote}
-              />
-            </View>
-          </View>
-      </KeyboardAwareScrollView>
-
-      {/* Fixed Bottom Action Bar */}
-      <View style={[styles.fixedBottomBar, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
+      {/* 4. FIXED BOTTOM SUBMIT FOOTER */}
+      <View style={[styles.bottomFooterBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <TouchableOpacity
           activeOpacity={0.85}
-          style={styles.confirmSubmitBtn}
+          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
           onPress={handleApplySubmit}
           disabled={submitting}
         >
@@ -445,8 +413,8 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Send size={16} color="#FFFFFF" />
-              <Text style={styles.confirmSubmitBtnText}>Confirm & Submit Application</Text>
+              <Send size={18} color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>Submit Application</Text>
             </>
           )}
         </TouchableOpacity>
@@ -458,273 +426,271 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 110,
+    padding: 16,
   },
   errorBox: {
-    padding: 40,
+    padding: 24,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   errorText: {
     fontSize: 14,
-    color: '#64748B',
-    fontWeight: '700',
+    color: '#DC2626',
   },
-  sectionContainer: {
+
+  /* 1. TOP JOB DETAILS CARD */
+  jobCardContainer: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 4,
-  },
-  groupHeaderLabel: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: 1.0,
-    marginBottom: 8,
-    paddingLeft: 2,
-  },
-  targetJobTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#0F172A',
-    marginTop: 2,
-  },
-  targetJobSub: {
-    fontSize: 12.5,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 3,
-  },
-  sectionDivider: {
-    height: 1.5,
-    backgroundColor: '#CBD5E1',
-    marginVertical: 14,
-  },
-  cleanRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  innerSoftDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 10,
-    marginBottom: 4,
-  },
-  sectionHeaderTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  sectionHeaderBadge: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: 0,
-    marginLeft: 'auto',
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  cleanSpecRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 11,
-    paddingHorizontal: 4,
-  },
-  missingRowHighlight: {
-    backgroundColor: '#FFF1F2',
-    paddingHorizontal: 6,
-  },
-  missingLabelText: {
-    color: '#E11D48',
-    fontWeight: '800',
-  },
-  missingValueText: {
-    color: '#E11D48',
-    fontWeight: '800',
-  },
-  specLabelWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cleanSpecLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  cleanSpecValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-    textAlign: 'right',
-  },
-  specBoxLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  specSectionTitle: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: 0.6,
-  },
-  skillsTextFormatted: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 4,
-    paddingLeft: 2,
-  },
-  missingErrorText: {
-    fontSize: 12,
-    color: '#E11D48',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  cleanListEntry: {
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  expEntryTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  expEntrySubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  eduEntryTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  eduEntrySubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  resumeRowFlat: {
+  jobBannerHeader: {
+    backgroundColor: '#2563EB',
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
   },
-  resumeInfoTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
+  jobBannerTextWrap: {
+    flex: 1,
   },
-  resumeInfoDesc: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 2,
+  companyNameText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#93C5FD',
   },
-  manageResumeBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 0,
-  },
-  manageResumeBtnText: {
-    fontSize: 12,
+  jobTitleText: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
+    marginTop: 2,
+    lineHeight: 22,
   },
-  inputGroupField: {
-    marginBottom: 12,
+  jobBannerBody: {
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    gap: 10,
+  },
+  jobMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 6,
   },
-  inputLabel: {
-    fontSize: 13,
+  jobMetaLocationText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#475569',
+    lineHeight: 18,
+  },
+  jobStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 2,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  statItemText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+
+  /* 2. CANDIDATE PROFILE CARD */
+  profileCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 0,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  profileCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  profileCardTitle: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
-  salaryInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '700',
+  fieldBlocksList: {
+    gap: 10,
   },
-  coverNoteInput: {
-    backgroundColor: '#FFFFFF',
+  fieldBlock: {
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#F1F5F9',
+    borderRadius: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  fieldBlockLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  fieldBlockValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 3,
+  },
+
+  /* RESUME GREEN BOX */
+  resumeGreenBox: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
     borderRadius: 0,
     padding: 12,
-    fontSize: 13.5,
-    color: '#0F172A',
-    minHeight: 80,
-    textAlignVertical: 'top',
+    marginTop: 4,
+    gap: 4,
   },
-  incompleteAlertCard: {
+  resumeGreenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  resumeFileNameText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  resumeSubtext: {
+    fontSize: 11.5,
+    color: '#16A34A',
+    lineHeight: 16,
+    marginLeft: 26,
+  },
+
+  /* SECTION SEPARATOR */
+  sectionSeparator: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 12,
+  },
+
+  /* 3. MISSING INFORMATION CARD */
+  missingCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 0,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+    gap: 12,
+  },
+  missingHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  missingTitleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  missingTitleText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+  },
+  missingBadge: {
     backgroundColor: '#FEF3C7',
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: '#FDE68A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
   },
-  incompleteAlertLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  incompleteAlertTitle: {
-    fontSize: 12.5,
+  missingBadgeText: {
+    fontSize: 11,
     fontWeight: '800',
     color: '#B45309',
-    flex: 1,
   },
-  editProfileSmallBtn: {
+  amberCalloutBox: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 0,
+    padding: 12,
+    gap: 6,
+  },
+  amberCalloutSubhead: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#92400E',
+    lineHeight: 18,
+  },
+  amberBulletsList: {
+    gap: 4,
+    marginTop: 2,
+  },
+  amberBulletItem: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B45309',
+    lineHeight: 16,
+  },
+  missingFooterNote: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
+  },
+  updateProfileBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#D97706',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#2563EB',
     borderRadius: 0,
+    paddingVertical: 10,
+    marginTop: 4,
   },
-  editProfileSmallBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
+  updateProfileBtnText: {
+    fontSize: 13,
     fontWeight: '800',
+    color: '#2563EB',
   },
-  fixedBottomBar: {
+
+  /* 4. FIXED BOTTOM SUBMIT FOOTER */
+  bottomFooterBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -735,23 +701,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 8,
   },
-  confirmSubmitBtn: {
+  submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.primary,
-    height: 48,
+    backgroundColor: '#2563EB',
     borderRadius: 0,
+    paddingVertical: 14,
   },
-  confirmSubmitBtnText: {
-    color: '#FFFFFF',
+  submitButtonDisabled: {
+    backgroundColor: '#93C5FD',
+  },
+  submitButtonText: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

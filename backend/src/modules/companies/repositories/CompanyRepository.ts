@@ -37,210 +37,176 @@ export class CompanyRepository {
    */
   static async getAllCompanies(searchQuery?: string, industryFilter?: string, zoneFilter?: string): Promise<any[]> {
     try {
-      // 1. Fetch real companies from companies table with real open jobs count
-      const dbQuery = `
-        SELECT 
-          c.*, 
-          u.gst_number, 
-          u.aadhaar_verified,
-          COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
-        FROM companies c 
-        LEFT JOIN users u ON c.employer_id = u.id 
-        LEFT JOIN jobs j ON (j.company ILIKE c.name OR (j.employer_id IS NOT NULL AND j.employer_id = c.employer_id))
-        GROUP BY c.id, u.gst_number, u.aadhaar_verified
-        ORDER BY open_jobs_count DESC, c.name ASC;
-      `;
-      const res = await pool.query(dbQuery);
+      const allCompanies = await CacheService.getOrSet('cache:companies:all', 300, async () => {
+        // 1. Fetch real companies from companies table with real open jobs count
+        const dbQuery = `
+          SELECT 
+            c.*, 
+            u.gst_number, 
+            u.aadhaar_verified,
+            COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
+          FROM companies c 
+          LEFT JOIN users u ON c.employer_id = u.id 
+          LEFT JOIN jobs j ON (j.company ILIKE c.name OR (j.employer_id IS NOT NULL AND j.employer_id = c.employer_id))
+          GROUP BY c.id, u.gst_number, u.aadhaar_verified
+          ORDER BY open_jobs_count DESC, c.name ASC;
+        `;
+        const res = await pool.query(dbQuery);
 
-      const companyMap = new Map<string, any>();
+        const companyMap = new Map<string, any>();
 
-      res.rows.forEach(row => {
-        const compName = (row.name || '').trim();
-        if (!compName) return;
-        const key = compName.toLowerCase();
+        res.rows.forEach(row => {
+          const compName = (row.name || '').trim();
+          if (!compName) return;
+          const key = compName.toLowerCase();
 
-        companyMap.set(key, {
-          id: row.id,
-          employer_id: row.employer_id,
-          name: compName,
-          logo: row.logo,
-          color: row.color || '#2563EB',
-          industry: row.industry || 'Industrial Manufacturing',
-          company_type: row.company_type || 'Private Limited',
-          description: row.description || 'Registered manufacturing and industrial employer.',
-          website: row.website,
-          address: row.address,
-          city: row.city || 'Chhatrapati Sambhajinagar',
-          state: row.state || 'Maharashtra',
-          pincode: row.pincode,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          email: row.email,
-          phone: row.phone,
-          company_size: row.company_size || '500+ employees',
-          founded_year: row.founded_year || 2000,
-          midc_zone: row.midc_zone || 'Waluj MIDC',
-          specializations: Array.isArray(row.specializations) ? row.specializations : [],
-          gst_number: row.gst_number,
-          verified: row.verified !== false && row.aadhaar_verified !== false,
-          open_jobs_count: parseInt(row.open_jobs_count || '0', 10),
-          created_at: row.created_at
-        });
-      });
-
-      // 2. Fetch distinct companies directly from jobs table in PostgreSQL database
-      const jobsCompQuery = `
-        SELECT 
-          j.company as name,
-          COUNT(j.id) as open_jobs_count,
-          MIN(j.location) as city,
-          MIN(j.midc_zone) as midc_zone,
-          MIN(j.industry) as industry,
-          MIN(j.company_logo) as logo,
-          (ARRAY_REMOVE(ARRAY_AGG(j.employer_id), NULL))[1] as employer_id
-        FROM jobs j
-        WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved'
-        GROUP BY j.company;
-      `;
-      const jobsCompRes = await pool.query(jobsCompQuery);
-
-      jobsCompRes.rows.forEach((row, idx) => {
-        const compName = (row.name || '').trim();
-        if (!compName) return;
-        const key = compName.toLowerCase();
-
-        const count = parseInt(row.open_jobs_count || '0', 10);
-
-        if (companyMap.has(key)) {
-          const existing = companyMap.get(key);
-          existing.open_jobs_count = Math.max(existing.open_jobs_count, count);
-          if (!existing.logo && row.logo) existing.logo = row.logo;
-          if (!existing.midc_zone && row.midc_zone) existing.midc_zone = row.midc_zone;
-        } else {
           companyMap.set(key, {
-            id: row.employer_id || `job-comp-${idx + 1}`,
+            id: row.id,
             employer_id: row.employer_id,
             name: compName,
             logo: row.logo,
-            color: '#2563EB',
+            color: row.color || '#2563EB',
             industry: row.industry || 'Industrial Manufacturing',
-            company_type: 'Private Limited',
-            description: 'Industrial plant and enterprise with live open job postings.',
+            company_type: row.company_type || 'Private Limited',
+            description: row.description || 'Registered manufacturing and industrial employer.',
+            website: row.website,
+            address: row.address,
             city: row.city || 'Chhatrapati Sambhajinagar',
-            state: 'Maharashtra',
+            state: row.state || 'Maharashtra',
+            pincode: row.pincode,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            email: row.email,
+            phone: row.phone,
+            company_size: row.company_size || '500+ employees',
+            founded_year: row.founded_year || 2000,
             midc_zone: row.midc_zone || 'Waluj MIDC',
-            company_size: '500+ employees',
-            founded_year: 1998,
-            verified: true,
-            open_jobs_count: count
+            specializations: Array.isArray(row.specializations) ? row.specializations : [],
+            gst_number: row.gst_number,
+            verified: row.verified !== false && row.aadhaar_verified !== false,
+            open_jobs_count: parseInt(row.open_jobs_count || '0', 10),
+            created_at: row.created_at
           });
-        }
-      });
+        });
 
-      // 3. Fetch employer user accounts from users table
-      try {
-        const usersCompQuery = `
+        // 2. Fetch distinct companies directly from jobs table in PostgreSQL database
+        const jobsCompQuery = `
           SELECT 
-            u.id as employer_id,
-            u.name,
-            u.email,
-            u.company_name,
-            u.profile_picture_url as company_logo,
-            u.phone,
-            u.city,
-            u.midc_zone,
-            u.gst_number,
-            u.aadhaar_verified,
-            COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
-          FROM users u
-          LEFT JOIN jobs j ON (j.employer_id = u.id OR j.company ILIKE COALESCE(NULLIF(u.company_name, ''), u.name))
-          WHERE (u.role = 'employer' OR u.role = 'recruiter' OR u.email ILIKE 'noreply%')
-            AND (
-              (u.company_name IS NOT NULL AND u.company_name != '') OR
-              (u.name IS NOT NULL AND u.name != '')
-            )
-          GROUP BY u.id, u.name, u.email, u.company_name, u.profile_picture_url, u.phone, u.city, u.midc_zone, u.gst_number, u.aadhaar_verified;
+            j.company as name,
+            COUNT(j.id) as open_jobs_count,
+            MIN(j.location) as city,
+            MIN(j.midc_zone) as midc_zone,
+            MIN(j.industry) as industry,
+            MIN(j.company_logo) as logo,
+            (ARRAY_REMOVE(ARRAY_AGG(j.employer_id), NULL))[1] as employer_id
+          FROM jobs j
+          WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved'
+          GROUP BY j.company;
         `;
-        const usersCompRes = await pool.query(usersCompQuery);
+        const jobsCompRes = await pool.query(jobsCompQuery);
 
-        usersCompRes.rows.forEach((row) => {
-          const compName = (row.company_name || row.company || row.name || '').trim();
+        jobsCompRes.rows.forEach((row, idx) => {
+          const compName = (row.name || '').trim();
           if (!compName) return;
           const key = compName.toLowerCase();
+
           const count = parseInt(row.open_jobs_count || '0', 10);
 
-          if (!companyMap.has(key)) {
+          if (companyMap.has(key)) {
+            const existing = companyMap.get(key);
+            existing.open_jobs_count = Math.max(existing.open_jobs_count, count);
+            if (!existing.logo && row.logo) existing.logo = row.logo;
+            if (!existing.midc_zone && row.midc_zone) existing.midc_zone = row.midc_zone;
+          } else {
             companyMap.set(key, {
-              id: row.employer_id,
+              id: row.employer_id || `job-comp-${idx + 1}`,
               employer_id: row.employer_id,
               name: compName,
-              logo: row.company_logo,
+              logo: row.logo,
               color: '#2563EB',
-              industry: 'Industrial Manufacturing',
+              industry: row.industry || 'Industrial Manufacturing',
               company_type: 'Private Limited',
-              description: 'Registered employer enterprise on JobMarket platform.',
+              description: 'Industrial plant and enterprise with live open job postings.',
               city: row.city || 'Chhatrapati Sambhajinagar',
               state: 'Maharashtra',
               midc_zone: row.midc_zone || 'Waluj MIDC',
-              email: row.email,
-              phone: row.phone,
-              gst_number: row.gst_number,
-              verified: row.aadhaar_verified !== false,
-              company_size: '100+ employees',
-              founded_year: 2020,
+              company_size: '500+ employees',
+              founded_year: 1998,
+              verified: true,
               open_jobs_count: count
             });
-          } else {
-            const existing = companyMap.get(key);
-            if (!existing.email) existing.email = row.email;
-            if (!existing.phone) existing.phone = row.phone;
-            if (row.employer_id) existing.employer_id = row.employer_id;
           }
         });
-      } catch (uErr) {
-        console.error('Error fetching employer users for company list:', uErr);
-      }
 
-      // 4. Include full CSN_COMPANIES directory entries so all industrial companies on platform are listed
-      CSN_COMPANIES.forEach((seed, idx) => {
-        const compName = seed.name.trim();
-        const key = compName.toLowerCase();
+        // 3. Fetch employer user accounts from users table
+        try {
+          const usersCompQuery = `
+            SELECT 
+              u.id as employer_id,
+              u.name,
+              u.email,
+              u.company_name,
+              u.profile_picture_url as company_logo,
+              u.phone,
+              u.location,
+              u.gst_number,
+              u.aadhaar_verified,
+              COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
+            FROM users u
+            LEFT JOIN jobs j ON (j.employer_id = u.id OR j.company ILIKE COALESCE(NULLIF(u.company_name, ''), u.name))
+            WHERE (u.role = 'employer' OR u.role = 'recruiter' OR u.email ILIKE 'noreply%')
+              AND (
+                (u.company_name IS NOT NULL AND u.company_name != '') OR
+                (u.name IS NOT NULL AND u.name != '')
+              )
+            GROUP BY u.id, u.name, u.email, u.company_name, u.profile_picture_url, u.phone, u.location, u.gst_number, u.aadhaar_verified;
+          `;
+          const usersCompRes = await pool.query(usersCompQuery);
 
-        if (!companyMap.has(key)) {
-          companyMap.set(key, {
-            id: `csn-comp-${idx + 1}`,
-            name: compName,
-            logo: seed.logo,
-            color: seed.color || '#2563EB',
-            industry: seed.industry || 'Industrial Manufacturing',
-            company_type: 'Private Limited',
-            description: seed.description,
-            website: seed.website,
-            address: seed.address,
-            city: seed.city || 'Chhatrapati Sambhajinagar',
-            state: seed.state || 'Maharashtra',
-            pincode: seed.pincode,
-            latitude: seed.latitude,
-            longitude: seed.longitude,
-            email: seed.email,
-            phone: seed.phone,
-            company_size: seed.companySize || '500+ employees',
-            founded_year: seed.foundedYear || 1995,
-            midc_zone: seed.midcZone || 'Waluj MIDC',
-            specializations: ['Manufacturing', 'Industrial Plant'],
-            verified: true,
-            open_jobs_count: 0
+          usersCompRes.rows.forEach((row) => {
+            const compName = (row.company_name || row.company || row.name || '').trim();
+            if (!compName) return;
+            const key = compName.toLowerCase();
+            const count = parseInt(row.open_jobs_count || '0', 10);
+
+            if (!companyMap.has(key)) {
+              companyMap.set(key, {
+                id: row.employer_id,
+                employer_id: row.employer_id,
+                name: compName,
+                logo: row.company_logo,
+                color: '#2563EB',
+                industry: 'Industrial Manufacturing',
+                company_type: 'Private Limited',
+                description: 'Registered employer enterprise on JobMarket platform.',
+                city: row.location || 'Chhatrapati Sambhajinagar',
+                state: 'Maharashtra',
+                midc_zone: 'Waluj MIDC',
+                email: row.email,
+                phone: row.phone,
+                gst_number: row.gst_number,
+                verified: row.aadhaar_verified !== false,
+                company_size: '100+ employees',
+                founded_year: 2020,
+                open_jobs_count: count
+              });
+            } else {
+              const existing = companyMap.get(key);
+              if (!existing.email) existing.email = row.email;
+              if (!existing.phone) existing.phone = row.phone;
+              if (row.employer_id) existing.employer_id = row.employer_id;
+            }
           });
-        } else {
-          const existing = companyMap.get(key);
-          if (!existing.logo && seed.logo) existing.logo = seed.logo;
-          if (!existing.description && seed.description) existing.description = seed.description;
-          if (!existing.website && seed.website) existing.website = seed.website;
-          if (!existing.midc_zone && seed.midcZone) existing.midc_zone = seed.midcZone;
+        } catch (uErr) {
+          console.error('Error fetching employer users for company list:', uErr);
         }
+
+        // CSN_COMPANIES seed data removed — single source of truth is strictly database records
+
+        return Array.from(companyMap.values());
       });
 
-      let companies = Array.from(companyMap.values());
+      let companies = Array.isArray(allCompanies) ? [...allCompanies] : [];
 
       // Apply search and filter
       if (searchQuery && searchQuery.trim()) {
@@ -335,7 +301,8 @@ export class CompanyRepository {
       }
 
       // Check if matching company exists in CSN_COMPANIES seed data
-      const matchedSeed = CSN_COMPANIES.find(c => 
+      const matchedSeed = CSN_COMPANIES.find((c, idx) => 
+        `csn-comp-${idx + 1}` === identifier ||
         c.name.toLowerCase() === decodedName.toLowerCase() || 
         c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === decodedName.toLowerCase().replace(/[^a-z0-9]/g, '')
       );
@@ -467,16 +434,12 @@ export class CompanyRepository {
       AND (
         LOWER(j.company) = LOWER($1)
         OR LOWER(REGEXP_REPLACE(j.company, '[^a-zA-Z0-9]', '', 'g')) = $3
+        OR $1 ILIKE '%' || j.company || '%'
+        OR j.company ILIKE '%' || $1 || '%'
         OR (
           j.employer_id IS NOT NULL 
           AND j.employer_id = $2 
           AND $2 != '00000000-0000-0000-0000-000000000000'
-          AND (
-            LOWER(j.company) = LOWER($1) 
-            OR LOWER(REGEXP_REPLACE(j.company, '[^a-zA-Z0-9]', '', 'g')) = $3
-            OR $1 ILIKE '%' || j.company || '%'
-            OR j.company ILIKE '%' || $1 || '%'
-          )
         )
       )
       GROUP BY j.id
@@ -566,13 +529,26 @@ export class CompanyRepository {
         userUpdateFields.push(`trade_specialization = $${uIdx++}`);
         userValues.push(updateData.industry);
       }
-      if (updateData.address) {
+      if (updateData.address || updateData.city) {
+        const loc = [updateData.address, updateData.city].filter(Boolean).join(', ');
         userUpdateFields.push(`location = $${uIdx++}`);
-        userValues.push(updateData.address);
+        userValues.push(loc);
       }
       if (updateData.logo) {
         userUpdateFields.push(`profile_picture_url = $${uIdx++}`);
         userValues.push(updateData.logo);
+      }
+      if (updateData.midc_zone || (updateData as any).midcZone) {
+        userUpdateFields.push(`midc_zone = $${uIdx++}`);
+        userValues.push(updateData.midc_zone || (updateData as any).midcZone);
+      }
+      if (updateData.phone) {
+        userUpdateFields.push(`phone = $${uIdx++}`);
+        userValues.push(updateData.phone);
+      }
+      if (updateData.gst_number || (updateData as any).gstNumber) {
+        userUpdateFields.push(`gst_number = $${uIdx++}`);
+        userValues.push(updateData.gst_number || (updateData as any).gstNumber);
       }
 
       if (userUpdateFields.length > 0) {

@@ -110,6 +110,23 @@ export class AuthController {
       const userAgent = req.headers['user-agent'];
 
       const result = await LoginService.execute(email, password, role, ip, userAgent);
+      if ((result as any).require2FA || (result as any).requires2FA) {
+        return res.status(200).json({
+          success: true,
+          message: result.message,
+          require2FA: true,
+          requires2FA: true,
+          mfaToken: result.mfaToken,
+          email: result.email,
+          data: {
+            require2FA: true,
+            requires2FA: true,
+            mfaToken: result.mfaToken,
+            email: result.email,
+            message: result.message
+          }
+        });
+      }
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -697,23 +714,37 @@ export class AuthController {
   // 9. Toggle 2FA Setting
   static async toggle2FA(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.userId;
-      const { enabled } = req.body;
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+      let userId = req.user?.userId || req.user?.id;
+      if (token) {
+        try {
+          const { verifyAccessToken } = await import('../../../utils/jwt');
+          const decoded = verifyAccessToken(token);
+          if (decoded && (decoded.userId || decoded.id)) {
+            userId = decoded.userId || decoded.id;
+          }
+        } catch (_) {}
       }
+
+      if (!userId || userId === '00000000-0000-0000-0000-000000000001') {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Active login session required to update 2FA.' });
+      }
+
+      const { enabled } = req.body;
+      const isEnabled = Boolean(enabled);
 
       await pool.query(
         'UPDATE users SET is_two_factor_enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [Boolean(enabled), userId]
+        [isEnabled, userId]
       );
       await CacheService.invalidate(`user:profile:${userId}`);
 
       res.status(200).json({
         success: true,
-        isTwoFactorEnabled: Boolean(enabled),
-        message: enabled ? '2FA protection enabled successfully.' : '2FA protection disabled.'
+        isTwoFactorEnabled: isEnabled,
+        is_two_factor_enabled: isEnabled,
+        message: isEnabled ? 'Two-Factor Authentication (2FA) is now ENABLED.' : 'Two-Factor Authentication (2FA) is now DISABLED.'
       });
     } catch (error) {
       next(error);

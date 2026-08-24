@@ -16,6 +16,7 @@ import { ProfileSkeleton } from '../../components/common/SkeletonLoader';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { COLORS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CandidateProfileHeroCard } from './components/CandidateProfileHeroCard';
 import { CandidateProfileExperienceSection } from './components/CandidateProfileExperienceSection';
 
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { user, updateUserProfile, refreshUser } = useAuth();
   const { showToast } = useToast();
 
@@ -118,32 +120,29 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
       if (!res.canceled && res.assets[0]) {
         setUploadingPhoto(true);
         const file = res.assets[0];
-        let base64Data = file.base64 ? `data:${file.mimeType || 'image/jpeg'};base64,${file.base64}` : file.uri;
+        if (!file.base64) {
+          showToast('Could not read image file. Please try selecting a different photo.', 'error');
+          return;
+        }
 
-        await updateUserProfile({
-          profile_picture_url: base64Data,
-          profilePictureUrl: base64Data,
-          avatar_url: base64Data,
-          avatarUrl: base64Data,
-          avatar: base64Data,
-        } as any);
+        const base64Data = `data:image/webp;base64,${file.base64}`;
 
         try {
-          const apiRes = await (candidateApi as any).uploadProfilePicture?.(base64Data);
-          const finalUrl = apiRes?.data?.url || apiRes?.url;
-          if (finalUrl) {
-            await updateUserProfile({
-              profile_picture_url: finalUrl,
-              profilePictureUrl: finalUrl,
-              avatar_url: finalUrl,
-              avatarUrl: finalUrl,
-              avatar: finalUrl,
-            } as any);
-          }
+          const apiRes = await candidateApi.uploadProfilePicture(base64Data);
+          const finalUrl = apiRes?.data?.url || base64Data;
+          await updateUserProfile({
+            profile_picture_url: finalUrl,
+            profilePictureUrl: finalUrl,
+            avatar_url: finalUrl,
+            avatarUrl: finalUrl,
+            avatar: finalUrl,
+          } as any);
+
           await refreshUser().catch(() => {});
           showToast('Profile picture updated successfully', 'success');
         } catch (err: any) {
-          showToast('Profile picture updated', 'success');
+          console.error('Profile photo upload error:', err);
+          showToast(err?.message || 'Failed to upload profile picture to server', 'error');
         } finally {
           setUploadingPhoto(false);
         }
@@ -202,7 +201,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContentBody}
+        contentContainerStyle={[styles.scrollContentBody, { paddingBottom: Math.max(insets.bottom + 90, 120) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />

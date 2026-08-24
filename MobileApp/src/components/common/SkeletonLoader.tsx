@@ -206,6 +206,40 @@ export const AnalyticsSkeleton: React.FC = () => {
   );
 };
 
+export const CompanySkeleton: React.FC = () => {
+  return (
+    <View style={styles.skeletonContainer}>
+      {/* Hero Header Skeleton */}
+      <View style={styles.heroCardSkeleton}>
+        <View style={styles.heroRow}>
+          <Skeleton width={72} height={72} style={{ borderRadius: 36 }} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Skeleton width="75%" height={20} style={{ borderRadius: 4 }} />
+            <Skeleton width="50%" height={14} style={{ borderRadius: 4 }} />
+            <Skeleton width="40%" height={12} style={{ borderRadius: 4 }} />
+          </View>
+        </View>
+        <View style={styles.heroDivider} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Skeleton width="48%" height={36} style={{ borderRadius: 6 }} />
+          <Skeleton width="48%" height={36} style={{ borderRadius: 6 }} />
+        </View>
+      </View>
+
+      {/* Company Details Form / Info Skeleton */}
+      <View style={styles.card}>
+        <Skeleton width="45%" height={18} style={{ marginBottom: 16, borderRadius: 4 }} />
+        {[1, 2, 3, 4, 5].map((i) => (
+          <View key={i} style={{ marginBottom: 14 }}>
+            <Skeleton width="35%" height={13} style={{ marginBottom: 6, borderRadius: 4 }} />
+            <Skeleton width="100%" height={44} style={{ borderRadius: 6 }} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   skeleton: {
     backgroundColor: '#E2E8F0',

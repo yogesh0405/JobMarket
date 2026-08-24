@@ -738,10 +738,10 @@ const StatsSection: React.FC<StatsSectionProps> = ({ totalJobs, totalCompanies, 
         const [entry] = entries;
         if (entry.isIntersecting && !hasAnimated) {
           setHasAnimated(true);
-          animate(totalJobs * 10, setJobsCount);
-          animate(totalCompanies * 15, setCompaniesCount);
-          animate(totalCandidates * 230, setCandidatesCount);
-          animate((totalJobs + totalCandidates) * 35, setPlacementsCount);
+          animate(totalJobs, setJobsCount);
+          animate(totalCompanies, setCompaniesCount);
+          animate(totalCandidates, setCandidatesCount);
+          animate(totalJobs, setPlacementsCount);
         }
       },
       { threshold: 0.2 }

@@ -14,7 +14,14 @@ const startServer = async () => {
 
     // Verify DB & Redis asynchronously with unhandled rejection protection
     checkDatabaseConnection().catch(err => console.error('DB Conn Warning:', err));
-    connectRedis().catch(err => console.warn('Redis Conn Warning:', err));
+    connectRedis()
+      .then(async () => {
+        // Invalidate stale companies cache on startup
+        const { CacheService } = await import('./utils/redisCache');
+        await CacheService.invalidate('cache:companies:all');
+        console.log('🗑️  Stale companies cache invalidated on startup');
+      })
+      .catch(err => console.warn('Redis Conn Warning:', err));
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);

@@ -22,8 +22,10 @@ import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetai
 import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
 import { CandidateAppliedJobsScreen } from '../screens/candidate/CandidateAppliedJobsScreen';
 import { CandidateSavedJobsScreen } from '../screens/candidate/CandidateSavedJobsScreen';
+import { CandidateCompaniesScreen } from '../screens/candidate/CandidateCompaniesScreen';
 import { CandidateProfileScreen } from '../screens/candidate/CandidateProfileScreen';
 import { CandidateJobMapViewScreen } from '../screens/candidate/CandidateJobMapViewScreen';
+import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
 import { useAuth } from '../hooks/useAuth';
 
 const Tab = createBottomTabNavigator();
@@ -35,6 +37,7 @@ const CandidateJobsStackNavigator = () => (
     <JobsStackNav.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
     <JobsStackNav.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
     <JobsStackNav.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
+    <JobsStackNav.Screen name="CompanyProfile" component={CompanyProfileScreen} />
   </JobsStackNav.Navigator>
 );
 
@@ -197,7 +200,7 @@ export const CandidateTabNavigator: React.FC = () => {
       }}
     >
       <Tab.Screen name="CandidateHomeTab" component={CandidateHomeScreen} />
-      <Tab.Screen name="CandidateSavedTab" component={CandidateSavedJobsScreen} />
+      <Tab.Screen name="CandidateSavedTab" component={CandidateCompaniesScreen} />
       <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
       <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
       <Tab.Screen name="CandidateProfileTab" component={CandidateProfileScreen} />

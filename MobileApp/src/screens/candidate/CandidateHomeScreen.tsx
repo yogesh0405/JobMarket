@@ -138,17 +138,26 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   // Role Tab State
   const [roleTabsList, setRoleTabsList] = useState<RoleTabItem[]>(DEFAULT_ROLE_TABS_DATA);
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
+  const [totalCompaniesCount, setTotalCompaniesCount] = useState<number>(0);
   const homeRefreshOffsetRef = useRef(0);
 
   const loadHomeData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
     try {
-      const [jobsRes, savedRes, settingsRes, adsRes] = await Promise.all([
+      const [jobsRes, savedRes, settingsRes, adsRes, compRes] = await Promise.all([
         candidateApi.getAllJobs(),
         candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
         candidateApi.getSettings().catch(() => ({ success: false, data: null })),
         apiFetch('/api/v1/home/advertisements').catch(() => ({ success: false, data: [] })),
+        apiFetch('/api/v1/companies').catch(() => ({ success: false, data: [] })),
       ]);
+
+      if (compRes) {
+        const compList = Array.isArray(compRes) ? compRes : (compRes.data || []);
+        if (Array.isArray(compList) && compList.length > 0) {
+          setTotalCompaniesCount(compList.length);
+        }
+      }
 
       if (jobsRes.success && jobsRes.data) {
         const rawJobs = jobsRes.data || [];
@@ -552,14 +561,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.statsRow}>
             <View style={styles.statSquareCard}>
               <Text style={[styles.statValueText, { color: COLORS.primary }]}>
-                {jobs.length > 0 ? `${jobs.length}+` : '15+'}
+                {jobs.length > 0 ? `${jobs.length}` : '0'}
               </Text>
               <Text style={styles.statLabelText}>Active Listings</Text>
             </View>
 
             <View style={styles.statSquareCard}>
               <Text style={[styles.statValueText, { color: '#059669' }]}>
-                {jobs.length > 0 ? `${Array.from(new Set(jobs.map((j) => j.company).filter(Boolean))).length || jobs.length}+` : '12+'}
+                {totalCompaniesCount > 0 ? `${totalCompaniesCount}` : (jobs.length > 0 ? `${jobs.length}` : '0')}
               </Text>
               <Text style={styles.statLabelText}>Factories Hiring</Text>
             </View>
@@ -568,14 +577,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.statsRow}>
             <View style={styles.statSquareCard}>
               <Text style={[styles.statValueText, { color: '#7C3AED' }]}>
-                {jobs.length > 0 ? `${jobs.length * 12 + 150}+` : '200+'}
+                {jobs.length > 0 ? `${jobs.length}` : '0'}
               </Text>
               <Text style={styles.statLabelText}>Verified Workers</Text>
             </View>
 
             <View style={styles.statSquareCard}>
               <Text style={[styles.statValueText, { color: '#EA580C' }]}>
-                {jobs.length > 0 ? `${jobs.length * 45 + 500}+` : '850+'}
+                {jobs.length > 0 ? `${jobs.length}` : '0'}
               </Text>
               <Text style={styles.statLabelText}>Placements</Text>
             </View>

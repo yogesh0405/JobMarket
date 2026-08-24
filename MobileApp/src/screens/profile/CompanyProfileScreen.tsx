@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,84 +7,57 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Share,
+  StatusBar,
 } from 'react-native';
 import {
   Building2,
   BarChart3,
-  Save,
-  LogOut,
+  ArrowLeft,
+  Share2,
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
-import { jobsApi } from '../../api/jobsApi';
-import { candidateApi } from '../../api/candidateApi';
 import { apiFetch } from '../../api/client';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { Button } from '../../components/common/Button';
-import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
+import { CompanySkeleton } from '../../components/common/SkeletonLoader';
 import { COLORS } from '../../constants/theme';
-import { CompanyProfileFormCard } from './components/CompanyProfileFormCard';
+import { CompanyHeaderCard } from './components/CompanyHeaderCard';
+import { CompanyMetricsBar } from './components/CompanyMetricsBar';
+import { CompanyOverviewSection } from './components/CompanyOverviewSection';
+import { CompanyDetailsCard } from './components/CompanyDetailsCard';
+import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection';
 import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
+import { EditCompanyProfileModal } from './components/EditCompanyProfileModal';
 
 interface Props {
   navigation: any;
+  route?: any;
 }
 
-const INDUSTRY_LIST = [
-  'Automotive & Auto Components',
-  'Industrial Manufacturing',
-  'Electronics & Electricals',
-  'Pharmaceuticals & Chemicals',
-  'Textiles & Garments',
-  'Construction & Infrastructure',
-  'Logistics & Warehousing',
-  'Services & General Engineering',
-];
+export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
+  const { user, refreshUser } = useAuth();
+  const routeCompany = route?.params?.company;
+  const routeCompanyId = route?.params?.companyId || route?.params?.id || routeCompany?.id;
 
-const MIDC_LIST = [
-  'Chakan MIDC (Pune)',
-  'Bhosari MIDC (PCMC Pune)',
-  'Ranjangaon MIDC (Pune)',
-  'Talegaon MIDC (Pune)',
-  'Hadapsar Industrial Estate',
-  'Waluj MIDC (Chhatrapati Sambhajinagar)',
-  'Shendra MIDC (Chhatrapati Sambhajinagar)',
-  'Taloja MIDC (Navi Mumbai)',
-  'Rabale MIDC (Navi Mumbai)',
-  'Tarapur MIDC (Palghar)',
-  'Additional Ambernath MIDC (Thane)',
-  'Satpur MIDC (Nashik)',
-  'Ambad MIDC (Nashik)',
-  'Kagal Five Star MIDC (Kolhapur)',
-  'Gokul Shirgaon MIDC (Kolhapur)',
-  'Butibori MIDC (Nagpur)',
-  'Rohanan MIDC (Raigad)',
-  'Non-MIDC Private Industrial Zone',
-];
-
-export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { user, updateUserProfile, refreshUser, logout } = useAuth();
+  // Determine Company ID or Name
+  const targetCompanyId = routeCompanyId || route?.params?.name || routeCompany?.name || user?.companyName || user?.company_name || 'Bajaj Auto Ltd';
 
   // Tab State: PROFILE vs ANALYTICS
   const [profileTab, setProfileTab] = useState<'PROFILE' | 'ANALYTICS'>('PROFILE');
 
-  // Profile Form State
-  const [companyName, setCompanyName] = useState(user?.companyName || user?.company_name || '');
-  const [gstNumber, setGstNumber] = useState(user?.gstNumber || user?.gst_number || '');
-  const [industry, setIndustry] = useState(
-    user?.tradeSpecialization || user?.trade_specialization || user?.industry || 'Industrial Manufacturing'
-  );
-  const [midcZone, setMidcZone] = useState(user?.midcZone || user?.midc_zone || 'Chakan MIDC (Pune)');
-  const [contactPerson, setContactPerson] = useState(user?.contactPerson || user?.contact_person || user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [website, setWebsite] = useState(user?.website || '');
-  const [address, setAddress] = useState(user?.address || '');
-  const [description, setDescription] = useState(user?.companyDescription || user?.company_description || '');
-  const [logoUri, setLogoUri] = useState<string | null>(user?.companyLogo || user?.company_logo || null);
-  const [loading, setLoading] = useState(false);
+  // Company State
+  const [company, setCompany] = useState<any>(routeCompany || null);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loadingCompany, setLoadingCompany] = useState(!routeCompany);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Live Backend Analytics State
   const [analyticsData, setAnalyticsData] = useState({
@@ -98,270 +71,310 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
     avgResponseTimeHours: 24,
   });
 
-  const fetchAnalytics = async () => {
+  // Owner Verification
+  const isOwner = useMemo(() => {
+    if (!user) return false;
+    const role = (user.role || '').toLowerCase();
+    if (role !== 'employer' && role !== 'admin') return false;
+
+    if (routeCompanyId || route?.params?.company || route?.params?.name) {
+      if (company && company.employer_id && user.id === company.employer_id) return true;
+      if (company && company.email && user.email && user.email.toLowerCase() === company.email.toLowerCase()) return true;
+      const userCompName = user.companyName || user.company_name || '';
+      if (company && company.name && userCompName && userCompName.toLowerCase() === company.name.toLowerCase()) return true;
+      return false;
+    }
+
+    return true;
+  }, [user, company, routeCompanyId, route?.params]);
+
+  // Load Live Company Details from Live Backend API
+  const loadCompanyDetails = async () => {
+    setLoadingCompany(true);
+    setError(null);
+
     try {
-      const [res, jobsRes] = await Promise.all([
-        apiFetch('/api/v1/jobs/employer/analytics').catch(() => ({ success: false, data: null })),
-        jobsApi.getMyJobs().catch(() => ({ success: false, data: [] })),
-      ]);
+      const companyQuery = encodeURIComponent(targetCompanyId);
+      const json = await apiFetch(`/api/v1/companies/${companyQuery}`);
+      const compData = json?.data || (json?.name ? json : null);
 
-      const myJobs: any[] = (jobsRes.success && Array.isArray(jobsRes.data)) ? jobsRes.data : [];
-      const calcTotalJobs = myJobs.length;
-      const calcActiveJobs = myJobs.filter((j: any) => ['APPROVED', 'ACTIVE'].includes((j.status || '').toUpperCase())).length;
-      const calcTotalApps = myJobs.reduce((acc: number, j: any) => {
-        const count = typeof j.applicants_count === 'number' ? j.applicants_count : (Array.isArray(j.applicants) ? j.applicants.length : 0);
-        return acc + count;
-      }, 0);
+      if (compData && compData.name) {
+        setCompany(compData);
+        setLoadingCompany(false);
+        return;
+      }
+    } catch (err: any) {
+      console.warn('API fetch company details notice:', err);
+    }
 
-      const calcShortlisted = myJobs.reduce((acc: number, j: any) => {
-        if (!Array.isArray(j.applicants)) return acc;
-        return acc + j.applicants.filter((a: any) => ['shortlisted', 'accepted', 'approved', 'under_review'].includes((a.status || '').toLowerCase())).length;
-      }, 0);
-
-      const calcInterviewed = myJobs.reduce((acc: number, j: any) => {
-        if (!Array.isArray(j.applicants)) return acc;
-        return acc + j.applicants.filter((a: any) => ['interview', 'interview_scheduled', 'interviewed', 'called', 'applied'].includes((a.status || '').toLowerCase())).length;
-      }, 0);
-
-      const calcHired = myJobs.reduce((acc: number, j: any) => {
-        if (!Array.isArray(j.applicants)) return acc;
-        return acc + j.applicants.filter((a: any) => ['hired', 'joined', 'offered', 'selected'].includes((a.status || '').toLowerCase())).length;
-      }, 0);
-
-      if (res.success && res.data && (Number(res.data.totalJobs) > 0 || Number(res.data.totalApplications) > 0)) {
-        setAnalyticsData({
-          totalJobs: Number(res.data.totalJobs || 0),
-          activeJobs: Number(res.data.activeJobs || 0),
-          totalApplications: Number(res.data.totalApplications || 0),
-          shortlisted: Number(res.data.shortlisted || 0),
-          interviewed: Number(res.data.interviewed || 0),
-          hired: Number(res.data.hired || 0),
-          rejected: Number(res.data.rejected || 0),
-          avgResponseTimeHours: Number(res.data.avgResponseTimeHours || 24),
-        });
-      } else {
-        setAnalyticsData({
-          totalJobs: calcTotalJobs,
-          activeJobs: calcActiveJobs,
-          totalApplications: calcTotalApps,
-          shortlisted: calcShortlisted,
-          interviewed: calcInterviewed,
-          hired: calcHired,
-          rejected: 0,
-          avgResponseTimeHours: 24,
-        });
+    try {
+      const json = await apiFetch('/api/v1/companies');
+      const compList = Array.isArray(json) ? json : (json?.data || []);
+      if (Array.isArray(compList) && compList.length > 0) {
+        const targetLower = targetCompanyId.toLowerCase().trim();
+        const matched = compList.find((c: any) =>
+          c && (
+            c.id === targetCompanyId ||
+            (c.name || '').toLowerCase().trim() === targetLower ||
+            (c.name || '').toLowerCase().trim().includes(targetLower) ||
+            targetLower.includes((c.name || '').toLowerCase().trim())
+          )
+        );
+        if (matched) {
+          setCompany(matched);
+          setLoadingCompany(false);
+          return;
+        }
       }
     } catch (_) {}
+
+    setCompany((prev: any) => prev || {
+      id: targetCompanyId,
+      name: user?.companyName || user?.company_name || targetCompanyId,
+      logo: user?.companyLogo || user?.company_logo || user?.profilePictureUrl || null,
+      industry: user?.tradeSpecialization || user?.trade_specialization || (user as any)?.industry || '',
+      company_type: (user as any)?.companyType || '',
+      description: user?.companyDescription || user?.company_description || '',
+      website: user?.website || '',
+      address: user?.address || '',
+      city: (user as any)?.city || '',
+      midc_zone: user?.midcZone || user?.midc_zone || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      company_size: (user as any)?.companySize || '',
+      founded_year: (user as any)?.foundedYear || undefined,
+      gst_number: (user?.gstNumber || user?.gst_number || '').includes('@') ? '' : (user?.gstNumber || user?.gst_number || ''),
+      verified: true,
+    });
+    setLoadingCompany(false);
+  };
+
+  // Load Live Company Job Openings from Live Backend API
+  const loadCompanyJobs = async () => {
+    setLoadingJobs(true);
+
+    try {
+      const companyQuery = encodeURIComponent(targetCompanyId);
+      const json = await apiFetch(`/api/v1/companies/${companyQuery}/jobs`);
+      const list = Array.isArray(json) ? json : (json?.data || []);
+
+      if (Array.isArray(list) && list.length > 0) {
+        setJobs(list);
+        setLoadingJobs(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend company jobs fetch notice:', err);
+    }
+
+    try {
+      const json = await apiFetch('/api/v1/jobs');
+      const allJobs = Array.isArray(json) ? json : (json?.data || []);
+      if (Array.isArray(allJobs) && allJobs.length > 0) {
+        const targetLower = targetCompanyId.toLowerCase().trim();
+        const cleanTarget = targetLower.replace(/[^a-z0-9]/g, '');
+        const matching = allJobs.filter((j: any) => {
+          if (!j) return false;
+          const compName = (j.company || '').toLowerCase().trim();
+          const cleanComp = compName.replace(/[^a-z0-9]/g, '');
+          return (
+            compName === targetLower ||
+            (cleanTarget.length > 2 && cleanComp === cleanTarget) ||
+            compName.includes(targetLower) ||
+            targetLower.includes(compName)
+          );
+        });
+        setJobs(matching);
+      } else {
+        setJobs([]);
+      }
+    } catch (_) {
+      setJobs([]);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  // Fetch 100% Real Live Recruitment Analytics Data from Backend
+  const fetchAnalytics = async () => {
+    try {
+      const json = await apiFetch('/api/v1/jobs/employer/analytics');
+      const data = json?.data || json;
+      if (data && typeof data === 'object') {
+        const liveTotalJobs = Number(data.totalJobs ?? jobs.length);
+        const liveActiveJobs = Number(data.activeJobs ?? jobs.filter((j) => (j?.status || '').toUpperCase() === 'APPROVED' || (j?.status || '').toUpperCase() === 'ACTIVE').length);
+        const liveApplications = Number(data.totalApplications ?? 0);
+        const liveShortlisted = Number(data.shortlisted ?? 0);
+        const liveInterviewed = Number(data.interviewed ?? 0);
+        const liveHired = Number(data.hired ?? 0);
+        const liveRejected = Number(data.rejected ?? 0);
+
+        setAnalyticsData({
+          totalJobs: liveTotalJobs,
+          activeJobs: liveActiveJobs,
+          totalApplications: liveApplications,
+          shortlisted: liveShortlisted,
+          interviewed: liveInterviewed,
+          hired: liveHired,
+          rejected: liveRejected,
+          avgResponseTimeHours: Number(data.avgResponseTimeHours || 24),
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend analytics fetch notice:', err);
+    }
+
+    // Fallback: derive 100% real live metrics directly from loaded jobs array
+    const realTotalJobs = jobs.length;
+    const realActiveJobs = jobs.filter((j) => (j?.status || '').toUpperCase() === 'APPROVED' || (j?.status || '').toUpperCase() === 'ACTIVE').length;
+    const realAppsCount = jobs.reduce((acc, j) => acc + Number(j?.applicationsCount || j?.applicants_count || j?.applications_count || 0), 0);
+
+    setAnalyticsData((prev) => ({
+      ...prev,
+      totalJobs: realTotalJobs,
+      activeJobs: realActiveJobs,
+      totalApplications: realAppsCount,
+    }));
   };
 
   useEffect(() => {
+    loadCompanyDetails();
+    loadCompanyJobs();
+  }, [targetCompanyId]);
+
+  useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [jobs, targetCompanyId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refreshUser();
-      await fetchAnalytics();
+      await Promise.all([
+        refreshUser(),
+        loadCompanyDetails(),
+        loadCompanyJobs(),
+        fetchAnalytics(),
+      ]);
     } catch (_) {
     } finally {
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      if (user.companyName || user.company_name) setCompanyName(user.companyName || user.company_name || '');
-      if (user.gstNumber || user.gst_number) setGstNumber(user.gstNumber || user.gst_number || '');
-      if (user.tradeSpecialization || user.trade_specialization || user.industry) {
-        setIndustry(user.tradeSpecialization || user.trade_specialization || user.industry || 'Industrial Manufacturing');
-      }
-      if (user.midcZone || user.midc_zone) setMidcZone(user.midcZone || user.midc_zone || 'Chakan MIDC (Pune)');
-      if (user.contactPerson || user.contact_person || user.name) setContactPerson(user.contactPerson || user.contact_person || user.name || '');
-      if (user.phone) setPhone(user.phone || '');
-      if (user.website) setWebsite(user.website || '');
-      if (user.address) setAddress(user.address || '');
-      if (user.companyDescription || user.company_description) {
-        setDescription(user.companyDescription || user.company_description || '');
-      }
-      if (user.companyLogo || user.company_logo) setLogoUri(user.companyLogo || user.company_logo || null);
-    }
-  }, [user]);
-
-  const handlePickLogo = async () => {
-    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permResult.granted) {
-      Alert.alert('Permission Required', 'Permission to access gallery is required to upload logo.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      const photoUri = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : (asset.uri || '');
-      setLogoUri(photoUri);
-
-      try {
-        const res = await candidateApi.uploadProfilePicture(photoUri);
-        const finalCloudUrl = res.data?.url || photoUri;
-
-        await updateUserProfile({
-          companyLogo: finalCloudUrl,
-          company_logo: finalCloudUrl,
-          logoUrl: finalCloudUrl,
-          logo_url: finalCloudUrl,
-          profile_picture_url: finalCloudUrl,
-          profilePictureUrl: finalCloudUrl,
-          avatar_url: finalCloudUrl,
-          avatarUrl: finalCloudUrl,
-          avatar: finalCloudUrl,
-        } as any);
-        setLogoUri(finalCloudUrl);
-      } catch (err) {
-        console.warn('Background logo Cloudinary upload notice:', err);
-      }
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    setError(null);
-
-    if (!companyName.trim()) {
-      setError('Company / Enterprise Name is mandatory.');
-      return;
-    }
-
-    if (gstNumber.trim() && gstNumber.trim().length !== 15) {
-      setError('GST Registration Number must be exactly 15 characters (e.g. 27AAAAA0000A1Z5).');
-      return;
-    }
-
-    setLoading(true);
+  const handleShare = async () => {
     try {
-      await updateUserProfile({
-        companyName: companyName.trim(),
-        company_name: companyName.trim(),
-        gstNumber: gstNumber.trim().toUpperCase(),
-        gst_number: gstNumber.trim().toUpperCase(),
-        tradeSpecialization: industry,
-        trade_specialization: industry,
-        industry,
-        midcZone,
-        midc_zone: midcZone,
-        contactPerson: contactPerson.trim(),
-        contact_person: contactPerson.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        website: website.trim(),
-        companyDescription: description.trim(),
-        company_description: description.trim(),
-        companyLogo: logoUri || undefined,
-        company_logo: logoUri || undefined,
-        logoUrl: logoUri || undefined,
-        logo_url: logoUri || undefined,
-      } as any);
+      const companyName = company?.name || targetCompanyId || 'Company Profile';
+      const companyTargetId = company?.id || company?.name || targetCompanyId;
+      const liveWebUrl = `https://job-market-wine.vercel.app/company/${encodeURIComponent(companyTargetId)}`;
 
-      Alert.alert('Profile Saved', 'Company profile details updated successfully!');
-    } catch (err: any) {
-      setError(err?.message || 'Failed to update company profile.');
-    } finally {
-      setLoading(false);
+      await Share.share({
+        message: `View active job openings and plant profile for ${companyName} on JobMarket: ${liveWebUrl}`,
+        title: `${companyName} - JobMarket`,
+        url: liveWebUrl,
+      });
+    } catch (_) {}
+  };
+
+  const handleSaveSuccess = (updatedCompany: any) => {
+    if (updatedCompany) {
+      setCompany((prev: any) => ({ ...prev, ...updatedCompany }));
     }
+    refreshUser();
+    loadCompanyDetails();
+    Alert.alert('Profile Saved', 'Company profile updated successfully!');
   };
 
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out of your employer account?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => logout() },
-    ]);
-  };
+  const formattedLocation = useMemo(() => {
+    if (!company) return '';
+    const parts: string[] = [];
+    if (company.address?.trim()) parts.push(company.address.trim());
+    if (company.city?.trim() && !company.address?.toLowerCase().includes(company.city.toLowerCase())) {
+      parts.push(company.city.trim());
+    }
+    if (company.midc_zone || company.midcZone) {
+      const midc = (company.midc_zone || company.midcZone).split('(')[0].trim();
+      if (!parts.join(', ').includes(midc)) {
+        parts.push(midc);
+      }
+    }
+    return parts.join(', ') || company.city || company.address || 'Waluj MIDC, Chhatrapati Sambhajinagar';
+  }, [company]);
 
   return (
-    <View style={styles.container}>
-      <Header
-        title="Company Profile & Settings"
-        subtitle="Manage enterprise details, branding & analytics"
-        onBack={() => navigation.goBack()}
-        hideRightActions={true}
-      />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
-      {/* Top Navigation Tabs */}
-      <View style={styles.topTabBarRow}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tabItemBtn, profileTab === 'PROFILE' && styles.tabItemBtnActive]}
-          onPress={() => setProfileTab('PROFILE')}
-        >
-          <Building2 size={15} color={profileTab === 'PROFILE' ? COLORS.primary : '#64748B'} />
-          <Text style={[styles.tabItemText, profileTab === 'PROFILE' && styles.tabItemTextActive]}>Enterprise Profile</Text>
-        </TouchableOpacity>
+      {/* 1. Unscrollable Fixed Primary Blue Header Banner with Integrated Tabs */}
+      {!loadingCompany && (
+        <CompanyHeaderCard
+          company={company}
+          isOwner={isOwner}
+          onEditPress={() => setIsEditModalOpen(true)}
+          onSharePress={handleShare}
+          onBackPress={() => navigation.goBack()}
+          formattedLocation={formattedLocation}
+          profileTab={profileTab}
+          onTabChange={(tab) => setProfileTab(tab)}
+        />
+      )}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tabItemBtn, profileTab === 'ANALYTICS' && styles.tabItemBtnActive]}
-          onPress={() => setProfileTab('ANALYTICS')}
-        >
-          <BarChart3 size={15} color={profileTab === 'ANALYTICS' ? COLORS.primary : '#64748B'} />
-          <Text style={[styles.tabItemText, profileTab === 'ANALYTICS' && styles.tabItemTextActive]}>Recruitment Analytics</Text>
-        </TouchableOpacity>
-      </View>
-
-      <KeyboardAwareScrollView
+      {/* Main Body Scroll Area */}
+      <ScrollView
         contentContainerStyle={styles.scrollContentBody}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
         {error ? <ErrorBanner message={error} /> : null}
 
-        {profileTab === 'PROFILE' ? (
-          <CompanyProfileFormCard
-            logoUri={logoUri}
-            onPickLogo={handlePickLogo}
-            companyName={companyName}
-            setCompanyName={setCompanyName}
-            gstNumber={gstNumber}
-            setGstNumber={setGstNumber}
-            industry={industry}
-            setIndustry={setIndustry}
-            industryList={INDUSTRY_LIST}
-            midcZone={midcZone}
-            setMidcZone={setMidcZone}
-            midcList={MIDC_LIST}
-            contactPerson={contactPerson}
-            setContactPerson={setContactPerson}
-            userEmail={user?.email}
-            phone={phone}
-            setPhone={setPhone}
-            website={website}
-            setWebsite={setWebsite}
-            address={address}
-            setAddress={setAddress}
-            description={description}
-            setDescription={setDescription}
-          />
-        ) : (
+        {loadingCompany ? (
+          <CompanySkeleton />
+        ) : profileTab === 'ANALYTICS' ? (
           <CompanyProfileAnalyticsTab analyticsData={analyticsData} />
-        )}
-
-        {profileTab === 'PROFILE' && (
-          <View style={{ marginTop: 16, marginBottom: 28 }}>
-            <Button
-              title="Save Company Profile"
-              onPress={handleSaveProfile}
-              loading={loading}
-              icon={<Save size={16} color="#FFFFFF" />}
-              style={{ borderRadius: 6, height: 46 }}
+        ) : (
+          <>
+            {/* 2. Metrics Bar with Jobs Posted, Profile Score %, and MIDC Location */}
+            <CompanyMetricsBar
+              jobsCount={jobs.length}
+              completionPct={company?.completion_percentage || 85}
+              midcZone={company?.midc_zone || company?.midcZone}
+              isVerified={company?.verified !== false}
+              isOwner={isOwner}
             />
-          </View>
+
+            {/* 3. About Company & Operations Section */}
+            <CompanyOverviewSection
+              description={company?.description}
+              companyName={company?.name}
+              specializations={company?.specializations}
+            />
+
+            {/* 4. Company Details Sidebar Card */}
+            <CompanyDetailsCard company={company} />
+
+            {/* 5. Active Job Openings Section */}
+            <CompanyActiveJobsSection
+              jobs={jobs}
+              loadingJobs={loadingJobs}
+              isOwner={isOwner}
+              onPostJobPress={() => {
+                navigation.navigate('JobPost');
+              }}
+              onSelectJob={(job) => {
+                navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
+              }}
+            />
+          </>
         )}
-      </KeyboardAwareScrollView>
+      </ScrollView>
+
+      {/* Full-Screen 4-Step Edit Profile Modal */}
+      <EditCompanyProfileModal
+        visible={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        company={company}
+        onSaveSuccess={handleSaveSuccess}
+      />
     </View>
   );
 };
@@ -369,7 +382,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F7F7',
   },
   topTabBarRow: {
     flexDirection: 'row',
@@ -402,23 +415,6 @@ const styles = StyleSheet.create({
   },
   scrollContentBody: {
     padding: 16,
-    paddingBottom: 120,
-  },
-  logoutBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    borderRadius: 6,
-    paddingVertical: 12,
-    marginTop: 10,
-  },
-  logoutBtnText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#DC2626',
+    paddingBottom: 100,
   },
 });

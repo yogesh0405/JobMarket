@@ -80,7 +80,11 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
     setAppliedList([...appliedJobsStore.getAppliedJobs()]);
   }, []);
 
+  const isFetchingRef = React.useRef(false);
+
   const fetchAppliedData = useCallback(async (showSkeleton = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     if (showSkeleton) setLoading(true);
     try {
       const res = await candidateApi.getAppliedJobs();
@@ -93,17 +97,18 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
       console.log('Error loading applied jobs:', e);
       syncListWithStore();
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
   }, [syncListWithStore]);
 
-  // Subscribe to appliedJobsStore & live interval polling for real-time status updates
+  // Subscribe to appliedJobsStore & safe periodic sync when active
   useEffect(() => {
     fetchAppliedData(false);
     const interval = setInterval(() => {
       fetchAppliedData(false);
-    }, 4000);
+    }, 30000);
 
     const unsubscribe = appliedJobsStore.subscribe(() => {
       setAppliedList([...appliedJobsStore.getAppliedJobs()]);

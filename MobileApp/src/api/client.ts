@@ -1,5 +1,12 @@
 import { Platform } from 'react-native';
-import { getAccessToken, getRefreshToken, getSessionId, saveTokens, clearAuthSession } from '../utils/secureStorage';
+import {
+  getAccessToken,
+  getRefreshToken,
+  getSessionId,
+  getStoredUser,
+  saveTokens,
+  clearAuthSession,
+} from '../utils/secureStorage';
 
 // CANONICAL BACKEND API URL (defaults to live Render backend: https://jobmarket-ongn.onrender.com)
 export const API_BASE_URL =
@@ -45,6 +52,23 @@ const isAuthEndpoint = (endpoint: string): boolean => {
   );
 };
 
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  try {
+    return await fetch(url, options);
+  } catch (netErr) {
+    // Retry once after 1.5s for Render backend warm-up / transient network restarts (matching Web App api.ts)
+    try {
+      await new Promise((res) => setTimeout(res, 1500));
+      return await fetch(url, options);
+    } catch (retryErr: any) {
+      throw new Error(retryErr?.message || 'Network error: Unable to connect to backend server. Please check connection.');
+    }
+  }
+}
+
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   if (endpoint.includes('/undefined') || endpoint.includes('/null') || endpoint.includes('/NaN')) {
     throw new Error('Invalid resource identifier in request URL.');
@@ -53,6 +77,9 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   
   const token = await getAccessToken();
+  const sessionId = await getSessionId();
+  const storedUser = await getStoredUser();
+
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -60,10 +87,12 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     ...(options.headers as Record<string, string>),
   };
 
-  // Ensure client never sends identity override headers
-  delete headers['x-user-id'];
-  delete headers['x-user-role'];
-  delete headers['x-session-id'];
+  if (sessionId) {
+    headers['x-session-id'] = sessionId;
+  }
+  if (storedUser?.id) {
+    headers['x-user-id'] = storedUser.id;
+  }
 
   if (isFormData && (options.headers as Record<string, string>)?.[ 'Content-Type' ] === undefined) {
     delete headers['Content-Type'];
@@ -75,7 +104,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
 
   let response: Response;
   try {
-    response = await fetch(url, { ...options, headers });
+    response = await fetchWithTimeout(url, { ...options, headers });
   } catch (netErr: any) {
     throw new Error(netErr.message || 'Network error. Please check your internet connection.');
   }
@@ -92,7 +121,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
           throw new Error('Session expired');
         }
 
-        const refreshRes = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+        const refreshRes = await fetchWithTimeout(`${baseUrl}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken, sessionId }),
@@ -115,7 +144,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
 
         // Retry original request with new access token
         headers['Authorization'] = `Bearer ${newAccessToken}`;
-        const retryRes = await fetch(url, { ...options, headers });
+        const retryRes = await fetchWithTimeout(url, { ...options, headers });
         const retryText = await retryRes.text();
         let retryJson: any = {};
         if (retryText && retryText.trim()) {
@@ -154,7 +183,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
           resolve: async (newToken: string) => {
             headers['Authorization'] = `Bearer ${newToken}`;
             try {
-              const res = await fetch(url, { ...options, headers });
+              const res = await fetchWithTimeout(url, { ...options, headers });
               const textRes = await res.text();
               let jsonRes: any = {};
               if (textRes && textRes.trim()) {

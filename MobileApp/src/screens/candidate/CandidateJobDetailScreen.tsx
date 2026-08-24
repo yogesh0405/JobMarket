@@ -144,15 +144,20 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     const jobIdToCheck = targetJob?.id || activeJobId;
     if (!jobIdToCheck) return;
 
-    const allApplied = (appliedJobsStore as any).getAppliedJobs?.() || [];
-    const storedApplied = Array.isArray(allApplied)
-      ? allApplied.find((a: any) => String(a.job_id || a.jobId || a.job?.id || a.id) === String(jobIdToCheck))
-      : null;
+    const syncFromStore = () => {
+      const allApplied = (appliedJobsStore as any).getAppliedJobs?.() || [];
+      const storedApplied = Array.isArray(allApplied)
+        ? allApplied.find((a: any) => String(a.job_id || a.jobId || a.job?.id || a.id) === String(jobIdToCheck))
+        : null;
 
-    if (storedApplied) {
-      setHasApplied(true);
-      setAppliedItem(storedApplied);
-    }
+      if (storedApplied) {
+        setHasApplied(true);
+        setAppliedItem(storedApplied);
+      }
+    };
+
+    syncFromStore();
+    const unsubscribeStore = appliedJobsStore.subscribe(syncFromStore);
 
     const checkStatus = async () => {
       try {
@@ -180,6 +185,10 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     };
 
     checkStatus();
+
+    return () => {
+      unsubscribeStore();
+    };
   }, [job?.id, activeJobId]);
 
   const handleToggleSave = async () => {
@@ -228,19 +237,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
     navigation.navigate('CandidateApplyConfirm', {
       job: targetJob,
-      onAppliedSuccess: (appliedJob: Job) => {
-        const newAppliedObj = {
-          id: `applied-${Date.now()}`,
-          job_id: jobId,
-          jobId: jobId,
-          job: appliedJob || targetJob,
-          status: 'APPLIED',
-          created_at: new Date().toISOString(),
-        };
-        setHasApplied(true);
-        setAppliedItem(newAppliedObj);
-        (appliedJobsStore as any).addAppliedJob?.(newAppliedObj);
-      },
     });
   };
 
@@ -362,8 +358,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
 
       <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
         <CandidateJobDetailHeader
@@ -374,6 +370,10 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           onBack={handleBackNavigation}
           onShare={handleShareJob}
           onToggleSave={handleToggleSave}
+          onCompanyPress={() => {
+            const companyId = (job as any).company_id || (job as any).companyId || job.company;
+            navigation.navigate('CompanyProfile', { companyId, name: job.company });
+          }}
         />
 
         <View style={styles.headerBodySeparatorSlate} />

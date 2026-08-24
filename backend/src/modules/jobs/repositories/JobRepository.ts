@@ -180,7 +180,7 @@ export class JobRepository {
                joining_bonus, attendance_bonus, contract_duration, walk_in_date, interview_address, trade,
                education_requirement
         FROM jobs 
-        WHERE status = 'APPROVED'
+        WHERE (status IS NULL OR LOWER(status) = 'active' OR LOWER(status) = 'approved')
         ORDER BY posted_at DESC
       `;
       const result = await pool.query(query);
@@ -252,7 +252,7 @@ export class JobRepository {
    * Get visible jobs bounded by viewport rectangle (north, south, east, west)
    */
   static async getMapJobs(params: MapBoundsParams): Promise<any[]> {
-    const conditions: string[] = ["status = 'APPROVED'"];
+    const conditions: string[] = ["(status IS NULL OR LOWER(status) = 'active' OR LOWER(status) = 'approved')"];
     const values: any[] = [];
     let paramIndex = 1;
 
@@ -387,7 +387,7 @@ export class JobRepository {
             )
           ) AS distance_km
         FROM jobs
-        WHERE status = 'APPROVED' 
+        WHERE (status IS NULL OR LOWER(status) = 'active' OR LOWER(status) = 'approved') 
           AND latitude IS NOT NULL 
           AND longitude IS NOT NULL
           ${whereClause}
@@ -785,8 +785,8 @@ export class JobRepository {
         ja.maps_link as "mapsLink",
         ja.reject_reason as "rejectReason"
       FROM job_applications ja
-      JOIN jobs j ON ja.job_id = j.id
-      WHERE ja.user_id = $1
+      JOIN jobs j ON ja.job_id::text = j.id::text
+      WHERE ja.user_id::text = $1::text
       ORDER BY ja.applied_at DESC
     `;
     const result = await pool.query(query, [userId]);

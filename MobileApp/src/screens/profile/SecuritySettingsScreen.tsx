@@ -171,15 +171,16 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     setTwoFactorEnabled(nextVal);
 
     try {
-      const res = await ((authApi as any).toggleTwoFactor?.(nextVal) || Promise.resolve({ success: true }));
+      const res = await authApi.toggle2FA(nextVal);
       if (res && !res.success) {
         setTwoFactorEnabled(previousVal);
-        Alert.alert('Notice', res.message || '2FA preference updated locally.');
+        Alert.alert('Notice', res.message || 'Could not update 2FA setting on server.');
       } else {
         Alert.alert('2FA Protection Updated', `Two-Factor Authentication is now ${nextVal ? 'ENABLED' : 'DISABLED'}.`);
       }
-    } catch (err) {
-      // Local state is preserved
+    } catch (err: any) {
+      setTwoFactorEnabled(previousVal);
+      Alert.alert('Error', err.message || 'Failed to update 2FA setting.');
     }
   };
 

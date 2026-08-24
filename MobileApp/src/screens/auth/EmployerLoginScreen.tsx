@@ -127,7 +127,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

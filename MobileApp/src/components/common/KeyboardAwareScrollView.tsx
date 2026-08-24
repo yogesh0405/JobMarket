@@ -10,6 +10,7 @@ import {
   findNodeHandle,
   NativeSyntheticEvent,
   TargetedEvent,
+  View,
 } from 'react-native';
 
 interface KeyboardAwareScrollViewProps extends ScrollViewProps {
@@ -17,8 +18,37 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
   children: React.ReactNode;
 }
 
+export const handleFocusInput = (
+  event: NativeSyntheticEvent<TargetedEvent> | any,
+  scrollRef: React.RefObject<ScrollView | null>,
+  extraScrollHeight = 140
+) => {
+  const node = event?.nativeEvent?.target || event?.target;
+  if (node && scrollRef?.current) {
+    setTimeout(() => {
+      try {
+        const reactTag = findNodeHandle(node as any);
+        const scrollTag = findNodeHandle(scrollRef.current);
+        if (reactTag && scrollTag) {
+          UIManager.measureLayout(
+            reactTag,
+            scrollTag,
+            () => {},
+            (x, y, width, height) => {
+              const targetY = Math.max(0, y - extraScrollHeight);
+              scrollRef.current?.scrollTo({ y: targetY, animated: true });
+            }
+          );
+        }
+      } catch (e) {
+        // Ignore measurement error
+      }
+    }, Platform.OS === 'ios' ? 80 : 100);
+  }
+};
+
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
-  ({ children, extraScrollHeight = 85, contentContainerStyle, ...props }, ref) => {
+  ({ children, extraScrollHeight = 120, contentContainerStyle, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
     const keyboardHeightRef = useRef<number>(0);
@@ -43,31 +73,6 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
       };
     }, []);
 
-    const handleFocus = (event: NativeSyntheticEvent<TargetedEvent>) => {
-      const node = event.nativeEvent?.target;
-      if (node && scrollRef.current) {
-        setTimeout(() => {
-          try {
-            const reactTag = findNodeHandle(node as any);
-            const scrollTag = findNodeHandle(scrollRef.current);
-            if (reactTag && scrollTag) {
-              UIManager.measureLayout(
-                reactTag,
-                scrollTag,
-                () => {},
-                (x, y, width, height) => {
-                  const targetY = Math.max(0, y - extraScrollHeight);
-                  scrollRef.current?.scrollTo({ y: targetY, animated: true });
-                }
-              );
-            }
-          } catch (e) {
-            // Ignore unmount measurement errors
-          }
-        }, Platform.OS === 'ios' ? 80 : 120);
-      }
-    };
-
     return (
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -80,7 +85,6 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets={true}
           contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
-          onFocus={handleFocus}
           {...props}
         >
           {children}

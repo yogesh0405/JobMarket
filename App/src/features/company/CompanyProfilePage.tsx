@@ -257,10 +257,34 @@ export const CompanyProfilePage: React.FC = () => {
 
   if (loadingCompany) {
     return (
-      <div className="company-profile-wrapper" style={{ padding: '32px 16px' }}>
-        <div style={{ textAlign: 'center', padding: '48px 0', color: '#64748B' }}>
-          <div className="company-spinner" style={{ margin: '0 auto 16px auto' }} />
-          <span>Loading company profile...</span>
+      <div className="company-profile-wrapper" style={{ padding: '24px 16px' }}>
+        <div className="company-main-container" style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          {/* Hero Header Card Skeleton */}
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
+              <div className="skeleton" style={{ width: '80px', height: '80px', borderRadius: '16px', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="skeleton" style={{ width: '260px', height: '24px', borderRadius: '6px' }} />
+                <div className="skeleton" style={{ width: '180px', height: '16px', borderRadius: '4px' }} />
+                <div className="skeleton" style={{ width: '130px', height: '14px', borderRadius: '4px' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
+              <div className="skeleton" style={{ height: '48px', borderRadius: '8px' }} />
+              <div className="skeleton" style={{ height: '48px', borderRadius: '8px' }} />
+              <div className="skeleton" style={{ height: '48px', borderRadius: '8px' }} />
+              <div className="skeleton" style={{ height: '48px', borderRadius: '8px' }} />
+            </div>
+          </div>
+
+          {/* Overview & Form Content Skeleton */}
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="skeleton" style={{ width: '180px', height: '20px', borderRadius: '4px' }} />
+            <div className="skeleton" style={{ width: '100%', height: '14px', borderRadius: '4px' }} />
+            <div className="skeleton" style={{ width: '92%', height: '14px', borderRadius: '4px' }} />
+            <div className="skeleton" style={{ width: '85%', height: '14px', borderRadius: '4px' }} />
+          </div>
         </div>
       </div>
     );

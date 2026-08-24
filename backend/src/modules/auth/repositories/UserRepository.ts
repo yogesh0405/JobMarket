@@ -64,9 +64,16 @@ export class UserRepository {
 
   static async findById(id: string): Promise<User | null> {
     return CacheService.getOrSet(`user:profile:${id}`, 900, async () => {
+      await pool.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS headline VARCHAR(255);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS midc_zone VARCHAR(150);
+      `).catch(() => {});
+
       const query = `
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
-               trade_specialization, status, created_at, updated_at, headline, location, skills, 
+               trade_specialization, status, created_at, updated_at, headline, location, bio, midc_zone, skills, 
                preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url,
                COALESCE(is_resume_public, true) as is_resume_public 
         FROM users 
@@ -161,6 +168,9 @@ export class UserRepository {
       tradeSpecialization: 'trade_specialization',
       headline: 'headline',
       location: 'location',
+      bio: 'bio',
+      midc_zone: 'midc_zone',
+      midcZone: 'midc_zone',
       skills: 'skills',
       preferred_shift: 'preferred_shift',
       preferredShift: 'preferred_shift',
@@ -174,7 +184,10 @@ export class UserRepository {
       experience: 'experience',
       education: 'education',
       profile_picture_url: 'profile_picture_url',
-      profilePictureUrl: 'profile_picture_url'
+      profilePictureUrl: 'profile_picture_url',
+      avatar_url: 'profile_picture_url',
+      avatarUrl: 'profile_picture_url',
+      avatar: 'profile_picture_url',
     };
 
     const updatedColumns = new Set<string>();
@@ -183,7 +196,7 @@ export class UserRepository {
       const dbColumn = fieldMap[key];
       if (dbColumn && value !== undefined && !updatedColumns.has(dbColumn)) {
         updatedColumns.add(dbColumn);
-        if (dbColumn === 'resume' || dbColumn === 'experience' || dbColumn === 'education') {
+        if (dbColumn === 'resume' || dbColumn === 'experience' || dbColumn === 'education' || dbColumn === 'skills') {
           fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}::jsonb`);
           const jsonVal = typeof value === 'string' ? value : JSON.stringify(value);
           values.push(value ? jsonVal : null);
@@ -212,6 +225,7 @@ export class UserRepository {
 
     const result = await client.query(query, values);
     await CacheService.invalidate(`user:profile:${userId}`);
+    await CacheService.invalidate(`user:profile:${userId.toLowerCase()}`);
     await CacheService.invalidate('cache:candidates:all');
     return result.rows[0];
   }

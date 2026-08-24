@@ -25,7 +25,7 @@ import {
 } from 'lucide-react-native';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useNotifications, isNotificationRead } from '../../hooks/useNotifications';
 import { AppNotification } from '../../api/notificationApi';
 import { resolveMobileNotificationRoute } from '../../utils/notificationRouter';
 import { useAuth } from '../../hooks/useAuth';
@@ -71,13 +71,13 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
 
   const displayedList = notifications.filter((n) => {
     if (filter === 'UNREAD') {
-      return !(n.read || n.is_read);
+      return !isNotificationRead(n);
     }
     return true;
   });
 
   const handleNotificationClick = (item: AppNotification) => {
-    if (!item.read && !item.is_read) {
+    if (!isNotificationRead(item)) {
       onMarkNotifRead(item.id);
     }
     const userRole = (user?.role || '').toLowerCase();

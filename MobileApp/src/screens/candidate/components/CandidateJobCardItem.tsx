@@ -20,6 +20,7 @@ interface CandidateJobCardItemProps {
   isSaved: boolean;
   onPress: () => void;
   onToggleSave: (jobId: string) => void;
+  onCompanyPress?: (companyName: string) => void;
 }
 
 export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
@@ -29,6 +30,7 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
   isSaved,
   onPress,
   onToggleSave,
+  onCompanyPress,
 }) => {
   if (viewMode === 'list') {
     return (
@@ -137,7 +139,17 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
       </View>
 
       <View style={styles.naukriCardBottomSection}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+        <TouchableOpacity
+          activeOpacity={onCompanyPress ? 0.75 : 1}
+          onPress={() => {
+            if (onCompanyPress) {
+              onCompanyPress(job.company);
+            } else {
+              onPress();
+            }
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+        >
           <CompanyLogoAvatar
             logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
             companyName={job.company}
@@ -145,14 +157,14 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
             borderRadius={6}
           />
           <View style={{ flex: 1 }}>
-            <Text style={styles.naukriCompanyName} numberOfLines={1}>
+            <Text style={[styles.naukriCompanyName, onCompanyPress && { color: '#2563EB', textDecorationLine: 'underline' }]} numberOfLines={1}>
               {job.company || 'Industrial Company'}
             </Text>
             <Text style={styles.naukriPostedByText} numberOfLines={1}>
               Posted by {job.company || 'Recruiter'}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <Text style={styles.naukriTimeAgoText}>
           {formatTimeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || (job as any).createdAt)}

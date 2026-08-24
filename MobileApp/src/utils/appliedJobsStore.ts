@@ -61,12 +61,7 @@ class AppliedJobsStore {
       };
     });
 
-    const serverJobIds = new Set(formatted.map((f) => f.jobId || f.job?.id).filter(Boolean));
-    const optimisticUnsynced = this.appliedJobs.filter(
-      (opt) => !serverJobIds.has(opt.jobId) && !serverJobIds.has(opt.job?.id)
-    );
-
-    this.appliedJobs = [...formatted, ...optimisticUnsynced];
+    this.appliedJobs = formatted;
     this.pendingRefresh = false;
     this.notify();
   }

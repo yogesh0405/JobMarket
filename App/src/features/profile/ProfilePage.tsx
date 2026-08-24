@@ -27,7 +27,11 @@ import {
   Share2, 
   FileText, 
   Users,
-  BarChart3
+  BarChart3,
+  Eye,
+  Lock,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { Resume } from '../../types';
 
@@ -812,7 +816,7 @@ export const ProfilePage: React.FC = () => {
 
             <div style={{ textAlign: 'center' }}>
               <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-                100% Active
+                Verified
               </div>
               <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
                 Account Status
@@ -1392,58 +1396,51 @@ export const ProfilePage: React.FC = () => {
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
                         <div 
-                          style={{ 
+                          style={{
                             display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
+                            flexDirection: 'column', 
                             width: '100%', 
-                            padding: '16px 18px', 
-                            background: '#f8fafc', 
-                            borderRadius: '14px', 
-                            border: '1px solid #e2e8f0',
-                            flexWrap: 'wrap',
+                            padding: '16px', 
+                            background: '#F8FAFC', 
+                            borderRadius: '12px', 
+                            border: '1px solid #E2E8F0',
                             gap: '12px'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ffe4e6', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #fecdd3' }}>
-                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                              </svg>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#FFE4E6', color: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #FECDD3' }}>
+                              <FileText size={22} color="#E11D48" />
                             </div>
-                            <div>
-                              <h4 style={{ margin: '0 0 2px 0', fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>{resume.name}</h4>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Verified PDF Document {resume.size ? `• ${resume.size}` : ''}</p>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '800', color: '#0F172A', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                                {resume.name}
+                              </h4>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                                Verified PDF Document {resume.size ? `• ${resume.size}` : ''}
+                              </p>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '8px', borderTop: '1px dashed #CBD5E1' }}>
                             <button
                               onClick={() => setPreviewResume(resume)}
                               className="btn btn-secondary btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '6px 12px' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: '700' }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                              </svg>
+                              <Eye size={14} />
                               <span>View Document</span>
                             </button>
 
                             <button
                               onClick={handleDeleteResume}
                               className="btn btn-danger btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', padding: '6px 12px', background: '#ef4444', color: '#ffffff', border: 'none' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '6px', padding: '6px 14px', background: '#EF4444', color: '#FFFFFF', border: 'none', fontSize: '12.5px', fontWeight: '700' }}
                               disabled={isDeleting}
                             >
                               {isDeleting ? (
-                                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
-                                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"/>
-                                  <path d="M4 12a8 8 0 0 1 8-8" strokeLinecap="round"/>
-                                </svg>
+                                <Loader2 size={14} className="animate-spin" />
                               ) : (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                </svg>
+                                <Trash2 size={14} />
                               )}
                               <span>Delete</span>
                             </button>
@@ -1453,53 +1450,57 @@ export const ProfilePage: React.FC = () => {
                         {/* Public Resume Visibility Toggle Box */}
                         <div 
                           style={{
-                            background: currentUser.isResumePublic !== false ? '#eff6ff' : '#f8fafc',
-                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#bfdbfe' : '#e2e8f0'}`,
-                            borderRadius: '14px',
-                            padding: '14px 18px',
+                            background: currentUser.isResumePublic !== false ? '#EFF6FF' : '#F8FAFC',
+                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#BFDBFE' : '#E2E8F0'}`,
+                            borderRadius: '12px',
+                            padding: '14px 16px',
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px'
+                            flexDirection: 'column',
+                            gap: '8px'
                           }}
                         >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                              <span style={{ fontSize: '16px' }}>{currentUser.isResumePublic !== false ? '👁️' : '🔒'}</span>
-                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                              {currentUser.isResumePublic !== false ? (
+                                <Eye size={18} color="#2563EB" style={{ flexShrink: 0 }} />
+                              ) : (
+                                <Lock size={18} color="#64748B" style={{ flexShrink: 0 }} />
+                              )}
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 Public Resume Search Visibility
                               </h4>
                             </div>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                              {currentUser.isResumePublic !== false 
-                                ? 'Employers can search and view your resume in the public candidate talent directory.' 
-                                : 'Hidden from public search. Visible only to employers when you apply for their jobs.'}
-                            </p>
+
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
+                              <input 
+                                type="checkbox"
+                                checked={currentUser.isResumePublic !== false}
+                                onChange={async (e) => {
+                                  const checked = e.target.checked;
+                                  try {
+                                    const res = await updateUser({ isResumePublic: checked });
+                                    if (res.success) {
+                                      showToast(checked ? 'Resume is now public to employers' : 'Resume is now hidden from public search', 'info');
+                                    } else {
+                                      showToast(res.error || 'Failed to update visibility', 'error');
+                                    }
+                                  } catch (err) {
+                                    showToast('Failed to update visibility', 'error');
+                                  }
+                                }}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#2563EB' }}
+                              />
+                              <span style={{ fontSize: '12.5px', fontWeight: 700, color: currentUser.isResumePublic !== false ? '#1D4ED8' : '#64748B' }}>
+                                {currentUser.isResumePublic !== false ? 'Public' : 'Private'}
+                              </span>
+                            </label>
                           </div>
 
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}>
-                            <input 
-                              type="checkbox"
-                              checked={currentUser.isResumePublic !== false}
-                              onChange={async (e) => {
-                                const checked = e.target.checked;
-                                try {
-                                  const res = await updateUser({ isResumePublic: checked });
-                                  if (res.success) {
-                                    showToast(checked ? 'Resume is now public to employers' : 'Resume is now hidden from public candidate section', 'info');
-                                  } else {
-                                    showToast(res.error || 'Failed to update visibility', 'error');
-                                  }
-                                } catch (err) {
-                                  showToast('Failed to update visibility', 'error');
-                                }
-                              }}
-                              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#2563eb' }}
-                            />
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: currentUser.isResumePublic !== false ? '#1d4ed8' : '#64748b' }}>
-                              {currentUser.isResumePublic !== false ? 'Public' : 'Private'}
-                            </span>
-                          </label>
+                          <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: '1.4' }}>
+                            {currentUser.isResumePublic !== false 
+                              ? 'Employers can search and view your resume in the public candidate talent directory.' 
+                              : 'Hidden from public search. Visible only to employers when you apply for their jobs.'}
+                          </p>
                         </div>
                       </div>
                     );
@@ -1567,8 +1568,9 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {isUploadingResume && (
-                <div style={{ marginTop: '16px', textAlign: 'center', color: '#2563eb', fontSize: '13px', fontWeight: '700' }}>
-                  ⏳ Uploading and attaching PDF to your profile...
+                <div style={{ marginTop: '16px', textAlign: 'center', color: '#2563eb', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Uploading and attaching PDF to your profile...</span>
                 </div>
               )}
             </div>
