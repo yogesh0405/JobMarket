@@ -16,8 +16,8 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   BREVO_API_KEY: z.string().default(''),
   CLOUDINARY_URL: z.string().default('cloudinary://111364167496953:u99_zeW9Hrvk32mQa2a0fnX-ApY@gm4yqzhg'),
-  ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173'),
-  FRONTEND_URL: z.string().default('http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173,https://job-market-wine.vercel.app'),
+  FRONTEND_URL: z.string().default('https://job-market-wine.vercel.app'),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -15,13 +15,25 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
     try {
       const decoded = verifyAccessToken(token);
       if (decoded && (decoded.id || decoded.userId)) {
+        const sessionId = (decoded.sessionId || req.headers['x-session-id'] || req.headers['x-session-token']) as string;
+        if (sessionId) {
+          const { SessionRepository } = await import('../modules/auth/repositories/SessionRepository');
+          const isRevoked = await SessionRepository.isSessionRevoked(sessionId);
+          if (isRevoked) {
+            return res.status(401).json({
+              success: false,
+              error: 'SESSION_REVOKED',
+              message: 'Your session has been terminated. Please log in again.',
+            });
+          }
+          req.sessionId = sessionId;
+        }
+
         req.user = {
           ...decoded,
           id: decoded.id || decoded.userId,
           userId: decoded.userId || decoded.id || ''
         };
-        const sessionId = (decoded.sessionId || req.headers['x-session-id'] || req.headers['x-session-token']) as string;
-        if (sessionId) req.sessionId = sessionId;
         return next();
       }
     } catch (err) {

@@ -39,10 +39,18 @@ export const jobsApi = {
     });
   },
 
-  resolveMapUrl: async (url: string): Promise<ApiResponse<{ latitude?: number; longitude?: number; formattedAddress?: string }>> => {
+  resolveMapUrl: async (
+    url: string,
+    extra?: { location?: string; city?: string; midcZone?: string }
+  ): Promise<ApiResponse<{ latitude?: number; longitude?: number; formattedAddress?: string }>> => {
     return apiFetch('/api/v1/jobs/resolve-map-url', {
       method: 'POST',
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({
+        url,
+        location: extra?.location,
+        city: extra?.city,
+        midcZone: extra?.midcZone,
+      }),
     });
   },
 

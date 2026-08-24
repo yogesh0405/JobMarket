@@ -314,6 +314,18 @@ export class JobRepository {
       paramIndex++;
     }
 
+    // Industry Filter (Smart Token Matching)
+    if (params.industry && params.industry !== 'All' && params.industry !== 'All Industries' && params.industry.trim() !== '') {
+      const indClean = params.industry.toLowerCase().trim();
+      const tokens = indClean.split(/[\s&,/()]+/).map(t => t.replace(/(s|ing|als|ics)$/, '')).filter(t => t.length >= 3);
+      if (tokens.length > 0) {
+        const indConditions = tokens.map((_, i) => `(LOWER(industry) LIKE $${paramIndex + i} OR LOWER(trade) LIKE $${paramIndex + i} OR LOWER(title) LIKE $${paramIndex + i})`);
+        conditions.push(`(${indConditions.join(' OR ')})`);
+        tokens.forEach(t => values.push(`%${t}%`));
+        paramIndex += tokens.length;
+      }
+    }
+
     // Featured Filter
     if (params.featured) {
       conditions.push(`featured = TRUE`);

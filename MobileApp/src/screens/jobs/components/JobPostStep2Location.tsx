@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Animated,
+  Easing,
+  ActivityIndicator,
 } from 'react-native';
-import { MapPin, Map, CheckCircle2 } from 'lucide-react-native';
+import { MapPin, Map, Navigation2, Compass, AlertCircle } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { JobLocationMapPreview } from '../../../components/map/JobLocationMapPreview';
 import { COLORS, SPACING } from '../../../constants/theme';
@@ -17,7 +20,7 @@ interface JobPostStep2LocationProps {
   setGoogleMapsUrl: (val: string) => void;
   autoResolveMsg: string | null;
   resolvingMap: boolean;
-  onResolveMapUrl: () => void;
+  onResolveMapUrl?: () => void;
   latitude: number | null;
   longitude: number | null;
   resolvedAddress: string | null;
@@ -35,6 +38,35 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
   longitude,
   resolvedAddress,
 }) => {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (resolvingMap) {
+      progressAnim.setValue(0.1);
+      Animated.timing(progressAnim, {
+        toValue: 0.95,
+        duration: 1800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    } else {
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => {
+        progressAnim.setValue(0);
+      });
+    }
+  }, [resolvingMap]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
+  const hasRealCoordinates = latitude !== null && longitude !== null && !isNaN(latitude) && !isNaN(longitude);
+
   return (
     <View style={styles.formCard}>
       <View style={styles.cardHeaderRow}>
@@ -47,7 +79,7 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
           <MapPin size={16} color={COLORS.primary} />
-          <Text style={styles.sectionTitleText}>Work Location & GIS Mapping</Text>
+          <Text style={styles.sectionTitleText}>Work Location & Real GIS Mapping</Text>
         </View>
 
         <View style={styles.cardBody}>
@@ -62,8 +94,8 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
           />
 
           <Input
-            label="Google Maps Short Link (Auto-Resolves Coordinates)"
-            placeholder="e.g. https://maps.app.goo.gl/..."
+            label="Google Maps Location Link (Auto-Resolves Coordinates)"
+            placeholder="e.g. https://maps.app.goo.gl/... or https://google.com/maps/..."
             value={googleMapsUrl}
             onChangeText={setGoogleMapsUrl}
             leftIcon={<Map size={16} color="#64748B" />}
@@ -71,34 +103,44 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
             style={{ marginTop: SPACING.sm }}
           />
 
-          {autoResolveMsg ? (
-            <View style={styles.autoResolveBadge}>
-              <CheckCircle2 size={15} color="#059669" style={{ marginRight: 6 }} />
-              <Text style={styles.autoResolveBadgeText}>{autoResolveMsg}</Text>
-            </View>
-          ) : null}
-
-          {googleMapsUrl || location.includes('http') ? (
+          {/* Action Button to trigger fetching & pinning — Hidden while loading */}
+          {!resolvingMap ? (
             <TouchableOpacity
-              style={styles.resolveBtn}
+              style={styles.fetchLocationBtn}
               onPress={onResolveMapUrl}
-              disabled={resolvingMap}
+              activeOpacity={0.8}
             >
-              <Map size={15} color={COLORS.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.resolveText}>
-                {resolvingMap ? 'Resolving Coordinates...' : 'Re-verify Map Coordinates'}
-              </Text>
+              <Compass size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.fetchLocationBtnText}>Pin Location</Text>
             </TouchableOpacity>
-          ) : null}
+          ) : (
+            /* Real-time Resolution Progress Bar Card — Rendered at place of button */
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeaderRow}>
+                <View style={styles.progressIconBox}>
+                  <Compass size={16} color={COLORS.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.progressTitle}>Fetching Real GPS Coordinates...</Text>
+                  <Text style={styles.progressSub}>Resolving live latitude & longitude from map link</Text>
+                </View>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              </View>
+              <View style={styles.progressBarTrack}>
+                <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+              </View>
+            </View>
+          )}
 
-          {(latitude !== null && longitude !== null) || (googleMapsUrl && googleMapsUrl.trim().length > 0) ? (
-            <JobLocationMapPreview
-              latitude={latitude}
-              longitude={longitude}
-              locationName={resolvedAddress || location || 'Factory Location'}
-              height={240}
-            />
-          ) : null}
+
+
+          {/* Interactive Map Preview with Real Pin — Always active and responsive in Step 2 */}
+          <JobLocationMapPreview
+            latitude={latitude}
+            longitude={longitude}
+            locationName={resolvedAddress || location || 'Factory Location'}
+            height={250}
+          />
         </View>
       </View>
     </View>
@@ -144,36 +186,88 @@ const styles = StyleSheet.create({
   cardBody: {
     gap: 12,
   },
+  progressCard: {
+    backgroundColor: '#F0F7FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 4,
+  },
+  progressHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  progressIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E40AF',
+  },
+  progressSub: {
+    fontSize: 11,
+    color: '#3B82F6',
+    marginTop: 1,
+  },
+  progressBarTrack: {
+    height: 5,
+    backgroundColor: '#DBEAFE',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 3,
+  },
   autoResolveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ECFDF5',
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  autoResolveBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '500',
-    color: '#059669',
-  },
-  resolveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    paddingHorizontal: 12,
     paddingVertical: 9,
-    backgroundColor: '#EFF6FF',
     borderRadius: 8,
     marginTop: 4,
   },
-  resolveText: {
+  autoResolveBadgeTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  autoResolveBadgeSub: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 1,
+  },
+  fetchLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 2,
+    minHeight: 46,
+  },
+  fetchLocationBtnDisabled: {
+    opacity: 0.7,
+  },
+  fetchLocationBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });

@@ -156,9 +156,28 @@ export const CandidateJobMapScreen: React.FC<{ navigation: any; route: any }> = 
         if (!match) return false;
       }
 
-      // 2. Active filters
-      if (activeFilters.industry !== 'All Industries') {
-        if ((j.industry || '').toLowerCase() !== activeFilters.industry.toLowerCase()) return false;
+      // 2. Active filters (Smart Industry Match)
+      if (activeFilters.industry && activeFilters.industry !== 'All Industries' && activeFilters.industry !== 'All') {
+        const rawInd = activeFilters.industry.toLowerCase().trim();
+        const jobInd = (j.industry || '').toLowerCase();
+        const jobTitle = (j.title || '').toLowerCase();
+        const jobTrade = (j.trade || '').toLowerCase();
+        const jobDesc = (j.description || '').toLowerCase();
+
+        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
+        const indTokens = rawInd
+          .split(/[\s&,/()]+/)
+          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+          .filter((t) => t.length >= 2);
+
+        const matchesInd =
+          directMatch ||
+          indTokens.length === 0 ||
+          indTokens.some(
+            (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
+          );
+
+        if (!matchesInd) return false;
       }
       if (activeFilters.midcZone !== 'All MIDC Zones') {
         if (!(j.location || '').toLowerCase().includes(activeFilters.midcZone.toLowerCase())) return false;

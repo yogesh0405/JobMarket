@@ -4,7 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../../api/jobsApi';
 import { useAuth } from '../../../hooks/useAuth';
-import { getRolesForIndustry, getSkillsForRole } from '../components/JobPostConstants';
+import { getRolesForIndustry, getSkillsForRole, EDUCATION_REQUIREMENT_OPTIONS } from '../components/JobPostConstants';
+import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../../utils/mapUrlParser';
 
 export const useJobPostForm = (navigation: any, route: any) => {
   const { user } = useAuth();
@@ -47,6 +48,9 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [experienceRequired, setExperienceRequired] = useState(true);
   const [minExperience, setMinExperience] = useState('');
   const [maxExperience, setMaxExperience] = useState('');
+
+  const [educationRequirement, setEducationRequirement] = useState<string>('10th Pass');
+  const [customEducation, setCustomEducation] = useState<string>('');
 
   const [discloseSalary, setDiscloseSalary] = useState(true);
   const [salaryMin, setSalaryMin] = useState('');
@@ -105,47 +109,88 @@ export const useJobPostForm = (navigation: any, route: any) => {
     return d.toISOString().split('T')[0];
   };
 
-  // Automatic Map Coordinate Resolution
-  useEffect(() => {
-    const rawTarget = (googleMapsUrl || '').trim() || (location || '').trim();
-    const isMapLink =
-      rawTarget.includes('http://') ||
-      rawTarget.includes('https://') ||
-      rawTarget.includes('maps.app.goo.gl') ||
-      rawTarget.includes('goo.gl/maps') ||
-      rawTarget.includes('google.com/maps');
-
-    if (isMapLink && rawTarget !== lastResolvedUrl.current) {
-      const timer = setTimeout(async () => {
-        lastResolvedUrl.current = rawTarget;
-        setResolvingMap(true);
-        setAutoResolveMsg('Auto-resolving map coordinates...');
-        try {
-          const res = await jobsApi.resolveMapUrl(rawTarget);
-          if (res.success && res.data) {
-            if (res.data.latitude && res.data.longitude) {
-              setLatitude(res.data.latitude);
-              setLongitude(res.data.longitude);
-            }
-            if (res.data.formattedAddress) {
-              setResolvedAddress(res.data.formattedAddress);
-            }
-            const latStr = res.data.latitude ? res.data.latitude.toFixed(4) : '';
-            const lngStr = res.data.longitude ? res.data.longitude.toFixed(4) : '';
-            setAutoResolveMsg(`Coordinates Auto-Resolved${latStr ? ` (${latStr}, ${lngStr})` : ''}`);
-          } else {
-            setAutoResolveMsg('Map link captured (Coordinates will process)');
-          }
-        } catch (e: any) {
-          setAutoResolveMsg('Map URL captured');
-        } finally {
-          setResolvingMap(false);
-        }
-      }, 500);
-
-      return () => clearTimeout(timer);
+  // Google Maps URL change handler matching Web App logic
+  const handleGoogleMapsUrlChange = async (inputUrl: string) => {
+    setGoogleMapsUrl(inputUrl);
+    const trimmed = inputUrl.trim();
+    if (!trimmed) {
+      setLatitude(null);
+      setLongitude(null);
+      setAutoResolveMsg(null);
+      return;
     }
-  }, [googleMapsUrl, location]);
+
+    // 1. Synchronous Instant Extraction (<1ms)
+    const directCoords = extractCoordinatesFromMapInput(trimmed);
+    if (directCoords) {
+      setLatitude(directCoords.latitude);
+      setLongitude(directCoords.longitude);
+      if (directCoords.formattedAddress) {
+        setResolvedAddress(directCoords.formattedAddress);
+      }
+      setAutoResolveMsg(`Coordinates Resolved (${directCoords.latitude.toFixed(4)}, ${directCoords.longitude.toFixed(4)})`);
+      return;
+    }
+
+    // 2. Asynchronous Short URL & Backend Geocoder Resolution
+    setResolvingMap(true);
+    setAutoResolveMsg('Resolving coordinates from map link...');
+
+    try {
+      const resolved = await resolveShortMapUrl(trimmed, location, midcZone);
+      if (resolved) {
+        setLatitude(resolved.latitude);
+        setLongitude(resolved.longitude);
+        if (resolved.formattedAddress) {
+          setResolvedAddress(resolved.formattedAddress);
+        }
+        setAutoResolveMsg(`Coordinates Resolved (${resolved.latitude.toFixed(4)}, ${resolved.longitude.toFixed(4)})`);
+      } else {
+        const geoFallback = await geocodeQueryOnClient(trimmed);
+        if (geoFallback) {
+          setLatitude(geoFallback.latitude);
+          setLongitude(geoFallback.longitude);
+          if (geoFallback.formattedAddress) {
+            setResolvedAddress(geoFallback.formattedAddress);
+          }
+          setAutoResolveMsg(`Coordinates Resolved (${geoFallback.latitude.toFixed(4)}, ${geoFallback.longitude.toFixed(4)})`);
+        } else if (location && location.trim()) {
+          const locGeo = await geocodeQueryOnClient(location);
+          if (locGeo) {
+            setLatitude(locGeo.latitude);
+            setLongitude(locGeo.longitude);
+            if (locGeo.formattedAddress) {
+              setResolvedAddress(locGeo.formattedAddress);
+            }
+            setAutoResolveMsg(`Location Pinned (${locGeo.latitude.toFixed(4)}, ${locGeo.longitude.toFixed(4)})`);
+          } else {
+            setAutoResolveMsg('Map link captured');
+          }
+        } else {
+          setAutoResolveMsg('Map link captured');
+        }
+      }
+    } catch (err) {
+      setAutoResolveMsg('Map link captured');
+    } finally {
+      setResolvingMap(false);
+    }
+  };
+
+  const handleLocationChange = (val: string) => {
+    setLocation(val);
+    if (!googleMapsUrl.trim()) {
+      const direct = extractCoordinatesFromMapInput(val);
+      if (direct) {
+        setLatitude(direct.latitude);
+        setLongitude(direct.longitude);
+        if (direct.formattedAddress) {
+          setResolvedAddress(direct.formattedAddress);
+        }
+        setAutoResolveMsg(`Coordinates Resolved (${direct.latitude.toFixed(4)}, ${direct.longitude.toFixed(4)})`);
+      }
+    }
+  };
 
   const handleIndustryChange = (newIndustry: string) => {
     setIndustry(newIndustry);
@@ -192,6 +237,8 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setExperienceRequired(true);
     setMinExperience('');
     setMaxExperience('');
+    setEducationRequirement('10th Pass');
+    setCustomEducation('');
     setDiscloseSalary(true);
     setSalaryMin('');
     setSalaryMax('');
@@ -259,6 +306,17 @@ export const useJobPostForm = (navigation: any, route: any) => {
               setExperienceRequired(j.experienceRequired !== false);
               setMinExperience((j.min_experience ?? j.minExperience ?? 0).toString());
               setMaxExperience((j.max_experience ?? j.maxExperience ?? 3).toString());
+              const edu = j.education_requirement || j.educationRequirement || (typeof j.education === 'string' ? j.education : '') || '10th Pass';
+              if (EDUCATION_REQUIREMENT_OPTIONS.includes(edu)) {
+                setEducationRequirement(edu);
+                setCustomEducation('');
+              } else if (edu) {
+                setEducationRequirement('Others');
+                setCustomEducation(edu);
+              } else {
+                setEducationRequirement('10th Pass');
+                setCustomEducation('');
+              }
               setDiscloseSalary(j.discloseSalary !== false);
               setSalaryMin((j.salary_min ?? j.salaryMin ?? 15000).toString());
               setSalaryMax((j.salary_max ?? j.salaryMax ?? 25000).toString());
@@ -356,29 +414,12 @@ export const useJobPostForm = (navigation: any, route: any) => {
   };
 
   const handleResolveMapUrl = async () => {
-    const targetUrl = googleMapsUrl || location;
-    if (!targetUrl || !targetUrl.includes('http')) {
-      Alert.alert('Map Resolution', 'Please enter a valid Google Maps URL first.');
+    const targetUrl = (googleMapsUrl || location || midcZone || '').trim();
+    if (!targetUrl) {
+      Alert.alert('Location Required', 'Please enter a Google Maps URL or factory address first.');
       return;
     }
-    setResolvingMap(true);
-    try {
-      const res = await jobsApi.resolveMapUrl(targetUrl);
-      if (res.success && res.data) {
-        if (res.data.latitude && res.data.longitude) {
-          setLatitude(res.data.latitude);
-          setLongitude(res.data.longitude);
-        }
-        if (res.data.formattedAddress) {
-          setResolvedAddress(res.data.formattedAddress);
-        }
-        Alert.alert('Coordinates Resolved!', `Extracted Address: ${res.data.formattedAddress || 'Latitude/Longitude saved.'}`);
-      }
-    } catch (e: any) {
-      Alert.alert('Resolution Notice', e.message || 'Could not automatically resolve coordinates.');
-    } finally {
-      setResolvingMap(false);
-    }
+    await handleGoogleMapsUrlChange(targetUrl);
   };
 
   const handleSubmitJob = async () => {
@@ -450,10 +491,18 @@ export const useJobPostForm = (navigation: any, route: any) => {
         ? 'INTERNSHIP'
         : 'FULL_TIME';
 
+    const finalEducation =
+      educationRequirement === 'Others'
+        ? customEducation.trim() || '10th Pass'
+        : educationRequirement.trim() || '10th Pass';
+
     const jobPayload: any = {
       title: finalTitle,
       trade: finalIndustry,
       industry: finalIndustry,
+      educationRequirement: finalEducation,
+      education_requirement: finalEducation,
+      education: finalEducation,
       customIndustry: industry === 'Other' ? customIndustry : undefined,
       customTitle: title === 'Other' ? customTitle : undefined,
       openings: parsedOpenings,
@@ -524,6 +573,29 @@ export const useJobPostForm = (navigation: any, route: any) => {
 
     setLoading(true);
     try {
+      const navigateToManageJobs = () => {
+        try {
+          if (typeof navigation.navigate === 'function') {
+            navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+            return;
+          }
+        } catch (e) {}
+
+        try {
+          if (typeof navigation.reset === 'function') {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'EmployerMain', params: { screen: 'ManageJobsTab' } }],
+            });
+            return;
+          }
+        } catch (e) {}
+
+        if (typeof navigation.goBack === 'function' && navigation.canGoBack?.()) {
+          navigation.goBack();
+        }
+      };
+
       if (isEdit && editJobId) {
         const res = await jobsApi.updateJob(editJobId, jobPayload);
         setLoading(false);
@@ -531,17 +603,11 @@ export const useJobPostForm = (navigation: any, route: any) => {
           isSubmittedRef.current = true;
           Alert.alert(
             'Job Listing Updated',
-            `Your updated job posting for "${finalTitle}" has been submitted for approval. It will go live once approved by the JobMarket team.`,
+            `Your updated job posting for "${finalTitle}" has been submitted for admin approval. It will go live once approved by the JobMarket team.`,
             [
               {
-                text: 'View Manage Jobs',
-                onPress: () => {
-                  if (typeof navigation.navigate === 'function') {
-                    navigation.navigate('ManageJobsTab');
-                  } else if (navigation.goBack) {
-                    navigation.goBack();
-                  }
-                },
+                text: 'Manage Jobs',
+                onPress: navigateToManageJobs,
               },
             ]
           );
@@ -555,21 +621,17 @@ export const useJobPostForm = (navigation: any, route: any) => {
           isSubmittedRef.current = true;
           resetForm();
           Alert.alert(
-            'Job Posted Successfully',
-            `Your job post "${finalTitle}" has been sent for approval. It will go live once approved by the JobMarket team.`,
+            'Job Submitted for Admin Approval',
+            `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
             [
               {
-                text: 'View Manage Jobs',
-                onPress: () => {
-                  if (typeof navigation.navigate === 'function') {
-                    navigation.navigate('ManageJobsTab');
-                  }
-                },
+                text: 'Manage Jobs',
+                onPress: navigateToManageJobs,
               },
             ]
           );
         } else {
-          setError(res.message || 'Failed to publish job post');
+          setError(res.message || 'Failed to create job posting');
         }
       }
     } catch (err: any) {
@@ -606,21 +668,30 @@ export const useJobPostForm = (navigation: any, route: any) => {
     customMidcZone,
     setCustomMidcZone,
     location,
-    setLocation,
+    setLocation: handleLocationChange,
     googleMapsUrl,
-    setGoogleMapsUrl,
-    autoResolveMsg,
-    resolvingMap,
-    handleResolveMapUrl,
+    setGoogleMapsUrl: handleGoogleMapsUrlChange,
+    handleGoogleMapsUrlChange,
+    handleLocationChange,
     latitude,
+    setLatitude,
     longitude,
+    setLongitude,
     resolvedAddress,
+    setResolvedAddress,
+    autoResolveMsg,
+    handleResolveMapUrl,
+    resolvingMap,
     experienceRequired,
     setExperienceRequired,
     minExperience,
     setMinExperience,
     maxExperience,
     setMaxExperience,
+    educationRequirement,
+    setEducationRequirement,
+    customEducation,
+    setCustomEducation,
     discloseSalary,
     setDiscloseSalary,
     salaryMin,

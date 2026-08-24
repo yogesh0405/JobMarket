@@ -80,10 +80,23 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const sessionId = await getSessionId();
   const storedUser = await getStoredUser();
 
+  let dynamicDeviceName = 'Android Mobile';
+  if (Platform.OS === 'android') {
+    const constants = Platform.constants as any;
+    const brand = (constants?.Brand || constants?.Manufacturer || 'Android').toUpperCase();
+    const model = constants?.Model || 'Phone';
+    dynamicDeviceName = `${brand} ${model}`;
+  } else if (Platform.OS === 'ios') {
+    dynamicDeviceName = 'iPhone';
+  }
+
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     'User-Agent': MOBILE_USER_AGENT,
+    'x-device-type': Platform.OS === 'ios' ? 'iOS' : 'Android',
+    'x-device-name': dynamicDeviceName,
+    'x-client-platform': 'mobile-app',
     ...(options.headers as Record<string, string>),
   };
 

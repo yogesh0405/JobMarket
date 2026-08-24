@@ -12,15 +12,38 @@ interface JobLocationMapPreviewProps {
 }
 
 export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
-  latitude = 19.8762,
-  longitude = 75.3433,
+  latitude,
+  longitude,
   locationName = 'Industrial Job Location',
   height = 240,
 }) => {
   const webViewRef = useRef<WebView | null>(null);
 
-  const lat = latitude || 19.8762;
-  const lng = longitude || 75.3433;
+  const hasValidCoords =
+    latitude !== null &&
+    latitude !== undefined &&
+    longitude !== null &&
+    longitude !== undefined &&
+    !isNaN(latitude) &&
+    !isNaN(longitude) &&
+    !(latitude === 0 && longitude === 0);
+
+  if (!hasValidCoords) {
+    return (
+      <View style={[styles.cardContainer, styles.placeholderContainer, { minHeight: 140 }]}>
+        <View style={styles.placeholderIconBox}>
+          <MapPin size={24} color="#64748B" />
+        </View>
+        <Text style={styles.placeholderTitle}>Real Location Pin Preview</Text>
+        <Text style={styles.placeholderSub}>
+          Enter address or Google Maps URL and tap "Fetch & Pin Map Location" to display the live GPS pin.
+        </Text>
+      </View>
+    );
+  }
+
+  const lat = latitude;
+  const lng = longitude;
 
   const handleOpenGoogleMaps = () => {
     const queryStr = locationName ? `${locationName}, ${lat},${lng}` : `${lat},${lng}`;
@@ -42,13 +65,19 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <style>
-          html, body, #map {
+          html, body {
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
             background: #e2e8f0;
-            cursor: pointer;
+          }
+          #map {
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            background: #e2e8f0;
           }
           .custom-pin-marker {
             display: flex;
@@ -73,10 +102,14 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
             touchZoom: true
           });
 
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap',
             maxZoom: 19
           }).addTo(map);
+
+          setTimeout(function() {
+            map.invalidateSize();
+          }, 300);
 
           const svgPin = \`
             <svg width="34" height="44" viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -158,11 +191,13 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         <WebView
           ref={webViewRef}
           originWhitelist={['*']}
-          source={{ html: mapHtml }}
+          source={{ html: mapHtml, baseUrl: 'https://unpkg.com' }}
           style={{ flex: 1 }}
           scrollEnabled={false}
-          javaScriptEnabled
-          domStorageEnabled
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          mixedContentMode="always"
+          androidLayerType="hardware"
           onMessage={(event) => {
             if (event.nativeEvent.data === 'openMaps') {
               handleOpenGoogleMaps();
@@ -269,5 +304,36 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  placeholderContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8FAFC',
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+  },
+  placeholderIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  placeholderTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  placeholderSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    textAlign: 'center',
+    maxWidth: 280,
+    lineHeight: 16,
   },
 });

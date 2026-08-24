@@ -28,7 +28,7 @@ export class TokenService {
         throw new UnauthorizedError('User not found');
       }
       
-      const { accessToken, refreshToken } = generateTokens({ userId: payload.userId, role: payload.role });
+      const { accessToken, refreshToken } = generateTokens({ userId: payload.userId, role: payload.role, sessionId: session.id });
       const newRefreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
       // Update current active session with new refresh token hash and extend expiration date by 7 days

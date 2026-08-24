@@ -87,7 +87,16 @@ export const useJobs = () => {
       const industries = filters.industry.toLowerCase().split(',').map(i => i.trim()).filter(Boolean);
       jobs = jobs.filter(j => {
         const jInd = (j.industry || (j as any).industryType || j.trade || j.title || '').toLowerCase();
-        return industries.some(ind => jInd.includes(ind) || ind.includes(jInd));
+        const jDesc = (j.description || '').toLowerCase();
+
+        return industries.some(ind => {
+          if (!ind || ind === 'all' || ind === 'all industries') return true;
+          if (jInd.includes(ind) || ind.includes(jInd)) return true;
+
+          // Tokenize and stem key words (e.g. electricals -> electric, manufacturing -> manufactur, textiles -> textil)
+          const tokens = ind.split(/[\s&,/()]+/).map(t => t.replace(/(s|ing|als|ics)$/, '')).filter(t => t.length >= 3);
+          return tokens.length > 0 && tokens.some(t => jInd.includes(t) || jDesc.includes(t));
+        });
       });
     }
 

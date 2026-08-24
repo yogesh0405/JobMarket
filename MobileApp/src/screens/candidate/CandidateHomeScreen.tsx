@@ -293,6 +293,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     const cleanKw = keyword.replace(/^\d+\.\s*/, '').toLowerCase().trim();
     if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs.length;
 
+    const tokens = cleanKw
+      .split(/[\s&,/()]+/)
+      .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+      .filter((t) => t.length >= 2);
+
     return jobs.filter((j) => {
       const title = (j.title || '').toLowerCase();
       const trade = (j.trade || '').toLowerCase();
@@ -300,13 +305,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       const desc = (j.description || '').toLowerCase();
       const category = ((j as any).category || '').toLowerCase();
 
-      return (
+      const direct =
         title.includes(cleanKw) ||
         trade.includes(cleanKw) ||
         industry.includes(cleanKw) ||
         category.includes(cleanKw) ||
-        desc.includes(cleanKw)
-      );
+        desc.includes(cleanKw);
+
+      return direct || (tokens.length > 0 && tokens.some((t) => title.includes(t) || trade.includes(t) || industry.includes(t) || desc.includes(t)));
     }).length;
   }, [jobs]);
 
@@ -325,6 +331,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     const cleanKw = rawKw.replace(/^\d+\.\s*/, '').toLowerCase().trim();
     if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs;
 
+    const tokens = cleanKw
+      .split(/[\s&,/()]+/)
+      .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+      .filter((t) => t.length >= 2);
+
     return jobs.filter((j) => {
       const title = (j.title || '').toLowerCase();
       const trade = (j.trade || '').toLowerCase();
@@ -332,13 +343,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       const desc = (j.description || '').toLowerCase();
       const category = ((j as any).category || '').toLowerCase();
 
-      return (
+      const direct =
         title.includes(cleanKw) ||
         trade.includes(cleanKw) ||
         industry.includes(cleanKw) ||
         category.includes(cleanKw) ||
-        desc.includes(cleanKw)
-      );
+        desc.includes(cleanKw);
+
+      return direct || (tokens.length > 0 && tokens.some((t) => title.includes(t) || trade.includes(t) || industry.includes(t) || desc.includes(t)));
     });
   }, [jobs, activeRoleTab, roleTabsList]);
 

@@ -71,6 +71,12 @@ export const authApi = {
     });
   },
 
+  logoutAll: async (): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/auth/logout-all', {
+      method: 'POST',
+    });
+  },
+
   toggle2FA: async (enabled?: boolean): Promise<ApiResponse> => {
     return apiFetch('/api/v1/auth/2fa/toggle', {
       method: 'POST',

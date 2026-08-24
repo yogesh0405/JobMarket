@@ -75,7 +75,8 @@ export class UserRepository {
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
                trade_specialization, status, created_at, updated_at, headline, location, bio, midc_zone, skills, 
                preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url,
-               COALESCE(is_resume_public, true) as is_resume_public 
+               COALESCE(is_resume_public, true) as is_resume_public,
+               COALESCE(is_two_factor_enabled, false) as is_two_factor_enabled
         FROM users 
         WHERE id = $1;
       `;

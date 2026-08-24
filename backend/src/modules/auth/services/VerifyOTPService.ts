@@ -55,13 +55,18 @@ export class VerifyOTPService {
 
       // Create Session
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
+      const effectiveIp = ipAddress || payload.ipAddress || '127.0.0.1';
+      const effectiveUa = userAgent || payload.userAgent || '';
+      const { detectDeviceFromHeaders } = await import('../../../utils/deviceDetector');
+      const detected = detectDeviceFromHeaders(effectiveUa, effectiveIp);
+
       const session = await SessionRepository.createSession(
         newUser.id, 
         'temp_hash', 
         expiresAt, 
-        ipAddress || payload.ipAddress, 
-        userAgent || payload.userAgent, 
-        'Web',
+        detected.ipAddress, 
+        effectiveUa, 
+        detected.deviceName,
         client
       );
 

@@ -150,24 +150,20 @@ export const SecuritySettings: React.FC = () => {
         if (!isMounted) return;
         if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
           const mapped: SessionItem[] = json.data.map((s: any, idx: number) => {
-            const isCurrent = Boolean(s.isCurrent || (currentSessionId && s.id === currentSessionId) || idx === 0);
-            const devInfo = isCurrent ? clientInfo : {
-              browser: s.browser || 'Browser',
-              os: s.os || 'Desktop',
-              type: (s.deviceType || s.os || '').toLowerCase().includes('mobile') || (s.os || '').toLowerCase().includes('android') || (s.os || '').toLowerCase().includes('ios') ? ('mobile' as const) : ('desktop' as const),
-              deviceName: s.deviceName || `${s.os || 'Desktop'} (${s.browser || 'Browser'})`,
-              location: s.location || 'Maharashtra, India'
-            };
+            const isCurrent = Boolean(s.isCurrent || s.is_current || (currentSessionId && s.id === currentSessionId));
+            const devType = (s.deviceType || s.device_type || s.os || '').toLowerCase();
+            const isMob = devType.includes('mobile') || (s.os || '').toLowerCase().includes('android') || (s.os || '').toLowerCase().includes('ios');
+            const dName = s.deviceName || s.device_name || `${s.os || 'Device'} (${s.browser || 'Browser'})`;
 
             return {
               id: s.id || `sess-${idx}`,
-              device: devInfo.deviceName,
-              browser: devInfo.browser,
-              location: devInfo.location,
-              ip: s.ipAddress || '127.0.0.1',
+              device: dName,
+              browser: s.browser || (isMob ? 'Mobile App / Browser' : 'Web Browser'),
+              location: s.location || 'Maharashtra, India',
+              ip: s.ipAddress || s.ip_address || '127.0.0.1',
               lastActive: isCurrent ? 'Active now' : (s.lastUsedAt ? new Date(s.lastUsedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Recently active'),
               isCurrent,
-              type: devInfo.type
+              type: isMob ? ('mobile' as const) : ('desktop' as const)
             };
           });
 

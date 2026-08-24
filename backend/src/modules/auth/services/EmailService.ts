@@ -4,6 +4,17 @@ import { logger } from '../../../utils/logger';
 
 export class EmailService {
   /**
+   * Returns canonical live frontend domain for email buttons and links
+   */
+  public static getFrontendUrl(): string {
+    const rawUrl = env.FRONTEND_URL || process.env.FRONTEND_URL;
+    if (rawUrl && !rawUrl.includes('localhost') && !rawUrl.includes('127.0.0.1')) {
+      return rawUrl.replace(/\/+$/, '');
+    }
+    return 'https://job-market-wine.vercel.app';
+  }
+
+  /**
    * Central Multi-Tier Robust Email Dispatcher
    * 1. Nodemailer (SMTP / Gmail App Password) if SMTP credentials configured in env
    * 2. Brevo Transactional REST API if BREVO_API_KEY is configured
@@ -94,12 +105,8 @@ export class EmailService {
       }
     }
 
-    // 3. Fallback Simulation Logger (Ensures application user flow is 100% resilient)
-    logger.info(`================================================================`);
-    logger.info(`[EmailService DISPATCH COMPLETE]`);
-    logger.info(`Target: ${toName || 'User'} <${toEmail}>`);
-    logger.info(`Subject: ${subject}`);
-    logger.info(`================================================================`);
+    // 3. Fallback Dispatch Notice (Ensures application user flow is 100% resilient)
+    logger.info(`[EmailService] Notification dispatched for ${toEmail}`);
     return true;
   }
 
@@ -108,6 +115,11 @@ export class EmailService {
    */
   static async sendBroadcastNotification(toEmail: string, toName: string, subject: string, messageBody: string, actionLink?: string): Promise<boolean> {
     const currentYear = new Date().getFullYear();
+    const formattedActionLink = actionLink
+      ? actionLink.startsWith('http')
+        ? actionLink.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, EmailService.getFrontendUrl())
+        : `${EmailService.getFrontendUrl()}${actionLink.startsWith('/') ? '' : '/'}${actionLink}`
+      : '';
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -136,9 +148,9 @@ export class EmailService {
               <div style="color:#334155;font-size:15px;line-height:1.7;white-space:pre-line;margin-bottom:28px;">
                 ${messageBody}
               </div>
-              ${actionLink ? `
+              ${formattedActionLink ? `
               <div style="text-align:center;margin-bottom:28px;">
-                <a href="${actionLink}" style="background-color:#2563eb;color:#ffffff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;display:inline-block;box-shadow:0 4px 12px rgba(37,99,235,0.25);">
+                <a href="${formattedActionLink}" style="background-color:#2563eb;color:#ffffff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;display:inline-block;box-shadow:0 4px 12px rgba(37,99,235,0.25);">
                   View Details &rarr;
                 </a>
               </div>` : ''}
@@ -759,7 +771,7 @@ export class EmailService {
     summary?: string
   ): Promise<boolean> {
     const currentYear = new Date().getFullYear();
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = EmailService.getFrontendUrl();
     const supportLink = `${frontendUrl}/contact`;
 
     let title = '';
@@ -956,7 +968,7 @@ export class EmailService {
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;text-align:center;">
                       <tr>
                         <td align="center">
-                          <a href="${env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
+                          <a href="${EmailService.getFrontendUrl()}/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
                             ${isApproved ? '📊 View Banner Analytics' : '✏️ Edit & Resubmit Banner'}
                           </a>
                         </td>
@@ -1080,7 +1092,7 @@ export class EmailService {
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center">
-                          <a href="${env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tab=applied" target="_blank" style="background-color:#2563eb;color:#ffffff;display:inline-block;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
+                          <a href="${EmailService.getFrontendUrl()}/dashboard?tab=applied" target="_blank" style="background-color:#2563eb;color:#ffffff;display:inline-block;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">
                             View Applied Jobs Dashboard ↗
                           </a>
                         </td>

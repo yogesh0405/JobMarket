@@ -33,7 +33,15 @@ export function isRoleCompatible(userRole: string, requestedRole?: string): bool
 }
 
 export class LoginService {
-  static async execute(email: string, passwordPlain: string, role?: string, ipAddress?: string, userAgent?: string) {
+  static async execute(
+    email: string,
+    passwordPlain: string,
+    role?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    customDeviceName?: string,
+    reqHeaders?: any
+  ) {
     const normalizedEmail = email.toLowerCase().trim();
     
     const user = await UserRepository.findByEmail(normalizedEmail);
@@ -51,7 +59,6 @@ export class LoginService {
 
     const isPasswordValid = await bcrypt.compare(passwordPlain, user.password_hash);
     if (!isPasswordValid) {
-      // Typically we'd log failed attempts to Redis here
       await AuditRepository.logAction('LOGIN_FAILED', user.id, 'Auth', ipAddress, userAgent);
       throw new UnauthorizedError('Invalid email or password');
     }
@@ -69,12 +76,11 @@ export class LoginService {
         attempts: 0
       }));
 
-      console.log('\n=========================================\n🛡️ 2FA LOGIN VERIFICATION CODE FOR', user.email, ':', otpCode, '\n=========================================\n');
-
       await EmailService.send2FAOTP(user.email, otpCode, user.name);
 
       return {
         require2FA: true,
+        requires2FA: true,
         mfaToken,
         email: user.email,
         message: 'Two-Factor Authentication (2FA) is enabled for your account. Please enter the 6-digit code sent to your email.'
@@ -86,13 +92,16 @@ export class LoginService {
       await client.query('BEGIN');
 
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
+      const { detectDeviceFromHeaders } = await import('../../../utils/deviceDetector');
+      const detected = detectDeviceFromHeaders(userAgent, ipAddress, customDeviceName, reqHeaders);
+
       const session = await SessionRepository.createSession(
         user.id, 
         'temp_hash', 
         expiresAt, 
-        ipAddress, 
+        detected.ipAddress, 
         userAgent, 
-        'Web',
+        detected.deviceName,
         client
       );
 

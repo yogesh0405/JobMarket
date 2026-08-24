@@ -9,6 +9,17 @@ export const INDUSTRY_LIST = [
   'Services & General Engineering',
 ];
 
+export const EDUCATION_REQUIREMENT_OPTIONS = [
+  '10th Pass',
+  '12th Pass',
+  'ITI',
+  'Diploma',
+  'Graduate',
+  "Post Graduate / Master's",
+  'Doctorate / PhD',
+  'Others',
+];
+
 export const INDUSTRY_ROLE_MAPPINGS: Record<string, string[]> = {
   'Automotive & Auto Components': [
     'Assembly Line Operator',

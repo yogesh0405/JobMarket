@@ -103,10 +103,25 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
         if (!matchesText) return false;
       }
 
-      // 2. Industry Filter
-      if (activeFilters.industry !== 'All Industries') {
-        const ind = j.industry || (j as any).category || '';
-        if (ind !== activeFilters.industry) return false;
+      // 2. Industry Filter (Smart Matching)
+      if (activeFilters.industry && activeFilters.industry !== 'All Industries' && activeFilters.industry !== 'All') {
+        const rawInd = activeFilters.industry.toLowerCase().trim();
+        const jobInd = (j.industry || (j as any).category || '').toLowerCase();
+        const jobTitle = (j.title || '').toLowerCase();
+        const jobTrade = (j.trade || '').toLowerCase();
+
+        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
+        const indTokens = rawInd
+          .split(/[\s&,/()]+/)
+          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+          .filter((t) => t.length >= 2);
+
+        const matchesInd =
+          directMatch ||
+          indTokens.length === 0 ||
+          indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t));
+
+        if (!matchesInd) return false;
       }
 
       // 3. MIDC Zone Filter
@@ -147,9 +162,24 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
           const industry = (j.industry || (j as any).category || '').toLowerCase();
           if (!title.includes(q) && !company.includes(q) && !location.includes(q) && !industry.includes(q)) return false;
         }
-        if (draftFilters.industry !== 'All Industries') {
-          const ind = j.industry || (j as any).category || '';
-          if (ind !== draftFilters.industry) return false;
+        if (draftFilters.industry && draftFilters.industry !== 'All Industries' && draftFilters.industry !== 'All') {
+          const rawInd = draftFilters.industry.toLowerCase().trim();
+          const jobInd = (j.industry || (j as any).category || '').toLowerCase();
+          const jobTitle = (j.title || '').toLowerCase();
+          const jobTrade = (j.trade || '').toLowerCase();
+
+          const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
+          const indTokens = rawInd
+            .split(/[\s&,/()]+/)
+            .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+            .filter((t) => t.length >= 2);
+
+          const matchesInd =
+            directMatch ||
+            indTokens.length === 0 ||
+            indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t));
+
+          if (!matchesInd) return false;
         }
         if (draftFilters.midcZone !== 'All MIDC Zones') {
           const zone = (j as any).midcZone || j.midc_zone || j.location || '';

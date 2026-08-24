@@ -7,8 +7,10 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { Briefcase, IndianRupee, Clock, Sun, Moon, RotateCw } from 'lucide-react-native';
+import { Briefcase, IndianRupee, Clock, Sun, Moon, RotateCw, GraduationCap } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
+import { SelectDropdown } from '../../../components/common/SelectDropdown';
+import { EDUCATION_REQUIREMENT_OPTIONS } from './JobPostConstants';
 import { COLORS, SPACING } from '../../../constants/theme';
 
 interface JobPostStep3WorkPayProps {
@@ -18,6 +20,10 @@ interface JobPostStep3WorkPayProps {
   setMinExperience: (val: string) => void;
   maxExperience: string;
   setMaxExperience: (val: string) => void;
+  educationRequirement: string;
+  setEducationRequirement: (val: string) => void;
+  customEducation: string;
+  setCustomEducation: (val: string) => void;
   discloseSalary: boolean;
   setDiscloseSalary: (val: boolean) => void;
   salaryMin: string;
@@ -55,6 +61,10 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
   setMinExperience,
   maxExperience,
   setMaxExperience,
+  educationRequirement,
+  setEducationRequirement,
+  customEducation,
+  setCustomEducation,
   discloseSalary,
   setDiscloseSalary,
   salaryMin,
@@ -127,6 +137,32 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
               </View>
             </View>
           ) : null}
+
+          {/* Education Qualification Requirement */}
+          <View style={{ marginTop: SPACING.md }}>
+            <SelectDropdown
+              label="Education Qualification Requirement"
+              required
+              placeholder="Select Minimum Education..."
+              value={educationRequirement}
+              options={EDUCATION_REQUIREMENT_OPTIONS}
+              onSelect={(val) => {
+                setEducationRequirement(val);
+                if (val !== 'Others') setCustomEducation('');
+              }}
+              triggerStyle={{ borderRadius: 8 }}
+            />
+
+            {educationRequirement === 'Others' ? (
+              <Input
+                placeholder="Enter custom qualification (e.g. B.Tech Mechanical, CA, 8th Pass)"
+                value={customEducation}
+                onChangeText={setCustomEducation}
+                inputContainerStyle={{ borderRadius: 8 }}
+                style={{ marginTop: -SPACING.xs }}
+              />
+            ) : null}
+          </View>
 
           <View style={[styles.switchHeaderRow, { marginTop: SPACING.md }]}>
             <Text style={styles.fieldLabel}>Disclose Monthly Salary Range to Candidates</Text>

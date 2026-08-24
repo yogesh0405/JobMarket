@@ -255,18 +255,26 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
       if (!catMatch) return false;
 
-      // 3. Industry Filter Match (Token Matching)
+      // 3. Industry Filter Match (Smart Token & Stemming Match)
       if (activeFilters.industry && activeFilters.industry !== 'All Industries') {
-        const rawInd = activeFilters.industry.toLowerCase();
-        const indTokens = rawInd.split(/[\s&,/()]+/).filter((t) => t.length > 3);
+        const rawInd = activeFilters.industry.toLowerCase().trim();
         const jobInd = (job.industry || '').toLowerCase();
         const jobTitle = (job.title || '').toLowerCase();
         const jobTrade = (job.trade || '').toLowerCase();
         const jobDesc = (job.description || '').toLowerCase();
 
-        const matchesInd = indTokens.length === 0 || indTokens.some(
-          (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
-        );
+        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
+        const indTokens = rawInd
+          .split(/[\s&,/()]+/)
+          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
+          .filter((t) => t.length >= 2);
+
+        const matchesInd =
+          directMatch ||
+          indTokens.length === 0 ||
+          indTokens.some(
+            (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
+          );
 
         if (!matchesInd) return false;
       }
@@ -309,15 +317,16 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const getMatchingCountForDraft = useCallback(
     (draftFilters: FilterOptions) => {
+      const q = searchQuery.toLowerCase().trim();
       return jobs.filter((job) => {
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
+        if (q) {
           const title = (job.title || '').toLowerCase();
           const company = (job.company || '').toLowerCase();
           const location = (job.location || '').toLowerCase();
           const trade = (job.trade || '').toLowerCase();
           const industry = (job.industry || '').toLowerCase();
           const desc = (job.description || '').toLowerCase();
+
           const matchesQuery = title.includes(q) || company.includes(q) || location.includes(q) || trade.includes(q) || industry.includes(q) || desc.includes(q);
           if (!matchesQuery) return false;
         }
@@ -331,19 +340,31 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         if (!catMatch) return false;
 
         if (draftFilters.industry && draftFilters.industry !== 'All Industries') {
-          const rawInd = draftFilters.industry.toLowerCase();
-          const indTokens = rawInd.split(/[\s&,/()]+/).filter((t) => t.length > 3);
+          const rawInd = draftFilters.industry.toLowerCase().trim();
           const jobInd = (job.industry || '').toLowerCase();
           const jobTitle = (job.title || '').toLowerCase();
-          const matchesInd = indTokens.length === 0 || indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t));
+          const jobTrade = (job.trade || '').toLowerCase();
+          const jobDesc = (job.description || '').toLowerCase();
+
+          const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
+          const indTokens = rawInd
+            .split(/[\s&,/()]+/)
+            .map((t: string) => t.replace(/(s|ing|als|ics)$/, ''))
+            .filter((t: string) => t.length >= 2);
+
+          const matchesInd =
+            directMatch ||
+            indTokens.length === 0 ||
+            indTokens.some((t: string) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
+
           if (!matchesInd) return false;
         }
 
         if (draftFilters.midcZone && draftFilters.midcZone !== 'All MIDC Zones') {
           const rawZone = draftFilters.midcZone.toLowerCase();
-          const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
+          const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t: string) => t.length > 2 && t !== 'midc' && t !== 'zone');
           const jobLoc = (job.location || '').toLowerCase();
-          const matchesZone = zoneTokens.length === 0 || zoneTokens.some((t) => jobLoc.includes(t));
+          const matchesZone = zoneTokens.length === 0 || zoneTokens.some((t: string) => jobLoc.includes(t));
           if (!matchesZone) return false;
         }
 

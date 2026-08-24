@@ -242,6 +242,10 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             setMinExperience={form.setMinExperience}
             maxExperience={form.maxExperience}
             setMaxExperience={form.setMaxExperience}
+            educationRequirement={form.educationRequirement}
+            setEducationRequirement={form.setEducationRequirement}
+            customEducation={form.customEducation}
+            setCustomEducation={form.setCustomEducation}
             discloseSalary={form.discloseSalary}
             setDiscloseSalary={form.setDiscloseSalary}
             salaryMin={form.salaryMin}

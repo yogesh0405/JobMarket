@@ -87,6 +87,26 @@ export class JobController {
       }
 
       const data = await JobRepository.createJob(employerId, companyName, jobData);
+
+      // Trigger In-App Notification for Employer
+      (async () => {
+        try {
+          const { NotificationService } = await import('../../../../src/modules/notifications/services/NotificationService');
+          await NotificationService.sendNotification(
+            employerId,
+            'Job Submitted for Admin Approval',
+            `Your job post "${data.title}" has been submitted for admin approval. It will go live once approved by the JobMarket team.`,
+            'JOB_APPROVAL',
+            '/dashboard?tab=manage',
+            'JOB',
+            data.id,
+            { jobId: data.id, title: data.title }
+          );
+        } catch (notifErr) {
+          // Non-blocking notification dispatch
+        }
+      })();
+
       res.status(201).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -214,14 +234,87 @@ export class JobController {
 
   static async resolveMapUrl(req: any, res: Response, next: NextFunction) {
     try {
-      const { url } = req.body;
-      if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL parameter is required' });
-      const { extractCoordinatesFromText } = await import('../../../../src/utils/coordinateExtractor');
-      const extracted = extractCoordinatesFromText(url);
-      if (extracted) {
-        return res.status(200).json({ success: true, latitude: extracted.latitude, longitude: extracted.longitude });
+      const { url, city, location, midcZone } = req.body;
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL parameter is required' });
       }
-      return res.status(404).json({ success: false, error: 'Could not extract coordinates' });
+
+      const inputUrl = url.trim();
+      const { extractCoordinatesFromText, geocodeLocationText } = await import('../../../../src/utils/coordinateExtractor');
+
+      // 1. Instant extraction (<1ms) if coordinates or known industrial hub are directly in the string
+      let extracted = extractCoordinatesFromText(inputUrl);
+      if (extracted) {
+        return res.status(200).json({
+          success: true,
+          latitude: extracted.latitude,
+          longitude: extracted.longitude,
+          accuracy: extracted.accuracy,
+          formattedAddress: (extracted as any).formattedAddress || undefined,
+        });
+      }
+
+      // 2. Fast Single-Shot Redirect Follow with 2.5s Strict Timeout for shortened Google Maps links
+      if (inputUrl.includes('goo.gl') || inputUrl.includes('maps.app') || inputUrl.includes('google.com/maps') || inputUrl.includes('http')) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+          const response = await fetch(inputUrl, {
+            method: 'GET',
+            redirect: 'follow',
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            },
+          });
+          clearTimeout(timeoutId);
+
+          // Check final destination URL
+          if (response.url) {
+            extracted = extractCoordinatesFromText(response.url);
+          }
+
+          // If not in final URL, read first 30KB chunk of HTML
+          if (!extracted && response.ok) {
+            const htmlText = await response.text();
+            extracted = extractCoordinatesFromText(htmlText.slice(0, 30000));
+          }
+        } catch (fetchErr: any) {
+          // Timeout or network notice
+        }
+      }
+
+      // 3. Instant Fallback against location text / city / midcZone
+      if (!extracted) {
+        const fallbacks = [location, midcZone, city].filter(Boolean);
+        for (const text of fallbacks) {
+          extracted = extractCoordinatesFromText(text);
+          if (extracted) break;
+        }
+      }
+
+      // 4. Client/Server Geocoder fallback (Max 1.5s timeout)
+      if (!extracted) {
+        const searchTarget = location || city || midcZone || inputUrl;
+        extracted = await geocodeLocationText(searchTarget);
+      }
+
+      if (extracted) {
+        return res.status(200).json({
+          success: true,
+          latitude: extracted.latitude,
+          longitude: extracted.longitude,
+          accuracy: extracted.accuracy,
+          formattedAddress: (extracted as any).formattedAddress || undefined,
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        error: 'Could not extract coordinates from the provided Google Maps link',
+      });
     } catch (error) {
       next(error);
     }

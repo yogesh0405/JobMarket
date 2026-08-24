@@ -32,7 +32,7 @@ interface Props {
 
 export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -60,10 +60,14 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [otpError, setOtpError] = useState<string | null>(null);
 
   const handleOpenResetConfirm = () => {
-    const targetEmail = user?.email || 'yogeshdand04@gmail.com';
+    const targetEmail = user?.email || resetEmail;
+    if (!targetEmail) {
+      Alert.alert('Notice', 'No registered email found for this account.');
+      return;
+    }
     Alert.alert(
       'Request Password Reset',
-      `A 6-digit verification OTP code will be sent to your email address:\n\n${targetEmail}\n\nDo you want to proceed?`,
+      `A 6-digit verification OTP code will be sent to your registered email:\n\n${targetEmail}\n\nDo you want to proceed?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -87,59 +91,35 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const detectRealTimeDeviceSession = async () => {
-    let deviceName = 'Android / Desktop Workstation';
-    let osName = 'Android OS';
-    let ipAddress = '103.195.202.14';
-    let deviceType = Platform.OS === 'web' ? 'Desktop' : 'Mobile';
-
-    if (Platform.OS === 'android') {
-      const constants = Platform.constants as any;
-      const brand = (constants?.Brand || constants?.Manufacturer || 'Android').toUpperCase();
-      const model = constants?.Model || 'Handset';
-      deviceName = `${brand} ${model}`;
-      osName = `Android ${constants?.Release || ''}`.trim();
-    } else if (Platform.OS === 'ios') {
-      deviceName = 'iPhone Client';
-      osName = 'iOS Operating System';
-    }
-
+    setSessionsLoading(true);
     try {
       const serverRes = await authApi.getSessions();
-      if (serverRes.success && Array.isArray(serverRes.data) && serverRes.data.length > 0) {
+      if (serverRes.success && Array.isArray(serverRes.data)) {
         setSessions(serverRes.data);
       } else {
-        setSessions([
-          {
-            id: 'current-active-session-1',
-            device_name: deviceName,
-            deviceName: deviceName,
-            device_type: deviceType,
-            deviceType: deviceType,
-            os: osName,
-            ip_address: ipAddress,
-            is_current: true,
-          },
-        ]);
+        setSessions([]);
       }
     } catch (e) {
-      setSessions([
-        {
-          id: 'current-active-session-1',
-          device_name: deviceName,
-          deviceName: deviceName,
-          device_type: deviceType,
-          deviceType: deviceType,
-          os: osName,
-          ip_address: ipAddress,
-          is_current: true,
-        },
-      ]);
+      console.warn('Error fetching real-time sessions:', e);
+      setSessions([]);
     } finally {
       setSessionsLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. Fetch live 2FA and profile settings from backend
+    authApi.getProfile().then((res) => {
+      if (res.success && res.data) {
+        const u = (res.data as any).user || res.data;
+        const is2FA = Boolean(u.is_two_factor_enabled || u.two_factor_enabled || u.twoFactorEnabled);
+        setTwoFactorEnabled(is2FA);
+        if (u.email) setResetEmail(u.email);
+        refreshUser().catch(() => {});
+      }
+    }).catch(() => {});
+
+    // 2. Fetch live active sessions from backend
     detectRealTimeDeviceSession();
   }, []);
 
@@ -166,17 +146,48 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
+  const [isTerminatingOtherSessions, setIsTerminatingOtherSessions] = useState(false);
+
+  const handleTerminateOtherSessions = () => {
+    Alert.alert(
+      'Logout All Other Devices',
+      'Are you sure you want to terminate all other active login sessions? You will remain signed in on this device.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout Others',
+          style: 'destructive',
+          onPress: async () => {
+            setIsTerminatingOtherSessions(true);
+            try {
+              await authApi.logoutAll();
+              setSessions((prev) => prev.filter((s) => s.isCurrent || s.is_current));
+              Alert.alert('Success', 'All other device sessions have been terminated.');
+            } catch (e: any) {
+              Alert.alert('Notice', e?.message || 'Could not terminate other sessions.');
+            } finally {
+              setIsTerminatingOtherSessions(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleToggle2FA = async (nextVal: boolean) => {
     const previousVal = twoFactorEnabled;
     setTwoFactorEnabled(nextVal);
 
     try {
       const res = await authApi.toggle2FA(nextVal);
-      if (res && !res.success) {
+      if (res && res.success) {
+        const serverState = Boolean((res as any).isTwoFactorEnabled ?? (res as any).is_two_factor_enabled ?? nextVal);
+        setTwoFactorEnabled(serverState);
+        await refreshUser();
+        Alert.alert('2FA Protection Updated', `Two-Factor Authentication is now ${serverState ? 'ENABLED' : 'DISABLED'}.`);
+      } else {
         setTwoFactorEnabled(previousVal);
         Alert.alert('Notice', res.message || 'Could not update 2FA setting on server.');
-      } else {
-        Alert.alert('2FA Protection Updated', `Two-Factor Authentication is now ${nextVal ? 'ENABLED' : 'DISABLED'}.`);
       }
     } catch (err: any) {
       setTwoFactorEnabled(previousVal);
@@ -306,6 +317,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
           sessions={sessions}
           sessionsLoading={sessionsLoading}
           onRevokeSession={handleRevokeSession}
+          onTerminateOtherSessions={handleTerminateOtherSessions}
+          isTerminatingOtherSessions={isTerminatingOtherSessions}
         />
 
         <View style={styles.slateSectionDivider} />

@@ -8,16 +8,15 @@ export interface ExtractedCoordinates {
 
 // Comprehensive lookup dictionary for common Indian industrial hubs & cities
 export const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; accuracy: 'CITY' | 'POSTAL' | 'EXACT'; address: string }> = {
-  // Industrial Parks & MIDC Zones (EXACT)
-  'waluj midc': { lat: 19.8512, lng: 75.2536, accuracy: 'EXACT', address: 'Waluj MIDC Industrial Area, Chhatrapati Sambhajinagar, Maharashtra' },
+  'waluj midc': { lat: 19.8512, lng: 75.2536, accuracy: 'EXACT', address: 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra' },
   'waluj': { lat: 19.8512, lng: 75.2536, accuracy: 'EXACT', address: 'Waluj, Chhatrapati Sambhajinagar, Maharashtra' },
-  'shendra midc': { lat: 19.8661, lng: 75.4674, accuracy: 'EXACT', address: 'Shendra MIDC Industrial Park, Chhatrapati Sambhajinagar, Maharashtra' },
+  'shendra midc': { lat: 19.8661, lng: 75.4674, accuracy: 'EXACT', address: 'Shendra MIDC, Chhatrapati Sambhajinagar, Maharashtra' },
   'shendra': { lat: 19.8661, lng: 75.4674, accuracy: 'EXACT', address: 'Shendra, Chhatrapati Sambhajinagar, Maharashtra' },
   'chikalthana midc': { lat: 19.8797, lng: 75.3986, accuracy: 'EXACT', address: 'Chikalthana MIDC, Chhatrapati Sambhajinagar, Maharashtra' },
   'chikalthana': { lat: 19.8797, lng: 75.3986, accuracy: 'EXACT', address: 'Chikalthana, Chhatrapati Sambhajinagar, Maharashtra' },
   'chakan midc': { lat: 18.7606, lng: 73.8636, accuracy: 'EXACT', address: 'Chakan MIDC Industrial Area, Pune, Maharashtra' },
   'chakan': { lat: 18.7606, lng: 73.8636, accuracy: 'EXACT', address: 'Chakan, Pune, Maharashtra' },
-  'bhosari midc': { lat: 18.6298, lng: 73.8478, accuracy: 'EXACT', address: 'Bhosari MIDC Industrial Area, Pune, Maharashtra' },
+  'bhosari midc': { lat: 18.6298, lng: 73.8478, accuracy: 'EXACT', address: 'Bhosari MIDC Industrial Zone, Pune, Maharashtra' },
   'bhosari': { lat: 18.6298, lng: 73.8478, accuracy: 'EXACT', address: 'Bhosari, Pune, Maharashtra' },
   'talegaon midc': { lat: 18.7300, lng: 73.6756, accuracy: 'EXACT', address: 'Talegaon MIDC, Pune, Maharashtra' },
   'talegaon': { lat: 18.7300, lng: 73.6756, accuracy: 'EXACT', address: 'Talegaon Dabhade, Pune, Maharashtra' },
@@ -51,8 +50,6 @@ export const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; accurac
   'viman nagar': { lat: 18.5679, lng: 73.9143, accuracy: 'EXACT', address: 'Viman Nagar, Pune, Maharashtra' },
   'baner': { lat: 18.5590, lng: 73.7868, accuracy: 'EXACT', address: 'Baner, Pune, Maharashtra' },
   'wakad': { lat: 18.5987, lng: 73.7687, accuracy: 'EXACT', address: 'Wakad, Pune, Maharashtra' },
-
-  // Cities (CITY)
   'pune': { lat: 18.5204, lng: 73.8567, accuracy: 'CITY', address: 'Pune, Maharashtra' },
   'mumbai': { lat: 19.0760, lng: 72.8777, accuracy: 'CITY', address: 'Mumbai, Maharashtra' },
   'navi mumbai': { lat: 19.0330, lng: 73.0297, accuracy: 'CITY', address: 'Navi Mumbai, Maharashtra' },
@@ -74,56 +71,6 @@ export const KNOWN_LOCATIONS: Record<string, { lat: number; lng: number; accurac
   'ahmedabad': { lat: 23.0225, lng: 72.5714, accuracy: 'CITY', address: 'Ahmedabad, Gujarat' },
 };
 
-// Prioritize EXACT industrial/locality matches first (sorted by length), then CITY matches
-const PRIORITIZED_KEYS = [
-  ...Object.keys(KNOWN_LOCATIONS)
-    .filter((k) => KNOWN_LOCATIONS[k].accuracy === 'EXACT')
-    .sort((a, b) => b.length - a.length),
-  ...Object.keys(KNOWN_LOCATIONS)
-    .filter((k) => KNOWN_LOCATIONS[k].accuracy !== 'EXACT')
-    .sort((a, b) => b.length - a.length),
-];
-
-/**
- * Fallback geocodes location text or city names via OpenStreetMap Nominatim when link parsing fails.
- */
-export async function geocodeLocationText(query: string): Promise<ExtractedCoordinates | null> {
-  if (!query || typeof query !== 'string') return null;
-  const cleaned = query.replace(/https?:\/\/[^\s]+/g, '').replace(/[^\w\s,]/g, ' ').trim();
-  if (!cleaned || cleaned.length < 2) return null;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(cleaned)}`;
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'JobMarketApp/1.0' },
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-        if (isValidCoordinate(lat, lon)) {
-          return {
-            latitude: lat,
-            longitude: lon,
-            accuracy: 'CITY',
-            source: 'KNOWN_LOCATION_LOOKUP',
-            formattedAddress: data[0].display_name || undefined,
-          };
-        }
-      }
-    }
-  } catch (err) {
-    // Timeout or network error
-  }
-
-  return null;
-}
-
 export function isValidCoordinate(lat: number, lng: number): boolean {
   return (
     !isNaN(lat) &&
@@ -136,9 +83,18 @@ export function isValidCoordinate(lat: number, lng: number): boolean {
   );
 }
 
+// Prioritize EXACT industrial/locality matches first (sorted by length), then CITY matches
+const PRIORITIZED_KEYS = [
+  ...Object.keys(KNOWN_LOCATIONS)
+    .filter((k) => KNOWN_LOCATIONS[k].accuracy === 'EXACT')
+    .sort((a, b) => b.length - a.length),
+  ...Object.keys(KNOWN_LOCATIONS)
+    .filter((k) => KNOWN_LOCATIONS[k].accuracy !== 'EXACT')
+    .sort((a, b) => b.length - a.length),
+];
+
 /**
- * Extracts coordinates directly from text, URLs, embedded map tags, or known locality names.
- * Returns null if no direct coordinates or known localities are found.
+ * Extracts coordinates immediately (<1ms) from text or URL with regex patterns and dictionary lookups.
  */
 export function extractCoordinatesFromText(input: string): ExtractedCoordinates | null {
   if (!input || typeof input !== 'string') return null;
@@ -155,7 +111,7 @@ export function extractCoordinatesFromText(input: string): ExtractedCoordinates 
     }
   }
 
-  // 2. Maps path: search/lat,+lng or dir/lat,lng or place/lat,lng (e.g. /search/18.458266,+73.846720)
+  // 2. Maps path: search/lat,+lng or dir/lat,lng or place/lat,lng
   const pathMatch = text.match(/(?:search|dir|place|maps)\/[^\/]*?(-?\d{1,2}\.\d+)\s*[,;\s]\s*\+?(-?\d{1,3}\.\d+)/i);
   if (pathMatch) {
     const lat = parseFloat(pathMatch[1]);

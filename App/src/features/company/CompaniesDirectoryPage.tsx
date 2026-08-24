@@ -165,8 +165,13 @@ export const CompaniesDirectoryPage: React.FC = () => {
         (company.realJobs || []).some(j => (j.title || '').toLowerCase().includes(q) || (j.trade || '').toLowerCase().includes(q))
       );
 
+      const compInd = (company.industry || '').toLowerCase();
+      const rawInd = selectedIndustry.toLowerCase().trim();
+      const indTokens = rawInd.split(/[\s&,/()]+/).map(t => t.replace(/(s|ing|als|ics)$/, '')).filter(t => t.length >= 2);
       const matchesIndustry = selectedIndustry === 'All Companies' ||
-        (company.industry || '').toLowerCase().includes(selectedIndustry.toLowerCase());
+        compInd.includes(rawInd) ||
+        rawInd.includes(compInd) ||
+        (indTokens.length > 0 && indTokens.some(t => compInd.includes(t)));
 
       const matchesZone = selectedZone === 'All Zones' ||
         (company.midc_zone || '').toLowerCase() === selectedZone.toLowerCase();

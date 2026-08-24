@@ -54,7 +54,19 @@ export class AuthController {
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password, role } = req.body;
-      const result = await LoginService.execute(email, password, role, req.ip, req.headers['user-agent']);
+      const { extractClientIp } = await import('../../../../src/utils/deviceDetector');
+      const clientIp = extractClientIp(req);
+      const customDeviceName = req.headers['x-device-name'] as string;
+
+      const result = await LoginService.execute(
+        email,
+        password,
+        role,
+        clientIp,
+        req.headers['user-agent'],
+        customDeviceName,
+        req.headers
+      );
       if ((result as any).require2FA || (result as any).requires2FA) {
         return res.status(200).json({
           success: true,
@@ -151,10 +163,133 @@ export class AuthController {
   static async getSessions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const currentSessionId = (req.headers['x-session-id'] || req.sessionId) as string;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const sessions = await SessionRepository.findActiveUserSessions(userId);
-      res.status(200).json({ success: true, data: sessions });
+      const { detectDeviceFromHeaders, extractClientIp } = await import('../../../../src/utils/deviceDetector');
+      const rawSessions = await SessionRepository.findActiveUserSessions(userId);
+      const reqClientIp = extractClientIp(req);
+      const reqUserAgent = (req.headers['user-agent'] as string) || '';
+
+      let parsedSessions = rawSessions.map((s) => {
+        const isCurrentById = currentSessionId ? s.id === currentSessionId : false;
+        const detected = detectDeviceFromHeaders(
+          s.user_agent,
+          s.ip_address,
+          s.device_name,
+          isCurrentById ? req.headers : undefined
+        );
+
+        return {
+          id: s.id,
+          ipAddress: detected.ipAddress,
+          ip_address: detected.ipAddress,
+          deviceName: detected.deviceName,
+          device_name: detected.deviceName,
+          browser: detected.browser,
+          os: detected.os,
+          deviceType: detected.deviceType,
+          device_type: detected.deviceType,
+          location: detected.location,
+          isCurrent: isCurrentById,
+          is_current: isCurrentById,
+          createdAt: s.created_at,
+          created_at: s.created_at,
+          lastUsedAt: s.last_used_at || s.created_at,
+          last_used_at: s.last_used_at || s.created_at,
+        };
+      });
+
+      // Check if the current calling device already has an active session in the list
+      const detectedCalling = detectDeviceFromHeaders(
+        reqUserAgent,
+        reqClientIp,
+        req.headers['x-device-name'] as string,
+        req.headers
+      );
+
+      const hasMatchingCurrent = parsedSessions.some(
+        (s) => (currentSessionId && s.id === currentSessionId) ||
+               (s.os === detectedCalling.os && s.deviceType === detectedCalling.deviceType && s.ipAddress === reqClientIp)
+      );
+
+      if (!hasMatchingCurrent && userId) {
+        const newSession = await SessionRepository.createSession(
+          userId,
+          'active_session',
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          detectedCalling.ipAddress,
+          reqUserAgent,
+          detectedCalling.deviceName
+        ).catch(() => null);
+
+        if (newSession) {
+          parsedSessions.unshift({
+            id: newSession.id,
+            ipAddress: detectedCalling.ipAddress,
+            ip_address: detectedCalling.ipAddress,
+            deviceName: detectedCalling.deviceName,
+            device_name: detectedCalling.deviceName,
+            browser: detectedCalling.browser,
+            os: detectedCalling.os,
+            deviceType: detectedCalling.deviceType,
+            device_type: detectedCalling.deviceType,
+            location: detectedCalling.location,
+            isCurrent: true,
+            is_current: true,
+            createdAt: newSession.created_at,
+            created_at: newSession.created_at,
+            lastUsedAt: newSession.created_at,
+            last_used_at: newSession.created_at,
+          });
+        }
+      }
+
+      // Deduplicate by normalized (deviceName + ipAddress)
+      const deduplicatedMap = new Map<string, any>();
+      for (const sess of parsedSessions) {
+        const normIp = (sess.ipAddress || '127.0.0.1').trim().toLowerCase();
+        const normDevice = (sess.deviceName || `${sess.browser} on ${sess.os}`).trim().toLowerCase();
+        const clusterKey = `${normDevice}___${normIp}`;
+
+        if (!deduplicatedMap.has(clusterKey)) {
+          deduplicatedMap.set(clusterKey, sess);
+        } else {
+          const existing = deduplicatedMap.get(clusterKey);
+          const isCurr = existing.isCurrent || sess.isCurrent;
+          const newest = new Date(sess.lastUsedAt).getTime() > new Date(existing.lastUsedAt).getTime() ? sess : existing;
+
+          deduplicatedMap.set(clusterKey, {
+            ...newest,
+            isCurrent: isCurr,
+            is_current: isCurr,
+          });
+        }
+      }
+
+      let deduplicatedSessions = Array.from(deduplicatedMap.values());
+
+      // Ensure at least one session is marked as the current active device
+      const hasCurrent = deduplicatedSessions.some((s) => s.isCurrent);
+      if (!hasCurrent && deduplicatedSessions.length > 0) {
+        let matchedIdx = deduplicatedSessions.findIndex((s) => s.ipAddress === reqClientIp);
+        if (matchedIdx === -1) matchedIdx = 0;
+
+        deduplicatedSessions = deduplicatedSessions.map((s, idx) => ({
+          ...s,
+          isCurrent: idx === matchedIdx,
+          is_current: idx === matchedIdx,
+        }));
+      }
+
+      // Sort current device to index 0, followed by most recent lastUsedAt
+      deduplicatedSessions.sort((a, b) => {
+        if (a.isCurrent && !b.isCurrent) return -1;
+        if (!a.isCurrent && b.isCurrent) return 1;
+        return new Date(b.lastUsedAt).getTime() - new Date(a.lastUsedAt).getTime();
+      });
+
+      res.status(200).json({ success: true, data: deduplicatedSessions });
     } catch (error) {
       next(error);
     }
@@ -332,11 +467,24 @@ export class AuthController {
         } as any);
       }
 
-      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role });
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const { detectDeviceFromHeaders, extractClientIp } = await import('../../../../src/utils/deviceDetector');
+      const clientIp = extractClientIp(req);
+      const userAgent = (req.headers['user-agent'] as string) || '';
+      const detected = detectDeviceFromHeaders(userAgent, clientIp);
 
-      const session = await SessionRepository.createSession(user.id, refreshTokenHash, expiresAt, req.ip || '127.0.0.1', (req.headers['user-agent'] as string) || 'Google OAuth Device');
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const session = await SessionRepository.createSession(
+        user.id,
+        'temp_hash',
+        expiresAt,
+        detected.ipAddress,
+        userAgent,
+        detected.deviceName
+      );
+
+      const { accessToken, refreshToken } = generateTokens({ userId: user.id, role: user.role, sessionId: session.id });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      await pool.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, session.id]);
 
       res.status(200).json({
         success: true,
