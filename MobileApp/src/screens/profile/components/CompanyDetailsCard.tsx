@@ -19,6 +19,7 @@ import {
   MapPin,
   ExternalLink,
 } from 'lucide-react-native';
+import { RADIUS } from '../../../constants/theme';
 
 interface CompanyDetailsCardProps {
   company: any;
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     padding: 16,
     marginBottom: 16,
     shadowColor: '#0F172A',

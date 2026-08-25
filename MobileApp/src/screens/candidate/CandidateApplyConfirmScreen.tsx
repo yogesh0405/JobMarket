@@ -25,6 +25,7 @@ import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
+import { SuccessModal } from '../../components/common/SuccessModal';
 import { Job } from '../../types';
 
 interface Props {
@@ -38,9 +39,10 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const { showToast } = useToast();
 
   const job = route.params?.job as Job;
-  const onAppliedSuccess = route.params?.onAppliedSuccess;
+  const onAppliedSuccess = route.params?.onAppliedSuccess as ((id: string) => void) | undefined;
 
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Resume Parser Helper
   const getResumeInfo = (u: any) => {
@@ -169,7 +171,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     });
   };
 
-  // Handle Application Submit (0ms Instant Optimistic UX matching Web App)
+  // Handle Application Submit (Matching Web App instant optimistic UX)
   const handleApplySubmit = () => {
     if (!job?.id) {
       showToast('Invalid job details', 'error');
@@ -178,20 +180,25 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
     setSubmitting(true);
 
-    // 1. Instantly record application in local store
+    // 1. Instantly record application in local & persistent store
     appliedJobsStore.addAppliedJob(job);
-    showToast('Your application has been submitted to the recruiter.', 'success');
 
-    // 2. Fire background API sync to live backend
-    candidateApi.applyForJob(job.id, {}).catch((err) => {
-      console.warn('Background application sync note:', err);
+    // 2. Invoke callback to update Job Detail state immediately
+    if (typeof onAppliedSuccess === 'function') {
+      onAppliedSuccess(job.id);
+    }
+
+    // 3. Dispatch backend API call concurrently
+    const resumeUrl = getResumeInfo(user)?.url || undefined;
+    candidateApi.applyForJob(job.id, { resumeUrl }).catch((err) => {
+      console.warn('Background application API sync note:', err);
     });
 
-    // 3. Return to previous screen instantly
+    // 4. Brief tactile delay for smooth feedback, then open SuccessModal
     setTimeout(() => {
       setSubmitting(false);
-      navigation.goBack();
-    }, 150);
+      setShowSuccessModal(true);
+    }, 250);
   };
 
   if (!job) {
@@ -419,6 +426,22 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Application Submitted Successfully !"
+        message={`Your application for "${job?.title || 'Industrial Position'}" has been sent to the recruiter.`}
+        buttonText="View Applied Jobs"
+        onClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+        onButtonPress={() => {
+          setShowSuccessModal(false);
+          navigation.navigate('CandidateMain', { screen: 'CandidateAppliedTab' });
+        }}
+      />
     </View>
   );
 };

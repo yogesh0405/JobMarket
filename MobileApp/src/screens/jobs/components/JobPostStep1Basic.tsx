@@ -18,7 +18,7 @@ import {
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
-import { COLORS, SPACING } from '../../../constants/theme';
+import { COLORS, SPACING, RADIUS } from '../../../constants/theme';
 import { INDUSTRY_LIST } from './JobPostConstants';
 
 interface JobPostStep1BasicProps {
@@ -247,7 +247,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,

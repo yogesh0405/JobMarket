@@ -22,7 +22,7 @@ import {
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { DatePickerField } from '../../../components/common/DatePickerField';
-import { COLORS, SPACING } from '../../../constants/theme';
+import { COLORS, SPACING, RADIUS } from '../../../constants/theme';
 
 interface JobPostStep4EligibilityProps {
   genderPreference: string;
@@ -267,9 +267,10 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
                   <Input
                     label="Contact Mobile"
                     placeholder="10-digit number"
-                    keyboardType="phone-pad"
+                    keyboardType="number-pad"
+                    maxLength={10}
                     value={walkInContactNumber}
-                    onChangeText={setWalkInContactNumber}
+                    onChangeText={(t) => setWalkInContactNumber(t.replace(/[^0-9]/g, '').slice(0, 10))}
                     leftIcon={<Phone size={16} color="#64748B" />}
                     inputContainerStyle={{ borderRadius: 8 }}
                   />
@@ -431,7 +432,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,

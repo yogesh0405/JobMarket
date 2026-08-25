@@ -9,15 +9,16 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import {
   Search,
   X,
-  ShieldCheck,
   SlidersHorizontal,
   Check,
 } from 'lucide-react-native';
 import { apiFetch } from '../../api/client';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { Header } from '../../components/common/Header';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
@@ -32,6 +33,7 @@ import { CandidateCardItem } from './components/CandidateCardItem';
 import { CandidateDetailModal } from './components/CandidateDetailModal';
 
 export const CandidatesScreen: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const [candidates, setCandidates] = useState<ExtendedCandidate[]>([]);
   const searchInputRef = React.useRef<any>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -48,7 +50,6 @@ export const CandidatesScreen: React.FC = () => {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
   const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
-  const [aadhaarOnlyFilter, setAadhaarOnlyFilter] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,7 +75,16 @@ export const CandidatesScreen: React.FC = () => {
       if (rawList.length > 0) {
         const formatted: ExtendedCandidate[] = rawList.map((item: any, idx: number) => {
           const expYears = typeof item.experience === 'number' ? `${item.experience} Years` : (item.experience || '2 Years');
-          const photo = item.profilePictureUrl || item.profile_picture_url || item.avatarUrl;
+          const fallbackPhoto = SEED_CANDIDATES[idx % SEED_CANDIDATES.length]?.avatarUrl;
+          const photo =
+            item.profilePictureUrl ||
+            item.profile_picture_url ||
+            item.avatarUrl ||
+            item.avatar_url ||
+            item.avatar ||
+            item.photo ||
+            item.image ||
+            fallbackPhoto;
           return {
             id: item.id || `candidate-${idx}`,
             name: item.name || 'Industrial Candidate',
@@ -143,12 +153,10 @@ export const CandidatesScreen: React.FC = () => {
       if (candExpNum < expNum) return false;
     }
 
-    if (aadhaarOnlyFilter && !item.aadhaar_verified && !item.verified) return false;
-
     return true;
   });
 
-  const hasActiveFilters = !!activeTradeFilter || !!activeExpFilter || aadhaarOnlyFilter;
+  const hasActiveFilters = !!activeTradeFilter || !!activeExpFilter;
 
   return (
     <View style={styles.container}>
@@ -203,14 +211,12 @@ export const CandidatesScreen: React.FC = () => {
               Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'}
               {activeTradeFilter ? ` • ${activeTradeFilter}` : ''}
               {activeExpFilter ? ` • ${activeExpFilter}` : ''}
-              {aadhaarOnlyFilter ? ' • Aadhaar Verified' : ''}
             </Text>
             <TouchableOpacity
               onPress={() => {
                 setSearchQuery('');
                 setActiveTradeFilter(null);
                 setActiveExpFilter(null);
-                setAadhaarOnlyFilter(false);
               }}
             >
               <Text style={styles.clearSearchText}>Reset All</Text>
@@ -244,15 +250,7 @@ export const CandidatesScreen: React.FC = () => {
           windowSize={7}
           removeClippedSubviews={true}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-          ListFooterComponent={
-            filteredCandidates.length > 0 ? (
-              <View style={styles.loadMoreFooterBox}>
-                <TouchableOpacity activeOpacity={0.8} style={styles.loadMoreBtn}>
-                  <Text style={styles.loadMoreBtnText}>Load More</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null
-          }
+          ListFooterComponent={<View style={{ height: 32 }} />}
         />
       )}
 
@@ -279,7 +277,7 @@ export const CandidatesScreen: React.FC = () => {
       <Modal visible={filterModalVisible} transparent animationType="slide" onRequestClose={() => setFilterModalVisible(false)}>
         <View style={styles.sheetOverlayBottom}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
-          <View style={styles.cleanIosSheetCard}>
+          <View style={[styles.cleanIosSheetCard, { paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom + 48, 64) : Math.max(insets.bottom + 24, 40) }]}>
             <View style={styles.sheetGrabHandle} />
             <View style={styles.sheetHeaderRow}>
               <Text style={styles.sheetTitleText}>FILTER CANDIDATES</Text>
@@ -324,19 +322,6 @@ export const CandidatesScreen: React.FC = () => {
                   );
                 })}
               </View>
-
-              <View style={styles.rowDivider} />
-
-              <Text style={styles.filterSectionTitle}>VERIFICATION STATUS</Text>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => setAadhaarOnlyFilter(!aadhaarOnlyFilter)}
-                style={[styles.filterCheckRow, aadhaarOnlyFilter && styles.filterCheckRowSelected]}
-              >
-                <ShieldCheck size={18} color={aadhaarOnlyFilter ? COLORS.primary : '#64748B'} />
-                <Text style={styles.filterCheckLabel}>Aadhaar Verified Candidates Only</Text>
-                {aadhaarOnlyFilter ? <Check size={18} color={COLORS.primary} /> : null}
-              </TouchableOpacity>
             </ScrollView>
 
             <View style={styles.sheetActionsRow}>
@@ -345,7 +330,6 @@ export const CandidatesScreen: React.FC = () => {
                 onPress={() => {
                   setActiveTradeFilter(null);
                   setActiveExpFilter(null);
-                  setAadhaarOnlyFilter(false);
                 }}
                 style={styles.sheetResetBtn}
               >
@@ -473,9 +457,10 @@ const styles = StyleSheet.create({
   },
   cleanIosSheetCard: {
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 24,
+    paddingTop: 12,
     width: '100%',
   },
   sheetGrabHandle: {
@@ -537,56 +522,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     marginVertical: 8,
   },
-  filterCheckRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  filterCheckRowSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: COLORS.primary,
-  },
-  filterCheckLabel: {
-    flex: 1,
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
+
   sheetActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 14,
+    gap: 12,
+    marginTop: 18,
+    marginBottom: Platform.OS === 'android' ? 12 : 4,
   },
   sheetResetBtn: {
     flex: 1,
-    height: 42,
+    height: 48,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 6,
   },
   sheetResetText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '800',
-    color: '#64748B',
+    color: '#475569',
   },
   sheetApplyBtn: {
     flex: 1.5,
-    height: 42,
+    height: 48,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   sheetApplyText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },

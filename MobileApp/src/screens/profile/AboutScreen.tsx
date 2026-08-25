@@ -1,4 +1,4 @@
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import React from 'react';
 import {
   View,
@@ -45,10 +45,10 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{ padding: 4 }}
           >
-            <ArrowLeft size={20} color="#0F172A" />
+            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitleText}>About Us</Text>
         </View>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     paddingVertical: 8,
     paddingHorizontal: 10,
     marginBottom: 2,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 4,
+    borderRadius: RADIUS.card,
     padding: 14,
     gap: 10,
   },

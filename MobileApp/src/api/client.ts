@@ -58,13 +58,13 @@ async function fetchWithTimeout(
 ): Promise<Response> {
   try {
     return await fetch(url, options);
-  } catch (netErr) {
-    // Retry once after 1.5s for Render backend warm-up / transient network restarts (matching Web App api.ts)
+  } catch (netErr: any) {
+    // Fast retry after 800ms for transient network restarts or Render wakeups
     try {
-      await new Promise((res) => setTimeout(res, 1500));
+      await new Promise((res) => setTimeout(res, 800));
       return await fetch(url, options);
     } catch (retryErr: any) {
-      throw new Error(retryErr?.message || 'Network error: Unable to connect to backend server. Please check connection.');
+      throw new Error(retryErr?.message || 'Network error: Unable to connect to backend server.');
     }
   }
 }

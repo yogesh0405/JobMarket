@@ -1,5 +1,5 @@
-import { COLORS } from '../../constants/theme';
-import React, { useState, useEffect } from 'react';
+import { COLORS, RADIUS } from '../../constants/theme';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
 import {
   CheckCircle2,
   Send,
-  ChevronLeft,
+  ArrowLeft,
 } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
 import { candidateApi } from '../../api/candidateApi';
 import { isValidId } from '../../api/client';
@@ -139,57 +140,66 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     };
   }, [activeJobId]);
 
-  useEffect(() => {
+  const syncApplicationStatus = useCallback(() => {
     const targetJob = job || passedJob;
     const jobIdToCheck = targetJob?.id || activeJobId;
     if (!jobIdToCheck) return;
 
-    const syncFromStore = () => {
-      const allApplied = (appliedJobsStore as any).getAppliedJobs?.() || [];
-      const storedApplied = Array.isArray(allApplied)
-        ? allApplied.find((a: any) => String(a.job_id || a.jobId || a.job?.id || a.id) === String(jobIdToCheck))
-        : null;
+    const isMatched = appliedJobsStore.hasApplied(jobIdToCheck);
+    const storedApplied = appliedJobsStore.getAppliedJob(jobIdToCheck);
 
-      if (storedApplied) {
-        setHasApplied(true);
-        setAppliedItem(storedApplied);
-      }
-    };
+    setHasApplied(Boolean(isMatched));
+    if (storedApplied) {
+      setAppliedItem(storedApplied);
+    }
 
-    syncFromStore();
-    const unsubscribeStore = appliedJobsStore.subscribe(syncFromStore);
-
-    const checkStatus = async () => {
-      try {
-        const savedRes = await candidateApi.getSavedJobs().catch(() => ({ data: [] }));
-        if (Array.isArray(savedRes.data)) {
-          const saved = savedRes.data.some((j: any) => String(j.id) === String(jobIdToCheck));
-          setIsSaved(saved);
-        }
-
-        const appRes = await candidateApi.getAppliedJobs().catch(() => ({ data: [] }));
-        if (Array.isArray(appRes.data)) {
+    candidateApi
+      .getAppliedJobs()
+      .then((appRes) => {
+        if (Array.isArray(appRes?.data)) {
           const found = appRes.data.find(
             (a: any) =>
-              String(a.job_id || a.jobId || a.job?.id || a.id) === String(jobIdToCheck)
+              String(a.job_id || a.jobId || a.job?.id || a.id).toLowerCase() ===
+              String(jobIdToCheck).toLowerCase()
           );
           if (found) {
             setHasApplied(true);
             setAppliedItem(found);
-            (appliedJobsStore as any).addAppliedJob?.(found);
+            const actualJob = (found as any).job || found;
+            if (actualJob && actualJob.id) {
+              appliedJobsStore.addAppliedJob(actualJob);
+            }
           }
         }
-      } catch (err) {
-        logger.warn('Error checking saved/applied status:', err);
-      }
-    };
+      })
+      .catch(() => {});
 
-    checkStatus();
+    candidateApi
+      .getSavedJobs()
+      .then((savedRes) => {
+        if (Array.isArray(savedRes?.data)) {
+          const saved = savedRes.data.some(
+            (j: any) => String(j.id).toLowerCase() === String(jobIdToCheck).toLowerCase()
+          );
+          setIsSaved(saved);
+        }
+      })
+      .catch(() => {});
+  }, [job?.id, activeJobId, passedJob?.id]);
 
+  useEffect(() => {
+    syncApplicationStatus();
+    const unsubscribeStore = appliedJobsStore.subscribe(syncApplicationStatus);
     return () => {
       unsubscribeStore();
     };
-  }, [job?.id, activeJobId]);
+  }, [syncApplicationStatus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      syncApplicationStatus();
+    }, [syncApplicationStatus])
+  );
 
   const handleToggleSave = async () => {
     const targetJob = job || passedJob;
@@ -224,7 +234,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         'Please login to submit your application for this factory job opening.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => navigation.navigate('CandidateLogin') },
+          { text: 'Login', onPress: () => navigation.navigate('EmployerLogin') },
         ]
       );
       return;
@@ -237,6 +247,15 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
     navigation.navigate('CandidateApplyConfirm', {
       job: targetJob,
+      onAppliedSuccess: (appliedJobId: string) => {
+        setHasApplied(true);
+        setAppliedItem({
+          jobId: appliedJobId,
+          job: targetJob,
+          status: 'applied',
+          appliedAt: new Date().toISOString(),
+        });
+      },
     });
   };
 
@@ -302,8 +321,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     return (
       <View style={styles.container}>
         <View style={{ paddingTop: Math.max(insets.top, 12), paddingHorizontal: 16 }}>
-          <TouchableOpacity onPress={handleBackNavigation} style={{ padding: 6 }}>
-            <ChevronLeft size={24} color="#0F172A" />
+          <TouchableOpacity onPress={handleBackNavigation} style={{ padding: 4 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -361,7 +380,13 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
 
-      <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContentBody,
+          { paddingBottom: Math.max(insets.bottom + 120, 150) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <CandidateJobDetailHeader
           job={job}
           isSaved={isSaved}
@@ -541,11 +566,11 @@ const styles = StyleSheet.create({
   scrollContentBody: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 100,
+    paddingBottom: 150,
   },
   profileHeaderMasterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     overflow: 'hidden',
@@ -557,7 +582,7 @@ const styles = StyleSheet.create({
   },
   cardBlockContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,
@@ -635,7 +660,7 @@ const styles = StyleSheet.create({
   },
   applyCtaBtn: {
     height: 46,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
@@ -655,7 +680,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BBF7D0',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
   },
   appliedStatusTitle: {
     fontSize: 13,

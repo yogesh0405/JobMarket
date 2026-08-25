@@ -59,9 +59,9 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
             activeOpacity={0.75}
             onPress={onBackPress}
             style={styles.controlCircleBtn}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ArrowLeft size={20} color="#FFFFFF" />
+            <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2} />
           </TouchableOpacity>
         ) : (
           <View />
@@ -216,9 +216,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bannerContent: {
-    padding: 16,
-    paddingTop: 8,
-    gap: 14,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 0,
+    gap: 6,
   },
   heroLeftRow: {
     flexDirection: 'row',
@@ -413,10 +414,8 @@ const styles = StyleSheet.create({
   inBannerTabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    marginTop: 8,
-    paddingTop: 2,
+    marginTop: 2,
+    paddingTop: 0,
   },
   inBannerTabBtn: {
     flex: 1,

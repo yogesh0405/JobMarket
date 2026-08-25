@@ -115,9 +115,9 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
             label="Mobile Phone Number"
             required
             value={phone}
-            keyboardType="phone-pad"
+            keyboardType="number-pad"
             maxLength={10}
-            onChangeText={setPhone}
+            onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
             inputContainerStyle={{ borderRadius: 6 }}
           />
 

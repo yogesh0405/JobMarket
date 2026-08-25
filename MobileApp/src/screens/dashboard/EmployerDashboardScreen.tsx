@@ -27,7 +27,7 @@ import { Badge } from '../../components/common/Badge';
 import { Skeleton, JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { EmployerDashboardHeader } from './components/EmployerDashboardHeader';
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   subAnalyticsCard: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 10,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   },
   candidatesSingleCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   },
   emptyCandidatesCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 20,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   recentJobCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,

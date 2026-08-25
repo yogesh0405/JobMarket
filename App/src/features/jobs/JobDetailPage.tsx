@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { formatSalary, timeAgo, formatNumber, capitalize, shareContent } from '../../utils/helpers';
+import { formatSalary, timeAgo, formatNumber, formatDate, capitalize, shareContent } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
@@ -47,7 +47,7 @@ export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getJobById, fetchJobById, applyToJob, toggleSaveJob, isJobSaved } = useJobs();
+  const { getJobById, fetchJobById, applyToJob, toggleSaveJob, isJobSaved, fetchCandidateAppliedJobs } = useJobs();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
@@ -85,6 +85,12 @@ export const JobDetailPage: React.FC = () => {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'candidate' && fetchCandidateAppliedJobs) {
+      fetchCandidateAppliedJobs();
+    }
+  }, [currentUser?.id]);
 
   useEffect(() => {
     setLocalSavedOverride(null);
@@ -187,10 +193,21 @@ export const JobDetailPage: React.FC = () => {
   }
 
   const isOwner = currentUser && (currentUser.id === job.employerId || currentUser.role === 'employer');
-  const userApplications = Array.isArray(state.applications) ? state.applications : [];
-  const existingApp = userApplications.find(a => a.jobId === job.id || (a as any).job_id === job.id);
-  const hasApplied = Boolean(existingApp);
-  const appDetails = existingApp;
+  
+  const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser?.id || a.id === currentUser?.id);
+  const userAppWithStatus = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+  const hasApplied = Boolean(
+    currentUser && (
+      currentUser.appliedJobs?.includes(job.id) ||
+      userAppWithStatus ||
+      applicantRecord ||
+      (job as any).applicationStatus ||
+      (job as any).appliedAt
+    )
+  );
+
+  const appliedAtDate = userAppWithStatus?.appliedAt || applicantRecord?.appliedAt || (job as any).appliedAt || null;
+  const applicationStatus = userAppWithStatus?.status || applicantRecord?.status || (job as any).applicationStatus || 'applied';
 
   const perksList: string[] = ensureArray(job.perks);
   if (job.bus_facility || (job as any).busFacility) perksList.push('Bus / Transport Facility');
@@ -325,6 +342,12 @@ export const JobDetailPage: React.FC = () => {
                     </div>
 
                     <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25' }}>{job.title}</h1>
+                    {hasApplied && (
+                      <div style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(255, 255, 255, 0.16)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255, 255, 255, 0.28)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', color: '#FFFFFF' }}>
+                        <CheckCircle2 size={12} color="#86EFAC" strokeWidth={2.5} />
+                        <span>{appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -613,19 +636,58 @@ export const JobDetailPage: React.FC = () => {
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                backgroundColor: '#DCFCE7',
-                border: '1px solid #BBF7D0',
-                padding: '10px 14px',
-                borderRadius: '8px'
+                justifyContent: 'space-between',
+                gap: '12px',
+                backgroundColor: '#F0FDF4',
+                border: '1.5px solid #86EFAC',
+                padding: '8px 14px',
+                borderRadius: '8px',
+                boxShadow: '0 1px 4px rgba(22, 163, 74, 0.08)',
+                boxSizing: 'border-box'
               }}>
-                <CheckCircle2 size={18} color="#16A34A" />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#15803D' }}>Application Submitted</div>
-                  <div style={{ fontSize: '11px', color: '#166534', marginTop: '1px' }}>
-                    Status: {capitalize((appDetails as any)?.status || 'APPLIED')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: '#DCFCE7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <CheckCircle2 size={18} color="#16A34A" strokeWidth={2.5} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#15803D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '1px' }}>
+                      Status: <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{applicationStatus}</span>
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => navigate('/dashboard?tab=applied')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: '#15803D',
+                    border: '1px solid #86EFAC',
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                >
+                  Track Status
+                </button>
               </div>
             ) : isOwner ? (
               <button

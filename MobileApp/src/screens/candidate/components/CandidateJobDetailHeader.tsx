@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
 import {
-  ChevronLeft,
+  ArrowLeft,
   Share2,
   Bookmark,
   ExternalLink,
@@ -56,9 +56,9 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
           <TouchableOpacity
             style={styles.backBtnHeader}
             onPress={onBack}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.5} />
+            <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2} />
           </TouchableOpacity>
 
           <View style={styles.topRightActionsRow}>

@@ -69,7 +69,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
 
               <View style={styles.detailHeroHorizontalRow}>
                 <CompanyLogoAvatar
-                  logoUrl={candidate.avatarUrl}
+                  logoUrl={candidate.avatarUrl || candidate.profile_picture_url || (candidate as any).profilePictureUrl}
                   companyName={candidate.name}
                   size={48}
                   borderRadius={24}

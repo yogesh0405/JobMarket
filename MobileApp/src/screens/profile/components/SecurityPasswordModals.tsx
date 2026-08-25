@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,8 @@ export const SecurityPasswordModals: React.FC<SecurityPasswordModalsProps> = ({
   onResetWithOtp,
 }) => {
   const insets = useSafeAreaInsets();
+  const [showOtpNewPass, setShowOtpNewPass] = useState(false);
+  const [showOtpConfirmPass, setShowOtpConfirmPass] = useState(false);
 
   return (
     <>
@@ -174,13 +176,13 @@ export const SecurityPasswordModals: React.FC<SecurityPasswordModalsProps> = ({
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsOtpModalOpen(false)}>
           <TouchableOpacity activeOpacity={1} style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom + 16, 28) }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeaderRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}>
                 <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
                   <KeyRound size={18} color={COLORS.primary} />
                 </View>
-                <View>
-                  <Text style={styles.modalTitleText}>Password Reset via OTP</Text>
-                  <Text style={styles.modalSubtitleText}>OTP sent to {resetEmail}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitleText} numberOfLines={1}>Password Reset</Text>
+                  <Text style={styles.modalSubtitleText} numberOfLines={1}>Code sent to {resetEmail}</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={() => setIsOtpModalOpen(false)}>
@@ -201,26 +203,38 @@ export const SecurityPasswordModals: React.FC<SecurityPasswordModalsProps> = ({
                 leftIcon={<Mail size={18} color="#64748B" />}
               />
 
-              <Input
-                label="New Password *"
-                placeholder="Enter new password"
-                secureTextEntry
-                value={otpNewPass}
-                onChangeText={setOtpNewPass}
-                leftIcon={<Lock size={18} color="#64748B" />}
-              />
+              <View style={styles.inputWithIconRow}>
+                <Input
+                  label="New Password *"
+                  placeholder="Enter new password"
+                  secureTextEntry={!showOtpNewPass}
+                  value={otpNewPass}
+                  onChangeText={setOtpNewPass}
+                  leftIcon={<Lock size={18} color="#64748B" />}
+                  style={{ flex: 1 }}
+                />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowOtpNewPass(!showOtpNewPass)}>
+                  {showOtpNewPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                </TouchableOpacity>
+              </View>
 
-              <Input
-                label="Confirm New Password *"
-                placeholder="Confirm new password"
-                secureTextEntry
-                value={otpConfirmPass}
-                onChangeText={setOtpConfirmPass}
-                leftIcon={<Lock size={18} color="#64748B" />}
-              />
+              <View style={styles.inputWithIconRow}>
+                <Input
+                  label="Confirm New Password *"
+                  placeholder="Confirm new password"
+                  secureTextEntry={!showOtpConfirmPass}
+                  value={otpConfirmPass}
+                  onChangeText={setOtpConfirmPass}
+                  leftIcon={<Lock size={18} color="#64748B" />}
+                  style={{ flex: 1 }}
+                />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowOtpConfirmPass(!showOtpConfirmPass)}>
+                  {showOtpConfirmPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                </TouchableOpacity>
+              </View>
 
               <Button
-                title="Reset Password & Login"
+                title="Reset Password"
                 onPress={onResetWithOtp}
                 loading={otpLoading}
                 style={{ marginTop: 10, height: 46, borderRadius: 8 }}

@@ -26,11 +26,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
-import { appliedJobsStore } from '../../utils/appliedJobsStore';
+import { appliedJobsStore, normalizeApplicationStatus } from '../../utils/appliedJobsStore';
 
 interface Props {
   navigation: any;
@@ -45,32 +45,36 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   // Filter application list based on active tab
   const filteredApplications = appliedList.filter((item: any) => {
-    const s = (item.status || 'applied').toLowerCase();
+    const rawStatus = item.status || item.applicationStatus || item.job?.status;
+    const s = normalizeApplicationStatus(rawStatus);
     if (filterTab === 'INTERVIEW') {
-      return s === 'shortlisted' || s === 'interview' || s === 'interview_scheduled';
+      return s === 'shortlisted';
     }
     if (filterTab === 'REVIEW') {
-      return s === 'applied' || s === 'reviewed' || s === 'under_review';
+      return s === 'applied' || s === 'reviewed';
     }
     if (filterTab === 'DECISIONS') {
-      return s === 'hired' || s === 'selected' || s === 'accepted' || s === 'rejected';
+      return s === 'hired' || s === 'rejected';
     }
     return true;
   });
 
   const interviewCount = appliedList.filter((item: any) => {
-    const s = (item.status || 'applied').toLowerCase();
-    return s === 'shortlisted' || s === 'interview' || s === 'interview_scheduled';
+    const rawStatus = item.status || item.applicationStatus || item.job?.status;
+    const s = normalizeApplicationStatus(rawStatus);
+    return s === 'shortlisted';
   }).length;
 
   const reviewCount = appliedList.filter((item: any) => {
-    const s = (item.status || 'applied').toLowerCase();
-    return s === 'applied' || s === 'reviewed' || s === 'under_review';
+    const rawStatus = item.status || item.applicationStatus || item.job?.status;
+    const s = normalizeApplicationStatus(rawStatus);
+    return s === 'applied' || s === 'reviewed';
   }).length;
 
   const decisionsCount = appliedList.filter((item: any) => {
-    const s = (item.status || 'applied').toLowerCase();
-    return s === 'hired' || s === 'selected' || s === 'accepted' || s === 'rejected';
+    const rawStatus = item.status || item.applicationStatus || item.job?.status;
+    const s = normalizeApplicationStatus(rawStatus);
+    return s === 'hired' || s === 'rejected';
   }).length;
 
   const syncListWithStore = useCallback((apiData?: any[]) => {
@@ -85,10 +89,10 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const fetchAppliedData = useCallback(async (showSkeleton = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
-    if (showSkeleton) setLoading(true);
+    if (showSkeleton && appliedJobsStore.getAppliedJobs().length === 0) setLoading(true);
     try {
       const res = await candidateApi.getAppliedJobs();
-      if (res.success && res.data) {
+      if (res.success && Array.isArray(res.data)) {
         syncListWithStore(res.data);
       } else {
         syncListWithStore();
@@ -537,7 +541,7 @@ const styles = StyleSheet.create({
   },
   appliedCardSquare: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,

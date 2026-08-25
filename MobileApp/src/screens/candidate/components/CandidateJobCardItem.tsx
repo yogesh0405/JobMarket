@@ -10,7 +10,7 @@ import {
 } from 'lucide-react-native';
 import { Job } from '../../../types';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { formatTimeAgo } from './CandidateJobSearchUtils';
 
 interface CandidateJobCardItemProps {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#B4C3D4',
     padding: 12,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   naukriJobCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#B4C3D4',
     marginBottom: 8,

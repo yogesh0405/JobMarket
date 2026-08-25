@@ -218,6 +218,9 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           phone={phone}
           bio={bio}
           experience={experience}
+          skills={skills}
+          education={education}
+          resumeUrl={resumeUrl}
           profilePhotoUrl={profilePhotoUrl}
           onPickPhoto={handlePickPhoto}
           onEditPress={() => navigation.navigate('CandidateEditProfile')}

@@ -1,4 +1,4 @@
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 36,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     marginTop: 6,
   },
   browseBtnText: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   gridCard: {
     width: '48.5%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   gridCardSkeleton: {
     width: '48.5%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,

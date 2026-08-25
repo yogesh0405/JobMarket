@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Camera, Edit, Mail, Phone, MapPin, Briefcase, CheckCircle2, ShieldCheck, UserCheck } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
+import { calculateCandidateProfileCompletion } from '../../../utils/profileCompleteness';
 
 interface CandidateProfileHeroCardProps {
   user: any;
@@ -14,6 +15,9 @@ interface CandidateProfileHeroCardProps {
   phone: string;
   bio: string;
   experience: any[];
+  skills?: string[];
+  education?: any[];
+  resumeUrl?: string;
   profilePhotoUrl: string;
   onPickPhoto: () => void;
   onEditPress: () => void;
@@ -30,11 +34,32 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
   phone,
   bio,
   experience,
+  skills,
+  education,
+  resumeUrl,
   profilePhotoUrl,
   onPickPhoto,
   onEditPress,
 }) => {
   const tradeDisplay = (isOtherSelected || tradeSpecialization === 'Other') ? (customTrade || '—') : (tradeSpecialization || '—');
+
+  const userFull = {
+    ...user,
+    name,
+    headline,
+    tradeSpecialization,
+    customTrade,
+    location,
+    phone,
+    bio,
+    experience: experience || user?.experience || [],
+    skills: skills || user?.skills || [],
+    education: education || user?.education || [],
+    resume_url: resumeUrl || user?.resume_url || user?.resumeUrl,
+    avatar_url: profilePhotoUrl || user?.avatar_url || user?.avatarUrl,
+  };
+  const completionPercentage = calculateCandidateProfileCompletion(userFull).totalScore;
+  const skillsCount = (skills && skills.length > 0) ? skills.length : (user?.skills?.length || 0);
 
   return (
     <>
@@ -93,17 +118,15 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statCol}>
-          <Text style={styles.statValText}>100%</Text>
-          <Text style={styles.statLabelText}>Verified</Text>
+          <Text style={styles.statValText}>{completionPercentage}%</Text>
+          <Text style={styles.statLabelText}>Completeness</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statCol}>
-          <Text style={styles.statValText}>{user?.skills?.length || 0}</Text>
+          <Text style={styles.statValText}>{skillsCount}</Text>
           <Text style={styles.statLabelText}>Key Skills</Text>
         </View>
       </View>
-
-      <View style={styles.sectionDividerSlate} />
 
       {/* ABOUT SUMMARY CARD */}
       <View style={styles.sectionCard}>
@@ -119,8 +142,6 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
         </View>
       </View>
 
-      <View style={styles.sectionDividerSlate} />
-
       {/* CONTACT & PERSONAL DETAILS CARD */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionCardHeader}>
@@ -128,17 +149,17 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
         </View>
 
         <View style={styles.contactGrid2x2}>
-          <View style={styles.contactGridCell}>
-            <View style={styles.contactIconPill}>
-              <UserCheck size={14} color={COLORS.primary} />
+          {headline ? (
+            <View style={styles.contactGridCell}>
+              <View style={styles.contactIconPill}>
+                <UserCheck size={14} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.contactGridLabel}>Professional Headline</Text>
+                <Text style={styles.contactGridValue} numberOfLines={1}>{headline}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactGridLabel}>Professional Headline</Text>
-              <Text style={styles.contactGridValue} numberOfLines={1}>
-                {headline || (tradeSpecialization === 'Other' ? customTrade : tradeSpecialization) || 'Industrial Workforce Specialist'}
-              </Text>
-            </View>
-          </View>
+          ) : null}
 
           <View style={styles.contactGridCell}>
             <View style={styles.contactIconPill}>
@@ -170,7 +191,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
             </View>
           </View>
 
-          <View style={styles.contactGridCell}>
+          <View style={[styles.contactGridCell, styles.contactGridCellLast]}>
             <View style={styles.contactIconPill}>
               <Briefcase size={14} color={COLORS.primary} />
             </View>
@@ -190,7 +211,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
 const styles = StyleSheet.create({
   primaryBlueHeroCard: {
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#B4C3D4',
     padding: 16,
@@ -286,11 +307,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     paddingVertical: 10,
-    marginTop: 14,
+    marginTop: 4,
+    marginBottom: 10,
   },
   statCol: {
     flex: 1,
@@ -314,11 +336,11 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#B4C3D4',
     padding: 16,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   sectionCardHeader: {
     flexDirection: 'row',
@@ -355,17 +377,19 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   contactGrid2x2: {
-    gap: 10,
+    gap: 0,
   },
   contactGridCell: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 10,
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  contactGridCellLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 2,
   },
   contactIconPill: {
     width: 32,
@@ -376,12 +400,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   contactGridLabel: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
   },
   contactGridValue: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 1,

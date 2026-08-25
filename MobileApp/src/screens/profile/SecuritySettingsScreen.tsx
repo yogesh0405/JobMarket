@@ -17,12 +17,15 @@ import {
   ChevronRight,
   ShieldAlert,
   CheckCircle2,
+  LogOut,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
 import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
-import { COLORS } from '../../constants/theme';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { SuccessModal } from '../../components/common/SuccessModal';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { SecuritySessionsSection } from './components/SecuritySessionsSection';
 import { SecurityPasswordModals } from './components/SecurityPasswordModals';
 
@@ -32,7 +35,7 @@ interface Props {
 
 export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, login } = useAuth();
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -59,35 +62,67 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
 
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    highlightText?: string;
+    confirmText: string;
+    cancelText?: string;
+    type?: 'danger' | 'primary' | 'warning';
+    icon?: React.ReactNode;
+    iconBgColor?: string;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message?: string;
+  }>({
+    visible: false,
+    title: '',
+  });
+
   const handleOpenResetConfirm = () => {
     const targetEmail = user?.email || resetEmail;
     if (!targetEmail) {
       Alert.alert('Notice', 'No registered email found for this account.');
       return;
     }
-    Alert.alert(
-      'Request Password Reset',
-      `A 6-digit verification OTP code will be sent to your registered email:\n\n${targetEmail}\n\nDo you want to proceed?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send OTP Code',
-          onPress: async () => {
-            setOtpError(null);
-            setResetEmail(targetEmail);
-            setIsOtpModalOpen(true);
-            try {
-              const res = await authApi.forgotPassword(targetEmail);
-              if (!res.success) {
-                setOtpError(res.message || 'Could not dispatch OTP. Please check email address.');
-              }
-            } catch (err: any) {
-              console.warn('Direct OTP trigger error:', err);
-            }
-          },
-        },
-      ]
-    );
+    setConfirmModalConfig({
+      visible: true,
+      title: 'Reset Password',
+      message: 'A 6-digit verification code will be sent to your registered email address:',
+      highlightText: targetEmail,
+      confirmText: 'Send Code',
+      cancelText: 'Cancel',
+      type: 'primary',
+      iconBgColor: '#EFF6FF',
+      icon: <KeyRound size={26} color={COLORS.primary} />,
+      onConfirm: async () => {
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+        setOtpError(null);
+        setResetEmail(targetEmail);
+        setIsOtpModalOpen(true);
+        try {
+          const res = await authApi.forgotPassword(targetEmail);
+          if (!res.success) {
+            setOtpError(res.message || 'Could not dispatch OTP. Please check email address.');
+          }
+        } catch (err: any) {
+          console.warn('Direct OTP trigger error:', err);
+        }
+      },
+    });
   };
 
   const detectRealTimeDeviceSession = async () => {
@@ -124,54 +159,52 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const handleRevokeSession = (sessionId: string, deviceName: string) => {
-    Alert.alert(
-      'Revoke Device Session',
-      `Are you sure you want to revoke session for "${deviceName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await authApi.revokeSession(sessionId);
-              setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-              Alert.alert('Session Revoked', `Session for ${deviceName} has been terminated.`);
-            } catch (e) {
-              setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-            }
-          },
-        },
-      ]
-    );
+    setConfirmModalConfig({
+      visible: true,
+      title: 'Log Out Device',
+      message: `Are you sure you want to log out of "${deviceName}"? You will need to sign in again on that device.`,
+      confirmText: 'Log Out',
+      cancelText: 'Cancel',
+      type: 'danger',
+      iconBgColor: '#FEE2E2',
+      icon: <LogOut size={26} color="#DC2626" />,
+      onConfirm: async () => {
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+        try {
+          await authApi.revokeSession(sessionId);
+          setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+        } catch (e) {
+          setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+        }
+      },
+    });
   };
 
   const [isTerminatingOtherSessions, setIsTerminatingOtherSessions] = useState(false);
 
   const handleTerminateOtherSessions = () => {
-    Alert.alert(
-      'Logout All Other Devices',
-      'Are you sure you want to terminate all other active login sessions? You will remain signed in on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout Others',
-          style: 'destructive',
-          onPress: async () => {
-            setIsTerminatingOtherSessions(true);
-            try {
-              await authApi.logoutAll();
-              setSessions((prev) => prev.filter((s) => s.isCurrent || s.is_current));
-              Alert.alert('Success', 'All other device sessions have been terminated.');
-            } catch (e: any) {
-              Alert.alert('Notice', e?.message || 'Could not terminate other sessions.');
-            } finally {
-              setIsTerminatingOtherSessions(false);
-            }
-          },
-        },
-      ]
-    );
+    setConfirmModalConfig({
+      visible: true,
+      title: 'Log Out Other Devices',
+      message: 'Are you sure you want to log out of all other devices? You will remain signed in on this current device.',
+      confirmText: 'Log Out Others',
+      cancelText: 'Cancel',
+      type: 'danger',
+      iconBgColor: '#FEE2E2',
+      icon: <LogOut size={26} color="#DC2626" />,
+      onConfirm: async () => {
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+        setIsTerminatingOtherSessions(true);
+        try {
+          await authApi.logoutAll();
+          setSessions((prev) => prev.filter((s) => s.isCurrent || s.is_current));
+        } catch (e: any) {
+          console.warn(e);
+        } finally {
+          setIsTerminatingOtherSessions(false);
+        }
+      },
+    });
   };
 
   const handleToggle2FA = async (nextVal: boolean) => {
@@ -216,11 +249,15 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       const res = await authApi.changePassword({ currentPassword, newPassword });
       setPasswordLoading(false);
       if (res.success) {
-        Alert.alert('Success', 'Password updated successfully!');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setIsChangePassModalOpen(false);
+        setSuccessModalConfig({
+          visible: true,
+          title: 'Password Updated Successfully !',
+          message: 'Your account password has been updated securely.',
+        });
       } else {
         setPasswordError(res.message || res.error || 'Failed to update password');
       }
@@ -256,19 +293,33 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         otpCode: otpCode.trim(),
         newPassword: otpNewPass,
       });
-      setOtpLoading(false);
       if (res.success) {
-        Alert.alert('Success', 'Your password has been reset successfully!');
+        // Automatically renew authenticated session with the new password
+        try {
+          await login({
+            email: resetEmail.trim(),
+            password: otpNewPass,
+          });
+        } catch (loginErr) {
+          console.warn('Silent session renewal after password reset:', loginErr);
+        }
+
         setIsOtpModalOpen(false);
         setOtpCode('');
         setOtpNewPass('');
         setOtpConfirmPass('');
+        setSuccessModalConfig({
+          visible: true,
+          title: 'Password Reset Successfully !',
+          message: 'Your account password has been updated. You remain signed in.',
+        });
       } else {
         setOtpError(res.message || 'Failed to reset password.');
       }
     } catch (err: any) {
-      setOtpLoading(false);
       setOtpError(err.message || 'Failed to reset password.');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -281,10 +332,10 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.headerTitleNavRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{ padding: 4 }}
           >
-            <ArrowLeft size={20} color="#0F172A" />
+            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitleTextDark}>Security & Active Sessions</Text>
         </View>
@@ -320,8 +371,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
           onTerminateOtherSessions={handleTerminateOtherSessions}
           isTerminatingOtherSessions={isTerminatingOtherSessions}
         />
-
-        <View style={styles.slateSectionDivider} />
 
         {/* CARD BLOCK 2: ACCOUNT CREDENTIALS */}
         <View style={styles.cardBlock}>
@@ -371,12 +420,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <ChevronRight size={18} color={COLORS.primary} />
             </TouchableOpacity>
-
-            <View style={styles.rowDividerLineSlate} />
           </View>
         </View>
-
-        <View style={styles.slateSectionDivider} />
 
         {/* CARD BLOCK 3: MULTI-FACTOR AUTHENTICATION (2FA) */}
         <View style={styles.cardBlock}>
@@ -445,6 +490,27 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         otpError={otpError}
         onResetWithOtp={handleResetWithOtp}
       />
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={confirmModalConfig.visible}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        highlightText={confirmModalConfig.highlightText}
+        confirmText={confirmModalConfig.confirmText}
+        cancelText={confirmModalConfig.cancelText}
+        type={confirmModalConfig.type}
+        icon={confirmModalConfig.icon}
+        iconBgColor={confirmModalConfig.iconBgColor}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
+        onConfirm={confirmModalConfig.onConfirm}
+      />
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModalConfig.visible}
+        title={successModalConfig.title}
+        message={successModalConfig.message}
+        onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
+      />
     </View>
   );
 };
@@ -468,7 +534,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   headerTitleTextDark: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -476,7 +542,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     paddingVertical: 10,
@@ -492,7 +558,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   statLabelMutedTextDark: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
     marginTop: 1,
@@ -509,7 +575,7 @@ const styles = StyleSheet.create({
   },
   cardBlock: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
@@ -520,14 +586,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionBlockTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '800',
     color: '#0F172A',
   },
   sectionBlockSub: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+    lineHeight: 17,
   },
   slateSectionDivider: {
     height: 1,
@@ -549,14 +616,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionRowTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#0F172A',
   },
   actionRowSub: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
+    lineHeight: 16,
   },
   rowDividerLine: {
     height: 1,
@@ -587,8 +655,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   twoFactorBannerDesc: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#475569',
-    lineHeight: 16,
+    lineHeight: 17,
   },
 });

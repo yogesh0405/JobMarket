@@ -38,6 +38,10 @@ export function CompanyLogoAvatar({
 }: Props) {
   const [imageError, setImageError] = useState(false);
 
+  React.useEffect(() => {
+    setImageError(false);
+  }, [logoUrl]);
+
   const normName = companyName && companyName.trim() ? companyName.trim() : '';
   const initialLetters = normName
     ? normName
@@ -52,7 +56,17 @@ export function CompanyLogoAvatar({
   const palette = BRAND_PALETTES[hashString(normName || 'default') % BRAND_PALETTES.length];
   const fontSize = Math.max(11, Math.floor(size * (initialLetters.length > 1 ? 0.36 : 0.44)));
 
-  const rawUrl = getCompanyLogoUrl(normName, logoUrl || undefined);
+  // If explicit logoUrl / avatarUrl is provided, use it directly!
+  const directUrl =
+    logoUrl &&
+    typeof logoUrl === 'string' &&
+    logoUrl.trim().length > 5 &&
+    !logoUrl.includes('null') &&
+    !logoUrl.includes('undefined')
+      ? logoUrl.trim()
+      : null;
+
+  const rawUrl = directUrl || getCompanyLogoUrl(normName, undefined);
 
   const cleanUrl =
     !imageError &&

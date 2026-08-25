@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { RADIUS } from '../../../constants/theme';
 import {
   Briefcase,
   CalendarCheck,
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',

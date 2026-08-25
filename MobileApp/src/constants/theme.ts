@@ -121,10 +121,13 @@ export const SPACING = {
 };
 
 export const RADIUS = {
+  none: 0,
+  xs: 4,
   sm: 6,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  card: 6, // Universal Card Radius (6dp) across entire Mobile App
+  md: 6,   // Standard card & container radius (6dp)
+  lg: 6,   // Major card radius (6dp)
+  xl: 8,   // Modal / bottom sheet top corners
   full: 9999,
 };
 

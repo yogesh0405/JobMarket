@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
               style={styles.backButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <ArrowLeft size={22} color={COLORS.slate900} />
+              <ArrowLeft size={22} color={COLORS.slate900} strokeWidth={2} />
             </TouchableOpacity>
           ) : null}
 

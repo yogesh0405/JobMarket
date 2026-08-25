@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -264,148 +265,153 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         hideRightActions
       />
 
-      {/* Main Body */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Search Input Bar */}
-        <View style={styles.searchBar}>
-          <Search size={18} color="#64748B" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search companies by name, MIDC zone, industry..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+      {/* Main Virtualized List */}
+      <FlatList
+        data={loading ? [] : filteredCompanies}
+        keyExtractor={(item, index) => `company-${item.id || item.name}-${index}`}
+        renderItem={({ item: comp }) => {
+          const jobsCount = comp.open_jobs_count ?? comp.jobs_count ?? comp.openings_count ?? comp.jobsCount ?? 4;
+          const locationText = comp.midc_zone || comp.midcZone || comp.city || 'Waluj MIDC, Chhatrapati Sambhajinagar';
+          const companyType = comp.company_type || comp.companyType || 'Private Limited';
+          const companySize = comp.company_size || comp.companySize || '500+ employees';
 
-        {/* Zone Filter Chips Scroll */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterChipScroll}
-          contentContainerStyle={styles.filterChipContainer}
-        >
-          {ZONE_FILTERS.map((zone) => {
-            const isActive = selectedZone === zone;
-            return (
-              <TouchableOpacity
-                key={zone}
-                activeOpacity={0.8}
-                onPress={() => setSelectedZone(zone)}
-                style={[styles.filterChip, isActive && styles.filterChipActive]}
-              >
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {zone}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          return (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.companyCard}
+              onPress={() => {
+                navigation.navigate('CompanyProfile', {
+                  companyId: comp.id || comp.name,
+                  company: comp,
+                  name: comp.name,
+                });
+              }}
+            >
+              {/* Card Header Row */}
+              <View style={styles.cardHeaderRow}>
+                <CompanyLogoAvatar
+                  logoUrl={comp.logo || comp.logoUrl}
+                  companyName={comp.name}
+                  size={48}
+                  borderRadius={24}
+                />
 
-        {/* Count Summary */}
-        <View style={styles.countRow}>
-          <Text style={styles.countText}>
-            Showing <Text style={{ fontWeight: '800', color: '#0F172A' }}>{filteredCompanies.length}</Text> Verified Companies
-          </Text>
-        </View>
-
-        {/* Companies List */}
-        {loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#2563EB" />
-            <Text style={styles.loadingText}>Loading verified industrial companies...</Text>
-          </View>
-        ) : filteredCompanies.length > 0 ? (
-          <View style={styles.companiesList}>
-            {filteredCompanies.map((comp, index) => {
-              const jobsCount = comp.open_jobs_count ?? comp.jobs_count ?? comp.openings_count ?? comp.jobsCount ?? 4;
-              const locationText = comp.midc_zone || comp.midcZone || comp.city || 'Waluj MIDC, Chhatrapati Sambhajinagar';
-              const companyType = comp.company_type || comp.companyType || 'Private Limited';
-              const companySize = comp.company_size || comp.companySize || '500+ employees';
-              const cardKey = `company-${comp.id || comp.name}-${index}`;
-
-              return (
-                <TouchableOpacity
-                  key={cardKey}
-                  activeOpacity={0.85}
-                  style={styles.companyCard}
-                  onPress={() => {
-                    navigation.navigate('CompanyProfile', {
-                      companyId: comp.id || comp.name,
-                      company: comp,
-                      name: comp.name,
-                    });
-                  }}
-                >
-                  {/* Card Header Row */}
-                  <View style={styles.cardHeaderRow}>
-                    <CompanyLogoAvatar
-                      logoUrl={comp.logo || comp.logoUrl}
-                      companyName={comp.name}
-                      size={48}
-                      borderRadius={24}
-                    />
-
-                    <View style={styles.cardHeaderTextWrap}>
-                      <View style={styles.companyTitleRow}>
-                        <Text style={styles.companyNameText} numberOfLines={1}>
-                          {comp.name}
-                        </Text>
-                      </View>
-
-                      <Text style={styles.industryText} numberOfLines={1}>
-                        {comp.industry || 'Industrial Manufacturing'}
-                      </Text>
-
-                      <View style={styles.locationRow}>
-                        <MapPin size={13} color="#64748B" />
-                        <Text style={styles.locationText} numberOfLines={1}>
-                          {locationText}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Inline Metadata Sub-line */}
-                  <View style={styles.metaSubRow}>
-                    <Text style={styles.metaSubText} numberOfLines={1}>
-                      {companyType}  •  {companySize}
+                <View style={styles.cardHeaderTextWrap}>
+                  <View style={styles.companyTitleRow}>
+                    <Text style={styles.companyNameText} numberOfLines={1}>
+                      {comp.name}
                     </Text>
                   </View>
 
-                  {/* Crisp Section Divider */}
-                  <View style={styles.divider} />
+                  <Text style={styles.industryText} numberOfLines={1}>
+                    {comp.industry || 'Industrial Manufacturing'}
+                  </Text>
 
-                  {/* Card Footer */}
-                  <View style={styles.cardFooterRow}>
-                    <View style={styles.jobsNormalRow}>
-                      <Briefcase size={14} color="#2563EB" />
-                      <Text style={styles.jobsNormalText}>{jobsCount} Vacancies Available</Text>
-                    </View>
-
-                    <View style={styles.viewBtn}>
-                      <Text style={styles.viewBtnText}>View Profile</Text>
-                      <ChevronRight size={14} color="#2563EB" />
-                    </View>
+                  <View style={styles.locationRow}>
+                    <MapPin size={13} color="#64748B" />
+                    <Text style={styles.locationText} numberOfLines={1}>
+                      {locationText}
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+              </View>
+
+              {/* Inline Metadata Sub-line */}
+              <View style={styles.metaSubRow}>
+                <Text style={styles.metaSubText} numberOfLines={1}>
+                  {companyType}  •  {companySize}
+                </Text>
+              </View>
+
+              {/* Crisp Section Divider */}
+              <View style={styles.divider} />
+
+              {/* Card Footer */}
+              <View style={styles.cardFooterRow}>
+                <View style={styles.jobsNormalRow}>
+                  <Briefcase size={14} color="#2563EB" />
+                  <Text style={styles.jobsNormalText}>{jobsCount} Vacancies Available</Text>
+                </View>
+
+                <View style={styles.viewBtn}>
+                  <Text style={styles.viewBtnText}>View Profile</Text>
+                  <ChevronRight size={14} color="#2563EB" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={11}
+        removeClippedSubviews={true}
+        ListHeaderComponent={
+          <View>
+            {/* Search Input Bar */}
+            <View style={styles.searchBar}>
+              <Search size={18} color="#64748B" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search companies by name, MIDC zone, industry..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            {/* Zone Filter Chips Scroll */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterChipScroll}
+              contentContainerStyle={styles.filterChipContainer}
+            >
+              {ZONE_FILTERS.map((zone) => {
+                const isActive = selectedZone === zone;
+                return (
+                  <TouchableOpacity
+                    key={zone}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedZone(zone)}
+                    style={[styles.filterChip, isActive && styles.filterChipActive]}
+                  >
+                    <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                      {zone}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Count Summary */}
+            <View style={styles.countRow}>
+              <Text style={styles.countText}>
+                Showing <Text style={{ fontWeight: '800', color: '#0F172A' }}>{filteredCompanies.length}</Text> Verified Companies
+              </Text>
+            </View>
           </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Building2 size={36} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No Companies Found</Text>
-            <Text style={styles.emptySubtitle}>
-              No industrial companies match your current search query or zone filter.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={styles.loadingText}>Loading verified industrial companies...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Building2 size={36} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Companies Found</Text>
+              <Text style={styles.emptySubtitle}>
+                No industrial companies match your current search query or zone filter.
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={<View style={{ height: 32 }} />}
+      />
     </View>
   );
 };
@@ -416,7 +422,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F7F7',
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 110,
   },
   searchBar: {
@@ -426,18 +433,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    height: 44,
+    marginBottom: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 13.5,
     color: '#0F172A',
+    paddingVertical: 0,
+    margin: 0,
   },
   filterChipScroll: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   filterChipContainer: {
     gap: 8,
@@ -485,8 +494,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 4,
+    borderRadius: 6,
     padding: 16,
+    marginBottom: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

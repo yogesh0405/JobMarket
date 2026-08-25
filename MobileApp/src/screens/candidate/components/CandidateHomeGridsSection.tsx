@@ -7,7 +7,7 @@ import {
   HOTEL_GRID,
   SCHOOL_GRID,
 } from './CandidateHomeConstants';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateHomeGridsSectionProps {
   getRealJobCount: (keyword: string) => number;
@@ -191,7 +191,7 @@ export const CandidateHomeGridsSection: React.FC<CandidateHomeGridsSectionProps>
 const styles = StyleSheet.create({
   standaloneSection: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,

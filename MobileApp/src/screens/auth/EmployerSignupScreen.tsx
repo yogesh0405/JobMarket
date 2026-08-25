@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  Keyboard,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import {
@@ -26,7 +27,6 @@ import {
   Briefcase,
   FileText,
   Wrench,
-  ChevronLeft,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
@@ -34,6 +34,7 @@ import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { COLORS } from '../../constants/theme';
 import { signupSchema } from '../../utils/validators';
+import { handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 
 interface Props {
   navigation: any;
@@ -61,6 +62,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [gstNumber, setGstNumber] = useState('');
@@ -68,6 +70,27 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardPadding, setKeyboardPadding] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardPadding(e.endCoordinates ? Math.max(e.endCoordinates.height, 220) : 220);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardPadding(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleGoogleSignUp = async () => {
     try {
@@ -93,17 +116,25 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   const handleSignup = async () => {
     setError(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
     const payload = {
-      name,
-      email,
+      name: name.trim(),
+      email: cleanEmail,
       password,
       confirmPassword,
-      phone,
-      companyName: role === 'employer' ? companyName : (companyName || `${name}'s Candidate Profile`),
-      gstNumber: gstNumber || undefined,
-      tradeSpecialization: tradeSpecialization || undefined,
+      phone: cleanPhone,
+      companyName: role === 'employer' ? companyName.trim() : (companyName.trim() || `${name.trim()}'s Candidate Profile`),
+      gstNumber: gstNumber ? gstNumber.trim() : undefined,
+      tradeSpecialization: tradeSpecialization ? tradeSpecialization.trim() : undefined,
       role,
     };
+
+    if (role === 'employer' && !payload.companyName) {
+      setError('Company / Factory name is required for Employer registration.');
+      return;
+    }
 
     const result = signupSchema.safeParse(payload);
     if (!result.success) {
@@ -114,7 +145,12 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
     setLoading(true);
     try {
-      await signup(payload);
+      const res = await signup(payload);
+      const targetEmail = res?.email || cleanEmail;
+      navigation.navigate('VerifyOTP', {
+        email: targetEmail,
+        signupPayload: payload,
+      });
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please check details and try again.');
     } finally {
@@ -130,8 +166,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
       <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        ref={scrollViewRef}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(keyboardPadding + 40, 80) }]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={true}
         showsVerticalScrollIndicator={false}
       >
         {/* TOP BRAND HEADER SECTION (Primary Blue) */}
@@ -267,10 +306,12 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 style={styles.textInput}
                 placeholder="9876543210"
                 placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
+                keyboardType="number-pad"
+                maxLength={10}
                 value={phone}
                 onChangeText={(t) => {
-                  setPhone(t);
+                  const sanitized = t.replace(/[^0-9]/g, '').slice(0, 10);
+                  setPhone(sanitized);
                   if (error) setError(null);
                 }}
               />
@@ -344,8 +385,12 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   setPassword(t);
                   if (error) setError(null);
                 }}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
               </TouchableOpacity>
             </View>
@@ -362,13 +407,20 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 style={styles.textInput}
                 placeholder="••••••••"
                 placeholderTextColor="#94A3B8"
-                secureTextEntry={!showPassword}
+                secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={(t) => {
                   setConfirmPassword(t);
                   if (error) setError(null);
                 }}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
               />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {showConfirmPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+              </TouchableOpacity>
             </View>
           </View>
 

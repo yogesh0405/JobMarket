@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ExtendedCandidate, safeString } from './CandidatesUtils';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateCardItemProps {
   item: ExtendedCandidate;
@@ -10,6 +10,14 @@ interface CandidateCardItemProps {
 }
 
 export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSelectCandidate }) => {
+  const photoUrl =
+    item.avatarUrl ||
+    item.profile_picture_url ||
+    (item as any).profilePictureUrl ||
+    (item as any).avatar_url ||
+    (item as any).avatar ||
+    (item as any).photo;
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -19,7 +27,7 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
       {/* Centered Profile Avatar */}
       <View style={styles.avatarCenterBox}>
         <CompanyLogoAvatar
-          logoUrl={item.avatarUrl || item.profile_picture_url}
+          logoUrl={photoUrl}
           companyName={item.name}
           size={58}
           borderRadius={29}
@@ -80,7 +88,7 @@ const styles = StyleSheet.create({
     width: '48.5%',
     height: 200,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 10,

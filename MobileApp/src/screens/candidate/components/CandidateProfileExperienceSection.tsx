@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateProfileExperienceSectionProps {
   skills: string[];
@@ -38,8 +38,6 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
           <Text style={styles.emptySubText}>No key skills added yet.</Text>
         )}
       </View>
-
-      <View style={styles.sectionDividerSlate} />
 
       <View style={styles.sectionCard}>
         <View style={styles.sectionCardHeader}>
@@ -121,8 +119,6 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
         </View>
       </View>
 
-      <View style={styles.sectionDividerSlate} />
-
       <View style={styles.sectionCard}>
         <View style={styles.sectionCardHeader}>
           <Text style={styles.sectionCardTitle}>Education & ITI Certification</Text>
@@ -146,8 +142,6 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
           )}
         </View>
       </View>
-
-      <View style={styles.sectionDividerSlate} />
 
       <View style={[styles.sectionCard, { marginBottom: 24 }]}>
         <View style={styles.sectionCardHeader}>
@@ -185,11 +179,11 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
 const styles = StyleSheet.create({
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#B4C3D4',
     padding: 16,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   sectionCardHeader: {
     flexDirection: 'row',
@@ -236,16 +230,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 8,
   },
   expCardInnerBox: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#B4C3D4',
-    padding: 14,
-    gap: 10,
+    paddingVertical: 4,
+    gap: 8,
   },
   expCardTopRow: {
     flexDirection: 'row',

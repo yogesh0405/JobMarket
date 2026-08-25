@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Mail, CheckCircle2 } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { Mail, CheckCircle2, RotateCw } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
+import { authApi } from '../../api/authApi';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
@@ -15,12 +17,16 @@ interface Props {
 }
 
 export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { verifyOTP } = useAuth();
-  const email = route?.params?.email || '';
+  const { verifyOTP, signup } = useAuth();
+  const { showToast } = useToast();
+  const rawEmail = route?.params?.email || '';
+  const cleanEmail = String(rawEmail).trim().toLowerCase();
+  const signupPayload = route?.params?.signupPayload || null;
 
   const [otpCode, setOtpCode] = useState('');
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,24 +34,89 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
     if (timer > 0) {
       interval = setInterval(() => setTimer((t) => t - 1), 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [timer]);
 
   const handleVerify = async () => {
     setError(null);
-    const parseRes = otpSchema.safeParse({ otpCode });
+    const cleanOtp = otpCode.trim();
+
+    if (timer <= 0) {
+      setError('OTP has expired. Please click "Resend OTP Code" below to receive a new code.');
+      return;
+    }
+
+    const parseRes = otpSchema.safeParse({ otpCode: cleanOtp });
     if (!parseRes.success) {
-      setError(parseRes.error.issues[0]?.message || 'Invalid OTP');
+      setError(parseRes.error.issues[0]?.message || 'Please enter the complete 6-digit OTP code.');
       return;
     }
 
     setLoading(true);
     try {
-      await verifyOTP(email, otpCode);
+      const res = await verifyOTP(cleanEmail, cleanOtp, false);
+
+      Alert.alert(
+        'Signup Successful! 🎉',
+        'Your account has been successfully verified and saved to the database. Please sign in to access your workspace.',
+        [
+          {
+            text: 'Proceed to Login',
+            onPress: () => {
+              navigation.navigate('EmployerLogin', {
+                registeredEmail: cleanEmail,
+                initialRole: signupPayload?.role || 'candidate',
+                signupSuccess: true,
+              });
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (err: any) {
-      setError(err.message || 'OTP verification failed. Please check the code and try again.');
+      const serverMsg = err.message || '';
+      if (timer > 0) {
+        // While the countdown timer is active, do not display misleading "expired" text
+        if (serverMsg.toLowerCase().includes('expired')) {
+          setError('Invalid 6-digit OTP code. Please enter the latest code sent to your email.');
+        } else {
+          setError(serverMsg || 'Registration unsuccessful. Please verify your OTP code and try again.');
+        }
+      } else {
+        setError('OTP has expired. Please tap "Resend OTP Code" below.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (timer > 0 || resending) return;
+    setResending(true);
+    setError(null);
+    try {
+      if (signupPayload && signupPayload.email && signupPayload.password) {
+        await signup(signupPayload);
+      } else {
+        await authApi.signup({
+          email: cleanEmail,
+          password: 'Password@123',
+          confirmPassword: 'Password@123',
+          name: cleanEmail.split('@')[0],
+          role: 'employer',
+          phone: '9876543210',
+        });
+      }
+      setTimer(60);
+      setOtpCode('');
+      showToast('A fresh 6-digit verification code has been sent to your email.', 'success');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send new verification code. Please check details.');
+      showToast(err.message || 'Failed to resend OTP code', 'error');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -63,7 +134,7 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.title}>Check Your Inbox</Text>
             <Text style={styles.subtitle}>
               We sent a 6-digit verification code to {'\n'}
-              <Text style={styles.emailHighlight}>{email}</Text>
+              <Text style={styles.emailHighlight}>{cleanEmail}</Text>
             </Text>
 
             {error ? <ErrorBanner message={error} /> : null}
@@ -74,12 +145,15 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
               keyboardType="number-pad"
               maxLength={6}
               value={otpCode}
-              onChangeText={setOtpCode}
+              onChangeText={(t) => {
+                setOtpCode(t.replace(/[^0-9]/g, '').slice(0, 6));
+                if (error) setError(null);
+              }}
               style={styles.otpInputText}
             />
 
             <Button
-              title="Verify Code & Complete Sign In"
+              title={loading ? 'Verifying Code...' : 'Verify Code & Complete Sign In'}
               onPress={handleVerify}
               loading={loading}
               size="lg"
@@ -90,8 +164,17 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
               {timer > 0 ? (
                 <Text style={styles.timerText}>Resend code in {timer}s</Text>
               ) : (
-                <TouchableOpacity onPress={() => setTimer(60)}>
-                  <Text style={styles.resendLink}>Resend OTP Code</Text>
+                <TouchableOpacity
+                  onPress={handleResend}
+                  disabled={resending}
+                  style={styles.resendBtn}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {resending ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <Text style={styles.resendLink}>Resend OTP Code</Text>
+                  )}
                 </TouchableOpacity>
               )}
             </View>
@@ -163,6 +246,12 @@ const styles = StyleSheet.create({
   timerText: {
     ...TYPOGRAPHY.body,
     color: COLORS.slate400,
+  },
+  resendBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resendLink: {
     ...TYPOGRAPHY.body,

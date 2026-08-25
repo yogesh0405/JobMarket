@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,21 +21,27 @@ import {
   EyeOff,
   Phone,
   Briefcase,
+  KeyRound,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { SuccessModal } from '../../components/common/SuccessModal';
 import { COLORS } from '../../constants/theme';
+import { authApi } from '../../api/authApi';
 import { GoogleGLogo } from './components/GoogleGLogo';
 import { EmployerTwoFactorModal } from './components/EmployerTwoFactorModal';
+import { ForgotPasswordModal } from './components/ForgotPasswordModal';
 
 interface Props {
   navigation: any;
+  route?: any;
 }
 
-export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
+export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { login, loginWithGoogle, verify2FALogin } = useAuth();
   const { showToast } = useToast();
@@ -48,12 +54,84 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (route?.params?.registeredEmail) {
+      setEmail(String(route.params.registeredEmail).trim());
+    }
+    if (route?.params?.initialRole) {
+      setRole(route.params.initialRole);
+    }
+    if (route?.params?.signupSuccess) {
+      showToast('Registration verified! Please enter your password to sign in.', 'success');
+    }
+  }, [route?.params]);
+
   // 2FA Modal State
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [twoFactorOtp, setTwoFactorOtp] = useState('');
   const [twoFactorLoading, setTwoFactorLoading] = useState(false);
   const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+
+  // Forgot Password & Confirmation Modal State
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    highlightText?: string;
+    confirmText: string;
+    cancelText?: string;
+    type?: 'danger' | 'primary' | 'warning';
+    icon?: React.ReactNode;
+    iconBgColor?: string;
+    onConfirm: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message?: string;
+  }>({
+    visible: false,
+    title: '',
+  });
+
+  const handleOpenForgotPassword = () => {
+    const cleanEmail = email.trim();
+    if (cleanEmail && cleanEmail.includes('@')) {
+      setConfirmModalConfig({
+        visible: true,
+        title: 'Reset Password',
+        message: 'A 6-digit verification code will be sent to your registered email address:',
+        highlightText: cleanEmail,
+        confirmText: 'Send Code',
+        cancelText: 'Cancel',
+        type: 'primary',
+        iconBgColor: '#EFF6FF',
+        icon: <KeyRound size={26} color={COLORS.primary} />,
+        onConfirm: async () => {
+          setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+          setShowForgotPasswordModal(true);
+          try {
+            await authApi.forgotPassword(cleanEmail);
+          } catch (e: any) {
+            console.warn('Forgot password dispatch error:', e);
+          }
+        },
+      });
+    } else {
+      setShowForgotPasswordModal(true);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -244,11 +322,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.inputLabel}>
                 Account password<Text style={{ color: '#EF4444' }}>*</Text>
               </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  showToast('Sending password reset link...', 'info');
-                }}
-              >
+              <TouchableOpacity onPress={handleOpenForgotPassword}>
                 <Text style={styles.forgotLinkText}>Forgot?</Text>
               </TouchableOpacity>
             </View>
@@ -357,6 +431,46 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation }) => {
         setTwoFactorError={setTwoFactorError}
         twoFactorLoading={twoFactorLoading}
         onVerify={handleVerify2FACode}
+      />
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        visible={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+        initialEmail={email}
+        onSuccess={(newPass, resetMail) => {
+          setEmail(resetMail);
+          setPassword(newPass);
+          setSuccessModalConfig({
+            visible: true,
+            title: 'Password Reset Successfully !',
+            message: 'Your account password has been reset successfully. You can now sign in with your new password.',
+          });
+        }}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={confirmModalConfig.visible}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        highlightText={confirmModalConfig.highlightText}
+        confirmText={confirmModalConfig.confirmText}
+        cancelText={confirmModalConfig.cancelText}
+        type={confirmModalConfig.type}
+        icon={confirmModalConfig.icon}
+        iconBgColor={confirmModalConfig.iconBgColor}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
+        onConfirm={confirmModalConfig.onConfirm}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModalConfig.visible}
+        title={successModalConfig.title}
+        message={successModalConfig.message}
+        buttonText="Sign in Now"
+        onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
       />
     </KeyboardAvoidingView>
   );

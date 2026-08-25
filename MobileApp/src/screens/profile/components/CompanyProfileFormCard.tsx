@@ -22,7 +22,7 @@ import {
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CompanyProfileFormCardProps {
   logoUri: string | null;
@@ -148,10 +148,10 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
       <Input
         label="Contact Phone Number *"
         placeholder="10-digit mobile number"
-        keyboardType="phone-pad"
+        keyboardType="number-pad"
         value={phone}
         maxLength={10}
-        onChangeText={setPhone}
+        onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
         leftIcon={<Phone size={18} color="#64748B" />}
       />
 
@@ -188,7 +188,7 @@ export const CompanyProfileFormCard: React.FC<CompanyProfileFormCardProps> = ({
 const styles = StyleSheet.create({
   formCardContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,

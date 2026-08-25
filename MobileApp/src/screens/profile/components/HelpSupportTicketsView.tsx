@@ -26,7 +26,7 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { Button } from '../../../components/common/Button';
@@ -105,10 +105,10 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
         <View style={styles.headerTitleRowNav}>
           <TouchableOpacity
             onPress={onBackToMain}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{ padding: 4 }}
           >
-            <ArrowLeft size={20} color="#0F172A" />
+            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.ticketsHeaderTitleTextDark}>Support Tickets Desk</Text>
         </View>
@@ -211,9 +211,10 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
             <Input
               label="Mobile Phone Number (Optional)"
               placeholder="10-digit mobile number"
-              keyboardType="phone-pad"
+              keyboardType="number-pad"
+              maxLength={10}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
               leftIcon={<Phone size={18} color="#64748B" />}
             />
 
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 32,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     gap: 8,
@@ -534,7 +535,7 @@ const styles = StyleSheet.create({
   },
   ticketListItemCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,

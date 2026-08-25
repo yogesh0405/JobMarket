@@ -116,7 +116,9 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
     }
   };
 
-  const userPhotoUrl = selectedApplicant?.user ? (selectedApplicant.user.profile_picture_url || (selectedApplicant.user as any).profilePhotoUrl) : null;
+  const userPhotoUrl = selectedApplicant?.user
+    ? (selectedApplicant.user.profile_picture_url || (selectedApplicant.user as any).profilePictureUrl || (selectedApplicant.user as any).avatarUrl || (selectedApplicant.user as any).avatar_url || (selectedApplicant.user as any).avatar || (selectedApplicant.user as any).photo)
+    : null;
 
   const getDaysInMonthGrid = (date: Date) => {
     const year = date.getFullYear();

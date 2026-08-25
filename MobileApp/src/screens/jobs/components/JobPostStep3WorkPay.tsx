@@ -11,7 +11,7 @@ import { Briefcase, IndianRupee, Clock, Sun, Moon, RotateCw, GraduationCap } fro
 import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { EDUCATION_REQUIREMENT_OPTIONS } from './JobPostConstants';
-import { COLORS, SPACING } from '../../../constants/theme';
+import { COLORS, SPACING, RADIUS } from '../../../constants/theme';
 
 interface JobPostStep3WorkPayProps {
   experienceRequired: boolean;
@@ -310,7 +310,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,

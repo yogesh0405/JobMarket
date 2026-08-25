@@ -275,12 +275,44 @@ export const useJobs = () => {
         const existingIds = new Set(state.jobs.map(j => j.id));
         const brandNewJobs = json.data.filter((j: any) => !existingIds.has(j.id));
         dispatch({ type: 'SET_JOBS', payload: [...updatedJobs, ...brandNewJobs] });
+
+        if (state.currentUser) {
+          const appliedIds = json.data.map((j: any) => j.id);
+          const currentApplied = Array.isArray(state.currentUser.appliedJobs) ? state.currentUser.appliedJobs : [];
+          const mergedAppliedIds = Array.from(new Set([...currentApplied, ...appliedIds]));
+
+          const currentWithStatus = Array.isArray(state.currentUser.appliedJobsWithStatus) ? state.currentUser.appliedJobsWithStatus : [];
+          const statusMap = new Map(currentWithStatus.map((item: any) => [item.jobId, item]));
+
+          json.data.forEach((j: any) => {
+            statusMap.set(j.id, {
+              ...(statusMap.get(j.id) || {}),
+              jobId: j.id,
+              status: j.applicationStatus || j.status || 'applied',
+              appliedAt: j.appliedAt || j.created_at || (statusMap.get(j.id) as any)?.appliedAt || new Date().toISOString(),
+              interviewDate: j.interviewDate,
+              interviewTime: j.interviewTime,
+              venueAddress: j.venueAddress,
+              mapsLink: j.mapsLink
+            });
+          });
+
+          dispatch({
+            type: 'UPDATE_USER',
+            payload: {
+              id: state.currentUser.id,
+              appliedJobs: mergedAppliedIds,
+              appliedJobsWithStatus: Array.from(statusMap.values())
+            }
+          });
+        }
+
         return json.data;
       }
     } catch (err) {
       console.error('Error fetching candidate applied jobs:', err);
     }
-  }, [dispatch, state.jobs]);
+  }, [dispatch, state.jobs, state.currentUser]);
 
   const fetchCandidateSavedJobs = useCallback(async () => {
     try {

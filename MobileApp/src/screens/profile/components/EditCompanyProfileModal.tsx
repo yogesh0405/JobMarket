@@ -260,8 +260,8 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
         {/* Modal Header */}
         <View style={styles.modalHeader}>
-          <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.backBtn}>
-            <ArrowLeft size={20} color="#0F172A" />
+          <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.headerTitleText}>Edit Company Profile</Text>
@@ -531,8 +531,8 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
                   <TextInput
                     style={styles.textInput}
                     value={phone}
-                    onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, ''))}
-                    keyboardType="phone-pad"
+                    onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, '').slice(0, 10))}
+                    keyboardType="number-pad"
                     maxLength={10}
                     placeholder="10-digit mobile number"
                     placeholderTextColor="#94A3B8"

@@ -11,7 +11,7 @@ import {
 import { MapPin, Map, Navigation2, Compass, AlertCircle } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { JobLocationMapPreview } from '../../../components/map/JobLocationMapPreview';
-import { COLORS, SPACING } from '../../../constants/theme';
+import { COLORS, SPACING, RADIUS } from '../../../constants/theme';
 
 interface JobPostStep2LocationProps {
   location: string;
@@ -150,7 +150,7 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,

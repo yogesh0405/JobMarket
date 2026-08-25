@@ -18,8 +18,8 @@ interface AuthContextType {
   login: (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => Promise<any>;
   loginWithGoogle: (payload: any) => Promise<void>;
   verify2FALogin: (mfaToken: string, otpCode: string) => Promise<any>;
-  signup: (payload: any) => Promise<{ email: string }>;
-  verifyOTP: (email: string, otpCode: string) => Promise<void>;
+  signup: (payload: any) => Promise<{ success?: boolean; email: string }>;
+  verifyOTP: (email: string, otpCode: string, autoLogin?: boolean) => Promise<any>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<User>) => Promise<User | void>;
   refreshUser: () => Promise<void>;
@@ -279,28 +279,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authApi.signup(payload);
-      if (res.success && res.data?.email) {
-        return { email: res.data.email };
+      if (res && (res.success || res.data || (res as any).email)) {
+        const returnedEmail = res.data?.email || (res as any).email || payload?.email;
+        return { success: true, email: returnedEmail };
       }
-      throw new Error(res.message || res.error || 'Signup failed');
+      throw new Error(res?.message || (res as any)?.error || 'Signup failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const verifyOTP = async (email: string, otpCode: string) => {
+  const verifyOTP = async (email: string, otpCode: string, autoLogin: boolean = false) => {
     setIsLoading(true);
     try {
       const res = await authApi.verifyOTP(email, otpCode);
-      if (res.success && res.data) {
-        const { accessToken, refreshToken, sessionId, user: userData } = res.data;
-        if (accessToken && refreshToken) {
-          await saveTokens({ accessToken, refreshToken }, sessionId);
-          await saveStoredUser(userData);
-          setUser(userData);
+      const data = res.data || (res as any);
+      if (res.success && data) {
+        const accessToken = data.accessToken || data.token || (data.tokens && data.tokens.accessToken);
+        const refreshToken = data.refreshToken || (data.tokens && data.tokens.refreshToken);
+        const sessionId = data.sessionId || (data.tokens && data.tokens.sessionId);
+        const userData = data.user || data;
+        if (autoLogin && accessToken) {
+          await saveTokens({ accessToken, refreshToken: refreshToken || '' }, sessionId);
+          if (userData) {
+            await saveStoredUser(userData);
+            setUser(userData);
+          }
         }
+        return { success: true, user: userData };
       } else {
-        throw new Error(res.message || res.error || 'OTP Verification failed');
+        throw new Error(res?.message || (res as any)?.error || 'Registration unsuccessful. Please try again.');
       }
     } finally {
       setIsLoading(false);

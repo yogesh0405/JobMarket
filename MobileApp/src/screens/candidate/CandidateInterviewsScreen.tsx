@@ -17,7 +17,7 @@ import {
   MapPin,
   Building2,
   Briefcase,
-  ChevronLeft,
+  ArrowLeft,
   ExternalLink,
   CheckCircle2,
   XCircle,
@@ -28,7 +28,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { candidateApi, InterviewItem } from '../../api/candidateApi';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -205,9 +205,9 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <ChevronLeft size={22} color="#0F172A" />
+          <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>My Interviews</Text>
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     padding: 14,
     gap: 10,
     shadowColor: '#0F172A',

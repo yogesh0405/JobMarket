@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
@@ -36,12 +36,10 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [visibleCount, setVisibleCount] = useState(15);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
@@ -198,7 +196,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setVisibleCount(15);
     loadJobsData(true);
   }, [loadJobsData]);
 
@@ -374,18 +371,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     [jobs, searchQuery, selectedCategory]
   );
 
-  const displayedJobs = filteredJobs.slice(0, visibleCount);
-
-  const handleLoadMore = () => {
-    if (displayedJobs.length < filteredJobs.length && !loadingMore) {
-      setLoadingMore(true);
-      setTimeout(() => {
-        setVisibleCount((prev) => prev + 15);
-        setLoadingMore(false);
-      }, 400);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Header title="Browse Industrial Vacancies" subtitle="Find factory, trade & engineering jobs" showBack={false} />
@@ -408,79 +393,75 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         navigation={navigation}
       />
 
-      <ScrollView
+      <FlatList
+        data={loading ? [] : filteredJobs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item: job }) => (
+          <CandidateJobCardItem
+            key={job.id}
+            job={job}
+            viewMode={viewMode}
+            isSaved={savedJobIds.includes(job.id)}
+            onToggleSave={() => handleToggleSave(job.id)}
+            onPress={() =>
+              navigation.navigate('CandidateJobsTab', {
+                screen: 'CandidateJobDetail',
+                params: { jobId: job.id, job },
+              })
+            }
+          />
+        )}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-      >
-        <View style={styles.resultsInfoRow}>
-          <Text style={styles.resultsCountText}>
-            Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>{filteredJobs.length}</Text> active vacancies
-          </Text>
-        </View>
-
-        {loading ? (
-          <View style={{ gap: 12 }}>
-            <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
-            <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={11}
+        removeClippedSubviews={true}
+        ListHeaderComponent={
+          <View style={styles.resultsInfoRow}>
+            <Text style={styles.resultsCountText}>
+              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>{filteredJobs.length}</Text> active vacancies
+            </Text>
           </View>
-        ) : filteredJobs.length === 0 ? (
-          <View style={styles.emptyStateBox}>
-            <Briefcase size={32} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No matching job vacancies</Text>
-            <Text style={styles.emptySub}>Try clearing filters or search term to see more listings.</Text>
-            <TouchableOpacity
-              style={styles.resetFilterBtn}
-              onPress={() => {
-                setSearchQuery('');
-                setSelectedCategory('All Jobs');
-                setActiveFilters({
-                  industry: 'All Industries',
-                  jobType: 'All Types',
-                  workMode: 'All Modes',
-                  minExperience: 'All Experience',
-                  salaryMin: 0,
-                  midcZone: 'All MIDC Zones',
-                  busFacility: false,
-                  canteen: false,
-                  accommodation: false,
-                  overtime: false,
-                });
-              }}
-            >
-              <Text style={styles.resetFilterBtnText}>Reset All Filters</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={viewMode === 'grid' ? styles.gridContainer : styles.listContainer}>
-            {displayedJobs.map((job) => (
-              <CandidateJobCardItem
-                key={job.id}
-                job={job}
-                viewMode={viewMode}
-                isSaved={savedJobIds.includes(job.id)}
-                onToggleSave={() => handleToggleSave(job.id)}
-                onPress={() =>
-                  navigation.navigate('CandidateJobsTab', {
-                    screen: 'CandidateJobDetail',
-                    params: { jobId: job.id, job },
-                  })
-                }
-              />
-            ))}
-          </View>
-        )}
-
-        {displayedJobs.length < filteredJobs.length && !loading ? (
-          <TouchableOpacity style={styles.loadMoreBtn} activeOpacity={0.8} onPress={handleLoadMore}>
-            {loadingMore ? (
-              <ActivityIndicator color={COLORS.primary} size="small" />
-            ) : (
-              <Text style={styles.loadMoreText}>Load More Jobs ({filteredJobs.length - displayedJobs.length} remaining)</Text>
-            )}
-          </TouchableOpacity>
-        ) : null}
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={{ gap: 12 }}>
+              <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+              <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+            </View>
+          ) : (
+            <View style={styles.emptyStateBox}>
+              <Briefcase size={32} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No matching job vacancies</Text>
+              <Text style={styles.emptySub}>Try clearing filters or search term to see more listings.</Text>
+              <TouchableOpacity
+                style={styles.resetFilterBtn}
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All Jobs');
+                  setActiveFilters({
+                    industry: 'All Industries',
+                    jobType: 'All Types',
+                    workMode: 'All Modes',
+                    minExperience: 'All Experience',
+                    salaryMin: 0,
+                    midcZone: 'All MIDC Zones',
+                    busFacility: false,
+                    canteen: false,
+                    accommodation: false,
+                    overtime: false,
+                  });
+                }}
+              >
+                <Text style={styles.resetFilterBtnText}>Reset All Filters</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
+        ListFooterComponent={<View style={{ height: 32 }} />}
+      />
 
       <JobFilterSideDrawer
         visible={filterDrawerOpen}
@@ -565,20 +546,5 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     gap: 8,
-  },
-  loadMoreBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 20,
-  },
-  loadMoreText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.primary,
   },
 });

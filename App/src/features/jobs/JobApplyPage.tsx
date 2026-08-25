@@ -22,7 +22,7 @@ import {
   Send
 } from 'lucide-react';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
-import { ensureArray } from '../../utils/helpers';
+import { ensureArray, formatDate } from '../../utils/helpers';
 
 export const JobApplyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,6 +100,60 @@ export const JobApplyPage: React.FC = () => {
           >
             Explore Other Jobs
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser.id || a.id === currentUser.id);
+  const userAppWithStatus = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+  const hasApplied = Boolean(
+    currentUser.appliedJobs?.includes(job.id) ||
+    userAppWithStatus ||
+    applicantRecord ||
+    (job as any).applicationStatus ||
+    (job as any).appliedAt
+  );
+
+  const appliedAtDate = userAppWithStatus?.appliedAt || applicantRecord?.appliedAt || (job as any).appliedAt || null;
+  const applicationStatus = userAppWithStatus?.status || applicantRecord?.status || (job as any).applicationStatus || 'applied';
+
+  if (hasApplied && !submittedSuccess) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '40px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', padding: '36px 28px', borderRadius: '8px', maxWidth: '520px', width: '100%', textAlign: 'center', boxShadow: '0 8px 24px rgba(15,23,42,0.08)' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+            <CheckCircle2 size={32} strokeWidth={2.5} />
+          </div>
+
+          <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
+            Application Already Submitted
+          </h2>
+
+          <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 8px 0' }}>
+            You have already applied for <strong>{job.title}</strong> at <strong>{job.company}</strong>.
+          </p>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: '700', color: '#15803D', margin: '8px 0 24px 0' }}>
+            <span>{appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}</span>
+            <span>•</span>
+            <span style={{ textTransform: 'capitalize' }}>Status: {applicationStatus}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button
+              onClick={() => navigate(`/job/${job.id}`)}
+              style={{ backgroundColor: '#FFFFFF', color: '#475569', border: '1px solid #CBD5E1', padding: '10px 18px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+            >
+              Back to Job
+            </button>
+            <button
+              onClick={() => navigate('/dashboard?tab=applied')}
+              style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}
+            >
+              View My Applications
+            </button>
+          </div>
         </div>
       </div>
     );

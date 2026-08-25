@@ -14,7 +14,7 @@ import {
   Clock,
   History,
 } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface SecuritySessionsSectionProps {
   sessions: any[];
@@ -38,11 +38,8 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
         <View style={{ flex: 1 }}>
           <View style={styles.titleRow}>
             <History size={18} color="#2563EB" />
-            <Text style={styles.sectionTitle}>Login Sessions History & Security Log</Text>
+            <Text style={styles.sectionTitle}>Login Sessions</Text>
           </View>
-          <Text style={styles.sectionSub}>
-            Audit log of active & past logins across browsers and mobile platforms.
-          </Text>
         </View>
 
         {sessions.length > 1 && onTerminateOtherSessions ? (
@@ -52,7 +49,7 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
             disabled={isTerminatingOtherSessions}
             onPress={onTerminateOtherSessions}
           >
-            <LogOut size={12} color="#DC2626" />
+            <LogOut size={10} color="#DC2626" />
             <Text style={styles.terminateAllText}>
               {isTerminatingOtherSessions ? 'Terminating...' : 'Logout Others'}
             </Text>
@@ -64,11 +61,11 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
       {sessionsLoading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Detecting active device sessions...</Text>
+          <Text style={styles.loadingText}>Checking active devices...</Text>
         </View>
       ) : sessions.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>No active sessions detected.</Text>
+          <Text style={styles.emptyText}>No other active devices found.</Text>
         </View>
       ) : (
         /* Sessions List Cards matching Web App styling */
@@ -111,7 +108,7 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
                       ]}
                     >
                       <DeviceIconComp
-                        size={18}
+                        size={15}
                         color={isCurrent ? '#2563EB' : '#64748B'}
                       />
                     </View>
@@ -132,7 +129,7 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
                       activeOpacity={0.7}
                       onPress={() => onRevokeSession(sess.id, deviceName)}
                     >
-                      <LogOut size={13} color="#DC2626" />
+                      <LogOut size={10} color="#DC2626" />
                       <Text style={styles.logoutButtonText}>Logout</Text>
                     </TouchableOpacity>
                   ) : null}
@@ -175,7 +172,7 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
 const styles = StyleSheet.create({
   sectionContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
@@ -193,29 +190,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14.5,
+    fontWeight: '800',
     color: '#0F172A',
   },
   sectionSub: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   terminateAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   terminateAllText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#DC2626',
   },
@@ -243,9 +240,9 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 14,
-    gap: 10,
+    borderRadius: RADIUS.card,
+    padding: 10,
+    gap: 6,
   },
   sessionCardCurrent: {
     borderWidth: 1.5,
@@ -259,17 +256,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   cardLeftBlock: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   deviceIconContainer: {
-    width: 38,
-    height: 38,
+    width: 30,
+    height: 30,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -284,47 +281,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   deviceNameText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#0F172A',
   },
   browserSubtitleText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 0.5,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    gap: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FEE2E2',
     borderRadius: 4,
   },
   logoutButtonText: {
-    fontSize: 11.5,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     color: '#DC2626',
   },
   cardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
     flexWrap: 'wrap',
-    paddingTop: 8,
+    paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: '#F8FAFC',
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
   },
   activeStatusText: {

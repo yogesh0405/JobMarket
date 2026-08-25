@@ -23,7 +23,7 @@ import { candidateApi } from '../../api/candidateApi';
 import { apiFetch } from '../../api/client';
 import { Job, Advertisement } from '../../types';
 import { Header } from '../../components/common/Header';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { ApplicantAdvantageSection } from '../../components/candidate/ApplicantAdvantageSection';
@@ -605,14 +605,16 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.sectionSeparatorDivider} />
 
-        {/* Applicant Advantage Section */}
-        <ApplicantAdvantageSection />
-
         {/* Category & Industry Grids Section */}
         <CandidateHomeGridsSection
           getRealJobCount={getRealJobCount}
           onQuickTradeSearch={handleQuickTradeSearch}
         />
+
+        <View style={styles.sectionSeparatorDivider} />
+
+        {/* Applicant Advantage Section (Placed at End of Home Page) */}
+        <ApplicantAdvantageSection />
       </ScrollView>
 
       <JobFilterSideDrawer
@@ -644,7 +646,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     paddingHorizontal: 12,
     height: 48,
     gap: 10,
@@ -695,7 +697,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingVertical: 8,
@@ -709,7 +711,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#EFF6FF',
     padding: 10,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     marginBottom: 6,
   },
   suggestionHeaderText: {
@@ -765,7 +767,7 @@ const styles = StyleSheet.create({
   statSquareCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,

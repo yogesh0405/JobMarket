@@ -34,6 +34,8 @@ import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { SuccessModal } from '../../components/common/SuccessModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface Props {
@@ -79,26 +81,46 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
     fetchJobs();
   };
 
+  const [deleteConfirmConfig, setDeleteConfirmConfig] = useState<{
+    visible: boolean;
+    jobId: string;
+    jobTitle: string;
+  }>({
+    visible: false,
+    jobId: '',
+    jobTitle: '',
+  });
+  const [deleting, setDeleting] = useState(false);
+
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message?: string;
+  }>({
+    visible: false,
+    title: '',
+  });
+
   const handleDeleteJob = (id: string, title: string) => {
-    Alert.alert(
-      'Delete Job Posting',
-      `Are you sure you want to delete "${title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await jobsApi.deleteJob(id);
-              setJobs((prev) => prev.filter((j) => j.id !== id));
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to delete job posting.');
-            }
-          },
-        },
-      ]
-    );
+    setDeleteConfirmConfig({
+      visible: true,
+      jobId: id,
+      jobTitle: title,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmConfig.jobId) return;
+    setDeleting(true);
+    try {
+      await jobsApi.deleteJob(deleteConfirmConfig.jobId);
+      setJobs((prev) => prev.filter((j) => j.id !== deleteConfirmConfig.jobId));
+      setDeleteConfirmConfig({ visible: false, jobId: '', jobTitle: '' });
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to delete job posting.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const isPendingStatus = (status?: string) => {
@@ -323,7 +345,34 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
         onClose={() => setManageVacanciesJob(null)}
         onSuccess={(updatedJob) => {
           setJobs((prev) => prev.map((j) => (j.id === updatedJob.id ? updatedJob : j)));
+          setSuccessModalConfig({
+            visible: true,
+            title: 'Your Job Details Updated Successfully !',
+          });
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        visible={deleteConfirmConfig.visible}
+        title="Delete Job Role"
+        message={`Are you sure you want to delete "${deleteConfirmConfig.jobTitle}"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        iconBgColor="#FEE2E2"
+        icon={<Trash2 size={26} color="#DC2626" />}
+        loading={deleting}
+        onClose={() => setDeleteConfirmConfig({ visible: false, jobId: '', jobTitle: '' })}
+        onConfirm={handleConfirmDelete}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModalConfig.visible}
+        title={successModalConfig.title}
+        message={successModalConfig.message}
+        onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
       />
     </View>
   );
@@ -407,7 +456,7 @@ const styles = StyleSheet.create({
   },
   jobCard3D: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 12,
