@@ -475,10 +475,17 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
                     border: '1.5px solid #cbd5e1'
                   }}
                 >
-                  {viewWorker.profilePictureUrl ? (
-                    <img src={viewWorker.profilePictureUrl} alt={viewWorker.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {viewWorker.profilePictureUrl && typeof viewWorker.profilePictureUrl === 'string' ? (
+                    <img 
+                      src={viewWorker.profilePictureUrl} 
+                      alt={typeof viewWorker.name === 'string' ? viewWorker.name : 'Candidate'} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
                   ) : (
-                    (viewWorker.name || 'C').charAt(0).toUpperCase()
+                    (typeof viewWorker.name === 'string' && viewWorker.name.trim() ? viewWorker.name.trim().charAt(0) : 'C').toUpperCase()
                   )}
                 </div>
 

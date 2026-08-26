@@ -36,6 +36,8 @@ import { CandidateHomeGridsSection } from './components/CandidateHomeGridsSectio
 import { CandidateHomePromoSlider } from './components/CandidateHomePromoSlider';
 import { CandidateHomePopularRolesSection } from './components/CandidateHomePopularRolesSection';
 
+import { savedJobsStore } from '../../utils/savedJobsStore';
+
 interface Props {
   navigation: any;
 }
@@ -43,10 +45,20 @@ interface Props {
 export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>(savedJobsStore.getSavedIds());
   const [promoBanners, setPromoBanners] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    setSavedJobIds(savedJobsStore.getSavedIds());
+    const unsubscribe = savedJobsStore.subscribe(() => {
+      setSavedJobIds(savedJobsStore.getSavedIds());
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Top Search Bar & Live Autocomplete Suggestions State
   const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
@@ -169,8 +181,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         setJobs(rotatedJobs);
       }
       if (savedRes.success && savedRes.data) {
-        const savedIds = (savedRes.data || []).map((j: any) => j.id);
-        setSavedJobIds(savedIds);
+        savedJobsStore.setSavedJobs(savedRes.data);
+        setSavedJobIds(savedJobsStore.getSavedIds());
       }
 
       if (adsRes && adsRes.success && Array.isArray(adsRes.data)) {
@@ -239,19 +251,15 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleToggleSave = useCallback((jobId: string) => {
-    setSavedJobIds((prev) => {
-      const isSaved = prev.includes(jobId);
+    const foundJob = jobs.find((j) => String(j.id) === String(jobId));
+    savedJobsStore.toggleSave(foundJob || jobId).then((isSaved) => {
       if (isSaved) {
-        showToast('Job removed !', 'info');
-        return prev.filter((id) => id !== jobId);
+        showToast('Job saved to bookmarks!', 'success');
       } else {
-        showToast('Job saved !', 'success');
-        return [...prev, jobId];
+        showToast('Job removed from bookmarks', 'info');
       }
     });
-
-    candidateApi.toggleSaveJob(jobId).catch(() => {});
-  }, [showToast]);
+  }, [jobs, showToast]);
 
   const handleSearchSubmit = () => {
     navigation.navigate('CandidateJobsTab', {

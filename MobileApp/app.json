@@ -39,7 +39,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "intentFilters": [
         {
@@ -96,11 +97,11 @@
       "autolinkingModuleResolution": false,
       "tsconfigPaths": true
     },
+    "owner": "insightforges-team",
     "extra": {
       "eas": {
-        "projectId": "673f709a-f3b0-4a3f-8df7-377c007d41df"
+        "projectId": "0dffde1a-d3aa-46e6-b42e-379ed7312736"
       }
-    },
-    "owner": "insightforge"
+    }
   }
 }

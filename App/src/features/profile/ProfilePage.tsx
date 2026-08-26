@@ -31,7 +31,8 @@ import {
   Eye,
   Lock,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { Resume } from '../../types';
 
@@ -726,11 +727,14 @@ export const ProfilePage: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    {currentUser.profilePictureUrl ? (
+                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
                       <img 
                         src={currentUser.profilePictureUrl} 
-                        alt={currentUser.companyName || currentUser.name} 
+                        alt={typeof (currentUser.companyName || currentUser.name) === 'string' ? (currentUser.companyName || currentUser.name) : 'Company Logo'} 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
                     ) : (
                       <CompanyDefaultLogo logoUrl={null} companyName={currentUser.companyName || currentUser.name} size={54} />
@@ -994,11 +998,14 @@ export const ProfilePage: React.FC = () => {
                   fontSize: '24px',
                   fontWeight: '800'
                 }}>
-                  {currentUser.profilePictureUrl ? (
+                  {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
                     <img 
                       src={currentUser.profilePictureUrl} 
-                      alt={currentUser.name} 
+                      alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     getInitials(currentUser.name)

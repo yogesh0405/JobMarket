@@ -102,6 +102,15 @@ export class ErrorBoundary extends Component<Props, State> {
                 Browse Jobs
               </a>
             </div>
+
+            {this.state.error && (
+              <details style={{ marginTop: '16px', textAlign: 'left', background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', color: '#64748B' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Error Details</summary>
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: '6px 0 0 0' }}>
+                  {this.state.error.toString()}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       );

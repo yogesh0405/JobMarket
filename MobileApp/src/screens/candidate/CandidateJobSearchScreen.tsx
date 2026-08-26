@@ -22,6 +22,7 @@ import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobF
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
 import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
+import { savedJobsStore } from '../../utils/savedJobsStore';
 
 const FALLBACK_JOBS: Job[] = [];
 
@@ -33,10 +34,20 @@ interface Props {
 export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showToast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [savedJobIds, setSavedJobIds] = useState<string[]>(savedJobsStore.getSavedIds());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    setSavedJobIds(savedJobsStore.getSavedIds());
+    const unsubscribe = savedJobsStore.subscribe(() => {
+      setSavedJobIds(savedJobsStore.getSavedIds());
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -177,8 +188,8 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       }
 
       if (savedRes.success && savedRes.data) {
-        const savedIds = (savedRes.data || []).map((j: any) => j.id);
-        setSavedJobIds(savedIds);
+        savedJobsStore.setSavedJobs(savedRes.data);
+        setSavedJobIds(savedJobsStore.getSavedIds());
       }
     } catch (err) {
       setJobs(ensureJobLogos(FALLBACK_JOBS));
@@ -200,19 +211,15 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   }, [loadJobsData]);
 
   const handleToggleSave = useCallback((jobId: string) => {
-    setSavedJobIds((prev) => {
-      const isSaved = prev.includes(jobId);
+    const foundJob = jobs.find((j) => String(j.id) === String(jobId));
+    savedJobsStore.toggleSave(foundJob || jobId).then((isSaved) => {
       if (isSaved) {
-        showToast('Job removed !', 'info');
-        return prev.filter((id) => id !== jobId);
+        showToast('Job saved to bookmarks!', 'success');
       } else {
-        showToast('Job saved !', 'success');
-        return [...prev, jobId];
+        showToast('Job removed from bookmarks', 'info');
       }
     });
-
-    candidateApi.toggleSaveJob(jobId).catch(() => {});
-  }, [showToast]);
+  }, [jobs, showToast]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {

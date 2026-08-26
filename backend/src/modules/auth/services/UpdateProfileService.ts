@@ -116,6 +116,30 @@ export class UpdateProfileService {
       }
     }
 
+    // Check if new profile picture base64 data is uploaded
+    const photoUrl = profileData.profilePictureUrl || profileData.profile_picture_url;
+    if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('data:image/')) {
+      if (currentUser.profile_picture_url) {
+        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.profile_picture_url);
+        if (oldPublicId) {
+          try {
+            await CloudinaryUtil.deleteFile(oldPublicId);
+          } catch (err) {
+            logger.error(`Failed to delete old avatar ${oldPublicId} from Cloudinary:`, err);
+          }
+        }
+      }
+
+      try {
+        const publicId = `avatar_${userId}_${Date.now()}`;
+        const secureUrl = await CloudinaryUtil.uploadImage(photoUrl, 'avatars', publicId);
+        profileData.profilePictureUrl = secureUrl;
+        profileData.profile_picture_url = secureUrl;
+      } catch (err: any) {
+        logger.error('Failed to upload profile picture to Cloudinary:', err);
+      }
+    }
+
     const updatedUser = await UserRepository.updateProfile(userId, profileData);
     if (!updatedUser) {
       throw new NotFoundError('User not found');

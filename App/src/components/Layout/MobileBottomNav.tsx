@@ -158,11 +158,14 @@ export const MobileBottomNav: React.FC = () => {
           className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=profile') ? 'active' : ''}`}
         >
           <div className="mobile-bottom-icon-wrap">
-            {currentUser.profilePictureUrl ? (
+            {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
               <img 
                 src={currentUser.profilePictureUrl} 
-                alt={currentUser.name} 
+                alt={typeof currentUser.name === 'string' ? currentUser.name : 'Profile'} 
                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
               />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -171,7 +174,7 @@ export const MobileBottomNav: React.FC = () => {
             )}
           </div>
           <span style={{ maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {currentUser.name.split(' ')[0]}
+            {(typeof currentUser.name === 'string' && currentUser.name.trim() ? currentUser.name : 'Profile').split(' ')[0]}
           </span>
         </NavLink>
       ) : (

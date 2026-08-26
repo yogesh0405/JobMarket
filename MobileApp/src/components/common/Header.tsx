@@ -34,6 +34,8 @@ import {
   Image as ImageIcon,
   Megaphone,
   Calendar,
+  Bookmark,
+  FileText,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -342,13 +344,31 @@ export const Header: React.FC<HeaderProps> = ({
                     onPress={() => {
                       closeDrawer(() => {
                         if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('CandidateSavedJobs');
+                        }
+                      });
+                    }}
+                  >
+                    <View style={styles.iconSquircle}>
+                      <Bookmark size={17} color="#334155" />
+                    </View>
+                    <Text style={styles.menuItemTitle}>Saved Jobs</Text>
+                    <ChevronRight size={16} color={COLORS.slate400} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItemRow}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      closeDrawer(() => {
+                        if (navigation && typeof navigation.navigate === 'function') {
                           navigation.navigate('CandidateResume');
                         }
                       });
                     }}
                   >
                     <View style={styles.iconSquircle}>
-                      <UserIcon size={17} color="#334155" />
+                      <FileText size={17} color="#334155" />
                     </View>
                     <Text style={styles.menuItemTitle}>My Resume Document</Text>
                     <ChevronRight size={16} color={COLORS.slate400} />

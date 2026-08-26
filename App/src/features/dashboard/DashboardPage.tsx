@@ -313,8 +313,15 @@ export const DashboardPage: React.FC = () => {
               <div className="dashboard-profile-body">
                 <div className="dashboard-profile-header">
                   <div className="dashboard-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {currentUser.profilePictureUrl ? (
-                      <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                      <img 
+                        src={currentUser.profilePictureUrl} 
+                        alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
                       getInitials(currentUser.companyName || currentUser.name)
                     )}
@@ -1290,8 +1297,15 @@ const CandidatesTab: React.FC<{
                   margin: '0 auto 8px auto',
                   flexShrink: 0
                 }}>
-                  {c.profilePictureUrl ? (
-                    <img src={c.profilePictureUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {c.profilePictureUrl && typeof c.profilePictureUrl === 'string' ? (
+                    <img 
+                      src={c.profilePictureUrl} 
+                      alt={c.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
                   ) : (
                     <span style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.5px' }}>
                       {initials}
@@ -2413,8 +2427,15 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     <div className="applicant-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: '1 1 220px' }}>
                         <div className="applicant-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
-                          {a.profilePictureUrl ? (
-                            <img src={a.profilePictureUrl} alt={a.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {a.profilePictureUrl && typeof a.profilePictureUrl === 'string' ? (
+                            <img 
+                              src={a.profilePictureUrl} 
+                              alt={a.name} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
+                            />
                           ) : (
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'white' }}>
                               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>

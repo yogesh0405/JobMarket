@@ -69,6 +69,7 @@ export class UserRepository {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255);
         ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS midc_zone VARCHAR(150);
+        ALTER TABLE users ALTER COLUMN profile_picture_url TYPE TEXT;
       `).catch(() => {});
 
       const query = `

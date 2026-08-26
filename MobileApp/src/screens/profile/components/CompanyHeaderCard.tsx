@@ -4,6 +4,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import {
   Check,
@@ -16,9 +18,11 @@ import {
   Calendar,
   Building2,
   BarChart3,
+  Briefcase,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
+import { COLORS } from '../../../constants/theme';
 
 interface CompanyHeaderCardProps {
   company: any;
@@ -42,15 +46,26 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
   onTabChange,
 }) => {
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top || 0,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0
+  );
   const companyName = company?.name || 'Company';
   const logoUrl = company?.logo || company?.logoUrl || null;
-  const industry = company?.industry || 'Industrial Manufacturing & Engineering Operations';
+  const industry =
+    company?.industry ||
+    company?.industry_type ||
+    company?.industryType ||
+    company?.trade_specialization ||
+    company?.specialization ||
+    'Industrial Manufacturing & Operations';
+  const companyType = company?.company_type || company?.companyType || company?.type;
   const companySize = company?.company_size || company?.companySize;
   const foundedYear = company?.founded_year || company?.foundedYear;
   const completionPct = company?.completion_percentage || 85;
 
   return (
-    <View style={styles.bannerContainer}>
+    <View style={[styles.bannerContainer, { paddingTop: topInset }]}>
       {/* Top Controls Row inside Blue Banner: Left = Back | Right = Edit Icon & Share Icon */}
       <View style={styles.topControlsRow}>
         {/* Back Button (Left) */}
@@ -92,7 +107,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
       </View>
 
       {/* Solid Primary Blue Header Content */}
-      <View style={styles.bannerContent}>
+      <View style={[styles.bannerContent, { paddingBottom: isOwner && onTabChange ? 0 : 16 }]}>
         {/* Top Info Row: Logo Avatar + Text Block */}
         <View style={styles.heroLeftRow}>
           {/* Circular Company Logo Avatar with Camera Overlay Badge */}
@@ -105,13 +120,13 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
               <CompanyLogoAvatar
                 logoUrl={logoUrl}
                 companyName={companyName}
-                size={44}
-                borderRadius={22}
+                size={52}
+                borderRadius={26}
               />
             </View>
             {isOwner && (
               <View style={styles.cameraBadge}>
-                <Camera size={10} color="#2563EB" strokeWidth={2.5} />
+                <Camera size={10} color={COLORS.primary} strokeWidth={2.5} />
               </View>
             )}
           </TouchableOpacity>
@@ -121,9 +136,25 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
             <Text style={styles.companyTitle} numberOfLines={2}>
               {companyName}
             </Text>
-            <Text style={styles.taglineText} numberOfLines={1}>
-              {industry}
-            </Text>
+
+            {/* Industry Type & Sector Badges in Blue Banner */}
+            <View style={styles.industryBadgeRow}>
+              <View style={styles.industryPill}>
+                <Briefcase size={11} color="#DBEAFE" />
+                <Text style={styles.industryPillText} numberOfLines={1}>
+                  {industry}
+                </Text>
+              </View>
+
+              {companyType ? (
+                <View style={styles.companyTypePill}>
+                  <Building2 size={11} color="#DBEAFE" />
+                  <Text style={styles.companyTypePillText} numberOfLines={1}>
+                    {companyType}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
 
@@ -186,7 +217,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
 
 const styles = StyleSheet.create({
   bannerContainer: {
-    backgroundColor: '#2563EB',
+    backgroundColor: COLORS.primary,
     borderRadius: 0,
     overflow: 'hidden',
     shadowColor: '#1E40AF',
@@ -200,10 +231,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    marginTop: 6,
-    paddingBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   topRightControls: {
     flexDirection: 'row',
@@ -217,25 +247,25 @@ const styles = StyleSheet.create({
   },
   bannerContent: {
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 0,
-    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 16,
+    gap: 8,
   },
   heroLeftRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
   avatarWrapper: {
     position: 'relative',
-    width: 48,
-    height: 48,
+    width: 54,
+    height: 54,
     flexShrink: 0,
   },
   avatarCircleInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 24,
+    borderRadius: 27,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -259,10 +289,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#2563EB',
+    borderColor: COLORS.primary,
   },
   textBlock: {
     flex: 1,
+    justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
@@ -271,7 +302,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   companyTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
@@ -289,6 +320,46 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  industryBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  industryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    maxWidth: '100%',
+    flexShrink: 1,
+  },
+  industryPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flexShrink: 1,
+  },
+  companyTypePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+    flexShrink: 1,
+  },
+  companyTypePillText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#DBEAFE',
+    flexShrink: 1,
   },
   taglineText: {
     fontSize: 12.5,
@@ -331,7 +402,7 @@ const styles = StyleSheet.create({
   primaryActionBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   completionBanner: {
     marginTop: 10,

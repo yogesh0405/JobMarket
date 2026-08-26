@@ -488,8 +488,15 @@ export const JobApplicantsPage: React.FC = () => {
                           border: '1.5px solid #cbd5e1'
                         }}
                       >
-                        {a.profilePictureUrl ? (
-                          <img src={a.profilePictureUrl} alt={a.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {a.profilePictureUrl && typeof a.profilePictureUrl === 'string' ? (
+                          <img 
+                            src={a.profilePictureUrl} 
+                            alt={typeof a.name === 'string' ? a.name : 'Applicant'} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                          />
                         ) : (
                           getInitials(a.name || 'C')
                         )}

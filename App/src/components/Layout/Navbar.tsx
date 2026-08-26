@@ -102,8 +102,15 @@ export const Navbar: React.FC = () => {
               <div className="mobile-sidebar-profile">
                 <div className="sidebar-profile-header">
                   <div className="sidebar-profile-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', overflow: 'hidden' }}>
-                    {currentUser.profilePictureUrl ? (
-                      <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                      <img 
+                        src={currentUser.profilePictureUrl} 
+                        alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
                       getInitials(currentUser.name)
                     )}
@@ -318,8 +325,15 @@ export const Navbar: React.FC = () => {
               title="Dashboard Overview"
             >
               <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
-                {currentUser.profilePictureUrl ? (
-                  <img src={currentUser.profilePictureUrl} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                  <img 
+                    src={currentUser.profilePictureUrl} 
+                    alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
+                  />
                 ) : (
                   getInitials(currentUser.name)
                 )}

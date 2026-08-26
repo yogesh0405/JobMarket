@@ -313,8 +313,15 @@ export const PublicProfilePage: React.FC = () => {
               flexShrink: 0,
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
             }}>
-              {profileUser.profile_picture_url ? (
-                <img src={profileUser.profile_picture_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {profileUser.profile_picture_url && typeof profileUser.profile_picture_url === 'string' ? (
+                <img 
+                  src={profileUser.profile_picture_url} 
+                  alt={typeof name === 'string' ? name : 'User'} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
               ) : (
                 <div style={{ width: '100%', height: '100%', backgroundColor: '#2563EB', color: '#FFFFFF', fontWeight: '800', fontSize: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {getInitials(name)}

@@ -302,8 +302,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   }, [company]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
 
       {/* 1. Unscrollable Fixed Primary Blue Header Banner with Integrated Tabs */}
       {!loadingCompany && (
@@ -321,7 +321,10 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
       {/* Main Body Scroll Area */}
       <ScrollView
-        contentContainerStyle={styles.scrollContentBody}
+        contentContainerStyle={[
+          styles.scrollContentBody,
+          { paddingBottom: Math.max(insets.bottom + 140, 160) },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >

@@ -26,8 +26,7 @@ import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { useToast } from '../../context/ToastContext';
-
-
+import { savedJobsStore } from '../../utils/savedJobsStore';
 
 interface Props {
   navigation: any;
@@ -35,28 +34,27 @@ interface Props {
 
 export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
-  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [savedJobs, setSavedJobs] = useState<Job[]>(savedJobsStore.getSavedJobs());
+  const [loading, setLoading] = useState(savedJobsStore.getSavedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
 
+  React.useEffect(() => {
+    setSavedJobs(savedJobsStore.getSavedJobs());
+    const unsubscribe = savedJobsStore.subscribe(() => {
+      setSavedJobs(savedJobsStore.getSavedJobs());
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const fetchSavedData = useCallback(async (showSkeleton = false) => {
-    if (showSkeleton) setLoading(true);
+    if (showSkeleton && savedJobsStore.getSavedJobs().length === 0) setLoading(true);
     try {
-      const res: any = await candidateApi.getSavedJobs();
-      let jobsList: Job[] = [];
-
-      if (Array.isArray(res)) {
-        jobsList = res;
-      } else if (res && Array.isArray(res.data)) {
-        jobsList = res.data;
-      } else if (res && res.success && Array.isArray(res.jobs)) {
-        jobsList = res.jobs;
-      }
-
-      setSavedJobs(jobsList || []);
+      const jobs = await savedJobsStore.syncFromApi();
+      setSavedJobs(jobs);
     } catch (e) {
       console.log('Error loading saved jobs from database:', e);
-      setSavedJobs([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,9 +73,8 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleUnsave = useCallback((jobId: string) => {
-    setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
-    showToast('Job removed !', 'info');
-    candidateApi.toggleSaveJob(jobId).catch(() => {});
+    savedJobsStore.toggleSave(jobId);
+    showToast('Job removed from saved bookmarks', 'info');
   }, [showToast]);
 
   return (

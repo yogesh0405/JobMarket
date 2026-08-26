@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Send,
   ArrowLeft,
+  MapPin,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -29,6 +30,7 @@ import { JobLocationMapPreview } from '../../components/map/JobLocationMapPrevie
 import { logger } from '../../utils/logger';
 import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
+import { savedJobsStore } from '../../utils/savedJobsStore';
 import { CandidateJobDetailHeader } from './components/CandidateJobDetailHeader';
 
 interface Props {
@@ -174,26 +176,48 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       })
       .catch(() => {});
 
+    // Check saved state from reactive store first
+    if (savedJobsStore.isSaved(jobIdToCheck)) {
+      setIsSaved(true);
+    }
+
     candidateApi
       .getSavedJobs()
       .then((savedRes) => {
-        if (Array.isArray(savedRes?.data)) {
-          const saved = savedRes.data.some(
-            (j: any) => String(j.id).toLowerCase() === String(jobIdToCheck).toLowerCase()
-          );
-          setIsSaved(saved);
+        let jobsList: Job[] = [];
+        if (Array.isArray(savedRes)) {
+          jobsList = savedRes;
+        } else if (savedRes && Array.isArray(savedRes.data)) {
+          jobsList = savedRes.data;
+        } else if (savedRes && (savedRes as any).success && Array.isArray((savedRes as any).jobs)) {
+          jobsList = (savedRes as any).jobs;
         }
+        if (jobsList.length > 0) {
+          savedJobsStore.setSavedJobs(jobsList);
+        }
+        const saved = savedJobsStore.isSaved(jobIdToCheck) || jobsList.some(
+          (j: any) => String(j.id).toLowerCase() === String(jobIdToCheck).toLowerCase()
+        );
+        setIsSaved(saved);
       })
       .catch(() => {});
   }, [job?.id, activeJobId, passedJob?.id]);
 
   useEffect(() => {
     syncApplicationStatus();
-    const unsubscribeStore = appliedJobsStore.subscribe(syncApplicationStatus);
+    const unsubscribeApplied = appliedJobsStore.subscribe(syncApplicationStatus);
+    const unsubscribeSaved = savedJobsStore.subscribe(() => {
+      const targetJob = job || passedJob;
+      const jobIdToCheck = targetJob?.id || activeJobId;
+      if (jobIdToCheck) {
+        setIsSaved(savedJobsStore.isSaved(jobIdToCheck));
+      }
+    });
     return () => {
-      unsubscribeStore();
+      unsubscribeApplied();
+      unsubscribeSaved();
     };
-  }, [syncApplicationStatus]);
+  }, [syncApplicationStatus, job?.id, passedJob?.id, activeJobId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -206,19 +230,17 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     const jobId = targetJob?.id || activeJobId;
     if (!jobId) return;
 
-    const nextSavedState = !isSaved;
-    setIsSaved(nextSavedState);
-
+    const previousSaved = isSaved;
     try {
+      const nextSavedState = await savedJobsStore.toggleSave(targetJob || { id: jobId } as Job);
+      setIsSaved(nextSavedState);
       if (nextSavedState) {
-        await ((candidateApi as any).saveJob?.(jobId) || Promise.resolve());
-        showToast('Job added to saved bookmarks', 'success');
+        showToast('Job saved to bookmarks!', 'success');
       } else {
-        await ((candidateApi as any).unsaveJob?.(jobId) || Promise.resolve());
-        showToast('Job removed from saved bookmarks', 'info');
+        showToast('Job removed from bookmarks', 'info');
       }
     } catch (err: any) {
-      setIsSaved(!nextSavedState);
+      setIsSaved(previousSaved);
       showToast(err.message || 'Failed to update saved job status', 'error');
     }
   };
@@ -247,15 +269,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
     navigation.navigate('CandidateApplyConfirm', {
       job: targetJob,
-      onAppliedSuccess: (appliedJobId: string) => {
-        setHasApplied(true);
-        setAppliedItem({
-          jobId: appliedJobId,
-          job: targetJob,
-          status: 'applied',
-          appliedAt: new Date().toISOString(),
-        });
-      },
     });
   };
 
@@ -377,32 +390,32 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
 
+      {/* 1. Full-Width Edge-to-Edge Blue Header Banner with Tabs */}
+      <CandidateJobDetailHeader
+        job={job}
+        isSaved={isSaved}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onBack={handleBackNavigation}
+        onShare={handleShareJob}
+        onToggleSave={handleToggleSave}
+        onCompanyPress={() => {
+          const companyId = (job as any).company_id || (job as any).companyId || job.company;
+          navigation.navigate('CompanyProfile', { companyId, name: job.company });
+        }}
+      />
+
+      {/* 2. Main Content Scroll Area */}
       <ScrollView
         contentContainerStyle={[
           styles.scrollContentBody,
-          { paddingBottom: Math.max(insets.bottom + 120, 150) },
+          { paddingBottom: Math.max(insets.bottom + 140, 160) },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <CandidateJobDetailHeader
-          job={job}
-          isSaved={isSaved}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onBack={handleBackNavigation}
-          onShare={handleShareJob}
-          onToggleSave={handleToggleSave}
-          onCompanyPress={() => {
-            const companyId = (job as any).company_id || (job as any).companyId || job.company;
-            navigation.navigate('CompanyProfile', { companyId, name: job.company });
-          }}
-        />
-
-        <View style={styles.headerBodySeparatorSlate} />
-
         <View style={styles.cardBlockContainer}>
           {activeTab === 'job_overview' ? (
             <>
@@ -441,6 +454,16 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                   <View style={styles.specGridItem}>
                     <Text style={styles.specLabelText}>Work Mode</Text>
                     <Text style={styles.specValueText} numberOfLines={1}>{job.work_mode || job.workMode || job.job_type || job.jobType}</Text>
+                  </View>
+                ) : null}
+
+                {job.location ? (
+                  <View style={styles.specGridItemFull}>
+                    <Text style={styles.specLabelText}>Plant Location / Address</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                      <MapPin size={14} color={COLORS.primary} />
+                      <Text style={styles.specValueText} numberOfLines={2}>{job.location}</Text>
+                    </View>
                   </View>
                 ) : null}
               </View>
@@ -564,9 +587,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F7F7',
   },
   scrollContentBody: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 150,
+    padding: 16,
   },
   profileHeaderMasterCard: {
     backgroundColor: '#FFFFFF',
@@ -608,6 +629,12 @@ const styles = StyleSheet.create({
   },
   specGridItem: {
     width: '48%',
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 6,
+  },
+  specGridItemFull: {
+    width: '100%',
     backgroundColor: '#F8FAFC',
     padding: 10,
     borderRadius: 6,

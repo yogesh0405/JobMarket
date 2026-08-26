@@ -84,7 +84,7 @@ export const CandidateDashboardAnalyticsSection: React.FC<CandidateDashboardAnal
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.kpiItem}
-          onPress={() => navigation.navigate('CandidateSavedTab')}
+          onPress={() => navigation.navigate('CandidateSavedJobs')}
         >
           <Text style={styles.kpiValueText}>{savedCount}</Text>
           <Text style={styles.kpiLabelText}>Saved</Text>

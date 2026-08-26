@@ -87,16 +87,6 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company 
       <View style={styles.divider} />
 
       <View style={styles.detailsList}>
-        {/* Industry Sector */}
-        {industry ? (
-          <View style={styles.detailRow}>
-            <Briefcase size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Industry Sector</Text>
-              <Text style={styles.detailValue}>{industry}</Text>
-            </View>
-          </View>
-        ) : null}
 
         {/* Plant Location & Address */}
         {fullLocation && fullLocation.trim() ? (

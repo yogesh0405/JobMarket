@@ -47,6 +47,16 @@ const getInitialState = (): StoreState => {
         parsed.currentUser.savedJobs = ensureArray(parsed.currentUser.savedJobs);
         parsed.currentUser.appliedJobs = ensureArray(parsed.currentUser.appliedJobs);
         parsed.currentUser.appliedJobsWithStatus = ensureArray(parsed.currentUser.appliedJobsWithStatus);
+        if (typeof parsed.currentUser.profilePictureUrl === 'object' && parsed.currentUser.profilePictureUrl !== null) {
+          parsed.currentUser.profilePictureUrl = parsed.currentUser.profilePictureUrl.url || parsed.currentUser.profilePictureUrl.secure_url || '';
+        }
+        if (typeof parsed.currentUser.resume === 'string' && parsed.currentUser.resume.trim()) {
+          try {
+            parsed.currentUser.resume = JSON.parse(parsed.currentUser.resume);
+          } catch (_) {
+            parsed.currentUser.resume = { url: parsed.currentUser.resume, name: 'Resume_Document.pdf' };
+          }
+        }
       }
 
       return parsed;

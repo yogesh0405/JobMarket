@@ -49,8 +49,8 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
 
   return (
     <View style={styles.profileHeaderMasterCard}>
-      {/* Primary Blue Top Banner Section */}
-      <View style={styles.topHeaderBandPrimary}>
+      {/* Primary Blue Top Banner Section with Safe Area Inset */}
+      <View style={[styles.topHeaderBandPrimary, { paddingTop: topInset + 8 }]}>
         {/* Navigation Action Buttons Row */}
         <View style={styles.headerBandTopActions}>
           <TouchableOpacity
@@ -87,7 +87,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
             onPress={onCompanyPress}
             style={styles.bannerAvatarBox}
           >
-            <CompanyLogoAvatar logoUrl={logoUrl} companyName={job.company} size={58} borderRadius={29} />
+            <CompanyLogoAvatar logoUrl={logoUrl} companyName={job.company} size={46} borderRadius={23} />
           </TouchableOpacity>
 
           <View style={styles.bannerTitleTextStack}>
@@ -96,48 +96,48 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
               onPress={onCompanyPress}
               style={styles.bannerCompanyRow}
             >
-              <Text style={[styles.bannerCompanyNameText, { textDecorationLine: 'underline' }]} numberOfLines={1}>
+              <Text style={styles.bannerCompanyNameText} numberOfLines={1}>
                 {job.company || 'Industrial Partner'}
               </Text>
-              <ExternalLink size={12} color="#93C5FD" strokeWidth={2.2} />
+              <ExternalLink size={12} color="#BFDBFE" strokeWidth={2.2} />
             </TouchableOpacity>
 
             <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
               {job.title}
             </Text>
+
+            {/* Clean Inline Industry & Job Type Metadata without Chips/Backgrounds */}
+            {(job.industry || job.trade || job.job_type || (job as any).jobType) ? (
+              <View style={styles.metaTextRow}>
+                {job.industry || job.trade ? (
+                  <View style={styles.metaItemInline}>
+                    <Briefcase size={12} color="#BFDBFE" />
+                    <Text style={styles.metaItemText} numberOfLines={1}>
+                      {job.industry || job.trade}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {(job.industry || job.trade) && (job.job_type || (job as any).jobType) ? (
+                  <Text style={styles.metaDotDivider}>•</Text>
+                ) : null}
+
+                {job.job_type || (job as any).jobType ? (
+                  <View style={styles.metaItemInline}>
+                    <Building2 size={12} color="#BFDBFE" />
+                    <Text style={styles.metaItemText} numberOfLines={1}>
+                      {job.job_type || (job as any).jobType}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
 
-      {/* Secondary Meta Information Card Body */}
+      {/* Tab Navigation Controls */}
       <View style={styles.whiteHeaderCardBody}>
-        <View style={styles.refMetaStack}>
-          {job.location || (job as any).website ? (
-            <View style={styles.refMetaRow}>
-              {job.location ? (
-                <>
-                  <MapPin size={13} color="#64748B" />
-                  <Text style={styles.refMetaText}>{job.location}</Text>
-                </>
-              ) : null}
-              {(job as any).website ? (
-                <>
-                  <Globe size={13} color={COLORS.primary} style={{ marginLeft: job.location ? 12 : 0 }} />
-                  <Text style={styles.refMetaLink}>{(job as any).website}</Text>
-                </>
-              ) : null}
-            </View>
-          ) : null}
-
-          {job.industry || job.trade ? (
-            <View style={styles.refMetaRow}>
-              <Building2 size={13} color="#64748B" />
-              <Text style={styles.refMetaText}>Industry : {job.industry || job.trade}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Tab Navigation Controls */}
         <View style={styles.segmentedTabBar}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -169,23 +169,28 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
 const styles = StyleSheet.create({
   profileHeaderMasterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderRadius: 0,
+    borderWidth: 0,
     overflow: 'hidden',
     marginBottom: 0,
+    width: '100%',
+    shadowColor: '#1E40AF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   topHeaderBandPrimary: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
+    width: '100%',
   },
   headerBandTopActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   backBtnHeader: {
     padding: 6,
@@ -208,14 +213,26 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   bannerAvatarBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    borderRadius: 30,
     backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    flexShrink: 0,
   },
   bannerTitleTextStack: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
   },
   bannerCompanyRow: {
     flexDirection: 'row',
@@ -225,14 +242,39 @@ const styles = StyleSheet.create({
   bannerCompanyNameText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#BAE6FD',
+    color: '#BFDBFE',
   },
   bannerJobRoleSubText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
-    lineHeight: 21,
+    letterSpacing: -0.3,
+    lineHeight: 23,
     marginTop: 2,
+  },
+  metaTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  metaItemInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
+  },
+  metaItemText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#DBEAFE',
+    flexShrink: 1,
+  },
+  metaDotDivider: {
+    fontSize: 12,
+    color: '#93C5FD',
+    marginHorizontal: 2,
   },
   bannerLocationRow: {
     flexDirection: 'row',
@@ -247,8 +289,9 @@ const styles = StyleSheet.create({
   },
   whiteHeaderCardBody: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 0,
     position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   openingsBadgeTopRight: {
     position: 'absolute',

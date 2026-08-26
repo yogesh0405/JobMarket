@@ -62,9 +62,11 @@ export const isValidPhone = (phone: string): boolean => {
   return /^\d{10}$/.test(phone.replace(/\D/g, ''));
 };
 
-export const getInitials = (name: string): string => {
-  if (!name) return '?';
-  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+export const getInitials = (name: any): string => {
+  if (!name || typeof name !== 'string') return '?';
+  const trimmed = name.trim();
+  if (!trimmed) return '?';
+  return trimmed.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 };
 
 export const getCompanyColor = (seed: string): string => {

@@ -20,6 +20,7 @@ import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApply
 import { CandidateJobMapScreen } from '../screens/candidate/CandidateJobMapScreen';
 import { CandidateJobMapViewScreen } from '../screens/candidate/CandidateJobMapViewScreen';
 import { CandidateInterviewsScreen } from '../screens/candidate/CandidateInterviewsScreen';
+import { CandidateSavedJobsScreen } from '../screens/candidate/CandidateSavedJobsScreen';
 import { NotificationScreen } from '../screens/notifications/NotificationScreen';
 
 import { EmployerBannersScreen } from '../screens/advertisements/EmployerBannersScreen';
@@ -59,6 +60,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateJobMap" component={CandidateJobMapScreen} />
           <Stack.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
           <Stack.Screen name="CandidateMap" component={CandidateJobMapScreen} />
+          <Stack.Screen name="CandidateSavedJobs" component={CandidateSavedJobsScreen} />
+          <Stack.Screen name="SavedJobs" component={CandidateSavedJobsScreen} />
+          <Stack.Screen name="CandidateSaved" component={CandidateSavedJobsScreen} />
           <Stack.Screen name="MyInterviews" component={CandidateInterviewsScreen} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
         </>

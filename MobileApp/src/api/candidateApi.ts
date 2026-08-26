@@ -76,6 +76,16 @@ export const candidateApi = {
     });
   },
 
+  // Save / Bookmark job alias
+  saveJob: async (jobId: string): Promise<ApiResponse<{ saved: boolean }>> => {
+    return candidateApi.toggleSaveJob(jobId);
+  },
+
+  // Unsave / Remove bookmark job alias
+  unsaveJob: async (jobId: string): Promise<ApiResponse<{ saved: boolean }>> => {
+    return candidateApi.toggleSaveJob(jobId);
+  },
+
   // Submit job application
   applyForJob: async (
     jobId: string,

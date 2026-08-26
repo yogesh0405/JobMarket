@@ -21,6 +21,7 @@ import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { getRecommendedJobsForCandidate } from '../../utils/recommendationMatcher';
 import { COLORS } from '../../constants/theme';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
+import { savedJobsStore } from '../../utils/savedJobsStore';
 import { CandidateDashboardAnalyticsSection } from './components/CandidateDashboardAnalyticsSection';
 import { CandidateDashboardApplicationsSection } from './components/CandidateDashboardApplicationsSection';
 
@@ -32,7 +33,7 @@ interface Props {
 export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHeader = false }) => {
   const { user, refreshUser } = useAuth();
   const [appliedJobs, setAppliedJobs] = useState<any[]>(appliedJobsStore.getAppliedJobs());
-  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
+  const [savedJobs, setSavedJobs] = useState<Job[]>(savedJobsStore.getSavedJobs());
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(appliedJobsStore.getAppliedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,7 +56,10 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
       }
 
       if (savedRes.success && savedRes.data) {
-        setSavedJobs(savedRes.data || []);
+        savedJobsStore.setSavedJobs(savedRes.data);
+        setSavedJobs(savedJobsStore.getSavedJobs());
+      } else {
+        setSavedJobs(savedJobsStore.getSavedJobs());
       }
       if (allJobsRes.success && allJobsRes.data) {
         const jobs = allJobsRes.data || [];
@@ -65,6 +69,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
     } catch (e) {
       console.log('Error fetching candidate dashboard data:', e);
       setAppliedJobs([...appliedJobsStore.getAppliedJobs()]);
+      setSavedJobs(savedJobsStore.getSavedJobs());
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -77,13 +82,18 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
       loadData(false);
     }, 4000);
 
-    const unsubscribe = appliedJobsStore.subscribe(() => {
+    const unsubscribeApplied = appliedJobsStore.subscribe(() => {
       setAppliedListStoreData();
+    });
+
+    const unsubscribeSaved = savedJobsStore.subscribe(() => {
+      setSavedJobs(savedJobsStore.getSavedJobs());
     });
 
     return () => {
       clearInterval(interval);
-      unsubscribe();
+      unsubscribeApplied();
+      unsubscribeSaved();
     };
   }, [loadData]);
 

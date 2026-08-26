@@ -16,6 +16,30 @@ const parseArrayField = (val: any): any[] => {
   return [];
 };
 
+const parseResumeField = (val: any): any => {
+  if (!val) return null;
+  if (typeof val === 'object' && val !== null) return val;
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (typeof parsed === 'object' && parsed !== null) return parsed;
+    } catch (_) {
+      return { url: val, name: 'Candidate_Resume.pdf' };
+    }
+  }
+  return null;
+};
+
+const normalizeProfilePicture = (val: any): string => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && val !== null) {
+    if (typeof val.url === 'string') return val.url;
+    if (typeof val.secure_url === 'string') return val.secure_url;
+  }
+  return '';
+};
+
 export const useAuth = () => {
   const { state, dispatch } = useStore();
 
@@ -71,14 +95,14 @@ export const useAuth = () => {
       // Map the backend user shape to the frontend User type
       const user: User = {
         id: apiUser.id,
-        name: apiUser.name,
-        email: apiUser.email,
+        name: typeof apiUser.name === 'string' ? apiUser.name : '',
+        email: apiUser.email || '',
         role: apiUser.role as UserRole,
         phone: apiUser.phone || '',
-        profilePictureUrl: apiUser.profile_picture_url || '',
+        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
-        resume: apiUser.resume || null,
+        resume: parseResumeField(apiUser.resume),
         experience: parseArrayField(apiUser.experience),
         education: parseArrayField(apiUser.education),
         skills: parseArrayField(apiUser.skills),
@@ -129,20 +153,20 @@ export const useAuth = () => {
 
       const user: User = {
         id: apiUser.id,
-        name: apiUser.name,
-        email: apiUser.email,
+        name: typeof apiUser.name === 'string' ? apiUser.name : '',
+        email: apiUser.email || '',
         role: apiUser.role as UserRole,
         phone: apiUser.phone || '',
-        profilePictureUrl: apiUser.profile_picture_url || '',
+        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
-        resume: apiUser.resume || null,
-        experience: apiUser.experience || [],
-        education: apiUser.education || [],
-        skills: apiUser.skills || [],
-        savedJobs: apiUser.savedJobs || apiUser.saved_jobs || [],
-        appliedJobs: apiUser.appliedJobs || apiUser.applied_jobs || [],
-        appliedJobsWithStatus: apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || [],
+        resume: parseResumeField(apiUser.resume),
+        experience: parseArrayField(apiUser.experience),
+        education: parseArrayField(apiUser.education),
+        skills: parseArrayField(apiUser.skills),
+        savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs),
+        appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs),
+        appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status),
         headline: apiUser.headline || '',
         location: apiUser.location || '',
         tradeSpecialization: apiUser.trade_specialization || '',
@@ -242,14 +266,14 @@ export const useAuth = () => {
       const apiUser = data.data;
       const user: User = {
         id: apiUser.id,
-        name: apiUser.name,
-        email: apiUser.email,
+        name: typeof apiUser.name === 'string' ? apiUser.name : '',
+        email: apiUser.email || '',
         role: apiUser.role as UserRole,
         phone: apiUser.phone || '',
-        profilePictureUrl: apiUser.profile_picture_url || '',
+        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
         createdAt: apiUser.created_at || new Date().toISOString(),
         profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
-        resume: apiUser.resume || null,
+        resume: parseResumeField(apiUser.resume),
         experience: parseArrayField(apiUser.experience),
         education: parseArrayField(apiUser.education),
         skills: parseArrayField(apiUser.skills),
@@ -313,14 +337,14 @@ export const useAuth = () => {
           const apiUser = data.data;
           const user: User = {
             id: apiUser.id,
-            name: apiUser.name,
-            email: apiUser.email,
+            name: typeof apiUser.name === 'string' ? apiUser.name : '',
+            email: apiUser.email || '',
             role: apiUser.role as UserRole,
             phone: apiUser.phone || '',
-            profilePictureUrl: apiUser.profile_picture_url || '',
+            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
             createdAt: apiUser.created_at || new Date().toISOString(),
             profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
-            resume: apiUser.resume || null,
+            resume: parseResumeField(apiUser.resume),
             experience: parseArrayField(apiUser.experience),
             education: parseArrayField(apiUser.education),
             skills: parseArrayField(apiUser.skills),

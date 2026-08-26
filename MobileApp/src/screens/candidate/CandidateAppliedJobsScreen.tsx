@@ -355,14 +355,16 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   {/* Metadata Info Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaInlineItem}>
-                      <MapPin size={13} color={COLORS.primary} />
-                      <Text style={styles.metaInlineText}>{job.location || 'MIDC Zone'}</Text>
+                      <MapPin size={13} color={COLORS.primary} style={{ flexShrink: 0 }} />
+                      <Text style={styles.metaInlineText} numberOfLines={1} ellipsizeMode="tail">
+                        {job.location || 'MIDC Zone'}
+                      </Text>
                     </View>
 
                     {job.salary_max || job.salaryMax ? (
                       <View style={styles.metaInlineItem}>
-                        <IndianRupee size={13} color="#0F172A" />
-                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '800' }]}>
+                        <IndianRupee size={13} color="#0F172A" style={{ flexShrink: 0 }} />
+                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '800' }]} numberOfLines={1}>
                           ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
                         </Text>
                       </View>
@@ -383,15 +385,17 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                       <View style={styles.interviewDetailsRow}>
                         <Text style={styles.detailLabel}>DATE & TIME:</Text>
-                        <Text style={styles.detailValue}>
+                        <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="tail">
                           {item.interviewDate || item.interview_date} {item.interviewTime || item.interview_time ? `(${item.interviewTime || item.interview_time})` : ''}
                         </Text>
                       </View>
 
                       {item.venueAddress || item.venue_address ? (
-                        <View style={{ marginTop: 2 }}>
-                          <Text style={styles.venueLabel}>VENUE:</Text>
-                          <Text style={styles.venueAddressText}>{item.venueAddress || item.venue_address}</Text>
+                        <View style={styles.venueContainer}>
+                          <Text style={styles.venueLabel}>VENUE ADDRESS:</Text>
+                          <Text style={styles.venueAddressText} numberOfLines={3} ellipsizeMode="tail">
+                            {item.venueAddress || item.venue_address}
+                          </Text>
                         </View>
                       ) : null}
 
@@ -586,25 +590,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: 12,
+    width: '100%',
   },
   metaInlineItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 1,
+    maxWidth: '100%',
   },
   metaInlineText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
+    flexShrink: 1,
   },
   interviewSubLayout: {
     gap: 6,
+    width: '100%',
   },
   interviewHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    width: '100%',
   },
   interviewHeaderTitle: {
     fontSize: 13,
@@ -619,6 +629,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    flexShrink: 0,
   },
   actionPillText: {
     fontSize: 9.5,
@@ -629,30 +640,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    width: '100%',
   },
   detailLabel: {
     fontSize: 10.5,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
+    flexShrink: 0,
   },
   detailValue: {
     fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
+    flex: 1,
+    flexShrink: 1,
+  },
+  venueContainer: {
+    marginTop: 2,
+    width: '100%',
   },
   venueLabel: {
     fontSize: 10.5,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
-    marginBottom: 1,
+    marginBottom: 2,
   },
   venueAddressText: {
     fontSize: 12,
     color: '#334155',
-    lineHeight: 16,
+    lineHeight: 17,
     fontWeight: '600',
+    width: '100%',
+    flexWrap: 'wrap',
   },
   openMapsBtn: {
     flexDirection: 'row',
