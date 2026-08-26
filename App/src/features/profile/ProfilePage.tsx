@@ -12,6 +12,7 @@ import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal'
 import { CandidateEditProfileModal } from './CandidateEditProfileModal';
 import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+import { calculateCandidateProfileCompletion } from '../../utils/profileCompleteness';
 import { 
   Camera, 
   Mail, 
@@ -201,13 +202,15 @@ export const ProfilePage: React.FC = () => {
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      showToast('Please select a valid PDF document file', 'error');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name);
+    if (!isPdf && !isImage) {
+      showToast('Please select a valid PDF document or image file (.pdf, .png, .jpg, .jpeg, .webp)', 'error');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      showToast('PDF file size must be less than 10 MB', 'error');
+      showToast('File size must be less than 10 MB', 'error');
       return;
     }
 
@@ -221,15 +224,16 @@ export const ProfilePage: React.FC = () => {
           resume: {
             name: file.name,
             size: sizeFormatted,
-            url: base64
+            url: base64,
+            type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')
           }
         } as any);
 
         if (result.success) {
-          showToast('Resume PDF uploaded successfully! 📄', 'success');
+          showToast('Resume uploaded successfully! 📄', 'success');
           setResumeModalOpen(false);
         } else {
-          showToast(result.error || 'Failed to upload resume PDF', 'error');
+          showToast(result.error || 'Failed to upload resume', 'error');
         }
       };
       reader.readAsDataURL(file);
@@ -671,6 +675,16 @@ export const ProfilePage: React.FC = () => {
   }
   if (!Array.isArray(skillsList)) skillsList = [];
 
+  const candidateForCompleteness = {
+    ...currentUser,
+    experience: experienceList,
+    skills: skillsList,
+    education: educationList,
+    resume_url: currentUser.resume?.url || currentUser.resumeUrl || currentUser.resume_url,
+    avatar_url: currentUser.profilePictureUrl || currentUser.avatarUrl || currentUser.avatar_url || currentUser.avatar,
+  };
+  const completionPercentage = calculateCandidateProfileCompletion(candidateForCompleteness).totalScore;
+
   if (currentUser.role === 'employer') {
     const myJobs = getJobsByEmployer(currentUser.id) || [];
     const activeJobs = myJobs.filter((j: any) => !j.status || j.status.toLowerCase() === 'active' || j.status.toLowerCase() === 'approved');
@@ -1111,28 +1125,28 @@ export const ProfilePage: React.FC = () => {
         }}>
           <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
             <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-              {currentUser.role === 'employer' ? '1' : (experienceList.length || 1)}
+              {experienceList.length}
             </div>
             <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-              {currentUser.role === 'employer' ? 'Company' : 'Work Exp'}
+              Work Exp
             </div>
           </div>
 
           <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
             <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-              100%
+              {completionPercentage}%
             </div>
             <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-              Verified
+              Completeness
             </div>
           </div>
 
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-              {currentUser.role === 'employer' ? (currentUser.gstNumber ? 'Verified' : 'Active') : (skillsList.length || 1)}
+              {skillsList.length}
             </div>
             <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-              {currentUser.role === 'employer' ? 'Status' : 'Key Skills'}
+              Key Skills
             </div>
           </div>
         </div>
@@ -1173,10 +1187,6 @@ export const ProfilePage: React.FC = () => {
               <div className="profile-detail-tile">
                 <span className="profile-detail-label">Mobile Phone</span>
                 <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
-              </div>
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Account Role</span>
-                <p className="profile-detail-value" style={{ textTransform: 'capitalize' }}>{currentUser.role}</p>
               </div>
             </div>
           </div>
@@ -1423,7 +1433,7 @@ export const ProfilePage: React.FC = () => {
                                 {resume.name}
                               </h4>
                               <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                                Verified PDF Document {resume.size ? `• ${resume.size}` : ''}
+                                Verified {(resume.type?.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(resume.name || '')) ? 'Image' : 'PDF'} Document {resume.size ? `• ${resume.size}` : ''}
                               </p>
                             </div>
                           </div>
@@ -1560,15 +1570,15 @@ export const ProfilePage: React.FC = () => {
                   </svg>
                 </div>
                 <h4 style={{ margin: '0 0 4px', fontSize: '15.5px', fontWeight: 800, color: '#0f172a' }}>
-                  {isUploadingResume ? 'Uploading Document...' : 'Select PDF Resume File'}
+                  {isUploadingResume ? 'Uploading Document...' : 'Select Resume File (PDF or Image)'}
                 </h4>
                 <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
-                  Supports PDF documents up to 10 MB. Click anywhere to select file.
+                  Supports PDF documents and images (PNG, JPG, JPEG, WEBP) up to 10 MB. Click anywhere to select file.
                 </p>
                 <input 
                   type="file" 
                   ref={pdfInputRef} 
-                  accept="application/pdf" 
+                  accept=".pdf,application/pdf,image/*,.png,.jpg,.jpeg,.webp" 
                   style={{ display: 'none' }} 
                   onChange={handlePdfFileChange} 
                 />
@@ -1577,7 +1587,7 @@ export const ProfilePage: React.FC = () => {
               {isUploadingResume && (
                 <div style={{ marginTop: '16px', textAlign: 'center', color: '#2563eb', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>Uploading and attaching PDF to your profile...</span>
+                  <span>Uploading and attaching resume to your profile...</span>
                 </div>
               )}
             </div>

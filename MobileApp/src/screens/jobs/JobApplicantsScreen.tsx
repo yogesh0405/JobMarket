@@ -272,7 +272,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     setModalLoading(true);
     try {
       const venue = interviewLocation.trim() || 'Industrial Plant Main Gate';
-      const res = await applicantsApi.scheduleInterview(targetJobId, selectedApplicant.user_id, {
+      const targetUserId =
+        selectedApplicant.user_id ||
+        (selectedApplicant as any).userId ||
+        (selectedApplicant.user as any)?.id ||
+        (selectedApplicant as any).id;
+
+      const res = await applicantsApi.scheduleInterview(targetJobId, targetUserId, {
         interviewDate,
         interviewTime: interviewTime || '10:00 AM',
         venueAddress: venue,

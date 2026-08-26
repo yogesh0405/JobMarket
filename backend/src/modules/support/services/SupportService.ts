@@ -4,22 +4,24 @@ import { EmailService } from '../../auth/services/EmailService';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
 
+import { pool } from '../../../config/database/pool';
+
 export class SupportService {
   static async createTicket(ticketData: {
     user_id: string | null;
     full_name: string;
     email: string;
-    phone?: string;
+    phone?: string | null;
     category: string;
     subject: string;
     description: string;
     attachmentBase64?: string;
     attachmentName?: string;
     preferred_contact: string;
-    priority: 'low' | 'medium' | 'high';
-    ip_address?: string;
-    browser?: string;
-    device?: string;
+    priority: 'low' | 'medium' | 'high' | string;
+    ip_address?: string | null;
+    browser?: string | null;
+    device?: string | null;
   }): Promise<SupportTicket> {
     let attachmentUrl: string | null = null;
     
@@ -37,17 +39,33 @@ export class SupportService {
       }
     }
 
+    // Verify user_id is a valid UUID and exists in DB
+    let validUserId: string | null = null;
+    if (ticketData.user_id && typeof ticketData.user_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ticketData.user_id)) {
+      try {
+        const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [ticketData.user_id]);
+        if (userCheck.rows.length > 0) {
+          validUserId = ticketData.user_id;
+        }
+      } catch (_) {
+        validUserId = null;
+      }
+    }
+
+    const priorityNorm = String(ticketData.priority || 'medium').toLowerCase();
+    const safePriority: 'low' | 'medium' | 'high' = (priorityNorm === 'low' || priorityNorm === 'high') ? priorityNorm : 'medium';
+
     const ticket = await SupportRepository.createTicket({
-      user_id: ticketData.user_id,
+      user_id: validUserId,
       full_name: ticketData.full_name,
       email: ticketData.email,
       phone: ticketData.phone || null,
-      category: ticketData.category,
+      category: ticketData.category || 'General Technical Inquiry',
       subject: ticketData.subject,
       description: ticketData.description,
       attachment: attachmentUrl,
-      preferred_contact: ticketData.preferred_contact,
-      priority: ticketData.priority,
+      preferred_contact: ticketData.preferred_contact || 'email',
+      priority: safePriority,
       status: 'open',
       assigned_admin: null,
       ip_address: ticketData.ip_address || null,

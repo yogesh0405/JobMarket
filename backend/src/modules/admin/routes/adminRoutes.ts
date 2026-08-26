@@ -58,6 +58,7 @@ router.get('/settings', AdminController.getSettings);
 router.put('/settings', adminActionLimiter, AdminController.updateSettings);
 
 // Broadcast Notifications System
+router.get('/broadcast/history', AdminController.getBroadcastHistory);
 router.post('/broadcast', adminActionLimiter, AdminController.broadcastNotifications);
 
 export default router;

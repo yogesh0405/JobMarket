@@ -54,10 +54,17 @@ export const CandidateEditStep3Experience: React.FC<CandidateEditStep3Experience
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemRowTitle}>{item.title}</Text>
                   <Text style={styles.itemRowSub}>{item.company}</Text>
-                  <Text style={styles.itemRowDuration}>{item.duration}</Text>
+                  <Text style={styles.itemRowDuration}>
+                    {item.duration || (item.startYear ? `${item.startYear} - ${item.endYear || 'Present'}` : '')}
+                  </Text>
                   {item.description ? <Text style={styles.itemRowDesc}>{item.description}</Text> : null}
                 </View>
-                <TouchableOpacity onPress={() => onRemoveExperience(idx)}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.deleteBtnBox}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  onPress={() => onRemoveExperience(idx)}
+                >
                   <Trash2 size={16} color="#DC2626" />
                 </TouchableOpacity>
               </View>
@@ -232,5 +239,13 @@ const styles = StyleSheet.create({
   toggleDesc: {
     fontSize: 11,
     color: '#64748B',
+  },
+  deleteBtnBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

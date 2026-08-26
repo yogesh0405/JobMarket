@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, User, Paperclip, Send, Headphones, CheckCheck } from 'lucide-react-native';
+import { ArrowLeft, Paperclip, Send, X, Headphones } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { useAuth } from '../../../hooks/useAuth';
 import { SupportTicket, TicketMessage } from './HelpSupportConstants';
@@ -33,6 +34,56 @@ interface HelpSupportChatModalProps {
   onSendReply: () => void;
 }
 
+// Helpers for Real Industry-Grade Date Separator Grouping
+const formatChatDateHeader = (dateInput?: string): string => {
+  if (!dateInput) return 'Today';
+
+  const parsed = new Date(dateInput);
+  if (isNaN(parsed.getTime())) {
+    // If already pre-formatted like "12 dec, 8:24 pm" or "26 Aug 2026", return directly
+    return String(dateInput);
+  }
+
+  const now = new Date();
+  const isSameDay =
+    parsed.getDate() === now.getDate() &&
+    parsed.getMonth() === now.getMonth() &&
+    parsed.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    parsed.getDate() === yesterday.getDate() &&
+    parsed.getMonth() === yesterday.getMonth() &&
+    parsed.getFullYear() === yesterday.getFullYear();
+
+  const timeStr = parsed
+    .toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+    .toLowerCase();
+
+  if (isSameDay) {
+    const dayMonth = parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toLowerCase();
+    return `${dayMonth}, ${timeStr}`;
+  }
+
+  if (isYesterday) {
+    return `Yesterday, ${timeStr}`;
+  }
+
+  const dayMonth = parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toLowerCase();
+  const yearSuffix = parsed.getFullYear() !== now.getFullYear() ? ` ${parsed.getFullYear()}` : '';
+  return `${dayMonth}${yearSuffix}, ${timeStr}`;
+};
+
+const getDayKey = (dateInput?: string): string => {
+  if (!dateInput) return 'today';
+  const parsed = new Date(dateInput);
+  if (isNaN(parsed.getTime())) {
+    return String(dateInput).split(',')[0].trim().toLowerCase();
+  }
+  return `${parsed.getFullYear()}-${parsed.getMonth() + 1}-${parsed.getDate()}`;
+};
+
 export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   visible,
   onClose,
@@ -47,14 +98,17 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   onSendReply,
 }) => {
   const { user } = useAuth();
-  const userPhotoUri =
-    user?.profilePictureUrl ||
-    (user as any)?.profile_picture_url ||
-    (user as any)?.companyLogo ||
-    (user as any)?.company_logo;
-
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 200);
+    }
+  }, [visible, chatMessages.length]);
 
   if (!ticket) return null;
 
@@ -62,360 +116,368 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalRootContainer}>
-        {/* Instagram DM Style Header Bar */}
-        <View style={[styles.chatHeaderBar, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
-          <TouchableOpacity onPress={onClose} style={styles.chatCloseBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <X size={22} color="#0F172A" />
+      <SafeAreaView style={styles.modalContainer}>
+        {/* Top Header Bar */}
+        <View style={[styles.headerBar, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
           </TouchableOpacity>
 
-          <View style={styles.headerInfoCol}>
+          <View style={styles.headerInfo}>
             <View style={styles.headerTitleRow}>
-              <Text style={styles.chatHeaderNameText} numberOfLines={1}>Support Ticket #{ticket.ticketNumber}</Text>
-              <View style={[styles.chatStatusBadge, ticket.status === 'RESOLVED' ? styles.statusBadgeResolved : styles.statusBadgeOpen]}>
-                <Text style={styles.chatStatusBadgeText}>{ticket.status}</Text>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                Ticket #{ticket.ticketNumber}
+              </Text>
+              <View style={[styles.statusPill, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillResolved : styles.statusPillOpen]}>
+                <Text style={[styles.statusPillText, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillTextResolved : styles.statusPillTextOpen]}>
+                  {ticket.status}
+                </Text>
               </View>
             </View>
-            <Text style={styles.chatHeaderSubText} numberOfLines={1}>{ticket.subject}</Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {ticket.subject}
+            </Text>
           </View>
         </View>
 
-        {/* Message Thread List */}
-        <ScrollView contentContainerStyle={styles.chatMessagesScrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.systemInfoNoticeBox}>
-            <Text style={styles.systemInfoNoticeTitle}>Technical Inquiry Thread</Text>
-            <Text style={styles.systemInfoNoticeSub}>Category: {ticket.category} • Priority: {ticket.priority.toUpperCase()}</Text>
-          </View>
+        {/* Chat Messages Scroll View (100% Matching Reference UI with Dynamic Date Separators) */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+        >
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={[styles.messagesContainer, { paddingBottom: 16 }]}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {chatMessages.map((msg, index) => {
+              const isUser = msg.sender === 'user';
+              const prevMsg = index > 0 ? chatMessages[index - 1] : null;
 
-          {chatMessages.map((msg) => {
-            const isUser = msg.sender === 'user';
-            return (
-              <View key={msg.id} style={[styles.chatMsgRow, isUser ? styles.chatMsgRowUser : styles.chatMsgRowSupport]}>
-                <View style={[styles.chatBubble, isUser ? styles.chatBubbleUser : styles.chatBubbleSupport]}>
-                  {/* Inside Avatar & Sender Name Header */}
-                  <View style={styles.chatBubbleHeaderRow}>
-                    {isUser ? (
-                      <View style={styles.chatAvatarUserInside}>
-                        {userPhotoUri ? (
-                          <Image source={{ uri: userPhotoUri }} style={styles.avatarImageInside} />
-                        ) : (
-                          <User size={9} color="#FFFFFF" />
-                        )}
+              // Check if date header should appear (First message or when date changes from previous message)
+              const msgDate = msg.createdAt || ticket.createdAt || new Date().toISOString();
+              const prevDate = prevMsg?.createdAt || ticket.createdAt;
+              const shouldShowDateHeader = index === 0 || getDayKey(msgDate) !== getDayKey(prevDate);
+
+              return (
+                <React.Fragment key={msg.id || index}>
+                  {/* Centered Date Separator Header (Shown at start & when message date changes) */}
+                  {shouldShowDateHeader && (
+                    <View style={styles.dateStampContainer}>
+                      <Text style={styles.dateStampText}>{formatChatDateHeader(msgDate)}</Text>
+                    </View>
+                  )}
+
+                  {isUser ? (
+                    /* USER OUTBOUND BUBBLE (Vibrant Blue Pill - Matching Reference) */
+                    <View style={styles.userMsgWrapper}>
+                      {/* Optional Image Attachment */}
+                      {msg.attachment ? (
+                        <View style={styles.imageAttachmentWrapper}>
+                          <Image source={{ uri: msg.attachment }} style={styles.imageAttachmentCard} />
+                        </View>
+                      ) : null}
+
+                      {/* Text Bubble */}
+                      {msg.text ? (
+                        <View style={styles.userBubble}>
+                          <Text style={styles.userBubbleText}>{msg.text}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : (
+                    /* SUPPORT AGENT INBOUND BUBBLE (With professional icon next to title) */
+                    <View style={styles.supportMsgRow}>
+                      <View style={styles.supportBubble}>
+                        <View style={styles.supportHeaderTitleRow}>
+                          <Headphones size={13} color="#2186FF" strokeWidth={2.2} />
+                          <Text style={styles.supportAgentName}>
+                            {msg.senderName || 'Support Team'}
+                          </Text>
+                        </View>
+                        <Text style={styles.supportBubbleText}>{msg.text}</Text>
+
+                        {msg.attachment ? (
+                          <View style={styles.imageAttachmentWrapperLeft}>
+                            <Image source={{ uri: msg.attachment }} style={styles.imageAttachmentCard} />
+                          </View>
+                        ) : null}
                       </View>
-                    ) : (
-                      <View style={styles.chatAvatarSupportInside}>
-                        <Headphones size={9} color={COLORS.primary} />
-                      </View>
-                    )}
-                    <Text style={[styles.chatSenderNameText, isUser ? styles.chatSenderNameUser : styles.chatSenderNameSupport]}>
-                      {isUser ? 'Me' : msg.senderName}
-                    </Text>
-                  </View>
+                    </View>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </ScrollView>
 
-                  <Text style={[styles.chatMsgBodyText, isUser ? styles.chatMsgBodyUser : styles.chatMsgBodySupport]}>
-                    {msg.text}
-                  </Text>
-
-                  {msg.attachment ? (
-                    <Image source={{ uri: msg.attachment }} style={styles.chatAttachmentImg} />
-                  ) : null}
-
-                  <View style={styles.msgFooterRow}>
-                    <Text style={[styles.chatMsgTimeText, isUser ? styles.chatMsgTimeUser : styles.chatMsgTimeSupport]}>
-                      {msg.createdAt}
-                    </Text>
-                    {isUser && <CheckCheck size={12} color="#93C5FD" style={{ marginLeft: 3 }} />}
-                  </View>
-                </View>
+          {/* Bottom Chat Input Bar (Exact match to reference capsule design) */}
+          <View style={[styles.inputBarOuterContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            {/* Attachment preview if selected */}
+            {selectedAttachment ? (
+              <View style={styles.attachmentPreviewStrip}>
+                <Text style={styles.attachmentPreviewText} numberOfLines={1}>
+                  📎 {selectedAttachment.name}
+                </Text>
+                <TouchableOpacity onPress={onRemoveAttachment} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <X size={16} color="#DC2626" />
+                </TouchableOpacity>
               </View>
-            );
-          })}
-        </ScrollView>
+            ) : null}
 
-        {/* Instagram DM Floating Input Bar */}
-        <View style={styles.chatInputBarContainer}>
-          {selectedAttachment ? (
-            <View style={styles.attachmentPreviewStrip}>
-              <Text style={styles.attachmentPreviewName} numberOfLines={1}>{selectedAttachment.name}</Text>
-              <TouchableOpacity onPress={onRemoveAttachment} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <X size={14} color="#DC2626" />
+            {/* Pill Capsule Container */}
+            <View style={styles.capsuleInputRow}>
+              {/* Paperclip / Attachment Icon on Left */}
+              <TouchableOpacity
+                style={styles.clipButton}
+                onPress={onPickAttachment}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Paperclip size={20} color="#94A3B8" strokeWidth={2} />
+              </TouchableOpacity>
+
+              {/* Text Input with 'Enter Message' placeholder */}
+              <TextInput
+                style={[styles.textInput, { maxHeight: 90 }]}
+                placeholder="Enter Message"
+                placeholderTextColor="#94A3B8"
+                value={replyMessage}
+                onChangeText={setReplyMessage}
+                multiline
+              />
+
+              {/* Direct Send Icon Button on Right (Matching Image) */}
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={styles.sendIconButton}
+                onPress={onSendReply}
+                disabled={!canSend}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {sendingReply ? (
+                  <ActivityIndicator size="small" color="#6366F1" />
+                ) : (
+                  <Send size={20} color={canSend ? '#6366F1' : '#94A3B8'} />
+                )}
               </TouchableOpacity>
             </View>
-          ) : null}
-
-          <View style={styles.chatInputRowWrap}>
-            <TouchableOpacity style={styles.attachBtnCircle} onPress={onPickAttachment} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Paperclip size={18} color="#64748B" />
-            </TouchableOpacity>
-
-            <TextInput
-              style={styles.chatInputField}
-              placeholder="Message..."
-              placeholderTextColor="#94A3B8"
-              value={replyMessage}
-              onChangeText={setReplyMessage}
-              multiline
-            />
-
-            <TouchableOpacity
-              style={[styles.chatSendBtnCircle, !canSend && styles.chatSendBtnDisabled]}
-              onPress={onSendReply}
-              disabled={!canSend}
-            >
-              {sendingReply ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Send size={15} color={canSend ? '#FFFFFF' : '#94A3B8'} />
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalRootContainer: {
+  modalContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  chatHeaderBar: {
+
+  /* Header */
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
     gap: 12,
   },
-  chatCloseBtn: {
-    padding: 2,
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerInfoCol: {
+  headerInfo: {
     flex: 1,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  chatHeaderNameText: {
-    fontSize: 14,
+  headerTitle: {
+    flex: 1,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.2,
   },
-  chatHeaderSubText: {
-    fontSize: 11.5,
+  headerSubtitle: {
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
   },
-  headerAvatarCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  onlinePulseDotSmall: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-    backgroundColor: '#22C55E',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  chatStatusBadge: {
+  statusPill: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  statusBadgeOpen: {
+  statusPillOpen: {
     backgroundColor: '#FEF3C7',
   },
-  statusBadgeResolved: {
+  statusPillResolved: {
     backgroundColor: '#DCFCE7',
   },
-  chatStatusBadgeText: {
+  statusPillText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#92400E',
+    textTransform: 'uppercase',
   },
-  chatMessagesScrollContent: {
+  statusPillTextOpen: {
+    color: '#B45309',
+  },
+  statusPillTextResolved: {
+    color: '#15803D',
+  },
+
+  /* Messages Scroll View */
+  messagesContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    paddingTop: 12,
   },
-  systemInfoNoticeBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 10,
+
+  /* Centered Date / Time Stamp (Matching Reference Image) */
+  dateStampContainer: {
     alignItems: 'center',
-    marginBottom: 6,
+    marginVertical: 14,
   },
-  systemInfoNoticeTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#475569',
+  dateStampText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '400',
   },
-  systemInfoNoticeSub: {
-    fontSize: 10.5,
-    color: '#64748B',
-    marginTop: 2,
+
+  /* Outbound User Message Styles (Matching Reference Image) */
+  userMsgWrapper: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+    marginBottom: 12,
+    maxWidth: '82%',
   },
-  chatMsgRow: {
-    flexDirection: 'row',
-    marginVertical: 1,
+  userBubble: {
+    backgroundColor: '#2186FF', // Vibrant reference blue
+    borderRadius: 22,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
   },
-  chatMsgRowUser: {
-    justifyContent: 'flex-end',
+  userBubbleText: {
+    fontSize: 14.5,
+    color: '#FFFFFF',
+    lineHeight: 20,
+    fontWeight: '400',
   },
-  chatMsgRowSupport: {
-    justifyContent: 'flex-start',
+
+  /* Inbound Support Message Styles (Matching Reference Image) */
+  supportMsgRow: {
+    alignSelf: 'flex-start',
+    marginBottom: 14,
+    maxWidth: '82%',
   },
-  chatBubble: {
-    maxWidth: '80%',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  supportBubble: {
+    backgroundColor: '#EEF2F6', // Soft cool gray-blue from reference
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  chatBubbleUser: {
-    backgroundColor: '#2563EB',
-    borderBottomRightRadius: 4,
-  },
-  chatBubbleSupport: {
-    backgroundColor: '#F1F5F9',
-    borderBottomLeftRadius: 4,
-  },
-  chatBubbleHeaderRow: {
+  supportHeaderTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginBottom: 4,
   },
-  chatAvatarUserInside: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  chatAvatarSupportInside: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarImageInside: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-  },
-  chatSenderNameText: {
-    fontSize: 10.5,
+  supportAgentName: {
+    fontSize: 13,
     fontWeight: '700',
+    color: '#2186FF',
   },
-  chatSenderNameUser: {
-    color: '#EFF6FF',
-  },
-  chatSenderNameSupport: {
-    color: '#475569',
-  },
-  chatMsgBodyText: {
-    fontSize: 13.5,
-    lineHeight: 19,
-  },
-  chatMsgBodyUser: {
-    color: '#FFFFFF',
-  },
-  chatMsgBodySupport: {
+  supportBubbleText: {
+    fontSize: 14.5,
     color: '#0F172A',
+    lineHeight: 20,
+    fontWeight: '400',
   },
-  chatAttachmentImg: {
-    width: 180,
-    height: 135,
-    borderRadius: 12,
-    marginTop: 6,
+
+  /* Image Attachments */
+  imageAttachmentWrapper: {
+    alignSelf: 'flex-end',
+    marginBottom: 6,
   },
-  msgFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 4,
+  imageAttachmentWrapperLeft: {
+    marginTop: 8,
   },
-  chatMsgTimeText: {
-    fontSize: 9.5,
+  imageAttachmentCard: {
+    width: 240,
+    height: 140,
+    borderRadius: 16,
+    backgroundColor: '#E2E8F0',
   },
-  chatMsgTimeUser: {
-    color: '#BFDBFE',
-  },
-  chatMsgTimeSupport: {
-    color: '#94A3B8',
-  },
-  chatInputBarContainer: {
+
+  /* Bottom Input Bar (Matching Reference Image) */
+  inputBarOuterContainer: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
   attachmentPreviewStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
     marginBottom: 8,
   },
-  attachmentPreviewName: {
-    fontSize: 11.5,
+  attachmentPreviewText: {
+    fontSize: 12,
     color: '#DC2626',
     fontWeight: '600',
+    flex: 1,
   },
-  chatInputRowWrap: {
+  capsuleInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 26,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 7,
+    minHeight: 48,
+    shadowColor: '#000000',
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
   },
-  attachBtnCircle: {
-    padding: 6,
-  },
-  chatInputField: {
-    flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    fontSize: 13.5,
-    color: '#0F172A',
-    maxHeight: 80,
-  },
-  chatSendBtnCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#2563EB',
+  clipButton: {
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 6,
   },
-  chatSendBtnDisabled: {
-    backgroundColor: '#E2E8F0',
+  textInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: '#0F172A',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    minHeight: 36,
+  },
+  sendIconButton: {
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
   },
 });
+

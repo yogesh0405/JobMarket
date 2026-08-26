@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
 import { Check, ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { KeyboardAwareScrollView, handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 import { COLORS } from '../../constants/theme';
 import {
   INDUSTRY_LIST,
@@ -31,6 +32,8 @@ interface Props {
 export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const pendingActionRef = useRef<any>(null);
 
   const form = useJobPostForm(navigation, route);
 
@@ -47,19 +50,9 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
       // Prevent default exit action
       e.preventDefault();
 
-      // Prompt confirmation alert dialog
-      Alert.alert(
-        'Discard Job Post Draft?',
-        'Are you sure you want to go back? Any unsubmitted job details will be lost.',
-        [
-          { text: 'Stay & Continue', style: 'cancel', onPress: () => {} },
-          {
-            text: 'Discard & Exit',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ]
-      );
+      // Show styled confirmation modal
+      pendingActionRef.current = e.data.action;
+      setShowDiscardModal(true);
     });
 
     return unsubscribe;
@@ -319,6 +312,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             onAddCustomSkill={form.handleAddCustomSkill}
             onToggleSkill={form.handleToggleSkill}
             availableSkills={form.availableSkills}
+            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 160)}
           />
         ) : null}
       </KeyboardAwareScrollView>
@@ -351,6 +345,28 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Themed Discard Job Post Draft Confirmation Modal */}
+      <ConfirmationModal
+        visible={showDiscardModal}
+        type="danger"
+        title="Discard Job Post Draft?"
+        message="You have unsaved changes in your job post draft. Are you sure you want to exit? All progress entered so far will be lost."
+        cancelText="Stay & Continue"
+        confirmText="Discard & Exit"
+        onClose={() => {
+          pendingActionRef.current = null;
+          setShowDiscardModal(false);
+        }}
+        onConfirm={() => {
+          setShowDiscardModal(false);
+          if (pendingActionRef.current) {
+            navigation.dispatch(pendingActionRef.current);
+          } else {
+            navigation.goBack();
+          }
+        }}
+      />
     </View>
   );
 };

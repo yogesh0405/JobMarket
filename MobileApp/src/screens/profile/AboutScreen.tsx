@@ -93,14 +93,8 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* Crisp Section Divider Line */}
-        <View style={styles.slateSectionDivider} />
-
         {/* CARD BLOCK 2: WHY CHOOSE JOBMARKET (REDESIGNED V2) */}
         <WhyChooseJobMarket />
-
-        {/* Crisp Section Divider Line */}
-        <View style={styles.slateSectionDivider} />
 
         {/* CARD BLOCK 3: APP INFORMATION & LEGAL */}
         <View style={styles.cardBlock}>
@@ -213,6 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 60,
+    gap: 12,
   },
   cardBlock: {
     backgroundColor: '#FFFFFF',
@@ -238,13 +233,6 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 18,
     fontWeight: '400',
-  },
-
-  /* Section Separator Rule */
-  slateSectionDivider: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 6,
   },
   rowDividerLine: {
     height: 1,

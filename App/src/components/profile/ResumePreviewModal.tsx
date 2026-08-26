@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Resume } from '../../types';
 import { apiFetch } from '../../utils/api';
+import { 
+  FileText, 
+  ExternalLink, 
+  Download, 
+  Printer, 
+  X, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCw, 
+  AlertCircle, 
+  Loader2,
+  Maximize2
+} from 'lucide-react';
 
 interface ResumePreviewModalProps {
   resume: Resume | null;
@@ -11,76 +24,138 @@ interface ResumePreviewModalProps {
 
 export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, onClose, userId }) => {
   const [objectUrl, setObjectUrl] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [rawUrl, setRawUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [rotation, setRotation] = useState<number>(0);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!resume) {
       setObjectUrl('');
+      setRawUrl('');
       return;
     }
 
     let isMounted = true;
     setLoading(true);
     setErrorMsg('');
+    setZoomLevel(100);
+    setRotation(0);
 
-    const processResumeUrl = (urlStr: string) => {
-      if (!urlStr) {
-        setErrorMsg('No resume document URL available');
-        return;
-      }
+    const convertBase64ToBlobUrl = (base64Str: string, mime: string) => {
+      try {
+        const base64Parts = base64Str.split(',');
+        const cleanBase64 = base64Parts.length > 1 ? base64Parts[1] : base64Str;
+        const resolvedMime = base64Parts.length > 1 && base64Parts[0].includes(';') 
+          ? base64Parts[0].split(';')[0].split(':')[1] 
+          : mime;
 
-      if (urlStr.startsWith('data:')) {
-        try {
-          const base64Parts = urlStr.split(',');
-          const base64WithoutHeader = base64Parts.length > 1 ? base64Parts[1] : urlStr;
-          const mimeType = base64Parts.length > 1 ? base64Parts[0].split(';')[0].split(':')[1] : (resume.type || 'application/pdf');
-
-          const byteCharacters = atob(base64WithoutHeader);
-          const byteArrays = [];
-          const sliceSize = 512;
-          for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-            const slice = byteCharacters.slice(offset, offset + sliceSize);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-              byteNumbers[i] = slice.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            byteArrays.push(byteArray);
+        const byteCharacters = atob(cleanBase64);
+        const sliceSize = 1024;
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+          const slice = byteCharacters.slice(offset, offset + sliceSize);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
           }
-          const blob = new Blob(byteArrays, { type: mimeType });
-          const blobUrl = URL.createObjectURL(blob);
-          setObjectUrl(blobUrl);
-        } catch (e) {
-          console.error('Error converting base64 to Blob:', e);
-          setObjectUrl(urlStr);
+          byteArrays.push(new Uint8Array(byteNumbers));
         }
-      } else {
-        setObjectUrl(urlStr);
+        const blob = new Blob(byteArrays, { type: resolvedMime });
+        return URL.createObjectURL(blob);
+      } catch (e) {
+        console.error('Error converting base64 to Blob URL:', e);
+        return base64Str;
       }
     };
 
-    // 1. If resume object already contains a valid URL or data URL, process it
+    const processUrl = async (urlStr: string) => {
+      if (!urlStr) {
+        setErrorMsg('No resume file URL or content found');
+        setLoading(false);
+        return;
+      }
+
+      setRawUrl(urlStr);
+
+      const fileNameLower = (resume.name || '').toLowerCase();
+      const isPdf = (resume.type && resume.type.includes('pdf')) || 
+        fileNameLower.endsWith('.pdf') || 
+        urlStr.toLowerCase().includes('.pdf') ||
+        urlStr.startsWith('data:application/pdf');
+
+      const isImg = !isPdf && (
+        (resume.type && resume.type.startsWith('image/')) || 
+        /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(fileNameLower) || 
+        urlStr.startsWith('data:image/') ||
+        (urlStr.includes('/image/upload/') && !urlStr.toLowerCase().includes('.pdf'))
+      );
+
+      if (urlStr.startsWith('data:')) {
+        const mime = isImg ? (resume.type || 'image/jpeg') : 'application/pdf';
+        const blobUrl = convertBase64ToBlobUrl(urlStr, mime);
+        if (isMounted) {
+          setObjectUrl(blobUrl);
+          setLoading(false);
+        }
+      } else if (urlStr.startsWith('blob:')) {
+        if (isMounted) {
+          setObjectUrl(urlStr);
+          setLoading(false);
+        }
+      } else if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+        if (isImg) {
+          if (isMounted) {
+            setObjectUrl(urlStr);
+            setLoading(false);
+          }
+        } else {
+          // Fetch remote PDF into memory and create a local Blob URL for in-app native display
+          try {
+            const resp = await fetch(urlStr);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const blob = await resp.blob();
+            const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            if (isMounted) {
+              setObjectUrl(blobUrl);
+              setLoading(false);
+            }
+          } catch (fetchErr: any) {
+            console.warn('Failed to fetch remote PDF blob:', fetchErr);
+            if (isMounted) {
+              setObjectUrl(urlStr);
+              setLoading(false);
+            }
+          }
+        }
+      } else {
+        if (isMounted) {
+          setObjectUrl(urlStr);
+          setLoading(false);
+        }
+      }
+    };
+
     if (resume.url) {
-      processResumeUrl(resume.url);
-      setLoading(false);
+      processUrl(resume.url);
       return;
     }
 
-    // 2. Fetch from backend API if url is missing from candidate payload
     const targetUserId = userId || (resume as any)?.userId;
     const fetchUrl = targetUserId ? `/api/v1/auth/resume?userId=${targetUserId}` : '/api/v1/auth/resume';
 
     apiFetch(fetchUrl)
       .then(res => {
-        if (!res.ok) throw new Error('Failed to load resume document');
+        if (!res.ok) throw new Error('Failed to fetch resume file');
         return res.json();
       })
       .then(data => {
         if (!isMounted) return;
         if (data.success && data.url) {
-          processResumeUrl(data.url);
+          processUrl(data.url);
         } else {
           throw new Error('Resume file not found');
         }
@@ -88,14 +163,12 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
       .catch(err => {
         if (!isMounted) return;
         if (resume.url) {
-          processResumeUrl(resume.url);
+          processUrl(resume.url);
         } else {
           console.error(err);
-          setErrorMsg('Failed to load resume document.');
+          setErrorMsg('Failed to load resume file. Please verify upload.');
+          setLoading(false);
         }
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
       });
 
     return () => {
@@ -106,166 +179,348 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
   if (!resume) return null;
 
   const fileNameLower = (resume.name || '').toLowerCase();
-  const isPdf = resume.type === 'application/pdf' || fileNameLower.endsWith('.pdf') || objectUrl.includes('.pdf') || objectUrl.includes('data:application/pdf');
-  const isImage = resume.type?.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(fileNameLower) || objectUrl.includes('/image/upload/');
+  const isPdf = (resume.type && resume.type.includes('pdf')) || 
+    fileNameLower.endsWith('.pdf') || 
+    (objectUrl && objectUrl.toLowerCase().includes('.pdf')) ||
+    (rawUrl && rawUrl.toLowerCase().includes('.pdf'));
+
+  const isImage = !isPdf && (
+    (resume.type && resume.type.startsWith('image/')) || 
+    /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(fileNameLower) || 
+    objectUrl.startsWith('data:image/') ||
+    (objectUrl.includes('/image/upload/') && !objectUrl.toLowerCase().includes('.pdf'))
+  );
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 25, 250));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 25, 50));
+  const handleRotate = () => setRotation(prev => (prev + 90) % 360);
 
   const handleDownload = async () => {
-    if (!objectUrl) return;
+    if (!objectUrl && !rawUrl) return;
     setIsDownloading(true);
     try {
-      if (objectUrl.startsWith('blob:') || objectUrl.startsWith('data:')) {
+      const target = objectUrl || rawUrl;
+      const downloadName = resume.name || (isImage ? 'Resume_Image.jpg' : 'Resume_Document.pdf');
+
+      if (target.startsWith('blob:') || target.startsWith('data:')) {
         const a = document.createElement('a');
-        a.href = objectUrl;
-        a.download = resume.name || 'Resume.pdf';
+        a.href = target;
+        a.download = downloadName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
       } else {
-        // Fetch cross-origin URL as blob to guarantee 100% download without NOT_FOUND
-        const resp = await fetch(objectUrl);
+        const resp = await fetch(target);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = resume.name || 'Resume.pdf';
+        a.download = downloadName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
       }
     } catch (err) {
-      console.warn('Direct blob fetch download failed, opening in new window:', err);
-      window.open(objectUrl, '_blank');
+      console.warn('Blob download fallback:', err);
+      window.open(rawUrl || objectUrl, '_blank');
     } finally {
       setIsDownloading(false);
     }
   };
 
+  const handlePrint = () => {
+    if (isImage) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>${resume.name || 'Resume Document'}</title>
+              <style>
+                body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background: #fff; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${objectUrl || rawUrl}" onload="window.print();window.close();" />
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } else {
+      if (objectUrl) {
+        const printWindow = window.open(objectUrl, '_blank');
+        if (printWindow) {
+          printWindow.focus();
+        }
+      }
+    }
+  };
+
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.75)', zIndex: 99999 }}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '900px', height: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg, #ffffff)', borderRadius: '12px', overflow: 'hidden', border: '1.5px solid var(--border, #cbd5e1)' }}>
-        <div className="modal-header" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-          <h3 className="modal-title" style={{ margin: 0, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-            </svg>
-            {resume.name || 'Resume Preview'}
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div 
+      className="modal-backdrop" 
+      onClick={onClose} 
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        background: 'rgba(15, 23, 42, 0.82)', 
+        zIndex: 99999,
+        padding: '16px'
+      }}
+    >
+      <div 
+        className="modal" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ 
+          width: '100%', 
+          maxWidth: '1020px', 
+          height: '92vh', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          background: '#FFFFFF', 
+          borderRadius: '14px', 
+          overflow: 'hidden', 
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+          border: '1px solid #CBD5E1'
+        }}
+      >
+        {/* Header Bar */}
+        <div 
+          style={{ 
+            padding: '12px 20px', 
+            borderBottom: '1px solid #E2E8F0', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            background: '#FFFFFF',
+            flexShrink: 0
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+            <div style={{ 
+              width: '36px', 
+              height: '36px', 
+              borderRadius: '8px', 
+              background: '#EFF6FF', 
+              color: '#2563EB', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <FileText size={20} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {resume.name || (isImage ? 'Resume_Image.jpg' : 'Resume_Document.pdf')}
+              </h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                {isImage ? 'Image Document' : 'PDF Document'} {resume.size ? `• ${resume.size}` : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions & Close */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {objectUrl && (
               <a
                 href={objectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Open in new tab"
+                title="Open in new window"
                 style={{
-                  color: '#64748b',
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '4px',
-                  borderRadius: '4px',
+                  gap: '5px',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  background: '#F8FAFC',
+                  color: '#334155',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
                   textDecoration: 'none'
                 }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
+                <ExternalLink size={14} />
+                <span className="hidden-mobile">Open Window</span>
               </a>
             )}
-            <button className="modal-close" onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+
+            <button 
+              onClick={onClose} 
+              style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#F1F5F9', 
+                border: 'none', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: 'pointer', 
+                color: '#64748B' 
+              }}
+              title="Close Preview"
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
-        
-        <div className="modal-body" style={{ flex: 1, padding: 0, background: '#323639', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
+
+        {/* In-Modal Viewer Body */}
+        <div 
+          style={{ 
+            flex: 1, 
+            padding: 0, 
+            background: '#1E293B', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
           {loading ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#ffffff' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3.5px solid #ffffff', borderTopColor: '#2563eb', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }}></div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Loading Resume Preview...</h3>
+            <div style={{ padding: '32px', textAlign: 'center', color: '#FFFFFF' }}>
+              <Loader2 size={40} className="animate-spin" style={{ margin: '0 auto 12px', color: '#3B82F6' }} />
+              <h4 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>Opening Resume in App...</h4>
+              <p style={{ fontSize: '12.5px', color: '#94A3B8', marginTop: '4px' }}>Rendering preview canvas</p>
             </div>
           ) : errorMsg ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#ffffff' }}>
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" style={{ marginBottom: '12px' }}>
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <h3 style={{ fontSize: '17px', fontWeight: '700' }}>{errorMsg}</h3>
+            <div style={{ padding: '32px', textAlign: 'center', color: '#FFFFFF', maxWidth: '400px' }}>
+              <AlertCircle size={44} color="#EF4444" style={{ margin: '0 auto 12px' }} />
+              <h4 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>{errorMsg}</h4>
+              {rawUrl && (
+                <div style={{ marginTop: '14px' }}>
+                  <a 
+                    href={rawUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn btn-primary btn-sm"
+                    style={{ textDecoration: 'none', display: 'inline-block' }}
+                  >
+                    Open Document Link
+                  </a>
+                </div>
+              )}
             </div>
-          ) : objectUrl && isImage ? (
-            <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', overflow: 'auto' }}>
+          ) : isImage && objectUrl ? (
+            /* Direct Image Viewer with Zoom & Rotate */
+            <div 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                overflow: 'auto',
+                padding: '20px'
+              }}
+            >
               <img 
                 src={objectUrl} 
                 alt={resume.name || 'Resume Document'} 
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }} 
+                style={{ 
+                  maxWidth: zoomLevel === 100 ? '100%' : 'none', 
+                  maxHeight: zoomLevel === 100 ? '100%' : 'none', 
+                  width: zoomLevel !== 100 ? `${zoomLevel}%` : 'auto',
+                  objectFit: 'contain', 
+                  borderRadius: '6px', 
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                  transform: `rotate(${rotation}deg)`,
+                  transition: 'transform 0.2s ease, width 0.2s ease'
+                }} 
               />
             </div>
           ) : objectUrl ? (
-            <div style={{ width: '100%', height: '100%', position: 'relative', background: '#323639' }}>
+            /* Direct Native In-App PDF Viewer (No Auto-Download) */
+            <div style={{ width: '100%', height: '100%', position: 'relative', background: '#334155' }}>
               <iframe 
-                src={objectUrl}
-                title={resume.name || 'Resume PDF'} 
+                src={`${objectUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                title={resume.name || 'Resume Document'} 
                 width="100%" 
                 height="100%" 
-                style={{ border: 'none', background: '#323639' }}
-              />
-            </div>
-          ) : objectUrl ? (
-            <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', overflow: 'auto' }}>
-              <img 
-                src={objectUrl} 
-                alt={resume.name || 'Resume Document'} 
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }} 
+                style={{ border: 'none', width: '100%', height: '100%', display: 'block', background: '#334155' }}
               />
             </div>
           ) : (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#ffffff' }}>
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '12px', opacity: 0.7 }}>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <h3 style={{ fontSize: '17px', fontWeight: '700' }}>Preview Not Available</h3>
+            <div style={{ padding: '32px', textAlign: 'center', color: '#94A3B8' }}>
+              <FileText size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+              <h4 style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF', margin: 0 }}>Preview Not Available</h4>
             </div>
           )}
         </div>
-        
+
+        {/* Footer Toolbar */}
         <div 
-          className="modal-footer" 
           style={{ 
-            padding: '14px 18px', 
-            borderTop: '1px solid var(--border, #e2e8f0)', 
+            padding: '10px 18px', 
+            borderTop: '1px solid #E2E8F0', 
             display: 'flex', 
-            alignItems: 'center',
-            justifyContent: 'flex-end', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
             gap: '8px', 
             flexWrap: 'wrap',
-            background: '#f8fafc' 
+            background: '#F8FAFC',
+            flexShrink: 0
           }}
         >
-          {objectUrl && (
-            <a 
-              href={objectUrl} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-sm"
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '6px', 
-                textDecoration: 'none', 
-                padding: '7px 12px', 
-                borderRadius: '8px', 
-                fontWeight: '700', 
-                fontSize: '12.5px',
-                whiteSpace: 'nowrap',
-                boxSizing: 'border-box'
-              }}
+          {/* Left Controls (Zoom for image) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {isImage && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  title="Zoom In"
+                >
+                  <ZoomIn size={14} />
+                  <span>Zoom In</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  title="Zoom Out"
+                >
+                  <ZoomOut size={14} />
+                  <span>Zoom Out</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRotate}
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  title="Rotate"
+                >
+                  <RotateCw size={14} />
+                  <span>Rotate</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Right Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="btn btn-secondary btn-sm"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '12.5px' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-              <span>Open Document</span>
-            </a>
-          )}
-          {!loading && objectUrl && (
+              <Printer size={15} />
+              <span>Print</span>
+            </button>
+
             <button 
               type="button"
               onClick={handleDownload}
@@ -274,53 +529,52 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
               style={{ 
                 display: 'inline-flex', 
                 alignItems: 'center', 
-                justifyContent: 'center',
                 gap: '6px', 
-                padding: '7px 14px', 
-                borderRadius: '8px', 
+                padding: '7px 16px', 
+                borderRadius: '6px', 
                 fontWeight: '700', 
                 fontSize: '12.5px', 
                 cursor: 'pointer', 
-                background: '#2563eb', 
-                color: '#ffffff', 
+                background: '#2563EB', 
+                color: '#FFFFFF', 
                 border: 'none',
-                whiteSpace: 'nowrap',
                 boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
               }}
             >
               {isDownloading ? (
-                <span>Downloading...</span>
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Downloading...</span>
+                </>
               ) : (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
+                  <Download size={15} />
                   <span>Download</span>
                 </>
               )}
             </button>
-          )}
-          <button 
-            className="btn btn-secondary btn-sm" 
-            onClick={onClose} 
-            style={{ 
-              padding: '7px 14px', 
-              borderRadius: '8px', 
-              fontWeight: '700', 
-              fontSize: '12.5px', 
-              background: '#e2e8f0', 
-              color: '#334155',
-              border: 'none', 
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Close
-          </button>
+
+            <button 
+              type="button"
+              className="btn btn-secondary btn-sm" 
+              onClick={onClose} 
+              style={{ 
+                padding: '7px 14px', 
+                borderRadius: '6px', 
+                fontWeight: '700', 
+                fontSize: '12.5px', 
+                background: '#E2E8F0', 
+                color: '#334155', 
+                border: 'none', 
+                cursor: 'pointer' 
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>,
     document.body
   );
 };
-

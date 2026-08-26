@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -31,7 +31,7 @@ import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { Button } from '../../../components/common/Button';
 import { ErrorBanner } from '../../../components/common/ErrorBanner';
-import { KeyboardAwareScrollView } from '../../../components/common/KeyboardAwareScrollView';
+import { KeyboardAwareScrollView, handleFocusInput } from '../../../components/common/KeyboardAwareScrollView';
 import { SupportTicket } from './HelpSupportConstants';
 
 interface HelpSupportTicketsViewProps {
@@ -95,6 +95,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   onRefresh,
   onOpenTicketChat,
 }) => {
+  const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
 
@@ -174,6 +175,8 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
       </View>
 
       <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        extraScrollHeight={180}
         contentContainerStyle={styles.ticketsScrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -196,6 +199,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
+              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
               leftIcon={<User size={18} color="#64748B" />}
             />
 
@@ -205,6 +209,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
               keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
+              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
               leftIcon={<Mail size={18} color="#64748B" />}
             />
 
@@ -215,6 +220,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
               maxLength={10}
               value={phone}
               onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
+              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
               leftIcon={<Phone size={18} color="#64748B" />}
             />
 
@@ -268,6 +274,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
               placeholder="Brief summary of your query or technical issue"
               value={subject}
               onChangeText={setSubject}
+              onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
               leftIcon={<HelpCircle size={18} color="#64748B" />}
             />
 
@@ -277,6 +284,12 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
               multiline={true}
               value={description}
               onChangeText={setDescription}
+              onFocus={(e) => {
+                handleFocusInput(e, scrollViewRef, 240);
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 120);
+              }}
               leftIcon={<FileText size={18} color="#64748B" />}
             />
 

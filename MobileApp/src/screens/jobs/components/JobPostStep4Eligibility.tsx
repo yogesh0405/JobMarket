@@ -65,6 +65,7 @@ interface JobPostStep4EligibilityProps {
   onAddCustomSkill: () => void;
   onToggleSkill: (skill: string) => void;
   availableSkills: string[];
+  onFocusInput?: (e: any) => void;
 }
 
 export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = ({
@@ -108,6 +109,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
   onAddCustomSkill,
   onToggleSkill,
   availableSkills,
+  onFocusInput,
 }) => {
   return (
     <View style={styles.formCard}>
@@ -321,6 +323,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
             placeholder="Describe machine operations, shop floor duties, and expectations..."
             value={description}
             onChangeText={setDescription}
+            onFocus={onFocusInput}
             inputContainerStyle={{ borderRadius: 8 }}
             style={{ minHeight: 90 }}
           />
@@ -345,6 +348,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               placeholder="e.g. Operate CNC machine per job card&#10;Perform Quality Checks"
               value={responsibilities}
               onChangeText={setResponsibilities}
+              onFocus={onFocusInput}
               inputContainerStyle={{ borderRadius: 8 }}
               style={{ marginTop: 4, minHeight: 70 }}
             />
@@ -370,6 +374,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               placeholder="e.g. ITI / Diploma in Fitter Trade&#10;1+ year shopfloor experience"
               value={requirements}
               onChangeText={setRequirements}
+              onFocus={onFocusInput}
               inputContainerStyle={{ borderRadius: 8 }}
               style={{ marginTop: 4, minHeight: 70 }}
             />
@@ -386,6 +391,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               placeholderTextColor="#94A3B8"
               value={customSkillInput}
               onChangeText={setCustomSkillInput}
+              onFocus={onFocusInput}
               onSubmitEditing={onAddCustomSkill}
               returnKeyType="done"
             />

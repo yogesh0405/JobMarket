@@ -300,4 +300,13 @@ export class AdminController {
       next(error);
     }
   }
+
+  static async getBroadcastHistory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await AdminService.getBroadcastHistory(req.query as any);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

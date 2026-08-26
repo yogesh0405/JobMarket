@@ -56,6 +56,8 @@ export const CandidateEditStep2Education: React.FC<CandidateEditStep2EducationPr
               value={customTrade}
               onChangeText={setCustomTrade}
               inputContainerStyle={{ borderRadius: 6 }}
+              allowClear={true}
+              onClear={() => setCustomTrade('')}
             />
           ) : null}
         </View>
@@ -81,10 +83,15 @@ export const CandidateEditStep2Education: React.FC<CandidateEditStep2EducationPr
                 {idx > 0 && <View style={styles.innerCardItemSeparator} />}
                 <View style={styles.itemRowCard}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemRowTitle}>{item.degree}</Text>
-                    <Text style={styles.itemRowSub}>{item.institution} • Passing Year: {item.year}</Text>
+                    <Text style={styles.itemRowTitle}>{item.degree || item.degreeName || 'Degree / ITI Certificate'}</Text>
+                    <Text style={styles.itemRowSub}>{item.institution || item.school || item.college} • Passing Year: {item.year || item.passingYear || '-'}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => onRemoveEducation(idx)}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={styles.deleteBtnBox}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    onPress={() => onRemoveEducation(idx)}
+                  >
                     <Trash2 size={16} color="#DC2626" />
                   </TouchableOpacity>
                 </View>
@@ -194,5 +201,13 @@ const styles = StyleSheet.create({
   itemRowSub: {
     fontSize: 11.5,
     color: '#64748B',
+  },
+  deleteBtnBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

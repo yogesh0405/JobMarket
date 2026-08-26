@@ -22,12 +22,14 @@ import {
   Award,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
+import { isRemoteHttpUrl } from '../../utils/fileUploadHelper';
 
 interface Props {
   navigation: any;
@@ -50,42 +52,81 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
   } else if (typeof rawResume === 'string') {
     try { parsedObj = JSON.parse(rawResume); } catch (_) {}
   }
-  const resumeUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
-  const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_BioData_Resume.jpg';
+  const rawUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
+  const resumeUrl = isRemoteHttpUrl(rawUrl) ? rawUrl : null;
+  const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_Resume.pdf';
 
   const handlePickDocument = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        showToast('Permission needed to access photo library', 'warning');
+      setUploading(true);
+
+      // 1. Try DocumentPicker for PDF documents or images
+      const docRes = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (docRes.canceled) {
+        setUploading(false);
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        base64: true,
-      });
+      if (docRes.assets && docRes.assets[0]) {
+        const asset = docRes.assets[0];
+        const fileName = asset.name || 'Candidate_Resume.pdf';
+        const fileUri = asset.uri;
 
-      if (!result.canceled && result.assets && result.assets[0]?.base64) {
-        const file = result.assets[0];
-        setUploading(true);
-        const fileName = file.fileName || 'Resume_BioData.jpg';
-        const base64Data = `data:image/jpeg;base64,${file.base64}`;
-
-        const res = await candidateApi.uploadResume(base64Data, fileName);
+        const res = await candidateApi.uploadResume(fileUri, fileName);
         setUploading(false);
 
-        if (res.success) {
+        if (res.success && res.data?.url && isRemoteHttpUrl(res.data.url)) {
           await refreshUser();
-          showToast('Resume document uploaded successfully', 'success');
+          showToast('Resume document uploaded to cloud successfully!', 'success');
+          return;
         } else {
           showToast(res.message || 'Failed to upload resume document', 'error');
+          return;
         }
       }
-    } catch (e: any) {
+    } catch (docErr) {
+      console.warn('DocumentPicker notice on Resume screen, trying ImagePicker:', docErr);
+      try {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          showToast('Permission needed to access photo library', 'warning');
+          return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.8,
+          base64: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const file = result.assets[0];
+          const fileName = file.fileName || 'Candidate_Resume_Photo.jpg';
+          const fileInput = file.base64
+            ? `data:${file.mimeType || 'image/jpeg'};base64,${file.base64}`
+            : file.uri;
+
+          const res = await candidateApi.uploadResume(fileInput, fileName);
+          setUploading(false);
+
+          if (res.success && res.data?.url && isRemoteHttpUrl(res.data.url)) {
+            await refreshUser();
+            showToast('Resume photo uploaded to cloud successfully!', 'success');
+            return;
+          } else {
+            showToast(res.message || 'Failed to upload resume document', 'error');
+            return;
+          }
+        }
+      } catch (e: any) {
+        showToast(e.message || 'Error selecting resume file', 'error');
+      }
+    } finally {
       setUploading(false);
-      showToast(e.message || 'Error selecting resume file', 'error');
     }
   };
 

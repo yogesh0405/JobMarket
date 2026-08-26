@@ -83,6 +83,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [appliedItem, setAppliedItem] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
 
   // Synchronize state whenever screen receives new navigation parameters
   useEffect(() => {
@@ -386,8 +387,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const uniquePerks = Array.from(new Set(perksList));
   const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
   const maxExp = job.max_experience ?? (job as any).maxExperience ?? 3;
-
-  const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
 
   return (
     <View style={styles.container}>

@@ -21,8 +21,9 @@ export const BroadcastPage: React.FC = () => {
   const fetchHistory = async () => {
     try {
       setLoadingHistory(true);
-      const res = await AdminApiService.getAuditLogs({ page: 1, limit: 30, search: 'BROADCAST_SENT' });
-      setHistoryLogs(res?.data || []);
+      const res = await AdminApiService.getBroadcastHistory({ page: 1, limit: 50 });
+      const logs = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.data?.data) ? res.data.data : []));
+      setHistoryLogs(logs);
     } catch (err) {
       console.error('Failed to fetch broadcast history logs', err);
     } finally {
@@ -390,17 +391,27 @@ export const BroadcastPage: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
                 {historyLogs.map((log: any) => {
                   const meta = typeof log.details === 'string' ? JSON.parse(log.details || '{}') : (log.details || {});
+                  const subjectTitle = log.subject || meta.subject || log.title || 'System Broadcast';
+                  const messageText = log.message || meta.message || '';
+                  const totalRecipients = log.totalRecipients ?? meta.totalRecipients ?? log.total_recipients ?? 0;
+                  const audience = log.targetAudience || meta.targetAudience || 'ALL';
+
                   return (
-                    <div key={log.id} style={{ padding: '12px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div key={log.id || `${subjectTitle}-${log.created_at}`} style={{ padding: '12px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                        <strong style={{ fontSize: '13px', color: '#0f172a', lineHeight: '1.3' }}>{meta.subject || log.details?.subject || 'System Broadcast'}</strong>
+                        <strong style={{ fontSize: '13px', color: '#0f172a', lineHeight: '1.3' }}>{subjectTitle}</strong>
                         <span style={{ fontSize: '10px', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap' }}>
-                          {meta.targetAudience || 'ALL'}
+                          {audience}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        <span>Sent to <strong>{meta.totalRecipients || 0}</strong> users</span>
-                        <span>{new Date(log.created_at).toLocaleDateString()}</span>
+                      {messageText && (
+                        <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 4px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          {messageText}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#64748b', marginTop: '2px', borderTop: '1px solid #f1f5f9', paddingTop: '4px' }}>
+                        <span>Sent to <strong>{totalRecipients}</strong> users</span>
+                        <span>{log.created_at ? new Date(log.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent'}</span>
                       </div>
                     </div>
                   );

@@ -257,6 +257,13 @@ export class AdminApiService {
   }
 
   // Broadcast System
+  static async getBroadcastHistory(params: any = {}) {
+    const res = await apiFetch(`/api/v1/admin/broadcast/history${getQueryString(params)}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch broadcast history');
+    return json.data;
+  }
+
   static async broadcastNotifications(data: {
     targetAudience: 'ALL' | 'WORKERS' | 'EMPLOYERS' | 'CATEGORY_WORKERS';
     category?: string;

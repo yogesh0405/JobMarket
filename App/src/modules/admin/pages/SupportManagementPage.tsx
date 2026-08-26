@@ -111,14 +111,15 @@ export const SupportManagementPage: React.FC = () => {
       const res = await apiFetch(`/api/admin/support?${queryStr}`);
       const data = await res.json();
       if (data.success) {
-        const fetchedItems = data.data || [];
+        const fetchedItems = Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.tickets) ? data.data.tickets : []);
+        const total = typeof data.total === 'number' ? data.total : (typeof data.data?.total === 'number' ? data.data.total : fetchedItems.length);
         if (pageNum === 1 || isInitial) {
           setTickets(fetchedItems);
         } else {
           setTickets(prev => [...prev, ...fetchedItems]);
         }
-        setTotalTickets(data.total);
-        setHasMore((pageNum * limit) < data.total);
+        setTotalTickets(total);
+        setHasMore((pageNum * limit) < total);
       }
     } catch (err) {
       showToast('Failed to load support tickets list', 'error');
@@ -158,7 +159,8 @@ export const SupportManagementPage: React.FC = () => {
       const res = await apiFetch('/api/v1/admin/users?role=admin');
       const data = await res.json();
       if (data.success) {
-        setAdmins(data.data.map((u: any) => ({ id: u.id, name: u.name })));
+        const userList = Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.data) ? data.data.data : []);
+        setAdmins(userList.map((u: any) => ({ id: u.id, name: u.name || u.email || 'Admin' })));
       }
     } catch (err) {
       console.error('Failed to fetch admin users list:', err);

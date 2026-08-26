@@ -36,6 +36,7 @@ import { COLORS, RADIUS } from '../../constants/theme';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { SuccessModal } from '../../components/common/SuccessModal';
+import { isRemoteHttpUrl } from '../../utils/fileUploadHelper';
 import { Job } from '../../types';
 
 interface Props {
@@ -81,7 +82,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
       (typeof rawResume === 'object' && rawResume?.url ? rawResume.url : null);
 
     const hasResume = Boolean(
-      url && typeof url === 'string' && url.trim().length > 3 && !url.includes('null') && !url.includes('undefined')
+      url && typeof url === 'string' && url.trim().length > 3 && isRemoteHttpUrl(url)
     );
 
     let name =
@@ -99,7 +100,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
     return {
       hasResume,
-      url,
+      url: hasResume ? url : null,
       name: name || 'Uploaded_Resume.pdf',
     };
   };

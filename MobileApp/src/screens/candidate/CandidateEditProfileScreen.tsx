@@ -17,8 +17,10 @@ import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { Button } from '../../components/common/Button';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { KeyboardAwareScrollView, handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 import { COLORS } from '../../constants/theme';
+import { isRemoteHttpUrl } from '../../utils/fileUploadHelper';
 import { TRADES, STEPS } from './components/CandidateEditConstants';
 import { CandidateEditStep1Basic } from './components/CandidateEditStep1Basic';
 import { CandidateEditStep2Education } from './components/CandidateEditStep2Education';
@@ -52,15 +54,65 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
 
   const [profilePhotoUrl, setProfilePhotoUrl] = useState((user as any)?.avatar || (user as any)?.profilePhotoUrl || '');
-  const [resumeUrl, setResumeUrl] = useState(user?.resumeUrl || '');
-  const [resumeName, setResumeName] = useState(user?.resumeName || 'Candidate_Resume.pdf');
+
+  const extractResumeInfo = (userData: any) => {
+    if (!userData) return { url: '', name: 'Candidate_Resume.pdf' };
+    const rawResume = userData.resume;
+    let parsedObj: any = null;
+    if (typeof rawResume === 'object' && rawResume !== null) {
+      parsedObj = rawResume;
+    } else if (typeof rawResume === 'string' && rawResume.trim()) {
+      try {
+        parsedObj = JSON.parse(rawResume);
+      } catch (_) {
+        if (rawResume.startsWith('http')) {
+          parsedObj = { url: rawResume, name: 'Candidate_Resume.pdf' };
+        }
+      }
+    }
+
+    const rawUrl =
+      userData.resumeUrl ||
+      userData.resume_url ||
+      parsedObj?.url ||
+      parsedObj?.resumeUrl ||
+      (typeof rawResume === 'string' && rawResume.startsWith('http') ? rawResume : '');
+
+    const resolvedUrl = isRemoteHttpUrl(rawUrl) ? rawUrl : (rawUrl || '');
+    const resolvedName =
+      userData.resumeName ||
+      userData.resume_name ||
+      parsedObj?.name ||
+      parsedObj?.fileName ||
+      'Candidate_Resume.pdf';
+
+    return {
+      url: typeof resolvedUrl === 'string' ? resolvedUrl.trim() : '',
+      name: typeof resolvedName === 'string' ? resolvedName.trim() : 'Candidate_Resume.pdf',
+    };
+  };
+
+  const initialResume = extractResumeInfo(user);
+  const [resumeUrl, setResumeUrl] = useState(initialResume.url);
+  const [resumeName, setResumeName] = useState(initialResume.name);
   const [showPdfModal, setShowPdfModal] = useState(false);
+
+  const parseJsonArray = (val: any) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string' && val.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (_) {}
+    }
+    return [];
+  };
 
   const [skills, setSkills] = useState<string[]>(
     Array.isArray(user?.skills) ? user?.skills : ['Welding', 'Machining', 'Fanuc Control', 'Vernier Caliper']
   );
-  const [experience, setExperience] = useState<any[]>(Array.isArray(user?.experience) ? user?.experience : []);
-  const [education, setEducation] = useState<any[]>(Array.isArray(user?.education) ? user?.education : []);
+  const [experience, setExperience] = useState<any[]>(parseJsonArray(user?.experience));
+  const [education, setEducation] = useState<any[]>(parseJsonArray(user?.education));
 
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -77,6 +129,16 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
     }
   }, [routeStep]);
 
+  useEffect(() => {
+    if (user) {
+      const freshResume = extractResumeInfo(user);
+      if (freshResume.url && !resumeUrl) {
+        setResumeUrl(freshResume.url);
+        setResumeName(freshResume.name);
+      }
+    }
+  }, [user]);
+
   // Modal States
   const [skillInput, setSkillInput] = useState('');
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
@@ -85,23 +147,19 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [expModalOpen, setExpModalOpen] = useState(false);
   const [expTitle, setExpTitle] = useState('');
   const [expCompany, setExpCompany] = useState('');
-  const [expDuration, setExpDuration] = useState('');
+  const [expStartYear, setExpStartYear] = useState('2022');
+  const [expEndYear, setExpEndYear] = useState(String(new Date().getFullYear()));
+  const [expIsCurrent, setExpIsCurrent] = useState(false);
   const [expDesc, setExpDesc] = useState('');
 
   const [eduModalOpen, setEduModalOpen] = useState(false);
   const [eduDegree, setEduDegree] = useState('');
   const [eduInstitution, setEduInstitution] = useState('');
   const [eduYear, setEduYear] = useState('');
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   const handleConfirmBack = () => {
-    Alert.alert(
-      'Discard Profile Changes?',
-      'Are you sure you want to go back? Any unsaved profile edits will be lost.',
-      [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard & Leave', style: 'destructive', onPress: () => navigation.goBack() },
-      ]
-    );
+    setShowDiscardModal(true);
   };
 
   useEffect(() => {
@@ -163,26 +221,42 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
     try {
       setUploadingResume(true);
 
-      // Primary: DocumentPicker allowing PDF documents and Image files (*/* or pdf & images)
+      // Primary: DocumentPicker allowing PDF documents and Image files
       const docRes = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
         copyToCacheDirectory: true,
       });
 
-      if (!docRes.canceled && docRes.assets && docRes.assets[0]) {
+      if (docRes.canceled) {
+        setUploadingResume(false);
+        return;
+      }
+
+      if (docRes.assets && docRes.assets[0]) {
         const asset = docRes.assets[0];
         const fileName = asset.name || 'Candidate_Resume.pdf';
         const fileUri = asset.uri;
 
         const uploadRes = await candidateApi.uploadResume(fileUri, fileName);
-        const returnedUrl = (uploadRes as any)?.data?.resumeUrl || (uploadRes as any)?.data?.url || fileUri;
+        const cloudUrl = uploadRes?.data?.url;
 
-        setResumeUrl(returnedUrl);
-        setResumeName(fileName);
-        showToast('Resume file attached successfully!', 'success');
-        return;
+        if (uploadRes.success && cloudUrl && isRemoteHttpUrl(cloudUrl)) {
+          setResumeUrl(cloudUrl);
+          setResumeName(fileName);
+          updateUserProfile({
+            resume: {
+              url: cloudUrl,
+              name: fileName,
+              uploadedAt: new Date().toISOString(),
+            },
+          } as any);
+          showToast('Resume uploaded & saved to cloud successfully!', 'success');
+          return;
+        } else {
+          throw new Error('Cloud storage URL not received for uploaded resume.');
+        }
       }
-    } catch (docErr) {
+    } catch (docErr: any) {
       console.warn('DocumentPicker notice, trying ImagePicker fallback:', docErr);
       try {
         const imgRes = await ImagePicker.launchImageLibraryAsync({
@@ -192,20 +266,39 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
           base64: true,
         });
 
-        if (!imgRes.canceled && imgRes.assets[0]) {
+        if (imgRes.canceled) {
+          setUploadingResume(false);
+          return;
+        }
+
+        if (imgRes.assets && imgRes.assets[0]) {
           const asset = imgRes.assets[0];
           const fileName = asset.fileName || 'Candidate_Resume_Photo.jpg';
-          const base64Data = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+          const fileInput = asset.base64
+            ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
+            : asset.uri;
 
-          const uploadRes = await candidateApi.uploadResume(base64Data, fileName);
-          const returnedUrl = (uploadRes as any)?.data?.resumeUrl || (uploadRes as any)?.data?.url || base64Data;
+          const uploadRes = await candidateApi.uploadResume(fileInput, fileName);
+          const cloudUrl = uploadRes?.data?.url;
 
-          setResumeUrl(returnedUrl);
-          setResumeName(fileName);
-          showToast('Resume image attached!', 'success');
+          if (uploadRes.success && cloudUrl && isRemoteHttpUrl(cloudUrl)) {
+            setResumeUrl(cloudUrl);
+            setResumeName(fileName);
+            updateUserProfile({
+              resume: {
+                url: cloudUrl,
+                name: fileName,
+                uploadedAt: new Date().toISOString(),
+              },
+            } as any);
+            showToast('Resume photo uploaded to cloud successfully!', 'success');
+            return;
+          } else {
+            throw new Error('Cloud storage URL not received for uploaded resume photo.');
+          }
         }
-      } catch (imgErr) {
-        Alert.alert('Upload Error', 'Failed to attach resume document or image.');
+      } catch (imgErr: any) {
+        Alert.alert('Upload Error', imgErr?.message || docErr?.message || 'Failed to upload resume to cloud storage.');
       }
     } finally {
       setUploadingResume(false);
@@ -257,22 +350,34 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
       Alert.alert('Validation Error', 'Job Title and Company Name are required.');
       return;
     }
+    const start = parseInt(expStartYear || '2022', 10);
+    const end = expIsCurrent ? new Date().getFullYear() : parseInt(expEndYear || String(new Date().getFullYear()), 10);
+    const diffYears = Math.max(end - start, 0);
+    const diffText = diffYears === 0 ? '< 1 Year' : diffYears === 1 ? '1 Year' : `${diffYears} Years`;
+    const formattedDuration = `${diffText} (${start} - ${expIsCurrent ? 'Present' : end})`;
+
     const newEntry = {
       title: expTitle.trim(),
       company: expCompany.trim(),
-      duration: expDuration.trim() || '1 Year',
+      startYear: String(start),
+      endYear: expIsCurrent ? 'Present' : String(end),
+      duration: formattedDuration,
       description: expDesc.trim(),
     };
-    setExperience([...experience, newEntry]);
+    setExperience((prev) => [...prev, newEntry]);
     setExpTitle('');
     setExpCompany('');
-    setExpDuration('');
+    setExpStartYear('2022');
+    setExpEndYear(String(new Date().getFullYear()));
+    setExpIsCurrent(false);
     setExpDesc('');
     setExpModalOpen(false);
+    showToast('Work experience entry added', 'success');
   };
 
   const handleRemoveExperience = (index: number) => {
-    setExperience(experience.filter((_, idx) => idx !== index));
+    setExperience((prev) => prev.filter((_, idx) => idx !== index));
+    showToast('Work experience entry removed', 'info');
   };
 
   const handleAddEducation = () => {
@@ -283,17 +388,19 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
     const newEntry = {
       degree: eduDegree.trim(),
       institution: eduInstitution.trim(),
-      year: eduYear.trim() || '2023',
+      year: eduYear.trim() || String(new Date().getFullYear()),
     };
-    setEducation([...education, newEntry]);
+    setEducation((prev) => [...prev, newEntry]);
     setEduDegree('');
     setEduInstitution('');
     setEduYear('');
     setEduModalOpen(false);
+    showToast('Education entry added', 'success');
   };
 
   const handleRemoveEducation = (index: number) => {
-    setEducation(education.filter((_, idx) => idx !== index));
+    setEducation((prev) => prev.filter((_, idx) => idx !== index));
+    showToast('Education entry removed', 'info');
   };
 
   const handleNextStep = () => {
@@ -461,6 +568,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             profilePhotoUrl={profilePhotoUrl}
             uploadingPhoto={uploadingPhoto}
             onPickPhoto={handlePickPhoto}
+            onFocusBio={(e) => handleFocusInput(e, scrollViewRef, 150)}
           />
         ) : null}
 
@@ -562,8 +670,12 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
         setExpTitle={setExpTitle}
         expCompany={expCompany}
         setExpCompany={setExpCompany}
-        expDuration={expDuration}
-        setExpDuration={setExpDuration}
+        expStartYear={expStartYear}
+        setExpStartYear={setExpStartYear}
+        expEndYear={expEndYear}
+        setExpEndYear={setExpEndYear}
+        expIsCurrent={expIsCurrent}
+        setExpIsCurrent={setExpIsCurrent}
         expDesc={expDesc}
         setExpDesc={setExpDesc}
         onAddExperience={handleAddExperience}
@@ -581,6 +693,21 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
         candidateName={name}
         candidateRole={tradeSpecialization}
         pdfUrl={resumeUrl}
+      />
+
+      {/* Themed Discard Changes Confirmation Modal */}
+      <ConfirmationModal
+        visible={showDiscardModal}
+        type="danger"
+        title="Discard Profile Changes?"
+        message="You have unsaved changes in your candidate profile. Are you sure you want to exit? All progress entered so far will be lost."
+        cancelText="Keep Editing"
+        confirmText="Discard & Exit"
+        onClose={() => setShowDiscardModal(false)}
+        onConfirm={() => {
+          setShowDiscardModal(false);
+          navigation.goBack();
+        }}
       />
     </View>
   );

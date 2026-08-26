@@ -265,7 +265,18 @@ export const AdminLayout: React.FC = () => {
       <aside className={`admin-sidebar ${collapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand" onClick={() => navigate('/admin/dashboard')}>
-            <div className="sidebar-brand-logo">JM</div>
+            <img
+              src="/logo.png"
+              alt="JobMarket"
+              className="sidebar-brand-logo"
+              onError={(e) => {
+                // Fallback to /icon.png if logo.png is not found
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/icon.png')) {
+                  target.src = '/icon.png';
+                }
+              }}
+            />
             <span className="sidebar-brand-text">JobMarket</span>
           </div>
           <button className="sidebar-collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">

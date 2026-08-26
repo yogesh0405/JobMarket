@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -19,6 +20,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   initialEmail = '',
   autoSendOtp = false
 }) => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
 
@@ -683,13 +685,17 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             </div>
             <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>Password Reset Successfully</h3>
             <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '18px' }}>
-              Your account password has been updated. You can now use your new password.
+              Your account password has been updated. You can now sign in with your new password.
             </p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                if (onSuccess) onSuccess();
+                navigate('/login');
+              }}
               style={{ width: '100%', padding: '10px', borderRadius: '6px', background: '#344BFD', color: '#ffffff', border: 'none', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer' }}
             >
-              Close Window
+              Sign In
             </button>
           </div>
         )}

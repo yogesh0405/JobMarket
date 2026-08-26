@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   ScrollView,
   ScrollViewProps,
@@ -10,7 +10,6 @@ import {
   findNodeHandle,
   NativeSyntheticEvent,
   TargetedEvent,
-  View,
 } from 'react-native';
 
 interface KeyboardAwareScrollViewProps extends ScrollViewProps {
@@ -41,9 +40,9 @@ export const handleFocusInput = (
           );
         }
       } catch (e) {
-        // Ignore measurement error
+        // Fallback
       }
-    }, Platform.OS === 'ios' ? 80 : 100);
+    }, Platform.OS === 'ios' ? 80 : 120);
   }
 };
 
@@ -51,19 +50,20 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
   ({ children, extraScrollHeight = 120, contentContainerStyle, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
-    const keyboardHeightRef = useRef<number>(0);
+    const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
     useEffect(() => {
       const showSub = Keyboard.addListener(
         Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
         (e) => {
-          keyboardHeightRef.current = e.endCoordinates ? e.endCoordinates.height : 250;
+          const height = e.endCoordinates ? e.endCoordinates.height : 280;
+          setKeyboardHeight(height);
         }
       );
       const hideSub = Keyboard.addListener(
         Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
         () => {
-          keyboardHeightRef.current = 0;
+          setKeyboardHeight(0);
         }
       );
 
@@ -73,18 +73,25 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
       };
     }, []);
 
+    const dynamicPaddingBottom = keyboardHeight > 0 ? keyboardHeight + extraScrollHeight : 30;
+
     return (
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         <ScrollView
           ref={scrollRef}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
-          automaticallyAdjustKeyboardInsets={true}
-          contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentContainerStyle={[
+            styles.scrollContent,
+            contentContainerStyle,
+            { paddingBottom: dynamicPaddingBottom }
+          ]}
           {...props}
         >
           {children}

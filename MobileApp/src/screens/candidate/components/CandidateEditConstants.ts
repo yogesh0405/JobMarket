@@ -20,3 +20,20 @@ export const STEPS = [
   { id: 3, title: 'Experience' },
   { id: 4, title: 'Skills & Resume' },
 ];
+
+const CURRENT_YEAR = new Date().getFullYear();
+export const PASSING_YEARS = Array.from(
+  { length: CURRENT_YEAR + 4 - 1970 + 1 },
+  (_, i) => String(CURRENT_YEAR + 4 - i)
+);
+
+export const QUICK_YEARS = [
+  String(CURRENT_YEAR),
+  String(CURRENT_YEAR - 1),
+  String(CURRENT_YEAR - 2),
+  String(CURRENT_YEAR - 3),
+  String(CURRENT_YEAR - 4),
+  String(CURRENT_YEAR - 5),
+  String(CURRENT_YEAR - 6),
+  String(CURRENT_YEAR - 7),
+];

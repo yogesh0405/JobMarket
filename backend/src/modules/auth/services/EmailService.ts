@@ -66,7 +66,7 @@ export class EmailService {
     }
 
     // 2. Try Direct Gmail SMTP or Custom SMTP via Nodemailer
-    if (smtpPass && smtpPass.length > 5 && !apiKey.startsWith('xkeysib-')) {
+    if (smtpPass && smtpPass.length > 5) {
       try {
         const transportConfig: any = isGmail
           ? {
@@ -632,7 +632,7 @@ export class EmailService {
                       <tr>
                         <td style="font-size:14px;color:#64748b;width:120px;font-weight:600;vertical-align:top;">Venue / Address:</td>
                         <td style="font-size:14px;color:#0f172a;line-height:1.5;">
-                          ${venueAddress.replace(/\n/g, '<br />')}
+                          ${(venueAddress || 'Industrial Plant Main Gate').replace(/\n/g, '<br />')}
                           ${mapsHtml}
                         </td>
                       </tr>

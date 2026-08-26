@@ -7,25 +7,42 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  Platform,
+  StatusBar,
   BackHandler,
+  RefreshControl,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Headphones,
+  ArrowLeft,
   Mail,
   Phone,
   MessageSquare,
   Ticket,
+  Plus,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  MoreVertical,
+  Send,
+  Building2,
+  Headphones,
+  Globe,
 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Header } from '../../components/common/Header';
 import { COLORS } from '../../constants/theme';
 import { SupportTicket, TicketMessage } from './components/HelpSupportConstants';
 import { HelpSupportFaqSection } from './components/HelpSupportFaqSection';
 import { HelpSupportTicketsView } from './components/HelpSupportTicketsView';
 import { HelpSupportChatModal } from './components/HelpSupportChatModal';
+import { Input } from '../../components/common/Input';
+import { SelectDropdown } from '../../components/common/SelectDropdown';
+import { Button } from '../../components/common/Button';
+import { ErrorBanner } from '../../components/common/ErrorBanner';
 
 interface Props {
   navigation: any;
@@ -33,15 +50,26 @@ interface Props {
 
 export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const { user } = useAuth();
 
-  const [currentView, setCurrentView] = useState<'MAIN' | 'TICKETS'>('MAIN');
-  const [ticketTab, setTicketTab] = useState<'CREATE' | 'MY_TICKETS'>('CREATE');
+  // 2 Primary Top Tabs: 'FAQ' | 'CONTACT'
+  const [mainTab, setMainTab] = useState<'FAQ' | 'CONTACT'>('FAQ');
 
+  // Help & Contact View: show 4 options menu vs detailed full-screen ticket manager
+  const [showTicketManager, setShowTicketManager] = useState(false);
+
+  // Contact Section Sub-Tab: 'CREATE' | 'MY_TICKETS'
+  const [ticketSubTab, setTicketSubTab] = useState<'CREATE' | 'MY_TICKETS'>('CREATE');
+
+  // FAQ Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFAQCategory, setActiveFAQCategory] = useState('General');
+
+  // Support Ticket Form State
   const [fullName, setFullName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
-
   const [category, setCategory] = useState('Job Application Inquiry');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [subject, setSubject] = useState('');
@@ -49,13 +77,10 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFAQCategory, setActiveFAQCategory] = useState('All');
-
+  // Tickets List & Chat State
   const [myTickets, setMyTickets] = useState<SupportTicket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [chatMessages, setChatMessages] = useState<TicketMessage[]>([]);
   const [replyMessage, setReplyMessage] = useState('');
@@ -75,23 +100,32 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     setLoadingTickets(true);
     try {
       const res = await apiFetch('/api/support/tickets');
-      if (res.success && Array.isArray(res.data)) {
-        const mapped: SupportTicket[] = res.data.map((item: any) => ({
+      const rawList = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res?.data?.tickets)
+        ? res.data.tickets
+        : Array.isArray(res?.tickets)
+        ? res.tickets
+        : [];
+
+      if (rawList.length > 0) {
+        const mapped: SupportTicket[] = rawList.map((item: any) => ({
           id: String(item.id || item._id),
           ticketNumber: item.ticket_number || item.ticketNumber || `TKT-${item.id}`,
           category: item.category || 'General Support',
           subject: item.subject || 'Support Inquiry',
           description: item.description || '',
-          priority: item.priority || 'medium',
-          status: item.status || 'OPEN',
+          priority: (item.priority || 'medium').toLowerCase() as any,
+          status: (item.status || 'OPEN').toUpperCase() as any,
           createdAt: item.created_at
             ? new Date(item.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
             : 'Recent',
         }));
         setMyTickets(mapped);
+      } else if (res && res.success) {
+        setMyTickets([]);
       }
-    } catch (err) {
-      // Keep state intact
+    } catch (_) {
     } finally {
       setLoadingTickets(false);
       setRefreshing(false);
@@ -102,15 +136,15 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     fetchMyTickets();
   }, [fetchMyTickets]);
 
-  // Intercept back navigation when viewing TICKETS section
+  // Back handler for chat modal and full-screen ticket view
   useEffect(() => {
     const handleBack = () => {
       if (selectedTicket) {
         setSelectedTicket(null);
         return true;
       }
-      if (currentView === 'TICKETS') {
-        setCurrentView('MAIN');
+      if (showTicketManager) {
+        setShowTicketManager(false);
         return true;
       }
       return false;
@@ -118,7 +152,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
 
     const backSubscription = BackHandler.addEventListener('hardwareBackPress', handleBack);
     return () => backSubscription.remove();
-  }, [currentView, selectedTicket]);
+  }, [showTicketManager, selectedTicket]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -168,9 +202,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
               senderName: isUserMsg ? (user?.name || 'You') : 'Support Team',
               text: m.message || m.text || '',
               attachment: m.attachment || m.attachment_url || undefined,
-              createdAt: m.created_at
-                ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : 'Recent',
+              createdAt: m.created_at || m.createdAt || new Date().toISOString(),
             };
           });
           setChatMessages(mappedMsgs);
@@ -212,7 +244,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
       senderName: user?.name || 'You',
       text: replyMessage.trim(),
       attachment: selectedAttachment?.uri,
-      createdAt: 'Just now',
+      createdAt: new Date().toISOString(),
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
@@ -229,43 +261,58 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         }),
       });
     } catch (_) {
-      // Chat state updated locally
     } finally {
       setSendingReply(false);
     }
   };
 
+  // Sync authenticated user details to support form state
+  useEffect(() => {
+    if (user?.name && !fullName) setFullName(user.name);
+    if (user?.email && !email) setEmail(user.email);
+    if (user?.phone && !phone) setPhone(user.phone);
+  }, [user]);
+
   const handleCreateTicket = async () => {
-    if (!fullName.trim() || !email.trim() || !subject.trim() || !description.trim()) {
-      setFormError('Please complete all required fields (*)');
+    const finalFullName = fullName.trim() || user?.name || (user as any)?.fullName || 'JobMarket User';
+    const finalEmail = email.trim() || user?.email || '';
+
+    if (!finalFullName || !finalEmail || !subject.trim() || !description.trim()) {
+      setFormError('Please fill out all required fields (*)');
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(finalEmail)) {
+      setFormError('Please provide a valid email address (e.g. user@example.com)');
+      return;
+    }
+
+    // Clean phone number to 10 digits if provided
+    let cleanedPhone: string | undefined = undefined;
+    if (phone.trim()) {
+      const digitsOnly = phone.replace(/[^0-9]/g, '');
+      if (digitsOnly.length >= 10) {
+        cleanedPhone = digitsOnly.slice(-10);
+      } else {
+        setFormError('Phone number must be at least 10 digits');
+        return;
+      }
+    }
+
     setFormError(null);
     setIsSubmitting(true);
 
-    const generatedNum = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const newTicket: SupportTicket = {
-      id: String(Date.now()),
-      ticketNumber: generatedNum,
-      category,
-      subject: subject.trim(),
-      description: description.trim(),
-      priority,
-      status: 'OPEN',
-      createdAt: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-    };
-
     try {
       const payload = {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim() || undefined,
-        category,
+        fullName: finalFullName,
+        email: finalEmail,
+        phone: cleanedPhone,
+        category: category || 'Job Application Inquiry',
         subject: subject.trim(),
         description: description.trim(),
         preferredContact: 'email',
-        priority,
+        priority: priority || 'medium',
       };
 
       const res = await apiFetch('/api/support/tickets', {
@@ -273,44 +320,48 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         body: JSON.stringify(payload),
       });
 
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         const serverTicket = res.data;
-        const ticketNum = serverTicket.ticket_number || serverTicket.ticketNumber || generatedNum;
-        newTicket.id = String(serverTicket.id || newTicket.id);
-        newTicket.ticketNumber = ticketNum;
-      }
+        const ticketNum = serverTicket.ticket_number || serverTicket.ticketNumber || `TKT-${serverTicket.id}`;
 
-      await fetchMyTickets();
+        // Reset form inputs
+        setSubject('');
+        setDescription('');
+        setFormError(null);
+
+        // Immediately refresh tickets list from database
+        await fetchMyTickets();
+
+        // Switch to MY_TICKETS tab to see the created ticket
+        setTicketSubTab('MY_TICKETS');
+
+        Alert.alert(
+          'Support Ticket Logged',
+          `Your support ticket #${ticketNum} has been recorded successfully!\n\nOur technical desk will review your inquiry and email updates to ${finalEmail}.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        const errMsg = res?.message || res?.error || 'Failed to record support ticket. Please verify your details.';
+        setFormError(errMsg);
+        Alert.alert('Ticket Error', errMsg);
+      }
     } catch (err: any) {
-      // Handled in state
+      const errMsg = err?.message || 'Unable to submit ticket. Please check your network connection or try again.';
+      setFormError(errMsg);
+      Alert.alert('Submission Error', errMsg);
     } finally {
       setIsSubmitting(false);
-      setMyTickets((prev) => [newTicket, ...prev]);
-
-      Alert.alert(
-        'Support Ticket Created',
-        `Your ticket #${generatedNum} has been logged successfully!\n\nOur technical support team will review your inquiry and contact you at ${email.trim()} within 2 hours.`,
-        [
-          {
-            text: 'View My Tickets',
-            onPress: () => {
-              setSubject('');
-              setDescription('');
-              setTicketTab('MY_TICKETS');
-            },
-          },
-        ]
-      );
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {currentView === 'TICKETS' ? (
+  // FULL SCREEN SUPPORT TICKET SECTION (Hides Help Center Header and Tabs)
+  if (showTicketManager) {
+    return (
+      <View style={styles.container}>
         <HelpSupportTicketsView
-          onBackToMain={() => setCurrentView('MAIN')}
-          ticketTab={ticketTab}
-          setTicketTab={setTicketTab}
+          onBackToMain={() => setShowTicketManager(false)}
+          ticketTab={ticketSubTab}
+          setTicketTab={setTicketSubTab}
           myTickets={myTickets}
           fullName={fullName}
           setFullName={setFullName}
@@ -334,93 +385,155 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
           onRefresh={onRefresh}
           onOpenTicketChat={handleOpenTicketChat}
         />
-      ) : (
-        <>
-          <Header
-            title="Help & Support Center"
-            subtitle="Knowledgebase, verified FAQs & support ticket desk"
-            onBack={() => navigation.goBack()}
-            hideRightActions={true}
-          />
 
-          <ScrollView
-            style={styles.mainScrollContent}
-            contentContainerStyle={[styles.mainScrollContentContainer, { paddingBottom: Math.max(insets.bottom + 24, 32) }]}
-            showsVerticalScrollIndicator={false}
+        {/* TICKET CHAT MODAL */}
+        <HelpSupportChatModal
+          visible={!!selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          ticket={selectedTicket}
+          chatMessages={chatMessages}
+          replyMessage={replyMessage}
+          setReplyMessage={setReplyMessage}
+          sendingReply={sendingReply}
+          selectedAttachment={selectedAttachment}
+          onPickAttachment={handlePickAttachment}
+          onRemoveAttachment={() => setSelectedAttachment(null)}
+          onSendReply={handleSendReply}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Top Header Bar (Matching Reference Image - No 3 dots) */}
+      <View style={[styles.topHeaderBar, { paddingTop: topInset + (Platform.OS === 'android' ? 10 : 8) }]}>
+        <View style={styles.topHeaderNavRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.backButton}
           >
-            {/* SUPPORT DESK BANNER CARD */}
-            <View style={styles.supportDeskBannerCard}>
-              <View style={styles.bannerTitleIconRow}>
-                <View style={styles.liveBadgeIconCircle}>
-                  <Headphones size={20} color={COLORS.primary} />
+            <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+          </TouchableOpacity>
+
+          <Text style={styles.topHeaderTitle}>Help Center</Text>
+
+          {/* Right empty spacer to keep title centered */}
+          <View style={styles.backButton} />
+        </View>
+
+        {/* 2 Primary Top Tabs (FAQ vs Help & Contact) */}
+        <View style={styles.tabBarContainer}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setMainTab('FAQ')}
+            style={[styles.tabButton, mainTab === 'FAQ' && styles.tabButtonActive]}
+          >
+            <Text style={[styles.tabButtonText, mainTab === 'FAQ' && styles.tabButtonTextActive]}>
+              FAQ
+            </Text>
+            {mainTab === 'FAQ' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setMainTab('CONTACT')}
+            style={[styles.tabButton, mainTab === 'CONTACT' && styles.tabButtonActive]}
+          >
+            <Text style={[styles.tabButtonText, mainTab === 'CONTACT' && styles.tabButtonTextActive]}>
+              Help & Contact
+            </Text>
+            {mainTab === 'CONTACT' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Main Scroll Content */}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 24, 36) }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          mainTab === 'CONTACT' ? (
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+          ) : undefined
+        }
+      >
+        {mainTab === 'FAQ' ? (
+          /* ── TAB 1: FAQ ACCORDION VIEW (Matching Reference Image) ── */
+          <HelpSupportFaqSection
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            activeFAQCategory={activeFAQCategory}
+            setActiveFAQCategory={setActiveFAQCategory}
+          />
+        ) : (
+          /* ── TAB 2: HELP & CONTACT 4 OPTIONS VIEW (Matching Reference Image) ── */
+          <View style={styles.contactOptionsList}>
+            {/* Option 1: Support Ticket */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.contactOptionCard}
+              onPress={() => {
+                setTicketSubTab(myTickets.length > 0 ? 'MY_TICKETS' : 'CREATE');
+                setShowTicketManager(true);
+              }}
+            >
+              <View style={styles.contactOptionLeft}>
+                <Headphones size={22} color="#0F172A" strokeWidth={2.2} />
+                <Text style={styles.contactOptionTitle}>Support Ticket</Text>
+              </View>
+              {myTickets.length > 0 ? (
+                <View style={styles.ticketCountBadge}>
+                  <Text style={styles.ticketCountText}>{myTickets.length}</Text>
                 </View>
-                <Text style={styles.bannerMainTitle}>How can we assist you today?</Text>
+              ) : (
+                <ChevronRight size={18} color="#94A3B8" />
+              )}
+            </TouchableOpacity>
+
+            {/* Option 2: Contact */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.contactOptionCard}
+              onPress={() => Linking.openURL('tel:18002098800')}
+            >
+              <View style={styles.contactOptionLeft}>
+                <Phone size={22} color="#0F172A" strokeWidth={2.2} />
+                <Text style={styles.contactOptionTitle}>Contact</Text>
               </View>
-              <Text style={styles.bannerSubDescription}>
-                Search our knowledgebase below or log a priority ticket to connect directly with our Chhatrapati Sambhajinagar desk.
-              </Text>
+              <ChevronRight size={18} color="#94A3B8" />
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.raiseTicketCtaBtn}
-                onPress={() => {
-                  setTicketTab('CREATE');
-                  setCurrentView('TICKETS');
-                }}
-              >
-                <MessageSquare size={16} color="#FFFFFF" />
-                <Text style={styles.raiseTicketCtaBtnText}>Raise Support Ticket</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.sectionDividerSlate} />
-
-            {/* FAQ KNOWLEDGEBASE SECTION */}
-            <HelpSupportFaqSection
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              activeFAQCategory={activeFAQCategory}
-              setActiveFAQCategory={setActiveFAQCategory}
-            />
-
-            <View style={styles.sectionDividerSlate} />
-
-            {/* HELPLINE & EMAIL CONTACT SECTION */}
-            <View style={styles.contactDetailsSectionCard}>
-              <Text style={styles.contactSectionHeaderTitle}>Direct Assistance Channels</Text>
-              <Text style={styles.contactSectionHeaderSub}>Reach out directly to our Chhatrapati Sambhajinagar operations desk</Text>
-
-              <View style={styles.contactItemsGridRow}>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.contactChannelItemCard}
-                  onPress={() => Linking.openURL('tel:18002098800')}
-                >
-                  <View style={styles.contactIconPillCircle}>
-                    <Phone size={18} color={COLORS.primary} />
-                  </View>
-                  <Text style={styles.contactChannelLabelText}>Toll-Free Helpline</Text>
-                  <Text style={styles.contactChannelValueText}>1800-209-8800</Text>
-                  <Text style={styles.contactChannelTimeText}>Mon-Sat (9 AM - 7 PM)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.contactChannelItemCard}
-                  onPress={() => Linking.openURL('mailto:support@jobmarket.com')}
-                >
-                  <View style={styles.contactIconPillCircle}>
-                    <Mail size={18} color={COLORS.primary} />
-                  </View>
-                  <Text style={styles.contactChannelLabelText}>Email Desk</Text>
-                  <Text style={styles.contactChannelValueText}>support@jobmarket.com</Text>
-                  <Text style={styles.contactChannelTimeText}>24/7 Inbox Response</Text>
-                </TouchableOpacity>
+            {/* Option 3: Email */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.contactOptionCard}
+              onPress={() => Linking.openURL('mailto:support@jobmarket.com')}
+            >
+              <View style={styles.contactOptionLeft}>
+                <Mail size={22} color="#0F172A" strokeWidth={2.2} />
+                <Text style={styles.contactOptionTitle}>Email</Text>
               </View>
-            </View>
-          </ScrollView>
-        </>
-      )}
+              <ChevronRight size={18} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Option 4: Website */}
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.contactOptionCard}
+              onPress={() => Linking.openURL('https://jobmarket.com')}
+            >
+              <View style={styles.contactOptionLeft}>
+                <Globe size={22} color="#0F172A" strokeWidth={2.2} />
+                <Text style={styles.contactOptionTitle}>Website</Text>
+              </View>
+              <ChevronRight size={18} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
 
       {/* TICKET CHAT MODAL */}
       <HelpSupportChatModal
@@ -445,97 +558,434 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  mainScrollContent: {
+
+  /* Top Navigation & Header */
+  topHeaderBar: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  topHeaderNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  moreButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Top Tab Bar (Matching Reference Image) */
+  tabBarContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  tabButtonActive: {},
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  tabButtonTextActive: {
+    color: '#0F172A',
+    fontWeight: '800',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+
+  /* Scroll Area */
+  scrollArea: {
     flex: 1,
   },
-  mainScrollContentContainer: {
+  scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-  supportDeskBannerCard: {
+
+  /* 4 Contact Options List (Matching Reference Image) */
+  contactOptionsList: {
+    gap: 12,
+    marginTop: 4,
+  },
+  contactOptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  contactOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  contactOptionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  ticketCountBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  ticketCountText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  backToOptionsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 16,
+    borderColor: '#E2E8F0',
+    marginBottom: 4,
   },
-  bannerTitleIconRow: {
+  backToOptionsText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  /* Contact Tab Styles */
+  contactTabContainer: {
+    gap: 16,
+  },
+  subSegmentContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+  },
+  subSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 8,
+    gap: 6,
+  },
+  subSegmentBtnActive: {
+    backgroundColor: '#0F172A',
+  },
+  subSegmentBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  subSegmentBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+
+  /* Ticket Form Card */
+  ticketFormCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    gap: 12,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 10,
+    marginBottom: 4,
   },
-  liveBadgeIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  cardHeaderIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bannerMainTitle: {
-    flex: 1,
-    fontSize: 17,
+  cardHeaderTitle: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
-  bannerSubDescription: {
-    fontSize: 12.5,
+  cardHeaderSubtitle: {
+    fontSize: 11.5,
     color: '#64748B',
-    lineHeight: 18,
-    marginBottom: 16,
+    marginTop: 1,
   },
-  raiseTicketCtaBtn: {
+  formFieldBlock: {
+    gap: 6,
+  },
+  formFieldLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  prioritySelectorRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 6,
   },
-  raiseTicketCtaBtnText: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  sectionDividerSlate: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 14,
-  },
-  contactDetailsSectionCard: {
-    backgroundColor: '#FFFFFF',
+  priorityPill: {
+    flex: 1,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+  },
+  priorityPillLow: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#93C5FD',
+  },
+  priorityPillMed: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FCD34D',
+  },
+  priorityPillHigh: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  priorityPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  priorityPillTextActive: {
+    color: '#0F172A',
+    fontWeight: '800',
+  },
+
+  /* My Tickets List */
+  myTicketsList: {
+    gap: 10,
+  },
+  ticketItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    gap: 6,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  ticketItemTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ticketNumberBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  ticketNumberText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  ticketStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  ticketStatusOpen: {
+    backgroundColor: '#FEF3C7',
+  },
+  ticketStatusResolved: {
+    backgroundColor: '#DCFCE7',
+  },
+  ticketStatusText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  ticketStatusTextOpen: {
+    color: '#B45309',
+  },
+  ticketStatusTextResolved: {
+    color: '#15803D',
+  },
+  ticketItemSubjectText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  ticketItemDescText: {
+    fontSize: 12.5,
+    color: '#64748B',
+    lineHeight: 17,
+  },
+  ticketItemFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  ticketCategoryPill: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  ticketCategoryPillText: {
+    fontSize: 10.5,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  ticketDateWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ticketDateText: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+
+  /* Empty Tickets State */
+  emptyTicketsBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+  },
+  emptyTicketsTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 6,
+  },
+  emptyTicketsSub: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 280,
+  },
+  emptyTicketsActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  emptyTicketsActionBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  /* Direct Contact Section */
+  directContactSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 16,
   },
-  contactSectionHeaderTitle: {
-    fontSize: 16,
+  directContactTitle: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
-  contactSectionHeaderSub: {
+  directContactSubtitle: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
     marginBottom: 14,
   },
-  contactItemsGridRow: {
+  contactGridRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
-  contactChannelItemCard: {
+  contactGridCard: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 12,
     alignItems: 'center',
   },
-  contactIconPillCircle: {
+  contactCardIconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -544,20 +994,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  contactChannelLabelText: {
+  contactCardLabel: {
     fontSize: 11,
     fontWeight: '700',
     color: '#64748B',
   },
-  contactChannelValueText: {
-    fontSize: 12.5,
+  contactCardValue: {
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
     marginTop: 2,
   },
-  contactChannelTimeText: {
+  contactCardTime: {
     fontSize: 10,
     color: '#94A3B8',
     marginTop: 2,
   },
 });
+

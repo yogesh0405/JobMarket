@@ -25,6 +25,7 @@ interface CandidateEditStep1BasicProps {
   profilePhotoUrl: string;
   uploadingPhoto: boolean;
   onPickPhoto: () => void;
+  onFocusBio?: (e: any) => void;
 }
 
 export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = ({
@@ -41,6 +42,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
   profilePhotoUrl,
   uploadingPhoto,
   onPickPhoto,
+  onFocusBio,
 }) => {
   return (
     <View style={styles.masterEditCard}>
@@ -131,6 +133,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
               placeholderTextColor="#94A3B8"
               value={bio}
               onChangeText={setBio}
+              onFocus={onFocusBio}
             />
           </View>
         </View>

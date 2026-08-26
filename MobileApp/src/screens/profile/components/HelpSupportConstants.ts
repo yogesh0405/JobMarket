@@ -20,43 +20,63 @@ export interface TicketMessage {
 
 export const FAQ_DATA = [
   {
-    category: 'Job Search',
-    question: 'How do I search for jobs in my local MIDC area?',
-    answer: 'Use the Find Jobs search bar to type trade names (e.g. VMC Operator, Welder, Fitter) or locality (e.g. Waluj MIDC, Chhatrapati Sambhajinagar). You can filter by job type, experience, and shift details.',
+    category: 'General',
+    question: 'How do I manage my notifications?',
+    answer: 'To manage notifications, go to "Settings," select "Notification Settings," and customize your alerts for new job postings, application status updates, and interview calls.',
   },
   {
-    category: 'Saved Jobs',
-    question: 'How do I save a job to view or apply later?',
-    answer: 'Tap the blue bookmark icon on any job card. Saved jobs appear instantly under "Saved Jobs" in your bottom tab and side menu.',
+    category: 'General',
+    question: 'Is JobMarket free for job seekers?',
+    answer: 'Yes, 100% free! Candidates can create profiles, build digital resumes, apply to verified employers, and attend interviews without any hidden fees.',
+  },
+  {
+    category: 'General',
+    question: 'Is my personal data safe and private?',
+    answer: 'Yes. All personal contact information, resumes, and identification documents are encrypted with enterprise AES-256 standard and only shared with employers you apply to.',
+  },
+  {
+    category: 'Account',
+    question: 'How do I update my profile and trade details?',
+    answer: 'Tap your profile in the top drawer menu and select "My Profile". You can edit your name, trade specializations, experience level, expected salary, and bio.',
+  },
+  {
+    category: 'Account',
+    question: 'How do I reset or change my account password?',
+    answer: 'Navigate to "Security & Sessions" from the header drawer. You can update your password directly or verify via an email OTP code.',
+  },
+  {
+    category: 'Job Search',
+    question: 'How do I search for jobs in specific industrial areas?',
+    answer: 'Use the Find Jobs search bar to filter by trade (e.g. CNC Operator, Welder, Electrician) or locality (e.g. Waluj MIDC, Shendra MIDC, Chhatrapati Sambhajinagar).',
+  },
+  {
+    category: 'Job Search',
+    question: 'How do I save a job to apply later?',
+    answer: 'Tap the bookmark icon on any job card. Saved jobs appear immediately under "Saved Jobs" in your bottom navigation dock.',
   },
   {
     category: 'Applications',
     question: 'How do I track my submitted job applications?',
-    answer: 'Navigate to "Applied" in your bottom navigation bar. You can view real-time application status updates from employers (e.g. Applied, Under Review, Shortlisted, Interview Scheduled).',
+    answer: 'Open the "Applied" tab in your navigation dock. You will see live status badges from employers: Applied, Under Review, Shortlisted, and Scheduled Interviews.',
   },
   {
-    category: 'Resume & Profile',
-    question: 'How do I upload or update my resume document?',
-    answer: 'Open the menu drawer and tap "My Resume". You can upload your latest PDF resume, update skills, trade certification, and contact information.',
+    category: 'Applications',
+    question: 'Can I withdraw or edit a submitted job application?',
+    answer: 'Once submitted, applications are delivered directly to the hiring employer. You can update your master resume profile anytime to ensure employers see your latest credentials.',
   },
   {
-    category: 'Account',
-    question: 'How do I update my profile details?',
-    answer: 'Go to your side menu drawer and tap "My Profile" to update your full name, trade sector, location, phone number, and bio data.',
+    category: 'Resume',
+    question: 'How do I upload or update my PDF resume?',
+    answer: 'Open the side drawer menu and tap "My Resume". You can upload a fresh PDF file, preview your formatted resume document, and download it with 1 tap.',
   },
   {
-    category: 'Account',
-    question: 'How can I reset my account password?',
-    answer: 'Navigate to "Security & Sessions" from the header drawer menu. You can update your current password or request a 6-digit OTP verification code sent directly to your registered email address.',
-  },
-  {
-    category: 'Job Posting',
-    question: 'How long does job post approval take?',
-    answer: 'Once an employer publishes a job post, it enters the admin review queue under the "Pending" tab. Verification typically takes less than 2 hours, after which the status automatically changes to "Active".',
+    category: 'Security',
+    question: 'What should I do if I suspect a fraudulent job listing?',
+    answer: 'All employers on JobMarket go through enterprise verification. If you ever encounter suspicious behavior, raise a support ticket immediately under the "Help & Contact" tab.',
   },
   {
     category: 'Technical',
-    question: 'Why am I not receiving OTP emails?',
-    answer: 'OTP emails are dispatched via Brevo transactional servers. Please check your Spam/Junk folder and ensure your registered email address is correctly spelled.',
+    question: 'Why am I not receiving OTP or email notifications?',
+    answer: 'OTP emails are dispatched via high-speed transactional servers. Please check your Spam/Junk folder and ensure your email address is spelled correctly in profile settings.',
   },
 ];

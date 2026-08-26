@@ -13,7 +13,7 @@ import {
   FileText,
   X,
   UploadCloud,
-  ExternalLink,
+  Eye,
 } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 
@@ -82,7 +82,10 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
             {skills.map((sk) => (
               <View key={sk} style={styles.skillChipTag}>
                 <Text style={styles.skillChipText}>{sk}</Text>
-                <TouchableOpacity onPress={() => onRemoveSkill(sk)}>
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => onRemoveSkill(sk)}
+                >
                   <X size={12} color={COLORS.primary} />
                 </TouchableOpacity>
               </View>
@@ -100,19 +103,60 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
 
         {resumeUrl ? (
           <View style={styles.resumeAttachedBox}>
-            <FileText size={24} color={COLORS.primary} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.resumeAttachedName} numberOfLines={1}>{resumeName}</Text>
-              <Text style={styles.resumeAttachedSub}>Resume File Attached & Live</Text>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}
+              onPress={onOpenPdfModal}
+            >
+              <View style={styles.resumeIconWrap}>
+                <FileText size={22} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.resumeAttachedName} numberOfLines={1}>
+                  {resumeName || 'Candidate_Resume.pdf'}
+                </Text>
+                <Text style={styles.resumeAttachedSub}>Attached & Live on Profile</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.resumeActionsRow}>
+              <TouchableOpacity
+                style={styles.viewPdfBtn}
+                activeOpacity={0.7}
+                onPress={onOpenPdfModal}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Eye size={16} color={COLORS.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.changePdfBtn}
+                activeOpacity={0.7}
+                onPress={onPickResume}
+                disabled={uploadingResume}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                {uploadingResume ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <UploadCloud size={16} color={COLORS.primary} />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deletePdfBtn}
+                activeOpacity={0.7}
+                onPress={onDeleteResume}
+                disabled={deletingResume}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                {deletingResume ? (
+                  <ActivityIndicator size="small" color="#DC2626" />
+                ) : (
+                  <Trash2 size={16} color="#DC2626" />
+                )}
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={styles.viewPdfBtn} onPress={onOpenPdfModal}>
-              <ExternalLink size={14} color={COLORS.primary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.deletePdfBtn} onPress={onDeleteResume} disabled={deletingResume}>
-              {deletingResume ? <ActivityIndicator size="small" color="#DC2626" /> : <Trash2 size={14} color="#DC2626" />}
-            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.uploadResumeBox} onPress={onPickResume} disabled={uploadingResume}>
@@ -244,12 +288,20 @@ const styles = StyleSheet.create({
   resumeAttachedBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
     borderRadius: 8,
     padding: 12,
+  },
+  resumeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resumeAttachedName: {
     fontSize: 13,
@@ -258,12 +310,42 @@ const styles = StyleSheet.create({
   },
   resumeAttachedSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#0284C7',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  resumeActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
   },
   viewPdfBtn: {
-    padding: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  changePdfBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deletePdfBtn: {
-    padding: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

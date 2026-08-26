@@ -784,12 +784,12 @@ export class JobController {
             await NotificationService.sendNotification(
               userId,
               `Interview Scheduled: ${job.title}`,
-              `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime} (${venueAddress})`,
+              `${employer.company_name || employer.name} scheduled an interview for ${interviewDate} at ${interviewTime} (${finalVenueAddress})`,
               'JOB_INTERVIEW',
               `/job/${job.id}`,
               'INTERVIEW',
               job.id,
-              { jobId: job.id, interviewDate, interviewTime, venueAddress }
+              { jobId: job.id, interviewDate, interviewTime, venueAddress: finalVenueAddress }
             ).catch(err => console.error('Failed to send interview in-app notification:', err));
 
             await EmailService.sendInterviewScheduledEmail(
@@ -799,7 +799,7 @@ export class JobController {
               employer.company_name || employer.name,
               interviewDate,
               interviewTime,
-              venueAddress,
+              finalVenueAddress,
               mapsLink
             );
           } catch (mailErr) {

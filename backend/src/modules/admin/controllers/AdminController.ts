@@ -395,6 +395,15 @@ export class AdminController {
     }
   }
 
+  static async getBroadcastHistory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await AdminService.getBroadcastHistory(req.query as any);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Reports
   static async listReports(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {

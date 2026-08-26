@@ -1,6 +1,7 @@
 import { apiFetch, isValidId } from './client';
 import { Job, ApiResponse, User } from '../types';
 import { logger } from '../utils/logger';
+import { uriToDataUri, isRemoteHttpUrl } from '../utils/fileUploadHelper';
 
 export interface AppliedJobDetails {
   jobId: string;
@@ -173,18 +174,37 @@ export const candidateApi = {
     });
   },
 
-  // Upload Resume document using live Render Cloudinary signature API
-  uploadResume: async (base64Data: string, fileName: string): Promise<ApiResponse<{ url: string }>> => {
-    const isPdf = fileName.toLowerCase().endsWith('.pdf') || fileName.toLowerCase().endsWith('.doc') || fileName.toLowerCase().endsWith('.docx');
+  // Upload Resume document using live Cloudinary signature or backend API
+  uploadResume: async (fileInput: string, fileName: string): Promise<ApiResponse<{ url: string }>> => {
+    if (!fileInput || typeof fileInput !== 'string') {
+      throw new Error('No resume file data provided for upload.');
+    }
+
+    const cleanFileName = fileName || 'Candidate_Resume.pdf';
+    const isPdf =
+      cleanFileName.toLowerCase().endsWith('.pdf') ||
+      cleanFileName.toLowerCase().endsWith('.doc') ||
+      cleanFileName.toLowerCase().endsWith('.docx');
     const resourceType = isPdf ? 'raw' : 'image';
 
-    // 1. Try Live Render Cloudinary Signature Upload
+    // 1. Convert local file URI (file://, content://) into base64 data URI if needed
+    let dataUri = fileInput;
+    if (!fileInput.startsWith('data:')) {
+      try {
+        dataUri = await uriToDataUri(fileInput, isPdf ? 'application/pdf' : 'image/jpeg', cleanFileName);
+      } catch (conversionErr) {
+        logger.warn('Failed to convert local file URI to data URI, attempting raw input:', conversionErr);
+        dataUri = fileInput;
+      }
+    }
+
+    // 2. Direct Cloudinary Signature Upload
     try {
       const sigRes = await apiFetch(`/api/v1/auth/resume/signature?resourceType=${resourceType}`);
       if (sigRes && sigRes.success && sigRes.data) {
         const { signature, timestamp, apiKey, cloudName, folder, publicId } = sigRes.data;
         const formData = new FormData();
-        formData.append('file', base64Data);
+        formData.append('file', dataUri);
         formData.append('api_key', apiKey);
         formData.append('timestamp', timestamp.toString());
         formData.append('signature', signature);
@@ -199,11 +219,17 @@ export const candidateApi = {
         if (cloudRes.ok) {
           const cloudJson = await cloudRes.json();
           const secureUrl = cloudJson.secure_url || cloudJson.url;
-          if (secureUrl) {
-            // Save Cloudinary HTTPS URL & metadata to Live Render backend
+          if (isRemoteHttpUrl(secureUrl)) {
+            // Save Cloudinary HTTPS URL & metadata to Live backend
             await apiFetch('/api/v1/auth/resume', {
               method: 'POST',
-              body: JSON.stringify({ name: fileName, fileName, url: secureUrl, resume_url: secureUrl, resumeUrl: secureUrl }),
+              body: JSON.stringify({
+                name: cleanFileName,
+                fileName: cleanFileName,
+                url: secureUrl,
+                resume_url: secureUrl,
+                resumeUrl: secureUrl,
+              }),
             }).catch(() => {});
 
             return { success: true, data: { url: secureUrl } };
@@ -211,22 +237,40 @@ export const candidateApi = {
         }
       }
     } catch (e) {
-      logger.warn('Cloudinary direct resume signature notice, using live Render fallback:', e);
+      logger.warn('Cloudinary direct resume signature notice, using live backend fallback:', e);
     }
 
-    // 2. Fallback to Live Render POST /api/v1/auth/resume API
+    // 3. Fallback to Live Backend POST /api/v1/auth/resume (Backend handles Cloudinary upload)
     try {
       const res = await apiFetch('/api/v1/auth/resume', {
         method: 'POST',
-        body: JSON.stringify({ base64: base64Data, file: base64Data, name: fileName, fileName, resume_url: base64Data, resumeUrl: base64Data }),
+        body: JSON.stringify({
+          base64: dataUri,
+          file: dataUri,
+          name: cleanFileName,
+          fileName: cleanFileName,
+          type: isPdf ? 'application/pdf' : 'image/jpeg',
+        }),
       });
-      if (res && (res.success || (res as any).url || res.data)) {
-        const url = res.data?.url || (res as any).url || base64Data;
-        return { success: true, data: { url } };
-      }
-    } catch (_) {}
 
-    return { success: true, data: { url: base64Data } };
+      if (res && res.success) {
+        const remoteUrl =
+          (res as any).url ||
+          res.data?.url ||
+          (res.data as any)?.resume?.url ||
+          (res.data as any)?.resumeUrl ||
+          (res.data as any)?.resume_url;
+
+        if (isRemoteHttpUrl(remoteUrl)) {
+          return { success: true, data: { url: remoteUrl } };
+        }
+      }
+    } catch (backendErr: any) {
+      logger.error('Backend resume upload failed:', backendErr);
+      throw new Error(backendErr?.message || 'Failed to upload resume to server.');
+    }
+
+    throw new Error('Failed to upload resume to cloud storage. Please check your internet connection and try again.');
   },
 
   // Delete uploaded Resume document

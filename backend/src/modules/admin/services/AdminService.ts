@@ -273,7 +273,9 @@ export class AdminService {
         category,
         channels,
         totalRecipients: targetUsers.length,
-        subject
+        subject,
+        message,
+        actionLink
       });
     } catch (auditErr) {
       logger.error('Audit logging failed for broadcast:', auditErr);
@@ -284,6 +286,87 @@ export class AdminService {
       totalRecipients: targetUsers.length,
       inAppDelivered,
       message: `Broadcast successfully dispatched to ${targetUsers.length} users across selected channels.`
+    };
+  }
+
+  // Broadcast History
+  static async getBroadcastHistory(filters: { page?: number; limit?: number } = {}) {
+    const page = Math.max(1, Number(filters.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(filters.limit) || 30));
+    const offset = (page - 1) * limit;
+
+    const auditRes = await pool.query(
+      `SELECT al.*, u.name as admin_name, u.email as admin_email 
+       FROM audit_logs al 
+       LEFT JOIN users u ON al.user_id = u.id 
+       WHERE al.action = 'BROADCAST_SENT' 
+       ORDER BY al.created_at DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const auditItems = auditRes.rows.map(r => {
+      const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata || '{}') : (r.metadata || {});
+      return {
+        id: r.id,
+        subject: meta.subject || 'System Broadcast',
+        message: meta.message || '',
+        targetAudience: meta.targetAudience || 'ALL',
+        channels: meta.channels || ['IN_APP'],
+        totalRecipients: meta.totalRecipients || 0,
+        actionLink: meta.actionLink || null,
+        adminName: r.admin_name,
+        adminEmail: r.admin_email,
+        created_at: r.created_at
+      };
+    });
+
+    // Also get grouped notifications to include historical broadcasts
+    const notifQuery = `
+      SELECT 
+        MIN(id::text) as id,
+        title as subject,
+        message,
+        link as action_link,
+        COUNT(*)::int as total_recipients,
+        MAX(created_at) as created_at
+      FROM notifications
+      WHERE type = 'BROADCAST'
+      GROUP BY title, message, link
+      ORDER BY MAX(created_at) DESC
+      LIMIT $1 OFFSET $2;
+    `;
+    const notifRes = await pool.query(notifQuery, [limit, offset]);
+
+    const combined = [...auditItems];
+    for (const notif of notifRes.rows) {
+      const alreadyInAudit = auditItems.some(a => 
+        a.subject === notif.subject || 
+        (Math.abs(new Date(a.created_at).getTime() - new Date(notif.created_at).getTime()) < 60000)
+      );
+      if (!alreadyInAudit) {
+        combined.push({
+          id: notif.id,
+          subject: notif.subject,
+          message: notif.message,
+          targetAudience: 'ALL',
+          channels: ['IN_APP'],
+          totalRecipients: notif.total_recipients,
+          actionLink: notif.action_link,
+          adminName: null,
+          adminEmail: null,
+          created_at: notif.created_at
+        });
+      }
+    }
+
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return {
+      data: combined.slice(0, limit),
+      total: combined.length,
+      page,
+      limit
     };
   }
 

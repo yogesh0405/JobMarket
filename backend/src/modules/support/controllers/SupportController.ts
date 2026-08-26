@@ -8,23 +8,35 @@ export class SupportController {
 
   static async createTicket(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
+      const userId = (req.headers['x-user-id'] as string) || req.user?.userId || null;
       const {
-        fullName, email, phone, category, subject, description,
-        attachmentBase64, attachmentName, preferredContact, priority
+        fullName, full_name, email, userEmail, phone, category, subject, title, description, message,
+        attachmentBase64, attachmentName, preferredContact, preferred_contact, priority
       } = req.body;
 
-      if (!fullName || !email || !category || !subject || !description || !preferredContact) {
-        throw new BadRequestError('Required fields are missing');
+      const finalName = fullName || full_name || 'JobMarket User';
+      const finalEmail = email || userEmail || '';
+      const finalSubject = subject || title || '';
+      const finalDesc = description || message || '';
+      const finalCategory = category || 'General Technical Inquiry';
+      const finalContact = preferredContact || preferred_contact || 'email';
+      const finalPriority = String(priority || 'medium').toLowerCase();
+
+      if (!finalName.trim() || !finalEmail.trim() || !finalSubject.trim() || !finalDesc.trim()) {
+        throw new BadRequestError('Please provide your name, email, subject, and description');
       }
 
-      // RFC-style simple email regex check
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(finalEmail.trim())) {
         throw new BadRequestError('Invalid email address format');
       }
 
-      if (phone && !/^\d{10}$/.test(phone.replace(/[^0-9]/g, ''))) {
-        throw new BadRequestError('Phone number must be exactly 10 digits');
+      let cleanPhone: string | null = null;
+      if (phone) {
+        const digits = String(phone).replace(/[^0-9]/g, '');
+        if (digits.length >= 10) {
+          cleanPhone = digits.slice(-10);
+        }
       }
 
       // Parse user agent
@@ -36,23 +48,27 @@ export class SupportController {
       const ip_address = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
 
       const ticket = await SupportService.createTicket({
-        user_id: req.user?.userId || null,
-        full_name: fullName,
-        email,
-        phone,
-        category,
-        subject,
-        description,
+        user_id: userId,
+        full_name: finalName.trim(),
+        email: finalEmail.trim(),
+        phone: cleanPhone,
+        category: finalCategory,
+        subject: finalSubject.trim(),
+        description: finalDesc.trim(),
         attachmentBase64,
         attachmentName,
-        preferred_contact: preferredContact,
-        priority: priority || 'medium',
+        preferred_contact: finalContact,
+        priority: finalPriority,
         ip_address,
         browser: userAgent.substring(0, 255),
         device
       });
 
-      res.status(201).json({ success: true, message: 'Support ticket created successfully', data: ticket });
+      res.status(201).json({
+        success: true,
+        message: 'Support ticket created successfully',
+        data: ticket
+      });
     } catch (error) {
       next(error);
     }

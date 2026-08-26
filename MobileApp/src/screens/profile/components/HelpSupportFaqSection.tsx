@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView } from 'react-native';
-import { Search, ChevronDown, ChevronUp, HelpCircle, X } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Platform } from 'react-native';
+import { Search, ChevronDown, ChevronUp, HelpCircle, X, SlidersHorizontal } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { FAQ_DATA } from './HelpSupportConstants';
 
@@ -19,35 +19,57 @@ export const HelpSupportFaqSection: React.FC<HelpSupportFaqSectionProps> = ({
 }) => {
   const [expandedFAQIndex, setExpandedFAQIndex] = useState<number | null>(0);
 
-  const categories = ['All', 'Job Search', 'Saved Jobs', 'Applications', 'Resume & Profile', 'Account', 'Technical'];
+  const categories = ['General', 'Account', 'Job Search', 'Applications', 'Resume', 'Security', 'Technical'];
 
   const filteredFAQs = FAQ_DATA.filter((faq) => {
-    const matchesCategory = activeFAQCategory === 'All' || faq.category === activeFAQCategory;
+    const matchesCategory =
+      activeFAQCategory === 'General'
+        ? true // General shows all / top questions
+        : faq.category.toLowerCase() === activeFAQCategory.toLowerCase();
+
     const matchesQuery =
       searchQuery.trim() === '' ||
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesQuery;
   });
 
   return (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>KNOWLEDGEBASE & FAQS</Text>
-          <Text style={styles.sectionSub}>Find verified answers to common platform queries</Text>
-        </View>
-        <View style={styles.countBadgePill}>
-          <Text style={styles.countBadgeText}>{filteredFAQs.length} FAQs</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      {/* Category Pills (Matching Reference Image) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriesRow}
+        style={styles.categoriesScrollView}
+      >
+        {categories.map((cat) => {
+          const isSelected = activeFAQCategory === cat;
+          return (
+            <TouchableOpacity
+              key={cat}
+              activeOpacity={0.75}
+              style={[styles.categoryPill, isSelected && styles.categoryPillActive]}
+              onPress={() => {
+                setActiveFAQCategory(cat);
+                setExpandedFAQIndex(0);
+              }}
+            >
+              <Text style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
-      {/* FAQ Search Bar */}
-      <View style={styles.faqSearchBox}>
-        <Search size={16} color="#64748B" />
+      {/* Clean Minimal Search Bar (Matching Reference Image) */}
+      <View style={styles.searchContainer}>
+        <Search size={18} color="#94A3B8" />
         <TextInput
-          style={styles.faqSearchInput}
-          placeholder="Search topics, keywords, or features..."
+          style={styles.searchInput}
+          placeholder="Search for help..."
           placeholderTextColor="#94A3B8"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -56,36 +78,20 @@ export const HelpSupportFaqSection: React.FC<HelpSupportFaqSectionProps> = ({
           <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <X size={16} color="#64748B" />
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          <SlidersHorizontal size={16} color="#94A3B8" />
+        )}
       </View>
 
-      {/* Category Pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
-        {categories.map((cat) => {
-          const isSelected = activeFAQCategory === cat;
-          return (
-            <TouchableOpacity
-              key={cat}
-              activeOpacity={0.8}
-              style={[styles.categoryPill, isSelected && styles.categoryPillActive]}
-              onPress={() => {
-                setActiveFAQCategory(cat);
-                setExpandedFAQIndex(0);
-              }}
-            >
-              <Text style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>{cat}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* FAQ Accordion List */}
+      {/* FAQ Accordion List (Matching Reference Image) */}
       <View style={styles.faqList}>
         {filteredFAQs.length === 0 ? (
-          <View style={styles.emptyFaqState}>
-            <HelpCircle size={28} color="#94A3B8" />
-            <Text style={styles.emptyFaqText}>No matching questions found</Text>
-            <Text style={styles.emptyFaqSub}>Try adjusting your search query or switching categories.</Text>
+          <View style={styles.emptyStateContainer}>
+            <HelpCircle size={32} color="#CBD5E1" />
+            <Text style={styles.emptyStateTitle}>No results found</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              Try searching with different keywords or switch categories.
+            </Text>
           </View>
         ) : (
           filteredFAQs.map((faq, idx) => {
@@ -93,26 +99,28 @@ export const HelpSupportFaqSection: React.FC<HelpSupportFaqSectionProps> = ({
             return (
               <TouchableOpacity
                 key={idx}
-                activeOpacity={0.9}
-                style={[styles.faqAccordionCard, isExpanded && styles.faqAccordionCardActive]}
+                activeOpacity={0.85}
+                style={[styles.faqCard, isExpanded && styles.faqCardExpanded]}
                 onPress={() => setExpandedFAQIndex(isExpanded ? null : idx)}
               >
-                <View style={styles.faqHeaderRow}>
-                  <HelpCircle size={16} color={isExpanded ? COLORS.primary : '#64748B'} style={{ marginTop: 2 }} />
+                <View style={styles.faqHeader}>
                   <Text style={[styles.faqQuestionText, isExpanded && styles.faqQuestionTextActive]}>
                     {faq.question}
                   </Text>
-                  {isExpanded ? (
-                    <ChevronUp size={16} color={COLORS.primary} />
-                  ) : (
-                    <ChevronDown size={16} color="#94A3B8" />
-                  )}
+                  <View style={styles.chevronWrap}>
+                    {isExpanded ? (
+                      <ChevronUp size={20} color={COLORS.primary} strokeWidth={2.2} />
+                    ) : (
+                      <ChevronDown size={20} color="#64748B" strokeWidth={2.2} />
+                    )}
+                  </View>
                 </View>
-                {isExpanded ? (
-                  <View style={styles.faqAnswerBox}>
+
+                {isExpanded && (
+                  <View style={styles.faqAnswerContainer}>
                     <Text style={styles.faqAnswerText}>{faq.answer}</Text>
                   </View>
-                ) : null}
+                )}
               </TouchableOpacity>
             );
           })
@@ -123,147 +131,151 @@ export const HelpSupportFaqSection: React.FC<HelpSupportFaqSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 16,
-    marginBottom: 16,
+  container: {
+    width: '100%',
   },
-  sectionHeaderRow: {
+
+  /* Category Pills Carousel */
+  categoriesScrollView: {
+    marginBottom: 14,
+  },
+  categoriesRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryPillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  categoryPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  /* Search Bar */
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    gap: 10,
+    marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+
+  /* FAQ List */
+  faqList: {
+    gap: 10,
+  },
+  faqCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.02,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  faqCardExpanded: {
+    borderColor: '#BFDBFE',
+    backgroundColor: '#FFFFFF',
+  },
+  faqHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: 12,
   },
-  sectionTitle: {
-    fontSize: 12,
+  faqQuestionText: {
+    flex: 1,
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    lineHeight: 20,
+    letterSpacing: -0.2,
+  },
+  faqQuestionTextActive: {
+    color: '#0F172A',
     fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 0.6,
   },
-  sectionSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+  chevronWrap: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  countBadgePill: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  faqAnswerContainer: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  faqAnswerText: {
+    fontSize: 13.5,
+    color: '#475569',
+    lineHeight: 20,
+    fontWeight: '400',
+  },
+
+  /* Empty State */
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  countBadgeText: {
-    fontSize: 10.5,
+  emptyStateTitle: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#475569',
+    color: '#1E293B',
+    marginTop: 10,
   },
-  faqSearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
-    marginBottom: 10,
-  },
-  faqSearchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#0F172A',
-  },
-  categoriesRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingBottom: 4,
-    marginBottom: 12,
-  },
-  categoryPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  categoryPillActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: COLORS.primary,
-  },
-  categoryPillText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  categoryPillTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
-  },
-  faqList: {
-    gap: 8,
-  },
-  emptyFaqState: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 4,
-  },
-  emptyFaqText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-    marginTop: 4,
-  },
-  emptyFaqSub: {
-    fontSize: 11.5,
-    color: '#64748B',
-  },
-  faqAccordionCard: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  faqAccordionCardActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#F8FAFC',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  faqHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  faqQuestionText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-    lineHeight: 18,
-  },
-  faqQuestionTextActive: {
-    color: COLORS.primary,
-  },
-  faqAnswerBox: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-  },
-  faqAnswerText: {
+  emptyStateSubtitle: {
     fontSize: 12.5,
-    color: '#334155',
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
     lineHeight: 18,
   },
 });
+
+export default HelpSupportFaqSection;

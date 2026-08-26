@@ -39,6 +39,7 @@ router.get('/audit', AdminController.listAuditLogs);
 router.get('/settings', AdminController.getSettings);
 router.put('/settings', AdminController.updateSettings);
 
+router.get('/broadcast/history', AdminController.getBroadcastHistory);
 router.post('/broadcast', AdminController.broadcastNotifications);
 
 export default router;

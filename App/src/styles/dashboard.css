@@ -3,7 +3,7 @@
    ============================================ */
 
 .dashboard-page {
-  padding: var(--space-8) 0 var(--space-16);
+  padding: 12px 0 var(--space-16);
   background: #f8fafc;
   min-height: calc(100vh - var(--navbar-height));
 }
@@ -36,11 +36,14 @@
     display: none !important;
   }
 
-  .desktop-manage-jobs-table {
+  .desktop-manage-jobs-table,
+  .desktop-banners-table {
     display: block !important;
   }
 
-  .mobile-manage-jobs-list {
+  .mobile-manage-jobs-list,
+  .mobile-banners-list,
+  .mobile-only-back-link {
     display: none !important;
   }
 }
@@ -772,7 +775,7 @@
   }
 
   .dashboard-page {
-    padding-top: 16px !important;
+    padding-top: 8px !important;
     padding-bottom: 110px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -824,8 +827,22 @@
     display: none !important;
   }
 
-  .desktop-manage-jobs-table {
+  .desktop-manage-jobs-table,
+  .desktop-banners-table,
+  .desktop-banners-metrics {
     display: none !important;
+  }
+
+  .mobile-banners-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .mobile-only-back-link {
+    display: inline-flex !important;
   }
 
   .applicant-card {
