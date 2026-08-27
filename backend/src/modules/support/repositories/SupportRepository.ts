@@ -221,6 +221,15 @@ export class SupportRepository {
         RETURNING *;
       `;
       const result = await client.query(query, [message.ticket_id, message.sender_id, message.message, message.attachment]);
+      const createdMsg = result.rows[0];
+
+      if (message.sender_id) {
+        const userRes = await client.query('SELECT name, role FROM users WHERE id = $1', [message.sender_id]);
+        if (userRes.rows.length > 0) {
+          createdMsg.sender_name = userRes.rows[0].name;
+          createdMsg.sender_role = userRes.rows[0].role;
+        }
+      }
       
       // Update last_reply_at on ticket
       await client.query(
@@ -229,7 +238,7 @@ export class SupportRepository {
       );
       
       await client.query('COMMIT');
-      return result.rows[0];
+      return createdMsg;
     } catch (error) {
       await client.query('ROLLBACK');
       logger.error('Failed to create support message in DB:', error);

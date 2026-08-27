@@ -199,23 +199,23 @@ export const AdminAdvertisementPage: React.FC = () => {
     if (submittingActionKey === 'create-banner') return;
 
     if (!title.trim()) { showToast('Title required', 'warning'); return; }
-    if (!bannerImage) { showToast('Banner image required', 'warning'); return; }
     if (!startDate || !endDate) { showToast('Valid dates required', 'warning'); return; }
 
     setSubmittingActionKey('create-banner');
     try {
-      const payload = {
+      const defaultImage = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+      const payload: any = {
         title,
-        description,
-        banner_image: bannerImage,
+        description: description || undefined,
+        banner_image: bannerImage && bannerImage.trim().length > 5 ? bannerImage.trim() : defaultImage,
         advertisement_type: advertisementType,
         redirect_url: redirectUrl || undefined,
-        button_text: buttonText,
+        button_text: buttonText || 'Learn More',
         priority,
         start_date: new Date(startDate).toISOString(),
         end_date: new Date(endDate).toISOString(),
-        target_audience: targetAudience,
-        status: 'APPROVED', // Admin banners auto-published
+        target_audience: targetAudience || undefined,
+        status: 'APPROVED', // Admin created ads are auto-approved
       };
 
       const res = await apiFetch('/api/v1/admin/advertisements', {
@@ -374,7 +374,12 @@ export const AdminAdvertisementPage: React.FC = () => {
                 <div key={top.id || idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#64748b', width: '24px' }}>#{idx + 1}</div>
                   <div style={{ width: '90px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#0f172a' }}>
-                    <img src={top.banner_image} alt={top.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                      src={top.banner_image && top.banner_image.trim().length > 5 ? top.banner_image.trim() : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'}
+                      alt={top.title}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'; }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '700', color: '#1e293b' }}>{top.title}</div>
@@ -420,7 +425,12 @@ export const AdminAdvertisementPage: React.FC = () => {
                       {/* Banner Thumbnail */}
                       <td style={{ padding: '14px 16px' }}>
                         <div style={{ width: '110px', height: '55px', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', cursor: 'pointer' }} onClick={() => setPreviewAd(ad)}>
-                          <img src={ad.banner_image} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img
+                            src={ad.banner_image && ad.banner_image.trim().length > 5 ? ad.banner_image.trim() : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'}
+                            alt={ad.title}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'; }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
                         </div>
                       </td>
 
@@ -521,11 +531,19 @@ export const AdminAdvertisementPage: React.FC = () => {
 
             {/* Exact rendered Banner Card Preview */}
             <div style={{ borderRadius: '20px', overflow: 'hidden', height: '280px', position: 'relative', background: '#0f172a', marginBottom: '1.5rem', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.25)' }}>
-              {previewAd.banner_image ? (
-                <img src={previewAd.banner_image} alt={previewAd.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)' }} />
-              )}
+              <img
+                src={
+                  previewAd.banner_image && previewAd.banner_image.trim().length > 5
+                    ? previewAd.banner_image.trim()
+                    : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
+                }
+                alt={previewAd.title}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+                }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              />
               {/* Dark Gradient Overlay */}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.6) 65%, transparent 100%)', zIndex: 2 }} />
 

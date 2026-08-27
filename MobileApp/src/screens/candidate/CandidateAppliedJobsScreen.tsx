@@ -97,8 +97,8 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
       } else {
         syncListWithStore();
       }
-    } catch (e) {
-      console.log('Error loading applied jobs:', e);
+    } catch (e: any) {
+      // Graceful error catch for unauthenticated applied jobs load
       syncListWithStore();
     } finally {
       isFetchingRef.current = false;

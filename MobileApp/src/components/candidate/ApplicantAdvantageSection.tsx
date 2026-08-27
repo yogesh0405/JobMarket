@@ -91,13 +91,8 @@ export const ApplicantAdvantageSection: React.FC = () => {
 
 const styles = StyleSheet.create({
   sectionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 0, // Strict rule: square corners
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    marginVertical: 12,
+    paddingVertical: 12,
+    marginVertical: 8,
     alignItems: 'center',
   },
   topSubtitleText: {

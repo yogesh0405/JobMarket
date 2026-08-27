@@ -400,7 +400,7 @@ export const NavbarNotificationBell: React.FC = () => {
                       borderRadius: '999px'
                     }}
                   >
-                    {unreadCount} new
+                    {unreadCount > 9 ? '9+' : unreadCount} new
                   </span>
                 )}
               </div>
@@ -578,8 +578,8 @@ export const NavbarNotificationBell: React.FC = () => {
               position: 'absolute',
               top: '-3px',
               right: '-3px',
-              minWidth: '16px',
-              height: '16px',
+              minWidth: '18px',
+              height: '18px',
               padding: '0 4px',
               borderRadius: '999px',
               background: '#ef4444',
@@ -594,7 +594,7 @@ export const NavbarNotificationBell: React.FC = () => {
               boxSizing: 'border-box'
             }}
           >
-            {unreadCount}
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>

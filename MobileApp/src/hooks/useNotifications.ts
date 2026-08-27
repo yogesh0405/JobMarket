@@ -7,16 +7,31 @@ export const isNotificationRead = (n: any): boolean => {
   return n.read === true || n.is_read === true || n.isRead === true || n.read === 'true' || n.is_read === 'true';
 };
 
+// Global memory cache to eliminate "0 notifications" flash on screen navigation
+let globalNotificationsCache: AppNotification[] = [];
+let globalHasFetched = false;
+let globalIsFetching = false;
+const listeners = new Set<(list: AppNotification[]) => void>();
+
+function updateGlobalCache(list: AppNotification[]) {
+  globalNotificationsCache = list;
+  globalHasFetched = true;
+  listeners.forEach((listener) => {
+    try {
+      listener(list);
+    } catch {}
+  });
+}
+
 export const useNotifications = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>(globalNotificationsCache);
+  const [loading, setLoading] = useState<boolean>(!globalHasFetched && globalNotificationsCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const isMounted = useRef(true);
 
   const userId = user?.id || '';
   const hasUser = !!user;
-  const hasFetchedRef = useRef(false);
 
   // Persistence refs to prevent backend refresh from overriding local clear / read actions
   const isClearedAllRef = useRef(false);
@@ -24,20 +39,37 @@ export const useNotifications = () => {
   const deletedIdsRef = useRef<Set<string>>(new Set());
   const readIdsRef = useRef<Set<string>>(new Set());
 
+  // Subscribe to global memory cache updates
+  useEffect(() => {
+    const listener = (newList: AppNotification[]) => {
+      if (isMounted.current) {
+        setNotifications(newList);
+      }
+    };
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
   const fetchNotifications = useCallback(async (showLoading = false) => {
-    if (!hasUser) return;
-    
-    // Only show loading spinner on initial load
-    if (showLoading && !hasFetchedRef.current) {
+    if (!hasUser) {
+      setLoading(false);
+      return;
+    }
+
+    if (showLoading && !globalHasFetched && globalNotificationsCache.length === 0) {
       setLoading(true);
     }
-    
+
+    if (globalIsFetching) return;
+    globalIsFetching = true;
+
     try {
       const res = await notificationApi.getNotifications();
       if (res.success && isMounted.current) {
         if (isClearedAllRef.current) {
-          setNotifications([]);
-          hasFetchedRef.current = true;
+          updateGlobalCache([]);
           return;
         }
 
@@ -63,12 +95,12 @@ export const useNotifications = () => {
             };
           });
 
-        setNotifications(rawList);
-        hasFetchedRef.current = true;
+        updateGlobalCache(rawList);
       }
-    } catch (e) {
-      console.log('Failed to fetch real-time notifications:', e);
+    } catch (e: any) {
+      // Graceful error catch for notifications polling
     } finally {
+      globalIsFetching = false;
       if (isMounted.current) {
         setLoading(false);
         setRefreshing(false);
@@ -78,14 +110,14 @@ export const useNotifications = () => {
 
   useEffect(() => {
     isMounted.current = true;
-    hasFetchedRef.current = false;
     isClearedAllRef.current = false;
     allMarkedReadRef.current = false;
     deletedIdsRef.current.clear();
     readIdsRef.current.clear();
 
     if (hasUser) {
-      fetchNotifications(true);
+      // If we already have cache, don't block with loading spinner
+      fetchNotifications(!globalHasFetched && globalNotificationsCache.length === 0);
 
       // Live polling interval every 30 seconds
       const intervalId = setInterval(() => {
@@ -96,8 +128,11 @@ export const useNotifications = () => {
         isMounted.current = false;
         clearInterval(intervalId);
       };
+    } else {
+      setNotifications([]);
+      setLoading(false);
     }
-  }, [hasUser, userId]);
+  }, [hasUser, userId, fetchNotifications]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -106,44 +141,43 @@ export const useNotifications = () => {
 
   const markAsRead = useCallback(async (id: string) => {
     readIdsRef.current.add(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n))
-    );
+    const updated = notifications.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n));
+    updateGlobalCache(updated);
     try {
       await notificationApi.markAsRead(id);
     } catch (e) {
       // Ignore
     }
-  }, []);
+  }, [notifications]);
 
   const markAllAsRead = useCallback(async () => {
     allMarkedReadRef.current = true;
-    setNotifications((prev) =>
-      prev.map((n) => {
-        readIdsRef.current.add(n.id);
-        return { ...n, read: true, is_read: true };
-      })
-    );
+    const updated = notifications.map((n) => {
+      readIdsRef.current.add(n.id);
+      return { ...n, read: true, is_read: true };
+    });
+    updateGlobalCache(updated);
     try {
       await notificationApi.markAllAsRead();
     } catch (e) {
       // Ignore
     }
-  }, []);
+  }, [notifications]);
 
   const removeNotification = useCallback(async (id: string) => {
     deletedIdsRef.current.add(id);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const updated = notifications.filter((n) => n.id !== id);
+    updateGlobalCache(updated);
     try {
       await notificationApi.deleteNotification(id);
     } catch (e) {
       // Ignore
     }
-  }, []);
+  }, [notifications]);
 
   const clearAll = useCallback(async () => {
     isClearedAllRef.current = true;
-    setNotifications([]);
+    updateGlobalCache([]);
     try {
       await notificationApi.clearAll();
     } catch (e) {

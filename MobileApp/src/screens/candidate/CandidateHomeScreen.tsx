@@ -230,8 +230,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           console.log('Error parsing backend role_tabs_config:', e);
         }
       }
-    } catch (e) {
-      console.log('Error loading home data:', e);
+    } catch (e: any) {
+      // Graceful error catch for unauthenticated home screen data load
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -547,7 +547,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         <CandidateHomePromoSlider promoBanners={promoBanners} onBannerPress={handleBannerPress} />
 
         {/* Hero Search Card */}
-        <View style={{ marginTop: 16, marginBottom: 16 }}>
+        <View style={{ marginTop: 16, marginBottom: 12 }}>
           <CandidateHomeSearchCard
             selectedIndustry={selectedIndustry}
             setSelectedIndustry={setSelectedIndustry}
@@ -559,22 +559,20 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
 
-        <View style={styles.sectionSeparatorDivider} />
-
         {/* Popular Role Picks Section */}
-        <CandidateHomePopularRolesSection
-          roleTabsList={roleTabsList}
-          activeRoleTab={activeRoleTab}
-          setActiveRoleTab={setActiveRoleTab}
-          getRoleJobCount={getRoleJobCount}
-          loading={loading}
-          roleFilteredJobs={roleFilteredJobs}
-          savedJobIds={savedJobIds}
-          handleToggleSave={handleToggleSave}
-          navigation={navigation}
-        />
-
-        <View style={styles.sectionSeparatorDivider} />
+        <View style={{ marginBottom: 12 }}>
+          <CandidateHomePopularRolesSection
+            roleTabsList={roleTabsList}
+            activeRoleTab={activeRoleTab}
+            setActiveRoleTab={setActiveRoleTab}
+            getRoleJobCount={getRoleJobCount}
+            loading={loading}
+            roleFilteredJobs={roleFilteredJobs}
+            savedJobIds={savedJobIds}
+            handleToggleSave={handleToggleSave}
+            navigation={navigation}
+          />
+        </View>
 
         {/* Live Stats 2x2 Grid */}
         <View style={styles.statsGrid2x2}>
@@ -611,15 +609,13 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={styles.sectionSeparatorDivider} />
-
         {/* Category & Industry Grids Section */}
-        <CandidateHomeGridsSection
-          getRealJobCount={getRealJobCount}
-          onQuickTradeSearch={handleQuickTradeSearch}
-        />
-
-        <View style={styles.sectionSeparatorDivider} />
+        <View style={{ marginTop: 12, marginBottom: 12 }}>
+          <CandidateHomeGridsSection
+            getRealJobCount={getRealJobCount}
+            onQuickTradeSearch={handleQuickTradeSearch}
+          />
+        </View>
 
         {/* Applicant Advantage Section (Placed at End of Home Page) */}
         <ApplicantAdvantageSection />

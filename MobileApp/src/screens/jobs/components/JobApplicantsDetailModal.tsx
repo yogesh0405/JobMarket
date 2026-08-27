@@ -226,7 +226,11 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
             </View>
 
             {/* Modal Body Tabs */}
-            <ScrollView style={styles.modalBodyScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalBodyScroll}
+              contentContainerStyle={{ paddingBottom: 64 }}
+              showsVerticalScrollIndicator={false}
+            >
               {modalTab === 'JOB' ? (
                 <ApplicantDetailJobTab
                   selectedApplicant={selectedApplicant}

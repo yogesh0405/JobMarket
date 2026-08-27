@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { Lock, Eye, EyeOff, X, KeyRound, Mail, ArrowRight, RefreshCw } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -143,144 +146,159 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom + 16, 28) }]}
-          onPress={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <View style={styles.modalHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}>
-              <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
-                <KeyRound size={18} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitleText} numberOfLines={1}>
-                  {step === 'REQUEST_OTP' ? 'Reset Password' : 'Enter Verification Code'}
-                </Text>
-                <Text style={styles.modalSubtitleText} numberOfLines={1}>
-                  {step === 'REQUEST_OTP'
-                    ? 'Enter your registered email to receive a code'
-                    : `Code sent to ${email}`}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <X size={22} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-
-          {error ? <ErrorBanner message={error} style={{ marginBottom: 12 }} /> : null}
-
-          {step === 'REQUEST_OTP' ? (
-            /* STEP 1: Enter Email & Send OTP */
-            <View style={{ marginTop: 8, gap: 12 }}>
-              <Input
-                label="Registered Email Address *"
-                placeholder="you@company.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
-                  if (error) setError(null);
-                }}
-                leftIcon={<Mail size={18} color="#64748B" />}
-              />
-
-              <Button
-                title="Send Verification Code"
-                onPress={handleSendOtp}
-                loading={loading}
-                style={{ marginTop: 6, height: 46, borderRadius: 8 }}
-              />
-            </View>
-          ) : (
-            /* STEP 2: Enter OTP & New Password */
-            <View style={{ marginTop: 8, gap: 10 }}>
-              <Input
-                label="6-Digit Verification Code *"
-                placeholder="Enter 6-digit code"
-                keyboardType="numeric"
-                maxLength={6}
-                value={otpCode}
-                onChangeText={(t) => {
-                  setOtpCode(t);
-                  if (error) setError(null);
-                }}
-                leftIcon={<Mail size={18} color="#64748B" />}
-              />
-
-              <View style={styles.inputWithIconRow}>
-                <Input
-                  label="New Password *"
-                  placeholder="Enter new password"
-                  secureTextEntry={!showNewPass}
-                  value={newPassword}
-                  onChangeText={(t) => {
-                    setNewPassword(t);
-                    if (error) setError(null);
-                  }}
-                  leftIcon={<Lock size={18} color="#64748B" />}
-                  style={{ flex: 1 }}
-                />
-                <TouchableOpacity
-                  style={styles.eyeBtn}
-                  onPress={() => setShowNewPass(!showNewPass)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  {showNewPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingContainer}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              contentContainerStyle={{ paddingBottom: 8 }}
+            >
+              {/* Header */}
+              <View style={styles.modalHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8 }}>
+                  <View style={[styles.sectionIconBox, { backgroundColor: '#EFF6FF' }]}>
+                    <KeyRound size={18} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalTitleText} numberOfLines={1}>
+                      {step === 'REQUEST_OTP' ? 'Reset Password' : 'Enter Verification Code'}
+                    </Text>
+                    <Text style={styles.modalSubtitleText} numberOfLines={1}>
+                      {step === 'REQUEST_OTP'
+                        ? 'Enter your registered email to receive a code'
+                        : `Code sent to ${email}`}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <X size={22} color="#64748B" />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.inputWithIconRow}>
-                <Input
-                  label="Confirm New Password *"
-                  placeholder="Re-enter new password"
-                  secureTextEntry={!showConfirmPass}
-                  value={confirmPassword}
-                  onChangeText={(t) => {
-                    setConfirmPassword(t);
-                    if (error) setError(null);
-                  }}
-                  leftIcon={<Lock size={18} color="#64748B" />}
-                  style={{ flex: 1 }}
-                />
-                <TouchableOpacity
-                  style={styles.eyeBtn}
-                  onPress={() => setShowConfirmPass(!showConfirmPass)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  {showConfirmPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
-                </TouchableOpacity>
-              </View>
+              {error ? <ErrorBanner message={error} style={{ marginBottom: 12 }} /> : null}
 
-              <View style={styles.resendRow}>
-                {resendCooldown > 0 ? (
-                  <Text style={styles.resendTimerText}>Resend code in {resendCooldown}s</Text>
-                ) : (
-                  <TouchableOpacity activeOpacity={0.7} onPress={handleSendOtp} disabled={loading}>
-                    <Text style={styles.resendLinkText}>Didn't receive code? Resend Code</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              {step === 'REQUEST_OTP' ? (
+                /* STEP 1: Enter Email & Send OTP */
+                <View style={{ marginTop: 4, gap: 12 }}>
+                  <Input
+                    label="Registered Email Address *"
+                    placeholder="you@company.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={(t) => {
+                      setEmail(t);
+                      if (error) setError(null);
+                    }}
+                    leftIcon={<Mail size={18} color="#64748B" />}
+                  />
 
-              <Button
-                title="Reset Password"
-                onPress={handleResetPassword}
-                loading={loading}
-                style={{ marginTop: 6, height: 46, borderRadius: 8 }}
-              />
-            </View>
-          )}
+                  <Button
+                    title="Send Verification Code"
+                    onPress={handleSendOtp}
+                    loading={loading}
+                    style={{ marginTop: 6, height: 46, borderRadius: 8 }}
+                  />
+                </View>
+              ) : (
+                /* STEP 2: Enter OTP & New Password */
+                <View style={{ marginTop: 4, gap: 10 }}>
+                  <Input
+                    label="6-Digit Verification Code *"
+                    placeholder="Enter 6-digit code"
+                    keyboardType="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    onChangeText={(t) => {
+                      setOtpCode(t);
+                      if (error) setError(null);
+                    }}
+                    leftIcon={<Mail size={18} color="#64748B" />}
+                  />
+
+                  <View style={styles.inputWithIconRow}>
+                    <Input
+                      label="New Password *"
+                      placeholder="Enter new password"
+                      secureTextEntry={!showNewPass}
+                      value={newPassword}
+                      onChangeText={(t) => {
+                        setNewPassword(t);
+                        if (error) setError(null);
+                      }}
+                      leftIcon={<Lock size={18} color="#64748B" />}
+                      style={{ flex: 1 }}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeBtn}
+                      onPress={() => setShowNewPass(!showNewPass)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      {showNewPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.inputWithIconRow}>
+                    <Input
+                      label="Confirm New Password *"
+                      placeholder="Re-enter new password"
+                      secureTextEntry={!showConfirmPass}
+                      value={confirmPassword}
+                      onChangeText={(t) => {
+                        setConfirmPassword(t);
+                        if (error) setError(null);
+                      }}
+                      leftIcon={<Lock size={18} color="#64748B" />}
+                      style={{ flex: 1 }}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeBtn}
+                      onPress={() => setShowConfirmPass(!showConfirmPass)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      {showConfirmPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.resendRow}>
+                    {resendCooldown > 0 ? (
+                      <Text style={styles.resendTimerText}>Resend code in {resendCooldown}s</Text>
+                    ) : (
+                      <TouchableOpacity activeOpacity={0.7} onPress={handleSendOtp} disabled={loading}>
+                        <Text style={styles.resendLinkText}>Didn't receive code? Resend Code</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <Button
+                    title="Reset Password"
+                    onPress={handleResetPassword}
+                    loading={loading}
+                    style={{ marginTop: 6, height: 46, borderRadius: 8 }}
+                  />
+                </View>
+              )}
+            </ScrollView>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoidingContainer: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
@@ -292,6 +310,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+    maxHeight: '88%',
   },
   modalHeaderRow: {
     flexDirection: 'row',

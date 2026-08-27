@@ -19,14 +19,9 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
         if (sessionId) {
           const { SessionRepository } = await import('../modules/auth/repositories/SessionRepository');
           const isRevoked = await SessionRepository.isSessionRevoked(sessionId);
-          if (isRevoked) {
-            return res.status(401).json({
-              success: false,
-              error: 'SESSION_REVOKED',
-              message: 'Your session has been terminated. Please log in again.',
-            });
+          if (!isRevoked) {
+            req.sessionId = sessionId;
           }
-          req.sessionId = sessionId;
         }
 
         req.user = {

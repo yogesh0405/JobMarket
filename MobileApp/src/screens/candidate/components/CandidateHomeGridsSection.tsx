@@ -190,12 +190,7 @@ export const CandidateHomeGridsSection: React.FC<CandidateHomeGridsSectionProps>
 
 const styles = StyleSheet.create({
   standaloneSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 14,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   popularTradesBadge: {
     alignSelf: 'center',
@@ -273,7 +268,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     marginTop: 2,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   threeColumnGrid: {
     flexDirection: 'row',
@@ -281,12 +276,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tradeSquareCard: {
-    width: '31%',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
+    width: '31.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     alignItems: 'center',
   },
   tradeIconSquare: {
@@ -310,12 +306,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   qualSquareCard: {
-    width: '31%',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 6,
+    width: '31.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     alignItems: 'center',
   },
   qualIconSquare: {

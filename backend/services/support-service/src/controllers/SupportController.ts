@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../../shared/types';
 import { SupportService } from '../../../../src/modules/support/services/SupportService';
 import { BadRequestError } from '../../../../src/errors/AppError';
+import { pool } from '../../../../src/config/database/pool';
 
 export class SupportController {
   static async createTicket(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -12,22 +13,13 @@ export class SupportController {
         attachmentBase64, attachmentName, preferredContact, preferred_contact, priority
       } = req.body;
 
-      const finalName = fullName || full_name || 'JobMarket User';
-      const finalEmail = email || userEmail || '';
-      const finalSubject = subject || title || '';
-      const finalDesc = description || message || '';
+      let finalName = (fullName || full_name || '').trim();
+      let finalEmail = (email || userEmail || '').trim();
+      const finalSubject = (subject || title || '').trim();
+      const finalDesc = (description || message || '').trim();
       const finalCategory = category || 'General Technical Inquiry';
       const finalContact = preferredContact || preferred_contact || 'email';
-      const finalPriority = String(priority || 'medium').toLowerCase();
-
-      if (!finalName.trim() || !finalEmail.trim() || !finalSubject.trim() || !finalDesc.trim()) {
-        throw new BadRequestError('Please provide your name, email, subject, and description');
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(finalEmail.trim())) {
-        throw new BadRequestError('Invalid email address format');
-      }
+      const finalPriority = String(priority || '').toLowerCase() === 'high' ? 'high' : 'medium';
 
       let cleanPhone: string | null = null;
       if (phone) {
@@ -37,10 +29,40 @@ export class SupportController {
         }
       }
 
+      if (userId) {
+        try {
+          const userLookup = await pool.query('SELECT name, email, phone FROM users WHERE id = $1', [userId]);
+          if (userLookup.rows.length > 0) {
+            const u = userLookup.rows[0];
+            if (!finalName) finalName = u.name || 'JobMarket User';
+            if (!finalEmail) finalEmail = u.email || '';
+            if (!cleanPhone && u.phone) {
+              const uDigits = String(u.phone).replace(/[^0-9]/g, '');
+              if (uDigits.length >= 10) cleanPhone = uDigits.slice(-10);
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!finalName) finalName = 'JobMarket User';
+      if (!finalEmail) finalEmail = 'user@jobmarket.com';
+
+      if (!finalSubject || !finalDesc) {
+        throw new BadRequestError('Please provide a subject title and description');
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (finalEmail && !emailRegex.test(finalEmail)) {
+        throw new BadRequestError('Invalid email address format');
+      }
+
       const userAgent = req.headers['user-agent'] || '';
       let device = 'Desktop';
       if (/mobi/i.test(userAgent)) device = 'Mobile';
       else if (/tablet/i.test(userAgent)) device = 'Tablet';
+
+      const finalAttachmentBase64 = attachmentBase64 || req.body.attachment || req.body.attachment_url || null;
+      const finalAttachmentName = attachmentName || req.body.attachment_name || (finalAttachmentBase64 ? 'attachment.jpg' : null);
 
       const ip_address = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '').split(',')[0].trim();
 
@@ -52,8 +74,8 @@ export class SupportController {
         category: finalCategory,
         subject: finalSubject.trim(),
         description: finalDesc.trim(),
-        attachmentBase64,
-        attachmentName,
+        attachmentBase64: finalAttachmentBase64,
+        attachmentName: finalAttachmentName,
         preferred_contact: finalContact,
         priority: finalPriority,
         ip_address,
@@ -93,28 +115,48 @@ export class SupportController {
 
   static async postMessage(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req.headers['x-user-id'] as string) || req.user?.userId;
-      const role = (req.headers['x-user-role'] as string) || req.user?.role || 'candidate';
       const ticketId = req.params.id || req.body.ticketId;
-      const { message, attachmentBase64, attachmentName } = req.body;
+      const {
+        message,
+        text,
+        attachmentBase64,
+        attachment,
+        attachment_url,
+        attachmentName,
+        attachment_name
+      } = req.body;
+      const userId = (req.headers['x-user-id'] as string) || req.user?.userId || (req.user as any)?.id || null;
+      const role = (req.headers['x-user-role'] as string) || req.user?.role || 'candidate';
 
       if (!ticketId) {
         throw new BadRequestError('Ticket ID is required');
       }
 
-      if (!message || !message.trim()) {
-        throw new BadRequestError('Message body cannot be empty');
+      if (!userId) {
+        throw new BadRequestError('User identification is required to post a message');
       }
 
-      const data = await SupportService.addMessage(
+      const finalAttachment = attachmentBase64 || attachment || attachment_url || null;
+      const finalAttachmentName = attachmentName || attachment_name || (finalAttachment ? 'attachment.jpg' : null);
+      let finalMessage = (message || text || '').trim();
+
+      if (!finalMessage && !finalAttachment) {
+        throw new BadRequestError('Message or attachment is required');
+      }
+
+      if (!finalMessage) {
+        finalMessage = '📎 Attachment';
+      }
+
+      const msg = await SupportService.addMessage(
         ticketId,
         userId,
         role,
-        message,
-        attachmentBase64,
-        attachmentName
+        finalMessage,
+        finalAttachment,
+        finalAttachmentName
       );
-      res.status(201).json({ success: true, message: 'Message sent successfully', data });
+      res.status(201).json({ success: true, message: 'Message sent successfully', data: msg });
     } catch (error) {
       next(error);
     }

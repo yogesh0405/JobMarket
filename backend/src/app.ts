@@ -110,6 +110,7 @@ app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/jobs', jobRoutes);

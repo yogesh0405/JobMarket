@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,12 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Platform,
   StatusBar,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Paperclip, Send, X, Headphones } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 import { useAuth } from '../../../hooks/useAuth';
@@ -25,6 +25,7 @@ interface HelpSupportChatModalProps {
   onClose: () => void;
   ticket: SupportTicket | null;
   chatMessages: TicketMessage[];
+  loadingMessages?: boolean;
   replyMessage: string;
   setReplyMessage: (val: string) => void;
   sendingReply: boolean;
@@ -34,13 +35,22 @@ interface HelpSupportChatModalProps {
   onSendReply: () => void;
 }
 
-// Helpers for Real Industry-Grade Date Separator Grouping
+// Helpers for Real Industry-Grade Date and Time Display
+const formatMessageTime = (dateInput?: string): string => {
+  if (!dateInput) return '';
+  const parsed = new Date(dateInput);
+  if (isNaN(parsed.getTime())) {
+    if (/^\d{1,2}:\d{2}\s*(am|pm)?$/i.test(dateInput)) return dateInput;
+    return '';
+  }
+  return parsed.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
 const formatChatDateHeader = (dateInput?: string): string => {
   if (!dateInput) return 'Today';
 
   const parsed = new Date(dateInput);
   if (isNaN(parsed.getTime())) {
-    // If already pre-formatted like "12 dec, 8:24 pm" or "26 Aug 2026", return directly
     return String(dateInput);
   }
 
@@ -57,22 +67,20 @@ const formatChatDateHeader = (dateInput?: string): string => {
     parsed.getMonth() === yesterday.getMonth() &&
     parsed.getFullYear() === yesterday.getFullYear();
 
-  const timeStr = parsed
-    .toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    .toLowerCase();
-
   if (isSameDay) {
-    const dayMonth = parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toLowerCase();
-    return `${dayMonth}, ${timeStr}`;
+    return 'Today';
   }
 
   if (isYesterday) {
-    return `Yesterday, ${timeStr}`;
+    return 'Yesterday';
   }
 
-  const dayMonth = parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toLowerCase();
-  const yearSuffix = parsed.getFullYear() !== now.getFullYear() ? ` ${parsed.getFullYear()}` : '';
-  return `${dayMonth}${yearSuffix}, ${timeStr}`;
+  const isCurrentYear = parsed.getFullYear() === now.getFullYear();
+  return parsed.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(isCurrentYear ? {} : { year: 'numeric' }),
+  });
 };
 
 const getDayKey = (dateInput?: string): string => {
@@ -89,6 +97,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   onClose,
   ticket,
   chatMessages,
+  loadingMessages = false,
   replyMessage,
   setReplyMessage,
   sendingReply,
@@ -101,24 +110,39 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [previewImageModal, setPreviewImageModal] = useState<string | null>(null);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !loadingMessages) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 200);
+      }, 100);
     }
-  }, [visible, chatMessages.length]);
+  }, [visible, loadingMessages, chatMessages.length]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+    });
+
+    return () => {
+      showSub.remove();
+    };
+  }, []);
 
   if (!ticket) return null;
 
   const canSend = (replyMessage.trim().length > 0 || !!selectedAttachment) && !sendingReply;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalContainer}>
+    <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
         {/* Top Header Bar */}
-        <View style={[styles.headerBar, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
+        <View style={styles.headerBar}>
           <TouchableOpacity onPress={onClose} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
           </TouchableOpacity>
@@ -140,30 +164,34 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
           </View>
         </View>
 
-        {/* Chat Messages Scroll View (100% Matching Reference UI with Dynamic Date Separators) */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
         >
-          <ScrollView
-            ref={scrollViewRef}
-            contentContainerStyle={[styles.messagesContainer, { paddingBottom: 16 }]}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-          >
+          {loadingMessages ? (
+            <View style={styles.loadingStateWrapper}>
+              <ActivityIndicator size="large" color="#6366F1" />
+              <Text style={styles.loadingStateText}>Loading conversation...</Text>
+            </View>
+          ) : (
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={[styles.messagesContainer, { paddingBottom: 16 }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+            >
             {chatMessages.map((msg, index) => {
               const isUser = msg.sender === 'user';
               const prevMsg = index > 0 ? chatMessages[index - 1] : null;
 
-              // Check if date header should appear (First message or when date changes from previous message)
-              const msgDate = msg.createdAt || ticket.createdAt || new Date().toISOString();
-              const prevDate = prevMsg?.createdAt || ticket.createdAt;
+              const msgDate = msg.createdAt || ticket?.createdAt || new Date().toISOString();
+              const prevDate = prevMsg?.createdAt || ticket?.createdAt;
               const shouldShowDateHeader = index === 0 || getDayKey(msgDate) !== getDayKey(prevDate);
 
               return (
                 <React.Fragment key={msg.id || index}>
-                  {/* Centered Date Separator Header (Shown at start & when message date changes) */}
                   {shouldShowDateHeader && (
                     <View style={styles.dateStampContainer}>
                       <Text style={styles.dateStampText}>{formatChatDateHeader(msgDate)}</Text>
@@ -171,24 +199,27 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                   )}
 
                   {isUser ? (
-                    /* USER OUTBOUND BUBBLE (Vibrant Blue Pill - Matching Reference) */
                     <View style={styles.userMsgWrapper}>
-                      {/* Optional Image Attachment */}
                       {msg.attachment ? (
-                        <View style={styles.imageAttachmentWrapper}>
+                        <TouchableOpacity
+                          activeOpacity={0.88}
+                          onPress={() => setPreviewImageModal(msg.attachment!)}
+                          style={styles.imageAttachmentWrapper}
+                        >
                           <Image source={{ uri: msg.attachment }} style={styles.imageAttachmentCard} />
-                        </View>
+                        </TouchableOpacity>
                       ) : null}
 
-                      {/* Text Bubble */}
                       {msg.text ? (
                         <View style={styles.userBubble}>
                           <Text style={styles.userBubbleText}>{msg.text}</Text>
+                          <View style={styles.userBubbleTimeRow}>
+                            <Text style={styles.userBubbleTimeText}>{formatMessageTime(msgDate)}</Text>
+                          </View>
                         </View>
                       ) : null}
                     </View>
                   ) : (
-                    /* SUPPORT AGENT INBOUND BUBBLE (With professional icon next to title) */
                     <View style={styles.supportMsgRow}>
                       <View style={styles.supportBubble}>
                         <View style={styles.supportHeaderTitleRow}>
@@ -200,10 +231,18 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                         <Text style={styles.supportBubbleText}>{msg.text}</Text>
 
                         {msg.attachment ? (
-                          <View style={styles.imageAttachmentWrapperLeft}>
+                          <TouchableOpacity
+                            activeOpacity={0.88}
+                            onPress={() => setPreviewImageModal(msg.attachment!)}
+                            style={styles.imageAttachmentWrapperLeft}
+                          >
                             <Image source={{ uri: msg.attachment }} style={styles.imageAttachmentCard} />
-                          </View>
+                          </TouchableOpacity>
                         ) : null}
+
+                        <View style={styles.supportBubbleTimeRow}>
+                          <Text style={styles.supportBubbleTimeText}>{formatMessageTime(msgDate)}</Text>
+                        </View>
                       </View>
                     </View>
                   )}
@@ -211,10 +250,35 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
               );
             })}
           </ScrollView>
+        )}
 
-          {/* Bottom Chat Input Bar (Exact match to reference capsule design) */}
+          {/* Fullscreen High-Res Image Preview Modal */}
+          {previewImageModal && (
+            <Modal
+              visible={!!previewImageModal}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setPreviewImageModal(null)}
+            >
+              <View style={styles.fullImageModalOverlay}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={styles.closeFullImageBtn}
+                  onPress={() => setPreviewImageModal(null)}
+                >
+                  <X size={22} color="#FFFFFF" strokeWidth={2.5} />
+                </TouchableOpacity>
+
+                <Image
+                  source={{ uri: previewImageModal }}
+                  style={styles.fullImagePreview}
+                  resizeMode="contain"
+                />
+              </View>
+            </Modal>
+          )}
+
           <View style={[styles.inputBarOuterContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-            {/* Attachment preview if selected */}
             {selectedAttachment ? (
               <View style={styles.attachmentPreviewStrip}>
                 <Text style={styles.attachmentPreviewText} numberOfLines={1}>
@@ -244,6 +308,9 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                 placeholderTextColor="#94A3B8"
                 value={replyMessage}
                 onChangeText={setReplyMessage}
+                onFocus={() => {
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 60);
+                }}
                 multiline
               />
 
@@ -265,7 +332,6 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </Modal>
   );
 };
 
@@ -372,6 +438,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '400',
   },
+  userBubbleTimeRow: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  userBubbleTimeText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '500',
+  },
 
   /* Inbound Support Message Styles (Matching Reference Image) */
   supportMsgRow: {
@@ -401,6 +476,15 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     lineHeight: 20,
     fontWeight: '400',
+  },
+  supportBubbleTimeRow: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  supportBubbleTimeText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 
   /* Image Attachments */
@@ -478,6 +562,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 6,
+  },
+
+  /* Fullscreen Image Lightbox Modal */
+  fullImageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 6, 23, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  closeFullImageBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 48 : 24,
+    right: 20,
+    zIndex: 99,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullImagePreview: {
+    width: '100%',
+    height: '80%',
+  },
+  loadingStateWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  loadingStateText: {
+    fontSize: 13.5,
+    fontWeight: '500',
+    color: '#64748B',
   },
 });
 

@@ -74,6 +74,7 @@ export const ApplicantDetailStatusTab: React.FC<ApplicantDetailStatusTabProps> =
 const styles = StyleSheet.create({
   modalSectionBox: {
     padding: 16,
+    backgroundColor: '#F8FAFC',
   },
   sectionHeadingTitle: {
     fontSize: 11,

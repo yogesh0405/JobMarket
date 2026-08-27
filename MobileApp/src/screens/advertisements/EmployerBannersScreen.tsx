@@ -7,208 +7,109 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
-  ActivityIndicator,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import {
+  ArrowLeft,
   Plus,
-  Image as ImageIcon,
   Sparkles,
-  Eye,
-  MousePointerClick,
-  CheckCircle2,
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Header } from '../../components/common/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { apiFetch } from '../../api/client';
-import { jobsApi } from '../../api/jobsApi';
-import { Advertisement, AdvertisementAnalytics, AdvertisementType, Job } from '../../types';
+import { Advertisement } from '../../types';
 import { COLORS } from '../../constants/theme';
 import { EmployerBannerItemCard } from './components/EmployerBannerItemCard';
-import { EmployerBannerModal } from './components/EmployerBannerModal';
+import { BannerAnalyticsModal } from './components/BannerAnalyticsModal';
 
-export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+type FilterTab = 'ALL' | 'LIVE' | 'REVIEW' | 'REJECTED';
+
+export const EmployerBannersScreen: React.FC<{ navigation: any; route?: any }> = ({
+  navigation,
+}) => {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
   const [banners, setBanners] = useState<Advertisement[]>([]);
-  const [analytics, setAnalytics] = useState<AdvertisementAnalytics | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
 
-  // Modal State
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<Advertisement | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form Fields
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [bannerImage, setBannerImage] = useState('');
-  const [advertisementType, setAdvertisementType] = useState<AdvertisementType>('FEATURED_JOB');
-  const [linkedJobId, setLinkedJobId] = useState('');
-  const [redirectUrl, setRedirectUrl] = useState('');
-  const [buttonText, setButtonText] = useState('Apply Now');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
+  // Analytics Modal
+  const [analyticsBanner, setAnalyticsBanner] = useState<Advertisement | null>(null);
 
   const loadData = useCallback(async () => {
-    setError(null);
     try {
-      const [bannersRes, analyticsRes, jobsRes] = await Promise.all([
-        apiFetch('/api/v1/employer/advertisements').catch(() => ({ success: false, data: [] })),
-        apiFetch('/api/v1/employer/advertisements/analytics').catch(() => ({ success: false, data: null })),
-        jobsApi.getMyJobs().catch(() => ({ success: false, data: [] })),
-      ]);
+      const bannersRes = await apiFetch('/api/v1/employer/advertisements').catch(() => ({
+        success: false,
+        data: [],
+      }));
 
       if (bannersRes.success && Array.isArray(bannersRes.data)) {
         setBanners(bannersRes.data);
       } else {
         setBanners([]);
       }
-
-      if (analyticsRes.success && analyticsRes.data) {
-        setAnalytics(analyticsRes.data);
-      }
-
-      if (jobsRes.success && Array.isArray(jobsRes.data)) {
-        setJobs(jobsRes.data);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load banner advertisements');
+    } catch {
+      setBanners([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Reload data every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
-  const openCreateModal = () => {
-    setEditingBanner(null);
-    setTitle('');
-    setDescription('');
-    setBannerImage('');
-    setAdvertisementType('FEATURED_JOB');
-    setLinkedJobId('');
-    setRedirectUrl('');
-    setButtonText('Apply Now');
-    setTargetAudience('');
+  // Status Filter Counts (100% Real Database Lifecycle)
+  const countAll = banners.length;
+  const countLive = banners.filter(
+    (b) =>
+      ((b.status || '').toUpperCase() === 'APPROVED' ||
+        (b.status || '').toUpperCase() === 'PUBLISHED') &&
+      b.is_active === true
+  ).length;
+  const countRejected = banners.filter(
+    (b) => (b.status || '').toUpperCase() === 'REJECTED'
+  ).length;
+  const countReview = banners.filter((b) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    const isLive = (s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === true;
+    const isRejected = s === 'REJECTED';
+    return !isLive && !isRejected;
+  }).length;
 
-    const today = new Date();
-    const future = new Date();
-    future.setDate(today.getDate() + 30);
+  const filteredBanners = banners.filter((b) => {
+    const s = (b.status || (b as any).approval_status || 'PENDING_APPROVAL').toUpperCase();
+    const isLive = (s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === true;
+    const isRejected = s === 'REJECTED';
+    const isInReview = !isLive && !isRejected;
 
-    setStartDate(today.toISOString().split('T')[0]);
-    setEndDate(future.toISOString().split('T')[0]);
-    setModalVisible(true);
+    if (activeTab === 'LIVE') return isLive;
+    if (activeTab === 'REVIEW') return isInReview;
+    if (activeTab === 'REJECTED') return isRejected;
+    return true;
+  });
+
+  // Navigate to Dedicated Full-Page Creation Screen
+  const handleOpenCreate = () => {
+    navigation.navigate('CreateBanner');
   };
 
-  const openEditModal = (banner: Advertisement) => {
-    setEditingBanner(banner);
-    setTitle(banner.title);
-    setDescription(banner.description || '');
-    setBannerImage(banner.banner_image || '');
-    setAdvertisementType(banner.advertisement_type || 'FEATURED_JOB');
-    setLinkedJobId((banner as any).job_id || (banner as any).jobId || '');
-    setRedirectUrl((banner as any).target_url || (banner as any).targetUrl || (banner as any).redirectUrl || '');
-    setButtonText(banner.button_text || 'Apply Now');
-    setStartDate(banner.start_date ? banner.start_date.slice(0, 10) : '');
-    setEndDate(banner.end_date ? banner.end_date.slice(0, 10) : '');
-    setTargetAudience(banner.target_audience || '');
-    setModalVisible(true);
-  };
-
-  const handlePickImage = async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Permission Required', 'Gallery access is needed to select banner images.');
-        return;
-      }
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!res.canceled && res.assets[0]) {
-        const asset = res.assets[0];
-        const base64Data = asset.base64
-          ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
-          : asset.uri;
-        setBannerImage(base64Data);
-      }
-    } catch (err) {
-      Alert.alert('Image Error', 'Could not process selected image.');
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert('Validation Error', 'Please enter a title for your banner advertisement.');
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      Alert.alert('Validation Error', 'Please select both start date and end date for the banner campaign.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        title: title.trim(),
-        description: description.trim(),
-        bannerImage: bannerImage.trim() || undefined,
-        advertisementType,
-        jobId: linkedJobId || undefined,
-        redirectUrl: redirectUrl.trim() || undefined,
-        buttonText: buttonText.trim() || 'Apply Now',
-        startDate,
-        endDate,
-        targetAudience: targetAudience.trim() || undefined,
-      };
-
-      let res;
-      if (editingBanner) {
-        res = await apiFetch(`/api/v1/employer/advertisements/${editingBanner.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
-      } else {
-        res = await apiFetch('/api/v1/employer/advertisements', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (res.success) {
-        Alert.alert(
-          'Banner Submitted for Review',
-          editingBanner
-            ? 'Your updated banner has been saved and sent for admin review.'
-            : 'Your promotional banner advertisement has been submitted successfully and is currently pending admin verification.',
-          [{ text: 'OK', onPress: () => setModalVisible(false) }]
-        );
-        loadData();
-      } else {
-        Alert.alert('Submission Failed', res.message || 'Could not submit banner advertisement.');
-      }
-    } catch (err: any) {
-      Alert.alert('Submission Error', err.message || 'Network error submitting banner.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  // Navigate to Dedicated Full-Page Edit Screen
+  const handleOpenEdit = (banner: Advertisement) => {
+    navigation.navigate('CreateBanner', { banner });
   };
 
   const handleDelete = (id: string, bannerTitle: string) => {
@@ -226,7 +127,7 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
               if (res.success) {
                 setBanners((prev) => prev.filter((b) => b.id !== id));
               }
-            } catch (err) {
+            } catch {
               setBanners((prev) => prev.filter((b) => b.id !== id));
             }
           },
@@ -237,141 +138,159 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
 
   return (
     <View style={styles.container}>
-      <Header
-        title="JobMarket"
-        subtitle="Industrial & Factory Jobs"
-        showBack={false}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
+      {/* 1. Header Bar (Exact match to reference screenshot) */}
+      <View style={[styles.headerBanner, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 4) }]}>
+        <View style={styles.headerLeftGroup}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.backBtn}
+          >
+            <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+          </TouchableOpacity>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitleText}>Promotional Banners</Text>
+            <Text style={styles.headerSubtitleText}>Urgent hiring ads on homepage slider</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 2. Horizontal Filter Tabs Bar */}
+      <View style={styles.filterTabsContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterTabsContent}>
+          {/* All */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('ALL')}
+            style={[styles.filterTabPill, activeTab === 'ALL' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'ALL' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              All
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'ALL' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'ALL' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countAll}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Live */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('LIVE')}
+            style={[styles.filterTabPill, activeTab === 'LIVE' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'LIVE' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              Live
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'LIVE' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'LIVE' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countLive}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* In Review */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('REVIEW')}
+            style={[styles.filterTabPill, activeTab === 'REVIEW' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'REVIEW' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              In Review
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'REVIEW' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'REVIEW' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countReview}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Rejected */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('REJECTED')}
+            style={[styles.filterTabPill, activeTab === 'REJECTED' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'REJECTED' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              Rejected
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'REJECTED' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'REJECTED' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countRejected}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* 3. Banners List */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
-        {/* Top Header Card */}
-        <View style={styles.topHeaderCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.topHeaderTitle}>Promotional Banners Desk</Text>
-            <Text style={styles.topHeaderSubtitle}>
-              Promote factory job openings & walk-in drives to candidates across Maharashtra
-            </Text>
-          </View>
-
-          <TouchableOpacity style={styles.createBtnHeader} activeOpacity={0.85} onPress={openCreateModal}>
-            <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.createBtnHeaderText}>Create Banner</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Analytics Performance Summary Metrics Card */}
-        <View style={styles.analyticsGridRow}>
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Total Banners</Text>
-              <ImageIcon size={16} color={COLORS.primary} />
-            </View>
-            <Text style={styles.metricValueText}>{analytics?.total_advertisements ?? banners.length}</Text>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Active Live</Text>
-              <CheckCircle2 size={16} color="#16A34A" />
-            </View>
-            <Text style={styles.metricValueText}>{analytics?.active_advertisements ?? banners.filter((b) => b.is_active).length}</Text>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Total Views</Text>
-              <Eye size={16} color="#0284C7" />
-            </View>
-            <Text style={styles.metricValueText}>{analytics?.total_views ?? 0}</Text>
-          </View>
-
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeaderRow}>
-              <Text style={styles.metricLabelText}>Total Clicks</Text>
-              <MousePointerClick size={16} color="#D97706" />
-            </View>
-            <Text style={styles.metricValueText}>{analytics?.total_clicks ?? 0}</Text>
-          </View>
-        </View>
-
-        {/* Banners List Section */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>YOUR PROMOTIONAL BANNERS ({banners.length})</Text>
-        </View>
-
         {loading && !refreshing ? (
-          <View style={{ gap: 12, marginBottom: 14 }}>
+          <View style={{ gap: 12 }}>
             {[1, 2].map((key) => (
-              <View key={key} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', padding: 12 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <SkeletonLoader width={90} height={18} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width={80} height={14} style={{ borderRadius: 4 }} />
-                </View>
-                <SkeletonLoader width="100%" height={130} style={{ borderRadius: 8 }} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
-                  <SkeletonLoader width={100} height={16} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width={110} height={26} style={{ borderRadius: 6 }} />
+              <View key={key} style={styles.skeletonCard}>
+                <SkeletonLoader width="100%" height={145} style={{ borderRadius: 8 }} />
+                <SkeletonLoader width={180} height={16} style={{ borderRadius: 4, marginTop: 10 }} />
+                <SkeletonLoader width="100%" height={32} style={{ borderRadius: 6, marginTop: 8 }} />
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  <SkeletonLoader width="48%" height={36} style={{ borderRadius: 6 }} />
+                  <SkeletonLoader width="48%" height={36} style={{ borderRadius: 6 }} />
                 </View>
               </View>
             ))}
           </View>
-        ) : banners.length === 0 ? (
+        ) : filteredBanners.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Sparkles size={36} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No Promotional Banners Created</Text>
-            <Text style={styles.emptySubtitle}>
-              Promote your featured factory jobs or walk-in drives with custom banners shown to thousands of job seekers.
+            <Sparkles size={38} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'ALL' ? 'No Promotional Banners' : `No ${activeTab} Banners`}
             </Text>
-            <TouchableOpacity style={styles.emptyActionBtn} onPress={openCreateModal}>
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.emptyActionText}>Create First Banner</Text>
+            <Text style={styles.emptySubtitle}>
+              Promote your urgent hiring requirements on the homepage slider banner to reach thousands of active job seekers.
+            </Text>
+            <TouchableOpacity style={styles.emptyActionBtn} activeOpacity={0.85} onPress={handleOpenCreate}>
+              <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.emptyActionText}>Create New Banner</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          banners.map((banner) => (
+          filteredBanners.map((banner) => (
             <EmployerBannerItemCard
               key={banner.id}
               banner={banner}
-              onEdit={openEditModal}
+              onEdit={handleOpenEdit}
               onDelete={handleDelete}
+              onViewAnalytics={(b) => setAnalyticsBanner(b)}
             />
           ))
         )}
       </ScrollView>
 
-      {/* Create / Edit Modal */}
-      <EmployerBannerModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        editingBanner={editingBanner}
-        title={title}
-        setTitle={setTitle}
-        description={description}
-        setDescription={setDescription}
-        advertisementType={advertisementType}
-        setAdvertisementType={setAdvertisementType}
-        jobs={jobs}
-        linkedJobId={linkedJobId}
-        setLinkedJobId={setLinkedJobId}
-        redirectUrl={redirectUrl}
-        setRedirectUrl={setRedirectUrl}
-        buttonText={buttonText}
-        setButtonText={setButtonText}
-        bannerImage={bannerImage}
-        setBannerImage={setBannerImage}
-        onPickImage={handlePickImage}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
-        targetAudience={targetAudience}
-        setTargetAudience={setTargetAudience}
-        isSubmitting={isSubmitting}
-        onSubmit={handleSubmit}
+      {/* 4. Floating Action Button (FAB) placed higher with safe-area bottom offset */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handleOpenCreate}
+        style={[
+          styles.createFabBtn,
+          { bottom: Math.max(insets.bottom || 0, 16) + 28 },
+        ]}
+      >
+        <Plus size={24} color="#FFFFFF" strokeWidth={2.6} />
+      </TouchableOpacity>
+
+      {/* 5. Banner Analytics Modal */}
+      <BannerAnalyticsModal
+        visible={!!analyticsBanner}
+        onClose={() => setAnalyticsBanner(null)}
+        banner={analyticsBanner}
       />
     </View>
   );
@@ -380,96 +299,124 @@ export const EmployerBannersScreen: React.FC<{ navigation: any }> = ({ navigatio
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F8FAFC',
   },
-  scrollContent: {
+
+  /* 1. Header Bar */
+  headerBanner: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 120,
-  },
-  topHeaderCard: {
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 14,
-    marginBottom: 12,
   },
-  topHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  topHeaderSubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  createBtnHeader: {
+  headerLeftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    gap: 12,
+    flex: 1,
   },
-  createBtnHeaderText: {
-    fontSize: 12,
+  backBtn: {
+    padding: 2,
+  },
+  headerTitleText: {
+    fontSize: 18,
     fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  headerSubtitleText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+
+  /* 2. Filter Tabs */
+  filterTabsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 10,
+  },
+  filterTabsContent: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterTabPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  filterTabPillActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  filterTabPillInactive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  filterTabTextActive: {
     color: '#FFFFFF',
   },
-  analyticsGridRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+  filterTabTextInactive: {
+    color: '#334155',
   },
-  metricCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 10,
+  filterBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
   },
-  metricHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+  filterBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
-  metricLabelText: {
+  filterBadgeInactive: {
+    backgroundColor: '#F1F5F9',
+  },
+  filterBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '800',
+  },
+  filterBadgeTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadgeTextInactive: {
     color: '#64748B',
   },
-  metricValueText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#0F172A',
+
+  /* 3. Scroll Content */
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 110,
   },
-  sectionHeaderRow: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 0.6,
+  skeletonCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginBottom: 14,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 24,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
   },
   emptyTitle: {
     fontSize: 15,
@@ -481,21 +428,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
+    lineHeight: 18,
     marginTop: 4,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   emptyActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#2563EB',
     paddingHorizontal: 16,
     paddingVertical: 9,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   emptyActionText: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  /* 4. Floating Action Button (FAB) */
+  createFabBtn: {
+    position: 'absolute',
+    right: 20,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 99,
   },
 });

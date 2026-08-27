@@ -303,7 +303,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* 1. Unscrollable Fixed Primary Blue Header Banner with Integrated Tabs */}
       {!loadingCompany && (

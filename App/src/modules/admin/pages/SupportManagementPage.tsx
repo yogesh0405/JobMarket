@@ -69,6 +69,9 @@ export const SupportManagementPage: React.FC = () => {
   const [replyFileName, setReplyFileName] = useState<string | undefined>(undefined);
   const replyFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fullscreen Image Preview Lightbox State (No Download Triggered)
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   // List of admins to assign tickets to
   const [admins, setAdmins] = useState<{ id: string; name: string }[]>([]);
 
@@ -245,8 +248,13 @@ export const SupportManagementPage: React.FC = () => {
       });
 
       const data = await res.json();
-      if (data.success) {
-        setMessages(prev => [...prev, data.data]);
+      if (data.success && data.data) {
+        const adminMsg: SupportMessage = {
+          ...data.data,
+          sender_role: data.data.sender_role || 'admin',
+          sender_name: data.data.sender_name || 'System Admin'
+        };
+        setMessages(prev => [...prev, adminMsg]);
         setReplyText('');
         setReplyBase64(undefined);
         setReplyFileName(undefined);
@@ -713,18 +721,47 @@ export const SupportManagementPage: React.FC = () => {
                   <p style={{ margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.4 }}>{selectedTicket.description}</p>
                   
                   {selectedTicket.attachment && (
-                    <div style={{ marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
-                      <a
-                        href={selectedTicket.attachment}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                        </svg>
-                        View Attachment
-                      </a>
+                    <div style={{ marginTop: '10px' }}>
+                      <img
+                        src={selectedTicket.attachment}
+                        alt="Ticket attachment"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '240px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border)',
+                          objectFit: 'cover',
+                          display: 'block',
+                          cursor: 'zoom-in'
+                        }}
+                        onClick={() => setPreviewImage(selectedTicket.attachment!)}
+                      />
+                      <div style={{ marginTop: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(selectedTicket.attachment!)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            color: 'var(--primary)',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '11.5px'
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            <line x1="11" y1="8" x2="11" y2="14"/>
+                            <line x1="8" y1="11" x2="14" y2="11"/>
+                          </svg>
+                          Open in full preview window
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -739,7 +776,7 @@ export const SupportManagementPage: React.FC = () => {
                   </div>
                 ) : messages.length > 0 ? (
                   messages.map(m => {
-                    const isMe = m.sender_role === 'admin';
+                    const isMe = m.sender_role === 'admin' || (m as any).sender === 'admin' || (m as any).sender_type === 'admin' || (selectedTicket && m.sender_id && selectedTicket.user_id && m.sender_id !== selectedTicket.user_id);
                     return (
                       <div
                         key={m.id}
@@ -771,15 +808,48 @@ export const SupportManagementPage: React.FC = () => {
                         }}>
                           <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.message}</p>
                           {m.attachment && (
-                            <div style={{ marginTop: '6px', borderTop: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`, paddingTop: '4px' }}>
-                              <a
-                                href={m.attachment}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: isMe ? '#ffffff' : 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}
-                              >
-                                View Attachment
-                              </a>
+                            <div style={{ marginTop: '8px' }}>
+                              <img
+                                src={m.attachment}
+                                alt="Message attachment"
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '220px',
+                                  borderRadius: '8px',
+                                  border: isMe ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--border)',
+                                  objectFit: 'cover',
+                                  display: 'block',
+                                  cursor: 'zoom-in'
+                                }}
+                                onClick={() => setPreviewImage(m.attachment!)}
+                              />
+                              <div style={{ marginTop: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage(m.attachment!)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    color: isMe ? '#ffffff' : 'var(--primary)',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '11.5px',
+                                    opacity: isMe ? 0.95 : 1
+                                  }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <line x1="11" y1="8" x2="11" y2="14"/>
+                                    <line x1="8" y1="11" x2="14" y2="11"/>
+                                  </svg>
+                                  Open in full preview window
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -866,6 +936,82 @@ export const SupportManagementPage: React.FC = () => {
         )}
 
       </div>
+
+      {/* Fullscreen Big Window Image Preview Lightbox (No Download Triggered) */}
+      {previewImage && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '92vw',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              backgroundColor: '#0F172A',
+              borderRadius: '16px',
+              padding: '16px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Bar */}
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', color: '#FFFFFF' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#F8FAFC' }}>Attachment Full Preview</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '34px',
+                  height: '34px',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* High Resolution Image */}
+            <img
+              src={previewImage}
+              alt="Attachment Full View"
+              style={{
+                maxWidth: '88vw',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                backgroundColor: '#020617'
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

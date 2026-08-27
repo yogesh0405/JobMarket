@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,12 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  TextInput,
+  Switch,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import {
   ArrowLeft,
   Mail,
@@ -24,6 +29,12 @@ import {
   MessageSquare,
   Clock,
   CheckCircle2,
+  Search,
+  Headphones,
+  X,
+  PlusCircle,
+  ArrowUpCircle,
+  Info,
 } from 'lucide-react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../../../constants/theme';
@@ -58,6 +69,8 @@ interface HelpSupportTicketsViewProps {
   isSubmitting: boolean;
   formError: string | null;
   categoryOptions: string[];
+  ticketAttachment: { uri: string; name: string; base64?: string } | null;
+  setTicketAttachment: (att: { uri: string; name: string; base64?: string } | null) => void;
   onCreateTicket: () => void;
 
   // Tickets List Callbacks
@@ -89,6 +102,8 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   isSubmitting,
   formError,
   categoryOptions,
+  ticketAttachment,
+  setTicketAttachment,
   onCreateTicket,
 
   refreshing,
@@ -98,284 +113,519 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'RESOLVED'>('ALL');
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      {/* Top Clean Header Banner */}
-      <View style={[styles.ticketsHeaderBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
-        <View style={styles.headerTitleRowNav}>
+  const handlePickFile = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const filename = asset.fileName || `Attachment_${Date.now()}.jpg`;
+        const base64Data = asset.base64
+          ? (asset.base64.startsWith('data:') ? asset.base64 : `data:image/jpeg;base64,${asset.base64}`)
+          : undefined;
+
+        setTicketAttachment({
+          uri: asset.uri,
+          name: filename,
+          base64: base64Data,
+        });
+      }
+    } catch (_) {}
+  };
+
+  const filteredTickets = myTickets.filter((t) => {
+    if (filterStatus === 'ACTIVE' && (t.status === 'RESOLVED' || t.status === 'CLOSED')) return false;
+    if (filterStatus === 'RESOLVED' && t.status !== 'RESOLVED' && t.status !== 'CLOSED') return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (t.ticketNumber && t.ticketNumber.toLowerCase().includes(q)) ||
+      (t.subject && t.subject.toLowerCase().includes(q)) ||
+      (t.description && t.description.toLowerCase().includes(q)) ||
+      (t.category && t.category.toLowerCase().includes(q))
+    );
+  });
+
+  if (ticketTab === 'CREATE') {
+    const isUrgent = priority === 'high';
+
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        {/* Top Clean Header for Create Ticket Page (Matching Reference) */}
+        <View style={[styles.newTicketHeader, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 4) }]}>
+          <View style={styles.headerTitleLeftGroup}>
+            <TouchableOpacity
+              onPress={() => setTicketTab('MY_TICKETS')}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.headerBackBtn}
+            >
+              <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+            </TouchableOpacity>
+            <Text style={styles.newTicketHeaderTitle}>New ticket</Text>
+          </View>
+
           <TouchableOpacity
+            activeOpacity={0.75}
             onPress={onBackToMain}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={{ padding: 4 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.headerSupportBtn}
           >
-            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={styles.ticketsHeaderTitleTextDark}>Support Tickets Desk</Text>
-        </View>
-
-        <View style={styles.topBannerStatsCardWhite}>
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>{myTickets.length}</Text>
-            <Text style={styles.statLabelMutedTextDark}>Total Tickets</Text>
-          </View>
-          <View style={styles.statColDividerDark} />
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>
-              {myTickets.filter((t) => t.status !== 'RESOLVED' && t.status !== 'CLOSED').length}
-            </Text>
-            <Text style={styles.statLabelMutedTextDark}>Active Tickets</Text>
-          </View>
-          <View style={styles.statColDividerDark} />
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>&lt;2 Hrs</Text>
-            <Text style={styles.statLabelMutedTextDark}>Avg SLA</Text>
-          </View>
-        </View>
-
-        <View style={styles.whiteHeaderUnderlineTabs}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setTicketTab('CREATE')}
-            style={styles.navyHeaderTabItem}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Plus size={15} color={ticketTab === 'CREATE' ? COLORS.primary : '#64748B'} />
-              <Text
-                style={[
-                  styles.whiteHeaderTabText,
-                  ticketTab === 'CREATE' && styles.whiteHeaderTabTextActive,
-                ]}
-              >
-                Create Ticket
-              </Text>
-            </View>
-            {ticketTab === 'CREATE' ? <View style={styles.whiteHeaderActiveUnderline} /> : null}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setTicketTab('MY_TICKETS')}
-            style={styles.navyHeaderTabItem}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ticket size={15} color={ticketTab === 'MY_TICKETS' ? COLORS.primary : '#64748B'} />
-              <Text
-                style={[
-                  styles.whiteHeaderTabText,
-                  ticketTab === 'MY_TICKETS' && styles.whiteHeaderTabTextActive,
-                ]}
-              >
-                My Tickets ({myTickets.length})
-              </Text>
-            </View>
-            {ticketTab === 'MY_TICKETS' ? <View style={styles.whiteHeaderActiveUnderline} /> : null}
+            <Headphones size={20} color="#0F172A" strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
-      </View>
 
-      <KeyboardAwareScrollView
-        ref={scrollViewRef}
-        extraScrollHeight={180}
-        contentContainerStyle={styles.ticketsScrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {ticketTab === 'CREATE' ? (
-          <View style={styles.createTicketCardContainer}>
-            <View style={{ marginBottom: 2 }}>
-              <Text style={styles.formMainHeaderTitle}>Log Technical Support Ticket</Text>
-              <Text style={styles.formMainHeaderSub}>
-                Provide your details below. Our Chhatrapati Sambhajinagar desk will inspect and respond shortly.
-              </Text>
-            </View>
+        <KeyboardAwareScrollView
+          ref={scrollViewRef}
+          extraScrollHeight={180}
+          contentContainerStyle={styles.newTicketScrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {formError ? <ErrorBanner message={formError} style={{ marginBottom: 16 }} /> : null}
 
-            {formError ? <ErrorBanner message={formError} style={{ marginVertical: 2 }} /> : null}
-
-            <Text style={styles.formSectionCategoryTitle}>CONTACT INFORMATION</Text>
-
-            <Input
-              label="Full Name *"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChangeText={setFullName}
-              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
-              leftIcon={<User size={18} color="#64748B" />}
-            />
-
-            <Input
-              label="Email Address *"
-              placeholder="name@company.com"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
-              leftIcon={<Mail size={18} color="#64748B" />}
-            />
-
-            <Input
-              label="Mobile Phone Number (Optional)"
-              placeholder="10-digit mobile number"
-              keyboardType="number-pad"
-              maxLength={10}
-              value={phone}
-              onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
-              onFocus={(e) => handleFocusInput(e, scrollViewRef, 120)}
-              leftIcon={<Phone size={18} color="#64748B" />}
-            />
-
-            <View style={styles.horizontalSoftSeparatorLine} />
-
-            <Text style={styles.formSectionCategoryTitle}>INQUIRY DETAILS</Text>
-
+          {/* 1. Category */}
+          <View style={styles.formItemBlock}>
+            <Text style={styles.formItemLabel}>Category</Text>
             <SelectDropdown
-              label="Inquiry Category *"
               value={category}
               options={categoryOptions}
               onSelect={setCategory}
-              leftIcon={<Briefcase size={18} color="#64748B" />}
-            />
-
-            {/* Priority Selector */}
-            <View style={styles.prioritySelectorGroup}>
-              <Text style={styles.inputLabelText}>Ticket Priority Level</Text>
-              <View style={styles.priorityPillRow}>
-                {(['low', 'medium', 'high'] as const).map((pLevel) => {
-                  const isSelected = priority === pLevel;
-                  const labelCap = pLevel.toUpperCase();
-                  return (
-                    <TouchableOpacity
-                      key={pLevel}
-                      activeOpacity={0.8}
-                      style={[
-                        styles.priorityPillBtn,
-                        isSelected && pLevel === 'low' && styles.priorityPillLowActive,
-                        isSelected && pLevel === 'medium' && styles.priorityPillMediumActive,
-                        isSelected && pLevel === 'high' && styles.priorityPillHighActive,
-                      ]}
-                      onPress={() => setPriority(pLevel)}
-                    >
-                      <Text
-                        style={[
-                          styles.priorityPillText,
-                          isSelected && styles.priorityPillTextActive,
-                        ]}
-                      >
-                        {labelCap} PRIORITY
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <Input
-              label="Subject / Topic Title *"
-              placeholder="Brief summary of your query or technical issue"
-              value={subject}
-              onChangeText={setSubject}
-              onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
-              leftIcon={<HelpCircle size={18} color="#64748B" />}
-            />
-
-            <Input
-              label="Detailed Explanation *"
-              placeholder="Describe your request, steps to reproduce, or issue details..."
-              multiline={true}
-              value={description}
-              onChangeText={setDescription}
-              onFocus={(e) => {
-                handleFocusInput(e, scrollViewRef, 240);
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 120);
-              }}
-              leftIcon={<FileText size={18} color="#64748B" />}
-            />
-
-            <Button
-              title="Submit Support Ticket"
-              onPress={onCreateTicket}
-              loading={isSubmitting}
-              icon={<MessageSquare size={16} color="#FFFFFF" />}
-              style={{ marginTop: 8, borderRadius: 6, height: 46 }}
+              placeholder="Select a category"
+              triggerStyle={styles.categoryDropdownTrigger}
             />
           </View>
-        ) : (
-          <ScrollView
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            contentContainerStyle={{ gap: 10, paddingBottom: 24 }}
-          >
-            {myTickets.length === 0 ? (
-              <View style={styles.emptyTicketsStateCard}>
-                <Ticket size={36} color="#94A3B8" />
-                <Text style={styles.emptyTicketsTitleText}>No Support Tickets Found</Text>
-                <Text style={styles.emptyTicketsSubText}>
-                  You haven't submitted any technical tickets yet. Tap 'Create Ticket' above to log an inquiry.
-                </Text>
+
+          {/* 2. Subject */}
+          <View style={styles.formItemBlock}>
+            <Text style={styles.formItemLabel}>Subject</Text>
+            <View style={styles.simpleTextInputWrapper}>
+              <TextInput
+                style={styles.simpleTextInput}
+                placeholder="E.g, Payment not going though"
+                placeholderTextColor="#94A3B8"
+                value={subject}
+                onChangeText={setSubject}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef, 100)}
+              />
+            </View>
+          </View>
+
+          {/* 3. Describe your issue */}
+          <View style={styles.formItemBlock}>
+            <Text style={styles.formItemLabel}>Describe your issue</Text>
+            <View style={styles.simpleTextAreaWrapper}>
+              <TextInput
+                style={styles.simpleTextAreaInput}
+                placeholder="Please provide as much details as possible"
+                placeholderTextColor="#94A3B8"
+                multiline
+                numberOfLines={4}
+                value={description}
+                onChangeText={setDescription}
+                onFocus={(e) => {
+                  handleFocusInput(e, scrollViewRef, 180);
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+                }}
+              />
+            </View>
+          </View>
+
+          {/* 4. Upload file */}
+          <View style={styles.formItemBlock}>
+            <Text style={styles.formItemLabel}>Upload file</Text>
+            {ticketAttachment ? (
+              <View style={styles.attachmentSelectedCard}>
+                {ticketAttachment.uri ? (
+                  <Image source={{ uri: ticketAttachment.uri }} style={styles.attachmentThumbnail} />
+                ) : null}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.attachmentFileName} numberOfLines={1}>
+                    {ticketAttachment.name}
+                  </Text>
+                  <Text style={styles.attachmentFileSize}>Ready to upload (Max 10 MB)</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setTicketAttachment(null)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.attachmentRemoveBtn}
+                >
+                  <X size={16} color="#DC2626" />
+                </TouchableOpacity>
               </View>
             ) : (
-              myTickets.map((t) => {
-                const isResolved = t.status === 'RESOLVED' || t.status === 'CLOSED';
-                return (
-                  <TouchableOpacity
-                    key={t.id}
-                    activeOpacity={0.88}
-                    style={styles.ticketListItemCard}
-                    onPress={() => onOpenTicketChat(t)}
-                  >
-                    <View style={styles.ticketCardHeaderRow}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ticket size={14} color={COLORS.primary} />
-                        <Text style={styles.ticketCardNumberText}>{t.ticketNumber}</Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.ticketCardStatusPill,
-                          isResolved ? styles.statusPillResolved : styles.statusPillOpen,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.ticketCardStatusText,
-                            isResolved ? styles.statusTextResolved : styles.statusTextOpen,
-                          ]}
-                        >
-                          {t.status}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.ticketCardSubjectText} numberOfLines={1}>
-                      {t.subject}
-                    </Text>
-                    <Text style={styles.ticketCardDescSnippetText} numberOfLines={2}>
-                      {t.description}
-                    </Text>
-
-                    <View style={styles.ticketCardFooterRow}>
-                      <View style={styles.categoryPillTag}>
-                        <Text style={styles.categoryPillTagText}>{t.category}</Text>
-                      </View>
-
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Clock size={12} color="#94A3B8" />
-                        <Text style={styles.ticketCardMetaText}>{t.createdAt}</Text>
-                        <ChevronRight size={14} color={COLORS.primary} style={{ marginLeft: 4 }} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={handlePickFile}
+                style={styles.uploadDashedCard}
+              >
+                <PlusCircle size={22} color="#0F172A" strokeWidth={2} />
+                <Text style={styles.uploadCardMainText}>Add screenshot / file</Text>
+                <View style={styles.uploadCardSubRow}>
+                  <Info size={12} color="#94A3B8" />
+                  <Text style={styles.uploadCardSubText}>Max 10 Mb</Text>
+                </View>
+              </TouchableOpacity>
             )}
-          </ScrollView>
+          </View>
+
+          {/* 5. Mark as urgent Switch */}
+          <View style={styles.markUrgentRow}>
+            <Text style={styles.markUrgentLabel}>Mark as urgent</Text>
+            <Switch
+              value={isUrgent}
+              onValueChange={(val) => setPriority(val ? 'high' : 'medium')}
+              trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor="#E2E8F0"
+            />
+          </View>
+
+          {/* 6. Submit Ticket Pill Button (Exact Reference Match) */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onCreateTicket}
+            disabled={isSubmitting}
+            style={styles.submitTicketPillBtn}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.submitTicketPillText}>Submit Ticket</Text>
+                <ArrowUpCircle size={20} color="#FFFFFF" strokeWidth={2.2} />
+              </>
+            )}
+          </TouchableOpacity>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+      {/* Top Clean Header Banner for My Tickets List (Matching Reference Image) */}
+      <View style={[styles.ticketsHeaderBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
+        {/* Title Row with Back Button, Title, and Support Headphone Icon */}
+        <View style={styles.headerTitleRowNav}>
+          <View style={styles.headerTitleLeftGroup}>
+            <TouchableOpacity
+              onPress={onBackToMain}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.headerBackBtn}
+            >
+              <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+            </TouchableOpacity>
+            <Text style={styles.ticketsHeaderTitleTextDark}>Support Tickets Desk</Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={onBackToMain}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.headerSupportBtn}
+          >
+            <Headphones size={20} color="#0F172A" strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Conversation Bar (Matching Reference Image) */}
+        <View style={styles.searchConversationBarContainer}>
+          <View style={styles.searchConversationInputRow}>
+            <Search size={16} color="#94A3B8" strokeWidth={2} />
+            <TextInput
+              style={styles.searchConversationTextInput}
+              placeholder="Search conversation"
+              placeholderTextColor="#94A3B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X size={15} color="#94A3B8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </View>
+
+      {/* Direct Tickets List View */}
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.ticketsListScrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {filteredTickets.length === 0 ? (
+          <View style={styles.emptyTicketsStateCard}>
+            <Ticket size={36} color="#94A3B8" />
+            <Text style={styles.emptyTicketsTitleText}>
+              {searchQuery.trim() || filterStatus !== 'ALL' ? 'No Matching Tickets Found' : 'No Support Tickets Found'}
+            </Text>
+            <Text style={styles.emptyTicketsSubText}>
+              {searchQuery.trim() || filterStatus !== 'ALL'
+                ? 'Try adjusting your search keywords or reset active filters.'
+                : "You haven't submitted any technical tickets yet. Tap the '+' button below to log an inquiry."}
+            </Text>
+            {(searchQuery.trim() || filterStatus !== 'ALL') ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setFilterStatus('ALL');
+                }}
+                style={styles.clearSearchBtn}
+              >
+                <Text style={styles.clearSearchBtnText}>Reset Filters</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          filteredTickets.map((t) => {
+            const isResolved = t.status === 'RESOLVED' || t.status === 'CLOSED';
+            return (
+              <TouchableOpacity
+                key={t.id}
+                activeOpacity={0.88}
+                style={styles.ticketListItemCard}
+                onPress={() => onOpenTicketChat(t)}
+              >
+                <View style={styles.ticketCardHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ticket size={14} color={COLORS.primary} />
+                    <Text style={styles.ticketCardNumberText}>{t.ticketNumber}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.ticketCardStatusPill,
+                      isResolved ? styles.statusPillResolved : styles.statusPillOpen,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.ticketCardStatusText,
+                        isResolved ? styles.statusTextResolved : styles.statusTextOpen,
+                      ]}
+                    >
+                      {t.status}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.ticketCardSubjectText} numberOfLines={1}>
+                  {t.subject}
+                </Text>
+                <Text style={styles.ticketCardDescSnippetText} numberOfLines={2}>
+                  {t.description}
+                </Text>
+
+                <View style={styles.ticketCardFooterRow}>
+                  <View style={styles.categoryPillTag}>
+                    <Text style={styles.categoryPillTagText}>{t.category}</Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Clock size={12} color="#94A3B8" />
+                    <Text style={styles.ticketCardMetaText}>{t.createdAt}</Text>
+                    <ChevronRight size={14} color={COLORS.primary} style={{ marginLeft: 4 }} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
-      </KeyboardAwareScrollView>
+      </ScrollView>
+
+      {/* Floating Action Button (FAB) for Creating Ticket */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => setTicketTab('CREATE')}
+        style={[
+          styles.createTicketFab,
+          { bottom: Math.max(insets.bottom + 20, 24) }
+        ]}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Plus size={26} color="#FFFFFF" strokeWidth={2.6} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  /* New Ticket Dedicated Screen Styles (100% Matching Reference Image) */
+  newTicketHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  newTicketHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  newTicketScrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
+    gap: 16,
+  },
+  formItemBlock: {
+    gap: 8,
+  },
+  formItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    letterSpacing: -0.1,
+  },
+  categoryDropdownTrigger: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    minHeight: 48,
+  },
+  simpleTextInputWrapper: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  simpleTextInput: {
+    fontSize: 14,
+    color: '#0F172A',
+    paddingVertical: 10,
+  },
+  simpleTextAreaWrapper: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 110,
+  },
+  simpleTextAreaInput: {
+    fontSize: 14,
+    color: '#0F172A',
+    minHeight: 90,
+    textAlignVertical: 'top',
+    paddingTop: 2,
+  },
+  uploadDashedCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    paddingVertical: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  uploadCardMainText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginTop: 4,
+  },
+  uploadCardSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  uploadCardSubText: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+  },
+  attachmentSelectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+    gap: 12,
+  },
+  attachmentThumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+  },
+  attachmentFileName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  attachmentFileSize: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  attachmentRemoveBtn: {
+    padding: 6,
+    borderRadius: 14,
+    backgroundColor: '#FEE2E2',
+  },
+  markUrgentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  markUrgentLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  submitTicketPillBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 26,
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitTicketPillText: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  ticketsListScrollContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 90,
+    gap: 10,
+  },
   ticketsHeaderBannerWhite: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
@@ -386,13 +636,68 @@ const styles = StyleSheet.create({
   headerTitleRowNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  headerTitleLeftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerBackBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   ticketsHeaderTitleTextDark: {
     fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  headerSupportBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Search Conversation Bar (Exact Reference Match) */
+  searchConversationBarContainer: {
+    marginBottom: 12,
+  },
+  searchConversationInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9', // Soft light gray pill from reference
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 44,
+    gap: 10,
+  },
+  searchConversationTextInput: {
+    flex: 1,
+    fontSize: 13.5,
+    color: '#0F172A',
+    paddingVertical: 0,
+    fontWeight: '400',
+  },
+  clearSearchBtn: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignSelf: 'center',
+  },
+  clearSearchBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   topBannerStatsCardWhite: {
     flexDirection: 'row',
@@ -622,5 +927,20 @@ const styles = StyleSheet.create({
   ticketCardMetaText: {
     fontSize: 11,
     color: '#94A3B8',
+  },
+  createTicketFab: {
+    position: 'absolute',
+    right: 20,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

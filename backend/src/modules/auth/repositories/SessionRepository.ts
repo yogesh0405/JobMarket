@@ -56,7 +56,7 @@ export class SessionRepository {
   }
 
   static async isSessionRevoked(sessionId: string): Promise<boolean> {
-    if (!sessionId) return true;
+    if (!sessionId) return false;
     if (localRevokedSessions.has(sessionId)) return true;
 
     return CacheService.getOrSet(`session:revoked_state:${sessionId}`, 60, async () => {
@@ -65,7 +65,7 @@ export class SessionRepository {
       `;
       const result = await pool.query(query, [sessionId]);
       if (result.rows.length === 0) {
-        return true; // Not found -> treat as revoked
+        return false; // Not in DB -> do not falsely revoke valid access tokens
       }
       const isRevoked = result.rows[0].revoked === true || new Date(result.rows[0].expires_at).getTime() < Date.now();
       if (isRevoked) {

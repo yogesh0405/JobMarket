@@ -390,7 +390,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* 1. Full-Width Edge-to-Edge Blue Header Banner with Tabs */}
       <CandidateJobDetailHeader

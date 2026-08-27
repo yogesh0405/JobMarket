@@ -13,6 +13,9 @@ import { Advertisement } from '../../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const DEFAULT_BANNER_IMAGE =
+  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+
 interface CandidateHomePromoSliderProps {
   promoBanners: Advertisement[];
   onBannerPress: (banner?: Advertisement) => void;
@@ -64,41 +67,43 @@ export const CandidateHomePromoSlider: React.FC<CandidateHomePromoSliderProps> =
             setActivePromoIndex(pageNum);
           }
         }}
-        renderItem={({ item }) => (
-          <View style={[styles.promoSliderCard, { width: SCREEN_WIDTH - 32 }]}>
-            <Image
-              source={{
-                uri:
-                  item.banner_image ||
-                  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
-              }}
-              style={styles.promoImage}
-            />
-            <View style={styles.promoOverlay}>
-              <View style={styles.promoBadgeOrange}>
-                <Text style={styles.promoBadgeOrangeText}>
-                  {(item.advertisement_type || 'PROMOTIONAL').replace('_', ' ')}
-                </Text>
+        renderItem={({ item }) => {
+          const rawUri = item.banner_image?.trim();
+          const validUri = rawUri && rawUri.length > 5 ? rawUri : DEFAULT_BANNER_IMAGE;
+
+          return (
+            <View style={[styles.promoSliderCard, { width: SCREEN_WIDTH - 32 }]}>
+              <Image
+                source={{ uri: validUri }}
+                style={styles.promoImage}
+                resizeMode="cover"
+              />
+              <View style={styles.promoOverlay}>
+                <View style={styles.promoBadgeOrange}>
+                  <Text style={styles.promoBadgeOrangeText}>
+                    {(item.advertisement_type || 'PROMOTIONAL').replace('_', ' ')}
+                  </Text>
+                </View>
+                <Text style={styles.promoTitle}>{item.title}</Text>
+                {item.description ? (
+                  <Text style={styles.promoDesc} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                ) : null}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.promoActionBtnBlue}
+                  onPress={() => onBannerPress(item)}
+                >
+                  <Text style={styles.promoActionBtnText}>
+                    {item.button_text || 'Apply Now'}
+                  </Text>
+                  <ArrowRight size={14} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
-              <Text style={styles.promoTitle}>{item.title}</Text>
-              {item.description ? (
-                <Text style={styles.promoDesc} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              ) : null}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.promoActionBtnBlue}
-                onPress={() => onBannerPress(item)}
-              >
-                <Text style={styles.promoActionBtnText}>
-                  {item.button_text || 'Apply Now'}
-                </Text>
-                <ArrowRight size={14} color="#FFFFFF" />
-              </TouchableOpacity>
             </View>
-          </View>
-        )}
+          );
+        }}
       />
 
       {promoBanners.length > 1 ? (

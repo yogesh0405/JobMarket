@@ -1,12 +1,17 @@
 export interface SupportTicket {
   id: string;
   ticketNumber: string;
+  userId?: string;
+  fullName?: string;
   category: string;
   subject: string;
   description: string;
+  attachment?: string;
   priority: 'low' | 'medium' | 'high';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   createdAt: string;
+  rawCreatedAt?: string;
+  updatedAt?: string;
 }
 
 export interface TicketMessage {

@@ -10,11 +10,8 @@ import {
   Smartphone,
   Laptop,
   LogOut,
-  MapPin,
-  Clock,
-  History,
 } from 'lucide-react-native';
-import { COLORS, RADIUS } from '../../../constants/theme';
+import { COLORS } from '../../../constants/theme';
 
 interface SecuritySessionsSectionProps {
   sessions: any[];
@@ -32,32 +29,32 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
   isTerminatingOtherSessions = false,
 }) => {
   return (
-    <View style={styles.sectionContainer}>
-      {/* Header Block matching Web App */}
+    <View style={styles.container}>
+      {/* Header matching Reference Image */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <View style={styles.titleRow}>
-            <History size={18} color="#2563EB" />
-            <Text style={styles.sectionTitle}>Login Sessions</Text>
-          </View>
+          <Text style={styles.title}>Active sessions</Text>
+          <Text style={styles.subtitle}>
+            Devices that are currently signed in to your account
+          </Text>
         </View>
 
         {sessions.length > 1 && onTerminateOtherSessions ? (
           <TouchableOpacity
-            style={styles.terminateAllButton}
+            style={styles.logoutOthersBtn}
             activeOpacity={0.7}
             disabled={isTerminatingOtherSessions}
             onPress={onTerminateOtherSessions}
           >
-            <LogOut size={10} color="#DC2626" />
-            <Text style={styles.terminateAllText}>
-              {isTerminatingOtherSessions ? 'Terminating...' : 'Logout Others'}
+            <LogOut size={12} color="#DC2626" strokeWidth={2} />
+            <Text style={styles.logoutOthersText}>
+              {isTerminatingOtherSessions ? 'Logging out...' : 'Log out others'}
             </Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
-      {/* Loading Box */}
+      {/* Sessions List */}
       {sessionsLoading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="small" color={COLORS.primary} />
@@ -65,11 +62,10 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
         </View>
       ) : sessions.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>No other active devices found.</Text>
+          <Text style={styles.emptyText}>No active devices found.</Text>
         </View>
       ) : (
-        /* Sessions List Cards matching Web App styling */
-        <View style={styles.sessionsList}>
+        <View style={styles.list}>
           {sessions.map((sess, idx) => {
             const isCurrent = Boolean(sess.isCurrent || sess.is_current);
             const dType = (sess?.deviceType || sess?.device_type || '').toLowerCase();
@@ -80,86 +76,61 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
               osStr.includes('android') ||
               osStr.includes('ios');
 
-            const DeviceIconComp = isMobile ? Smartphone : Laptop;
-            const deviceName = sess.deviceName || sess.device_name || (isMobile ? 'JobMarket Android App' : 'Google Chrome on macOS');
-            const browserName = sess.browser || (isMobile ? 'JobMarket Android App' : 'Google Chrome');
+            const DeviceIcon = isMobile ? Smartphone : Laptop;
+            const rawName = sess.deviceName || sess.device_name || (isMobile ? 'Mobile App' : 'Desktop Browser');
+            const cleanName = rawName.replace(/\s*\([^)]*JobMarket[^)]*\)/gi, '').trim() || rawName;
+
             const locationStr = sess.location || 'Maharashtra, India';
-            const lastActiveTime = isCurrent
+            const activeTimeStr = isCurrent
               ? 'Active now'
               : sess.lastUsedAt
-              ? new Date(sess.lastUsedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+              ? new Date(sess.lastUsedAt).toLocaleDateString('en-IN', {
+                  month: 'short',
+                  day: 'numeric',
+                })
               : 'Recently active';
 
             return (
-              <View
-                key={sess.id || idx}
-                style={[
-                  styles.sessionCard,
-                  isCurrent ? styles.sessionCardCurrent : styles.sessionCardDefault,
-                ]}
-              >
-                {/* Top Row: Icon + Device Info + Revoke Action */}
-                <View style={styles.cardTopRow}>
-                  <View style={styles.cardLeftBlock}>
-                    <View
-                      style={[
-                        styles.deviceIconContainer,
-                        isCurrent ? styles.deviceIconCurrent : styles.deviceIconDefault,
-                      ]}
-                    >
-                      <DeviceIconComp
-                        size={15}
-                        color={isCurrent ? '#2563EB' : '#64748B'}
-                      />
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.deviceNameText} numberOfLines={1}>
-                        {deviceName}
-                      </Text>
-                      <Text style={styles.browserSubtitleText} numberOfLines={1}>
-                        {browserName}
-                      </Text>
-                    </View>
+              <View key={sess.id || idx}>
+                <View style={styles.sessionItem}>
+                  {/* Left Icon Container matching Reference */}
+                  <View style={styles.iconBox}>
+                    <DeviceIcon size={16} color="#475569" strokeWidth={1.8} />
                   </View>
 
+                  {/* Info Block */}
+                  <View style={styles.infoCol}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.deviceName} numberOfLines={1}>
+                        {cleanName}
+                      </Text>
+                      {isCurrent ? (
+                        <View style={styles.currentBadge}>
+                          <Text style={styles.currentBadgeText}>Current</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    <Text style={styles.metaText} numberOfLines={1}>
+                      {locationStr} · {activeTimeStr}
+                    </Text>
+                  </View>
+
+                  {/* Right Revoke Action */}
                   {!isCurrent ? (
                     <TouchableOpacity
-                      style={styles.logoutButton}
+                      style={styles.revokeBtn}
                       activeOpacity={0.7}
-                      onPress={() => onRevokeSession(sess.id, deviceName)}
+                      onPress={() => onRevokeSession(sess.id, cleanName)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <LogOut size={10} color="#DC2626" />
-                      <Text style={styles.logoutButtonText}>Logout</Text>
+                      <LogOut size={13} color="#EF4444" strokeWidth={1.8} />
+                      <Text style={styles.revokeBtnText}>Logout</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
 
-                {/* Bottom Row: Metadata (Location & Active State matching Web App) */}
-                <View style={styles.cardBottomRow}>
-                  <View style={styles.metaItem}>
-                    <MapPin size={13} color="#64748B" />
-                    <Text style={styles.metaText} numberOfLines={1}>
-                      {locationStr}
-                    </Text>
-                  </View>
-
-                  <View style={styles.metaItem}>
-                    <Clock
-                      size={13}
-                      color={isCurrent ? '#16A34A' : '#64748B'}
-                    />
-                    <Text
-                      style={[
-                        styles.metaText,
-                        isCurrent ? styles.activeStatusText : styles.inactiveStatusText,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isCurrent ? '● Active now' : `Last active: ${lastActiveTime}`}
-                    </Text>
-                  </View>
-                </View>
+                {idx < sessions.length - 1 ? <View style={styles.itemDivider} /> : null}
               </View>
             );
           })}
@@ -170,54 +141,44 @@ export const SecuritySessionsSection: React.FC<SecuritySessionsSectionProps> = (
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
+  container: {
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 14,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 14,
-    gap: 8,
+    marginBottom: 8,
+    gap: 12,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 14.5,
-    fontWeight: '800',
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#0F172A',
+    lineHeight: 19,
   },
-  sectionSub: {
+  subtitle: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
-    lineHeight: 17,
+    lineHeight: 16,
   },
-  terminateAllButton: {
+  logoutOthersBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
   },
-  terminateAllText: {
-    fontSize: 10,
-    fontWeight: '700',
+  logoutOthersText: {
+    fontSize: 11,
+    fontWeight: '600',
     color: '#DC2626',
   },
   loadingBox: {
-    paddingVertical: 18,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -228,108 +189,80 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   emptyBox: {
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
   },
-  sessionsList: {
-    gap: 10,
+  list: {
+    gap: 2,
   },
-  sessionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    padding: 10,
-    gap: 6,
-  },
-  sessionCardCurrent: {
-    borderWidth: 1.5,
-    borderColor: '#2563EB',
-  },
-  sessionCardDefault: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  cardTopRow: {
+  sessionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    paddingVertical: 10,
+    gap: 12,
   },
-  cardLeftBlock: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  deviceIconContainer: {
-    width: 30,
-    height: 30,
+  iconBox: {
+    width: 32,
+    height: 32,
     borderRadius: 6,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deviceIconCurrent: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+  infoCol: {
+    flex: 1,
+    gap: 2,
   },
-  deviceIconDefault: {
-    backgroundColor: '#F8FAFC',
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  deviceNameText: {
-    fontSize: 12.5,
-    fontWeight: '700',
+  deviceName: {
+    fontSize: 13.5,
+    fontWeight: '600',
     color: '#0F172A',
+    flexShrink: 1,
   },
-  browserSubtitleText: {
-    fontSize: 11,
+  currentBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  currentBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  metaText: {
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 0.5,
+    lineHeight: 16,
   },
-  logoutButton: {
+  revokeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    paddingHorizontal: 7,
     paddingVertical: 3,
-    paddingHorizontal: 6,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
     borderRadius: 4,
+    backgroundColor: '#FEF2F2',
   },
-  logoutButtonText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#DC2626',
+  revokeBtnText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#EF4444',
   },
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-    paddingTop: 5,
-    borderTopWidth: 1,
-    borderTopColor: '#F8FAFC',
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  activeStatusText: {
-    color: '#16A34A',
-    fontWeight: '700',
-  },
-  inactiveStatusText: {
-    color: '#64748B',
-    fontWeight: '500',
+  itemDivider: {
+    height: 1,
+    backgroundColor: '#F8FAFC',
   },
 });

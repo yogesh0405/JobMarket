@@ -37,6 +37,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
 }) => {
   return (
     <View style={styles.modalSectionBox}>
+      {/* 1. Quick Action Bar */}
       <View style={styles.contactActionBarInlineRow}>
         <TouchableOpacity
           style={[styles.contactPillBtn, { borderColor: '#CBD5E1', flex: 1 }]}
@@ -99,22 +100,24 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         </TouchableOpacity>
       </View>
 
+      {/* 2. Candidate Bio */}
       {selectedApplicant?.user?.bio ? (
-        <View style={{ marginTop: 12, marginBottom: 10 }}>
+        <View style={{ marginTop: 14 }}>
           <Text style={styles.sectionHeadingTitle}>ABOUT CANDIDATE</Text>
           <Text style={styles.infoSectionBody}>{safeValue(selectedApplicant?.user?.bio)}</Text>
         </View>
       ) : null}
 
-      <Text style={[styles.sectionHeadingTitle, { marginTop: 12 }]}>WORK & AVAILABILITY</Text>
+      <View style={styles.sectionDivider} />
+
+      {/* 3. Work & Availability (Minimal Unboxed Icons) */}
+      <Text style={styles.sectionHeadingTitle}>WORK & AVAILABILITY</Text>
 
       <View style={styles.specRowsContainer}>
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <MapPin size={15} color="#0284C7" />
-          </View>
+          <MapPin size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>MIDC Location Address</Text>
+            <Text style={styles.specGridLabel}>Location Address</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.location)}</Text>
           </View>
         </View>
@@ -122,9 +125,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Briefcase size={15} color={COLORS.primary} />
-          </View>
+          <Briefcase size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Work Experience</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.experience)}</Text>
@@ -134,9 +135,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Award size={15} color={COLORS.primary} />
-          </View>
+          <Award size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Education & Trade</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.education)}</Text>
@@ -146,9 +145,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <UserCheck size={15} color="#D97706" />
-          </View>
+          <UserCheck size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Preferred Shift</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.preferred_shift)}</Text>
@@ -158,9 +155,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Mail size={15} color="#DC2626" />
-          </View>
+          <Mail size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Email Address</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.email)}</Text>
@@ -170,9 +165,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Phone size={15} color={COLORS.primary} />
-          </View>
+          <Phone size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Phone Number</Text>
             <Text style={styles.specGridValue}>{safeValue(selectedApplicant?.user?.phone)}</Text>
@@ -182,9 +175,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <ShieldCheck size={15} color="#16A34A" />
-          </View>
+          <ShieldCheck size={16} color="#16A34A" strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Aadhaar Verification</Text>
             <Text style={styles.specGridValue}>
@@ -196,9 +187,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Zap size={15} color={COLORS.primary} />
-          </View>
+          <Zap size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Bus & Hostel Facility</Text>
             <Text style={styles.specGridValue}>
@@ -210,9 +199,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         <View style={styles.rowDivider} />
 
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Clock size={15} color="#64748B" />
-          </View>
+          <Clock size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Applied On</Text>
             <Text style={styles.specGridValue}>
@@ -222,8 +209,10 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
         </View>
       </View>
 
+      {/* 4. Technical Skills */}
       {selectedApplicant?.user?.skills && selectedApplicant.user.skills.length > 0 ? (
-        <View style={{ marginTop: 12 }}>
+        <>
+          <View style={styles.sectionDivider} />
           <Text style={styles.sectionHeadingTitle}>TECHNICAL SKILLS</Text>
           <View style={styles.skillsWrapRow}>
             {selectedApplicant.user.skills.map((skill, i) => (
@@ -233,7 +222,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
               </View>
             ))}
           </View>
-        </View>
+        </>
       ) : null}
     </View>
   );
@@ -242,12 +231,15 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
 const styles = StyleSheet.create({
   modalSectionBox: {
     padding: 16,
+    paddingBottom: 60,
+    marginBottom: 20,
+    backgroundColor: '#F8FAFC',
   },
   contactActionBarInlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   contactPillBtn: {
     flexDirection: 'row',
@@ -255,49 +247,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
-    borderRadius: 6,
-    paddingVertical: 8,
+    borderRadius: 8,
+    paddingVertical: 9,
     backgroundColor: '#FFFFFF',
   },
   contactPillText: {
     fontSize: 12,
     fontWeight: '700',
   },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 14,
+  },
   sectionHeadingTitle: {
     fontSize: 11,
     fontWeight: '800',
     color: '#94A3B8',
     letterSpacing: 0.8,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   infoSectionBody: {
     fontSize: 13,
     color: '#334155',
-    lineHeight: 18,
-  },
-  rowDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
+    lineHeight: 20,
   },
   specRowsContainer: {
-    gap: 8,
-    marginTop: 6,
+    gap: 4,
   },
   specRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 4,
-  },
-  specIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingVertical: 6,
   },
   specTextCol: {
     flex: 1,
@@ -308,16 +290,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   specGridValue: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 1,
   },
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
   skillsWrapRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 2,
   },
   borderlessSkillTag: {
     flexDirection: 'row',
@@ -325,8 +311,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   skillDot: {
     width: 6,

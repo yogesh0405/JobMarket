@@ -21,7 +21,7 @@ export interface MobileNavigationTarget {
 export const resolveMobileNotificationRoute = (
   item: MobileNotificationPayload,
   userRole: string = 'candidate'
-): MobileNavigationTarget => {
+): MobileNavigationTarget | null => {
   const role = userRole.toLowerCase();
   const type = (item.type || '').toUpperCase();
   const title = (item.title || '').toUpperCase();
@@ -102,9 +102,7 @@ export const resolveMobileNotificationRoute = (
 
     // Advertisements / Banners Link
     if (lowerLink.includes('/banners') || lowerLink.includes('/advertisements') || lowerLink.includes('tab=banners')) {
-      return role === 'employer'
-        ? { screen: 'EmployerBanners' }
-        : { screen: 'CandidateMain', params: { screen: 'CandidateJobsTab' } };
+      return role === 'employer' ? { screen: 'EmployerBanners' } : null;
     }
 
     // Specific Job Detail Link (/job/123)
@@ -139,7 +137,7 @@ export const resolveMobileNotificationRoute = (
     }
   }
 
-  // 3. Candidate & Recruiter Interviews / Scheduled Meetings / Passes
+  // 3. Candidate & Recruiter Interviews / Scheduled Meetings
   if (
     type === 'JOB_INTERVIEW' ||
     type === 'INTERVIEW_SCHEDULED' ||
@@ -147,8 +145,7 @@ export const resolveMobileNotificationRoute = (
     type === 'INTERVIEW_CANCELLED' ||
     type === 'INTERVIEW_PASSED' ||
     combined.includes('INTERVIEW') ||
-    combined.includes('WALK-IN') ||
-    combined.includes('SHORTLIST')
+    combined.includes('WALK-IN')
   ) {
     if (role === 'employer') {
       if (extractedJobId) {
@@ -162,7 +159,6 @@ export const resolveMobileNotificationRoute = (
         params: { screen: 'ApplicantsTab' },
       };
     }
-    // Candidate -> Navigate directly to MyInterviews pass screen
     return { screen: 'MyInterviews' };
   }
 
@@ -174,6 +170,8 @@ export const resolveMobileNotificationRoute = (
     type === 'APPLICATION_SUBMITTED' ||
     type === 'APPLICATION_CONFIRMATION' ||
     type === 'APPLICATION_STATUS_UPDATED' ||
+    type === 'SHORTLISTED' ||
+    combined.includes('SHORTLIST') ||
     combined.includes('APPLIED') ||
     combined.includes('APPLICATION')
   ) {
@@ -189,111 +187,84 @@ export const resolveMobileNotificationRoute = (
         params: { screen: 'ApplicantsTab' },
       };
     }
-    // Candidate -> Navigate directly to CandidateAppliedTab in CandidateMain
     return {
       screen: 'CandidateMain',
       params: { screen: 'CandidateAppliedTab' },
     };
   }
 
-  // 5. Job Management & Approvals / Rejections / Postings
-  if (
-    type === 'JOB_POSTED' ||
-    type === 'JOB_APPROVAL' ||
-    type === 'JOB_APPROVED' ||
-    type === 'JOB_REJECTED' ||
-    type === 'JOB_STATUS' ||
-    type === 'JOB_UNPUBLISHED' ||
-    type === 'JOB_EXPIRED' ||
-    combined.includes('APPROVAL') ||
-    combined.includes('APPROVED') ||
-    combined.includes('REJECTED') ||
-    combined.includes('VACANCY') ||
-    combined.includes('POSTED')
-  ) {
+  // 5. Specific Job Reference or Job Updates
+  if (extractedJobId) {
     if (role === 'employer') {
       return {
-        screen: 'EmployerMain',
-        params: { screen: 'ManageJobsTab' },
-      };
-    }
-    if (extractedJobId) {
-      return {
-        screen: 'CandidateJobDetail',
-        params: { jobId: extractedJobId, id: extractedJobId },
+        screen: 'JobApplicants',
+        params: { jobId: extractedJobId, jobTitle: item.title || 'Applicants' },
       };
     }
     return {
-      screen: 'CandidateMain',
-      params: { screen: 'CandidateJobsTab' },
+      screen: 'CandidateJobDetail',
+      params: { jobId: extractedJobId, id: extractedJobId },
     };
   }
 
-  // 6. Banner Ads & Marketing Promotions
+  // 6. Job Management for Employers
   if (
-    type === 'AD_APPROVED' ||
-    type === 'AD_REJECTED' ||
-    type === 'ADVERTISEMENT' ||
-    combined.includes('BANNER') ||
-    combined.includes('PROMOT') ||
-    combined.includes('SPONSORED')
+    role === 'employer' &&
+    (type === 'JOB_POSTED' ||
+      type === 'JOB_APPROVAL' ||
+      type === 'JOB_APPROVED' ||
+      type === 'JOB_REJECTED' ||
+      type === 'JOB_STATUS' ||
+      type === 'JOB_UNPUBLISHED' ||
+      type === 'JOB_EXPIRED' ||
+      combined.includes('JOB APPROVED') ||
+      combined.includes('JOB REJECTED') ||
+      combined.includes('JOB POSTED'))
   ) {
-    if (role === 'employer') {
-      return { screen: 'EmployerBanners' };
-    }
+    return {
+      screen: 'EmployerMain',
+      params: { screen: 'ManageJobsTab' },
+    };
+  }
+
+  // 7. Banner Ads & Marketing (for Employer)
+  if (
+    role === 'employer' &&
+    (type === 'AD_APPROVED' ||
+      type === 'AD_REJECTED' ||
+      type === 'ADVERTISEMENT' ||
+      combined.includes('BANNER') ||
+      combined.includes('ADVERTISEMENT'))
+  ) {
+    return { screen: 'EmployerBanners' };
+  }
+
+  // 8. Saved Jobs
+  if (
+    role === 'candidate' &&
+    (type === 'SAVED_JOB' || type === 'BOOKMARK' || combined.includes('SAVED JOB') || combined.includes('BOOKMARK'))
+  ) {
     return {
       screen: 'CandidateMain',
-      params: { screen: 'CandidateJobsTab' },
+      params: { screen: 'CandidateSavedTab' },
     };
   }
 
-  // 7. Saved / Bookmarked Jobs & Job Alerts
-  if (
-    type === 'SAVED_JOB' ||
-    type === 'BOOKMARK' ||
-    type === 'JOB_ALERT' ||
-    type === 'NEW_MATCH' ||
-    combined.includes('SAVED') ||
-    combined.includes('BOOKMARK')
-  ) {
-    if (role === 'candidate') {
-      return {
-        screen: 'CandidateMain',
-        params: { screen: 'CandidateSavedTab' },
-      };
-    }
+  // 9. Profile & Resume
+  if (type.includes('RESUME') || combined.includes('RESUME') || combined.includes('BIO-DATA')) {
+    return role === 'employer' ? { screen: 'CompanyProfile' } : { screen: 'CandidateResume' };
   }
 
-  // 8. Profile, Resume & Verification
   if (
     type.includes('PROFILE') ||
-    type.includes('RESUME') ||
-    combined.includes('RESUME') ||
-    combined.includes('BIO-DATA') ||
     combined.includes('VERIFICATION') ||
     combined.includes('AADHAAR') ||
     combined.includes('GST')
   ) {
-    if (role === 'employer') {
-      return { screen: 'CompanyProfile' };
-    }
-    if (type.includes('RESUME') || combined.includes('RESUME')) {
-      return { screen: 'CandidateResume' };
-    }
-    return { screen: 'CandidateProfile' };
+    return role === 'employer' ? { screen: 'CompanyProfile' } : { screen: 'CandidateProfile' };
   }
 
-  // 9. Candidates / Talent Search (for Employer)
-  if (combined.includes('CANDIDATE') || combined.includes('WORKER') || combined.includes('TALENT')) {
-    if (role === 'employer') {
-      return {
-        screen: 'EmployerMain',
-        params: { screen: 'CandidatesTab' },
-      };
-    }
-  }
-
-  // 10. Security & Credentials Settings
+  // 10. Security & Credentials
   if (
     type === 'SECURITY' ||
     type === 'SECURITY_ALERT' ||
@@ -310,12 +281,6 @@ export const resolveMobileNotificationRoute = (
     return { screen: 'HelpSupport' };
   }
 
-  // 12. Default fallback based on role
-  if (role === 'employer') {
-    return { screen: 'EmployerMain', params: { screen: 'ManageJobsTab' } };
-  }
-  return {
-    screen: 'CandidateMain',
-    params: { screen: 'CandidateJobsTab' },
-  };
+  // 12. Non-actionable or informational notification -> No unnecessary navigation
+  return null;
 };

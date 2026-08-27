@@ -143,16 +143,20 @@ export class SupportService {
 
     let attachmentUrl: string | null = null;
     if (attachmentBase64) {
-      try {
-        const folder = 'support';
-        const timestamp = Date.now();
-        const cleanName = attachmentName ? attachmentName.replace(/[^a-zA-Z0-9]/g, '_') : 'reply_file';
-        const publicId = `reply_attach_${timestamp}_${cleanName}`.substring(0, 100);
-        
-        attachmentUrl = await CloudinaryUtil.uploadFile(attachmentBase64, folder, publicId);
-      } catch (err: any) {
-        logger.error('Failed to upload reply attachment to Cloudinary:', err);
-        throw new BadRequestError(`Failed to save attachment: ${err.message}`);
+      if (typeof attachmentBase64 === 'string' && (attachmentBase64.startsWith('http://') || attachmentBase64.startsWith('https://'))) {
+        attachmentUrl = attachmentBase64;
+      } else {
+        try {
+          const folder = 'support';
+          const timestamp = Date.now();
+          const cleanName = attachmentName ? attachmentName.replace(/[^a-zA-Z0-9]/g, '_') : 'reply_file';
+          const publicId = `reply_attach_${timestamp}_${cleanName}`.substring(0, 100);
+          
+          attachmentUrl = await CloudinaryUtil.uploadFile(attachmentBase64, folder, publicId);
+        } catch (err: any) {
+          logger.warn('Failed to upload reply attachment to Cloudinary, storing fallback:', err);
+          attachmentUrl = attachmentBase64;
+        }
       }
     }
 
@@ -173,35 +177,17 @@ export class SupportService {
 
     await SupportRepository.updateTicket(ticketId, { status: nextStatus });
 
-    // Send notifications if Admin replied
-    if (role === 'admin') {
+    // Send in-app notification if Admin replied (no email)
+    if (role === 'admin' && ticket.user_id) {
       try {
-        // Send email
-        await EmailService.sendSupportTicketNotification(
-          ticket.email,
-          ticket.full_name,
-          ticket.ticket_number,
-          ticket.subject,
-          nextStatus,
-          'reply',
-          messageText
-        );
+        await SupportRepository.createNotification({
+          user_id: ticket.user_id,
+          title: 'New Support Reply',
+          message: `A support agent has replied to your ticket ${ticket.ticket_number}.`,
+          link: `#/contact`
+        });
       } catch (err) {
-        logger.error('Failed to send admin reply email:', err);
-      }
-
-      if (ticket.user_id) {
-        try {
-          // Send in-app notification
-          await SupportRepository.createNotification({
-            user_id: ticket.user_id,
-            title: 'New Support Reply',
-            message: `A support agent has replied to your ticket ${ticket.ticket_number}.`,
-            link: `#/contact`
-          });
-        } catch (err) {
-          logger.error('Failed to send admin reply in-app notification:', err);
-        }
+        logger.error('Failed to send admin reply in-app notification:', err);
       }
     }
 

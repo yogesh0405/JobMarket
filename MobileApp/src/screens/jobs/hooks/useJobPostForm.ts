@@ -100,6 +100,17 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [resolvingMap, setResolvingMap] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttonText?: string;
+    onButtonPress?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -601,16 +612,16 @@ export const useJobPostForm = (navigation: any, route: any) => {
         setLoading(false);
         if (res.success) {
           isSubmittedRef.current = true;
-          Alert.alert(
-            'Job Listing Updated',
-            `Your updated job posting for "${finalTitle}" has been submitted for admin approval. It will go live once approved by the JobMarket team.`,
-            [
-              {
-                text: 'Manage Jobs',
-                onPress: navigateToManageJobs,
-              },
-            ]
-          );
+          setSuccessModalConfig({
+            visible: true,
+            title: 'Job Updated Successfully !',
+            message: `Your updated job post "${finalTitle}" has been submitted for admin review and approval. It will go live once approved by the JobMarket team.`,
+            buttonText: 'Manage Jobs',
+            onButtonPress: () => {
+              setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+              navigateToManageJobs();
+            },
+          });
         } else {
           setError(res.message || 'Failed to update job posting');
         }
@@ -620,16 +631,16 @@ export const useJobPostForm = (navigation: any, route: any) => {
         if (res.success) {
           isSubmittedRef.current = true;
           resetForm();
-          Alert.alert(
-            'Job Submitted for Admin Approval',
-            `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
-            [
-              {
-                text: 'Manage Jobs',
-                onPress: navigateToManageJobs,
-              },
-            ]
-          );
+          setSuccessModalConfig({
+            visible: true,
+            title: 'Job Submitted for Approval !',
+            message: `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
+            buttonText: 'Manage Jobs',
+            onButtonPress: () => {
+              setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+              navigateToManageJobs();
+            },
+          });
         } else {
           setError(res.message || 'Failed to create job posting');
         }
@@ -767,5 +778,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setError,
     handleSubmitJob,
     isSubmittedRef,
+    successModalConfig,
+    setSuccessModalConfig,
   };
 };

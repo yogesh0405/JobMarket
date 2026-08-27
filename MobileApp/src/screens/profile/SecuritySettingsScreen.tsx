@@ -15,6 +15,7 @@ import {
   Lock,
   KeyRound,
   ChevronRight,
+  ShieldCheck,
   ShieldAlert,
   CheckCircle2,
   LogOut,
@@ -22,6 +23,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
+import { saveTokens } from '../../utils/secureStorage';
 import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
@@ -35,7 +37,7 @@ interface Props {
 
 export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { user, refreshUser, login } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -87,6 +89,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     visible: boolean;
     title: string;
     message?: string;
+    buttonText?: string;
+    onButtonPress?: () => void;
   }>({
     visible: false,
     title: '',
@@ -246,7 +250,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
     setPasswordLoading(true);
     try {
-      const res = await authApi.changePassword({ currentPassword, newPassword });
+      const res: any = await authApi.changePassword({ currentPassword, newPassword });
       setPasswordLoading(false);
       if (res.success) {
         setCurrentPassword('');
@@ -256,7 +260,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         setSuccessModalConfig({
           visible: true,
           title: 'Password Updated Successfully !',
-          message: 'Your account password has been updated securely.',
+          message: 'Your account password has been updated securely. Please log in with your new password.',
+          buttonText: 'Log In',
+          onButtonPress: async () => {
+            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+            await logout();
+          },
         });
       } else {
         setPasswordError(res.message || res.error || 'Failed to update password');
@@ -288,22 +297,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
     setOtpLoading(true);
     try {
-      const res = await authApi.resetPassword({
+      const res: any = await authApi.resetPassword({
         email: resetEmail.trim(),
         otpCode: otpCode.trim(),
         newPassword: otpNewPass,
       });
       if (res.success) {
-        // Automatically renew authenticated session with the new password
-        try {
-          await login({
-            email: resetEmail.trim(),
-            password: otpNewPass,
-          });
-        } catch (loginErr) {
-          console.warn('Silent session renewal after password reset:', loginErr);
-        }
-
         setIsOtpModalOpen(false);
         setOtpCode('');
         setOtpNewPass('');
@@ -311,7 +310,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         setSuccessModalConfig({
           visible: true,
           title: 'Password Reset Successfully !',
-          message: 'Your account password has been updated. You remain signed in.',
+          message: 'Your account password has been reset. Please log in with your new password.',
+          buttonText: 'Log In',
+          onButtonPress: async () => {
+            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+            await logout();
+          },
         });
       } else {
         setOtpError(res.message || 'Failed to reset password.');
@@ -327,35 +331,17 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Top Header Banner */}
+      {/* Top Header Banner matching Reference */}
       <View style={[styles.headerBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
-        <View style={styles.headerTitleNavRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={{ padding: 4 }}
-          >
-            <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitleTextDark}>Security & Active Sessions</Text>
-        </View>
-
-        <View style={styles.topBannerStatsCardWhite}>
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>{twoFactorEnabled ? 'Active' : 'Off'}</Text>
-            <Text style={styles.statLabelMutedTextDark}>2FA Protection</Text>
-          </View>
-          <View style={styles.statColDividerDark} />
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>{sessions.length || 1}</Text>
-            <Text style={styles.statLabelMutedTextDark}>Device Sessions</Text>
-          </View>
-          <View style={styles.statColDividerDark} />
-          <View style={styles.statColItem}>
-            <Text style={styles.statValDarkText}>100%</Text>
-            <Text style={styles.statLabelMutedTextDark}>Encrypted</Text>
-          </View>
-        </View>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.backButton}
+        >
+          <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitleTextDark}>Security & Privacy</Text>
+        <View style={{ width: 28 }} />
       </View>
 
       <KeyboardAwareScrollView
@@ -363,98 +349,86 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* CARD BLOCK 1: ACTIVE LOGIN SESSIONS */}
-        <SecuritySessionsSection
-          sessions={sessions}
-          sessionsLoading={sessionsLoading}
-          onRevokeSession={handleRevokeSession}
-          onTerminateOtherSessions={handleTerminateOtherSessions}
-          isTerminatingOtherSessions={isTerminatingOtherSessions}
-        />
+        {/* SECTION 1: LOGIN & CREDENTIALS */}
+        <View style={styles.sectionGroup}>
+          <Text style={styles.sectionCategoryTitle}>Login & Credentials</Text>
 
-        {/* CARD BLOCK 2: ACCOUNT CREDENTIALS */}
-        <View style={styles.cardBlock}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionBlockTitle}>Account Credentials & Recovery</Text>
-              <Text style={styles.sectionBlockSub}>Update password or trigger instant OTP reset</Text>
+          {/* Row 1: Change Password */}
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => {
+              setPasswordError(null);
+              setIsChangePassModalOpen(true);
+            }}
+            activeOpacity={0.65}
+          >
+            <View style={styles.settingIconCol}>
+              <Lock size={20} color="#334155" strokeWidth={1.8} />
             </View>
-          </View>
+            <View style={styles.settingRowTextContent}>
+              <Text style={styles.settingRowTitle}>Change password</Text>
+              <Text style={styles.settingRowSub}>
+                Update current password using existing account credentials
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
 
-          <View style={{ gap: 10, paddingLeft: 14 }}>
-            <TouchableOpacity
-              style={styles.actionItemRow}
-              onPress={() => {
-                setPasswordError(null);
-                setIsChangePassModalOpen(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.actionIconPill}>
-                <Lock size={16} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.actionRowTitle}>Change Account Password</Text>
-                <Text style={styles.actionRowSub}>
-                  Update current password using existing account credentials
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#94A3B8" />
-            </TouchableOpacity>
+          <View style={styles.rowDividerLine} />
 
-            <View style={styles.rowDividerLine} />
+          {/* Row 2: Forgot Password */}
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={handleOpenResetConfirm}
+            activeOpacity={0.65}
+          >
+            <View style={styles.settingIconCol}>
+              <KeyRound size={20} color="#334155" strokeWidth={1.8} />
+            </View>
+            <View style={styles.settingRowTextContent}>
+              <Text style={styles.settingRowTitle}>Forgot password?</Text>
+              <Text style={styles.settingRowSub}>
+                Send a 6-digit OTP to your registered email to reset password
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionItemRow}
-              onPress={handleOpenResetConfirm}
-              activeOpacity={0.7}
-            >
-              <View style={styles.actionIconPill}>
-                <KeyRound size={16} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.actionRowTitle}>Forgot Password?</Text>
-                <Text style={styles.actionRowSub}>
-                  Send 6-digit OTP to your registered email to reset password
-                </Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-        </View>
+          <View style={styles.rowDividerLine} />
 
-        {/* CARD BLOCK 3: MULTI-FACTOR AUTHENTICATION (2FA) */}
-        <View style={styles.cardBlock}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionBlockTitle}>Two-Factor Authentication (2FA)</Text>
-              <Text style={styles.sectionBlockSub}>Extra layer of email OTP login security</Text>
+          {/* Row 3: Two-Factor Authentication */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingIconCol}>
+              <ShieldCheck size={20} color="#334155" strokeWidth={1.8} />
+            </View>
+            <View style={styles.settingRowTextContent}>
+              <Text style={styles.settingRowTitle}>Two-factor authentication (2FA)</Text>
+              <Text style={styles.settingRowSub}>
+                {twoFactorEnabled
+                  ? 'Active: Every new login requires a 6-digit verification code sent to your email.'
+                  : 'Require an email verification code on new device login attempts.'}
+              </Text>
             </View>
             <Switch
               value={twoFactorEnabled}
               onValueChange={handleToggle2FA}
-              trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
-              thumbColor={twoFactorEnabled ? COLORS.primary : '#94A3B8'}
+              trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+              thumbColor={twoFactorEnabled ? '#2563EB' : '#94A3B8'}
             />
           </View>
+        </View>
 
-          <View style={[styles.twoFactorBannerBox, twoFactorEnabled ? styles.twoFactorActiveBox : styles.twoFactorDisabledBox]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              {twoFactorEnabled ? (
-                <CheckCircle2 size={16} color="#16A34A" />
-              ) : (
-                <ShieldAlert size={16} color="#D97706" />
-              )}
-              <Text style={[styles.twoFactorStatusText, { color: twoFactorEnabled ? '#15803D' : '#B45309' }]}>
-                2FA Protection is {twoFactorEnabled ? 'ACTIVE & ENFORCED' : 'DISABLED'}
-              </Text>
-            </View>
-            <Text style={styles.twoFactorBannerDesc}>
-              {twoFactorEnabled
-                ? 'Every new device login requires a 6-digit verification code sent directly to your registered email address.'
-                : 'Enable 2FA to protect your account from unauthorized login attempts across untrusted devices.'}
-            </Text>
-          </View>
+        <View style={styles.sectionSeparator} />
+
+        {/* SECTION 2: ACTIVE SESSIONS */}
+        <View style={styles.sectionGroup}>
+          <SecuritySessionsSection
+            sessions={sessions}
+            sessionsLoading={sessionsLoading}
+            onRevokeSession={handleRevokeSession}
+            onTerminateOtherSessions={handleTerminateOtherSessions}
+            isTerminatingOtherSessions={isTerminatingOtherSessions}
+          />
         </View>
       </KeyboardAwareScrollView>
 
@@ -509,7 +483,15 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         visible={successModalConfig.visible}
         title={successModalConfig.title}
         message={successModalConfig.message}
-        onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
+        buttonText={successModalConfig.buttonText || 'Done'}
+        onButtonPress={successModalConfig.onButtonPress}
+        onClose={() => {
+          if (successModalConfig.onButtonPress) {
+            successModalConfig.onButtonPress();
+          } else {
+            setSuccessModalConfig({ visible: false, title: '' });
+          }
+        }}
       />
     </View>
   );
@@ -518,145 +500,79 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#FFFFFF',
   },
   headerBannerWhite: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: '#F1F5F9',
     paddingTop: 12,
+    paddingBottom: 14,
     paddingHorizontal: 16,
-  },
-  headerTitleNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  headerTitleTextDark: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  topBannerStatsCardWhite: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
-  statColItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValDarkText: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: COLORS.primary,
-  },
-  statLabelMutedTextDark: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 1,
-  },
-  statColDividerDark: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#CBD5E1',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
-    gap: 14,
-  },
-  cardBlock: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 14,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionBlockTitle: {
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  sectionBlockSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-    lineHeight: 17,
-  },
-  slateSectionDivider: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 4,
-  },
-  actionItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-  },
-  actionIconPill: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
+  backButton: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionRowTitle: {
-    fontSize: 13.5,
+  headerTitleTextDark: {
+    fontSize: 16.5,
     fontWeight: '700',
     color: '#0F172A',
+    textAlign: 'center',
   },
-  actionRowSub: {
-    fontSize: 11.5,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
+  sectionGroup: {
+    gap: 2,
+  },
+  sectionCategoryTitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#64748B',
-    marginTop: 2,
-    lineHeight: 16,
+    marginBottom: 4,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    gap: 12,
+  },
+  settingIconCol: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingRowTextContent: {
+    flex: 1,
+    gap: 3,
+  },
+  settingRowTitle: {
+    fontSize: 14.5,
+    fontWeight: '600',
+    color: '#0F172A',
+    lineHeight: 20,
+  },
+  settingRowSub: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
   },
   rowDividerLine: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
   },
-  rowDividerLineSlate: {
+  sectionSeparator: {
     height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 6,
-  },
-  twoFactorBannerBox: {
-    padding: 12,
-    borderRadius: 6,
-    marginTop: 6,
-  },
-  twoFactorActiveBox: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  twoFactorDisabledBox: {
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  twoFactorStatusText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  twoFactorBannerDesc: {
-    fontSize: 12,
-    color: '#475569',
-    lineHeight: 17,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 16,
   },
 });

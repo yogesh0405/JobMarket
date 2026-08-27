@@ -127,32 +127,36 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        const refreshToken = await getRefreshToken();
+        const refreshToken = (await getRefreshToken()) || (await getAccessToken());
         const sessionId = await getSessionId();
 
-        if (!refreshToken || !sessionId) {
+        if (!refreshToken) {
           throw new Error('Session expired');
         }
 
         const refreshRes = await fetchWithTimeout(`${baseUrl}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken, sessionId }),
+          body: JSON.stringify({ refreshToken, ...(sessionId ? { sessionId } : {}) }),
         });
 
         if (!refreshRes.ok) {
-          throw new Error('Token refresh failed');
+          const isExplicitUnauthorized = refreshRes.status === 401 || refreshRes.status === 403;
+          const err: any = new Error('Token refresh failed');
+          err.isExplicitUnauthorized = isExplicitUnauthorized;
+          throw err;
         }
 
         const refreshData = await refreshRes.json();
         const newAccessToken = refreshData?.data?.accessToken || refreshData?.tokens?.accessToken || refreshData?.accessToken;
         const newRefreshToken = refreshData?.data?.refreshToken || refreshData?.tokens?.refreshToken || refreshData?.refreshToken;
+        const newSessionId = refreshData?.data?.sessionId || refreshData?.sessionId || sessionId;
 
         if (!newAccessToken) {
           throw new Error('Invalid token refresh response');
         }
 
-        await saveTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken || refreshToken }, sessionId);
+        await saveTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken || refreshToken }, newSessionId);
         processQueue(null, newAccessToken);
 
         // Retry original request with new access token
@@ -179,13 +183,15 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
           throw new Error(errorMsg);
         }
         return retryJson as T;
-      } catch (refreshErr) {
+      } catch (refreshErr: any) {
         processQueue(refreshErr, null);
-        await clearAuthSession();
-        if (onUnauthenticatedCallback) {
-          onUnauthenticatedCallback();
+        if (refreshErr?.isExplicitUnauthorized) {
+          await clearAuthSession();
+          if (onUnauthenticatedCallback) {
+            onUnauthenticatedCallback();
+          }
         }
-        throw new Error('Session expired. Please log in again.');
+        throw new Error(refreshErr?.message || 'Session expired. Please log in again.');
       } finally {
         isRefreshing = false;
       }

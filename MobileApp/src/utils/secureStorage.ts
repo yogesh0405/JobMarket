@@ -13,15 +13,15 @@ let memoryRefreshToken: string | null = null;
 let memorySessionId: string | null = null;
 let memoryUser: User | null = null;
 
-const isWebLocalStorageAvailable = (): boolean => {
+function isWebLocalStorageAvailable(): boolean {
   try {
     return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
   } catch {
     return false;
   }
-};
+}
 
-export const saveTokens = async (tokens: AuthTokens, sessionId?: string): Promise<void> => {
+export async function saveTokens(tokens: AuthTokens, sessionId?: string): Promise<void> {
   memoryAccessToken = tokens.accessToken;
   memoryRefreshToken = tokens.refreshToken;
   if (sessionId) memorySessionId = sessionId;
@@ -42,9 +42,9 @@ export const saveTokens = async (tokens: AuthTokens, sessionId?: string): Promis
   } catch (error) {
     console.warn('SecureStore save error (using memory cache):', error);
   }
-};
+}
 
-export const getAccessToken = async (): Promise<string | null> => {
+export async function getAccessToken(): Promise<string | null> {
   if (memoryAccessToken) return memoryAccessToken;
   try {
     const isAvailable = await SecureStore.isAvailableAsync();
@@ -61,9 +61,9 @@ export const getAccessToken = async (): Promise<string | null> => {
     return memoryAccessToken;
   }
   return memoryAccessToken;
-};
+}
 
-export const getRefreshToken = async (): Promise<string | null> => {
+export async function getRefreshToken(): Promise<string | null> {
   if (memoryRefreshToken) return memoryRefreshToken;
   try {
     const isAvailable = await SecureStore.isAvailableAsync();
@@ -80,9 +80,9 @@ export const getRefreshToken = async (): Promise<string | null> => {
     return memoryRefreshToken;
   }
   return memoryRefreshToken;
-};
+}
 
-export const getSessionId = async (): Promise<string | null> => {
+export async function getSessionId(): Promise<string | null> {
   if (memorySessionId) return memorySessionId;
   try {
     const isAvailable = await SecureStore.isAvailableAsync();
@@ -99,9 +99,9 @@ export const getSessionId = async (): Promise<string | null> => {
     return memorySessionId;
   }
   return memorySessionId;
-};
+}
 
-export const saveStoredUser = async (user: User): Promise<void> => {
+export async function saveStoredUser(user: User): Promise<void> {
   memoryUser = user;
   try {
     const isAvailable = await SecureStore.isAvailableAsync();
@@ -114,9 +114,9 @@ export const saveStoredUser = async (user: User): Promise<void> => {
   } catch (error) {
     console.warn('SecureStore user save error:', error);
   }
-};
+}
 
-export const getStoredUser = async (): Promise<User | null> => {
+export async function getStoredUser(): Promise<User | null> {
   if (memoryUser) return memoryUser;
   try {
     const isAvailable = await SecureStore.isAvailableAsync();
@@ -137,9 +137,9 @@ export const getStoredUser = async (): Promise<User | null> => {
     return memoryUser;
   }
   return memoryUser;
-};
+}
 
-export const clearAuthSession = async (): Promise<void> => {
+export async function clearAuthSession(): Promise<void> {
   memoryAccessToken = null;
   memoryRefreshToken = null;
   memorySessionId = null;
@@ -162,4 +162,4 @@ export const clearAuthSession = async (): Promise<void> => {
   } catch (error) {
     console.warn('Error clearing auth session:', error);
   }
-};
+}

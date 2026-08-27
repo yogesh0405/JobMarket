@@ -96,11 +96,13 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     loadData();
   }, []);
 
-  // Filtered ads list
+  // Filtered ads list (100% Real Database Lifecycle)
   const filteredAds = useMemo(() => {
     if (filterStatus === 'ALL') return advertisements;
-    if (filterStatus === 'APPROVED') return advertisements.filter(a => a.status === 'APPROVED' || a.status === 'PUBLISHED');
-    if (filterStatus === 'PENDING_APPROVAL') return advertisements.filter(a => a.status === 'PENDING_APPROVAL' || a.status === 'SUBMITTED');
+    if (filterStatus === 'APPROVED') return advertisements.filter(a => (a.status === 'APPROVED' || a.status === 'PUBLISHED') && a.is_active);
+    if (filterStatus === 'PENDING_APPROVAL') return advertisements.filter(a => a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && a.status !== 'REJECTED' && a.status !== 'EXPIRED');
+    if (filterStatus === 'REJECTED') return advertisements.filter(a => a.status === 'REJECTED');
+    if (filterStatus === 'EXPIRED') return advertisements.filter(a => a.status === 'EXPIRED');
     return advertisements.filter(a => a.status === filterStatus);
   }, [advertisements, filterStatus]);
 
@@ -108,8 +110,8 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
   const statusCounts = useMemo(() => {
     return {
       all: advertisements.length,
-      live: advertisements.filter(a => a.status === 'APPROVED' || a.status === 'PUBLISHED').length,
-      pending: advertisements.filter(a => a.status === 'PENDING_APPROVAL' || a.status === 'SUBMITTED').length,
+      live: advertisements.filter(a => (a.status === 'APPROVED' || a.status === 'PUBLISHED') && a.is_active).length,
+      pending: advertisements.filter(a => a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && a.status !== 'REJECTED' && a.status !== 'EXPIRED').length,
       rejected: advertisements.filter(a => a.status === 'REJECTED').length,
       expired: advertisements.filter(a => a.status === 'EXPIRED').length,
     };
@@ -342,8 +344,8 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
         <button
           onClick={openCreateModal}
+          className="desktop-only-btn"
           style={{
-            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
@@ -496,13 +498,19 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                       {/* Thumbnail */}
                       <td style={{ padding: '14px 16px' }}>
                         <div style={{ width: '130px', height: '65px', borderRadius: '6px', overflow: 'hidden', background: '#0F172A', position: 'relative', border: '1px solid #E2E8F0' }}>
-                          {ad.banner_image ? (
-                            <img src={ad.banner_image} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '10px', fontWeight: '700', padding: '4px', textAlign: 'center' }}>
-                              Gradient Cover
-                            </div>
-                          )}
+                          <img
+                            src={
+                              ad.banner_image && ad.banner_image.trim().length > 5
+                                ? ad.banner_image.trim()
+                                : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
+                            }
+                            alt={ad.title}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+                            }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
                         </div>
                       </td>
 
@@ -581,8 +589,8 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
             </div>
           </div>
 
-          {/* Premium Mobile Cards View */}
-          <div className="mobile-banners-list">
+          {/* Premium Mobile Cards View (100% exact match to Mobile App) */}
+          <div className="mobile-banners-list" style={{ paddingBottom: '70px' }}>
             {filteredAds.map((ad) => (
               <div
                 key={ad.id}
@@ -591,98 +599,89 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   border: '1px solid #E2E8F0',
                   borderRadius: '10px',
                   overflow: 'hidden',
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                   display: 'flex',
                   flexDirection: 'column',
                   width: '100%',
                   boxSizing: 'border-box'
                 }}
               >
-                {/* Hero Banner Preview Header with Floating Badges */}
-                <div style={{ position: 'relative', width: '100%', height: '110px', background: '#0F172A' }}>
-                  {ad.banner_image ? (
-                    <img src={ad.banner_image} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%)' }} />
-                  )}
+                {/* 1. 16:9 Image Thumbnail with Badge & Status Overlays */}
+                <div style={{ position: 'relative', width: '100%', height: '145px', background: '#0F172A' }}>
+                  <img
+                    src={
+                      ad.banner_image && ad.banner_image.trim().length > 5
+                        ? ad.banner_image.trim()
+                        : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
+                    }
+                    alt={ad.title}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
 
-                  {/* Gradient Overlay for text readability */}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
+                  {/* Gradient Overlay for Title */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.3) 60%, transparent 100%)' }} />
 
-                  {/* Floating Badges */}
-                  <div style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 2 }}>
-                    <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                      {ad.advertisement_type.replace(/_/g, ' ')}
+                  {/* Top Floating Badges */}
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}>
+                    <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      {(ad.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}
                     </span>
                   </div>
 
-                  <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 2 }}>
+                  <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 2 }}>
                     {getStatusPill(ad.status)}
                   </div>
 
                   {/* Banner Title on Image */}
-                  <div style={{ position: 'absolute', bottom: '8px', left: '10px', right: '10px', zIndex: 2 }}>
-                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px', zIndex: 2 }}>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.6)', lineHeight: 1.3 }}>
                       {ad.title}
                     </div>
                   </div>
                 </div>
 
-                {/* Card Content Area */}
+                {/* 2. Card Details Area */}
                 <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {/* Linked Job / Description */}
-                  {ad.job_title ? (
-                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Briefcase size={13} color="#2563EB" />
-                      <span>Linked: <strong style={{ color: '#0F172A' }}>{ad.job_title}</strong></span>
-                    </div>
-                  ) : ad.description ? (
-                    <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {ad.description}
-                    </p>
-                  ) : null}
-
-                  {/* Schedule Date Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: '#F8FAFC', borderRadius: '6px', fontSize: '11.5px', color: '#64748B', border: '1px solid #F1F5F9' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Calendar size={12} color="#2563EB" />
-                      <span>{new Date(ad.start_date).toLocaleDateString()} &rarr; {new Date(ad.end_date).toLocaleDateString()}</span>
-                    </div>
-                    <span style={{ fontWeight: '700', color: '#2563EB', textTransform: 'uppercase', fontSize: '10.5px' }}>
-                      {ad.priority}
-                    </span>
+                  {/* Linked Job Row */}
+                  <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Briefcase size={14} color="#2563EB" />
+                    <span>Linked: <strong style={{ color: '#0F172A' }}>{ad.job_title || 'Direct Application'}</strong></span>
                   </div>
 
-                  {/* Moderation Rejection Alert Notice */}
+                  {/* Moderation Rejection Alert Notice (if rejected) */}
                   {ad.status === 'REJECTED' && ad.rejection_reason && (
                     <div style={{ fontSize: '11.5px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '8px 10px', borderRadius: '6px', fontWeight: '600' }}>
                       ⚠️ <strong>Admin Note:</strong> {ad.rejection_reason}
                     </div>
                   )}
 
-                  {/* Action Buttons Toolbar */}
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', paddingTop: '2px' }}>
+                  {/* 3. Action Buttons (Analytics, Edit, Delete) */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingTop: '2px' }}>
                     <button
                       onClick={() => setSelectedAdForAnalytics(ad)}
-                      style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #DBEAFE', background: '#EFF6FF', color: '#2563EB', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                      style={{ flex: 1.2, padding: '9px 12px', borderRadius: '8px', border: '1px solid #DBEAFE', background: '#EFF6FF', color: '#2563EB', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
-                      <BarChart3 size={13} />
+                      <BarChart3 size={14} />
                       <span>Analytics</span>
                     </button>
                     <button
                       onClick={() => openEditModal(ad)}
-                      style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                      style={{ flex: 1.2, padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#334155', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
-                      <Edit size={13} />
+                      <Edit size={14} />
                       <span>{ad.status === 'REJECTED' ? 'Resubmit' : 'Edit'}</span>
                     </button>
                     <button
                       onClick={() => handleDelete(ad.id)}
                       disabled={submittingId === ad.id}
-                      style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #FECACA', background: '#FFFFFF', color: '#DC2626', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Delete Banner"
                     >
-                      {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={13} />}
+                      {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={14} />}
                     </button>
                   </div>
                 </div>
@@ -691,6 +690,31 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
           </div>
         </>
       )}
+
+      {/* Floating Action Button (FAB) for Mobile View */}
+      <button
+        className="mobile-fab-btn"
+        onClick={openCreateModal}
+        style={{
+          position: 'fixed',
+          right: '20px',
+          bottom: '28px',
+          width: '54px',
+          height: '54px',
+          borderRadius: '50%',
+          background: '#2563EB',
+          color: '#FFFFFF',
+          border: 'none',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.45)',
+          cursor: 'pointer',
+          zIndex: 999,
+        }}
+        title="Create Promotional Banner"
+      >
+        <Plus size={24} strokeWidth={2.6} />
+      </button>
 
       {/* CREATE / EDIT MODAL */}
       {formModalOpen && (
@@ -940,35 +964,75 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       {/* ANALYTICS MODAL */}
       {selectedAdForAnalytics && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: 'var(--card-bg, #ffffff)', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800' }}>Banner Performance Analytics</h3>
-              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid #F1F5F9', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>Banner Analytics</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748B' }}>{selectedAdForAnalytics.title}</p>
+              </div>
+              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}>✕</button>
             </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px' }}>{selectedAdForAnalytics.title}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Created on {new Date(selectedAdForAnalytics.created_at).toLocaleDateString()}</div>
+            {/* KPI Cards (Icon and Number in same horizontal row) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB' }}>
+                    <Eye size={15} />
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.views_count || 0}</span>
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Total Views</div>
+              </div>
+
+              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
+                    <MousePointerClick size={15} />
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.clicks_count || 0}</span>
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Total Clicks</div>
+              </div>
+
+              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
+                    <TrendingUp size={15} />
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.ctr || 0}%</span>
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Click Rate</div>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', marginBottom: '1.5rem' }}>
-              <div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>VIEWS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#2563eb', marginTop: '4px' }}>{selectedAdForAnalytics.views_count || 0}</div>
+            {/* Campaign Performance Specs */}
+            <div style={{ background: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', padding: '12px 14px', marginBottom: '16px', fontSize: '12px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', letterSpacing: '0.5px', marginBottom: '8px' }}>CAMPAIGN SPECIFICATIONS</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
+                <span style={{ color: '#64748B', fontWeight: '600' }}>Ad Type:</span>
+                <span style={{ fontWeight: '700', color: '#0F172A' }}>{selectedAdForAnalytics.advertisement_type.replace(/_/g, ' ')}</span>
               </div>
-              <div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>CLICKS</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#9333ea', marginTop: '4px' }}>{selectedAdForAnalytics.clicks_count || 0}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
+                <span style={{ color: '#64748B', fontWeight: '600' }}>Linked Job:</span>
+                <span style={{ fontWeight: '700', color: '#0F172A' }}>{selectedAdForAnalytics.job_title || 'Direct Application'}</span>
               </div>
-              <div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>CTR</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#16a34a', marginTop: '4px' }}>{selectedAdForAnalytics.ctr || 0}%</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
+                <span style={{ color: '#64748B', fontWeight: '600' }}>Duration:</span>
+                <span style={{ fontWeight: '700', color: '#0F172A' }}>{new Date(selectedAdForAnalytics.start_date).toLocaleDateString()} → {new Date(selectedAdForAnalytics.end_date).toLocaleDateString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span style={{ color: '#64748B', fontWeight: '600' }}>Live Status:</span>
+                <span style={{ fontWeight: '800', color: ((selectedAdForAnalytics.status === 'APPROVED' || selectedAdForAnalytics.status === 'PUBLISHED') && selectedAdForAnalytics.is_active) ? '#16A34A' : selectedAdForAnalytics.status === 'REJECTED' ? '#DC2626' : '#D97706' }}>
+                  {((selectedAdForAnalytics.status === 'APPROVED' || selectedAdForAnalytics.status === 'PUBLISHED') && selectedAdForAnalytics.is_active) ? 'LIVE ON HOMEPAGE' : selectedAdForAnalytics.status === 'REJECTED' ? 'REJECTED' : 'IN REVIEW (PENDING APPROVAL)'}
+                </span>
               </div>
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ padding: '8px 18px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                Close
+              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ padding: '9px 20px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #DBEAFE', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', width: '100%' }}>
+                Close Analytics
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   saveStoredUser,
   getStoredUser,
   getAccessToken,
+  getRefreshToken,
   clearAuthSession,
 } from '../utils/secureStorage';
 import { setGlobalCompanyLogo } from '../utils/companyLogos';
@@ -31,10 +32,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Automatically reset user to null if an unauthenticated 401 response occurs
+  // Automatically reset user to null ONLY when credentials are confirmed invalid
   useEffect(() => {
-    setOnUnauthenticated(() => {
-      setUser(null);
+    setOnUnauthenticated(async () => {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) {
+        setUser(null);
+      }
     });
   }, []);
 
@@ -149,9 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         const token = await getAccessToken();
+        const refreshToken = await getRefreshToken();
         const storedUser = await getStoredUser();
 
-        if (token && storedUser && mounted) {
+        if ((token || refreshToken) && storedUser && mounted) {
           setUser(storedUser);
         }
       } catch (error) {

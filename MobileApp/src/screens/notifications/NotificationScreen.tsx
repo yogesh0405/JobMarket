@@ -146,7 +146,7 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => setFilter('ALL')}
             >
               <Text style={[styles.filterPillText, filter === 'ALL' && styles.filterPillTextActive]}>
-                All ({notifications.length})
+                {loading && notifications.length === 0 ? 'All' : `All (${notifications.length})`}
               </Text>
             </TouchableOpacity>
 
@@ -156,20 +156,22 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => setFilter('UNREAD')}
             >
               <Text style={[styles.filterPillText, filter === 'UNREAD' && styles.filterPillTextActive]}>
-                Unread ({unreadCount > 9 ? '9+' : unreadCount})
+                {loading && notifications.length === 0
+                  ? 'Unread'
+                  : `Unread (${unreadCount > 9 ? '9+' : unreadCount})`}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.bulkActionsGroup}>
-            {unreadCount > 0 ? (
+            {!loading && unreadCount > 0 ? (
               <TouchableOpacity activeOpacity={0.8} style={styles.bulkActionBtn} onPress={onMarkAllNotifRead}>
                 <CheckCheck size={14} color={COLORS.primary} />
                 <Text style={styles.bulkActionBtnText}>Read All</Text>
               </TouchableOpacity>
             ) : null}
 
-            {notifications.length > 0 ? (
+            {!loading && notifications.length > 0 ? (
               <TouchableOpacity activeOpacity={0.8} style={styles.bulkActionBtn} onPress={onClearAllNotif}>
                 <Trash2 size={14} color="#DC2626" />
                 <Text style={[styles.bulkActionBtnText, { color: '#DC2626' }]}>Clear All</Text>

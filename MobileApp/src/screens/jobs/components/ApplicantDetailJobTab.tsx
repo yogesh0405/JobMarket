@@ -6,6 +6,7 @@ import {
   Building2,
   MapPin,
   Clock,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { Job, JobApplication } from '../../../types';
 import { COLORS } from '../../../constants/theme';
@@ -27,22 +28,26 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
   const appliedJob = selectedApplicant?.job || myJobs.find((j) => j.id === selectedApplicant?.job_id) || jobDetails;
 
   return (
-    <View style={styles.modalSectionBox}>
-      <Text style={styles.sectionHeadingTitle}>APPLIED JOB SPECIFICATIONS</Text>
-      <Text style={styles.jobTitleLarge}>{appliedJob?.title || jobTitle || 'Industrial Operator'}</Text>
-      <Text style={styles.jobCompanySub}>
-        {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
-      </Text>
+    <View style={styles.container}>
+      {/* 1. Header Information */}
+      <View style={styles.headerBlock}>
+        <Text style={styles.jobTitleLarge}>
+          {appliedJob?.title || jobTitle || 'Industrial Operator'}
+        </Text>
+        <Text style={styles.jobCompanySub}>
+          {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
+        </Text>
+      </View>
 
-      <View style={[styles.rowDivider, { marginVertical: 12 }]} />
+      <View style={styles.sectionDivider} />
 
-      <Text style={styles.sectionHeadingTitle}>JOB DETAILS & SALARY</Text>
+      {/* 2. Specifications List (Minimal - No Icon Background Boxes) */}
+      <Text style={styles.sectionHeadingTitle}>JOB SPECIFICATIONS</Text>
 
       <View style={styles.specRowsContainer}>
+        {/* Salary */}
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <IndianRupee size={15} color={COLORS.primary} />
-          </View>
+          <IndianRupee size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Salary Offer</Text>
             <Text style={styles.specGridValue}>
@@ -55,24 +60,24 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
 
         <View style={styles.rowDivider} />
 
+        {/* Vacancies */}
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Building2 size={15} color="#16A34A" />
-          </View>
+          <Building2 size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>Vacancies & Openings</Text>
-            <Text style={styles.specGridValue}>{appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings</Text>
+            <Text style={styles.specGridLabel}>Open Vacancies</Text>
+            <Text style={styles.specGridValue}>
+              {appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings
+            </Text>
           </View>
         </View>
 
         <View style={styles.rowDivider} />
 
+        {/* Location */}
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <MapPin size={15} color="#0284C7" />
-          </View>
+          <MapPin size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>MIDC Location Address</Text>
+            <Text style={styles.specGridLabel}>Work Location</Text>
             <Text style={styles.specGridValue}>
               {safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC Industrial Area')}
             </Text>
@@ -81,10 +86,9 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
 
         <View style={styles.rowDivider} />
 
+        {/* Shift */}
         <View style={styles.specRowItem}>
-          <View style={styles.specIconBadge}>
-            <Clock size={15} color="#D97706" />
-          </View>
+          <Clock size={16} color={COLORS.primary} strokeWidth={2.2} />
           <View style={styles.specTextCol}>
             <Text style={styles.specGridLabel}>Work Shift & Mode</Text>
             <Text style={styles.specGridValue}>
@@ -94,18 +98,20 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
         </View>
       </View>
 
+      {/* 3. Job Description */}
       {appliedJob?.description ? (
         <>
-          <View style={[styles.rowDivider, { marginVertical: 12 }]} />
-          <Text style={styles.sectionHeadingTitle}>JOB DESCRIPTION & REQUIREMENTS</Text>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionHeadingTitle}>JOB DESCRIPTION</Text>
           <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
         </>
       ) : null}
 
+      {/* 4. Required Skills */}
       {appliedJob?.skills && appliedJob.skills.length > 0 ? (
         <>
-          <View style={[styles.rowDivider, { marginVertical: 12 }]} />
-          <Text style={styles.sectionHeadingTitle}>REQUIRED TRADE SKILLS</Text>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionHeadingTitle}>REQUIRED SKILLS</Text>
           <View style={styles.skillsWrapRow}>
             {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
               <View key={i} style={styles.borderlessSkillTag}>
@@ -121,49 +127,45 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
 };
 
 const styles = StyleSheet.create({
-  modalSectionBox: {
+  container: {
     padding: 16,
+    paddingBottom: 50,
+    backgroundColor: '#F8FAFC',
+  },
+  headerBlock: {
+    marginBottom: 4,
+  },
+  jobTitleLarge: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 24,
+  },
+  jobCompanySub: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 14,
   },
   sectionHeadingTitle: {
     fontSize: 11,
     fontWeight: '800',
     color: '#94A3B8',
     letterSpacing: 0.8,
-    marginBottom: 6,
-  },
-  jobTitleLarge: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  jobCompanySub: {
-    fontSize: 12.5,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  rowDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
+    marginBottom: 10,
   },
   specRowsContainer: {
-    gap: 8,
-    marginTop: 6,
+    gap: 4,
   },
   specRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 4,
-  },
-  specIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingVertical: 6,
   },
   specTextCol: {
     flex: 1,
@@ -174,21 +176,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   specGridValue: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 1,
   },
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
   infoSectionBody: {
     fontSize: 13,
     color: '#334155',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   skillsWrapRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 2,
   },
   borderlessSkillTag: {
     flexDirection: 'row',
@@ -196,8 +202,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   skillDot: {
     width: 6,

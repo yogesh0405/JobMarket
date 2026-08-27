@@ -133,6 +133,8 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
 const styles = StyleSheet.create({
   modalSectionBox: {
     padding: 16,
+    paddingBottom: 60,
+    backgroundColor: '#F8FAFC',
   },
   sectionHeadingTitle: {
     fontSize: 11,

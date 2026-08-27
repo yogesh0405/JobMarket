@@ -43,9 +43,22 @@
 
   .mobile-manage-jobs-list,
   .mobile-banners-list,
-  .mobile-only-back-link {
+  .mobile-only-back-link,
+  .mobile-fab-btn {
     display: none !important;
   }
+
+  .desktop-only-btn {
+    display: inline-flex !important;
+  }
+}
+
+.desktop-only-btn {
+  display: none;
+}
+
+.mobile-fab-btn {
+  display: flex !important;
 }
 
 .desktop-only-text {

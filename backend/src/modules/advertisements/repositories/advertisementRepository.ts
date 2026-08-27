@@ -26,6 +26,7 @@ export class AdvertisementRepository {
       LEFT JOIN jobs j ON a.linked_job_id = j.id
       LEFT JOIN users u ON a.owner_id = u.id
       WHERE (a.status = 'APPROVED' OR a.status = 'PUBLISHED')
+        AND a.approval_status = 'APPROVED'
         AND a.is_active = TRUE
         AND (a.start_date IS NULL OR a.start_date <= CURRENT_TIMESTAMP + INTERVAL '1 hour')
         AND (a.end_date IS NULL OR a.end_date >= CURRENT_TIMESTAMP)
@@ -178,8 +179,23 @@ export class AdvertisementRepository {
     ownerType: 'EMPLOYER' | 'ADMIN',
     data: CreateAdvertisementInput
   ): Promise<Advertisement> {
-    const status = data.status || (ownerType === 'ADMIN' ? 'APPROVED' : 'PENDING_APPROVAL');
+    const status = ownerType === 'ADMIN' ? (data.status || 'APPROVED') : 'PENDING_APPROVAL';
     const approvalStatus = status === 'APPROVED' || status === 'PUBLISHED' ? 'APPROVED' : 'PENDING';
+    const isActive = ownerType === 'ADMIN' ? true : false;
+
+    const rawImg = (data as any).banner_image || (data as any).bannerImage;
+    const bannerImage =
+      rawImg && String(rawImg).trim().length > 5
+        ? String(rawImg).trim()
+        : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+    const adType = (data as any).advertisement_type || (data as any).advertisementType || 'FEATURED_JOB';
+    const linkedJobId = (data as any).linked_job_id || (data as any).jobId || (data as any).linkedJobId || null;
+    const redirectUrl = (data as any).redirect_url || (data as any).redirectUrl || null;
+    const buttonText = (data as any).button_text || (data as any).buttonText || 'Apply Now';
+    const priority = (data as any).priority || 'MEDIUM';
+    const startDate = (data as any).start_date || (data as any).startDate || new Date().toISOString();
+    const endDate = (data as any).end_date || (data as any).endDate || new Date(Date.now() + 14 * 86400000).toISOString();
+    const targetAudience = (data as any).target_audience || (data as any).targetAudience || null;
 
     const query = `
       INSERT INTO advertisements (
@@ -199,26 +215,27 @@ export class AdvertisementRepository {
         end_date,
         is_active,
         target_audience
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, TRUE, $15)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *;
     `;
 
     const values = [
       data.title,
       data.description || null,
-      data.banner_image,
-      data.advertisement_type,
+      bannerImage,
+      adType,
       ownerType,
       ownerId,
-      data.linked_job_id || null,
-      data.redirect_url || null,
-      data.button_text || 'Apply Now',
-      data.priority || 'MEDIUM',
+      linkedJobId,
+      redirectUrl,
+      buttonText,
+      priority,
       status,
       approvalStatus,
-      data.start_date,
-      data.end_date,
-      data.target_audience || null,
+      startDate,
+      endDate,
+      isActive,
+      targetAudience,
     ];
 
     const { rows } = await pool.query(query, values);
@@ -233,17 +250,26 @@ export class AdvertisementRepository {
     const values: any[] = [];
     let idx = 1;
 
+    const bannerImage = (data as any).banner_image || (data as any).bannerImage;
+    const adType = (data as any).advertisement_type || (data as any).advertisementType;
+    const linkedJobId = (data as any).linked_job_id || (data as any).jobId || (data as any).linkedJobId;
+    const redirectUrl = (data as any).redirect_url || (data as any).redirectUrl;
+    const buttonText = (data as any).button_text || (data as any).buttonText;
+    const startDate = (data as any).start_date || (data as any).startDate;
+    const endDate = (data as any).end_date || (data as any).endDate;
+    const targetAudience = (data as any).target_audience || (data as any).targetAudience;
+
     if (data.title !== undefined) { fields.push(`title = $${idx++}`); values.push(data.title); }
     if (data.description !== undefined) { fields.push(`description = $${idx++}`); values.push(data.description); }
-    if (data.banner_image !== undefined) { fields.push(`banner_image = $${idx++}`); values.push(data.banner_image); }
-    if (data.advertisement_type !== undefined) { fields.push(`advertisement_type = $${idx++}`); values.push(data.advertisement_type); }
-    if (data.linked_job_id !== undefined) { fields.push(`linked_job_id = $${idx++}`); values.push(data.linked_job_id || null); }
-    if (data.redirect_url !== undefined) { fields.push(`redirect_url = $${idx++}`); values.push(data.redirect_url || null); }
-    if (data.button_text !== undefined) { fields.push(`button_text = $${idx++}`); values.push(data.button_text); }
+    if (bannerImage !== undefined) { fields.push(`banner_image = $${idx++}`); values.push(bannerImage); }
+    if (adType !== undefined) { fields.push(`advertisement_type = $${idx++}`); values.push(adType); }
+    if (linkedJobId !== undefined) { fields.push(`linked_job_id = $${idx++}`); values.push(linkedJobId || null); }
+    if (redirectUrl !== undefined) { fields.push(`redirect_url = $${idx++}`); values.push(redirectUrl || null); }
+    if (buttonText !== undefined) { fields.push(`button_text = $${idx++}`); values.push(buttonText); }
     if (data.priority !== undefined) { fields.push(`priority = $${idx++}`); values.push(data.priority); }
-    if (data.start_date !== undefined) { fields.push(`start_date = $${idx++}`); values.push(data.start_date); }
-    if (data.end_date !== undefined) { fields.push(`end_date = $${idx++}`); values.push(data.end_date); }
-    if (data.target_audience !== undefined) { fields.push(`target_audience = $${idx++}`); values.push(data.target_audience); }
+    if (startDate !== undefined) { fields.push(`start_date = $${idx++}`); values.push(startDate); }
+    if (endDate !== undefined) { fields.push(`end_date = $${idx++}`); values.push(endDate); }
+    if (targetAudience !== undefined) { fields.push(`target_audience = $${idx++}`); values.push(targetAudience); }
     if (data.status !== undefined) { fields.push(`status = $${idx++}`); values.push(data.status); }
     if (data.is_active !== undefined) { fields.push(`is_active = $${idx++}`); values.push(data.is_active); }
 

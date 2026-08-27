@@ -13,6 +13,7 @@ import { Check, ArrowLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { SuccessModal } from '../../components/common/SuccessModal';
 import { KeyboardAwareScrollView, handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 import { COLORS } from '../../constants/theme';
 import {
@@ -366,6 +367,16 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             navigation.goBack();
           }
         }}
+      />
+
+      {/* Themed Success Modal for Job Submission / Update */}
+      <SuccessModal
+        visible={form.successModalConfig.visible}
+        title={form.successModalConfig.title}
+        message={form.successModalConfig.message}
+        buttonText={form.successModalConfig.buttonText || 'Manage Jobs'}
+        onButtonPress={form.successModalConfig.onButtonPress}
+        onClose={form.successModalConfig.onButtonPress || (() => form.setSuccessModalConfig((prev) => ({ ...prev, visible: false })))}
       />
     </View>
   );

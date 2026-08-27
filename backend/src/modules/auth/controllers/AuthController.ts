@@ -575,7 +575,24 @@ export class AuthController {
       const newHash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
 
-      res.status(200).json({ success: true, message: 'Password changed successfully' });
+      // Generate refreshed tokens for the user so current session remains completely intact
+      const { accessToken, refreshToken } = generateTokens({
+        userId: user.id,
+        role: user.role,
+        sessionId: req.sessionId
+      });
+
+      if (req.sessionId) {
+        const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+        await pool.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, req.sessionId]).catch(() => {});
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Password changed successfully',
+        tokens: { accessToken, refreshToken },
+        sessionId: req.sessionId
+      });
     } catch (error) {
       next(error);
     }
@@ -701,8 +718,29 @@ export class AuthController {
       const newHash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, user.id]);
 
-      // Revoke old active sessions
-      await SessionRepository.revokeAllUserSessions(user.id);
+      // Generate new active session & tokens so user session remains valid
+      const { detectDeviceFromHeaders } = await import('../../../utils/deviceDetector');
+      const reqIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const reqAgent = req.headers['user-agent'] || '';
+      const customDevName = req.headers['x-device-name'] as string;
+      const detected = detectDeviceFromHeaders(reqAgent, reqIp, customDevName, req.headers);
+
+      const newSession = await SessionRepository.createSession(
+        user.id,
+        'temp_hash',
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        detected.ipAddress,
+        reqAgent,
+        detected.deviceName
+      );
+
+      const { accessToken, refreshToken } = generateTokens({
+        userId: user.id,
+        role: user.role,
+        sessionId: newSession.id
+      });
+      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+      await pool.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, newSession.id]);
 
       // Clean Redis / Memory store
       await OtpStore.del(redisKey);
@@ -710,7 +748,15 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        message: 'Password reset successfully. You can now log in with your new password.'
+        message: 'Password reset successfully.',
+        tokens: { accessToken, refreshToken },
+        sessionId: newSession.id,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name
+        }
       });
     } catch (error) {
       next(error);

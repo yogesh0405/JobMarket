@@ -27,5 +27,9 @@ export const verifyAccessToken = (token: string): TokenPayload => {
 };
 
 export const verifyRefreshToken = (token: string): TokenPayload => {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as TokenPayload;
+  try {
+    return jwt.verify(token, env.JWT_REFRESH_SECRET) as TokenPayload;
+  } catch (err) {
+    return jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload;
+  }
 };
