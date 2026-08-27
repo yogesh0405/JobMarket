@@ -6,6 +6,7 @@ import { jobsApi } from '../../../api/jobsApi';
 import { useAuth } from '../../../hooks/useAuth';
 import { getRolesForIndustry, getSkillsForRole, EDUCATION_REQUIREMENT_OPTIONS } from '../components/JobPostConstants';
 import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../../utils/mapUrlParser';
+import { uriToDataUri } from '../../../utils/fileUploadHelper';
 
 export const useJobPostForm = (navigation: any, route: any) => {
   const { user } = useAuth();
@@ -400,10 +401,17 @@ export const useJobPostForm = (navigation: any, route: any) => {
     });
     if (!res.canceled && res.assets[0]) {
       const asset = res.assets[0];
-      const base64Data = asset.base64
-        ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
-        : asset.uri;
-      setCompanyLogo(base64Data);
+      try {
+        let base64Data = asset.base64
+          ? `data:${asset.mimeType || 'image/png'};base64,${asset.base64}`
+          : '';
+        if (!base64Data && asset.uri) {
+          base64Data = await uriToDataUri(asset.uri, asset.mimeType || 'image/png', 'company_logo.png');
+        }
+        setCompanyLogo(base64Data || asset.uri);
+      } catch (err) {
+        setCompanyLogo(asset.uri);
+      }
     }
   };
 

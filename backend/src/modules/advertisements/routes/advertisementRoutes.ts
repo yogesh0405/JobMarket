@@ -15,6 +15,7 @@ employerAdvertisementRouter.use(requireAuth, requireRole(['employer']));
 employerAdvertisementRouter.post('/advertisements', AdvertisementController.createEmployerAdvertisement);
 employerAdvertisementRouter.get('/advertisements', AdvertisementController.getEmployerAdvertisements);
 employerAdvertisementRouter.get('/advertisements/analytics', AdvertisementController.getEmployerAnalytics);
+employerAdvertisementRouter.get('/advertisements/:id', AdvertisementController.getEmployerAdvertisementById);
 employerAdvertisementRouter.put('/advertisements/:id', AdvertisementController.updateEmployerAdvertisement);
 employerAdvertisementRouter.delete('/advertisements/:id', AdvertisementController.deleteEmployerAdvertisement);
 

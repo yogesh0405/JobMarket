@@ -67,7 +67,7 @@ export const NavbarNotificationBell: React.FC = () => {
           const isRead = item.read || item.is_read || false;
 
           let notifType: NotificationItem['type'] = 'info';
-          if (['JOB_APPLICATION', 'JOB_STATUS', 'JOB_INTERVIEW', 'JOB_APPROVAL', 'AD_APPROVED', 'AD_REJECTED'].includes(item.type)) {
+          if (['JOB_APPLICATION', 'JOB_STATUS', 'JOB_INTERVIEW', 'JOB_APPROVAL', 'AD_APPROVED', 'AD_REJECTED', 'AD_UNPUBLISHED'].includes(item.type)) {
             notifType = 'job';
           } else if (['SUPPORT', 'SUPPORT_TICKET', 'SUPPORT_REPLY'].includes(item.type)) {
             notifType = 'support';

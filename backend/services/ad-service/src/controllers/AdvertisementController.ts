@@ -65,6 +65,19 @@ export class AdvertisementController {
     }
   }
 
+  static async getEmployerAdvertisementById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.headers['x-user-id'] as string || req.user?.userId;
+      if (!employerId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const id = req.params.id as string;
+      const data = await AdvertisementService.getEmployerAdvertisementById(id, employerId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getEmployerAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const employerId = req.headers['x-user-id'] as string || req.user?.userId;
@@ -167,7 +180,9 @@ export class AdvertisementController {
   static async unpublish(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const data = await AdvertisementService.unpublish(id);
+      const adminId = req.headers['x-user-id'] as string || req.user?.userId || 'admin';
+      const { reason, unpublishReason, notes } = req.body || {};
+      const data = await AdvertisementService.unpublishAdvertisement(id, adminId, reason || unpublishReason || notes);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

@@ -18,6 +18,10 @@ const envSchema = z.object({
   CLOUDINARY_URL: z.string().default('cloudinary://111364167496953:u99_zeW9Hrvk32mQa2a0fnX-ApY@gm4yqzhg'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173,https://job-market-wine.vercel.app'),
   FRONTEND_URL: z.string().default('https://job-market-wine.vercel.app'),
+  AWS_ACCESS_KEY_ID: z.string().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().default(''),
+  AWS_REGION: z.string().default('ap-south-1'),
+  AWS_S3_BUCKET_NAME: z.string().default(''),
 });
 
 const _env = envSchema.safeParse(process.env);

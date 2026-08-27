@@ -44,6 +44,7 @@ import { Input } from '../../components/common/Input';
 import { SelectDropdown } from '../../components/common/SelectDropdown';
 import { Button } from '../../components/common/Button';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { uriToDataUri } from '../../utils/fileUploadHelper';
 
 interface Props {
   navigation: any;
@@ -307,12 +308,21 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     setSelectedAttachment(null);
 
     try {
+      let finalAttachmentBase64 = sentAttachment?.base64;
+      if (!finalAttachmentBase64 && sentAttachment?.uri) {
+        try {
+          finalAttachmentBase64 = await uriToDataUri(sentAttachment.uri, 'image/jpeg', sentAttachment.name || 'attachment.jpg');
+        } catch (_) {
+          finalAttachmentBase64 = sentAttachment.uri;
+        }
+      }
+
       await apiFetch(`/api/support/tickets/${selectedTicket.id}/messages`, {
         method: 'POST',
         body: JSON.stringify({
           message: messageText || '📎 Attachment',
-          attachment: sentAttachment?.base64 || sentAttachment?.uri,
-          attachmentBase64: sentAttachment?.base64 || sentAttachment?.uri,
+          attachment: finalAttachmentBase64,
+          attachmentBase64: finalAttachmentBase64,
           attachmentName: sentAttachment?.name || 'attachment.jpg',
         }),
       });
@@ -338,7 +348,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     const userRawPhone = user?.phone || (user as any)?.mobile || phone.trim() || '';
 
     if (!subject.trim() || !description.trim()) {
-      setFormError('Please enter a subject title and detailed explanation (*)');
+      setFormError('Please fill in the subject and description.');
       return;
     }
 
@@ -354,6 +364,15 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     setIsSubmitting(true);
 
     try {
+      let finalTicketAttachment = createTicketAttachment?.base64;
+      if (!finalTicketAttachment && createTicketAttachment?.uri) {
+        try {
+          finalTicketAttachment = await uriToDataUri(createTicketAttachment.uri, 'image/jpeg', createTicketAttachment.name || 'attachment.jpg');
+        } catch (_) {
+          finalTicketAttachment = createTicketAttachment.uri;
+        }
+      }
+
       const payload = {
         fullName: finalFullName,
         email: finalEmail,
@@ -361,8 +380,8 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
         category: category || 'Job Application Inquiry',
         subject: subject.trim(),
         description: description.trim(),
-        attachment: createTicketAttachment?.base64 || createTicketAttachment?.uri,
-        attachmentBase64: createTicketAttachment?.base64 || createTicketAttachment?.uri,
+        attachment: finalTicketAttachment,
+        attachmentBase64: finalTicketAttachment,
         attachmentName: createTicketAttachment?.name || 'attachment.jpg',
         preferredContact: 'email',
         priority: priority || 'medium',

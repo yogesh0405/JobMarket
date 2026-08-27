@@ -18,10 +18,12 @@ export type AdvertisementPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AdvertisementStatus =
   | 'DRAFT'
   | 'SUBMITTED'
+  | 'RESUBMITTED'
   | 'PENDING_APPROVAL'
   | 'APPROVED'
   | 'REJECTED'
   | 'PUBLISHED'
+  | 'UNPUBLISHED'
   | 'EXPIRED';
 
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -87,6 +89,7 @@ export interface UpdateAdvertisementInput {
   target_audience?: string;
   status?: AdvertisementStatus;
   is_active?: boolean;
+  rejection_reason?: string | null;
 }
 
 export interface AdvertisementAnalytics {

@@ -1,5 +1,5 @@
 import { SupportRepository, SupportTicket, SupportMessage, InAppNotification } from '../repositories/SupportRepository';
-import { CloudinaryUtil } from '../../../utils/cloudinary';
+import { S3Util } from '../../../utils/s3';
 import { EmailService } from '../../auth/services/EmailService';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
@@ -30,11 +30,11 @@ export class SupportService {
         const folder = 'support';
         const timestamp = Date.now();
         const cleanName = ticketData.attachmentName ? ticketData.attachmentName.replace(/[^a-zA-Z0-9]/g, '_') : 'file';
-        const publicId = `ticket_attach_${timestamp}_${cleanName}`.substring(0, 100);
+        const customKey = `ticket_${timestamp}_${cleanName}`.substring(0, 100);
         
-        attachmentUrl = await CloudinaryUtil.uploadFile(ticketData.attachmentBase64, folder, publicId);
+        attachmentUrl = await S3Util.uploadFile(ticketData.attachmentBase64, folder, customKey);
       } catch (err: any) {
-        logger.error('Failed to upload ticket attachment to Cloudinary:', err);
+        logger.error('Failed to upload ticket attachment to S3:', err);
         throw new BadRequestError(`Failed to save attachment: ${err.message}`);
       }
     }
@@ -150,11 +150,11 @@ export class SupportService {
           const folder = 'support';
           const timestamp = Date.now();
           const cleanName = attachmentName ? attachmentName.replace(/[^a-zA-Z0-9]/g, '_') : 'reply_file';
-          const publicId = `reply_attach_${timestamp}_${cleanName}`.substring(0, 100);
+          const customKey = `reply_${timestamp}_${cleanName}`.substring(0, 100);
           
-          attachmentUrl = await CloudinaryUtil.uploadFile(attachmentBase64, folder, publicId);
+          attachmentUrl = await S3Util.uploadFile(attachmentBase64, folder, customKey);
         } catch (err: any) {
-          logger.warn('Failed to upload reply attachment to Cloudinary, storing fallback:', err);
+          logger.warn('Failed to upload reply attachment to S3, storing fallback:', err);
           attachmentUrl = attachmentBase64;
         }
       }

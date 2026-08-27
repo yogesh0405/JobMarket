@@ -81,6 +81,17 @@ export class AdvertisementController {
     }
   }
 
+  public static async getEmployerAdvertisementById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.user!.userId;
+      const id = req.params.id as string;
+      const ad = await AdvertisementService.getEmployerAdvertisementById(id, employerId);
+      res.json({ success: true, data: ad });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   public static async updateEmployerAdvertisement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const employerId = req.user!.userId;
@@ -189,9 +200,10 @@ export class AdvertisementController {
 
   public static async unpublish(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const adminId = req.user!.userId;
+      const adminId = (req as any).user?.userId || (req as any).user?.id || 'admin';
       const id = req.params.id as string;
-      const ad = await AdvertisementService.unpublishAdvertisement(id, adminId);
+      const { reason, unpublishReason, notes } = req.body || {};
+      const ad = await AdvertisementService.unpublishAdvertisement(id, adminId, reason || unpublishReason || notes);
       res.json({ success: true, data: ad, message: 'Advertisement unpublished successfully' });
     } catch (error) {
       next(error);

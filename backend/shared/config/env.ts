@@ -29,6 +29,12 @@ const envSchema = z.object({
   SUPPORT_SERVICE_PORT: z.coerce.number().default(5006),
   AD_SERVICE_PORT: z.coerce.number().default(5007),
   ADMIN_SERVICE_PORT: z.coerce.number().default(5008),
+
+  // AWS S3 Storage
+  AWS_ACCESS_KEY_ID: z.string().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().default(''),
+  AWS_REGION: z.string().default('ap-south-1'),
+  AWS_S3_BUCKET_NAME: z.string().default(''),
 });
 
 const _env = envSchema.safeParse(process.env);

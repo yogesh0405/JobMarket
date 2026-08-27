@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from '../../../../shared/types';
 import { JobRepository } from '../../../../src/modules/jobs/repositories/JobRepository';
 import { UserRepository } from '../../../../src/modules/auth/repositories/UserRepository';
 import { AdminRepository } from '../../../../src/modules/admin/repositories/AdminRepository';
-import { CloudinaryUtil } from '../../../../shared/utils/cloudinary';
+import { S3Util } from '../../../../shared/utils/s3';
 
 const isEmployerRole = (r?: string) => {
   const norm = (r || '').toLowerCase().trim();
@@ -81,9 +81,9 @@ export class JobController {
       }
 
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
-        const publicId = `job_logo_${employerId}_${Date.now()}`;
-        const cloudinaryUrl = await CloudinaryUtil.uploadImage(jobData.companyLogo, 'job_logos', publicId);
-        jobData.companyLogo = cloudinaryUrl;
+        const customKey = `logo_${employerId}_${Date.now()}`;
+        const s3Url = await S3Util.uploadImage(jobData.companyLogo, 'company_logos', customKey);
+        jobData.companyLogo = s3Url;
       }
 
       const data = await JobRepository.createJob(employerId, companyName, jobData);
@@ -132,9 +132,16 @@ export class JobController {
       const jobData = { ...req.body };
 
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
-        const publicId = `job_logo_${employerId}_${Date.now()}`;
-        const cloudinaryUrl = await CloudinaryUtil.uploadImage(jobData.companyLogo, 'job_logos', publicId);
-        jobData.companyLogo = cloudinaryUrl;
+        if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {
+          const oldKey = S3Util.extractKey(existingJob.companyLogo);
+          if (oldKey) {
+            await S3Util.deleteImage(oldKey).catch(() => {});
+          }
+        }
+
+        const customKey = `logo_${employerId}_${Date.now()}`;
+        const s3Url = await S3Util.uploadImage(jobData.companyLogo, 'company_logos', customKey);
+        jobData.companyLogo = s3Url;
       }
 
       const data = await JobRepository.updateJob(id, employerId, jobData);

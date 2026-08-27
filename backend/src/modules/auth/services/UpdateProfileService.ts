@@ -1,7 +1,7 @@
 import { UserRepository, User } from '../repositories/UserRepository';
 import { BadRequestError, NotFoundError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
-import { CloudinaryUtil } from '../../../utils/cloudinary';
+import { S3Util } from '../../../utils/s3';
 
 export class UpdateProfileService {
   static async execute(userId: string, profileData: {
@@ -36,12 +36,12 @@ export class UpdateProfileService {
 
     // Check if resume is being deleted (passed as null)
     if (profileData.resume === null && currentUser.resume?.url) {
-      const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.resume.url);
-      if (oldPublicId) {
+      const oldKey = S3Util.extractKey(currentUser.resume.url);
+      if (oldKey) {
         try {
-          await CloudinaryUtil.deleteFile(oldPublicId);
+          await S3Util.deleteFile(oldKey);
         } catch (err) {
-          logger.error(`Failed to delete resume ${oldPublicId} from Cloudinary:`, err);
+          logger.error(`Failed to delete resume ${oldKey} from S3:`, err);
         }
       }
     }
@@ -91,52 +91,61 @@ export class UpdateProfileService {
 
     // Check if new resume base64 data is uploaded
     if (profileData.resume && profileData.resume.url && profileData.resume.url.startsWith('data:')) {
-      // Clean up old resume from Cloudinary first if it exists
+      // Clean up old resume from S3 first if it exists
       if (currentUser.resume?.url) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.resume.url);
-        if (oldPublicId) {
+        const oldKey = S3Util.extractKey(currentUser.resume.url);
+        if (oldKey) {
           try {
-            await CloudinaryUtil.deleteFile(oldPublicId);
+            await S3Util.deleteFile(oldKey);
           } catch (err) {
-            logger.error(`Failed to delete old resume ${oldPublicId} from Cloudinary:`, err);
+            logger.error(`Failed to delete old resume ${oldKey} from S3:`, err);
           }
         }
       }
 
       try {
-        const publicId = `resume_${userId}_${Date.now()}`;
-        const isImage = profileData.resume.url.startsWith('data:image/');
-        const secureUrl = isImage
-          ? await CloudinaryUtil.uploadImage(profileData.resume.url, 'resumes', publicId)
-          : await CloudinaryUtil.uploadFile(profileData.resume.url, 'resumes', publicId);
+        const customKey = `resume_${userId}_${Date.now()}`;
+        const secureUrl = await S3Util.uploadFile(profileData.resume.url, 'resumes', customKey);
         profileData.resume.url = secureUrl;
       } catch (err: any) {
-        logger.error('Failed to upload user resume to Cloudinary, proceeding with direct storage:', err);
-        // Fallback: If Cloudinary fails, preserve data so profile save succeeds
+        logger.error('Failed to upload user resume to S3, proceeding with direct storage:', err);
       }
     }
 
-    // Check if new profile picture base64 data is uploaded
-    const photoUrl = profileData.profilePictureUrl || profileData.profile_picture_url;
+    // Check if new profile picture or company logo base64 data is uploaded
+    const photoUrl =
+      profileData.profilePictureUrl ||
+      profileData.profile_picture_url ||
+      (profileData as any).avatar ||
+      (profileData as any).avatarUrl ||
+      (profileData as any).companyLogo ||
+      (profileData as any).company_logo ||
+      (profileData as any).logo ||
+      (profileData as any).logoUrl;
+
     if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('data:image/')) {
       if (currentUser.profile_picture_url) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.profile_picture_url);
-        if (oldPublicId) {
+        const oldKey = S3Util.extractKey(currentUser.profile_picture_url);
+        if (oldKey) {
           try {
-            await CloudinaryUtil.deleteFile(oldPublicId);
+            await S3Util.deleteFile(oldKey);
           } catch (err) {
-            logger.error(`Failed to delete old avatar ${oldPublicId} from Cloudinary:`, err);
+            logger.error(`Failed to delete old avatar ${oldKey} from S3:`, err);
           }
         }
       }
 
       try {
-        const publicId = `avatar_${userId}_${Date.now()}`;
-        const secureUrl = await CloudinaryUtil.uploadImage(photoUrl, 'avatars', publicId);
+        const customKey = `avatar_${userId}_${Date.now()}`;
+        const secureUrl = await S3Util.uploadImage(photoUrl, 'profiles', customKey);
         profileData.profilePictureUrl = secureUrl;
         profileData.profile_picture_url = secureUrl;
+        (profileData as any).avatar = secureUrl;
+        (profileData as any).companyLogo = secureUrl;
+        (profileData as any).company_logo = secureUrl;
+        (profileData as any).logo = secureUrl;
       } catch (err: any) {
-        logger.error('Failed to upload profile picture to Cloudinary:', err);
+        logger.error('Failed to upload profile picture / company logo to S3:', err);
       }
     }
 

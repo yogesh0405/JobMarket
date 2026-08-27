@@ -8,7 +8,7 @@ export const AdminAdvertisementPage: React.FC = () => {
   const { showToast } = useToast();
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [analytics, setAnalytics] = useState<AdvertisementAnalytics | null>(null);
-  const [activeTab, setActiveTab] = useState<'pending' | 'all' | 'analytics'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'live' | 'unpublished' | 'past' | 'all' | 'analytics'>('pending');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -16,6 +16,9 @@ export const AdminAdvertisementPage: React.FC = () => {
   const [previewAd, setPreviewAd] = useState<Advertisement | null>(null);
   const [rejectingAd, setRejectingAd] = useState<Advertisement | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [unpublishingAd, setUnpublishingAd] = useState<Advertisement | null>(null);
+  const [unpublishReason, setUnpublishReason] = useState('');
+  const [approvingAd, setApprovingAd] = useState<Advertisement | null>(null);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   // Admin Direct Banner Creation Modal State
@@ -69,9 +72,12 @@ export const AdminAdvertisementPage: React.FC = () => {
     loadData();
   }, [statusFilter]);
 
-  // Handle Approve
-  const handleApprove = async (id: string) => {
+  // Handle Approve Confirm
+  const handleConfirmApprove = async () => {
+    if (!approvingAd || submittingActionKey || isSubmittingAction) return;
+    const id = approvingAd.id;
     setSubmittingActionKey(`approve-${id}`);
+    setIsSubmittingAction(true);
     try {
       const res = await apiFetch(`/api/v1/admin/advertisements/${id}/approve`, {
         method: 'PATCH',
@@ -80,6 +86,7 @@ export const AdminAdvertisementPage: React.FC = () => {
       if (res.ok && json.success) {
         showToast('Advertisement approved and published to homepage!', 'success');
         window.dispatchEvent(new CustomEvent('notifications-updated'));
+        setApprovingAd(null);
         if (previewAd?.id === id) setPreviewAd(null);
         loadData();
       } else {
@@ -89,22 +96,27 @@ export const AdminAdvertisementPage: React.FC = () => {
       showToast('Error approving advertisement', 'error');
     } finally {
       setSubmittingActionKey(null);
+      setIsSubmittingAction(false);
     }
   };
 
   // Handle Reject Submit
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingActionKey || isSubmittingAction) return;
     if (!rejectingAd || !rejectionReason.trim()) {
       showToast('Please provide a valid rejection reason', 'warning');
       return;
     }
 
-    setSubmittingActionKey(`reject-${rejectingAd.id}`);
+    const adId = rejectingAd.id;
+    setSubmittingActionKey(`reject-${adId}`);
+    setIsSubmittingAction(true);
     try {
-      const res = await apiFetch(`/api/v1/admin/advertisements/${rejectingAd.id}/reject`, {
+      const res = await apiFetch(`/api/v1/admin/advertisements/${adId}/reject`, {
         method: 'PATCH',
-        body: JSON.stringify({ reason: rejectionReason }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectionReason.trim() }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
@@ -112,7 +124,7 @@ export const AdminAdvertisementPage: React.FC = () => {
         window.dispatchEvent(new CustomEvent('notifications-updated'));
         setRejectingAd(null);
         setRejectionReason('');
-        if (previewAd?.id === rejectingAd.id) setPreviewAd(null);
+        if (previewAd?.id === adId) setPreviewAd(null);
         loadData();
       } else {
         showToast(json.message || 'Failed to reject advertisement', 'error');
@@ -121,22 +133,32 @@ export const AdminAdvertisementPage: React.FC = () => {
       showToast('Error rejecting advertisement', 'error');
     } finally {
       setSubmittingActionKey(null);
+      setIsSubmittingAction(false);
     }
   };
 
-  // Handle Unpublish (Live Banners -> Set to Inactive/Unpublished)
-  const handleUnpublish = async (id: string) => {
-    if (!window.confirm('Unpublish this advertisement banner from the homepage?')) return;
-    setSubmittingActionKey(`unpublish-${id}`);
+  // Handle Unpublish Submit with Reason
+  const handleUnpublishSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submittingActionKey || isSubmittingAction) return;
+    if (!unpublishingAd) return;
+
+    const adId = unpublishingAd.id;
+    setSubmittingActionKey(`unpublish-${adId}`);
+    setIsSubmittingAction(true);
     try {
-      const res = await apiFetch(`/api/v1/admin/advertisements/${id}/unpublish`, {
+      const res = await apiFetch(`/api/v1/admin/advertisements/${adId}/unpublish`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: unpublishReason.trim() }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast('Advertisement unpublished (Set to Inactive)', 'info');
+        showToast('Advertisement banner unpublished and employer notified', 'info');
         window.dispatchEvent(new CustomEvent('notifications-updated'));
-        if (previewAd?.id === id) setPreviewAd(null);
+        setUnpublishingAd(null);
+        setUnpublishReason('');
+        if (previewAd?.id === adId) setPreviewAd(null);
         loadData();
       } else {
         showToast(json.message || 'Failed to unpublish advertisement', 'error');
@@ -145,6 +167,7 @@ export const AdminAdvertisementPage: React.FC = () => {
       showToast('Error unpublishing advertisement', 'error');
     } finally {
       setSubmittingActionKey(null);
+      setIsSubmittingAction(false);
     }
   };
 
@@ -257,29 +280,78 @@ export const AdminAdvertisementPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const isAdLive = (ad: Advertisement) => {
+    const isLiveStatus = (ad.status === 'APPROVED' || ad.status === 'PUBLISHED') && ad.is_active === true;
+    const notExpired = !ad.end_date || new Date(ad.end_date).getTime() >= new Date().getTime();
+    return isLiveStatus && notExpired;
+  };
+
+  const isAdPending = (ad: Advertisement) => {
+    return ad.status === 'PENDING_APPROVAL' || ad.status === 'SUBMITTED' || ad.status === 'RESUBMITTED';
+  };
+
+  const isAdUnpublished = (ad: Advertisement) => {
+    if (isAdPending(ad) || isAdLive(ad)) return false;
+    return ad.status === 'UNPUBLISHED' || (!ad.is_active && (ad.status === 'DRAFT' || ad.status === 'APPROVED' || ad.status === 'PUBLISHED'));
+  };
+
+  const isAdPast = (ad: Advertisement) => {
+    if (isAdPending(ad) || isAdLive(ad)) return false;
+    const isExpired = ad.status === 'EXPIRED' || (ad.end_date && new Date(ad.end_date).getTime() < new Date().getTime());
+    return isExpired || ad.status === 'REJECTED';
+  };
+
+  const countPending = advertisements.filter((ad) => isAdPending(ad)).length;
+  const countLive = advertisements.filter((ad) => isAdLive(ad)).length;
+  const countUnpublished = advertisements.filter((ad) => isAdUnpublished(ad)).length;
+  const countPast = advertisements.filter((ad) => isAdPast(ad)).length;
+
   // Filter list per tab
   const displayedAds = advertisements.filter((ad) => {
     if (activeTab === 'pending') {
-      return ad.status === 'PENDING_APPROVAL' || ad.status === 'SUBMITTED';
+      return isAdPending(ad);
+    }
+    if (activeTab === 'live') {
+      return isAdLive(ad);
+    }
+    if (activeTab === 'unpublished') {
+      return isAdUnpublished(ad);
+    }
+    if (activeTab === 'past') {
+      return isAdPast(ad);
     }
     return true;
   });
 
-  const getStatusPill = (status: string) => {
+  const getStatusPill = (status: string, ad?: Advertisement) => {
+    if (ad && isAdLive(ad)) {
+      return <span style={{ background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Live / Active</span>;
+    }
+    if (ad && isAdUnpublished(ad)) {
+      return <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Unpublished</span>;
+    }
+    if (ad && ad.end_date && new Date(ad.end_date).getTime() < new Date().getTime()) {
+      return <span style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Expired</span>;
+    }
     switch (status) {
       case 'APPROVED':
       case 'PUBLISHED':
         return <span style={{ background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Live / Active</span>;
+      case 'RESUBMITTED':
+        return <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Resubmitted</span>;
       case 'PENDING_APPROVAL':
       case 'SUBMITTED':
         return <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Pending Approval</span>;
       case 'REJECTED':
         return <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Rejected</span>;
-      case 'DRAFT':
+      case 'EXPIRED':
+        return <span style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Expired</span>;
       case 'UNPUBLISHED':
+        return <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Unpublished</span>;
+      case 'DRAFT':
       case 'INACTIVE':
       default:
-        return <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Inactive / Unpublished</span>;
+        return <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Inactive / Draft</span>;
     }
   };
 
@@ -340,22 +412,54 @@ export const AdminAdvertisementPage: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setActiveTab('pending')}
           style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'pending' ? '3px solid #2563eb' : 'none', fontWeight: 'bold', color: activeTab === 'pending' ? '#2563eb' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <span>Pending Approvals</span>
-          {analytics && analytics.pending_approval > 0 && (
-            <span style={{ background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontSize: '11px' }}>{analytics.pending_approval}</span>
+          {countPending > 0 && (
+            <span style={{ background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontSize: '11px' }}>{countPending}</span>
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('live')}
+          style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'live' ? '3px solid #16a34a' : 'none', fontWeight: 'bold', color: activeTab === 'live' ? '#16a34a' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <span>Live Banners</span>
+          {countLive > 0 && (
+            <span style={{ background: '#16a34a', color: 'white', borderRadius: '999px', padding: '2px 8px', fontSize: '11px' }}>{countLive}</span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('unpublished')}
+          style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'unpublished' ? '3px solid #d97706' : 'none', fontWeight: 'bold', color: activeTab === 'unpublished' ? '#d97706' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <span>Unpublished Banners</span>
+          {countUnpublished > 0 && (
+            <span style={{ background: '#d97706', color: 'white', borderRadius: '999px', padding: '2px 8px', fontSize: '11px' }}>{countUnpublished}</span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('past')}
+          style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'past' ? '3px solid #64748b' : 'none', fontWeight: 'bold', color: activeTab === 'past' ? '#0f172a' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <span>Past & Expired Banners</span>
+          {countPast > 0 && (
+            <span style={{ background: '#94a3b8', color: 'white', borderRadius: '999px', padding: '2px 8px', fontSize: '11px' }}>{countPast}</span>
+          )}
+        </button>
+
         <button
           onClick={() => setActiveTab('all')}
           style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'all' ? '3px solid #2563eb' : 'none', fontWeight: 'bold', color: activeTab === 'all' ? '#2563eb' : '#64748b', cursor: 'pointer' }}
         >
-          All Advertisements
+          All Advertisements ({advertisements.length})
         </button>
+
         <button
           onClick={() => setActiveTab('analytics')}
           style={{ padding: '10px 16px', background: 'none', border: 'none', borderBottom: activeTab === 'analytics' ? '3px solid #2563eb' : 'none', fontWeight: 'bold', color: activeTab === 'analytics' ? '#2563eb' : '#64748b', cursor: 'pointer' }}
@@ -448,7 +552,7 @@ export const AdminAdvertisementPage: React.FC = () => {
 
                       {/* Priority & Status */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ marginBottom: '4px' }}>{getStatusPill(ad.status)}</div>
+                        <div style={{ marginBottom: '4px' }}>{getStatusPill(ad.status, ad)}</div>
                         <div style={{ fontSize: '11px', color: '#475569', fontWeight: 'bold' }}>Priority: {ad.priority}</div>
                       </td>
 
@@ -460,37 +564,40 @@ export const AdminAdvertisementPage: React.FC = () => {
 
                       {/* Actions */}
                       <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => setPreviewAd(ad)}
                             style={{ background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
                           >
                             Preview
                           </button>
-                          {/* Action Buttons per Status Rules */}
-                          {(ad.status === 'PENDING_APPROVAL' || ad.status === 'SUBMITTED' || ad.status === 'DRAFT' || ad.status === 'EXPIRED') && (
-                            <button
-                              onClick={() => handleApprove(ad.id)}
-                              disabled={!!submittingActionKey}
-                              style={{ background: '#16a34a', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
-                            >
-                              {submittingActionKey === `approve-${ad.id}` && renderSpinner('white')}
-                              {ad.status === 'DRAFT' || ad.status === 'EXPIRED' ? 'Publish' : 'Approve'}
-                            </button>
+
+                          {/* 1. Pending / Resubmitted Actions */}
+                          {isAdPending(ad) && (
+                            <>
+                              <button
+                                onClick={() => setApprovingAd(ad)}
+                                disabled={!!submittingActionKey}
+                                style={{ background: '#16a34a', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                {submittingActionKey === `approve-${ad.id}` && renderSpinner('white')}
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => { setRejectingAd(ad); setRejectionReason(''); }}
+                                disabled={!!submittingActionKey}
+                                style={{ background: '#dc2626', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                {submittingActionKey === `reject-${ad.id}` && renderSpinner('white')}
+                                Reject
+                              </button>
+                            </>
                           )}
-                          {(ad.status === 'PENDING_APPROVAL' || ad.status === 'SUBMITTED') && (
+
+                          {/* 2. Live Active Banner Actions: ONLY UNPUBLISH (Live banners cannot be deleted) */}
+                          {isAdLive(ad) && (
                             <button
-                              onClick={() => { setRejectingAd(ad); setRejectionReason(''); }}
-                              disabled={!!submittingActionKey}
-                              style={{ background: '#dc2626', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
-                            >
-                              {submittingActionKey === `reject-${ad.id}` && renderSpinner('white')}
-                              Reject
-                            </button>
-                          )}
-                          {(ad.status === 'APPROVED' || ad.status === 'PUBLISHED') && (
-                            <button
-                              onClick={() => handleUnpublish(ad.id)}
+                              onClick={() => { setUnpublishingAd(ad); setUnpublishReason(''); }}
                               disabled={!!submittingActionKey}
                               style={{ background: '#d97706', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
                             >
@@ -498,14 +605,40 @@ export const AdminAdvertisementPage: React.FC = () => {
                               Unpublish
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDelete(ad.id)}
-                            disabled={!!submittingActionKey}
-                            style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
-                          >
-                            {submittingActionKey === `delete-${ad.id}` && renderSpinner('#dc2626')}
-                            Delete
-                          </button>
+
+                          {/* 3. Unpublished Banner Actions: ONLY PUBLISH (No delete option in unpublished section) */}
+                          {isAdUnpublished(ad) && (
+                            <button
+                              onClick={() => setApprovingAd(ad)}
+                              disabled={!!submittingActionKey}
+                              style={{ background: '#2563eb', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                            >
+                              {submittingActionKey === `approve-${ad.id}` && renderSpinner('white')}
+                              Publish Live
+                            </button>
+                          )}
+
+                          {/* 4. Past / Expired Actions: Can Re-publish and CAN DELETE */}
+                          {isAdPast(ad) && (
+                            <>
+                              <button
+                                onClick={() => setApprovingAd(ad)}
+                                disabled={!!submittingActionKey}
+                                style={{ background: '#2563eb', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                {submittingActionKey === `approve-${ad.id}` && renderSpinner('white')}
+                                Re-publish
+                              </button>
+                              <button
+                                onClick={() => handleDelete(ad.id)}
+                                disabled={!!submittingActionKey}
+                                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                {submittingActionKey === `delete-${ad.id}` && renderSpinner('#dc2626')}
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -576,37 +709,75 @@ export const AdminAdvertisementPage: React.FC = () => {
               <div><strong>Status:</strong> {previewAd.status}</div>
               <div><strong>Linked Job:</strong> {previewAd.job_title ? `${previewAd.job_title} (${previewAd.job_location})` : 'None (External Redirect)'}</div>
               <div><strong>Priority:</strong> {previewAd.priority}</div>
-              <div><strong>Start Date:</strong> {new Date(previewAd.start_date).toLocaleString()}</div>
-              <div><strong>Expiry Date:</strong> {new Date(previewAd.end_date).toLocaleString()}</div>
-              <div><strong>Target Audience:</strong> {previewAd.target_audience || 'All Candidates'}</div>
-              <div><strong>Redirect Destination:</strong> {previewAd.linked_job_id ? `/job/${previewAd.linked_job_id}` : previewAd.redirect_url || '/jobs'}</div>
             </div>
 
+            {/* Metadata Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Title</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a' }}>{previewAd.title}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Target Audience</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a' }}>{previewAd.target_audience || 'All Platform Users'}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Priority Level</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a' }}>{previewAd.priority}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Created By</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a' }}>{previewAd.owner_type === 'ADMIN' ? '🛡️ Admin' : '🏢 Employer'}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Date Range</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a', fontSize: '0.85rem' }}>
+                  {previewAd.start_date ? new Date(previewAd.start_date).toLocaleDateString() : 'Immediate'} - {previewAd.end_date ? new Date(previewAd.end_date).toLocaleDateString() : 'Continuous'}
+                </p>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Call to Action</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#2563eb', fontSize: '0.85rem' }}>
+                  {previewAd.button_text || 'Learn More'} &rarr; <span style={{ color: '#64748b', fontSize: '0.8rem' }}>({previewAd.redirect_url})</span>
+                </p>
+              </div>
+            </div>
+
+            {previewAd.description && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Description / Caption</span>
+                <p style={{ margin: '4px 0 0 0', color: '#334155', lineHeight: '1.5' }}>{previewAd.description}</p>
+              </div>
+            )}
+
             {/* Modal Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-              {(previewAd.status === 'PENDING_APPROVAL' || previewAd.status === 'SUBMITTED' || previewAd.status === 'DRAFT' || previewAd.status === 'EXPIRED') && (
-                <button
-                  onClick={() => handleApprove(previewAd.id)}
-                  disabled={!!submittingActionKey}
-                  style={{ padding: '10px 22px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
-                >
-                  {submittingActionKey === `approve-${previewAd.id}` && renderSpinner('white')}
-                  {previewAd.status === 'DRAFT' || previewAd.status === 'EXPIRED' ? 'Publish Now' : 'Approve & Publish Now'}
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem', flexWrap: 'wrap' }}>
+              {/* 1. Pending Submissions */}
+              {isAdPending(previewAd) && (
+                <>
+                  <button
+                    onClick={() => setApprovingAd(previewAd)}
+                    disabled={!!submittingActionKey}
+                    style={{ padding: '10px 22px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {submittingActionKey === `approve-${previewAd.id}` && renderSpinner('white')}
+                    Approve & Publish Live
+                  </button>
+                  <button
+                    onClick={() => { setRejectingAd(previewAd); setRejectionReason(''); }}
+                    disabled={!!submittingActionKey}
+                    style={{ padding: '10px 22px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {submittingActionKey === `reject-${previewAd.id}` && renderSpinner('white')}
+                    Reject Submission
+                  </button>
+                </>
               )}
-              {(previewAd.status === 'PENDING_APPROVAL' || previewAd.status === 'SUBMITTED') && (
+
+              {/* 2. Live Active Banner: ONLY Unpublish (Cannot Delete Live Banners) */}
+              {isAdLive(previewAd) && (
                 <button
-                  onClick={() => { setRejectingAd(previewAd); setRejectionReason(''); }}
-                  disabled={!!submittingActionKey}
-                  style={{ padding: '10px 22px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
-                >
-                  {submittingActionKey === `reject-${previewAd.id}` && renderSpinner('white')}
-                  Reject Submission
-                </button>
-              )}
-              {(previewAd.status === 'APPROVED' || previewAd.status === 'PUBLISHED') && (
-                <button
-                  onClick={() => handleUnpublish(previewAd.id)}
+                  onClick={() => { setUnpublishingAd(previewAd); setUnpublishReason(''); }}
                   disabled={!!submittingActionKey}
                   style={{ padding: '10px 22px', background: '#d97706', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
                 >
@@ -614,6 +785,41 @@ export const AdminAdvertisementPage: React.FC = () => {
                   Unpublish Banner
                 </button>
               )}
+
+              {/* 3. Unpublished Banner: ONLY Publish (No delete option in unpublished section) */}
+              {isAdUnpublished(previewAd) && (
+                <button
+                  onClick={() => setApprovingAd(previewAd)}
+                  disabled={!!submittingActionKey}
+                  style={{ padding: '10px 22px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                >
+                  {submittingActionKey === `approve-${previewAd.id}` && renderSpinner('white')}
+                  Publish Live
+                </button>
+              )}
+
+              {/* 4. Past & Expired Banners: Can Re-publish or Delete */}
+              {isAdPast(previewAd) && (
+                <>
+                  <button
+                    onClick={() => setApprovingAd(previewAd)}
+                    disabled={!!submittingActionKey}
+                    style={{ padding: '10px 22px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {submittingActionKey === `approve-${previewAd.id}` && renderSpinner('white')}
+                    Re-publish Live
+                  </button>
+                  <button
+                    onClick={() => handleDelete(previewAd.id)}
+                    disabled={!!submittingActionKey}
+                    style={{ padding: '10px 22px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {submittingActionKey === `delete-${previewAd.id}` && renderSpinner('#dc2626')}
+                    Delete Banner
+                  </button>
+                </>
+              )}
+
               <button onClick={() => setPreviewAd(null)} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
                 Close
               </button>
@@ -646,20 +852,165 @@ export const AdminAdvertisementPage: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button
                   type="button"
+                  disabled={!!submittingActionKey || isSubmittingAction}
                   onClick={() => setRejectingAd(null)}
-                  style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingAction}
-                  style={{ padding: '8px 20px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                  disabled={!!submittingActionKey || isSubmittingAction}
+                  style={{
+                    padding: '8px 20px',
+                    background: (submittingActionKey || isSubmittingAction) ? '#94a3b8' : '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
                 >
-                  {isSubmittingAction ? 'Rejecting...' : 'Confirm Rejection'}
+                  {(submittingActionKey === `reject-${rejectingAd.id}` || isSubmittingAction) && renderSpinner('white')}
+                  {(submittingActionKey === `reject-${rejectingAd.id}` || isSubmittingAction) ? 'Rejecting...' : 'Confirm Rejection'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* UNPUBLISH REASON MODAL */}
+      {unpublishingAd && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '500px', padding: '2rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: '800', color: '#d97706' }}>
+              Unpublish Advertisement Banner
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Provide a reason for unpublishing "{unpublishingAd.title}". The banner will be taken down from the homepage and the employer will receive an email and in-app notice.
+            </p>
+
+            <form onSubmit={handleUnpublishSubmit}>
+              <textarea
+                required
+                rows={4}
+                placeholder="e.g., Campaign duration ended / Moderation policy violation / Promotional banner content out of date."
+                value={unpublishReason}
+                onChange={(e) => setUnpublishReason(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', marginBottom: '1.25rem', fontFamily: 'inherit' }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button
+                  type="button"
+                  disabled={!!submittingActionKey || isSubmittingAction}
+                  onClick={() => setUnpublishingAd(null)}
+                  style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!!submittingActionKey || isSubmittingAction}
+                  style={{
+                    padding: '8px 20px',
+                    background: (submittingActionKey || isSubmittingAction) ? '#94a3b8' : '#d97706',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {(submittingActionKey === `unpublish-${unpublishingAd.id}` || isSubmittingAction) && renderSpinner('white')}
+                  {(submittingActionKey === `unpublish-${unpublishingAd.id}` || isSubmittingAction) ? 'Unpublishing...' : 'Confirm Unpublish'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* APPROVAL & PUBLICATION CONFIRMATION MODAL */}
+      {approvingAd && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                  Approve & Publish Advertisement
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  Live homepage publication confirmation
+                </span>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.95rem', marginBottom: '4px' }}>
+                {approvingAd.title}
+              </div>
+              <div style={{ fontSize: '0.825rem', color: '#64748b' }}>
+                Owner: <span style={{ fontWeight: '600', color: '#334155' }}>{approvingAd.company_name || approvingAd.employer_name || approvingAd.owner_type || 'Employer'}</span>
+              </div>
+              {approvingAd.job_title && (
+                <div style={{ fontSize: '0.825rem', color: '#64748b', marginTop: '2px' }}>
+                  Linked Job: <span style={{ fontWeight: '600', color: '#334155' }}>{approvingAd.job_title}</span>
+                </div>
+              )}
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5', margin: '0 0 1.5rem 0' }}>
+              Are you sure you want to approve this advertisement? It will go live immediately on the platform's homepage carousel and an approval confirmation email with in-app notification will be sent to the employer.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                disabled={!!submittingActionKey || isSubmittingAction}
+                onClick={() => setApprovingAd(null)}
+                style={{ padding: '9px 18px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!!submittingActionKey || isSubmittingAction}
+                onClick={handleConfirmApprove}
+                style={{
+                  padding: '9px 22px',
+                  background: (submittingActionKey || isSubmittingAction) ? '#94a3b8' : '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: (submittingActionKey || isSubmittingAction) ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                {(submittingActionKey === `approve-${approvingAd.id}` || isSubmittingAction) && renderSpinner('white')}
+                {(submittingActionKey === `approve-${approvingAd.id}` || isSubmittingAction) ? 'Publishing Live...' : 'Confirm & Publish Live'}
+              </button>
+            </div>
           </div>
         </div>
       )}

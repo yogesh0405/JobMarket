@@ -85,6 +85,7 @@ export const resolveWebNotificationRoute = (
   if (
     type === 'AD_APPROVED' ||
     type === 'AD_REJECTED' ||
+    type === 'AD_UNPUBLISHED' ||
     combined.includes('BANNER') ||
     combined.includes('PROMOT')
   ) {

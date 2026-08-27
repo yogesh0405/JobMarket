@@ -9,6 +9,9 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  AlertCircle,
+  EyeOff,
+  RefreshCw,
 } from 'lucide-react-native';
 import { Advertisement } from '../../../types';
 import { COLORS } from '../../../constants/theme';
@@ -41,9 +44,24 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
   }, [banner.banner_image]);
 
   const rawStatus = (banner.status || (banner as any).approval_status || 'PENDING_APPROVAL').toUpperCase();
-  const isLive = (rawStatus === 'APPROVED' || rawStatus === 'PUBLISHED') && banner.is_active === true;
+  const isPast = rawStatus === 'EXPIRED' || (banner.end_date ? new Date(banner.end_date).getTime() < new Date().getTime() : false);
+  const isLive = !isPast && (rawStatus === 'APPROVED' || rawStatus === 'PUBLISHED') && banner.is_active === true;
   const isRejected = rawStatus === 'REJECTED';
-  const isInReview = !isLive && !isRejected;
+  const isResubmitted = rawStatus === 'RESUBMITTED';
+  const isUnpublished = !isPast && (rawStatus === 'UNPUBLISHED' || ((rawStatus === 'DRAFT' || rawStatus === 'APPROVED' || rawStatus === 'PUBLISHED') && banner.is_active === false));
+  const isInReview = !isLive && !isPast && !isRejected && !isUnpublished && !isResubmitted;
+
+  const reasonText = (
+    banner.rejection_reason ||
+    (banner as any).rejectionReason ||
+    (banner as any).unpublish_reason ||
+    (banner as any).unpublishReason ||
+    (banner as any).admin_reason ||
+    (banner as any).adminReason ||
+    (banner as any).notes ||
+    (banner as any).reason ||
+    ''
+  ).trim();
 
   // Format dates e.g. 26/08/2026 -> 09/09/2026
   const formatDate = (dStr?: string) => {
@@ -82,11 +100,18 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
             <Text style={styles.featuredJobTagText}>{adTypeLabel}</Text>
           </View>
 
-          {/* Status Badge (In Review / Live / Rejected) */}
+          {/* Status Badge (In Review / Resubmitted / Live / Rejected / Unpublished / Expired) */}
           {isInReview && (
             <View style={styles.statusBadgeReview}>
               <Clock size={13} color="#B45309" strokeWidth={2.4} />
               <Text style={styles.statusTextReview}>In Review</Text>
+            </View>
+          )}
+
+          {isResubmitted && (
+            <View style={styles.statusBadgeResubmitted}>
+              <RefreshCw size={12} color="#1D4ED8" strokeWidth={2.5} />
+              <Text style={styles.statusTextResubmitted}>Resubmitted</Text>
             </View>
           )}
 
@@ -97,10 +122,24 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
             </View>
           )}
 
+          {isPast && (
+            <View style={styles.statusBadgeExpired}>
+              <Calendar size={13} color="#64748B" strokeWidth={2.4} />
+              <Text style={styles.statusTextExpired}>Expired</Text>
+            </View>
+          )}
+
           {isRejected && (
             <View style={styles.statusBadgeRejected}>
               <XCircle size={13} color="#DC2626" strokeWidth={2.4} />
               <Text style={styles.statusTextRejected}>Rejected</Text>
+            </View>
+          )}
+
+          {isUnpublished && (
+            <View style={styles.statusBadgeUnpublished}>
+              <EyeOff size={13} color="#D97706" strokeWidth={2.4} />
+              <Text style={styles.statusTextUnpublished}>Unpublished</Text>
             </View>
           )}
         </View>
@@ -121,16 +160,59 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
         </Text>
       </View>
 
-      {/* Admin Rejection Notice if applicable */}
-      {isRejected && banner.rejection_reason ? (
+      {/* 3. Reason for Rejection Notice if applicable */}
+      {isRejected && (
         <View style={styles.rejectionNoticeBox}>
+          <View style={styles.noticeHeaderRow}>
+            <AlertCircle size={14} color="#DC2626" strokeWidth={2.5} />
+            <Text style={styles.rejectionNoticeHeading}>Reason for Rejection</Text>
+          </View>
           <Text style={styles.rejectionNoticeText}>
-            Admin Note: {banner.rejection_reason}
+            {reasonText || 'This advertisement banner did not meet platform guidelines. Please update the details and resubmit.'}
           </Text>
         </View>
-      ) : null}
+      )}
 
-      {/* 3. Action Buttons (Analytics, Edit, Delete) */}
+      {/* 4. Reason for Unpublishing Notice if applicable */}
+      {isUnpublished && (
+        <View style={styles.unpublishedNoticeBox}>
+          <View style={styles.noticeHeaderRow}>
+            <EyeOff size={14} color="#D97706" strokeWidth={2.5} />
+            <Text style={styles.unpublishedNoticeHeading}>Reason for Unpublishing</Text>
+          </View>
+          <Text style={styles.unpublishedNoticeText}>
+            {reasonText || 'This banner was unpublished from the homepage by an administrator. You can edit and resubmit it.'}
+          </Text>
+        </View>
+      )}
+
+      {/* 5. Expired Notice if applicable */}
+      {isPast && (
+        <View style={styles.expiredNoticeBox}>
+          <View style={styles.noticeHeaderRow}>
+            <Calendar size={14} color="#64748B" strokeWidth={2.5} />
+            <Text style={styles.expiredNoticeHeading}>Campaign Expired</Text>
+          </View>
+          <Text style={styles.expiredNoticeText}>
+            This banner campaign duration has ended. You can update dates to resubmit or run a new campaign.
+          </Text>
+        </View>
+      )}
+
+      {/* 6. Resubmitted Notice if applicable */}
+      {isResubmitted && (
+        <View style={styles.resubmittedNoticeBox}>
+          <View style={styles.noticeHeaderRow}>
+            <RefreshCw size={13} color="#1D4ED8" strokeWidth={2.4} />
+            <Text style={styles.resubmittedNoticeHeading}>Resubmitted for Review</Text>
+          </View>
+          <Text style={styles.resubmittedNoticeText}>
+            You have resubmitted this advertisement with changes. It is currently under moderation review by administrators.
+          </Text>
+        </View>
+      )}
+
+      {/* 5. Action Buttons (Analytics, Edit, Delete) */}
       <View style={styles.actionButtonsRow}>
         <TouchableOpacity
           style={styles.analyticsBtn}
@@ -263,6 +345,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#DC2626',
   },
+  statusBadgeUnpublished: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+  },
+  statusTextUnpublished: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  statusBadgeExpired: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+  },
+  statusTextExpired: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  statusBadgeResubmitted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+  },
+  statusTextResubmitted: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
 
   titleGradientOverlay: {
     position: 'absolute',
@@ -298,20 +428,109 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
+
+  /* Notice Boxes */
+  noticeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 4,
+  },
   rejectionNoticeBox: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#DC2626',
     borderRadius: 6,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 8,
     marginBottom: 10,
   },
-  rejectionNoticeText: {
+  rejectionNoticeHeading: {
     fontSize: 11.5,
+    fontWeight: '800',
     color: '#991B1B',
-    fontWeight: '600',
-    lineHeight: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  rejectionNoticeText: {
+    fontSize: 12,
+    color: '#7F1D1D',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  unpublishedNoticeBox: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#D97706',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  unpublishedNoticeHeading: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#92400E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  unpublishedNoticeText: {
+    fontSize: 12,
+    color: '#78350F',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  resubmittedNoticeBox: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#1D4ED8',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  resubmittedNoticeHeading: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#1E40AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  resubmittedNoticeText: {
+    fontSize: 12,
+    color: '#1E3A8A',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  expiredNoticeBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#64748B',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  expiredNoticeHeading: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  expiredNoticeText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+    lineHeight: 17,
   },
 
   /* 3. Date & Priority Box */

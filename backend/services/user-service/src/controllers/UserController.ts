@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRepository } from '../../../../src/modules/auth/repositories/UserRepository';
 import { UpdateProfileService } from '../../../../src/modules/auth/services/UpdateProfileService';
-import { CloudinaryUtil } from '../../../../shared/utils/cloudinary';
+import { S3Util } from '../../../../shared/utils/s3';
 import { AuthenticatedRequest } from '../../../../shared/types';
 import { sanitizeUserForResponse } from '../../../auth-service/src/controllers/AuthController';
 
@@ -60,9 +60,9 @@ export class UserController {
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       if (user.resume && user.resume.url) {
-        const publicId = CloudinaryUtil.extractPublicId(user.resume.url);
-        if (publicId) {
-          try { await CloudinaryUtil.deleteFile(publicId); } catch (e) {}
+        const oldKey = S3Util.extractKey(user.resume.url);
+        if (oldKey) {
+          try { await S3Util.deleteFile(oldKey); } catch (e) {}
         }
       }
 
@@ -76,10 +76,10 @@ export class UserController {
   static async getResumeSignature(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.headers['x-user-id'] as string || req.user?.userId;
-      const resourceType = (req.query.resourceType as string) || 'auto';
-      const publicId = `resume_${userId}_${Date.now()}`;
-      const sigData = CloudinaryUtil.getUploadSignature('resumes', publicId);
-      res.status(200).json({ success: true, data: { ...sigData, resourceType } });
+      const filename = (req.query.filename as string) || `resume_${userId}_${Date.now()}.pdf`;
+      const contentType = (req.query.contentType as string) || 'application/pdf';
+      const presignedData = await S3Util.getPresignedUploadUrl('resumes', filename, contentType);
+      res.status(200).json({ success: true, data: presignedData });
     } catch (error) {
       next(error);
     }
@@ -102,20 +102,17 @@ export class UserController {
       }
 
       if (!finalUrl && base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {
-        const publicId = `resume_${userId}_${Date.now()}`;
-        const isPdf = (type && type.includes('pdf')) || (fileTitle && fileTitle.toLowerCase().endsWith('.pdf'));
-        finalUrl = isPdf
-          ? await CloudinaryUtil.uploadFile(base64Data, 'resumes', publicId)
-          : await CloudinaryUtil.uploadImage(base64Data, 'resumes', publicId);
+        const customKey = `resume_${userId}_${Date.now()}`;
+        finalUrl = await S3Util.uploadFile(base64Data, 'resumes', customKey);
       }
 
       if (!finalUrl) return res.status(400).json({ error: 'Resume URL or file data is required' });
 
       const currentUser = await UserRepository.findById(userId);
       if (currentUser?.resume?.url && currentUser.resume.url !== finalUrl) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.resume.url);
-        if (oldPublicId) {
-          try { await CloudinaryUtil.deleteFile(oldPublicId); } catch (e) {}
+        const oldKey = S3Util.extractKey(currentUser.resume.url);
+        if (oldKey) {
+          try { await S3Util.deleteFile(oldKey); } catch (e) {}
         }
       }
 
@@ -140,22 +137,22 @@ export class UserController {
       const { image } = req.body;
 
       if (!image) return res.status(400).json({ error: 'Image data is required' });
-      if (!image.startsWith('data:image/webp;base64,')) {
-        return res.status(400).json({ error: 'Only WebP images are supported for profile pictures' });
+      if (!image.startsWith('data:image/')) {
+        return res.status(400).json({ error: 'Invalid image format' });
       }
 
       const user = await UserRepository.findById(userId);
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       if (user.profile_picture_url) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(user.profile_picture_url);
-        if (oldPublicId) {
-          try { await CloudinaryUtil.deleteImage(oldPublicId); } catch (e) {}
+        const oldKey = S3Util.extractKey(user.profile_picture_url);
+        if (oldKey) {
+          try { await S3Util.deleteImage(oldKey); } catch (e) {}
         }
       }
 
-      const publicId = `user_${userId}_${Date.now()}`;
-      const secureUrl = await CloudinaryUtil.uploadImage(image, 'profiles', publicId);
+      const customKey = `avatar_${userId}_${Date.now()}`;
+      const secureUrl = await S3Util.uploadImage(image, 'profiles', customKey);
       const updatedUser = await UserRepository.updateProfile(userId, { profile_picture_url: secureUrl });
 
       res.status(200).json({ success: true, data: sanitizeUserForResponse(updatedUser) });
@@ -171,9 +168,9 @@ export class UserController {
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       if (user.profile_picture_url) {
-        const publicId = CloudinaryUtil.extractPublicId(user.profile_picture_url);
-        if (publicId) {
-          try { await CloudinaryUtil.deleteImage(publicId); } catch (e) {}
+        const oldKey = S3Util.extractKey(user.profile_picture_url);
+        if (oldKey) {
+          try { await S3Util.deleteImage(oldKey); } catch (e) {}
         }
       }
 

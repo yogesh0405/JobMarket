@@ -19,6 +19,8 @@ import {
   ArrowRight,
   Briefcase,
   CheckCircle2,
+  AlertCircle,
+  EyeOff,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -223,6 +225,28 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
           ]}
           showsVerticalScrollIndicator={false}
         >
+          {/* Moderation Feedback Alert Banner */}
+          {editingBanner && (editingBanner.status === 'REJECTED' || editingBanner.status === 'UNPUBLISHED' || (!editingBanner.is_active && editingBanner.status === 'DRAFT')) && (
+            <View style={editingBanner.status === 'REJECTED' ? styles.moderationAlertBoxRejected : styles.moderationAlertBoxUnpublished}>
+              <View style={styles.alertHeaderRow}>
+                {editingBanner.status === 'REJECTED' ? (
+                  <AlertCircle size={16} color="#DC2626" strokeWidth={2.4} />
+                ) : (
+                  <EyeOff size={16} color="#D97706" strokeWidth={2.4} />
+                )}
+                <Text style={editingBanner.status === 'REJECTED' ? styles.alertTitleRejected : styles.alertTitleUnpublished}>
+                  {editingBanner.status === 'REJECTED' ? 'REJECTION FEEDBACK / REASON' : 'UNPUBLISHED REASON / ADMIN NOTE'}
+                </Text>
+              </View>
+              <Text style={editingBanner.status === 'REJECTED' ? styles.alertBodyRejected : styles.alertBodyUnpublished}>
+                {(editingBanner.rejection_reason || (editingBanner as any).unpublish_reason || (editingBanner as any).notes || (editingBanner as any).reason) ||
+                  (editingBanner.status === 'REJECTED'
+                    ? 'This banner was rejected by administrators. Please update the necessary details and resubmit.'
+                    : 'This banner was unpublished from the homepage by administrators. You can update and resubmit it.')}
+              </Text>
+            </View>
+          )}
+
           {/* Section 1: Campaign Details */}
           <View style={styles.formCard}>
             <Text style={styles.sectionHeaderTitle}>1. CAMPAIGN DETAILS</Text>
@@ -732,5 +756,57 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
+  },
+
+  /* Moderation Feedback Alert Box */
+  moderationAlertBoxRejected: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+  },
+  moderationAlertBoxUnpublished: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderLeftWidth: 4,
+    borderLeftColor: '#D97706',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+  },
+  alertHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5,
+  },
+  alertTitleRejected: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#991B1B',
+    letterSpacing: 0.5,
+  },
+  alertTitleUnpublished: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.5,
+  },
+  alertBodyRejected: {
+    fontSize: 12.5,
+    color: '#7F1D1D',
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  alertBodyUnpublished: {
+    fontSize: 12.5,
+    color: '#78350F',
+    fontWeight: '500',
+    lineHeight: 18,
   },
 });

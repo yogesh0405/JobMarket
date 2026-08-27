@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  AlertCircle,
+  EyeOff,
 } from 'lucide-react-native';
 import { Advertisement } from '../../../types';
 import { COLORS } from '../../../constants/theme';
@@ -43,16 +45,23 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
   useEffect(() => {
     if (banner && visible) {
       setLiveBanner(banner);
-      // Fetch latest real-time stats from backend
-      setLoadingFresh(true);
-      apiFetch(`/api/v1/employer/advertisements/${banner.id}`)
-        .then((res) => {
-          if (res.success && res.data) {
-            setLiveBanner(res.data);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoadingFresh(false));
+      const fetchFresh = (silent = false) => {
+        if (!silent) setLoadingFresh(true);
+        apiFetch(`/api/v1/employer/advertisements/${banner.id}`)
+          .then((res) => {
+            if (res.success && res.data) {
+              setLiveBanner(res.data);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (!silent) setLoadingFresh(false);
+          });
+      };
+
+      fetchFresh(false);
+      const timer = setInterval(() => fetchFresh(true), 4000);
+      return () => clearInterval(timer);
     }
   }, [banner, visible]);
 
@@ -68,12 +77,30 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
   const rawStatus = (current.status || (current as any).approval_status || 'PENDING_APPROVAL').toUpperCase();
   const isLive = (rawStatus === 'APPROVED' || rawStatus === 'PUBLISHED') && current.is_active === true;
   const isRejected = rawStatus === 'REJECTED';
-  const isInReview = !isLive && !isRejected;
+  const isResubmitted = rawStatus === 'RESUBMITTED';
+  const isUnpublished = rawStatus === 'UNPUBLISHED' || ((rawStatus === 'DRAFT' || rawStatus === 'APPROVED' || rawStatus === 'PUBLISHED') && current.is_active === false);
+  const isInReview = !isLive && !isRejected && !isUnpublished && !isResubmitted;
+
+  const reasonText = (
+    current.rejection_reason ||
+    (current as any).rejectionReason ||
+    (current as any).unpublish_reason ||
+    (current as any).unpublishReason ||
+    (current as any).admin_reason ||
+    (current as any).adminReason ||
+    (current as any).notes ||
+    (current as any).reason ||
+    ''
+  ).trim();
 
   const displayStatusLabel = isLive
     ? 'LIVE ON HOMEPAGE'
+    : isResubmitted
+    ? 'RESUBMITTED (PENDING APPROVAL)'
     : isRejected
     ? 'REJECTED'
+    : isUnpublished
+    ? 'UNPUBLISHED (INACTIVE)'
     : 'IN REVIEW (PENDING APPROVAL)';
 
   const formatDate = (dStr?: string) => {
@@ -150,6 +177,28 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
               </View>
             </View>
 
+            {/* Admin Reason Notice if Rejected or Unpublished */}
+            {(isRejected || isUnpublished) && (
+              <View style={isRejected ? styles.modalNoticeBoxRejected : styles.modalNoticeBoxUnpublished}>
+                <View style={styles.modalNoticeHeader}>
+                  {isRejected ? (
+                    <AlertCircle size={15} color="#DC2626" strokeWidth={2.4} />
+                  ) : (
+                    <EyeOff size={15} color="#D97706" strokeWidth={2.4} />
+                  )}
+                  <Text style={isRejected ? styles.modalNoticeTitleRejected : styles.modalNoticeTitleUnpublished}>
+                    {isRejected ? 'REASON FOR REJECTION' : 'REASON FOR UNPUBLISHING'}
+                  </Text>
+                </View>
+                <Text style={isRejected ? styles.modalNoticeBodyRejected : styles.modalNoticeBodyUnpublished}>
+                  {reasonText ||
+                    (isRejected
+                      ? 'This advertisement banner did not meet platform guidelines.'
+                      : 'This banner was unpublished from the homepage by an administrator.')}
+                </Text>
+              </View>
+            )}
+
             {/* Campaign Specifications */}
             <View style={styles.specsSection}>
               <Text style={styles.specsSectionTitle}>CAMPAIGN PERFORMANCE SPECIFICATIONS</Text>
@@ -192,6 +241,8 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
                   <CheckCircle2 size={15} color="#16A34A" />
                 ) : isRejected ? (
                   <XCircle size={15} color="#DC2626" />
+                ) : isUnpublished ? (
+                  <EyeOff size={15} color="#D97706" />
                 ) : (
                   <Clock size={15} color="#D97706" />
                 )}
@@ -200,7 +251,7 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
                   style={[
                     styles.specVal,
                     {
-                      color: isLive ? '#16A34A' : isRejected ? '#DC2626' : '#D97706',
+                      color: isLive ? '#16A34A' : isRejected ? '#DC2626' : isUnpublished ? '#D97706' : '#D97706',
                       fontWeight: '800',
                     },
                   ]}
@@ -367,5 +418,57 @@ const styles = StyleSheet.create({
   },
   scrollContentPadding: {
     paddingBottom: 28,
+  },
+
+  /* Admin Moderation Notice in Modal */
+  modalNoticeBoxRejected: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#DC2626',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  modalNoticeBoxUnpublished: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderLeftWidth: 3.5,
+    borderLeftColor: '#D97706',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  modalNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  modalNoticeTitleRejected: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#991B1B',
+    letterSpacing: 0.4,
+  },
+  modalNoticeTitleUnpublished: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.4,
+  },
+  modalNoticeBodyRejected: {
+    fontSize: 12,
+    color: '#7F1D1D',
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  modalNoticeBodyUnpublished: {
+    fontSize: 12,
+    color: '#78350F',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });

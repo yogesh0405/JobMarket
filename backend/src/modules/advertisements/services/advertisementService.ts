@@ -3,6 +3,7 @@ import { CacheService } from '../../../utils/redisCache';
 import { AdvertisementRepository } from '../repositories/advertisementRepository';
 import { UserRepository } from '../../auth/repositories/UserRepository';
 import { EmailService } from '../../auth/services/EmailService';
+import { S3Util } from '../../../utils/s3';
 import {
   Advertisement,
   CreateAdvertisementInput,
@@ -54,8 +55,14 @@ export class AdvertisementService {
     employerId: string,
     data: CreateAdvertisementInput
   ): Promise<Advertisement> {
+    const payload = { ...data };
+    if (payload.banner_image && payload.banner_image.startsWith('data:image/')) {
+      const customKey = `banner_${employerId}_${Date.now()}`;
+      payload.banner_image = await S3Util.uploadImage(payload.banner_image, 'static', customKey);
+    }
+
     const ad = await AdvertisementRepository.create(employerId, 'EMPLOYER', {
-      ...data,
+      ...payload,
       status: 'PENDING_APPROVAL',
     });
 
@@ -79,6 +86,18 @@ export class AdvertisementService {
   }
 
   /**
+   * Fetch Single Employer Advertisement By ID
+   */
+  public static async getEmployerAdvertisementById(adId: string, employerId: string): Promise<Advertisement> {
+    const ad = await AdvertisementRepository.findById(adId);
+    if (!ad) throw new Error('Advertisement not found');
+    if (ad.owner_id && ad.owner_id !== employerId) {
+      throw new Error('Unauthorized access to advertisement');
+    }
+    return ad;
+  }
+
+  /**
    * Employer Updates / Resubmits Advertisement
    */
   public static async updateEmployerAdvertisement(
@@ -94,13 +113,24 @@ export class AdvertisementService {
       throw new Error('Unauthorized access to advertisement');
     }
 
-    // Resubmitting resets status to PENDING_APPROVAL
-    const isResubmit = existing.status === 'REJECTED';
-    const updatedStatus = isResubmit ? 'PENDING_APPROVAL' : data.status || existing.status;
+    const payload = { ...data };
+    if (payload.banner_image && payload.banner_image.startsWith('data:image/')) {
+      if (existing.banner_image && existing.banner_image.startsWith('http')) {
+        const oldKey = S3Util.extractKey(existing.banner_image);
+        if (oldKey) await S3Util.deleteImage(oldKey).catch(() => {});
+      }
+      const customKey = `banner_${employerId}_${Date.now()}`;
+      payload.banner_image = await S3Util.uploadImage(payload.banner_image, 'static', customKey);
+    }
+
+    // Resubmitting resets status to RESUBMITTED
+    const isResubmit = existing.status === 'REJECTED' || existing.status === 'UNPUBLISHED' || existing.status === 'DRAFT' || existing.status === 'PENDING_APPROVAL' || existing.status === 'RESUBMITTED';
+    const updatedStatus: any = isResubmit ? 'RESUBMITTED' : (payload.status || 'RESUBMITTED');
 
     const updated = await AdvertisementRepository.update(adId, {
-      ...data,
+      ...payload,
       status: updatedStatus,
+      is_active: false,
     });
 
     if (!updated) throw new Error('Failed to update advertisement');
@@ -162,9 +192,15 @@ export class AdvertisementService {
     adminId: string,
     data: CreateAdvertisementInput
   ): Promise<Advertisement> {
-    const status = data.status || 'APPROVED';
+    const payload = { ...data };
+    if (payload.banner_image && payload.banner_image.startsWith('data:image/')) {
+      const customKey = `banner_admin_${Date.now()}`;
+      payload.banner_image = await S3Util.uploadImage(payload.banner_image, 'static', customKey);
+    }
+
+    const status = payload.status || 'APPROVED';
     const ad = await AdvertisementRepository.create(adminId, 'ADMIN', {
-      ...data,
+      ...payload,
       status,
     });
 
@@ -178,6 +214,7 @@ export class AdvertisementService {
   public static async approveAdvertisement(adId: string, adminId: string): Promise<Advertisement> {
     const existing = await AdvertisementRepository.findById(adId);
     if (!existing) throw new Error('Advertisement not found');
+    if (existing.status === 'APPROVED') return existing;
 
     const updated = await AdvertisementRepository.updateStatus(adId, adminId, 'APPROVED');
     if (!updated) throw new Error('Failed to approve advertisement');
@@ -222,6 +259,7 @@ export class AdvertisementService {
   ): Promise<Advertisement> {
     const existing = await AdvertisementRepository.findById(adId);
     if (!existing) throw new Error('Advertisement not found');
+    if (existing.status === 'REJECTED') return existing;
 
     const updated = await AdvertisementRepository.updateStatus(adId, adminId, 'REJECTED', reason);
     if (!updated) throw new Error('Failed to reject advertisement');
@@ -262,29 +300,64 @@ export class AdvertisementService {
    */
   public static async unpublishAdvertisement(
     adId: string,
-    adminId: string
+    adminId: string,
+    reason?: string
   ): Promise<Advertisement> {
     const existing = await AdvertisementRepository.findById(adId);
     if (!existing) throw new Error('Advertisement not found');
+    if (existing.status === 'DRAFT' && !existing.is_active) return existing;
 
     const updated = await AdvertisementRepository.update(adId, {
       status: 'DRAFT',
-      is_active: false
+      is_active: false,
+      rejection_reason: reason || null
     });
     if (!updated) throw new Error('Failed to unpublish advertisement');
 
     if (existing.owner_id) {
+      // 1. Create In-App Notification
+      const notifMsg = reason
+        ? `Your advertisement banner "${existing.title}" was unpublished from the homepage by an administrator. Reason: ${reason}`
+        : `Your advertisement banner "${existing.title}" was unpublished from the homepage by an administrator.`;
+
       await AdvertisementRepository.createNotification(
         existing.owner_id,
         'Advertisement Unpublished',
-        `Your advertisement banner "${existing.title}" was unpublished from the homepage by an administrator.`,
+        notifMsg,
         'AD_UNPUBLISHED',
         `/dashboard?tab=advertisements`
       );
+
+      // 2. Dispatch Transactional Email to Owner
+      try {
+        const owner = await UserRepository.findById(existing.owner_id);
+        if (owner && owner.email) {
+          await EmailService.sendAdvertisementStatusEmail(
+            owner.email,
+            owner.name || 'Employer',
+            existing.title,
+            'UNPUBLISHED',
+            reason
+          );
+        }
+      } catch (emailErr) {
+        console.error('Failed to send banner unpublish email:', emailErr);
+      }
     }
 
     await this.invalidateCache();
     return updated;
+  }
+
+  /**
+   * Alias for unpublishAdvertisement to handle direct controller calls
+   */
+  public static async unpublish(
+    adId: string,
+    adminId: string = 'admin',
+    reason?: string
+  ): Promise<Advertisement> {
+    return this.unpublishAdvertisement(adId, adminId, reason);
   }
 
   /**

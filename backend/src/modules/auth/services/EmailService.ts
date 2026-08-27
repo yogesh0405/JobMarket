@@ -847,25 +847,44 @@ export class EmailService {
   }
 
   /**
-   * Send Professional Transactional Email for Advertisement Approval / Rejection
+   * Send Professional Transactional Email for Advertisement Approval / Rejection / Unpublish
    */
   static async sendAdvertisementStatusEmail(
     employerEmail: string,
     employerName: string,
     adTitle: string,
-    status: 'APPROVED' | 'REJECTED',
+    status: 'APPROVED' | 'REJECTED' | 'UNPUBLISHED',
     reason?: string
   ): Promise<boolean> {
     const isApproved = status === 'APPROVED';
-    const subject = isApproved
-      ? `🎉 Approved: Your Promotional Banner "${adTitle}" is Now Live!`
-      : `⚠️ Action Required: Moderation Update on Banner "${adTitle}"`;
+    const isUnpublished = status === 'UNPUBLISHED';
 
-    const statusBadgeColor = isApproved ? '#16a34a' : '#dc2626';
-    const statusText = isApproved ? 'APPROVED & PUBLISHED' : 'REVISION REQUIRED';
-    const topBarGradient = isApproved
-      ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
-      : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+    let subject = `🎉 Approved: Your Promotional Banner "${adTitle}" is Now Live!`;
+    let statusBadgeColor = '#16a34a';
+    let statusText = 'APPROVED & PUBLISHED';
+    let topBarGradient = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+    let headline = 'Your Banner is Live on Homepage!';
+    let ctaText = '📊 View Banner Analytics';
+    let ctaBg = '#2563eb';
+
+    if (isUnpublished) {
+      subject = `⚠️ Notice: Your Promotional Banner "${adTitle}" has been Unpublished`;
+      statusBadgeColor = '#d97706';
+      statusText = 'UNPUBLISHED';
+      topBarGradient = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
+      headline = 'Banner Unpublished by Administrator';
+      ctaText = '✏️ View & Edit Banner';
+      ctaBg = '#d97706';
+    } else if (!isApproved) {
+      subject = `⚠️ Action Required: Moderation Update on Banner "${adTitle}"`;
+      statusBadgeColor = '#dc2626';
+      statusText = 'REVISION REQUIRED';
+      topBarGradient = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+      headline = 'Banner Revision Required';
+      ctaText = '✏️ Edit & Resubmit Banner';
+      ctaBg = '#dc2626';
+    }
+
     const currentYear = new Date().getFullYear();
 
     const htmlContent = `
@@ -920,7 +939,7 @@ export class EmailService {
 
                     <!-- Greeting & Headline -->
                     <p style="margin:0 0 12px;font-size:24px;font-weight:800;color:#0f172a;">
-                      ${isApproved ? 'Your Banner is Live on Homepage!' : 'Banner Revision Required'}
+                      ${headline}
                     </p>
                     <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
                       Hello <strong style="color:#0f172a;">${employerName}</strong>,
@@ -928,6 +947,8 @@ export class EmailService {
                       ${
                         isApproved
                           ? `Great news! Your promotional banner submission <strong style="color:#1e3a8a;">"${adTitle}"</strong> has been reviewed and approved by our moderation team. It is now active and visible to candidates on the CSN-JobMarket homepage.`
+                          : isUnpublished
+                          ? `This is to inform you that your promotional banner <strong style="color:#0f172a;">"${adTitle}"</strong> was unpublished and taken down from the homepage by an administrator.`
                           : `Our moderation team reviewed your promotional banner submission <strong style="color:#0f172a;">"${adTitle}"</strong>. Before it can be published, a few adjustments are required.`
                       }
                     </p>
@@ -935,12 +956,12 @@ export class EmailService {
                     ${
                       !isApproved && reason
                         ? `
-                    <!-- Rejection Reason Box -->
+                    <!-- Reason Box -->
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
                       <tr>
-                        <td style="background-color:#fef2f2;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:8px;padding:16px 20px;">
-                          <p style="margin:0 0 4px;font-size:12px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">Moderation Feedback / Reason</p>
-                          <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.5;">${reason}</p>
+                        <td style="background-color:${isUnpublished ? '#fffbeb' : '#fef2f2'};border:1px solid ${isUnpublished ? '#fde68a' : '#fecaca'};border-left:4px solid ${isUnpublished ? '#d97706' : '#dc2626'};border-radius:8px;padding:16px 20px;">
+                          <p style="margin:0 0 4px;font-size:12px;font-weight:800;color:${isUnpublished ? '#92400e' : '#991b1b'};text-transform:uppercase;letter-spacing:0.5px;">${isUnpublished ? 'Unpublish Reason / Feedback' : 'Moderation Feedback / Reason'}</p>
+                          <p style="margin:0;font-size:14px;color:${isUnpublished ? '#78350f' : '#7f1d1d'};line-height:1.5;">${reason}</p>
                         </td>
                       </tr>
                     </table>
@@ -957,6 +978,8 @@ export class EmailService {
                             ${
                               isApproved
                                 ? 'You can monitor real-time impressions, click-through rates (CTR), and performance metrics directly from your employer dashboard.'
+                                : isUnpublished
+                                ? 'You can review and update this advertisement banner directly from your employer dashboard to schedule or resubmit it.'
                                 : 'Please log in to your employer dashboard, make the required updates to your banner, and click <strong>Resubmit for Approval</strong> for priority re-evaluation.'
                             }
                           </p>
@@ -968,8 +991,8 @@ export class EmailService {
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;text-align:center;">
                       <tr>
                         <td align="center">
-                          <a href="${EmailService.getFrontendUrl()}/dashboard?tab=advertisements" target="_blank" style="background-color:${isApproved ? '#2563eb' : '#dc2626'};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.25);">
-                            ${isApproved ? '📊 View Banner Analytics' : '✏️ Edit & Resubmit Banner'}
+                          <a href="${EmailService.getFrontendUrl()}/dashboard?tab=advertisements" target="_blank" style="background-color:${ctaBg};color:#ffffff;display:inline-block;padding:13px 32px;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+                            ${ctaText}
                           </a>
                         </td>
                       </tr>

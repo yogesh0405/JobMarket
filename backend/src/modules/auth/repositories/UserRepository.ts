@@ -190,6 +190,11 @@ export class UserRepository {
       avatar_url: 'profile_picture_url',
       avatarUrl: 'profile_picture_url',
       avatar: 'profile_picture_url',
+      company_logo: 'profile_picture_url',
+      companyLogo: 'profile_picture_url',
+      logo: 'profile_picture_url',
+      logo_url: 'profile_picture_url',
+      logoUrl: 'profile_picture_url',
     };
 
     const updatedColumns = new Set<string>();

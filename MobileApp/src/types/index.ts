@@ -177,10 +177,12 @@ export type AdvertisementPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AdvertisementStatus =
   | 'DRAFT'
   | 'SUBMITTED'
+  | 'RESUBMITTED'
   | 'PENDING_APPROVAL'
   | 'APPROVED'
   | 'REJECTED'
   | 'PUBLISHED'
+  | 'UNPUBLISHED'
   | 'EXPIRED';
 
 export interface Advertisement {

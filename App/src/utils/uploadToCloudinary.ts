@@ -67,101 +67,21 @@ export async function compressImageIfNecessary(file: File, maxDimension = 1600, 
 }
 
 /**
- * Fast direct-to-Cloudinary upload with signature and progress tracking via XMLHttpRequest.
+ * Fast S3 Resume Upload with compression and progress tracking.
  */
 export async function uploadResumeFast(
   file: File,
   onProgress?: UploadProgressCallback
 ): Promise<{ url: string; name: string; size: string; type: string }> {
   // Step 1: Compress image if it's an image file
+  if (onProgress) onProgress(15);
   const processedBlob = await compressImageIfNecessary(file);
   const sizeInMB = (processedBlob.size / (1024 * 1024)).toFixed(2) + ' MB';
 
-  // Step 2: Determine resource type (raw for PDF/DOC, image for images)
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx');
-  const resourceType = isPdf ? 'raw' : 'image';
 
-  // Request upload signature from backend (super fast ~50ms)
-  let sigResponse;
-  try {
-    sigResponse = await apiFetch(`/api/v1/auth/resume/signature?resourceType=${resourceType}`);
-  } catch (err) {
-    console.warn('Could not fetch resume signature:', err);
-  }
-
-  if (sigResponse && sigResponse.ok) {
-    const sigJson = await sigResponse.json();
-    if (sigJson.success && sigJson.data) {
-      const { signature, timestamp, apiKey, cloudName, folder, publicId } = sigJson.data;
-
-      // Upload directly to Cloudinary via FormData + XMLHttpRequest
-      const formData = new FormData();
-      formData.append('file', processedBlob, file.name);
-      formData.append('api_key', apiKey);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('signature', signature);
-      if (folder) formData.append('folder', folder);
-      if (publicId) formData.append('public_id', publicId);
-
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-
-      try {
-        const cloudinaryUrl = await new Promise<string>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', uploadUrl);
-
-          if (xhr.upload && onProgress) {
-            xhr.upload.onprogress = (event) => {
-              if (event.lengthComputable) {
-                const percent = Math.round((event.loaded / event.total) * 100);
-                onProgress(percent);
-              }
-            };
-          }
-
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              const res = JSON.parse(xhr.responseText);
-              resolve(res.secure_url || res.url);
-            } else {
-              reject(new Error(`Cloudinary upload failed with status ${xhr.status}`));
-            }
-          };
-
-          xhr.onerror = () => reject(new Error('Network error uploading to Cloudinary'));
-          xhr.ontimeout = () => reject(new Error('Upload to Cloudinary timed out'));
-          xhr.timeout = 45000; // 45 sec timeout
-
-          xhr.send(formData);
-        });
-
-        // Save resume metadata to backend
-        const saveRes = await apiFetch('/api/v1/auth/resume', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: file.name,
-            size: sizeInMB,
-            type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
-            url: cloudinaryUrl
-          })
-        });
-
-        if (saveRes.ok) {
-          return {
-            url: cloudinaryUrl,
-            name: file.name,
-            size: sizeInMB,
-            type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')
-          };
-        }
-      } catch (directErr) {
-        console.warn('Direct Cloudinary upload error, using fallback:', directErr);
-      }
-    }
-  }
-
-  // Fallback: Read file as base64 and send to POST /api/v1/auth/resume
+  // Step 2: Read file as base64
+  if (onProgress) onProgress(45);
   const base64Data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
@@ -169,32 +89,35 @@ export async function uploadResumeFast(
     reader.readAsDataURL(processedBlob as Blob);
   });
 
-  if (onProgress) onProgress(60);
+  if (onProgress) onProgress(70);
 
-  const fallbackRes = await apiFetch('/api/v1/auth/resume', {
+  // Step 3: Send to Backend POST /api/v1/auth/resume (Stored in S3)
+  const res = await apiFetch('/api/v1/auth/resume', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: file.name,
+      fileName: file.name,
       size: sizeInMB,
-      type: file.type || 'image/jpeg',
-      base64: base64Data
+      type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+      base64: base64Data,
+      file: base64Data
     })
   });
 
   if (onProgress) onProgress(100);
 
-  if (!fallbackRes.ok) {
-    const errData = await fallbackRes.json();
-    throw new Error(errData.error || errData.message || 'Failed to upload resume');
+  if (!res.ok) {
+    const errData = await res.json();
+    throw new Error(errData.error || errData.message || 'Failed to upload resume to S3');
   }
 
-  const json = await fallbackRes.json();
+  const json = await res.json();
   const user = json.data;
   return {
-    url: user?.resume?.url || '',
+    url: json.url || user?.resume?.url || '',
     name: file.name,
     size: sizeInMB,
-    type: file.type || 'image/jpeg'
+    type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')
   };
 }

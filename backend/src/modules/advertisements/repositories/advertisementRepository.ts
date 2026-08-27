@@ -53,12 +53,19 @@ export class AdvertisementRepository {
     const adQuery = `
       SELECT 
         a.*,
+        COALESCE(a.rejection_reason, app.reason) as rejection_reason,
+        app.reason as admin_reason,
         j.title as job_title,
         j.company as job_company,
         j.location as job_location,
         u.name as employer_name,
         u.company_name as company_name
       FROM advertisements a
+      LEFT JOIN (
+        SELECT DISTINCT ON (advertisement_id) advertisement_id, reason, status
+        FROM advertisement_approvals
+        ORDER BY advertisement_id, approved_at DESC
+      ) app ON a.id = app.advertisement_id
       LEFT JOIN jobs j ON a.linked_job_id = j.id
       LEFT JOIN users u ON a.owner_id = u.id
       WHERE a.id = $1;
@@ -87,12 +94,19 @@ export class AdvertisementRepository {
     const query = `
       SELECT 
         a.*,
+        COALESCE(a.rejection_reason, app.reason) as rejection_reason,
+        app.reason as admin_reason,
         j.title as job_title,
         j.company as job_company,
         j.location as job_location,
         COALESCE(v.views_count, 0)::int as views_count,
         COALESCE(c.clicks_count, 0)::int as clicks_count
       FROM advertisements a
+      LEFT JOIN (
+        SELECT DISTINCT ON (advertisement_id) advertisement_id, reason, status
+        FROM advertisement_approvals
+        ORDER BY advertisement_id, approved_at DESC
+      ) app ON a.id = app.advertisement_id
       LEFT JOIN jobs j ON a.linked_job_id = j.id
       LEFT JOIN (
         SELECT advertisement_id, COUNT(*) as views_count 
@@ -127,6 +141,8 @@ export class AdvertisementRepository {
     let query = `
       SELECT 
         a.*,
+        COALESCE(a.rejection_reason, app.reason) as rejection_reason,
+        app.reason as admin_reason,
         j.title as job_title,
         j.company as job_company,
         j.location as job_location,
@@ -136,6 +152,11 @@ export class AdvertisementRepository {
         COALESCE(v.views_count, 0)::int as views_count,
         COALESCE(c.clicks_count, 0)::int as clicks_count
       FROM advertisements a
+      LEFT JOIN (
+        SELECT DISTINCT ON (advertisement_id) advertisement_id, reason, status
+        FROM advertisement_approvals
+        ORDER BY advertisement_id, approved_at DESC
+      ) app ON a.id = app.advertisement_id
       LEFT JOIN jobs j ON a.linked_job_id = j.id
       LEFT JOIN users u ON a.owner_id = u.id
       LEFT JOIN (
@@ -272,6 +293,8 @@ export class AdvertisementRepository {
     if (targetAudience !== undefined) { fields.push(`target_audience = $${idx++}`); values.push(targetAudience); }
     if (data.status !== undefined) { fields.push(`status = $${idx++}`); values.push(data.status); }
     if (data.is_active !== undefined) { fields.push(`is_active = $${idx++}`); values.push(data.is_active); }
+    const reasonVal = (data as any).rejection_reason ?? (data as any).rejectionReason ?? (data as any).reason ?? (data as any).notes;
+    if (reasonVal !== undefined) { fields.push(`rejection_reason = $${idx++}`); values.push(reasonVal); }
 
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
 

@@ -232,6 +232,7 @@ export const resolveMobileNotificationRoute = (
     role === 'employer' &&
     (type === 'AD_APPROVED' ||
       type === 'AD_REJECTED' ||
+      type === 'AD_UNPUBLISHED' ||
       type === 'ADVERTISEMENT' ||
       combined.includes('BANNER') ||
       combined.includes('ADVERTISEMENT'))

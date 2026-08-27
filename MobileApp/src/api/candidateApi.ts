@@ -174,7 +174,7 @@ export const candidateApi = {
     });
   },
 
-  // Upload Resume document using live Cloudinary signature or backend API
+  // Upload Resume document to backend AWS S3 storage
   uploadResume: async (fileInput: string, fileName: string): Promise<ApiResponse<{ url: string }>> => {
     if (!fileInput || typeof fileInput !== 'string') {
       throw new Error('No resume file data provided for upload.');
@@ -185,7 +185,6 @@ export const candidateApi = {
       cleanFileName.toLowerCase().endsWith('.pdf') ||
       cleanFileName.toLowerCase().endsWith('.doc') ||
       cleanFileName.toLowerCase().endsWith('.docx');
-    const resourceType = isPdf ? 'raw' : 'image';
 
     // 1. Convert local file URI (file://, content://) into base64 data URI if needed
     let dataUri = fileInput;
@@ -198,49 +197,7 @@ export const candidateApi = {
       }
     }
 
-    // 2. Direct Cloudinary Signature Upload
-    try {
-      const sigRes = await apiFetch(`/api/v1/auth/resume/signature?resourceType=${resourceType}`);
-      if (sigRes && sigRes.success && sigRes.data) {
-        const { signature, timestamp, apiKey, cloudName, folder, publicId } = sigRes.data;
-        const formData = new FormData();
-        formData.append('file', dataUri);
-        formData.append('api_key', apiKey);
-        formData.append('timestamp', timestamp.toString());
-        formData.append('signature', signature);
-        if (folder) formData.append('folder', folder);
-        if (publicId) formData.append('public_id', publicId);
-
-        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (cloudRes.ok) {
-          const cloudJson = await cloudRes.json();
-          const secureUrl = cloudJson.secure_url || cloudJson.url;
-          if (isRemoteHttpUrl(secureUrl)) {
-            // Save Cloudinary HTTPS URL & metadata to Live backend
-            await apiFetch('/api/v1/auth/resume', {
-              method: 'POST',
-              body: JSON.stringify({
-                name: cleanFileName,
-                fileName: cleanFileName,
-                url: secureUrl,
-                resume_url: secureUrl,
-                resumeUrl: secureUrl,
-              }),
-            }).catch(() => {});
-
-            return { success: true, data: { url: secureUrl } };
-          }
-        }
-      }
-    } catch (e) {
-      logger.warn('Cloudinary direct resume signature notice, using live backend fallback:', e);
-    }
-
-    // 3. Fallback to Live Backend POST /api/v1/auth/resume (Backend handles Cloudinary upload)
+    // 2. Upload to Live Backend POST /api/v1/auth/resume (Backend uploads directly to S3)
     try {
       const res = await apiFetch('/api/v1/auth/resume', {
         method: 'POST',
@@ -265,12 +222,11 @@ export const candidateApi = {
           return { success: true, data: { url: remoteUrl } };
         }
       }
+      return res;
     } catch (backendErr: any) {
-      logger.error('Backend resume upload failed:', backendErr);
-      throw new Error(backendErr?.message || 'Failed to upload resume to server.');
+      logger.error('Backend resume upload to S3 failed:', backendErr);
+      throw new Error(backendErr?.message || 'Failed to upload resume to S3 server.');
     }
-
-    throw new Error('Failed to upload resume to cloud storage. Please check your internet connection and try again.');
   },
 
   // Delete uploaded Resume document

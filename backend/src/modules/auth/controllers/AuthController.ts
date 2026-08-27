@@ -14,7 +14,7 @@ import { pool } from '../../../config/database/pool';
 import { redisClient } from '../../../config/redis';
 import { OtpStore, CacheService } from '../../../utils/redisCache';
 import { Verify2FALoginService } from '../services/Verify2FALoginService';
-import { CloudinaryUtil } from '../../../utils/cloudinary';
+import { S3Util } from '../../../utils/s3';
 import { generateTokens } from '../../../utils/jwt';
 
 export function sanitizeUserForResponse(user: any) {
@@ -236,12 +236,12 @@ export class AuthController {
       }
 
       if (user.resume && user.resume.url) {
-        const publicId = CloudinaryUtil.extractPublicId(user.resume.url);
-        if (publicId) {
+        const oldKey = S3Util.extractKey(user.resume.url);
+        if (oldKey) {
           try {
-            await CloudinaryUtil.deleteFile(publicId);
+            await S3Util.deleteFile(oldKey);
           } catch (err) {
-            console.error('Failed to delete resume file from Cloudinary:', err);
+            console.error('Failed to delete resume file from S3:', err);
           }
         }
       }
@@ -259,10 +259,10 @@ export class AuthController {
   static async getResumeSignature(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
-      const resourceType = (req.query.resourceType as string) || 'auto';
-      const publicId = `resume_${userId}_${Date.now()}`;
-      const sigData = CloudinaryUtil.getUploadSignature('resumes', publicId);
-      res.status(200).json({ success: true, data: { ...sigData, resourceType } });
+      const filename = (req.query.filename as string) || `resume_${userId}_${Date.now()}.pdf`;
+      const contentType = (req.query.contentType as string) || 'application/pdf';
+      const presignedData = await S3Util.getPresignedUploadUrl('resumes', filename, contentType);
+      res.status(200).json({ success: true, data: presignedData });
     } catch (error) {
       next(error);
     }
@@ -287,11 +287,8 @@ export class AuthController {
 
       let finalUrl = url;
       if (!finalUrl && base64Data && typeof base64Data === 'string' && base64Data.startsWith('data:')) {
-        const publicId = `resume_${userId}_${Date.now()}`;
-        const isPdf = (type && type.includes('pdf')) || (fileTitle && fileTitle.toLowerCase().endsWith('.pdf'));
-        finalUrl = isPdf
-          ? await CloudinaryUtil.uploadFile(base64Data, 'resumes', publicId)
-          : await CloudinaryUtil.uploadImage(base64Data, 'resumes', publicId);
+        const customKey = `resume_${userId}_${Date.now()}`;
+        finalUrl = await S3Util.uploadFile(base64Data, 'resumes', customKey);
       }
 
       if (!finalUrl) {
@@ -300,10 +297,10 @@ export class AuthController {
 
       const currentUser = await UserRepository.findById(userId);
       if (currentUser?.resume?.url && currentUser.resume.url !== finalUrl) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(currentUser.resume.url);
-        if (oldPublicId) {
+        const oldKey = S3Util.extractKey(currentUser.resume.url);
+        if (oldKey) {
           try {
-            await CloudinaryUtil.deleteFile(oldPublicId);
+            await S3Util.deleteFile(oldKey);
           } catch (err) {
             console.error('Failed to delete old resume file:', err);
           }
@@ -338,8 +335,8 @@ export class AuthController {
         return res.status(400).json({ error: 'Image data is required' });
       }
 
-      if (!image.startsWith('data:image/webp;base64,')) {
-        return res.status(400).json({ error: 'Only WebP images are supported for profile pictures' });
+      if (!image.startsWith('data:image/')) {
+        return res.status(400).json({ error: 'Invalid image format' });
       }
 
       const user = await UserRepository.findById(userId);
@@ -348,18 +345,18 @@ export class AuthController {
       }
 
       if (user.profile_picture_url) {
-        const oldPublicId = CloudinaryUtil.extractPublicId(user.profile_picture_url);
-        if (oldPublicId) {
+        const oldKey = S3Util.extractKey(user.profile_picture_url);
+        if (oldKey) {
           try {
-            await CloudinaryUtil.deleteImage(oldPublicId);
+            await S3Util.deleteImage(oldKey);
           } catch (err) {
-            console.error('Failed to delete old profile image from Cloudinary:', err);
+            console.error('Failed to delete old profile image from S3:', err);
           }
         }
       }
 
-      const publicId = `user_${userId}_${Date.now()}`;
-      const secureUrl = await CloudinaryUtil.uploadImage(image, 'profiles', publicId);
+      const customKey = `avatar_${userId}_${Date.now()}`;
+      const secureUrl = await S3Util.uploadImage(image, 'profiles', customKey);
 
       const updatedUser = await UserRepository.updateProfile(userId, { profile_picture_url: secureUrl });
 
@@ -382,9 +379,9 @@ export class AuthController {
       }
 
       if (user.profile_picture_url) {
-        const publicId = CloudinaryUtil.extractPublicId(user.profile_picture_url);
-        if (publicId) {
-          await CloudinaryUtil.deleteImage(publicId);
+        const oldKey = S3Util.extractKey(user.profile_picture_url);
+        if (oldKey) {
+          await S3Util.deleteImage(oldKey);
         }
       }
 

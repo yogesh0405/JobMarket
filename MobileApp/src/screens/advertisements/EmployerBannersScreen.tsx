@@ -24,7 +24,7 @@ import { COLORS } from '../../constants/theme';
 import { EmployerBannerItemCard } from './components/EmployerBannerItemCard';
 import { BannerAnalyticsModal } from './components/BannerAnalyticsModal';
 
-type FilterTab = 'ALL' | 'LIVE' | 'REVIEW' | 'REJECTED';
+type FilterTab = 'ALL' | 'LIVE' | 'REVIEW' | 'REJECTED' | 'UNPUBLISHED' | 'PAST';
 
 export const EmployerBannersScreen: React.FC<{ navigation: any; route?: any }> = ({
   navigation,
@@ -40,7 +40,8 @@ export const EmployerBannersScreen: React.FC<{ navigation: any; route?: any }> =
   // Analytics Modal
   const [analyticsBanner, setAnalyticsBanner] = useState<Advertisement | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const bannersRes = await apiFetch('/api/v1/employer/advertisements').catch(() => ({
         success: false,
@@ -49,56 +50,76 @@ export const EmployerBannersScreen: React.FC<{ navigation: any; route?: any }> =
 
       if (bannersRes.success && Array.isArray(bannersRes.data)) {
         setBanners(bannersRes.data);
-      } else {
+      } else if (!silent) {
         setBanners([]);
       }
     } catch {
-      setBanners([]);
+      if (!silent) setBanners([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // Reload data every time screen comes into focus
+  // Reload data every time screen comes into focus & poll in real-time
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadData(false);
+      const interval = setInterval(() => {
+        loadData(true);
+      }, 5000);
+      return () => clearInterval(interval);
     }, [loadData])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadData();
+    loadData(false);
   };
 
-  // Status Filter Counts (100% Real Database Lifecycle)
-  const countAll = banners.length;
-  const countLive = banners.filter(
-    (b) =>
-      ((b.status || '').toUpperCase() === 'APPROVED' ||
-        (b.status || '').toUpperCase() === 'PUBLISHED') &&
-      b.is_active === true
-  ).length;
-  const countRejected = banners.filter(
-    (b) => (b.status || '').toUpperCase() === 'REJECTED'
-  ).length;
-  const countReview = banners.filter((b) => {
+  // Status Filter Predicates (100% Real Database Lifecycle)
+  const isBannerLive = (b: Advertisement) => {
     const s = (b.status || (b as any).approval_status || '').toUpperCase();
-    const isLive = (s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === true;
-    const isRejected = s === 'REJECTED';
-    return !isLive && !isRejected;
-  }).length;
+    const isApproved = s === 'APPROVED' || s === 'PUBLISHED';
+    const notExpired = !b.end_date || new Date(b.end_date).getTime() >= new Date().getTime();
+    return isApproved && b.is_active === true && notExpired;
+  };
+
+  const isBannerPast = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    const isExpiredStatus = s === 'EXPIRED';
+    const isDateExpired = b.end_date ? new Date(b.end_date).getTime() < new Date().getTime() : false;
+    return isExpiredStatus || isDateExpired;
+  };
+
+  const isBannerRejected = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    return s === 'REJECTED';
+  };
+
+  const isBannerUnpublished = (b: Advertisement) => {
+    if (isBannerLive(b) || isBannerPast(b) || isBannerRejected(b)) return false;
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    return s === 'UNPUBLISHED' || ((s === 'DRAFT' || s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === false);
+  };
+
+  const isBannerReview = (b: Advertisement) => {
+    return !isBannerLive(b) && !isBannerPast(b) && !isBannerRejected(b) && !isBannerUnpublished(b);
+  };
+
+  const countAll = banners.length;
+  const countLive = banners.filter(isBannerLive).length;
+  const countReview = banners.filter(isBannerReview).length;
+  const countRejected = banners.filter(isBannerRejected).length;
+  const countUnpublished = banners.filter(isBannerUnpublished).length;
+  const countPast = banners.filter(isBannerPast).length;
 
   const filteredBanners = banners.filter((b) => {
-    const s = (b.status || (b as any).approval_status || 'PENDING_APPROVAL').toUpperCase();
-    const isLive = (s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === true;
-    const isRejected = s === 'REJECTED';
-    const isInReview = !isLive && !isRejected;
-
-    if (activeTab === 'LIVE') return isLive;
-    if (activeTab === 'REVIEW') return isInReview;
-    if (activeTab === 'REJECTED') return isRejected;
+    if (activeTab === 'LIVE') return isBannerLive(b);
+    if (activeTab === 'REVIEW') return isBannerReview(b);
+    if (activeTab === 'REJECTED') return isBannerRejected(b);
+    if (activeTab === 'UNPUBLISHED') return isBannerUnpublished(b);
+    if (activeTab === 'PAST') return isBannerPast(b);
     return true;
   });
 
@@ -221,6 +242,38 @@ export const EmployerBannersScreen: React.FC<{ navigation: any; route?: any }> =
             <View style={[styles.filterBadge, activeTab === 'REJECTED' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
               <Text style={[styles.filterBadgeText, activeTab === 'REJECTED' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
                 {countRejected}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Unpublished */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('UNPUBLISHED')}
+            style={[styles.filterTabPill, activeTab === 'UNPUBLISHED' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'UNPUBLISHED' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              Unpublished
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'UNPUBLISHED' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'UNPUBLISHED' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countUnpublished}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Past & Expired */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('PAST')}
+            style={[styles.filterTabPill, activeTab === 'PAST' ? styles.filterTabPillActive : styles.filterTabPillInactive]}
+          >
+            <Text style={[styles.filterTabText, activeTab === 'PAST' ? styles.filterTabTextActive : styles.filterTabTextInactive]}>
+              Past & Expired
+            </Text>
+            <View style={[styles.filterBadge, activeTab === 'PAST' ? styles.filterBadgeActive : styles.filterBadgeInactive]}>
+              <Text style={[styles.filterBadgeText, activeTab === 'PAST' ? styles.filterBadgeTextActive : styles.filterBadgeTextInactive]}>
+                {countPast}
               </Text>
             </View>
           </TouchableOpacity>

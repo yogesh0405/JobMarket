@@ -6,7 +6,7 @@ import { EmailService } from '../../auth/services/EmailService';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
 import { NotificationService } from '../../notifications/services/NotificationService';
-import { CloudinaryUtil } from '../../../utils/cloudinary';
+import { S3Util } from '../../../utils/s3';
 import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
 const isEmployerRole = (r?: string) => {
@@ -411,9 +411,9 @@ export class JobController {
 
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
         const timestamp = Date.now();
-        const publicId = `job_logo_${employerId}_${timestamp}`;
-        const cloudinaryUrl = await CloudinaryUtil.uploadImage(jobData.companyLogo, 'job_logos', publicId);
-        jobData.companyLogo = cloudinaryUrl;
+        const customKey = `logo_${employerId}_${timestamp}`;
+        const s3Url = await S3Util.uploadImage(jobData.companyLogo, 'company_logos', customKey);
+        jobData.companyLogo = s3Url;
       }
 
       const data = await JobRepository.createJob(employerId, companyName, jobData);
@@ -523,18 +523,18 @@ export class JobController {
 
       if (jobData.companyLogo && jobData.companyLogo.startsWith('data:')) {
         if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {
-          const oldPublicId = CloudinaryUtil.extractPublicId(existingJob.companyLogo);
-          if (oldPublicId) {
-            await CloudinaryUtil.deleteImage(oldPublicId).catch((err) => {
+          const oldKey = S3Util.extractKey(existingJob.companyLogo);
+          if (oldKey) {
+            await S3Util.deleteImage(oldKey).catch((err) => {
               console.error('Failed to delete old job logo:', err);
             });
           }
         }
 
         const timestamp = Date.now();
-        const publicId = `job_logo_${employerId}_${timestamp}`;
-        const cloudinaryUrl = await CloudinaryUtil.uploadImage(jobData.companyLogo, 'job_logos', publicId);
-        jobData.companyLogo = cloudinaryUrl;
+        const customKey = `logo_${employerId}_${timestamp}`;
+        const s3Url = await S3Util.uploadImage(jobData.companyLogo, 'company_logos', customKey);
+        jobData.companyLogo = s3Url;
       }
 
       const data = await JobRepository.updateJob(id, employerId, jobData);
@@ -567,9 +567,9 @@ export class JobController {
       }
 
       if (existingJob.companyLogo && existingJob.companyLogo.startsWith('http')) {
-        const publicId = CloudinaryUtil.extractPublicId(existingJob.companyLogo);
-        if (publicId) {
-          await CloudinaryUtil.deleteImage(publicId).catch((err) => {
+        const oldKey = S3Util.extractKey(existingJob.companyLogo);
+        if (oldKey) {
+          await S3Util.deleteImage(oldKey).catch((err) => {
             console.error('Failed to delete job logo during deletion:', err);
           });
         }
