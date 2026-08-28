@@ -103,25 +103,26 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
       setLoading(true);
       setError(null);
       const clientId = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
-      const redirectUrl = 'https://auth.expo.io/@yogesh0405/csn-jobmarket';
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
+      const redirectUrl = makeRedirectUri({
+        scheme: 'jobmarket',
+        path: 'oauth',
+      });
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token%20id_token&scope=openid%20email%20profile&nonce=${Date.now()}&prompt=select_account`;
 
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
       if (result.type === 'success' && result.url) {
-        let accessToken: string | null = null;
-        if (result.url.includes('#')) {
-          const hash = result.url.split('#')[1];
-          const params = new URLSearchParams(hash);
-          accessToken = params.get('access_token');
-        } else if (result.url.includes('?')) {
-          const query = result.url.split('?')[1];
-          const params = new URLSearchParams(query);
-          accessToken = params.get('access_token');
-        }
+        const rawParams = result.url.includes('#') ? result.url.split('#')[1] : (result.url.includes('?') ? result.url.split('?')[1] : '');
+        const params = new URLSearchParams(rawParams);
+        const accessToken = params.get('access_token');
+        const idToken = params.get('id_token');
 
-        if (accessToken) {
-          await loginWithGoogle({ accessToken, role });
+        if (accessToken || idToken) {
+          await loginWithGoogle({ 
+            accessToken: accessToken || undefined, 
+            idToken: idToken || undefined, 
+            role 
+          });
         } else {
           setError('Google registration completed without access token.');
         }
