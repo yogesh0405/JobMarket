@@ -103,13 +103,14 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
       setLoading(true);
       setError(null);
       const clientId = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
-      const redirectUrl = makeRedirectUri({
+      const redirectUri = `${API_BASE_URL}/api/v1/auth/google/callback`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
+      const deepLinkReturn = makeRedirectUri({
         scheme: 'jobmarket',
         path: 'oauth',
       });
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token%20id_token&scope=openid%20email%20profile&nonce=${Date.now()}&prompt=select_account`;
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, deepLinkReturn);
 
       if (result.type === 'success' && result.url) {
         const rawParams = result.url.includes('#') ? result.url.split('#')[1] : (result.url.includes('?') ? result.url.split('?')[1] : '');
