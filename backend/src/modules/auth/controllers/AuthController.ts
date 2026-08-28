@@ -893,6 +893,7 @@ export class AuthController {
           const allowedAudiences = [
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_ANDROID_CLIENT_ID,
+            '324729375491-viu62s7s3l3m9o4be0geuv68t4j589id.apps.googleusercontent.com',
             '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com',
             '324729375491-21ieq19k1mu4krikbroub3afjibjrghd.apps.googleusercontent.com',
           ].filter(Boolean) as string[];

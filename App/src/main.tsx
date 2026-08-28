@@ -50,7 +50,7 @@ if (typeof window !== 'undefined') {
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-const GOOGLE_CLIENT_ID = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '324729375491-viu62s7s3l3m9o4be0geuv68t4j589id.apps.googleusercontent.com';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -102,7 +102,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     try {
       setLoading(true);
       setError(null);
-      const clientId = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
+      const clientId = '324729375491-viu62s7s3l3m9o4be0geuv68t4j589id.apps.googleusercontent.com';
       const redirectUri = `${API_BASE_URL}/api/v1/auth/google/callback`;
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
       const deepLinkReturn = makeRedirectUri({
