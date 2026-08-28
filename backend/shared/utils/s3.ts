@@ -117,6 +117,61 @@ export class S3Util {
   }
 
   /**
+   * Download image from a remote URL (e.g. Google profile photo) and upload permanently to S3.
+   */
+  static async uploadFromUrl(remoteUrl: string, folder: string, customKey?: string): Promise<string> {
+    try {
+      if (!remoteUrl) return '';
+      
+      const bucket = this.getBucket();
+      const region = env.AWS_REGION || 'ap-south-1';
+      
+      // If already stored in our S3 bucket, don't re-upload
+      if (remoteUrl.includes(bucket) || (remoteUrl.includes('amazonaws.com') && remoteUrl.includes('profiles/'))) {
+        return remoteUrl;
+      }
+
+      const response = await fetch(remoteUrl);
+      if (!response.ok) {
+        logger.warn(`Failed to fetch image from URL: ${remoteUrl} (${response.statusText})`);
+        return remoteUrl;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      
+      let ext = 'jpg';
+      if (contentType.includes('webp')) ext = 'webp';
+      else if (contentType.includes('png')) ext = 'png';
+      else if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = 'jpg';
+
+      const filename = customKey 
+        ? (customKey.includes('.') ? customKey : `${customKey}.${ext}`)
+        : `avatar_${crypto.randomUUID()}_${Date.now()}.${ext}`;
+
+      const key = `${folder.replace(/\/$/, '')}/${filename}`;
+      const client = this.getClient();
+
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      });
+
+      await client.send(command);
+
+      const s3Url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+      logger.info(`Successfully mirrored avatar to S3: ${s3Url}`);
+      return s3Url;
+    } catch (error: any) {
+      logger.error('S3 uploadFromUrl error:', error);
+      return remoteUrl;
+    }
+  }
+
+  /**
    * Upload an image (alias for uploadBase64 for backward compatibility with CloudinaryUtil)
    */
   static async uploadImage(base64Image: string, folder: string, customKey?: string): Promise<string> {

@@ -589,27 +589,38 @@ export const JobApplicantsPage: React.FC = () => {
                     )}
 
                     {/* Resume Action */}
-                    {job?.acceptResume !== false && a.resume && (a.resume.url || a.resume.name) ? (
-                      <button
-                        onClick={() => setPreviewResume({ ...a.resume, userId: targetUserId })}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          background: '#eff6ff',
-                          color: '#2563eb',
-                          border: '1px solid #bfdbfe',
-                          fontSize: '12.5px',
-                          fontWeight: '700',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <FileText size={14} />
-                        <span>View Resume PDF</span>
-                      </button>
-                    ) : null}
+                    {(() => {
+                      const rawRes = a.resume || a.resumeUrl || a.resume_url;
+                      const resObj = typeof rawRes === 'string' && rawRes.trim()
+                        ? { url: rawRes, name: `${a.name || 'Candidate'}_Resume.pdf` }
+                        : rawRes && typeof rawRes === 'object'
+                        ? rawRes
+                        : null;
+
+                      if (!resObj || (!resObj.url && !resObj.name)) return null;
+
+                      return (
+                        <button
+                          onClick={() => setPreviewResume({ ...resObj, userId: targetUserId })}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            background: '#eff6ff',
+                            color: '#2563eb',
+                            border: '1px solid #bfdbfe',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <FileText size={14} />
+                          <span>View Resume PDF</span>
+                        </button>
+                      );
+                    })()}
 
                     {/* Full Profile Trigger */}
                     <button

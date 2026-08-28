@@ -251,12 +251,12 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // Real-time polling while chat modal is open (every 3.5s)
+  // Active polling while chat modal is open (every 7s)
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(() => {
       fetchTicketMessages(selectedTicket);
-    }, 3500);
+    }, 7000);
     return () => clearInterval(interval);
   }, [selectedTicket?.id, fetchTicketMessages]);
 

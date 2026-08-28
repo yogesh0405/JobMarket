@@ -60,7 +60,7 @@ export const BannerAnalyticsModal: React.FC<BannerAnalyticsModalProps> = ({
       };
 
       fetchFresh(false);
-      const timer = setInterval(() => fetchFresh(true), 4000);
+      const timer = setInterval(() => fetchFresh(true), 15000);
       return () => clearInterval(timer);
     }
   }, [banner, visible]);

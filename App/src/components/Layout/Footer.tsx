@@ -74,9 +74,9 @@ export const Footer: React.FC = () => {
         <div className="footer-bottom">
           <p>&copy; 2026 JobMarket. All rights reserved.</p>
           <div className="footer-bottom-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Cookie Policy</a>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/terms">Cookie Policy</Link>
             <Link to="/admin/login" style={{ opacity: 0.85, fontWeight: '600' }}>Admin Portal</Link>
           </div>
         </div>

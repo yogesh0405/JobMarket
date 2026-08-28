@@ -48,14 +48,20 @@ if (typeof window !== 'undefined') {
   }, true);
 }
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <StoreProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ToastProvider>
-    </StoreProvider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <StoreProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ToastProvider>
+      </StoreProvider>
+    </GoogleOAuthProvider>
   </React.StrictMode>
 );

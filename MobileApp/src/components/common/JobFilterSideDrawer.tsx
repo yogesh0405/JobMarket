@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface FilterOptions {
   industry: string;
+  education?: string;
   jobType: string;
   workMode: string;
   minExperience: string;
@@ -64,6 +65,17 @@ const INDUSTRIES = [
   'IT & Software Engineering',
   'Hospitality & Retail',
   'Education & Academics',
+];
+
+const EDUCATIONS = [
+  'All Education Levels',
+  '10th Pass',
+  '12th Pass',
+  'ITI Certificate (Fitter / Welder / Electrician / CNC / Machinist)',
+  'Diploma (Mechanical / Electrical / Civil / Automobile)',
+  'B.E. / B.Tech (Engineering / Technical)',
+  'Graduate (BA / B.Com / B.Sc / BCA / BBA)',
+  'Post Graduate (M.Tech / MBA / MCA)',
 ];
 
 const JOB_TYPES = ['All Types', 'Full-time', 'Part-time', 'Contract', 'Apprenticeship'];
@@ -107,6 +119,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
   const handleReset = () => {
     const defaultFilters: FilterOptions = {
       industry: 'All Industries',
+      education: 'All Education Levels',
       jobType: 'All Types',
       workMode: 'All Modes',
       minExperience: 'All Experience',
@@ -172,7 +185,30 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
           </View>
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 2: MIDC INDUSTRIAL ZONE */}
+          {/* SECTION 2: MINIMUM EDUCATION & DEGREE */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.groupHeaderLabel}>MINIMUM EDUCATION & DEGREE</Text>
+            {EDUCATIONS.map((edu, idx) => {
+              const isActive = (filters.education || 'All Education Levels') === edu;
+              const isLast = idx === EDUCATIONS.length - 1;
+              return (
+                <TouchableOpacity
+                  key={edu}
+                  activeOpacity={0.7}
+                  style={[styles.cleanOptionRow, !isLast && styles.cleanRowBorder]}
+                  onPress={() => setFilters({ ...filters, education: edu })}
+                >
+                  <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
+                    {edu}
+                  </Text>
+                  {isActive && <Check size={18} color={COLORS.primary} strokeWidth={2.5} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <View style={styles.sectionDivider} />
+
+          {/* SECTION 3: MIDC INDUSTRIAL ZONE */}
           <View style={styles.sectionContainer}>
             <Text style={styles.groupHeaderLabel}>MIDC INDUSTRIAL ZONE</Text>
             {MIDC_ZONES.map((zone, idx) => {

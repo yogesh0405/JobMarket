@@ -6,11 +6,12 @@ import { UserRole } from '../../types';
 
 import { ForgotPasswordModal } from '../../components/auth/ForgotPasswordModal';
 import { ShieldCheck, ArrowLeft, KeyRound } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { login, verify2FALogin, currentUser } = useAuth();
+  const { login, loginWithGoogle, verify2FALogin, currentUser } = useAuth();
   const { showToast } = useToast();
 
   const roleParam = searchParams.get('role') as UserRole;
@@ -26,8 +27,77 @@ export const LoginPage: React.FC = () => {
   const [is2FAMode, setIs2FAMode] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaEmail, setMfaEmail] = useState('');
-  const [twoFactorOtp, setTwoFactorOtp] = useState('');
-  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (credentialResponse?.credential) {
+      setIsLoading(true);
+      try {
+        let googlePicture = '';
+        let googleName = '';
+        let googleEmail = '';
+        try {
+          const base64Url = credentialResponse.credential.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const decoded = JSON.parse(jsonPayload);
+          googlePicture = decoded.picture || '';
+          googleName = decoded.name || '';
+          googleEmail = decoded.email || '';
+        } catch (_) {}
+
+        const result = await loginWithGoogle({
+          idToken: credentialResponse.credential,
+          picture: googlePicture,
+          name: googleName,
+          email: googleEmail,
+        }, role);
+
+        if (result.success) {
+          showToast(`Welcome back, ${result.user?.name}!`, 'success');
+          if (result.user?.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          showToast(result.error || 'Google Sign-In failed.', 'error');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Handle Google OAuth Direct Redirect Callback (#access_token=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        setIsLoading(true);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        loginWithGoogle({ accessToken }, role).then((result) => {
+          setIsLoading(false);
+          if (result.success) {
+            showToast(`Welcome back, ${result.user?.name}!`, 'success');
+            if (result.user?.role === 'admin') {
+              navigate('/admin/dashboard');
+            } else {
+              navigate('/dashboard');
+            }
+          } else {
+            showToast(result.error || 'Google Login failed.', 'error');
+          }
+        });
+      }
+    }
+  }, [loginWithGoogle, role, navigate, showToast]);
 
   useEffect(() => {
     // Clear demo credentials — users must log in with real credentials
@@ -283,6 +353,27 @@ export const LoginPage: React.FC = () => {
                 {isLoading ? 'Logging in...' : 'Login'}
               </button>
             </form>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '12px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color, #E2E8F0)' }} />
+              <span style={{ fontSize: '12px', color: 'var(--text-muted, #64748B)', fontWeight: 500 }}>OR</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color, #E2E8F0)' }} />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '16px' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  showToast('Google Sign-In was cancelled or failed.', 'error');
+                }}
+                useOneTap={false}
+                theme="outline"
+                size="large"
+                text="continue_with"
+                shape="rectangular"
+                width="100%"
+              />
+            </div>
 
             <div className="auth-switch">
               No account? <Link to={`/signup?role=${role}`}>Sign up</Link>

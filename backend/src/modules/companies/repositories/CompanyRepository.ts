@@ -47,7 +47,7 @@ export class CompanyRepository {
             COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
           FROM companies c 
           LEFT JOIN users u ON c.employer_id = u.id 
-          LEFT JOIN jobs j ON (j.company ILIKE c.name OR (j.employer_id IS NOT NULL AND j.employer_id = c.employer_id))
+          LEFT JOIN jobs j ON (LOWER(j.company) = LOWER(c.name) OR (j.employer_id IS NOT NULL AND j.employer_id = c.employer_id))
           GROUP BY c.id, u.gst_number, u.aadhaar_verified
           ORDER BY open_jobs_count DESC, c.name ASC;
         `;

@@ -265,21 +265,21 @@ export const initialJobs: Job[] = [];
 
 export const initialUsers: User[] = [
   {
-    id: 'emp1', name: 'Ramesh Sawant', email: 'factory@demo.com', password: 'demo123',
+    id: 'emp1', name: 'Ramesh Sawant', email: 'factory@demo.com',
     role: 'employer', companyName: 'Tata AutoComp Systems', phone: '9876543210',
     createdAt: daysAgo(60), profileComplete: true, gstNumber: '27AAAAA1111A1Z1',
     location: 'Chakan MIDC',
     profilePictureUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
   },
   {
-    id: 'emp2', name: 'HR Manager', email: 'hr@demo.com', password: 'demo123',
+    id: 'emp2', name: 'HR Manager', email: 'hr@demo.com',
     role: 'employer', companyName: 'Bharat Forge Ltd', phone: '9876543211',
     createdAt: daysAgo(45), profileComplete: true, gstNumber: '27BBBBB2222B2Z2',
     location: 'Bhosari MIDC',
     profilePictureUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80'
   },
   {
-    id: 'u1', name: 'Rajesh Kumar Sharma', email: 'rajesh.sharma@demo.com', password: 'demo123',
+    id: 'u1', name: 'Rajesh Kumar Sharma', email: 'rajesh.sharma@demo.com',
     role: 'candidate', phone: '9822011001',
     createdAt: daysAgo(30), profileComplete: true,
     headline: 'Senior CNC Operator & Machinist (ITI Certified)',
@@ -291,7 +291,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'CNC Machinist'
   },
   {
-    id: 'u2', name: 'Amitabh Verma', email: 'amitabh.verma@demo.com', password: 'demo123',
+    id: 'u2', name: 'Amitabh Verma', email: 'amitabh.verma@demo.com',
     role: 'candidate', phone: '9822011002',
     createdAt: daysAgo(25), profileComplete: true,
     headline: 'VMC Programmer & CAD/CAM Designer',
@@ -303,7 +303,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'VMC Programmer'
   },
   {
-    id: 'u3', name: 'Sunil Deshmukh', email: 'sunil.deshmukh@demo.com', password: 'demo123',
+    id: 'u3', name: 'Sunil Deshmukh', email: 'sunil.deshmukh@demo.com',
     role: 'candidate', phone: '9822011003',
     createdAt: daysAgo(20), profileComplete: true,
     headline: 'Certified Industrial Electrician & PLC Technician',
@@ -315,7 +315,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Industrial Electrician'
   },
   {
-    id: 'u4', name: 'Vikram Kulkarni', email: 'vikram.kulkarni@demo.com', password: 'demo123',
+    id: 'u4', name: 'Vikram Kulkarni', email: 'vikram.kulkarni@demo.com',
     role: 'candidate', phone: '9822011004',
     createdAt: daysAgo(18), profileComplete: true,
     headline: 'Quality Control Inspector & CMM Specialist',
@@ -325,7 +325,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Quality Assurance'
   },
   {
-    id: 'u5', name: 'Pradeep Shinde', email: 'pradeep.shinde@demo.com', password: 'demo123',
+    id: 'u5', name: 'Pradeep Shinde', email: 'pradeep.shinde@demo.com',
     role: 'candidate', phone: '9822011005',
     createdAt: daysAgo(15), profileComplete: true,
     headline: 'High-Pressure Heavy MIG & TIG Welder',
@@ -335,7 +335,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'MIG/TIG Welder'
   },
   {
-    id: 'u6', name: 'Sachin Joshi', email: 'sachin.joshi@demo.com', password: 'demo123',
+    id: 'u6', name: 'Sachin Joshi', email: 'sachin.joshi@demo.com',
     role: 'candidate', phone: '9822011006',
     createdAt: daysAgo(12), profileComplete: true,
     headline: 'Warehouse & Inventory Store Supervisor (SAP MM)',
@@ -345,7 +345,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Store Keeper'
   },
   {
-    id: 'u7', name: 'Anil Gavhane', email: 'anil.gavhane@demo.com', password: 'demo123',
+    id: 'u7', name: 'Anil Gavhane', email: 'anil.gavhane@demo.com',
     role: 'candidate', phone: '9822011007',
     createdAt: daysAgo(10), profileComplete: true,
     headline: 'Senior Hydraulics & Pneumatics Maintenance Engineer',
@@ -355,7 +355,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Plant Maintenance'
   },
   {
-    id: 'u8', name: 'Manoj Jadhav', email: 'manoj.jadhav@demo.com', password: 'demo123',
+    id: 'u8', name: 'Manoj Jadhav', email: 'manoj.jadhav@demo.com',
     role: 'candidate', phone: '9822011008',
     createdAt: daysAgo(8), profileComplete: true,
     headline: 'Certified Heavy Material Handling & Forklift Operator',
@@ -365,7 +365,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Forklift Driver'
   },
   {
-    id: 'u9', name: 'Sanjay Pawar', email: 'sanjay.pawar@demo.com', password: 'demo123',
+    id: 'u9', name: 'Sanjay Pawar', email: 'sanjay.pawar@demo.com',
     role: 'candidate', phone: '9822011009',
     createdAt: daysAgo(5), profileComplete: true,
     headline: 'Shop Floor Assembly Line Production Supervisor',
@@ -375,7 +375,7 @@ export const initialUsers: User[] = [
     aadhaarVerified: true, tradeSpecialization: 'Assembly Line Supervisor'
   },
   {
-    id: 'u10', name: 'Vijay Kale', email: 'vijay.kale@demo.com', password: 'demo123',
+    id: 'u10', name: 'Vijay Kale', email: 'vijay.kale@demo.com',
     role: 'candidate', phone: '9822011010',
     createdAt: daysAgo(2), profileComplete: true,
     headline: 'Tool & Die Maker Fitter Specialist',

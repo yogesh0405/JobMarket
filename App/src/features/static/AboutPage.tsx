@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Compass,
   Info,
@@ -327,6 +328,7 @@ const EMPLOYER_FEATURES: FeatureItem[] = [
 ];
 
 export const AboutPage: React.FC = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const isEmployer = (currentUser?.role || '').toLowerCase() === 'employer';
   const activeFeatures = isEmployer ? EMPLOYER_FEATURES : CANDIDATE_FEATURES;
@@ -530,7 +532,10 @@ export const AboutPage: React.FC = () => {
 
           <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+          <div
+            onClick={() => navigate('/terms')}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <FileText size={16} color="#2563EB" />
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A' }}>Terms of Service & Usage Policies</span>
@@ -540,7 +545,10 @@ export const AboutPage: React.FC = () => {
 
           <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+          <div
+            onClick={() => navigate('/privacy')}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ShieldCheck size={16} color="#2563EB" />
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A' }}>Privacy Policy & Data Security</span>

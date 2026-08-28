@@ -111,6 +111,8 @@ export interface Job {
   latitude?: number;
   longitude?: number;
   trade?: string;
+  educationRequirement?: string;
+  education_requirement?: string;
   applicants_count?: number;
   created_at?: string;
 }

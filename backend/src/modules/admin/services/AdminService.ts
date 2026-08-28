@@ -64,7 +64,9 @@ export class AdminService {
       throw new NotFoundError('User not found');
     }
 
-    const tempPassword = 'Password123!';
+    const crypto = await import('crypto');
+    const randomChars = crypto.randomBytes(4).toString('hex');
+    const tempPassword = `Jm#${randomChars}${Math.floor(100 + Math.random() * 900)}!`;
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
     await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [hashedPassword, userId]);

@@ -53,26 +53,15 @@ export class SupportRepository {
     const year = new Date().getFullYear();
     const prefix = `SUP-${year}-`;
     
-    // Fetch latest ticket number for current year
-    const result = await client.query(
-      `SELECT ticket_number FROM support_tickets WHERE ticket_number LIKE $1 ORDER BY ticket_number DESC LIMIT 1`,
-      [`${prefix}%`]
-    );
-
-    let nextSeq = 1;
-    if (result.rows.length > 0) {
-      const latestNum = result.rows[0].ticket_number;
-      const parts = latestNum.split('-');
-      if (parts.length === 3) {
-        const seqPart = parseInt(parts[2], 10);
-        if (!isNaN(seqPart)) {
-          nextSeq = seqPart + 1;
-        }
-      }
+    try {
+      const seqResult = await client.query("SELECT nextval('support_ticket_seq') as seq;");
+      const nextSeq = seqResult.rows[0]?.seq || Math.floor(Math.random() * 900000) + 100000;
+      return `${prefix}${String(nextSeq).padStart(6, '0')}`;
+    } catch {
+      // Fallback if sequence is missing in edge-case environments
+      const timestampSuffix = String(Date.now()).slice(-6);
+      return `${prefix}${timestampSuffix}`;
     }
-    
-    const seqStr = String(nextSeq).padStart(6, '0');
-    return `${prefix}${seqStr}`;
   }
 
   static async createTicket(ticket: Omit<SupportTicket, 'id' | 'ticket_number' | 'created_at' | 'updated_at' | 'last_reply_at'>): Promise<SupportTicket> {
@@ -238,6 +227,12 @@ export class SupportRepository {
       );
       
       await client.query('COMMIT');
+
+      // Stream message to Kafka support-chat-topic
+      import('../../../config/kafka').then(({ publishKafkaEvent, TOPICS }) => {
+        publishKafkaEvent(TOPICS.SUPPORT_CHAT, createdMsg, message.ticket_id).catch(() => {});
+      }).catch(() => {});
+
       return createdMsg;
     } catch (error) {
       await client.query('ROLLBACK');

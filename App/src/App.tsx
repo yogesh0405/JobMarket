@@ -17,6 +17,8 @@ import { PublicProfilePage } from './features/profile/PublicProfilePage';
 import { ResumePage } from './features/profile/ResumePage';
 import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
+import { TermsPage } from './features/static/TermsPage';
+import { PrivacyPage } from './features/static/PrivacyPage';
 import { CompanyProfilePage } from './features/company/CompanyProfilePage';
 import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
 import { useAuth } from './hooks/useAuth';
@@ -43,9 +45,32 @@ import { AdminMapAnalyticsPage } from './modules/admin/pages/AdminMapAnalyticsPa
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
+// Route Guard: Prevents Employers from accessing candidate/employee sections (Home, Jobs Search, Map, Job Detail/Apply, Companies Directory)
+const CandidateOrGuestOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser } = useAuth();
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  if (isEmployer) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
+// Route Guard: Ensures only Employers can access employer actions (Post Job, Edit Job, Job Applicants)
+const EmployerOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { currentUser } = useAuth();
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!isEmployer) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
 export const App: React.FC = () => {
   const navigate = useNavigate();
-  const { syncUser } = useAuth();
+  const { currentUser, syncUser, loginWithGoogle } = useAuth();
   const { dispatch } = useStore();
 
   useEffect(() => {
@@ -56,7 +81,22 @@ export const App: React.FC = () => {
         navigate(cleanPath, { replace: true });
       }
     }
-  }, [navigate]);
+
+    // Intercept Google OAuth access_token returned in hash (#access_token=...)
+    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token=')) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        window.history.replaceState(null, '', window.location.pathname);
+        loginWithGoogle({ accessToken }, 'candidate').then((res) => {
+          if (res.success) {
+            navigate(res.user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+          }
+        });
+      }
+    }
+  }, [navigate, loginWithGoogle]);
 
   useEffect(() => {
     syncUser();
@@ -78,6 +118,8 @@ export const App: React.FC = () => {
         dispatch({ type: 'SET_JOBS', payload: [] });
       });
   }, []);
+
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
 
   return (
     <ErrorBoundary>
@@ -108,32 +150,41 @@ export const App: React.FC = () => {
           <Route path="map-analytics" element={<AdminMapAnalyticsPage />} />
         </Route>
 
-        {/* 3. Public Pages (WITH Navbar/Footer Layout) */}
+        {/* 3. Main Application Routes (WITH Navbar/Footer Layout) */}
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/jobs" element={<JobSearchPage />} />
-          <Route path="/jobs/map" element={<JobMapPage />} />
-          <Route path="/job/:id" element={<JobDetailPage />} />
-          <Route path="/jobs/:id" element={<JobDetailPage />} />
-          <Route path="/job/:id/apply" element={<JobApplyPage />} />
-          <Route path="/jobs/:id/apply" element={<JobApplyPage />} />
-          <Route path="/post-job" element={<JobPostPage />} />
-          <Route path="/edit-job/:id" element={<JobPostPage />} />
-          <Route path="/job/:id/applicants" element={<JobApplicantsPage />} />
+          {/* Candidate / Public Only Routes (Employers redirected to /dashboard) */}
+          <Route path="/" element={<CandidateOrGuestOnly><HomePage /></CandidateOrGuestOnly>} />
+          <Route path="/jobs" element={<CandidateOrGuestOnly><JobSearchPage /></CandidateOrGuestOnly>} />
+          <Route path="/jobs/map" element={<CandidateOrGuestOnly><JobMapPage /></CandidateOrGuestOnly>} />
+          <Route path="/job/:id" element={<CandidateOrGuestOnly><JobDetailPage /></CandidateOrGuestOnly>} />
+          <Route path="/jobs/:id" element={<CandidateOrGuestOnly><JobDetailPage /></CandidateOrGuestOnly>} />
+          <Route path="/job/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
+          <Route path="/jobs/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
+          <Route path="/companies" element={<CandidateOrGuestOnly><CompaniesDirectoryPage /></CandidateOrGuestOnly>} />
+          <Route path="/company/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
+          <Route path="/companies/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
+          <Route path="/resume" element={<CandidateOrGuestOnly><Navigate to="/dashboard?tab=resume" replace /></CandidateOrGuestOnly>} />
+
+          {/* Employer Only Routes */}
+          <Route path="/post-job" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
+          <Route path="/edit-job/:id" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
+          <Route path="/job/:id/applicants" element={<EmployerOnly><JobApplicantsPage /></EmployerOnly>} />
+
+          {/* Shared Workspaces */}
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
+          <Route path="/profile" element={<Navigate to={isEmployer ? "/dashboard?tab=profile" : "/dashboard?tab=profile"} replace />} />
           <Route path="/profile/:id" element={<PublicProfilePage />} />
           <Route path="/p/:id" element={<PublicProfilePage />} />
-          <Route path="/resume" element={<Navigate to="/dashboard?tab=resume" replace />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/companies" element={<CompaniesDirectoryPage />} />
-          <Route path="/company/:companyId" element={<CompanyProfilePage />} />
-          <Route path="/companies/:companyId" element={<CompanyProfilePage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/about/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/about/privacy" element={<PrivacyPage />} />
         </Route>
 
         {/* 4. Fallback Catch-All */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={isEmployer ? "/dashboard" : "/"} replace />} />
       </Routes>
     </ErrorBoundary>
   );

@@ -55,7 +55,6 @@ export interface User {
   name: string;
   email: string;
   profilePictureUrl?: string;
-  password?: string;
   role: UserRole;
   phone: string;
   companyName?: string;

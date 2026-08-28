@@ -36,6 +36,9 @@ export const Layout: React.FC = () => {
   const hideFooter = isEmployer ||
                      isEmployerRoute ||
                      location.pathname.startsWith('/job/') ||
+                     location.pathname.startsWith('/about') ||
+                     location.pathname.startsWith('/terms') ||
+                     location.pathname.startsWith('/privacy') ||
                      location.pathname.startsWith('/contact') ||
                      location.pathname.startsWith('/support') ||
                      location.pathname.startsWith('/settings') ||

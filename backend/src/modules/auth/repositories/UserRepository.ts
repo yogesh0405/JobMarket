@@ -35,21 +35,22 @@ export class UserRepository {
   static async createUser(userData: Partial<User>, client: any = pool): Promise<User> {
     const {
       email, password_hash, name, phone, role,
-      company_name, gst_number, aadhaar_verified, trade_specialization, status
+      company_name, gst_number, aadhaar_verified, trade_specialization, status, profile_picture_url
     } = userData;
 
     const query = `
       INSERT INTO users (
         email, password_hash, name, phone, role,
-        company_name, gst_number, aadhaar_verified, trade_specialization, status
+        company_name, gst_number, aadhaar_verified, trade_specialization, status, profile_picture_url
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING id, email, name, phone, role, company_name, gst_number, aadhaar_verified, trade_specialization, status, created_at, updated_at;
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id, email, name, phone, role, company_name, gst_number, aadhaar_verified, trade_specialization, status, profile_picture_url, created_at, updated_at;
     `;
 
     const values = [
       email, password_hash, name, phone, role,
-      company_name, gst_number, aadhaar_verified, trade_specialization, status || 'PENDING_VERIFICATION'
+      company_name, gst_number, aadhaar_verified, trade_specialization, status || 'PENDING_VERIFICATION',
+      profile_picture_url || null
     ];
 
     const result = await client.query(query, values);
@@ -64,14 +65,6 @@ export class UserRepository {
 
   static async findById(id: string): Promise<User | null> {
     return CacheService.getOrSet(`user:profile:${id}`, 900, async () => {
-      await pool.query(`
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS headline VARCHAR(255);
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255);
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS midc_zone VARCHAR(150);
-        ALTER TABLE users ALTER COLUMN profile_picture_url TYPE TEXT;
-      `).catch(() => {});
-
       const query = `
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
                trade_specialization, status, created_at, updated_at, headline, location, bio, midc_zone, skills, 

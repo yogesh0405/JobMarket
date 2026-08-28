@@ -59,23 +59,7 @@ export const AdminLoginPage: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>Authorized personnel access only</p>
         </div>
 
-        {/* Quick Demo Helper */}
-        <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '12px 14px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Demo Admin Login</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>admin@demo.com • demo123</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('admin@demo.com');
-              setPassword('demo123');
-            }}
-            style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
-          >
-            Auto Fill
-          </button>
-        </div>
+
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">

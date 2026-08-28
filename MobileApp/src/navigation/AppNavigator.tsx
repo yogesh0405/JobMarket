@@ -71,6 +71,7 @@ export const AppNavigator: React.FC = () => {
         <>
           <Stack.Screen name="EmployerMain" component={EmployerTabNavigator} />
           <Stack.Screen name="JobPost" component={JobPostScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PostJob" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="PostTab" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="EmployerPostJob" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />

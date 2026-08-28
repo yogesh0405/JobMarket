@@ -745,6 +745,7 @@ export const ProfilePage: React.FC = () => {
                       <img 
                         src={currentUser.profilePictureUrl} 
                         alt={typeof (currentUser.companyName || currentUser.name) === 'string' ? (currentUser.companyName || currentUser.name) : 'Company Logo'} 
+                        referrerPolicy="no-referrer"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';
@@ -1016,6 +1017,7 @@ export const ProfilePage: React.FC = () => {
                     <img 
                       src={currentUser.profilePictureUrl} 
                       alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                      referrerPolicy="no-referrer"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                       onError={(e) => {
                         (e.currentTarget as HTMLElement).style.display = 'none';

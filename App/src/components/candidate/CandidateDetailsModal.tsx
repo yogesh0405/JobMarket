@@ -75,10 +75,11 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
     ? (rawEducation.degree || rawEducation.title || rawEducation.qualification || 'ITI / Industrial Vocational Training')
     : 'ITI / Industrial Vocational Training';
 
-  const resumeObj = typeof viewWorker?.resume === 'string'
-    ? { url: viewWorker.resume, name: 'Candidate Resume.pdf' }
-    : viewWorker?.resume && typeof viewWorker.resume === 'object'
-    ? viewWorker.resume
+  const rawCandidateResume = viewWorker?.resume || viewWorker?.resume_url || viewWorker?.resumeUrl;
+  const resumeObj = typeof rawCandidateResume === 'string' && rawCandidateResume.trim()
+    ? { url: rawCandidateResume, name: `${viewWorker?.name || 'Candidate'}_Resume.pdf` }
+    : rawCandidateResume && typeof rawCandidateResume === 'object'
+    ? rawCandidateResume
     : null;
 
   const [activeSubTab, setActiveSubTab] = useState<'job_details' | 'profile' | 'hiring'>(hasJobContext ? 'job_details' : 'profile');

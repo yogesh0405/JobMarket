@@ -9,7 +9,7 @@ export class SupportController {
 
   static async createTicket(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req.headers['x-user-id'] as string) || req.user?.userId || null;
+      const userId = req.user?.userId || null;
       const {
         fullName, full_name, email, userEmail, phone, category, subject, title, description, message,
         attachmentBase64, attachmentName, preferredContact, preferred_contact, priority
@@ -129,8 +129,8 @@ export class SupportController {
         attachmentName,
         attachment_name
       } = req.body;
-      const userId = (req.headers['x-user-id'] as string) || req.user?.userId || (req.user as any)?.id || null;
-      const role = (req.headers['x-user-role'] as string) || req.user?.role || 'candidate';
+      const userId = req.user?.userId || (req.user as any)?.id || null;
+      const role = req.user?.role || 'candidate';
 
       if (!ticketId) {
         throw new BadRequestError('Ticket ID is required');

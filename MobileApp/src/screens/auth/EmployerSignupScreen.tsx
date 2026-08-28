@@ -33,8 +33,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { COLORS } from '../../constants/theme';
+import { API_BASE_URL } from '../../api/client';
 import { signupSchema } from '../../utils/validators';
 import { handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   navigation: any;
@@ -96,16 +102,30 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     try {
       setLoading(true);
       setError(null);
-      const userGoogleEmail = email.trim() || (role === 'employer' ? 'employer.google@gmail.com' : 'candidate.google@gmail.com');
-      const rawName = name.trim() || userGoogleEmail.split('@')[0].replace(/[\._]/g, ' ');
-      const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+      const clientId = '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
+      const redirectUrl = 'https://auth.expo.io/@yogesh0405/csn-jobmarket';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
 
-      await loginWithGoogle({
-        email: userGoogleEmail.toLowerCase(),
-        name: formattedName,
-        role: role,
-        googleId: `google_user_${Date.now()}`,
-      });
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
+      if (result.type === 'success' && result.url) {
+        let accessToken: string | null = null;
+        if (result.url.includes('#')) {
+          const hash = result.url.split('#')[1];
+          const params = new URLSearchParams(hash);
+          accessToken = params.get('access_token');
+        } else if (result.url.includes('?')) {
+          const query = result.url.split('?')[1];
+          const params = new URLSearchParams(query);
+          accessToken = params.get('access_token');
+        }
+
+        if (accessToken) {
+          await loginWithGoogle({ accessToken, role });
+        } else {
+          setError('Google registration completed without access token.');
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Google Registration failed');
     } finally {

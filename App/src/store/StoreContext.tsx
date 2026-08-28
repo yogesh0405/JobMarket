@@ -59,6 +59,21 @@ const getInitialState = (): StoreState => {
         }
       }
 
+      // Clean up any legacy password fields from stored user objects
+      if (Array.isArray(parsed.users)) {
+        parsed.users = parsed.users.map((u: any) => {
+          if (u && typeof u === 'object') {
+            const { password, ...safeU } = u;
+            return safeU;
+          }
+          return u;
+        });
+      }
+      if (parsed.currentUser && typeof parsed.currentUser === 'object') {
+        const { password, ...safeCurrent } = parsed.currentUser;
+        parsed.currentUser = safeCurrent;
+      }
+
       return parsed;
     } catch (e) {
       console.error('Failed to parse localStorage data', e);
@@ -84,7 +99,29 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [state, dispatch] = useReducer(storeReducer, null, getInitialState);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+    // Sanitize state before storing to ensure no sensitive credentials are saved
+    const safeUsers = Array.isArray(state.users)
+      ? state.users.map((u: any) => {
+          if (u && typeof u === 'object') {
+            const { password, ...rest } = u;
+            return rest;
+          }
+          return u;
+        })
+      : [];
+    let safeCurrentUser = state.currentUser;
+    if (safeCurrentUser && typeof safeCurrentUser === 'object') {
+      const { password, ...rest } = safeCurrentUser as any;
+      safeCurrentUser = rest;
+    }
+
+    const stateToPersist = {
+      ...state,
+      users: safeUsers,
+      currentUser: safeCurrentUser
+    };
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToPersist));
   }, [state]);
 
   return (

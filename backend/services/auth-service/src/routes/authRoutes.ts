@@ -17,6 +17,8 @@ router.post('/signup', authLimiter, validate(signupSchema), AuthController.signu
 router.post('/verify-otp', authLimiter, validate(verifyOTPSchema), AuthController.verifyOTP);
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
 router.post('/google', authLimiter, AuthController.googleAuth);
+router.get('/google/mobile-login', AuthController.googleMobileLogin);
+router.get('/google/callback', AuthController.googleCallback);
 router.post('/refresh', validate(refreshTokenSchema), AuthController.refresh);
 
 router.post('/forgot-password', authLimiter, AuthController.forgotPassword);

@@ -129,6 +129,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const bottomInset = Math.max(insets.bottom || 0, Platform.OS === 'android' ? 24 : 16);
 
   return (
     <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
@@ -318,8 +319,8 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
         ) : null}
       </KeyboardAwareScrollView>
 
-      {/* Fixed Sticky Action Bar at Bottom */}
-      <View style={[styles.submitContainer, { paddingBottom: Math.max(insets.bottom + 10, 24) }]}>
+      {/* Fixed Sticky Action Bar at Bottom (with Safe Area & System Navigation Menu Clearance) */}
+      <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
         {form.currentStep === 1 ? (
           <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.85} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -462,7 +463,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 28,
+    paddingBottom: 48,
   },
   submitContainer: {
     flexDirection: 'row',

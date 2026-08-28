@@ -2,7 +2,18 @@ import { Request, Response, NextFunction } from 'express';
 import { redisClient } from '../config/redis';
 import { logger } from '../utils/logger';
 
+// Resilient Bounded In-Memory Store with automatic cleanup
 const inMemoryRateStore = new Map<string, { count: number; expiresAt: number }>();
+
+// Periodic in-memory cleanup to prevent memory leaks (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of inMemoryRateStore.entries()) {
+    if (now > val.expiresAt) {
+      inMemoryRateStore.delete(key);
+    }
+  }
+}, 300000).unref();
 
 export const rateLimiter = (prefix: string, maxRequests: number, windowSeconds: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -11,8 +22,17 @@ export const rateLimiter = (prefix: string, maxRequests: number, windowSeconds: 
 
     try {
       if (redisClient.isOpen && redisClient.isReady) {
-        const current = await redisClient.incr(key);
-        if (current === 1) {
+        // Atomic transaction: INCR + Check TTL
+        const results = await redisClient
+          .multi()
+          .incr(key)
+          .ttl(key)
+          .exec();
+
+        const current = Number(results[0]);
+        const ttl = Number(results[1]);
+
+        if (ttl === -1) {
           await redisClient.expire(key, windowSeconds);
         }
 

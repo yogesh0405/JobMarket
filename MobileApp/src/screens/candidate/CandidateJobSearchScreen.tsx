@@ -23,6 +23,7 @@ import { getCompanyLogoUrl } from '../../utils/companyLogos';
 import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 import { savedJobsStore } from '../../utils/savedJobsStore';
+import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
 
 const FALLBACK_JOBS: Job[] = [];
 
@@ -81,13 +82,15 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   useEffect(() => {
     if (!route?.params) return;
-    const { keyword, location, industry, education, homeFilters } = route.params;
+    const { keyword, location, industry, education, homeFilters, rawFilterTitle } = route.params;
 
     if (homeFilters) {
       setActiveFilters(homeFilters);
     }
     if (keyword) {
-      setSearchQuery(keyword);
+      setSearchQuery(getCleanSearchTerm(keyword));
+    } else if (rawFilterTitle) {
+      setSearchQuery(getCleanSearchTerm(rawFilterTitle));
     }
     if (location) {
       setActiveFilters((prev) => ({ ...prev, midcZone: location }));
@@ -96,7 +99,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       setActiveFilters((prev) => ({ ...prev, industry }));
     }
     if (education && !keyword) {
-      const cleanEdu = education.replace(/\s*\([^)]*\)/g, '').trim();
+      const cleanEdu = getCleanSearchTerm(education);
       setSearchQuery(cleanEdu);
     }
   }, [route?.params]);
@@ -223,26 +226,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
-      // 1. Text Search Query Match
+      // 1. Text Search Query Match (Intelligent domain matching)
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const title = (job.title || '').toLowerCase();
-        const company = (job.company || '').toLowerCase();
-        const location = (job.location || '').toLowerCase();
-        const trade = (job.trade || '').toLowerCase();
-        const industry = (job.industry || '').toLowerCase();
-        const desc = (job.description || '').toLowerCase();
-        const skills = Array.isArray(job.skills) ? job.skills.join(' ').toLowerCase() : '';
-
-        const matchesQuery =
-          title.includes(q) ||
-          company.includes(q) ||
-          location.includes(q) ||
-          trade.includes(q) ||
-          industry.includes(q) ||
-          desc.includes(q) ||
-          skills.includes(q);
-
+        const matchesQuery = matchJobAgainstKeyword(job, searchQuery);
         if (!matchesQuery) return false;
       }
 
@@ -283,7 +269,13 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         if (!matchesInd) return false;
       }
 
-      // 4. MIDC Zone Filter Match (Token Matching)
+      // 4. Education Filter Match
+      if (activeFilters.education && activeFilters.education !== 'All Education Levels') {
+        const matchesEdu = matchJobAgainstKeyword(job, activeFilters.education);
+        if (!matchesEdu) return false;
+      }
+
+      // 5. MIDC Zone Filter Match (Token Matching)
       if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
         const rawZone = activeFilters.midcZone.toLowerCase();
         const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
@@ -297,21 +289,21 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         if (!matchesZone) return false;
       }
 
-      // 5. Job Type Filter Match
+      // 6. Job Type Filter Match
       if (activeFilters.jobType && activeFilters.jobType !== 'All Types') {
         const typeKey = activeFilters.jobType.toLowerCase();
         const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
         if (!jType.includes(typeKey)) return false;
       }
 
-      // 6. Work Mode Filter Match
+      // 7. Work Mode Filter Match
       if (activeFilters.workMode && activeFilters.workMode !== 'All Modes') {
         const modeKey = activeFilters.workMode.toLowerCase();
         const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
         if (!jMode.includes(modeKey)) return false;
       }
 
-      // 7. Amenities Filters
+      // 8. Amenities Filters
       if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
       if (activeFilters.canteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
 
@@ -324,14 +316,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       const q = searchQuery.toLowerCase().trim();
       return jobs.filter((job) => {
         if (q) {
-          const title = (job.title || '').toLowerCase();
-          const company = (job.company || '').toLowerCase();
-          const location = (job.location || '').toLowerCase();
-          const trade = (job.trade || '').toLowerCase();
-          const industry = (job.industry || '').toLowerCase();
-          const desc = (job.description || '').toLowerCase();
-
-          const matchesQuery = title.includes(q) || company.includes(q) || location.includes(q) || trade.includes(q) || industry.includes(q) || desc.includes(q);
+          const matchesQuery = matchJobAgainstKeyword(job, q);
           if (!matchesQuery) return false;
         }
 
@@ -362,6 +347,11 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             indTokens.some((t: string) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
 
           if (!matchesInd) return false;
+        }
+
+        if (draftFilters.education && draftFilters.education !== 'All Education Levels') {
+          const matchesEdu = matchJobAgainstKeyword(job, draftFilters.education);
+          if (!matchesEdu) return false;
         }
 
         if (draftFilters.midcZone && draftFilters.midcZone !== 'All MIDC Zones') {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Megaphone,
@@ -20,7 +20,10 @@ import {
   Check,
   X,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  EyeOff,
+  RotateCw,
+  XCircle,
 } from 'lucide-react';
 import { Advertisement, AdvertisementType, AdvertisementPriority, AdvertisementAnalytics } from '../../types/advertisement';
 import { apiFetch } from '../../utils/api';
@@ -31,7 +34,7 @@ interface EmployerAdvertisementsProps {
   employerJobs: Job[];
 }
 
-type FilterStatus = 'ALL' | 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED' | 'EXPIRED';
+type FilterStatus = 'ALL' | 'LIVE' | 'REVIEW' | 'REJECTED' | 'UNPUBLISHED' | 'PAST';
 
 export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ employerJobs }) => {
   const { showToast } = useToast();
@@ -44,6 +47,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
   const [selectedAdForAnalytics, setSelectedAdForAnalytics] = useState<Advertisement | null>(null);
+  const [loadingFreshAnalytics, setLoadingFreshAnalytics] = useState(false);
 
   // Form Fields
   const [title, setTitle] = useState('');
@@ -69,8 +73,43 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     </svg>
   );
 
-  const loadData = async () => {
-    setIsLoading(true);
+  // Helper Predicates (100% Match to Mobile App Lifecycle)
+  const isAdLive = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    const isApproved = s === 'APPROVED' || s === 'PUBLISHED';
+    const notExpired = !b.end_date || new Date(b.end_date).getTime() >= new Date().getTime();
+    return isApproved && b.is_active === true && notExpired;
+  };
+
+  const isAdPast = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    const isExpiredStatus = s === 'EXPIRED';
+    const isDateExpired = b.end_date ? new Date(b.end_date).getTime() < new Date().getTime() : false;
+    return isExpiredStatus || isDateExpired;
+  };
+
+  const isAdRejected = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    return s === 'REJECTED';
+  };
+
+  const isAdResubmitted = (b: Advertisement) => {
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    return s === 'RESUBMITTED';
+  };
+
+  const isAdUnpublished = (b: Advertisement) => {
+    if (isAdLive(b) || isAdPast(b) || isAdRejected(b)) return false;
+    const s = (b.status || (b as any).approval_status || '').toUpperCase();
+    return s === 'UNPUBLISHED' || ((s === 'DRAFT' || s === 'APPROVED' || s === 'PUBLISHED') && b.is_active === false);
+  };
+
+  const isAdReview = (b: Advertisement) => {
+    return !isAdLive(b) && !isAdPast(b) && !isAdRejected(b) && !isAdUnpublished(b);
+  };
+
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [adsRes, analyticsRes] = await Promise.all([
         apiFetch('/api/v1/employer/advertisements'),
@@ -79,7 +118,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
       if (adsRes.ok) {
         const json = await adsRes.json();
-        if (json.success) setAdvertisements(json.data);
+        if (json.success && Array.isArray(json.data)) setAdvertisements(json.data);
       }
       if (analyticsRes.ok) {
         const json = await analyticsRes.json();
@@ -88,32 +127,67 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     } catch (err) {
       console.error('Error loading employer advertisements:', err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
+
+  // Initial Load + Real-Time 5-Second Polling (exact match to Mobile App)
+  useEffect(() => {
+    loadData(false);
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  // Real-Time Analytics Polling (4-second interval when analytics modal is open)
+  useEffect(() => {
+    if (!selectedAdForAnalytics) return;
+    const adId = selectedAdForAnalytics.id;
+    const fetchFresh = async (silent = false) => {
+      if (!silent) setLoadingFreshAnalytics(true);
+      try {
+        const res = await apiFetch(`/api/v1/employer/advertisements/${adId}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setSelectedAdForAnalytics(json.data);
+          }
+        }
+      } catch {
+      } finally {
+        if (!silent) setLoadingFreshAnalytics(false);
+      }
+    };
+
+    fetchFresh(false);
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchFresh(true);
+      }
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [selectedAdForAnalytics?.id]);
 
   // Filtered ads list (100% Real Database Lifecycle)
   const filteredAds = useMemo(() => {
-    if (filterStatus === 'ALL') return advertisements;
-    if (filterStatus === 'APPROVED') return advertisements.filter(a => (a.status === 'APPROVED' || a.status === 'PUBLISHED') && a.is_active);
-    if (filterStatus === 'PENDING_APPROVAL') return advertisements.filter(a => a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && a.status !== 'REJECTED' && a.status !== 'EXPIRED');
-    if (filterStatus === 'REJECTED') return advertisements.filter(a => a.status === 'REJECTED');
-    if (filterStatus === 'EXPIRED') return advertisements.filter(a => a.status === 'EXPIRED');
-    return advertisements.filter(a => a.status === filterStatus);
+    if (filterStatus === 'LIVE') return advertisements.filter(isAdLive);
+    if (filterStatus === 'REVIEW') return advertisements.filter(isAdReview);
+    if (filterStatus === 'REJECTED') return advertisements.filter(isAdRejected);
+    if (filterStatus === 'UNPUBLISHED') return advertisements.filter(isAdUnpublished);
+    if (filterStatus === 'PAST') return advertisements.filter(isAdPast);
+    return advertisements;
   }, [advertisements, filterStatus]);
 
   // Status counts for tabs
   const statusCounts = useMemo(() => {
     return {
       all: advertisements.length,
-      live: advertisements.filter(a => (a.status === 'APPROVED' || a.status === 'PUBLISHED') && a.is_active).length,
-      pending: advertisements.filter(a => a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && a.status !== 'REJECTED' && a.status !== 'EXPIRED').length,
-      rejected: advertisements.filter(a => a.status === 'REJECTED').length,
-      expired: advertisements.filter(a => a.status === 'EXPIRED').length,
+      live: advertisements.filter(isAdLive).length,
+      review: advertisements.filter(isAdReview).length,
+      rejected: advertisements.filter(isAdRejected).length,
+      unpublished: advertisements.filter(isAdUnpublished).length,
+      past: advertisements.filter(isAdPast).length,
     };
   }, [advertisements]);
 
@@ -230,7 +304,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
         );
         window.dispatchEvent(new CustomEvent('notifications-updated'));
         setFormModalOpen(false);
-        loadData();
+        loadData(false);
       } else {
         showToast(json.message || 'Failed to save advertisement', 'error');
       }
@@ -241,8 +315,8 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this promotional banner?')) return;
+  const handleDelete = async (id: string, bannerTitle?: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${bannerTitle || 'this promotional banner'}"? This action cannot be undone.`)) return;
 
     setSubmittingId(id);
     try {
@@ -252,7 +326,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       const json = await res.json();
       if (res.ok && json.success) {
         showToast('Advertisement banner deleted successfully', 'info');
-        loadData();
+        loadData(false);
       } else {
         showToast(json.message || 'Failed to delete advertisement', 'error');
       }
@@ -263,44 +337,59 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     }
   };
 
-  const getStatusPill = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-      case 'PUBLISHED':
-        return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0', padding: '3px 9px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
-            Live / Active
-          </span>
-        );
-      case 'PENDING_APPROVAL':
-      case 'SUBMITTED':
-        return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A', padding: '3px 9px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700' }}>
-            <Clock size={11} strokeWidth={2.5} />
-            In Review
-          </span>
-        );
-      case 'REJECTED':
-        return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FECACA', padding: '3px 9px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700' }}>
-            <AlertCircle size={11} strokeWidth={2.5} />
-            Rejected
-          </span>
-        );
-      case 'EXPIRED':
-        return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 9px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700' }}>
-            Expired
-          </span>
-        );
-      default:
-        return (
-          <span style={{ background: '#F1F5F9', color: '#475569', padding: '3px 9px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700' }}>
-            {status}
-          </span>
-        );
+  const getStatusPill = (ad: Advertisement) => {
+    const isLive = isAdLive(ad);
+    const isPast = isAdPast(ad);
+    const isRejected = isAdRejected(ad);
+    const isResubmitted = isAdResubmitted(ad);
+    const isUnpublished = isAdUnpublished(ad);
+
+    if (isLive) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+          <CheckCircle2 size={12} strokeWidth={2.4} />
+          Live
+        </span>
+      );
     }
+    if (isPast) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+          <Calendar size={12} strokeWidth={2.4} />
+          Expired
+        </span>
+      );
+    }
+    if (isResubmitted) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+          <RotateCw size={11} strokeWidth={2.5} />
+          Resubmitted
+        </span>
+      );
+    }
+    if (isRejected) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+          <XCircle size={12} strokeWidth={2.4} />
+          Rejected
+        </span>
+      );
+    }
+    if (isUnpublished) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FEF3C7', color: '#D97706', border: '1px solid #FDE68A', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+          <EyeOff size={12} strokeWidth={2.4} />
+          Unpublished
+        </span>
+      );
+    }
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
+        <Clock size={12} strokeWidth={2.4} />
+        In Review
+      </span>
+    );
   };
 
   return (
@@ -401,10 +490,11 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '14px', scrollbarWidth: 'none' }}>
         {[
           { key: 'ALL', label: 'All', count: statusCounts.all },
-          { key: 'APPROVED', label: 'Live', count: statusCounts.live },
-          { key: 'PENDING_APPROVAL', label: 'In Review', count: statusCounts.pending },
+          { key: 'LIVE', label: 'Live', count: statusCounts.live },
+          { key: 'REVIEW', label: 'In Review', count: statusCounts.review },
           { key: 'REJECTED', label: 'Rejected', count: statusCounts.rejected },
-          { key: 'EXPIRED', label: 'Expired', count: statusCounts.expired },
+          { key: 'UNPUBLISHED', label: 'Unpublished', count: statusCounts.unpublished },
+          { key: 'PAST', label: 'Past & Expired', count: statusCounts.past },
         ].map(tab => (
           <button
             key={tab.key}
@@ -497,7 +587,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     <tr key={ad.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                       {/* Thumbnail */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ width: '130px', height: '65px', borderRadius: '6px', overflow: 'hidden', background: '#0F172A', position: 'relative', border: '1px solid #E2E8F0' }}>
+                        <div style={{ width: '130px', height: '65px', borderRadius: '6px', overflow: 'hidden', background: '#0F172A', position: 'relative', border: '1px solid #E2E8F0', cursor: 'pointer' }} onClick={() => setSelectedAdForAnalytics(ad)}>
                           <img
                             src={
                               ad.banner_image && ad.banner_image.trim().length > 5
@@ -516,27 +606,28 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
                       {/* Title & Type */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: '700', color: '#0F172A', marginBottom: '3px', fontSize: '14px' }}>{ad.title}</div>
-                        <div style={{ fontSize: '11.5px', color: '#2563EB', fontWeight: '700' }}>{ad.advertisement_type.replace(/_/g, ' ')}</div>
+                        <div style={{ fontWeight: '800', color: '#0F172A', marginBottom: '3px' }}>{ad.title}</div>
+                        <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: '700' }}>
+                          {(ad.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}
+                        </div>
                         {ad.job_title && (
-                          <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Briefcase size={11} /> Linked: {ad.job_title}
+                          <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Briefcase size={12} color="#2563EB" />
+                            <span>{ad.job_title}</span>
                           </div>
                         )}
                       </td>
 
                       {/* Status */}
                       <td style={{ padding: '14px 16px' }}>
-                        {getStatusPill(ad.status)}
-                        {ad.status === 'REJECTED' && ad.rejection_reason && (
-                          <div style={{ marginTop: '6px', fontSize: '11px', color: '#DC2626', background: '#FEF2F2', padding: '4px 8px', borderRadius: '6px', maxWidth: '200px', border: '1px solid #FECACA' }}>
-                            <strong>Reason:</strong> {ad.rejection_reason}
-                          </div>
-                        )}
+                        <div>{getStatusPill(ad)}</div>
+                        <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', fontWeight: '600' }}>
+                          Priority: {ad.priority}
+                        </div>
                       </td>
 
-                      {/* Dates */}
-                      <td style={{ padding: '14px 16px', fontSize: '12px', color: '#64748B' }}>
+                      {/* Schedule Dates */}
+                      <td style={{ padding: '14px 16px', fontSize: '12px', color: '#475569' }}>
                         <div><strong>Start:</strong> {new Date(ad.start_date).toLocaleDateString()}</div>
                         <div><strong>End:</strong> {new Date(ad.end_date).toLocaleDateString()}</div>
                       </td>
@@ -559,7 +650,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
                       {/* Actions */}
                       <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => setSelectedAdForAnalytics(ad)}
                             style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #DBEAFE', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -570,16 +661,18 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                             onClick={() => openEditModal(ad)}
                             style={{ background: '#F8FAFC', color: '#334155', border: '1px solid #CBD5E1', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
-                            <Edit size={13} /> {ad.status === 'REJECTED' ? 'Edit & Resubmit' : 'Edit'}
+                            <Edit size={13} /> {isAdRejected(ad) || isAdUnpublished(ad) ? 'Edit & Resubmit' : 'Edit'}
                           </button>
-                          <button
-                            onClick={() => handleDelete(ad.id)}
-                            disabled={submittingId === ad.id}
-                            style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
-                            title="Delete"
-                          >
-                            {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={13} />}
-                          </button>
+                          {(isAdPast(ad) || isAdRejected(ad)) && (
+                            <button
+                              onClick={() => handleDelete(ad.id, ad.title)}
+                              disabled={submittingId === ad.id}
+                              style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
+                              title="Delete"
+                            >
+                              {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={13} />}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -590,103 +683,175 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
           </div>
 
           {/* Premium Mobile Cards View (100% exact match to Mobile App) */}
-          <div className="mobile-banners-list" style={{ paddingBottom: '70px' }}>
-            {filteredAds.map((ad) => (
-              <div
-                key={ad.id}
-                style={{
-                  background: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {/* 1. 16:9 Image Thumbnail with Badge & Status Overlays */}
-                <div style={{ position: 'relative', width: '100%', height: '145px', background: '#0F172A' }}>
-                  <img
-                    src={
-                      ad.banner_image && ad.banner_image.trim().length > 5
-                        ? ad.banner_image.trim()
-                        : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
-                    }
-                    alt={ad.title}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
-                    }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+          <div className="mobile-banners-list" style={{ paddingBottom: '70px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {filteredAds.map((ad) => {
+              const reasonText = (
+                ad.rejection_reason ||
+                (ad as any).rejectionReason ||
+                (ad as any).unpublish_reason ||
+                (ad as any).unpublishReason ||
+                (ad as any).admin_reason ||
+                (ad as any).adminReason ||
+                (ad as any).notes ||
+                (ad as any).reason ||
+                ''
+              ).trim();
 
-                  {/* Gradient Overlay for Title */}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.3) 60%, transparent 100%)' }} />
+              return (
+                <div
+                  key={ad.id}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {/* 1. 16:9 Image Thumbnail with Badge & Status Overlays */}
+                  <div style={{ position: 'relative', width: '100%', height: '145px', background: '#0F172A' }}>
+                    <img
+                      src={
+                        ad.banner_image && ad.banner_image.trim().length > 5
+                          ? ad.banner_image.trim()
+                          : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
+                      }
+                      alt={ad.title}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
 
-                  {/* Top Floating Badges */}
-                  <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}>
-                    <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                      {(ad.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}
-                    </span>
+                    {/* Gradient Overlay for Title */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.3) 60%, transparent 100%)' }} />
+
+                    {/* Top Floating Badges */}
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2 }}>
+                      <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        {(ad.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 2 }}>
+                      {getStatusPill(ad)}
+                    </div>
+
+                    {/* Banner Title on Image */}
+                    <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px', zIndex: 2 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.6)', lineHeight: 1.3 }}>
+                        {ad.title}
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 2 }}>
-                    {getStatusPill(ad.status)}
-                  </div>
+                  {/* 2. Card Details Area */}
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Linked Job Row */}
+                    <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Briefcase size={14} color="#2563EB" />
+                      <span>Linked: <strong style={{ color: '#0F172A' }}>{ad.job_title || 'Direct Application'}</strong></span>
+                    </div>
 
-                  {/* Banner Title on Image */}
-                  <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px', zIndex: 2 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.6)', lineHeight: 1.3 }}>
-                      {ad.title}
+                    {/* 3. Reason for Rejection Notice if applicable */}
+                    {isAdRejected(ad) && (
+                      <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderLeft: '3.5px solid #DC2626', borderRadius: '6px', padding: '8px 10px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px', fontWeight: '800', color: '#991B1B', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                          <AlertCircle size={13} color="#DC2626" strokeWidth={2.5} />
+                          <span>Reason for Rejection</span>
+                        </div>
+                        <div style={{ color: '#7F1D1D', fontWeight: '500', lineHeight: 1.4 }}>
+                          {reasonText || 'This advertisement banner did not meet platform guidelines. Please update the details and resubmit.'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. Reason for Unpublishing Notice if applicable */}
+                    {isAdUnpublished(ad) && (
+                      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderLeft: '3.5px solid #D97706', borderRadius: '6px', padding: '8px 10px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px', fontWeight: '800', color: '#92400E', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                          <EyeOff size={13} color="#D97706" strokeWidth={2.5} />
+                          <span>Reason for Unpublishing</span>
+                        </div>
+                        <div style={{ color: '#78350F', fontWeight: '500', lineHeight: 1.4 }}>
+                          {reasonText || 'This banner was unpublished from the homepage by an administrator. You can edit and resubmit it.'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 5. Campaign Expired Notice if applicable */}
+                    {isAdPast(ad) && (
+                      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderLeft: '3.5px solid #64748B', borderRadius: '6px', padding: '8px 10px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                          <Calendar size={13} color="#64748B" strokeWidth={2.5} />
+                          <span>Campaign Expired</span>
+                        </div>
+                        <div style={{ color: '#475569', fontWeight: '500', lineHeight: 1.4 }}>
+                          This banner campaign duration has ended. You can update dates to resubmit or run a new campaign.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 6. Resubmitted Notice if applicable */}
+                    {isAdResubmitted(ad) && (
+                      <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderLeft: '3.5px solid #1D4ED8', borderRadius: '6px', padding: '8px 10px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px', fontWeight: '800', color: '#1E40AF', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                          <RotateCw size={12} color="#1D4ED8" strokeWidth={2.4} />
+                          <span>Resubmitted for Review</span>
+                        </div>
+                        <div style={{ color: '#1E3A8A', fontWeight: '500', lineHeight: 1.4 }}>
+                          You have resubmitted this advertisement with changes. It is currently under moderation review by administrators.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Date & Priority Box */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', borderRadius: '6px', padding: '7px 10px', fontSize: '11.5px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748B', fontWeight: '600' }}>
+                        <Calendar size={13} />
+                        <span>{new Date(ad.start_date).toLocaleDateString()} - {new Date(ad.end_date).toLocaleDateString()}</span>
+                      </div>
+                      <span style={{ fontWeight: '800', color: '#2563EB' }}>
+                        Priority: {ad.priority}
+                      </span>
+                    </div>
+
+                    {/* 7. Action Buttons (Analytics, Edit, Delete) */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingTop: '2px' }}>
+                      <button
+                        onClick={() => setSelectedAdForAnalytics(ad)}
+                        style={{ flex: 1.2, padding: '9px 12px', borderRadius: '6px', border: '1px solid #DBEAFE', background: '#EFF6FF', color: '#2563EB', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <BarChart3 size={14} />
+                        <span>Analytics</span>
+                      </button>
+                      <button
+                        onClick={() => openEditModal(ad)}
+                        style={{ flex: 1.2, padding: '9px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#334155', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <Edit size={14} />
+                        <span>{isAdRejected(ad) || isAdUnpublished(ad) ? 'Edit & Resubmit' : 'Edit'}</span>
+                      </button>
+                      {(isAdPast(ad) || isAdRejected(ad)) && (
+                        <button
+                          onClick={() => handleDelete(ad.id, ad.title)}
+                          disabled={submittingId === ad.id}
+                          style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FFFFFF', color: '#DC2626', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="Delete Banner"
+                        >
+                          {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={14} />}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                {/* 2. Card Details Area */}
-                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {/* Linked Job Row */}
-                  <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Briefcase size={14} color="#2563EB" />
-                    <span>Linked: <strong style={{ color: '#0F172A' }}>{ad.job_title || 'Direct Application'}</strong></span>
-                  </div>
-
-                  {/* Moderation Rejection Alert Notice (if rejected) */}
-                  {ad.status === 'REJECTED' && ad.rejection_reason && (
-                    <div style={{ fontSize: '11.5px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '8px 10px', borderRadius: '6px', fontWeight: '600' }}>
-                      ⚠️ <strong>Admin Note:</strong> {ad.rejection_reason}
-                    </div>
-                  )}
-
-                  {/* 3. Action Buttons (Analytics, Edit, Delete) */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingTop: '2px' }}>
-                    <button
-                      onClick={() => setSelectedAdForAnalytics(ad)}
-                      style={{ flex: 1.2, padding: '9px 12px', borderRadius: '8px', border: '1px solid #DBEAFE', background: '#EFF6FF', color: '#2563EB', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      <BarChart3 size={14} />
-                      <span>Analytics</span>
-                    </button>
-                    <button
-                      onClick={() => openEditModal(ad)}
-                      style={{ flex: 1.2, padding: '9px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#334155', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      <Edit size={14} />
-                      <span>{ad.status === 'REJECTED' ? 'Resubmit' : 'Edit'}</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(ad.id)}
-                      disabled={submittingId === ad.id}
-                      style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #FECACA', background: '#FFFFFF', color: '#DC2626', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      title="Delete Banner"
-                    >
-                      {submittingId === ad.id ? renderSpinner('#DC2626') : <Trash2 size={14} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -719,34 +884,36 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       {/* CREATE / EDIT MODAL */}
       {formModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: 'var(--card-bg, #ffffff)', borderRadius: '20px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+          <div style={{ background: 'var(--card-bg, #ffffff)', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800' }}>
-                {editingAd ? 'Edit & Resubmit Advertisement' : 'Create Promotional Banner'}
+                {editingAd ? (isAdRejected(editingAd) || isAdUnpublished(editingAd) ? 'Edit & Resubmit Advertisement' : 'Edit Promotional Banner') : 'Create Promotional Banner'}
               </h3>
               <button onClick={() => setFormModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* ADMIN MODERATION REJECTION FEEDBACK NOTICE */}
-              {editingAd && editingAd.status === 'REJECTED' && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderLeft: '4px solid #dc2626', borderRadius: '12px', padding: '16px 20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>⚠️ Admin Moderation Feedback</span>
+              {/* ADMIN MODERATION FEEDBACK NOTICE WHEN EDITING REJECTED OR UNPUBLISHED */}
+              {editingAd && (isAdRejected(editingAd) || isAdUnpublished(editingAd)) && (
+                <div style={{ background: isAdRejected(editingAd) ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${isAdRejected(editingAd) ? '#FECACA' : '#FDE68A'}`, borderLeft: `4px solid ${isAdRejected(editingAd) ? '#DC2626' : '#D97706'}`, borderRadius: '10px', padding: '14px 18px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {isAdRejected(editingAd) ? <AlertCircle size={14} /> : <EyeOff size={14} />}
+                    <span>Admin Moderation Feedback</span>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#7f1d1d', fontWeight: '700', lineHeight: '1.4' }}>
-                    {editingAd.rejection_reason || 'Please review image resolution, title clarity, and details before resubmitting.'}
+                  <div style={{ fontSize: '13.5px', color: isAdRejected(editingAd) ? '#7F1D1D' : '#78350F', fontWeight: '700', lineHeight: '1.4' }}>
+                    {editingAd.rejection_reason || (editingAd as any).rejectionReason || (editingAd as any).unpublish_reason || (editingAd as any).unpublishReason || (editingAd as any).reason || 'Please review banner image clarity, headline, and details before resubmitting.'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#991b1b', marginTop: '8px', lineHeight: '1.4' }}>
-                    Update your banner details below and click <strong>"Update & Resubmit for Approval"</strong> to send it back to the admin team for priority review.
+                  <div style={{ fontSize: '12px', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', marginTop: '6px', lineHeight: '1.4' }}>
+                    Update your banner details below and click <strong>"Update & Resubmit for Approval"</strong> to send it to the admin team for priority review.
                   </div>
                 </div>
               )}
-              {/* Image Upload (Optional) */}
+
+              {/* Image Upload */}
               <div>
-                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Banner Image (Optional - PNG, JPG, WEBP - Max 5MB)</label>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Banner Image (PNG, JPG, WEBP - Max 5MB)</label>
                 {bannerImage ? (
-                  <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', background: '#0f172a', marginBottom: '8px' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#0f172a', marginBottom: '8px' }}>
                     <img src={bannerImage} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button
                       type="button"
@@ -759,14 +926,14 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    style={{ border: '2px dashed var(--primary)', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', background: 'var(--primary-50, #eff6ff)', cursor: 'pointer' }}
+                    style={{ border: '2px dashed #2563EB', borderRadius: '10px', padding: '1.5rem', textAlign: 'center', background: '#EFF6FF', cursor: 'pointer' }}
                   >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--primary)', marginBottom: '6px' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" style={{ marginBottom: '6px' }}>
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
-                    <div style={{ fontWeight: '700', color: 'var(--primary)' }}>Click to upload custom banner image (Optional)</div>
+                    <div style={{ fontWeight: '700', color: '#2563EB' }}>Click to upload custom banner image (Optional)</div>
                     <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>If skipped, a sleek theme gradient banner will be generated automatically.</div>
                   </div>
                 )}
@@ -783,7 +950,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     placeholder="e.g. Mega Walk-In Drive for CNC Operators"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
                 <div>
@@ -791,7 +958,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   <select
                     value={advertisementType}
                     onChange={(e) => setAdvertisementType(e.target.value as AdvertisementType)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   >
                     <option value="FEATURED_JOB">Featured Job</option>
                     <option value="URGENT_HIRING">Urgent Hiring</option>
@@ -814,7 +981,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   placeholder="e.g. Spot offer for 50+ openings in Chakan MIDC with bus & canteen facility."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }}
                 />
               </div>
 
@@ -825,7 +992,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   <select
                     value={linkedJobId}
                     onChange={(e) => setLinkedJobId(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   >
                     <option value="">-- None (Custom Redirect) --</option>
                     {employerJobs.map((j) => (
@@ -843,7 +1010,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     value={redirectUrl}
                     onChange={(e) => setRedirectUrl(e.target.value)}
                     disabled={!!linkedJobId}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)', opacity: linkedJobId ? 0.6 : 1 }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', opacity: linkedJobId ? 0.6 : 1 }}
                   />
                 </div>
               </div>
@@ -857,7 +1024,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     placeholder="Apply Now / Register Today"
                     value={buttonText}
                     onChange={(e) => setButtonText(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
                 <div>
@@ -865,7 +1032,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as AdvertisementPriority)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium (Standard)</option>
@@ -884,7 +1051,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     required
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
                 <div>
@@ -894,14 +1061,14 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color, #cbd5e1)' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                   />
                 </div>
               </div>
 
               {/* REAL-TIME INTERACTIVE LIVE PREVIEW BOX */}
-              <div style={{ marginTop: '12px', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ marginTop: '6px', padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     👁️ Real-Time Banner Preview
                   </span>
@@ -910,7 +1077,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   </span>
                 </div>
 
-                <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)' }}>
+                <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)' }}>
                   {bannerImage ? (
                     <img src={bannerImage} alt="Banner Live Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
@@ -923,9 +1090,9 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                   {/* Content overlay */}
                   <div style={{ position: 'absolute', inset: 0, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, color: '#ffffff' }}>
                     <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', background: 'rgba(255, 255, 255, 0.2)', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', width: 'fit-content', marginBottom: '6px' }}>
-                      {advertisementType.replace('_', ' ')}
+                      {advertisementType.replace(/_/g, ' ')}
                     </span>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '800', textShadow: '0 2px 4px rgba(0,0,0,0.5)', color: '#ffffff' }}>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', textShadow: '0 2px 4px rgba(0,0,0,0.5)', color: '#ffffff' }}>
                       {title || 'Your Banner Title Here'}
                     </h4>
                     <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: 'rgba(255,255,255,0.85)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', maxWidth: '420px' }}>
@@ -939,7 +1106,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.75rem' }}>
                 <button
                   type="button"
                   onClick={() => setFormModalOpen(false)}
@@ -950,10 +1117,16 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ padding: '10px 24px', borderRadius: '8px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  style={{ padding: '10px 24px', borderRadius: '8px', background: '#2563EB', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
                 >
                   {isSubmitting && renderSpinner('white')}
-                  {isSubmitting ? 'Submitting...' : editingAd ? 'Update & Resubmit' : 'Submit for Admin Approval'}
+                  {isSubmitting
+                    ? 'Submitting...'
+                    : editingAd
+                    ? isAdRejected(editingAd) || isAdUnpublished(editingAd)
+                      ? 'Update & Resubmit for Approval'
+                      : 'Update Banner'
+                    : 'Submit for Admin Approval'}
                 </button>
               </div>
             </form>
@@ -961,83 +1134,152 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
         </div>
       )}
 
-      {/* ANALYTICS MODAL */}
-      {selectedAdForAnalytics && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid #F1F5F9', marginBottom: '14px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>Banner Analytics</h3>
-                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748B' }}>{selectedAdForAnalytics.title}</p>
-              </div>
-              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}>✕</button>
-            </div>
+      {/* REAL-TIME BANNER ANALYTICS MODAL (100% Match to Mobile App BannerAnalyticsModal) */}
+      {selectedAdForAnalytics && (() => {
+        const current = selectedAdForAnalytics;
+        const views = Number(current.views_count ?? (current as any).views ?? 0);
+        const clicks = Number(current.clicks_count ?? (current as any).clicks ?? 0);
+        const ctr = views > 0 ? ((clicks / views) * 100).toFixed(2) : '0.00';
 
-            {/* KPI Cards (Icon and Number in same horizontal row) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
-              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB' }}>
-                    <Eye size={15} />
+        const isLive = isAdLive(current);
+        const isPast = isAdPast(current);
+        const isRejected = isAdRejected(current);
+        const isResubmitted = isAdResubmitted(current);
+        const isUnpublished = isAdUnpublished(current);
+
+        const reasonText = (
+          current.rejection_reason ||
+          (current as any).rejectionReason ||
+          (current as any).unpublish_reason ||
+          (current as any).unpublishReason ||
+          (current as any).admin_reason ||
+          (current as any).adminReason ||
+          (current as any).notes ||
+          (current as any).reason ||
+          ''
+        ).trim();
+
+        const displayStatusLabel = isLive
+          ? 'LIVE ON HOMEPAGE'
+          : isPast
+          ? 'EXPIRED'
+          : isResubmitted
+          ? 'RESUBMITTED (PENDING APPROVAL)'
+          : isRejected
+          ? 'REJECTED'
+          : isUnpublished
+          ? 'UNPUBLISHED (INACTIVE)'
+          : 'IN REVIEW (PENDING APPROVAL)';
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid #F1F5F9', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>Real-Time Banner Analytics</h3>
+                    {loadingFreshAnalytics && <div style={{ width: '12px', height: '12px', border: '2px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
                   </div>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.views_count || 0}</span>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748B' }}>{current.title}</p>
                 </div>
-                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Total Views</div>
+                <button onClick={() => setSelectedAdForAnalytics(null)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}>✕</button>
               </div>
 
-              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
-                    <MousePointerClick size={15} />
+              {/* KPI Cards (Views, Clicks, CTR) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 8px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB' }}>
+                      <Eye size={15} />
+                    </div>
+                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>{views.toLocaleString()}</span>
                   </div>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.clicks_count || 0}</span>
+                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700' }}>Total Views</div>
                 </div>
-                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Total Clicks</div>
-              </div>
 
-              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
-                    <TrendingUp size={15} />
+                <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 8px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A' }}>
+                      <MousePointerClick size={15} />
+                    </div>
+                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>{clicks.toLocaleString()}</span>
                   </div>
-                  <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>{selectedAdForAnalytics.ctr || 0}%</span>
+                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700' }}>Total Clicks</div>
                 </div>
-                <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '600' }}>Click Rate</div>
-              </div>
-            </div>
 
-            {/* Campaign Performance Specs */}
-            <div style={{ background: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', padding: '12px 14px', marginBottom: '16px', fontSize: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', letterSpacing: '0.5px', marginBottom: '8px' }}>CAMPAIGN SPECIFICATIONS</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
-                <span style={{ color: '#64748B', fontWeight: '600' }}>Ad Type:</span>
-                <span style={{ fontWeight: '700', color: '#0F172A' }}>{selectedAdForAnalytics.advertisement_type.replace(/_/g, ' ')}</span>
+                <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 8px', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
+                      <TrendingUp size={15} />
+                    </div>
+                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>{ctr}%</span>
+                  </div>
+                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700' }}>Click Rate (CTR)</div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
-                <span style={{ color: '#64748B', fontWeight: '600' }}>Linked Job:</span>
-                <span style={{ fontWeight: '700', color: '#0F172A' }}>{selectedAdForAnalytics.job_title || 'Direct Application'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #E2E8F0' }}>
-                <span style={{ color: '#64748B', fontWeight: '600' }}>Duration:</span>
-                <span style={{ fontWeight: '700', color: '#0F172A' }}>{new Date(selectedAdForAnalytics.start_date).toLocaleDateString()} → {new Date(selectedAdForAnalytics.end_date).toLocaleDateString()}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                <span style={{ color: '#64748B', fontWeight: '600' }}>Live Status:</span>
-                <span style={{ fontWeight: '800', color: ((selectedAdForAnalytics.status === 'APPROVED' || selectedAdForAnalytics.status === 'PUBLISHED') && selectedAdForAnalytics.is_active) ? '#16A34A' : selectedAdForAnalytics.status === 'REJECTED' ? '#DC2626' : '#D97706' }}>
-                  {((selectedAdForAnalytics.status === 'APPROVED' || selectedAdForAnalytics.status === 'PUBLISHED') && selectedAdForAnalytics.is_active) ? 'LIVE ON HOMEPAGE' : selectedAdForAnalytics.status === 'REJECTED' ? 'REJECTED' : 'IN REVIEW (PENDING APPROVAL)'}
-                </span>
-              </div>
-            </div>
 
-            <div style={{ textAlign: 'right' }}>
-              <button onClick={() => setSelectedAdForAnalytics(null)} style={{ padding: '9px 20px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #DBEAFE', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', width: '100%' }}>
-                Close Analytics
-              </button>
+              {/* Admin Feedback Notice in Analytics if applicable */}
+              {isRejected && (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderLeft: '3.5px solid #DC2626', borderRadius: '6px', padding: '10px 12px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px', fontWeight: '800', color: '#991B1B', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                    <AlertCircle size={13} color="#DC2626" strokeWidth={2.5} />
+                    <span>Admin Rejection Reason</span>
+                  </div>
+                  <div style={{ color: '#7F1D1D', fontSize: '12px', fontWeight: '500', lineHeight: 1.4 }}>
+                    {reasonText || 'This advertisement banner did not meet platform guidelines. Please update the details and resubmit.'}
+                  </div>
+                </div>
+              )}
+
+              {isUnpublished && (
+                <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderLeft: '3.5px solid #D97706', borderRadius: '6px', padding: '10px 12px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px', fontWeight: '800', color: '#92400E', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.3px' }}>
+                    <EyeOff size={13} color="#D97706" strokeWidth={2.5} />
+                    <span>Admin Unpublish Reason</span>
+                  </div>
+                  <div style={{ color: '#78350F', fontSize: '12px', fontWeight: '500', lineHeight: 1.4 }}>
+                    {reasonText || 'This banner was unpublished from the homepage by an administrator. You can edit and resubmit it.'}
+                  </div>
+                </div>
+              )}
+
+              {/* Campaign Performance Specs */}
+              <div style={{ background: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', padding: '12px 14px', marginBottom: '16px', fontSize: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', letterSpacing: '0.5px', marginBottom: '8px' }}>CAMPAIGN SPECIFICATIONS</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #E2E8F0' }}>
+                  <span style={{ color: '#64748B', fontWeight: '600' }}>Ad Type:</span>
+                  <span style={{ fontWeight: '700', color: '#0F172A' }}>{(current.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #E2E8F0' }}>
+                  <span style={{ color: '#64748B', fontWeight: '600' }}>Linked Job:</span>
+                  <span style={{ fontWeight: '700', color: '#0F172A' }}>{current.job_title || 'Direct Application'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #E2E8F0' }}>
+                  <span style={{ color: '#64748B', fontWeight: '600' }}>Duration:</span>
+                  <span style={{ fontWeight: '700', color: '#0F172A' }}>{new Date(current.start_date).toLocaleDateString()} → {new Date(current.end_date).toLocaleDateString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #E2E8F0' }}>
+                  <span style={{ color: '#64748B', fontWeight: '600' }}>Target Audience:</span>
+                  <span style={{ fontWeight: '700', color: '#0F172A' }}>{current.target_audience || 'All Platform Users'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                  <span style={{ color: '#64748B', fontWeight: '600' }}>Live Status:</span>
+                  <span style={{ fontWeight: '800', color: isLive ? '#16A34A' : isResubmitted ? '#1D4ED8' : isRejected ? '#DC2626' : '#D97706' }}>
+                    {displayStatusLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <button onClick={() => setSelectedAdForAnalytics(null)} style={{ padding: '9px 20px', background: '#EFF6FF', color: '#2563EB', border: '1px solid #DBEAFE', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', width: '100%' }}>
+                  Close Analytics
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

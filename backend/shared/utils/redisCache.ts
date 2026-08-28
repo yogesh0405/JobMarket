@@ -1,6 +1,8 @@
 import { redisClient } from '../config/redis';
 import { logger } from './logger';
 
+const inFlightPromises = new Map<string, Promise<any>>();
+
 export class CacheService {
   static async getOrSet<T>(
     key: string,
@@ -23,17 +25,31 @@ export class CacheService {
       logger.warn(`Redis get error for key ${key}, falling back to DB:`, err);
     }
 
-    const freshData = await fetchFn();
-
-    try {
-      if (redisClient.isOpen && redisClient.isReady && freshData !== null && freshData !== undefined) {
-        await redisClient.setEx(key, ttlSeconds, JSON.stringify(freshData));
-      }
-    } catch (err) {
-      logger.warn(`Redis set error for key ${key}:`, err);
+    if (inFlightPromises.has(key)) {
+      return inFlightPromises.get(key) as Promise<T>;
     }
 
-    return freshData;
+    const fetchPromise = (async () => {
+      try {
+        const freshData = await fetchFn();
+
+        try {
+          if (redisClient.isOpen && redisClient.isReady && freshData !== null && freshData !== undefined) {
+            const jitter = Math.floor(Math.random() * 10);
+            await redisClient.setEx(key, ttlSeconds + jitter, JSON.stringify(freshData));
+          }
+        } catch (err) {
+          logger.warn(`Redis set error for key ${key}:`, err);
+        }
+
+        return freshData;
+      } finally {
+        inFlightPromises.delete(key);
+      }
+    })();
+
+    inFlightPromises.set(key, fetchPromise);
+    return fetchPromise;
   }
 
   static async invalidate(keys: string | string[]): Promise<void> {
@@ -53,9 +69,17 @@ export class CacheService {
     try {
       if (!redisClient.isOpen || !redisClient.isReady) return;
 
-      const keys = await redisClient.keys(pattern);
-      if (keys.length > 0) {
-        await Promise.all(keys.map((k) => redisClient.del(k)));
+      const keysToDelete: string[] = [];
+      for await (const key of redisClient.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+        const batchKeys = Array.isArray(key) ? (key as string[]) : [String(key)];
+        keysToDelete.push(...batchKeys);
+        if (keysToDelete.length >= 100) {
+          await Promise.all(keysToDelete.map(k => redisClient.del(k)));
+          keysToDelete.length = 0;
+        }
+      }
+      if (keysToDelete.length > 0) {
+        await Promise.all(keysToDelete.map(k => redisClient.del(k)));
       }
     } catch (err) {
       logger.warn(`Redis pattern invalidation error for ${pattern}:`, err);

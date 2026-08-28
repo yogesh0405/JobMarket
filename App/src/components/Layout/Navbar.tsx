@@ -64,7 +64,8 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const isSearchAllowed = location.pathname === '/';
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  const isSearchAllowed = location.pathname === '/' && !isEmployer;
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch({ type: 'SET_LANGUAGE', payload: e.target.value as Language });
@@ -85,16 +86,16 @@ export const Navbar: React.FC = () => {
       <div className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
       <div className="navbar-inner">
         <div className="navbar-header-row">
-          <Link to="/" className="navbar-brand">
+          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" title={isEmployer ? "Employer Workspace" : "JobMarket Home"}>
             <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '40px', height: '40px', objectFit: 'contain', marginRight: '8px' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '22px', lineHeight: 1.1 }}>{t.brand}</span>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '0', fontWeight: 'bold' }}>{t.tagline}</span>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '0', fontWeight: 'bold' }}>{isEmployer ? "Employer Portal" : t.tagline}</span>
             </div>
           </Link>
 
-          {/* DESKTOP SEARCH BAR */}
-          {isSearchAllowed && (
+          {/* DESKTOP SEARCH BAR (Candidates / Guests Only) */}
+          {isSearchAllowed && !isEmployer && (
             <div className="desktop-search-container">
               <HeaderSearchBar />
             </div>
@@ -111,6 +112,7 @@ export const Navbar: React.FC = () => {
                       <img 
                         src={currentUser.profilePictureUrl} 
                         alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                        referrerPolicy="no-referrer"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';
@@ -365,6 +367,7 @@ export const Navbar: React.FC = () => {
                   <img 
                     src={currentUser.profilePictureUrl} 
                     alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                    referrerPolicy="no-referrer"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     onError={(e) => {
                       (e.currentTarget as HTMLElement).style.display = 'none';
@@ -442,8 +445,8 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* MOBILE SEARCH STRIP BELOW HEADER ROW */}
-      {isSearchAllowed && (
+      {/* MOBILE SEARCH STRIP BELOW HEADER ROW (Candidates / Guests Only) */}
+      {isSearchAllowed && !isEmployer && (
         <div className="mobile-search-strip">
           <HeaderSearchBar />
         </div>

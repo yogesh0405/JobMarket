@@ -13,8 +13,16 @@ export const rateLimiter = (prefix: string, maxRequests: number, windowSeconds: 
     const key = `ratelimit:${prefix}:${ip}`;
 
     try {
-      const current = await redisClient.incr(key);
-      if (current === 1) {
+      const results = await redisClient
+        .multi()
+        .incr(key)
+        .ttl(key)
+        .exec();
+
+      const current = Number(results[0]);
+      const ttl = Number(results[1]);
+
+      if (ttl === -1) {
         await redisClient.expire(key, windowSeconds);
       }
 

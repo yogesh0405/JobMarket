@@ -317,6 +317,7 @@ export const DashboardPage: React.FC = () => {
                       <img 
                         src={currentUser.profilePictureUrl} 
                         alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                        referrerPolicy="no-referrer"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';

@@ -3,11 +3,12 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { UserRole } from '../../types';
+import { GoogleLogin } from '@react-oauth/google';
 
 export const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signup, verifyOtp, currentUser } = useAuth();
+  const { signup, verifyOtp, loginWithGoogle, currentUser } = useAuth();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -167,6 +168,77 @@ export const SignupPage: React.FC = () => {
       setIsVerifying(false);
     }
   };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (credentialResponse?.credential) {
+      setIsLoading(true);
+      try {
+        let googlePicture = '';
+        let googleName = '';
+        let googleEmail = '';
+        try {
+          const base64Url = credentialResponse.credential.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const decoded = JSON.parse(jsonPayload);
+          googlePicture = decoded.picture || '';
+          googleName = decoded.name || '';
+          googleEmail = decoded.email || '';
+        } catch (_) {}
+
+        const result = await loginWithGoogle({
+          idToken: credentialResponse.credential,
+          picture: googlePicture,
+          name: googleName,
+          email: googleEmail,
+        }, role);
+
+        if (result.success) {
+          showToast(`Account ready! Welcome, ${result.user?.name}!`, 'success');
+          if (result.user?.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          showToast(result.error || 'Google Registration failed.', 'error');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Handle Google OAuth Direct Redirect Callback (#access_token=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        setIsLoading(true);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        loginWithGoogle({ accessToken }, role).then((result) => {
+          setIsLoading(false);
+          if (result.success) {
+            showToast(`Account ready! Welcome, ${result.user?.name}!`, 'success');
+            if (result.user?.role === 'admin') {
+              navigate('/admin/dashboard');
+            } else {
+              navigate('/dashboard');
+            }
+          } else {
+            showToast(result.error || 'Google Sign-Up failed.', 'error');
+          }
+        });
+      }
+    }
+  }, [loginWithGoogle, role, navigate, showToast]);
 
   return (
     <div className="auth-page">
@@ -364,6 +436,27 @@ export const SignupPage: React.FC = () => {
               {isLoading ? 'Registering...' : 'Register'}
             </button>
           </form>
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', gap: '12px' }}>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color, #E2E8F0)' }} />
+            <span style={{ fontSize: '12px', color: 'var(--text-muted, #64748B)', fontWeight: 500 }}>OR</span>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color, #E2E8F0)' }} />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '16px' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                showToast('Google Sign-Up was cancelled or failed.', 'error');
+              }}
+              useOneTap={false}
+              theme="outline"
+              size="large"
+              text="continue_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
 
           <div className="auth-switch">
             Already have an account? <Link to="/login">Log In</Link>

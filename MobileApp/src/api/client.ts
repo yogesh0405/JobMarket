@@ -103,9 +103,6 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   if (sessionId) {
     headers['x-session-id'] = sessionId;
   }
-  if (storedUser?.id) {
-    headers['x-user-id'] = storedUser.id;
-  }
 
   if (isFormData && (options.headers as Record<string, string>)?.[ 'Content-Type' ] === undefined) {
     delete headers['Content-Type'];

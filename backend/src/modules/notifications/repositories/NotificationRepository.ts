@@ -31,13 +31,6 @@ export class NotificationRepository {
     metadata?: any | null
   ): Promise<NotificationRecord> {
     try {
-      // Ensure columns exist gracefully
-      await pool.query(`
-        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50);
-        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS entity_id VARCHAR(255);
-        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS metadata JSONB;
-      `).catch(() => {});
-
       const query = `
         INSERT INTO notifications (user_id, title, message, type, read, link, entity_type, entity_id, metadata, created_at, updated_at)
         VALUES ($1, $2, $3, $4, FALSE, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -54,7 +47,14 @@ export class NotificationRepository {
         entityId || null,
         metaJson,
       ]);
-      return rows[0];
+      const created = rows[0];
+      
+      // Stream notification event to Kafka asynchronously
+      import('../../../config/kafka').then(({ publishKafkaEvent, TOPICS }) => {
+        publishKafkaEvent(TOPICS.NOTIFICATIONS, created, userId).catch(() => {});
+      }).catch(() => {});
+
+      return created;
     } catch (error) {
       logger.error('Error creating notification in DB:', error);
       throw error;

@@ -12,6 +12,7 @@ import { UserRepository } from '../../../../src/modules/auth/repositories/UserRe
 import { SessionRepository } from '../../../../src/modules/auth/repositories/SessionRepository';
 import { pool } from '../../../../shared/database/pool';
 import { OtpStore, CacheService } from '../../../../shared/utils/redisCache';
+import { S3Util } from '../../../../shared/utils/s3';
 import { generateTokens } from '../../../../shared/utils/jwt';
 import { AuthenticatedRequest } from '../../../../shared/types';
 
@@ -451,20 +452,106 @@ export class AuthController {
 
   static async googleAuth(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, name, picture, role = 'candidate', googleId } = req.body;
-      if (!email) return res.status(400).json({ success: false, message: 'Google Auth requires valid email address' });
+      const { idToken, accessToken: googleAccessToken, role = 'candidate' } = req.body;
+      let userEmail = req.body.email;
+      let userName = req.body.name;
+      let userPicture = req.body.picture;
+      let userGoogleId = req.body.googleId;
 
-      let user = await UserRepository.findByEmail(email);
+      // 1. If googleAccessToken provided
+      if (googleAccessToken && !userEmail) {
+        try {
+          const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${googleAccessToken}` },
+          });
+          if (userinfoRes.ok) {
+            const profile = await userinfoRes.json();
+            userEmail = profile.email;
+            userName = profile.name || profile.given_name || profile.email?.split('@')[0];
+            userPicture = profile.picture || null;
+            userGoogleId = profile.sub;
+          }
+        } catch (fetchErr: any) {
+          console.error('Google accessToken verification error:', fetchErr.message);
+        }
+      }
+
+      // 2. If idToken provided
+      if (idToken) {
+        try {
+          const { OAuth2Client } = await import('google-auth-library');
+          const googleClient = new OAuth2Client();
+          const allowedAudiences = [
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_ANDROID_CLIENT_ID,
+            '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com',
+            '324729375491-21ieq19k1mu4krikbroub3afjibjrghd.apps.googleusercontent.com',
+          ].filter(Boolean) as string[];
+
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: allowedAudiences,
+          });
+          const payload = ticket.getPayload();
+          if (payload && payload.email) {
+            userEmail = payload.email;
+            userName = payload.name || userName || payload.email.split('@')[0];
+            userPicture = payload.picture || userPicture || null;
+            userGoogleId = payload.sub;
+          }
+        } catch (verifyErr: any) {
+          try {
+            const tokeninfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+            if (tokeninfoRes.ok) {
+              const info = await tokeninfoRes.json();
+              if (info.email) {
+                userEmail = info.email;
+                userName = info.name || userName || info.email.split('@')[0];
+                userPicture = info.picture || userPicture || null;
+                userGoogleId = info.sub;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (!userEmail) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Google authentication failed: Could not verify Google credentials.' 
+        });
+      }
+
+      let user = await UserRepository.findByEmail(userEmail.toLowerCase().trim());
+
       if (!user) {
-        const dummyPassword = await bcrypt.hash(`google_${googleId || Date.now()}_${Math.random()}`, 12);
+        let permanentAvatarUrl: string | null = null;
+        if (userPicture) {
+          try {
+            permanentAvatarUrl = await S3Util.uploadFromUrl(userPicture, 'profiles', `avatar_google_${userGoogleId || Date.now()}`);
+          } catch (_) {
+            permanentAvatarUrl = userPicture;
+          }
+        }
+
+        const dummyPassword = await bcrypt.hash(`google_${userGoogleId || Date.now()}_${Math.random()}`, 12);
         user = await UserRepository.createUser({
-          email: email.toLowerCase().trim(),
-          name: name || email.split('@')[0],
+          email: userEmail.toLowerCase().trim(),
+          name: userName || userEmail.split('@')[0],
           password_hash: dummyPassword,
           role: role || 'candidate',
           status: 'ACTIVE',
-          profile_picture_url: picture || null,
+          profile_picture_url: permanentAvatarUrl || null,
         } as any);
+      } else if (!user.profile_picture_url && userPicture) {
+        // Only if user had NO profile picture previously, store Google photo once in S3
+        let permanentAvatarUrl = userPicture;
+        try {
+          permanentAvatarUrl = await S3Util.uploadFromUrl(userPicture, 'profiles', `avatar_google_${user.id}`);
+        } catch (_) {}
+        await pool.query('UPDATE users SET profile_picture_url = $1, updated_at = NOW() WHERE id = $2', [permanentAvatarUrl, user.id]);
+        user.profile_picture_url = permanentAvatarUrl;
+        await CacheService.del(`user:profile:${user.id}`).catch(() => {});
       }
 
       const { detectDeviceFromHeaders, extractClientIp } = await import('../../../../src/utils/deviceDetector');
@@ -498,6 +585,63 @@ export class AuthController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+  // 11. Google Mobile OAuth Initiation
+  static async googleMobileLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const role = (req.query.role as string) || 'candidate';
+      const host = req.get('host') || 'jobmarket-ongn.onrender.com';
+      const protocol = req.protocol === 'https' || host.includes('onrender.com') ? 'https' : req.protocol;
+      const redirectUri = `${protocol}://${host}/api/v1/auth/google/callback`;
+      const clientId = process.env.GOOGLE_CLIENT_ID || '324729375491-nl1j4657c42169gptkb1tm8ttoqkce8q.apps.googleusercontent.com';
+      const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=openid%20email%20profile&state=${encodeURIComponent(role)}&prompt=select_account`;
+      res.redirect(googleUrl);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // 12. Google Mobile OAuth Callback Bridge
+  static async googleCallback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Authenticating...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #1e293b; text-align: center; }
+    .card { background: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 360px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h3 style="margin: 0 0 8px; font-size: 18px;">Authenticating with JobMarket</h3>
+    <p style="color: #64748b; font-size: 14px; margin: 0;">Returning to the app...</p>
+  </div>
+  <script>
+    (function() {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      const targetUrl = 'jobmarket://oauth' + (hash || search || '');
+      window.location.href = targetUrl;
+      setTimeout(function() {
+        window.location.href = targetUrl;
+      }, 400);
+    })();
+  </script>
+</body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (err) {
+      next(err);
     }
   }
 }

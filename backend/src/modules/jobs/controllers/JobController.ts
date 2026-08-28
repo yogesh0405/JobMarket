@@ -70,8 +70,48 @@ export class JobController {
         });
       }
 
-      // 2. Fast Single-Shot Redirect Follow with 2.5s Strict Timeout for shortened Google Maps links
-      if (inputUrl.includes('goo.gl') || inputUrl.includes('maps.app') || inputUrl.includes('google.com/maps') || inputUrl.includes('http')) {
+      // 2. Fast Single-Shot Redirect Follow with 2.5s Strict Timeout for verified Google Maps links (SSRF Protected)
+      let isSafeMapsDomain = false;
+      try {
+        const parsedUrl = new URL(inputUrl);
+        const protocol = parsedUrl.protocol.toLowerCase();
+        const hostname = parsedUrl.hostname.toLowerCase();
+
+        // Strictly allow only http/https protocols
+        if (protocol === 'http:' || protocol === 'https:') {
+          // Block localhost, private IP ranges, link-local, cloud metadata
+          const isPrivateIp = 
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '0.0.0.0' ||
+            hostname.startsWith('10.') ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('169.254.') ||
+            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+            hostname.endsWith('.local') ||
+            hostname.endsWith('.internal');
+
+          // Whitelist allowed map providers
+          const allowedDomains = [
+            'maps.google.com',
+            'www.google.com',
+            'google.com',
+            'maps.app.goo.gl',
+            'goo.gl',
+            'openstreetmap.org',
+            'www.openstreetmap.org'
+          ];
+          const matchesWhitelist = allowedDomains.some(d => hostname === d || hostname.endsWith('.' + d));
+
+          if (!isPrivateIp && matchesWhitelist) {
+            isSafeMapsDomain = true;
+          }
+        }
+      } catch (_) {
+        isSafeMapsDomain = false;
+      }
+
+      if (isSafeMapsDomain) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 2500);
@@ -605,7 +645,7 @@ export class JobController {
   static async applyToJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
-      const userId = req.user?.userId || req.user?.id || (req.headers['x-user-id'] as string);
+      const userId = req.user?.userId || req.user?.id;
 
       if (!userId) {
         res.status(401).json({ success: false, message: 'Authentication required to apply for jobs' });

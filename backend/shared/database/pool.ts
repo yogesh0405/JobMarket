@@ -35,7 +35,7 @@ export const checkDatabaseConnection = async () => {
   try {
     const client = await pool.connect();
     console.log('✅ Shared Database Pool connected successfully');
-    await client.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS education_requirement VARCHAR(255) DEFAULT '10th Pass';`).catch(() => {});
+    await client.query('SELECT 1');
     client.release();
   } catch (err) {
     console.error('❌ Database connection error', err);

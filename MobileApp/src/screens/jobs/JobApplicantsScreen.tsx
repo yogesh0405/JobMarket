@@ -120,28 +120,40 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
         const res = await applicantsApi.getApplicantsForJob(jobId);
         if (res.success && Array.isArray(res.data)) {
-          const mapped = res.data.map((item: any) => ({
-            id: item.id || `app-${item.userId || item.user_id}-${jobId}`,
-            user_id: item.userId || item.user_id,
-            job_id: jobId,
-            status: (item.status || 'applied').toLowerCase(),
-            applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
-            user: {
-              id: item.userId || item.user_id,
-              name: item.name || 'Candidate',
-              email: item.email || '',
-              phone: item.phone || '',
-              role: 'candidate' as const,
-              headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
-              location: item.location || 'Not Specified',
-              experience: item.experience || 'Not Specified',
-              skills: Array.isArray(item.skills) ? item.skills : [],
-              profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-              aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
-              education: item.education || 'Not Specified',
-              resume_url: item.resume_url || item.resumeUrl || item.resume,
+          const mapped = res.data.map((item: any) => {
+            const rawResume = item.resume || item.resume_url || item.resumeUrl;
+            let extractedResumeUrl = '';
+            if (typeof rawResume === 'string' && rawResume.trim()) {
+              extractedResumeUrl = rawResume;
+            } else if (rawResume && typeof rawResume === 'object') {
+              extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || '';
             }
-          }));
+
+            return {
+              id: item.id || `app-${item.userId || item.user_id}-${jobId}`,
+              user_id: item.userId || item.user_id,
+              job_id: jobId,
+              status: (item.status || 'applied').toLowerCase(),
+              applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+              user: {
+                id: item.userId || item.user_id,
+                name: item.name || 'Candidate',
+                email: item.email || '',
+                phone: item.phone || '',
+                role: 'candidate' as const,
+                headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
+                location: item.location || 'Not Specified',
+                experience: item.experience || 'Not Specified',
+                skills: Array.isArray(item.skills) ? item.skills : [],
+                profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
+                aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
+                education: item.education || 'Not Specified',
+                resume_url: extractedResumeUrl,
+                resumeUrl: extractedResumeUrl,
+                resume: typeof rawResume === 'object' ? rawResume : (extractedResumeUrl ? { url: extractedResumeUrl, name: 'Candidate_Resume.pdf' } : null),
+              }
+            };
+          });
           setApplicants(mapped);
           return;
         }
@@ -155,29 +167,41 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             try {
               const res = await applicantsApi.getApplicantsForJob(j.id);
               if (res.success && Array.isArray(res.data)) {
-                return res.data.map((item: any) => ({
-                  id: item.id || `app-${item.userId || item.user_id}-${j.id}`,
-                  user_id: item.userId || item.user_id,
-                  job_id: j.id,
-                  status: (item.status || 'applied').toLowerCase(),
-                  applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
-                  job: j,
-                  user: {
-                    id: item.userId || item.user_id,
-                    name: item.name || 'Candidate',
-                    email: item.email || '',
-                    phone: item.phone || '',
-                    role: 'candidate' as const,
-                    headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
-                    location: item.location || 'Not Specified',
-                    experience: item.experience || 'Not Specified',
-                    skills: Array.isArray(item.skills) ? item.skills : [],
-                    profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-                    aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
-                    education: item.education || 'Not Specified',
-                    resume_url: item.resume_url || item.resumeUrl || item.resume,
+                return res.data.map((item: any) => {
+                  const rawResume = item.resume || item.resume_url || item.resumeUrl;
+                  let extractedResumeUrl = '';
+                  if (typeof rawResume === 'string' && rawResume.trim()) {
+                    extractedResumeUrl = rawResume;
+                  } else if (rawResume && typeof rawResume === 'object') {
+                    extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || '';
                   }
-                }));
+
+                  return {
+                    id: item.id || `app-${item.userId || item.user_id}-${j.id}`,
+                    user_id: item.userId || item.user_id,
+                    job_id: j.id,
+                    status: (item.status || 'applied').toLowerCase(),
+                    applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+                    job: j,
+                    user: {
+                      id: item.userId || item.user_id,
+                      name: item.name || 'Candidate',
+                      email: item.email || '',
+                      phone: item.phone || '',
+                      role: 'candidate' as const,
+                      headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
+                      location: item.location || 'Not Specified',
+                      experience: item.experience || 'Not Specified',
+                      skills: Array.isArray(item.skills) ? item.skills : [],
+                      profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
+                      aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
+                      education: item.education || 'Not Specified',
+                      resume_url: extractedResumeUrl,
+                      resumeUrl: extractedResumeUrl,
+                      resume: typeof rawResume === 'object' ? rawResume : (extractedResumeUrl ? { url: extractedResumeUrl, name: 'Candidate_Resume.pdf' } : null),
+                    }
+                  };
+                });
               }
             } catch (e) {
               console.log('Error fetching applicants for job:', j.id, e);
@@ -611,7 +635,14 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           onClose={() => setPdfModalVisible(false)}
           candidateName={selectedApplicant.user?.name || 'Applicant'}
           candidateRole={jobTitle}
-          pdfUrl={selectedApplicant.resume_url || (selectedApplicant as any).resumeUrl || (selectedApplicant.user as any)?.resume_url || (selectedApplicant.user as any)?.resumeUrl}
+          pdfUrl={
+            selectedApplicant?.user?.resume_url ||
+            (selectedApplicant?.user as any)?.resumeUrl ||
+            (typeof (selectedApplicant?.user as any)?.resume === 'object' ? (selectedApplicant?.user as any)?.resume?.url : (selectedApplicant?.user as any)?.resume) ||
+            selectedApplicant?.resume_url ||
+            (selectedApplicant as any)?.resumeUrl ||
+            (typeof (selectedApplicant as any)?.resume === 'object' ? (selectedApplicant as any)?.resume?.url : (selectedApplicant as any)?.resume)
+          }
         />
       ) : null}
 

@@ -25,6 +25,7 @@ interface Props {
 
 const DEFAULT_MAP_FILTERS: FilterOptions = {
   industry: 'All Industries',
+  education: 'All Education Levels',
   midcZone: 'All MIDC Zones',
   jobType: 'All Types',
   workMode: 'All Modes',

@@ -35,6 +35,11 @@ import { CandidateHomeSearchCard } from './components/CandidateHomeSearchCard';
 import { CandidateHomeGridsSection } from './components/CandidateHomeGridsSection';
 import { CandidateHomePromoSlider } from './components/CandidateHomePromoSlider';
 import { CandidateHomePopularRolesSection } from './components/CandidateHomePopularRolesSection';
+import {
+  getRealJobCountForKeyword,
+  getCleanSearchTerm,
+  matchJobAgainstKeyword,
+} from './utils/jobMatchUtils';
 
 import { savedJobsStore } from '../../utils/savedJobsStore';
 
@@ -274,11 +279,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleQuickTradeSearch = (tradeName: string, filterType: 'trade' | 'education' = 'trade') => {
+    const cleanSearchTerm = getCleanSearchTerm(tradeName);
     navigation.navigate('CandidateJobsTab', {
       screen: 'CandidateJobSearch',
       params: {
-        keyword: filterType === 'trade' ? tradeName : undefined,
-        education: filterType === 'education' ? tradeName : undefined,
+        keyword: cleanSearchTerm,
+        rawFilterTitle: tradeName,
+        filterType,
+        education: filterType === 'education' ? cleanSearchTerm : undefined,
       },
     });
   };
@@ -297,38 +305,14 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getRealJobCount = useCallback((keyword: string) => {
-    if (!keyword) return jobs.length;
-    const cleanKw = keyword.replace(/^\d+\.\s*/, '').toLowerCase().trim();
-    if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs.length;
-
-    const tokens = cleanKw
-      .split(/[\s&,/()]+/)
-      .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-      .filter((t) => t.length >= 2);
-
-    return jobs.filter((j) => {
-      const title = (j.title || '').toLowerCase();
-      const trade = (j.trade || '').toLowerCase();
-      const industry = (j.industry || '').toLowerCase();
-      const desc = (j.description || '').toLowerCase();
-      const category = ((j as any).category || '').toLowerCase();
-
-      const direct =
-        title.includes(cleanKw) ||
-        trade.includes(cleanKw) ||
-        industry.includes(cleanKw) ||
-        category.includes(cleanKw) ||
-        desc.includes(cleanKw);
-
-      return direct || (tokens.length > 0 && tokens.some((t) => title.includes(t) || trade.includes(t) || industry.includes(t) || desc.includes(t)));
-    }).length;
+    return getRealJobCountForKeyword(jobs, keyword);
   }, [jobs]);
 
   const getRoleJobCount = useCallback((tabId: string, keyword: string) => {
     const isAll = tabId === 'All Opportunities' || tabId.toLowerCase() === 'all' || (keyword && keyword.toLowerCase() === 'all');
     if (isAll) return jobs.length;
-    return getRealJobCount(keyword || tabId);
-  }, [jobs, getRealJobCount]);
+    return getRealJobCountForKeyword(jobs, keyword || tabId);
+  }, [jobs]);
 
   const roleFilteredJobs = useMemo(() => {
     const isAll = activeRoleTab === 'All Opportunities' || activeRoleTab.toLowerCase() === 'all';
@@ -336,30 +320,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
     const tabObj = roleTabsList.find((t) => t.id === activeRoleTab);
     const rawKw = tabObj?.keyword || tabObj?.label || activeRoleTab;
-    const cleanKw = rawKw.replace(/^\d+\.\s*/, '').toLowerCase().trim();
-    if (!cleanKw || cleanKw === 'all opportunities' || cleanKw === 'all') return jobs;
-
-    const tokens = cleanKw
-      .split(/[\s&,/()]+/)
-      .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-      .filter((t) => t.length >= 2);
-
-    return jobs.filter((j) => {
-      const title = (j.title || '').toLowerCase();
-      const trade = (j.trade || '').toLowerCase();
-      const industry = (j.industry || '').toLowerCase();
-      const desc = (j.description || '').toLowerCase();
-      const category = ((j as any).category || '').toLowerCase();
-
-      const direct =
-        title.includes(cleanKw) ||
-        trade.includes(cleanKw) ||
-        industry.includes(cleanKw) ||
-        category.includes(cleanKw) ||
-        desc.includes(cleanKw);
-
-      return direct || (tokens.length > 0 && tokens.some((t) => title.includes(t) || trade.includes(t) || industry.includes(t) || desc.includes(t)));
-    });
+    return jobs.filter((j) => matchJobAgainstKeyword(j, rawKw));
   }, [jobs, activeRoleTab, roleTabsList]);
 
   const handleBannerPress = (banner?: Advertisement) => {

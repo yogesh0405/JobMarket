@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
 import {
   Inter_400Regular,
@@ -17,6 +18,9 @@ import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
 import { useAuth } from './src/hooks/useAuth';
+
+// Initialize OAuth browser session interception
+WebBrowser.maybeCompleteAuthSession();
 
 // Industry-Standard Deep Linking & Universal Link Configuration
 const linking: LinkingOptions<any> = {

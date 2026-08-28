@@ -48,7 +48,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
   const insets = useSafeAreaInsets();
   const topInset = Math.max(
     insets.top || 0,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0
+    Platform.OS === 'android' ? 4 : 0
   );
   const companyName = company?.name || 'Company';
   const logoUrl = company?.logo || company?.logoUrl || null;
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   topRightControls: {
     flexDirection: 'row',

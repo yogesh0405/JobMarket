@@ -370,9 +370,77 @@ export const useAuth = () => {
     }
   }, [dispatch]);
 
+  const loginWithGoogle = useCallback(async (tokenOrPayload: string | { idToken?: string; accessToken?: string; picture?: string; name?: string; email?: string }, role: UserRole) => {
+    try {
+      const payload = typeof tokenOrPayload === 'string'
+        ? { idToken: tokenOrPayload, role }
+        : { ...tokenOrPayload, role };
+
+      const response = await apiFetch('/api/v1/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        let errorMessage = data.error || data.message || 'Google Sign-In failed';
+        return { success: false, error: errorMessage };
+      }
+
+      const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;
+
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      if (sessionId) {
+        localStorage.setItem('sessionId', sessionId);
+      }
+
+      const rawPhoto = apiUser.profile_picture_url ||
+                       apiUser.profilePictureUrl ||
+                       (typeof tokenOrPayload === 'object' ? tokenOrPayload.picture : '') ||
+                       apiUser.avatar_url ||
+                       apiUser.avatar;
+
+      const user: User = {
+        id: apiUser.id,
+        name: typeof apiUser.name === 'string' ? apiUser.name : '',
+        email: apiUser.email || '',
+        role: apiUser.role as UserRole,
+        phone: apiUser.phone || '',
+        profilePictureUrl: normalizeProfilePicture(rawPhoto),
+        createdAt: apiUser.created_at || new Date().toISOString(),
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+        resume: parseResumeField(apiUser.resume),
+        experience: parseArrayField(apiUser.experience),
+        education: parseArrayField(apiUser.education),
+        skills: parseArrayField(apiUser.skills),
+        savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs),
+        appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs),
+        appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status),
+        headline: apiUser.headline || '',
+        location: apiUser.location || '',
+        tradeSpecialization: apiUser.trade_specialization || '',
+        preferredShift: apiUser.preferred_shift || '',
+        requiresBus: !!apiUser.requires_bus,
+        requiresAccommodation: !!apiUser.requires_accommodation,
+        isResumePublic: apiUser.is_resume_public !== false,
+        companyName: apiUser.company_name || '',
+        gstNumber: apiUser.gst_number || '',
+      };
+
+      dispatch({ type: 'LOGIN', payload: user });
+      return { success: true, user };
+    } catch (error) {
+      return { success: false, error: 'Network error during Google Sign-In. Please try again.' };
+    }
+  }, [dispatch]);
+
   return {
     currentUser: state.currentUser,
     login,
+    loginWithGoogle,
     verify2FALogin,
     signup,
     verifyOtp,

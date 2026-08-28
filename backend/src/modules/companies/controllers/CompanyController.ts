@@ -107,17 +107,16 @@ export class CompanyController {
     try {
       const rawId = req.params.companyId;
       const companyId = Array.isArray(rawId) ? rawId[0] : rawId;
-      let currentUser = req.user;
+      const employerId = (req.user as any)?.userId || req.user?.id;
 
-      if (!currentUser || !currentUser.id) {
-        currentUser = {
-          id: '00000000-0000-0000-0000-000000000001',
-          role: 'employer',
-          email: 'employer@jobmarket.com'
-        };
+      if (!employerId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required to update company profile.'
+        });
       }
 
-      const updatedCompany = await CompanyRepository.updateCompanyProfile(companyId, currentUser.id, req.body);
+      const updatedCompany = await CompanyRepository.updateCompanyProfile(companyId, employerId, req.body);
 
       return res.status(200).json({
         success: true,

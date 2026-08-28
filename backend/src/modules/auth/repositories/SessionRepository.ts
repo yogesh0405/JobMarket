@@ -16,8 +16,16 @@ export interface Session {
   last_used_at: Date;
 }
 
-// In-Memory Fast LRU-style Revocation Set for sub-millisecond local gateway checks
+// In-Memory Bounded Revocation Set for sub-millisecond local gateway checks (Max 5,000 items)
 const localRevokedSessions = new Set<string>();
+
+function recordLocalRevokedSession(sessionId: string) {
+  if (localRevokedSessions.size >= 5000) {
+    const firstKey = localRevokedSessions.values().next().value;
+    if (firstKey) localRevokedSessions.delete(firstKey);
+  }
+  localRevokedSessions.add(sessionId);
+}
 
 export class SessionRepository {
   static async createSession(
@@ -69,7 +77,7 @@ export class SessionRepository {
       }
       const isRevoked = result.rows[0].revoked === true || new Date(result.rows[0].expires_at).getTime() < Date.now();
       if (isRevoked) {
-        localRevokedSessions.add(sessionId);
+        recordLocalRevokedSession(sessionId);
       }
       return isRevoked;
     });

@@ -83,7 +83,14 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           activeOpacity={0.8}
           onPress={() => {
             const candUser = selectedApplicant?.user;
-            const rawUrl = selectedApplicant?.resume_url || (selectedApplicant as any)?.resumeUrl || candUser?.resume_url || (candUser as any)?.resumeUrl || (candUser as any)?.resume;
+            const rawUrl = selectedApplicant?.resume_url ||
+                           (selectedApplicant as any)?.resumeUrl ||
+                           (selectedApplicant as any)?.resume?.url ||
+                           (selectedApplicant as any)?.resume ||
+                           candUser?.resume_url ||
+                           (candUser as any)?.resumeUrl ||
+                           (candUser as any)?.resume?.url ||
+                           (candUser as any)?.resume;
             let urlStr = '';
             if (typeof rawUrl === 'string') urlStr = rawUrl.trim();
             else if (rawUrl && typeof rawUrl === 'object') urlStr = (rawUrl as any).url || (rawUrl as any).fileUrl || (rawUrl as any).uri || '';

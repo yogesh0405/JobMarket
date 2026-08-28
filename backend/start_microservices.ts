@@ -32,6 +32,15 @@ console.log('🚀 Launching JobMarket Microservices Architecture Cluster (Memory
 checkDatabaseConnection().catch(err => console.error('DB Conn Warning:', err));
 connectRedis().catch(err => console.warn('Redis Conn Warning:', err));
 
+// Connect Apache Kafka Producer & Background Consumer Worker gracefully
+import('./src/config/kafka').then(({ getKafkaProducer }) => {
+  getKafkaProducer().catch(() => {});
+}).catch(() => {});
+
+import('./src/workers/kafkaConsumerWorker').then(({ startKafkaConsumerWorker }) => {
+  startKafkaConsumerWorker().catch(() => {});
+}).catch(() => {});
+
 services.forEach((service) => {
   service.app.listen(service.port, () => {
     console.log(`✅ [${service.name}] running on port ${service.port}`);

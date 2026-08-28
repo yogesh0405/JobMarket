@@ -26,6 +26,7 @@ import { FONTS, COLORS } from '../../constants/theme';
 
 const DEFAULT_MAP_FILTERS: FilterOptions = {
   industry: 'All Industries',
+  education: 'All Education Levels',
   jobType: 'All Types',
   workMode: 'All Modes',
   minExperience: 'All Experience',

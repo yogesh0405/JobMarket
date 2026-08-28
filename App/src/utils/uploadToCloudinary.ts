@@ -67,7 +67,7 @@ export async function compressImageIfNecessary(file: File, maxDimension = 1600, 
 }
 
 /**
- * Fast S3 Resume Upload with compression and progress tracking.
+ * High-Throughput S3 Resume Upload with client pre-compression, direct S3 streaming & fallback.
  */
 export async function uploadResumeFast(
   file: File,
@@ -77,11 +77,60 @@ export async function uploadResumeFast(
   if (onProgress) onProgress(15);
   const processedBlob = await compressImageIfNecessary(file);
   const sizeInMB = (processedBlob.size / (1024 * 1024)).toFixed(2) + ' MB';
-
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx');
+  const contentType = file.type || (isPdf ? 'application/pdf' : 'image/jpeg');
 
-  // Step 2: Read file as base64
-  if (onProgress) onProgress(45);
+  // Step 2: Attempt Direct-to-S3 Presigned Upload (Bypasses server RAM & proxy bottleneck)
+  try {
+    if (onProgress) onProgress(30);
+    const sigRes = await apiFetch(`/api/v1/auth/resume/signature?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(contentType)}`);
+    if (sigRes.ok) {
+      const sigJson = await sigRes.json();
+      const presigned = sigJson.data;
+
+      if (presigned && presigned.uploadUrl && presigned.fileUrl) {
+        if (onProgress) onProgress(55);
+
+        const s3UploadRes = await fetch(presigned.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': contentType },
+          body: processedBlob,
+        });
+
+        if (s3UploadRes.ok) {
+          if (onProgress) onProgress(85);
+
+          // Save direct S3 URL to user profile
+          const saveRes = await apiFetch('/api/v1/auth/resume', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: presigned.fileUrl,
+              name: file.name,
+              fileName: file.name,
+              size: sizeInMB,
+              type: contentType,
+            }),
+          });
+
+          if (saveRes.ok) {
+            if (onProgress) onProgress(100);
+            return {
+              url: presigned.fileUrl,
+              name: file.name,
+              size: sizeInMB,
+              type: contentType,
+            };
+          }
+        }
+      }
+    }
+  } catch (directErr) {
+    // Direct presigned upload failed or unsupported in dev, fallback seamlessly to backend payload
+  }
+
+  // Step 3: Resilient Fallback via Backend Base64 Upload
+  if (onProgress) onProgress(60);
   const base64Data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
@@ -89,9 +138,8 @@ export async function uploadResumeFast(
     reader.readAsDataURL(processedBlob as Blob);
   });
 
-  if (onProgress) onProgress(70);
+  if (onProgress) onProgress(80);
 
-  // Step 3: Send to Backend POST /api/v1/auth/resume (Stored in S3)
   const res = await apiFetch('/api/v1/auth/resume', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,10 +147,10 @@ export async function uploadResumeFast(
       name: file.name,
       fileName: file.name,
       size: sizeInMB,
-      type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+      type: contentType,
       base64: base64Data,
-      file: base64Data
-    })
+      file: base64Data,
+    }),
   });
 
   if (onProgress) onProgress(100);
@@ -118,6 +166,6 @@ export async function uploadResumeFast(
     url: json.url || user?.resume?.url || '',
     name: file.name,
     size: sizeInMB,
-    type: file.type || (isPdf ? 'application/pdf' : 'image/jpeg')
+    type: contentType,
   };
 }

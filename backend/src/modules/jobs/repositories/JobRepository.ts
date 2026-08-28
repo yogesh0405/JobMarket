@@ -168,8 +168,15 @@ export class JobRepository {
     };
   }
 
-  static async getJobs(): Promise<any[]> {
-    return CacheService.getOrSet('cache:jobs:active', 120, async () => {
+  static async getJobs(limit?: number, page?: number): Promise<any[]> {
+    const hasPagination = limit !== undefined || page !== undefined;
+    const pageNum = Math.max(1, page || 1);
+    const limitNum = Math.min(100, Math.max(1, limit || 50));
+    const offset = (pageNum - 1) * limitNum;
+    const cacheKey = hasPagination ? `cache:jobs:p${pageNum}_l${limitNum}` : 'cache:jobs:active';
+
+    return CacheService.getOrSet(cacheKey, 120, async () => {
+      const paginationClause = hasPagination ? `LIMIT ${limitNum} OFFSET ${offset}` : `LIMIT 100`;
       const query = `
         SELECT id, employer_id, company, company_logo, company_color, title, industry, location,
                latitude, longitude, geocoding_status, last_geocoded_at, location_accuracy,
@@ -182,6 +189,7 @@ export class JobRepository {
         FROM jobs 
         WHERE (status IS NULL OR LOWER(status) = 'active' OR LOWER(status) = 'approved')
         ORDER BY posted_at DESC
+        ${paginationClause}
       `;
       const result = await pool.query(query);
       return result.rows.map((row) => this.mapDbJobToApi(row));
@@ -553,7 +561,14 @@ export class JobRepository {
     const result = await pool.query(query, values);
     await CacheService.invalidatePattern('cache:jobs:*');
     await CacheService.invalidate('cache:admin:stats');
-    return this.mapDbJobToApi(result.rows[0]);
+    const createdJob = this.mapDbJobToApi(result.rows[0]);
+
+    // Stream job.created event to Kafka
+    import('../../../config/kafka').then(({ publishKafkaEvent, TOPICS }) => {
+      publishKafkaEvent(TOPICS.JOB_EVENTS, { eventType: 'JOB_CREATED', job: createdJob }, createdJob.id).catch(() => {});
+    }).catch(() => {});
+
+    return createdJob;
   }
 
   static async updateJob(jobId: string, employerId: string, jobData: Partial<JobData>): Promise<any> {
@@ -786,6 +801,9 @@ export class JobRepository {
   }
 
   static async getMyAppliedJobs(userId: string): Promise<any[]> {
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(userId);
+    if (!isUUID) return [];
+
     const query = `
       SELECT 
         j.*,
@@ -797,8 +815,8 @@ export class JobRepository {
         ja.maps_link as "mapsLink",
         ja.reject_reason as "rejectReason"
       FROM job_applications ja
-      JOIN jobs j ON ja.job_id::text = j.id::text
-      WHERE ja.user_id::text = $1::text
+      JOIN jobs j ON ja.job_id = j.id
+      WHERE ja.user_id = $1
       ORDER BY ja.applied_at DESC
     `;
     const result = await pool.query(query, [userId]);
@@ -817,11 +835,14 @@ export class JobRepository {
   }
 
   static async getMySavedJobs(userId: string): Promise<any[]> {
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(userId);
+    if (!isUUID) return [];
+
     const query = `
       SELECT 
         j.*
       FROM saved_jobs sj
-      JOIN jobs j ON sj.job_id::text = j.id::text
+      JOIN jobs j ON sj.job_id = j.id
       WHERE sj.user_id = $1
       ORDER BY sj.created_at DESC
     `;
@@ -900,14 +921,32 @@ export class JobRepository {
       ORDER BY ja.applied_at DESC
     `;
     const result = await pool.query(query, [jobId]);
-    return result.rows.map(row => ({
-      ...row,
-      resume: acceptResume ? safeJsonParse(row.resume, null) : null,
-      experience: safeJsonParse(row.experience, []),
-      education: safeJsonParse(row.education, []),
-      skills: safeJsonParse(row.skills, []),
-      aadhaarVerified: !!row.aadhaarVerified
-    }));
+    return result.rows.map(row => {
+      let parsedResume: any = null;
+      if (row.resume) {
+        if (typeof row.resume === 'object' && row.resume !== null) {
+          parsedResume = row.resume;
+        } else if (typeof row.resume === 'string' && row.resume.trim()) {
+          try {
+            parsedResume = JSON.parse(row.resume);
+          } catch (_) {
+            parsedResume = { url: row.resume, name: 'Candidate_Resume.pdf' };
+          }
+        }
+      }
+      const resumeUrl = parsedResume?.url || (typeof row.resume === 'string' ? row.resume : null);
+
+      return {
+        ...row,
+        resume: parsedResume,
+        resume_url: resumeUrl,
+        resumeUrl: resumeUrl,
+        experience: safeJsonParse(row.experience, []),
+        education: safeJsonParse(row.education, []),
+        skills: safeJsonParse(row.skills, []),
+        aadhaarVerified: !!row.aadhaarVerified
+      };
+    });
   }
 
   static async updateApplicantStatus(jobId: string, userId: string, employerId: string, status: string): Promise<any> {
@@ -963,12 +1002,26 @@ export class JobRepository {
   }
 
   static async getEmployerAnalytics(employerId: string): Promise<any> {
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(employerId);
+    if (!isUUID) {
+      return {
+        totalJobs: 0,
+        activeJobs: 0,
+        totalApplications: 0,
+        shortlisted: 0,
+        interviewed: 0,
+        hired: 0,
+        rejected: 0,
+        avgResponseTimeHours: 24,
+      };
+    }
+
     const jobsCountRes = await pool.query(
       `SELECT 
         COUNT(*) as total_jobs,
         COUNT(*) FILTER (WHERE UPPER(status) IN ('APPROVED', 'ACTIVE')) as active_jobs
        FROM jobs 
-       WHERE employer_id::text = $1::text`,
+       WHERE employer_id = $1`,
       [employerId]
     );
 
@@ -980,8 +1033,8 @@ export class JobRepository {
         COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('hired', 'joined', 'offered', 'selected')) as hired,
         COUNT(*) FILTER (WHERE LOWER(ja.status) IN ('rejected', 'declined')) as rejected
        FROM job_applications ja
-       JOIN jobs j ON ja.job_id::text = j.id::text
-       WHERE j.employer_id::text = $1::text`,
+       JOIN jobs j ON ja.job_id = j.id
+       WHERE j.employer_id = $1`,
       [employerId]
     );
 
