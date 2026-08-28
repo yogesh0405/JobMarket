@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { EmployerLoginScreen } from '../screens/auth/EmployerLoginScreen';
 import { EmployerSignupScreen } from '../screens/auth/EmployerSignupScreen';
 import { VerifyOTPScreen } from '../screens/auth/VerifyOTPScreen';
+import { GoogleAuthScreen } from '../screens/auth/GoogleAuthScreen';
 import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerTabNavigator } from './EmployerTabNavigator';
@@ -40,6 +41,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="EmployerLogin" component={EmployerLoginScreen} />
           <Stack.Screen name="EmployerSignup" component={EmployerSignupScreen} />
           <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
+          <Stack.Screen name="GoogleAuth" component={GoogleAuthScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
         </>
       ) : isCandidate ? (

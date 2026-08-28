@@ -21,6 +21,7 @@ import { TermsPage } from './features/static/TermsPage';
 import { PrivacyPage } from './features/static/PrivacyPage';
 import { CompanyProfilePage } from './features/company/CompanyProfilePage';
 import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
+import { SecurityPage } from './features/security/SecurityPage';
 import { useAuth } from './hooks/useAuth';
 import { apiFetch } from './utils/api';
 import { useStore } from './store/useStore';
@@ -124,10 +125,12 @@ export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <Routes>
-        {/* 1. Standalone Auth Pages (Full screen - NO Navbar/Footer) */}
+        {/* 1. Standalone Fullscreen Pages (NO Navbar/Footer/BottomNav) */}
+        <Route path="/auth" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
+        <Route path="/security" element={<SecurityPage />} />
 
         {/* 2. Admin Module Routes (Isolated Portal) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -177,6 +180,8 @@ export const App: React.FC = () => {
           <Route path="/p/:id" element={<PublicProfilePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/help" element={<ContactPage />} />
+          <Route path="/support" element={<ContactPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/about/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

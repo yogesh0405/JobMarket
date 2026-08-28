@@ -10,24 +10,22 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  ImageBackground,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Mail,
-  Lock,
-  User as UserIcon,
-  CheckCircle2,
-  ArrowRight,
+  ArrowLeft,
   Eye,
   EyeOff,
-  Phone,
+  Check,
   Briefcase,
+  User as UserIcon,
   KeyRound,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
 import { COLORS } from '../../constants/theme';
@@ -36,11 +34,6 @@ import { API_BASE_URL } from '../../api/client';
 import { GoogleGLogo } from './components/GoogleGLogo';
 import { EmployerTwoFactorModal } from './components/EmployerTwoFactorModal';
 import { ForgotPasswordModal } from './components/ForgotPasswordModal';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
-
-WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   navigation: any;
@@ -139,49 +132,16 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const clientId = '324729375491-viu62s7s3l3m9o4be0geuv68t4j589id.apps.googleusercontent.com';
-      const redirectUri = `${API_BASE_URL}/api/v1/auth/google/callback`;
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
-      const deepLinkReturn = makeRedirectUri({
-        scheme: 'jobmarket',
-        path: 'oauth',
-      });
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, deepLinkReturn);
-
-      if (result.type === 'success' && result.url) {
-        const rawParams = result.url.includes('#') ? result.url.split('#')[1] : (result.url.includes('?') ? result.url.split('?')[1] : '');
-        const params = new URLSearchParams(rawParams);
-        const accessToken = params.get('access_token');
-        const idToken = params.get('id_token');
-
-        if (accessToken || idToken) {
-          await loginWithGoogle({ 
-            accessToken: accessToken || undefined, 
-            idToken: idToken || undefined, 
-            role 
-          });
-        } else {
-          showToast('Google Sign-In completed without access token.', 'error');
-        }
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Google Sign-In failed', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    setError(null);
+    navigation.navigate('GoogleAuth', { role });
   };
-
 
   const handleLogin = async () => {
     setError(null);
 
     if (!email.trim() || !password.trim()) {
-      const errMsg = 'Please enter mobile/email and password.';
+      const errMsg = 'Please enter email and password.';
       setError(errMsg);
       showToast(errMsg, 'error');
       return;
@@ -189,7 +149,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      const loginRes = await login({ email, password, role });
+      const loginRes = await login({ email: email.trim(), password, role });
       if (loginRes && loginRes.require2FA) {
         setMfaToken(loginRes.mfaToken);
         setShow2FAModal(true);
@@ -222,110 +182,119 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const safeTopPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
+  ) + 8;
+  const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <View
+        style={[
+          styles.mainWrapper,
+          {
+            paddingTop: safeTopPadding,
+            paddingBottom: safeBottomPadding,
+          },
+        ]}
       >
-        {/* TOP BRAND HEADER SECTION (Primary Blue) */}
-        <View style={[styles.brandHeader, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-          {/* Logo & Enterprise Certification Badge + Help Button */}
-          <View style={styles.brandTopRow}>
-            <View style={styles.logoTitleRow}>
-              <View style={styles.logoSquare}>
-                <JobMarketLogoSvg size={32} />
-              </View>
-              <View style={styles.titleBadgeColumn}>
-                <Text style={styles.brandTitleText}>JobMarket</Text>
-
-                {/* ENTERPRISE CERTIFIED Pill */}
-                <View style={styles.enterprisePill}>
-                  <CheckCircle2 size={11} color="#FFFFFF" />
-                  <Text style={styles.enterprisePillText}>ENTERPRISE CERTIFIED</Text>
+        {/* SINGLE UNIFIED OUTER CARD (CONTAINING IMAGE & FORM) */}
+        <View style={styles.unifiedCard}>
+          {/* TOP HERO BANNER IMAGE (FIXED) */}
+          <View style={styles.heroImageContainer}>
+            <ImageBackground
+              source={require('../../../assets/auth_group_banner.jpg')}
+              style={styles.heroImage}
+              resizeMode="cover"
+            >
+              <LinearGradient
+                colors={['rgba(15, 23, 42, 0.05)', 'rgba(15, 23, 42, 0.6)', 'rgba(15, 23, 42, 0.92)']}
+                style={styles.heroGradient}
+              >
+                <View style={styles.heroTextContainer}>
+                  <Text style={styles.heroHeadline}>Work together. Grow with ease.</Text>
+                  <Text style={styles.heroSubheadline}>
+                    Connecting skilled talent with leading enterprises across India.
+                  </Text>
                 </View>
-              </View>
-            </View>
+              </LinearGradient>
+            </ImageBackground>
           </View>
 
-          {/* Headline Text */}
-          <Text style={styles.heroHeadlineText}>
-            Where skilled talent meets the factory floor.
-          </Text>
-
-          {/* 3 Metric Stat Glass Cards Row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>42K+</Text>
-              <Text style={styles.statLabelText}>Workers Placed</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>860+</Text>
-              <Text style={styles.statLabelText}>Plants Hiring</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>36</Text>
-              <Text style={styles.statLabelText}>Districts</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* BOTTOM FORM SHEET CARD (Solid White with Curved Top Corners) */}
-        <View style={styles.whiteSheetCard}>
-          {/* Drag Handle Bar Indicator */}
-          <View style={styles.dragHandleBar} />
-
-          {/* Sign in Title & Subtitle */}
-          <Text style={styles.sheetTitle}>Sign in to your workspace</Text>
-          <Text style={styles.sheetSubtitle}>
-            {role === 'candidate' ? 'Candidate & job application portal' : 'Recruiter & company hiring portal'}
-          </Text>
-
-          {/* Segmented Role Switcher: Employer vs Employee */}
-          <View style={styles.roleSegmentContainer}>
+          {/* INNER SCROLLABLE FORM SECTION */}
+          <ScrollView
+            style={styles.scrollableFormArea}
+            contentContainerStyle={styles.cardBody}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Back Navigation Button */}
             <TouchableOpacity
-              activeOpacity={0.85}
-              style={[styles.roleSegmentTab, role === 'employer' && styles.roleSegmentTabActive]}
-              onPress={() => setRole('employer')}
+              style={styles.backButton}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                }
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
             >
-              <Briefcase size={16} color={role === 'employer' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
-                Employer
-              </Text>
+              <ArrowLeft size={22} color="#0F172A" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={[styles.roleSegmentTab, role === 'candidate' && styles.roleSegmentTabActive]}
-              onPress={() => setRole('candidate')}
-            >
-              <UserIcon size={16} color={role === 'candidate' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
-                Employee
-              </Text>
-            </TouchableOpacity>
-          </View>
+            {/* Welcome Back Heading */}
+            <Text style={styles.welcomeHeading}>Welcome Back</Text>
 
-          {error ? <ErrorBanner message={error} style={{ marginBottom: 14 }} /> : null}
+            {/* Subtitle & Sign Up Link */}
+            <View style={styles.signupPromptRow}>
+              <Text style={styles.promptText}>Don't have an account? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('EmployerSignup', { initialRole: role })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.signupLinkText}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Input 1: Mobile or email* */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Mobile or email<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <Mail size={18} color="#94A3B8" />
+            {/* Role Switcher (Candidate vs Employer) */}
+            <View style={styles.roleSegmentContainer}>
+              <TouchableOpacity
+                style={[styles.roleSegmentTab, role === 'candidate' && styles.roleSegmentTabActive]}
+                onPress={() => setRole('candidate')}
+                activeOpacity={0.8}
+              >
+                <UserIcon size={14} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
+                  Candidate
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roleSegmentTab, role === 'employer' && styles.roleSegmentTabActive]}
+                onPress={() => setRole('employer')}
+                activeOpacity={0.8}
+              >
+                <Briefcase size={14} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
+                  Employer
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {error ? <ErrorBanner message={error} style={{ marginBottom: 14 }} /> : null}
+
+            {/* Email Address Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder={role === 'candidate' ? 'candidate@email.com' : 'recruiter@company.com'}
+                placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={(t) => {
@@ -336,112 +305,86 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 keyboardType="email-address"
               />
             </View>
-          </View>
 
-          {/* Input 2: Account password* */}
-          <View style={styles.inputGroup}>
-            <View style={styles.labelLinkRow}>
-              <Text style={styles.inputLabel}>
-                Account password<Text style={{ color: '#EF4444' }}>*</Text>
-              </Text>
-              <TouchableOpacity onPress={handleOpenForgotPassword}>
-                <Text style={styles.forgotLinkText}>Forgot?</Text>
-              </TouchableOpacity>
+            {/* Password Input with Forgot Password? Link */}
+            <View style={styles.inputGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <TouchableOpacity onPress={handleOpenForgotPassword} activeOpacity={0.7}>
+                  <Text style={styles.forgotPasswordLink}>Forgot Password?</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordTextInput}
+                  placeholder="Password"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(t) => {
+                    setPassword(t);
+                    if (error) setError(null);
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? <EyeOff size={19} color="#0F172A" /> : <Eye size={19} color="#0F172A" />}
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.inputBox}>
-              <Lock size={18} color="#94A3B8" />
-              <TextInput
-                style={styles.textInput}
-                placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(t) => {
-                  setPassword(t);
-                  if (error) setError(null);
-                }}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Keep me signed in Checkbox */}
-          <TouchableOpacity
-            style={styles.checkboxRow}
-            activeOpacity={0.8}
-            onPress={() => setKeepSignedIn(!keepSignedIn)}
-          >
-            <View style={[styles.checkboxSquare, keepSignedIn && styles.checkboxSquareActive]}>
-              {keepSignedIn && <CheckCircle2 size={14} color="#FFFFFF" />}
-            </View>
-            <Text style={styles.checkboxLabelText}>Keep me signed in</Text>
-          </TouchableOpacity>
-
-          {/* Primary CTA Button: Sign in -> */}
-          <TouchableOpacity
-            style={styles.primarySignInBtn}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.88}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.primarySignInBtnText}>Sign in</Text>
-                <ArrowRight size={18} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* OR CONTINUE WITH Divider */}
-          <View style={styles.orDividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.orDividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social / Alternate Login Row */}
-          <View style={styles.socialButtonsRow}>
-            {/* Google Login Button */}
+            {/* Primary CTA: Log In Button */}
             <TouchableOpacity
-              style={styles.socialBtn}
+              style={styles.primaryLoginBtn}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.88}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryLoginBtnText}>Log In</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Remember my session Checkbox */}
+            <TouchableOpacity
+              style={styles.rememberSessionRow}
+              activeOpacity={0.8}
+              onPress={() => setKeepSignedIn(!keepSignedIn)}
+            >
+              <View style={[styles.checkboxBox, keepSignedIn && styles.checkboxBoxActive]}>
+                {keepSignedIn && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+              <Text style={styles.rememberSessionText}>Remember my session</Text>
+            </TouchableOpacity>
+
+            {/* OR Divider */}
+            <View style={styles.orDividerContainer}>
+              <View style={styles.orDividerLine} />
+              <Text style={styles.orDividerText}>OR</Text>
+              <View style={styles.orDividerLine} />
+            </View>
+
+            {/* Google Sign In Button */}
+            <TouchableOpacity
+              style={styles.googleSignInBtn}
               onPress={handleGoogleSignIn}
               disabled={loading}
               activeOpacity={0.8}
             >
-              <GoogleGLogo size={18} />
-              <Text style={styles.socialBtnText}>Google</Text>
-            </TouchableOpacity>
-
-            {/* Phone Number Login Button */}
-            <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={() => {
-                showToast('Enter your mobile number to sign in via SMS OTP', 'info');
-              }}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <View style={styles.phoneIconBadge}>
-                <Phone size={12} color="#16A34A" />
+              <View style={styles.googleIconContainer}>
+                <GoogleGLogo size={20} />
               </View>
-              <Text style={styles.socialBtnText}>Phone Number</Text>
+              <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Footer Signup Link */}
-          <View style={styles.footerLinkRow}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('EmployerSignup', { initialRole: role })}>
-              <Text style={styles.footerLinkBold}>Sign up now</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
 
       {/* 2FA Verification Modal */}
       <EmployerTwoFactorModal
@@ -486,6 +429,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         onConfirm={confirmModalConfig.onConfirm}
       />
 
+
       {/* Success Modal */}
       <SuccessModal
         visible={successModalConfig.visible}
@@ -501,289 +445,264 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#F1F5F9',
   },
-  scrollContent: {
-    flexGrow: 1,
-    backgroundColor: COLORS.primary,
-  },
-  brandHeader: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-  },
-  brandTopRow: {
-    flexDirection: 'row',
+  mainWrapper: {
+    flex: 1,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    justifyContent: 'center',
   },
-  logoTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoSquare: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+  unifiedCard: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 440,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  titleBadgeColumn: {
-    justifyContent: 'center',
+  heroImageContainer: {
+    height: 180,
+    width: '100%',
+    backgroundColor: '#0F172A',
+    flexShrink: 0,
   },
-  brandTitleText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+  scrollableFormArea: {
+    flex: 1,
   },
-  enterprisePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroGradient: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+  },
+  heroTextContainer: {
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginTop: 2,
   },
-  enterprisePillText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  heroHeadlineText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    padding: 10,
-    alignItems: 'center',
-  },
-  statNumberText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  statLabelText: {
-    fontSize: 10,
-    color: '#E2E8F0',
-    marginTop: 2,
-  },
-  whiteSheetCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
-  dragHandleBar: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#CBD5E1',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  sheetTitle: {
+  heroHeadline: {
     fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+    lineHeight: 25,
+  },
+  heroSubheadline: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 16,
+  },
+  cardBody: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 24,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+    paddingRight: 10,
+    marginBottom: 8,
+  },
+  welcomeHeading: {
+    fontSize: 23,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.4,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    marginBottom: 4,
   },
-  sheetSubtitle: {
-    fontSize: 13,
+  signupPromptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  promptText: {
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 2,
-    marginBottom: 18,
+    fontWeight: '400',
+  },
+  signupLinkText: {
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   roleSegmentContainer: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 3,
-    marginBottom: 18,
+    borderRadius: 10,
+    padding: 2.5,
+    marginBottom: 14,
   },
   roleSegmentTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 6,
+    gap: 5,
+    paddingVertical: 6.5,
+    borderRadius: 8,
   },
   roleSegmentTabActive: {
     backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   roleSegmentTabText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
   },
   roleSegmentTabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 14,
+    marginBottom: 13,
   },
-  labelLinkRow: {
+  labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   inputLabel: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 6,
-  },
-  forgotLinkText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 5,
   },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 46,
+  forgotPasswordLink: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#1E293B',
   },
   textInput: {
+    backgroundColor: '#F6F4EE',
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+    fontSize: 13.5,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F4EE',
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+  },
+  passwordTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#0F172A',
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  checkboxRow: {
+  eyeIconButton: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryLoginBtn: {
+    backgroundColor: COLORS.primary,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 12,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  primaryLoginBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  rememberSessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 18,
   },
-  checkboxSquare: {
-    width: 18,
-    height: 18,
+  checkboxBox: {
+    width: 17,
+    height: 17,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderColor: '#94A3B8',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
   },
-  checkboxSquareActive: {
+  checkboxBoxActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  checkboxLabelText: {
-    fontSize: 12.5,
+  rememberSessionText: {
+    fontSize: 12,
     color: '#475569',
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  primarySignInBtn: {
+  orDividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    height: 48,
-    borderRadius: 8,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 14,
   },
-  primarySignInBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  orDividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  dividerLine: {
+  orDividerLine: {
     flex: 1,
     height: 1,
     backgroundColor: '#E2E8F0',
   },
   orDividerText: {
     fontSize: 10.5,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#94A3B8',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
-  socialButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  socialBtn: {
-    flex: 1,
+  googleSignInBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 44,
-    backgroundColor: '#FFFFFF',
+    height: 46,
+    borderRadius: 23,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  phoneIconBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
+  googleIconContainer: {
+    marginRight: 8,
   },
-  socialBtnText: {
+  googleSignInBtnText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  footerLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerText: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  footerLinkBold: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontWeight: '600',
+    color: '#1E293B',
   },
 });

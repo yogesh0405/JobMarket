@@ -492,8 +492,8 @@ export const DashboardPage: React.FC = () => {
               )}
               <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
               <button
-                className={`dashboard-nav-item tab-security ${tab === 'security' ? 'active' : ''}`}
-                onClick={() => setTab('security')}
+                className="dashboard-nav-item tab-security"
+                onClick={() => navigate('/security')}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -502,8 +502,8 @@ export const DashboardPage: React.FC = () => {
                 Security & Sessions
               </button>
               <button
-                className={`dashboard-nav-item tab-about ${tab === 'about' ? 'active' : ''}`}
-                onClick={() => setTab('about')}
+                className="dashboard-nav-item tab-about"
+                onClick={() => navigate('/about')}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
@@ -511,8 +511,8 @@ export const DashboardPage: React.FC = () => {
                 About Us
               </button>
               <button
-                className={`dashboard-nav-item tab-support ${tab === 'support' ? 'active' : ''}`}
-                onClick={() => setTab('support')}
+                className="dashboard-nav-item tab-support"
+                onClick={() => navigate('/contact')}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>

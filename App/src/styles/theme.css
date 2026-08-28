@@ -33,6 +33,10 @@
   --color-border-light: #F1F5F9;
   --color-bg-surface: #FFFFFF;
   --color-bg-subtle: #F8FAFC;
+  --color-off-green-bg: #FAF9F6;
+  --color-off-green-border: #ECEAE4;
+  --color-soft-warm-bg: #FAF9F6;
+  --color-soft-warm-border: #ECEAE4;
 }
 
 /* Universal Typography Utility Classes */

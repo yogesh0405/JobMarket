@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { Camera, Edit, Mail, Phone, MapPin, Briefcase, CheckCircle2, ShieldCheck, UserCheck } from 'lucide-react-native';
-import { COLORS, RADIUS } from '../../../constants/theme';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Platform } from 'react-native';
+import { Camera, Edit } from 'lucide-react-native';
+import { COLORS } from '../../../constants/theme';
 import { calculateCandidateProfileCompletion } from '../../../utils/profileCompleteness';
 
 interface CandidateProfileHeroCardProps {
@@ -61,24 +61,35 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
   const completionPercentage = calculateCandidateProfileCompletion(userFull).totalScore;
   const skillsCount = (skills && skills.length > 0) ? skills.length : (user?.skills?.length || 0);
 
+  const displayName = name || user?.name || 'Candidate';
+  const getInitials = (str: string) => {
+    if (!str) return 'C';
+    const parts = str.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  };
+  const initials = getInitials(displayName);
+
   return (
     <>
-      {/* PRIMARY BLUE HERO CARD */}
-      <View style={styles.primaryBlueHeroCard}>
+      {/* HEADER PROFILE CARD (MATCHING USER REFERENCE) */}
+      <View style={styles.whiteHeroHeaderCard}>
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.heroEditIconCircleBtn}
           onPress={onEditPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Edit size={14} color="#FFFFFF" strokeWidth={2.2} />
+          <Edit size={14} color={COLORS.textSecondary} strokeWidth={2} />
         </TouchableOpacity>
 
-        <View style={styles.blueHeroRow}>
+        <View style={styles.heroRow}>
           <TouchableOpacity activeOpacity={0.88} onPress={onPickPhoto} style={styles.heroAvatarWrapper}>
             <View style={styles.heroAvatarFallback}>
               <Text style={styles.heroAvatarText}>
-                {(name || user?.name || 'C').charAt(0).toUpperCase()}
+                {initials}
               </Text>
             </View>
             {profilePhotoUrl && typeof profilePhotoUrl === 'string' && profilePhotoUrl.trim().length > 5 ? (
@@ -88,24 +99,17 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
               />
             ) : null}
             <View style={styles.heroCameraBadge}>
-              <Camera size={10} color={COLORS.primary} />
+              <Camera size={11} color={COLORS.primary} strokeWidth={2.5} />
             </View>
           </TouchableOpacity>
 
-          <View style={styles.blueHeroInfoCol}>
-            <View style={styles.nameHeaderRow}>
-              <Text style={styles.heroNameText} numberOfLines={1}>
-                {name || user?.name || 'Candidate Profile'}
-              </Text>
-              <CheckCircle2 size={16} color="#60A5FA" />
-            </View>
-
-            <View style={styles.heroEmailRow}>
-              <Mail size={13} color="#E0F2FE" />
-              <Text style={styles.heroEmailText} numberOfLines={1}>
-                {user?.email || '—'}
-              </Text>
-            </View>
+          <View style={styles.heroInfoCol}>
+            <Text style={styles.heroNameText} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.heroEmailText} numberOfLines={1}>
+              {user?.email || '—'}
+            </Text>
           </View>
         </View>
       </View>
@@ -128,77 +132,67 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
         </View>
       </View>
 
-      {/* ABOUT SUMMARY CARD */}
+      {/* PERSONAL DETAILS CARD (MATCHING REFERENCE UI) */}
       <View style={styles.sectionCard}>
-        <View style={styles.sectionCardHeader}>
-          <Text style={styles.sectionCardTitle}>Professional Summary</Text>
-        </View>
-        <View style={styles.aboutQuoteBox}>
-          {bio ? (
-            <Text style={styles.aboutText}>{bio}</Text>
-          ) : (
-            <Text style={styles.emptySubText}>No professional bio summary added yet. Tap Edit Profile to add a summary.</Text>
-          )}
-        </View>
-      </View>
+        <Text style={styles.serifCardTitle}>Personal Details</Text>
 
-      {/* CONTACT & PERSONAL DETAILS CARD */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionCardHeader}>
-          <Text style={styles.sectionCardTitle}>Contact & Work Details</Text>
-        </View>
-
-        <View style={styles.contactGrid2x2}>
-          {headline ? (
-            <View style={styles.contactGridCell}>
-              <View style={styles.contactIconPill}>
-                <UserCheck size={14} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactGridLabel}>Professional Headline</Text>
-                <Text style={styles.contactGridValue} numberOfLines={1}>{headline}</Text>
-              </View>
-            </View>
-          ) : null}
-
-          <View style={styles.contactGridCell}>
-            <View style={styles.contactIconPill}>
-              <Mail size={14} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactGridLabel}>Email Address</Text>
-              <Text style={styles.contactGridValue} numberOfLines={1}>{user?.email || '—'}</Text>
+        <View style={styles.fieldsList}>
+          {/* Full Name */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Full Name</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>
+                {displayName}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.contactGridCell}>
-            <View style={styles.contactIconPill}>
-              <Phone size={14} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactGridLabel}>Mobile Phone</Text>
-              <Text style={styles.contactGridValue} numberOfLines={1}>{phone || '—'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.contactGridCell}>
-            <View style={styles.contactIconPill}>
-              <MapPin size={14} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactGridLabel}>Current City / Location</Text>
-              <Text style={styles.contactGridValue} numberOfLines={1}>{location || '—'}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.contactGridCell, styles.contactGridCellLast]}>
-            <View style={styles.contactIconPill}>
-              <Briefcase size={14} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactGridLabel}>Primary Trade Specialization</Text>
-              <Text style={styles.contactGridValue} numberOfLines={1}>
+          {/* Role / Specialization */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Role / Trade Specialization</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>
                 {tradeDisplay}
+              </Text>
+            </View>
+          </View>
+
+          {/* Registered Email */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Registered Email</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>
+                {user?.email || '—'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Phone / WhatsApp */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Phone / WhatsApp</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>
+                {phone || '—'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Home City / Location Base */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Home City / Location Base</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>
+                {location || '—'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Bio & Notes */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Professional Bio & Notes</Text>
+            <View style={[styles.fieldValueBox, styles.fieldValueBoxMultiline]}>
+              <Text style={styles.fieldValueTextMultiline}>
+                {bio || 'No professional bio summary added yet. Tap Edit Profile to add a summary.'}
               </Text>
             </View>
           </View>
@@ -209,110 +203,103 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
 };
 
 const styles = StyleSheet.create({
-  primaryBlueHeroCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.card,
+  whiteHeroHeaderCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: '#B4C3D4',
+    borderColor: COLORS.border,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 12,
     position: 'relative',
+    shadowColor: COLORS.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   heroEditIconCircleBtn: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'transparent',
+    top: 14,
+    right: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: COLORS.slate50,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  blueHeroRow: {
+  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
   heroAvatarWrapper: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
   },
   heroAvatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 31,
+    borderRadius: 30,
   },
   heroAvatarFallback: {
     width: '100%',
     height: '100%',
-    borderRadius: 31,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#3D4A3E',
   },
   heroAvatarText: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: COLORS.textWhite,
+    letterSpacing: 0.5,
   },
   heroCameraBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.surface,
   },
-  blueHeroInfoCol: {
+  heroInfoCol: {
     flex: 1,
-    gap: 4,
-    paddingRight: 24,
-  },
-  nameHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    paddingRight: 32,
   },
   heroNameText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  heroEmailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    color: COLORS.textPrimary,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.2,
   },
   heroEmailText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#E0F2FE',
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   statsBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: RADIUS.card,
+    backgroundColor: COLORS.slate50,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.border,
     paddingVertical: 10,
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: 2,
+    marginBottom: 12,
   },
   statCol: {
     flex: 1,
@@ -324,90 +311,71 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   statLabelText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: COLORS.textMuted,
     marginTop: 1,
   },
   statDivider: {
     width: 1,
     height: 22,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: COLORS.slate300,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#B4C3D4',
-    padding: 16,
+    borderColor: COLORS.border,
+    padding: 14,
     marginBottom: 10,
+    shadowColor: COLORS.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  sectionCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
-  sectionCardTitle: {
-    fontSize: 14,
+  serifCardTitle: {
+    fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
-    flex: 1,
+    color: COLORS.textPrimary,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.2,
+    marginBottom: 10,
   },
-  aboutQuoteBox: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-    paddingLeft: 10,
+  fieldsList: {
+    gap: 9,
   },
-  aboutText: {
-    fontSize: 12.5,
-    fontWeight: '400',
-    color: '#334155',
-    lineHeight: 19,
+  fieldGroup: {
+    gap: 4,
   },
-  emptySubText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#94A3B8',
-    fontStyle: 'italic',
+  fieldLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
-  sectionDividerSlate: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 10,
-  },
-  contactGrid2x2: {
-    gap: 0,
-  },
-  contactGridCell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  contactGridCellLast: {
-    borderBottomWidth: 0,
-    paddingBottom: 2,
-  },
-  contactIconPill: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
+  fieldValueBox: {
+    backgroundColor: COLORS.softWarmBg,
+    borderWidth: 1,
+    borderColor: COLORS.softWarmBorder,
+    borderRadius: 12,
+    height: 40,
+    paddingHorizontal: 12,
     justifyContent: 'center',
   },
-  contactGridLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+  fieldValueText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
   },
-  contactGridValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 1,
+  fieldValueBoxMultiline: {
+    height: 'auto',
+    minHeight: 52,
+    paddingVertical: 9,
+  },
+  fieldValueTextMultiline: {
+    fontSize: 11.5,
+    fontWeight: '400',
+    color: COLORS.textPrimary,
+    lineHeight: 16,
   },
 });

@@ -1,575 +1,605 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Compass,
-  Info,
-  FileText,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Briefcase,
+  Users,
   ShieldCheck,
-  ChevronRight,
-  User,
-  Building2
+  Zap,
+  Building2,
+  Award,
+  Star,
+  Quote,
+  Info,
+  PhoneCall,
+  Lock,
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import THEME from '../../constants/theme';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FLAT VECTOR CHARACTER SCENE ILLUSTRATIONS (Matching Mobile Reference Style)
-// ─────────────────────────────────────────────────────────────────────────────
+const CORPORATE_PROFESSIONAL_IMG = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
+const INDUSTRIAL_WELDER_IMG = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80';
+const SOFTWARE_ENGINEER_IMG = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80';
 
-const DiscoverJobsScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="peachBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFF5ED" />
-        <stop offset="100%" stopColor="#FFEAD8" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#peachBackdrop)" stroke="#FED7AA" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#FDBA74" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <path d="M150 8V35" stroke="#FB923C" strokeWidth="1.5" />
-    <path d="M142 35H158L153 45H147L142 35Z" fill="#FDBA74" />
-    <rect x="40" y="68" width="120" height="42" rx="8" fill="#F87171" />
-    <rect x="34" y="60" width="132" height="16" rx="6" fill="#EF4444" />
-    <rect x="44" y="82" width="52" height="24" rx="4" fill="#DC2626" />
-    <rect x="104" y="82" width="52" height="24" rx="4" fill="#DC2626" />
-    <rect x="46" y="110" width="6" height="8" rx="2" fill="#78350F" />
-    <rect x="148" y="110" width="6" height="8" rx="2" fill="#78350F" />
-    <circle cx="82" cy="44" r="10" fill="#78350F" />
-    <circle cx="82" cy="46" r="8" fill="#FDBA74" />
-    <path d="M74 44C74 38 78 36 84 36C90 36 91 40 91 44" fill="#451A03" />
-    <path d="M70 60C70 54 75 52 82 52C89 52 94 54 94 60V78H70V60Z" fill="#0D9488" />
-    <rect x="72" y="78" width="10" height="26" rx="4" fill="#1D4ED8" />
-    <rect x="84" y="78" width="10" height="26" rx="4" fill="#1D4ED8" />
-    <rect x="68" y="72" width="28" height="18" rx="3" fill="#1B4FDF" />
-    <rect x="70" y="74" width="24" height="13" rx="2" fill="#FFFFFF" />
-    <circle cx="80" cy="80" r="4" stroke="#1B4FDF" strokeWidth="1.5" />
-    <path d="M83 83L87 87" stroke="#1B4FDF" strokeWidth="1.5" strokeLinecap="round" />
-    <rect x="64" y="90" width="36" height="3" rx="1.5" fill="#94A3B8" />
-    <g transform="translate(118, 25)">
-      <rect x="0" y="0" width="54" height="32" rx="6" fill="#FFFFFF" stroke="#BFDBFE" strokeWidth="1" />
-      <circle cx="12" cy="12" r="5" fill="#1B4FDF" />
-      <rect x="21" y="8" width="24" height="3" rx="1.5" fill="#0F172A" />
-      <rect x="21" y="14" width="18" height="2.5" rx="1" fill="#94A3B8" />
-      <rect x="8" y="21" width="38" height="5" rx="2.5" fill="#EFF6FF" />
-      <text x="14" y="25" fontSize="3.5" fontWeight="bold" fill="#1B4FDF">MIDC TECH</text>
-    </g>
-  </svg>
-);
-
-const CandidateProfileScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="purpleBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F5F3FF" />
-        <stop offset="100%" stopColor="#EDE9FE" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#purpleBackdrop)" stroke="#DDD6FE" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#C4B5FD" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="32" y="20" width="90" height="92" rx="8" fill="#FFFFFF" stroke="#8B5CF6" strokeWidth="1.5" />
-    <rect x="32" y="20" width="90" height="20" rx="8" fill="#7C3AED" />
-    <circle cx="50" cy="30" r="7" fill="#EDE9FE" stroke="#FFFFFF" strokeWidth="1.5" />
-    <rect x="62" y="26" width="45" height="4" rx="2" fill="#FFFFFF" />
-    <rect x="62" y="32" width="30" height="3" rx="1.5" fill="#DDD6FE" />
-    <rect x="42" y="48" width="70" height="4" rx="2" fill="#4C1D95" />
-    <rect x="42" y="56" width="55" height="3" rx="1.5" fill="#94A3B8" />
-    <rect x="42" y="62" width="62" height="3" rx="1.5" fill="#CBD5E1" />
-    <rect x="42" y="72" width="20" height="8" rx="4" fill="#F3E8FF" stroke="#C084FC" strokeWidth="1" />
-    <rect x="66" y="72" width="22" height="8" rx="4" fill="#EFF6FF" stroke="#93C5FD" strokeWidth="1" />
-    <rect x="42" y="84" width="46" height="16" rx="4" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="1" />
-    <circle cx="108" cy="94" r="9" fill="#059669" />
-    <path d="M104 94L107 97L112 91" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="152" cy="38" r="9" fill="#451A03" />
-    <circle cx="152" cy="40" r="7" fill="#FDBA74" />
-    <path d="M145 38C145 32 150 30 155 30C160 30 161 34 161 38" fill="#1E293B" />
-    <path d="M142 54C142 49 146 47 152 47C158 47 162 49 162 54V82H142V54Z" fill="#EC4899" />
-    <rect x="144" y="82" width="7" height="32" rx="3.5" fill="#1E293B" />
-    <rect x="153" y="82" width="7" height="32" rx="3.5" fill="#1E293B" />
-    <path d="M144 54L128 64" stroke="#EC4899" strokeWidth="4" strokeLinecap="round" />
-    <circle cx="127" cy="65" r="3" fill="#FDBA74" />
-  </svg>
-);
-
-const OneTapApplyScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="blueBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F0F9FF" />
-        <stop offset="100%" stopColor="#E0F2FE" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#blueBackdrop)" stroke="#BAE6FD" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#7DD3FC" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="50" y="76" width="100" height="8" rx="2" fill="#78350F" />
-    <rect x="56" y="84" width="6" height="32" rx="2" fill="#9A3412" />
-    <rect x="138" y="84" width="6" height="32" rx="2" fill="#9A3412" />
-    <rect x="82" y="65" width="36" height="45" rx="6" fill="#1E293B" />
-    <circle cx="100" cy="38" r="9" fill="#FDBA74" />
-    <path d="M92 36C92 30 96 28 100 28C104 28 108 30 108 36" fill="#1B4FDF" />
-    <path d="M90 38C90 32 94 30 100 30C106 30 110 32 110 38" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
-    <rect x="89" y="35" width="4" height="8" rx="2" fill="#EF4444" />
-    <rect x="107" y="35" width="4" height="8" rx="2" fill="#EF4444" />
-    <path d="M90 52C90 47 94 45 100 45C106 45 110 47 110 52V76H90V52Z" fill="#2563EB" />
-    <rect x="86" y="62" width="28" height="16" rx="3" fill="#0F172A" />
-    <rect x="88" y="64" width="24" height="12" rx="2" fill="#FFFFFF" />
-    <circle cx="100" cy="70" r="4" fill="#059669" />
-    <path d="M98 70L99.5 71.5L102 68.5" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-    <g transform="translate(132, 22)">
-      <circle cx="20" cy="20" r="18" fill="#FFFFFF" stroke="#3B82F6" strokeWidth="1.5" />
-      <path d="M20 9L27 27L20 23L13 27L20 9Z" fill="#1B4FDF" />
-      <circle cx="20" cy="32" r="3" fill="#F59E0B" />
-    </g>
-  </svg>
-);
-
-const TrackingScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="yellowBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FEFCE8" />
-        <stop offset="100%" stopColor="#FEF08A" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#yellowBackdrop)" stroke="#FDE047" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#FACC15" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="40" y="78" width="120" height="8" rx="2" fill="#B45309" />
-    <rect x="50" y="86" width="6" height="30" rx="2" fill="#78350F" />
-    <rect x="144" y="86" width="6" height="30" rx="2" fill="#78350F" />
-    <circle cx="62" cy="46" r="8" fill="#FDBA74" />
-    <path d="M55 44C55 38 60 36 65 36C70 36 71 40 71 44" fill="#78350F" />
-    <path d="M52 60C52 54 56 52 62 52C68 52 72 54 72 60V78H52V60Z" fill="#7C3AED" />
-    <circle cx="138" cy="46" r="8" fill="#FDBA74" />
-    <path d="M131 44C131 38 136 36 141 36C146 36 147 40 147 44" fill="#0F172A" />
-    <path d="M128 60C128 54 132 52 138 52C144 52 148 54 148 60V78H128V60Z" fill="#059669" />
-    <rect x="74" y="24" width="26" height="16" rx="5" fill="#FFFFFF" stroke="#7C3AED" strokeWidth="1.2" />
-    <path d="M80 40L84 45L86 40H80Z" fill="#FFFFFF" />
-    <rect x="78" y="29" width="18" height="2" rx="1" fill="#7C3AED" />
-    <rect x="78" y="34" width="12" height="2" rx="1" fill="#DDD6FE" />
-    <rect x="104" y="24" width="26" height="16" rx="5" fill="#FFFFFF" stroke="#059669" strokeWidth="1.2" />
-    <path d="M120 40L116 45L114 40H120Z" fill="#FFFFFF" />
-    <rect x="108" y="29" width="18" height="2" rx="1" fill="#059669" />
-    <rect x="108" y="34" width="14" height="2" rx="1" fill="#A7F3D0" />
-    <rect x="92" y="68" width="16" height="10" rx="2" fill="#64748B" />
-    <rect x="114" y="70" width="6" height="8" rx="2" fill="#EF4444" />
-  </svg>
-);
-
-const PostJobScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="empPeachBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFF5ED" />
-        <stop offset="100%" stopColor="#FFEAD8" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#empPeachBackdrop)" stroke="#FED7AA" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#FDBA74" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="45" y="22" width="75" height="52" rx="6" fill="#FFFFFF" stroke="#1B4FDF" strokeWidth="1.5" />
-    <rect x="45" y="22" width="75" height="12" rx="6" fill="#1B4FDF" />
-    <rect x="75" y="74" width="15" height="10" fill="#94A3B8" />
-    <rect x="65" y="84" width="35" height="4" rx="2" fill="#64748B" />
-    <rect x="52" y="40" width="35" height="4" rx="2" fill="#1E293B" />
-    <rect x="52" y="47" width="45" height="3" rx="1.5" fill="#94A3B8" />
-    <rect x="52" y="53" width="28" height="3" rx="1.5" fill="#CBD5E1" />
-    <rect x="52" y="60" width="20" height="8" rx="3" fill="#059669" />
-    <circle cx="145" cy="48" r="9" fill="#FDBA74" />
-    <path d="M137 46C137 40 142 38 147 38C152 38 153 42 153 46" fill="#1E293B" />
-    <path d="M135 64C135 58 139 56 145 56C151 56 155 58 155 64V86H135V64Z" fill="#2563EB" />
-    <circle cx="106" cy="30" r="10" fill="#1B4FDF" />
-    <path d="M106 24V36M100 30H112" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-  </svg>
-);
-
-const CandidatePoolScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="empPurpleBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F5F3FF" />
-        <stop offset="100%" stopColor="#EDE9FE" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#empPurpleBackdrop)" stroke="#DDD6FE" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#C4B5FD" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <g transform="translate(30, 24)">
-      <rect x="0" y="0" width="42" height="48" rx="6" fill="#FFFFFF" stroke="#8B5CF6" strokeWidth="1.5" />
-      <circle cx="21" cy="16" r="8" fill="#EDE9FE" stroke="#7C3AED" strokeWidth="1.5" />
-      <rect x="8" y="28" width="26" height="3" rx="1.5" fill="#4C1D95" />
-      <rect x="11" y="34" width="20" height="2.5" rx="1" fill="#94A3B8" />
-      <circle cx="34" cy="40" r="5" fill="#059669" />
-    </g>
-    <g transform="translate(80, 24)">
-      <rect x="0" y="0" width="42" height="48" rx="6" fill="#FFFFFF" stroke="#3B82F6" strokeWidth="1.5" />
-      <circle cx="21" cy="16" r="8" fill="#EFF6FF" stroke="#1D4ED8" strokeWidth="1.5" />
-      <rect x="8" y="28" width="26" height="3" rx="1.5" fill="#1E293B" />
-      <rect x="11" y="34" width="20" height="2.5" rx="1" fill="#94A3B8" />
-      <circle cx="34" cy="40" r="5" fill="#059669" />
-    </g>
-    <circle cx="152" cy="46" r="9" fill="#FDBA74" />
-    <path d="M144 44C144 38 149 36 154 36C159 36 160 44 160 44" fill="#0F172A" />
-    <path d="M142 62C142 56 146 54 152 54C158 54 162 56 162 62V86H142V62Z" fill="#7C3AED" />
-    <circle cx="64" cy="76" r="14" fill="#FFFFFF" stroke="#1B4FDF" strokeWidth="2.5" />
-    <path d="M74 86L86 98" stroke="#1B4FDF" strokeWidth="3.5" strokeLinecap="round" />
-  </svg>
-);
-
-const PipelineScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="empTealBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#F0FDF4" />
-        <stop offset="100%" stopColor="#DCFCE7" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#empTealBackdrop)" stroke="#86EFAC" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#4ADE80" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="30" y="22" width="140" height="82" rx="8" fill="#FFFFFF" stroke="#059669" strokeWidth="1.5" />
-    <rect x="38" y="30" width="36" height="66" rx="4" fill="#F1F5F9" />
-    <rect x="42" y="34" width="20" height="3" rx="1.5" fill="#475569" />
-    <rect x="42" y="42" width="28" height="14" rx="3" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" />
-    <rect x="42" y="60" width="28" height="14" rx="3" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" />
-    <rect x="82" y="30" width="36" height="66" rx="4" fill="#ECFDF5" stroke="#A7F3D0" strokeWidth="1" />
-    <rect x="86" y="34" width="24" height="3" rx="1.5" fill="#059669" />
-    <rect x="86" y="42" width="28" height="18" rx="3" fill="#FFFFFF" stroke="#059669" strokeWidth="1.2" />
-    <circle cx="106" cy="51" r="4" fill="#F59E0B" />
-    <rect x="126" y="30" width="36" height="66" rx="4" fill="#EFF6FF" />
-    <rect x="130" y="34" width="22" height="3" rx="1.5" fill="#1B4FDF" />
-    <rect x="130" y="42" width="28" height="14" rx="3" fill="#FFFFFF" stroke="#93C5FD" strokeWidth="1" />
-  </svg>
-);
-
-const RecruitmentMetricsScene: React.FC<{ width?: number; height?: number }> = ({ width = 140, height = 95 }) => (
-  <svg width={width} height={height} viewBox="0 0 200 138" fill="none">
-    <defs>
-      <linearGradient id="empYellowBackdrop" x1="0" y1="0" x2="200" y2="138" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FEFCE8" />
-        <stop offset="100%" stopColor="#FEF08A" />
-      </linearGradient>
-    </defs>
-    <rect x="10" y="8" width="180" height="120" rx="24" fill="url(#empYellowBackdrop)" stroke="#FDE047" strokeWidth="1" />
-    <path d="M25 116H175" stroke="#FACC15" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-    <rect x="35" y="20" width="130" height="84" rx="8" fill="#FFFFFF" stroke="#EAB308" strokeWidth="1.5" />
-    <rect x="45" y="28" width="45" height="4" rx="2" fill="#0F172A" />
-    <rect x="50" y="70" width="14" height="22" rx="3" fill="#93C5FD" />
-    <rect x="72" y="54" width="14" height="38" rx="3" fill="#3B82F6" />
-    <rect x="94" y="42" width="14" height="50" rx="3" fill="#1B4FDF" />
-    <rect x="116" y="32" width="14" height="60" rx="3" fill="#059669" />
-    <path d="M57 64L79 48L101 38L123 26" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" />
-    <path d="M116 26H124V34" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-interface FeatureItem {
-  id: string;
-  title: string;
-  description: string;
-  Illustration: React.FC<{ width?: number; height?: number }>;
-}
-
-const CANDIDATE_FEATURES: FeatureItem[] = [
+const TESTIMONIALS = [
   {
-    id: 'c1',
-    title: 'Discover Relevant Jobs',
-    description:
-      'Search vacancies across IT, Corporate, Healthcare, Sales, and technical trades in major industrial zones.',
-    Illustration: DiscoverJobsScene,
+    id: '1',
+    name: 'Pooja Deshmukh',
+    role: 'Head of Talent Acquisition & HR',
+    company: 'Apex Corporate Enterprises',
+    rating: 5,
+    avatarInitial: 'PD',
+    avatarBg: '#1B4FDF',
+    image: CORPORATE_PROFESSIONAL_IMG,
+    quote:
+      'We hired 40+ verified candidates across operations and sales in just one week. Direct calling and pre-verified documents saved our HR team hundreds of recruitment hours.',
   },
   {
-    id: 'c2',
-    title: 'Build Candidate Profile',
-    description:
-      'Build a digital resume showcasing your skills, qualifications, trade specialization, and verified work history.',
-    Illustration: CandidateProfileScene,
+    id: '2',
+    name: 'Ramesh Kumar',
+    role: 'Certified Industrial Welder & Fabricator',
+    company: 'Placed at MIDC Heavy Engineering',
+    rating: 5,
+    avatarInitial: 'RK',
+    avatarBg: '#0284C7',
+    image: INDUSTRIAL_WELDER_IMG,
+    quote:
+      'As a welder, getting direct calls from factory owners without any agent charging money changed my life. I got my walk-in interview pass on phone and joined work with great pay!',
   },
   {
-    id: 'c3',
-    title: 'Apply to Jobs Easily',
-    description:
-      'Apply to active postings in seconds using your stored candidate profile without redundant form fills.',
-    Illustration: OneTapApplyScene,
-  },
-  {
-    id: 'c4',
-    title: 'Track Applications & Status',
-    description:
-      'Track your job application status from review to shortlist and direct HR interview scheduling.',
-    Illustration: TrackingScene,
-  },
-];
-
-const EMPLOYER_FEATURES: FeatureItem[] = [
-  {
-    id: 'e1',
-    title: 'Publish Job Opportunities',
-    description:
-      'Post detailed job openings specifying MIDC industrial zones, shift timing, bus facility, and perks.',
-    Illustration: PostJobScene,
-  },
-  {
-    id: 'e2',
-    title: 'Reach Suitable Candidates',
-    description:
-      'Connect directly with pre-screened job seekers across engineering, skilled trades, and management.',
-    Illustration: CandidatePoolScene,
-  },
-  {
-    id: 'e3',
-    title: 'Manage Applications & Pipeline',
-    description:
-      'Review applicant profiles, evaluate resume credentials, shortlist top talent, and update status seamlessly.',
-    Illustration: PipelineScene,
-  },
-  {
-    id: 'e4',
-    title: 'Track Recruitment Activity',
-    description:
-      'Schedule interviews directly, track candidate conversions, and optimize company hiring metrics.',
-    Illustration: RecruitmentMetricsScene,
+    id: '3',
+    name: 'Rahul Sharma',
+    role: 'Senior Software Engineer',
+    company: 'Placed at TechMatrix Inc',
+    rating: 5,
+    avatarInitial: 'RS',
+    avatarBg: '#3B82F6',
+    image: SOFTWARE_ENGINEER_IMG,
+    quote:
+      'Applied directly to verified tech companies and got a call from the engineering manager within 3 hours. Transparent salary packages and zero commission make JobMarket unmatched.',
   },
 ];
 
 export const AboutPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const isEmployer = (currentUser?.role || '').toLowerCase() === 'employer';
-  const activeFeatures = isEmployer ? EMPLOYER_FEATURES : CANDIDATE_FEATURES;
 
   return (
-    <div style={{ backgroundColor: THEME.colors.offWhite, minHeight: '100vh', paddingBottom: '60px' }}>
-      {/* Dynamic Responsive Styles for Mobile vs Desktop Layouts */}
-      <style>{`
-        .about-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          background-color: #F8FAFC;
-          border: 1px solid #CBD5E1;
-          border-radius: 8px;
-          padding: 12px 8px;
-          gap: 4px;
-        }
-        .about-flow-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          width: 100%;
-          max-width: 480px;
-          margin: 0 auto;
-        }
-        .about-flow-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          width: 100%;
-        }
-        .about-dashed-connector {
-          width: 1.5px;
-          height: 24px;
-          border-left: 1.5px dashed #CBD5E1;
-          margin: 12px 0;
-        }
-
-        /* Desktop Layout Adjustments (>= 768px) */
-        @media (min-width: 768px) {
-          .about-flow-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            max-width: 100%;
-            align-items: stretch;
-          }
-          .about-flow-item {
-            background-color: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 6px;
-            padding: 20px 14px;
-            justify-content: flex-start;
-          }
-          .about-dashed-connector {
-            display: none;
-          }
-        }
-      `}</style>
-
-      {/* Top Header Banner (Pure White Background) */}
+    <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', paddingBottom: '40px', boxSizing: 'border-box' }}>
+      {/* Top Fixed Header Nav (Matching Mobile App) */}
       <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
         backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #CBD5E1',
-        padding: '24px 16px 20px',
-        textAlign: 'center'
+        borderBottom: '1px solid #E2E8F0',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '12px'
       }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A', margin: '0 0 16px 0', letterSpacing: '-0.4px' }}>
-            About Us
-          </h1>
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/dashboard');
+            }
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '36px',
+            height: '36px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '8px',
+            color: '#0F172A'
+          }}
+          aria-label="Go Back"
+        >
+          <ArrowLeft size={20} strokeWidth={2.4} />
+        </button>
 
-          {/* Top Banner Stats Card (Single Container matching Mobile Standard) */}
-          <div className="about-stats-grid">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>10M+</div>
-              <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#64748B', marginTop: '2px' }}>Active Users</div>
-            </div>
-
-            <div style={{ textAlign: 'center', borderLeft: '1px solid #CBD5E1' }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>500K+</div>
-              <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#64748B', marginTop: '2px' }}>Jobs Posted</div>
-            </div>
-
-            <div style={{ textAlign: 'center', borderLeft: '1px solid #CBD5E1' }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>2M+</div>
-              <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#64748B', marginTop: '2px' }}>Hires Made</div>
-            </div>
-
-            <div style={{ textAlign: 'center', borderLeft: '1px solid #CBD5E1' }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A' }}>50K+</div>
-              <div style={{ fontSize: '10.5px', fontWeight: '600', color: '#64748B', marginTop: '2px' }}>Companies</div>
-            </div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Building2 size={17} color="#1B4FDF" strokeWidth={2.2} />
+          <span style={{
+            fontSize: '16px',
+            fontWeight: 800,
+            color: '#0F172A',
+            fontFamily: 'Georgia, serif',
+            letterSpacing: '-0.2px'
+          }}>
+            About JobMarket
+          </span>
         </div>
+
+        <div style={{ width: '36px' }} />
       </div>
 
-      {/* Main Body Content Container */}
-      <div style={{ maxWidth: '960px', margin: '20px auto 0', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-        {/* CARD BLOCK 1: OUR MISSION & VISION */}
+        {/* 1. HERO SPOTLIGHT CARD */}
         <div style={{
           backgroundColor: '#FFFFFF',
-          border: '1px solid #CBD5E1',
-          borderRadius: '4px',
-          padding: '20px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <Compass size={20} color="#2563EB" />
-            <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-              Our Mission & Vision
-            </h2>
-          </div>
-          <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0, fontWeight: '400' }}>
-            JobMarket is India's comprehensive, all-in-one job marketplace built for every career domain. We bridge the gap between job seekers and top enterprise employers across all industries — from IT software engineering, corporate management, finance, healthcare, and sales, to skilled technical trades and industrial operations.
-          </p>
-        </div>
-
-        {/* Slate 400 Section Divider Line */}
-        <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '4px 0' }} />
-
-        {/* CARD BLOCK 2: WHY CHOOSE JOBMARKET? (EXACT MATCH FOR MOBILE IMAGE & DESKTOP GRID) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #CBD5E1',
-          borderRadius: '4px',
-          padding: '24px 20px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-          textAlign: 'center'
-        }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto 24px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.3px' }}>
-              Why Choose JobMarket?
-            </h2>
-            <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
-              {isEmployer
-                ? 'Built for enterprise recruiters and employers to hire qualified talent efficiently.'
-                : 'Designed to accelerate your career growth with verified opportunities nationwide.'}
-            </p>
-          </div>
-
-          {/* Storytelling Flow Container */}
-          <div className="about-flow-container">
-            {activeFeatures.map((item, index) => {
-              const isLast = index === activeFeatures.length - 1;
-              const { Illustration } = item;
-              return (
-                <React.Fragment key={item.id}>
-                  <div className="about-flow-item">
-                    {/* Centered Vector Illustration */}
-                    <div style={{ marginBottom: '10px' }}>
-                      <Illustration width={140} height={95} />
-                    </div>
-
-                    {/* Centered Title */}
-                    <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.2px' }}>
-                      {item.title}
-                    </h3>
-
-                    {/* Centered Description */}
-                    <p style={{ fontSize: '12.5px', color: '#64748B', margin: 0, lineHeight: '1.5', maxWidth: '340px' }}>
-                      {item.description}
-                    </p>
-                  </div>
-
-                  {/* Vertical Dashed Line Connector between items on Mobile */}
-                  {!isLast && <div className="about-dashed-connector" />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Slate 400 Section Divider Line */}
-        <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '4px 0' }} />
-
-        {/* CARD BLOCK 3: APPLICATION INFORMATION & LEGAL */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #CBD5E1',
-          borderRadius: '4px',
-          padding: '20px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '14px'
+          gap: '8px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Info size={20} color="#2563EB" />
-            <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-              Application Information
-            </h2>
+          {/* Badge */}
+          <div style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            backgroundColor: '#EFF6FF',
+            padding: '3px 8px',
+            borderRadius: '10px',
+            border: '1px solid #DBEAFE',
+            fontSize: '10.5px',
+            fontWeight: 700,
+            color: '#1B4FDF'
+          }}>
+            Platform Overview
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13.5px' }}>
-            <span style={{ color: '#334155', fontWeight: '600' }}>Platform Version</span>
-            <span style={{ color: '#2563EB', fontWeight: '800' }}>v2.4.0 (Build 108)</span>
-          </div>
+          {/* Title */}
+          <h1 style={{
+            fontSize: '16px',
+            fontWeight: 800,
+            color: '#0F172A',
+            fontFamily: 'Georgia, serif',
+            lineHeight: '22px',
+            letterSpacing: '-0.3px',
+            margin: 0
+          }}>
+            Unlock Your Full Career & Hiring Potential
+          </h1>
 
-          <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
+          {/* Subtitle */}
+          <p style={{
+            fontSize: '12px',
+            fontWeight: 400,
+            color: '#475569',
+            lineHeight: '17px',
+            margin: 0
+          }}>
+            Connecting ambitious job seekers with verified enterprise employers nationwide through direct contact, transparent hiring, and intelligent matching.
+          </p>
 
-          <div
-            onClick={() => navigate('/terms')}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
+          {/* Primary Action Button */}
+          <button
+            onClick={() => navigate('/jobs')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#1B4FDF',
+              borderRadius: '20px',
+              height: '40px',
+              padding: '0 6px 0 16px',
+              border: 'none',
+              cursor: 'pointer',
+              marginTop: '2px',
+              marginBottom: '2px',
+              color: '#FFFFFF'
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <FileText size={16} color="#2563EB" />
-              <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A' }}>Terms of Service & Usage Policies</span>
+            <span style={{ fontSize: '12.5px', fontWeight: 700 }}>Explore 50,000+ Jobs</span>
+            <div style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '13px',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#1B4FDF'
+            }}>
+              <ArrowRight size={13} strokeWidth={2.6} />
             </div>
-            <ChevronRight size={18} color="#94A3B8" />
+          </button>
+
+          {/* Bullets List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '2px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
+                <Check size={11} strokeWidth={3} />
+              </div>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
+                Direct HR calling & instant interview scheduling
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
+                <Check size={11} strokeWidth={3} />
+              </div>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
+                100% verified companies & zero placement fees
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
+                <Check size={11} strokeWidth={3} />
+              </div>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
+                Competitive salaries with transparent company profiles
+              </span>
+            </div>
           </div>
 
-          <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
-
-          <div
-            onClick={() => navigate('/privacy')}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ShieldCheck size={16} color="#2563EB" />
-              <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A' }}>Privacy Policy & Data Security</span>
+          {/* Social Proof Box */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            backgroundColor: '#FAF9F6',
+            border: '1px solid #ECEAE4',
+            borderRadius: '12px',
+            padding: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img src={CORPORATE_PROFESSIONAL_IMG} alt="User" style={{ width: '26px', height: '26px', borderRadius: '13px', border: '1.5px solid #FFFFFF', objectFit: 'cover', zIndex: 3 }} />
+              <img src={INDUSTRIAL_WELDER_IMG} alt="User" style={{ width: '26px', height: '26px', borderRadius: '13px', border: '1.5px solid #FFFFFF', objectFit: 'cover', marginLeft: '-8px', zIndex: 2 }} />
+              <img src={SOFTWARE_ENGINEER_IMG} alt="User" style={{ width: '26px', height: '26px', borderRadius: '13px', border: '1.5px solid #FFFFFF', objectFit: 'cover', marginLeft: '-8px', zIndex: 1 }} />
             </div>
-            <ChevronRight size={18} color="#94A3B8" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>1.2M+ Active Job Seekers</div>
+              <div style={{ fontSize: '10.5px', color: '#1B4FDF', fontWeight: 600, marginTop: '1px' }}>& 50,000+ Verified Hiring Partners</div>
+            </div>
+          </div>
+
+          {/* 3-Metric Stats Row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: '12px',
+            padding: '10px 8px'
+          }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>10M+</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Applications</div>
+            </div>
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#CBD5E1' }} />
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>500K+</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Live Vacancies</div>
+            </div>
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#CBD5E1' }} />
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>98%</div>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Satisfaction</div>
+            </div>
           </div>
         </div>
 
-        {/* Footer Copyright */}
-        <div style={{ textAlign: 'center', paddingTop: '16px', paddingBottom: '8px' }}>
-          <p style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', margin: 0 }}>
-            © 2026 JobMarket Inc. All rights reserved.
+        {/* 2. PLATFORM ARCHITECTURE & CUTTING-EDGE FEATURES */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            backgroundColor: '#EFF6FF',
+            padding: '3px 8px',
+            borderRadius: '10px',
+            border: '1px solid #DBEAFE',
+            fontSize: '10.5px',
+            fontWeight: 700,
+            color: '#1B4FDF'
+          }}>
+            <Zap size={11} color="#1B4FDF" />
+            <span>Platform Architecture</span>
+          </div>
+
+          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: '0 0 2px' }}>
+            Empower Your Journey with Cutting-Edge Features
+          </h2>
+          <p style={{ fontSize: '12px', color: '#475569', lineHeight: '17px', margin: '0 0 4px', fontWeight: 400 }}>
+            Engineered with advanced mobile workflows, bank-grade encryption, and seamless interview tracking.
           </p>
-          <p style={{ fontSize: '11px', color: '#94A3B8', margin: '4px 0 0 0' }}>
-            Empowering Job Seekers & Employers Across All Sectors Nationwide.
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Feature 1 */}
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <PhoneCall size={16} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Direct HR Call & WhatsApp</div>
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: 0 }}>
+                Directly connect with company talent leaders and HR decision makers without intermediary agencies or hidden spam.
+              </p>
+              <div style={{ alignSelf: 'flex-start', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', marginTop: '2px', fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>
+                Instant Access
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <ShieldCheck size={16} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>100% Verified Employers</div>
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: 0 }}>
+                Every company on our platform undergoes strict GSTIN, PAN, and corporate identity verification before posting jobs.
+              </p>
+              <div style={{ alignSelf: 'flex-start', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', marginTop: '2px', fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>
+                Zero Fraud Guarantee
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <Briefcase size={16} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>500+ Industry Domains</div>
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: 0 }}>
+                Opportunities spanning Software Engineering, AI, Healthcare, Finance, Skilled Technical Trades, Sales, and Logistics.
+              </p>
+              <div style={{ alignSelf: 'flex-start', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', marginTop: '2px', fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>
+                All Career Levels
+              </div>
+            </div>
+
+            {/* Feature 4 */}
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <Lock size={16} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Enterprise Data Privacy</div>
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: 0 }}>
+                AES-256 encrypted candidate profiles and digital resumes. Your sensitive contact data is shared only when you apply.
+              </p>
+              <div style={{ alignSelf: 'flex-start', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', marginTop: '2px', fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>
+                AES-256 Encrypted
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. SOCIAL IMPACT & TESTIMONIALS */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            backgroundColor: '#EFF6FF',
+            padding: '3px 8px',
+            borderRadius: '10px',
+            border: '1px solid #DBEAFE',
+            fontSize: '10.5px',
+            fontWeight: 700,
+            color: '#1B4FDF'
+          }}>
+            <Users size={11} color="#1B4FDF" />
+            <span>Social Impact & Stories</span>
+          </div>
+
+          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: 0 }}>
+            Real Candidates. Real Recruiters. Real Results.
+          </h2>
+
+          {/* Trust Rating Bar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: '#FAF9F6',
+            border: '1px solid #ECEAE4',
+            borderRadius: '10px',
+            padding: '7px 10px'
+          }}>
+            <div style={{ display: 'flex', gap: '2px' }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} size={13} color="#1B4FDF" fill="#1B4FDF" />
+              ))}
+            </div>
+            <span style={{ fontSize: '11px', color: '#475569' }}>
+              <strong style={{ color: '#0F172A' }}>4.9/5 Rating</strong> based on 50,000+ reviews
+            </span>
+          </div>
+
+          {/* Testimonial List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+            {TESTIMONIALS.map((t) => (
+              <div key={t.id} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <Quote size={14} />
+                </div>
+                <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16.5px', fontStyle: 'italic', margin: 0 }}>
+                  "{t.quote}"
+                </p>
+
+                <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {t.image ? (
+                    <img src={t.image} alt={t.name} style={{ width: '30px', height: '30px', borderRadius: '15px', border: '1.5px solid #BFDBFE', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '30px', height: '30px', borderRadius: '15px', backgroundColor: t.avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '11px', fontWeight: 800 }}>
+                      {t.avatarInitial}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>{t.name}</div>
+                    <div style={{ fontSize: '10.5px', fontWeight: 600, color: '#1B4FDF' }}>{t.role}</div>
+                    <div style={{ fontSize: '10px', color: '#64748B' }}>{t.company}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. AWARDS & INDUSTRY RECOGNITION */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Award size={18} color="#1B4FDF" />
+            <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: 0 }}>
+              Awards & Recognition
+            </h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginTop: '2px' }}>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textAlign: 'center' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '15px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', marginBottom: '4px' }}>
+                <ShieldCheck size={18} />
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A' }}>ISO 27001</div>
+              <div style={{ fontSize: '9px', fontWeight: 600, color: '#1B4FDF' }}>Information Security</div>
+            </div>
+
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textAlign: 'center' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '15px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', marginBottom: '4px' }}>
+                <Building2 size={18} />
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A' }}>Startup India</div>
+              <div style={{ fontSize: '9px', fontWeight: 600, color: '#1B4FDF' }}>DPIIT Recognized</div>
+            </div>
+
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textAlign: 'center' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '15px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', marginBottom: '4px' }}>
+                <Award size={18} />
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A' }}>Top Platform</div>
+              <div style={{ fontSize: '9px', fontWeight: 600, color: '#1B4FDF' }}>Hiring Excellence 2026</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. CALL TO ACTION BANNER */}
+        <div style={{
+          backgroundColor: '#1B4FDF',
+          borderRadius: '20px',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '6px',
+          boxShadow: '0 4px 12px rgba(27, 79, 223, 0.25)'
+        }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+            Ready to Accelerate Your Career?
+          </h2>
+          <p style={{ fontSize: '11.5px', color: '#DBEAFE', lineHeight: '16px', margin: '0 0 4px', maxWidth: '380px' }}>
+            Join over 1.2 million professionals and 50,000 verified employers discovering the future of direct hiring today.
           </p>
+
+          <button
+            onClick={() => navigate('/jobs')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#FFFFFF',
+              padding: '8px 16px',
+              borderRadius: '18px',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#1B4FDF',
+              fontSize: '12.5px',
+              fontWeight: 700
+            }}
+          >
+            <span>Browse All Open Jobs</span>
+            <ArrowRight size={14} color="#1B4FDF" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* 6. APP INFO & FOOTER */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+            <Info size={16} color="#1B4FDF" />
+            <h3 style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Application Information
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}>
+            <span style={{ fontSize: '11.5px', color: '#475569' }}>Platform Version</span>
+            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>v2.4.0 (Build 112)</span>
+          </div>
+
+          <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}>
+            <span style={{ fontSize: '11.5px', color: '#475569' }}>Platform Status</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#EFF6FF', padding: '2px 6px', borderRadius: '6px' }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '2.5px', backgroundColor: '#1B4FDF' }} />
+              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>Operational 99.99%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Note */}
+        <div style={{ textAlign: 'center', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+            © 2026 JobMarket Technologies Inc. All rights reserved.
+          </div>
+          <div style={{ fontSize: '10px', color: '#94A3B8', lineHeight: '14px' }}>
+            Empowering job seekers & enterprises with seamless, direct, and zero-fee hiring across India.
+          </div>
         </div>
 
       </div>
     </div>
   );
 };
-
-export default AboutPage;

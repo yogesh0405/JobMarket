@@ -11,51 +11,29 @@ import {
   ActivityIndicator,
   StatusBar,
   Keyboard,
+  ImageBackground,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Mail,
-  Lock,
-  Building2,
-  User as UserIcon,
-  Phone,
-  CheckCircle2,
-  ArrowRight,
+  ArrowLeft,
   Eye,
   EyeOff,
-  HelpCircle,
   Briefcase,
-  FileText,
-  Wrench,
+  User as UserIcon,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { COLORS } from '../../constants/theme';
 import { API_BASE_URL } from '../../api/client';
 import { signupSchema } from '../../utils/validators';
 import { handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
-
-WebBrowser.maybeCompleteAuthSession();
+import { GoogleGLogo } from './components/GoogleGLogo';
 
 interface Props {
   navigation: any;
   route?: any;
 }
-
-// Custom Google G Logo SVG
-const GoogleGLogo: React.FC<{ size?: number }> = ({ size = 18 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-    <Path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-    <Path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-    <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-  </Svg>
-);
 
 export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
@@ -98,41 +76,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     };
   }, []);
 
-  const handleGoogleSignUp = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const clientId = '324729375491-viu62s7s3l3m9o4be0geuv68t4j589id.apps.googleusercontent.com';
-      const redirectUri = `${API_BASE_URL}/api/v1/auth/google/callback`;
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=openid%20email%20profile&prompt=select_account`;
-      const deepLinkReturn = makeRedirectUri({
-        scheme: 'jobmarket',
-        path: 'oauth',
-      });
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, deepLinkReturn);
-
-      if (result.type === 'success' && result.url) {
-        const rawParams = result.url.includes('#') ? result.url.split('#')[1] : (result.url.includes('?') ? result.url.split('?')[1] : '');
-        const params = new URLSearchParams(rawParams);
-        const accessToken = params.get('access_token');
-        const idToken = params.get('id_token');
-
-        if (accessToken || idToken) {
-          await loginWithGoogle({ 
-            accessToken: accessToken || undefined, 
-            idToken: idToken || undefined, 
-            role 
-          });
-        } else {
-          setError('Google registration completed without access token.');
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google Registration failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleSignUp = () => {
+    setError(null);
+    navigation.navigate('GoogleAuth', { role });
   };
 
   const handleSignup = async () => {
@@ -180,108 +126,122 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     }
   };
 
+  const safeTopPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
+  ) + 8;
+  const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(keyboardPadding + 40, 80) }]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        automaticallyAdjustKeyboardInsets={true}
-        showsVerticalScrollIndicator={false}
+      <View
+        style={[
+          styles.mainWrapper,
+          {
+            paddingTop: safeTopPadding,
+            paddingBottom: safeBottomPadding + keyboardPadding,
+          },
+        ]}
       >
-        {/* TOP BRAND HEADER SECTION (Primary Blue) */}
-        <View style={[styles.brandHeader, { paddingTop: Math.max(insets.top + 8, 24) }]}>
-          {/* Logo & Enterprise Certification Badge + Back / Help Button */}
-          <View style={styles.brandTopRow}>
-            <View style={styles.logoTitleRow}>
-              <View style={styles.logoSquare}>
-                <JobMarketLogoSvg size={32} />
-              </View>
-              <View style={styles.titleBadgeColumn}>
-                <Text style={styles.brandTitleText}>JobMarket</Text>
-                <View style={styles.enterprisePill}>
-                  <CheckCircle2 size={11} color="#34D399" />
-                  <Text style={styles.enterprisePillText}>ENTERPRISE CERTIFIED</Text>
+        {/* SINGLE UNIFIED OUTER CARD */}
+        <View style={styles.unifiedCard}>
+          {/* TOP HERO BANNER IMAGE (FIXED) */}
+          <View style={styles.heroImageContainer}>
+            <ImageBackground
+              source={require('../../../assets/auth_group_banner.jpg')}
+              style={styles.heroImage}
+              resizeMode="cover"
+            >
+              <LinearGradient
+                colors={['rgba(15, 23, 42, 0.05)', 'rgba(15, 23, 42, 0.6)', 'rgba(15, 23, 42, 0.92)']}
+                style={styles.heroGradient}
+              >
+                <View style={styles.heroTextContainer}>
+                  <Text style={styles.heroHeadline}>Work together. Grow with ease.</Text>
+                  <Text style={styles.heroSubheadline}>
+                    Connecting skilled talent with leading enterprises across India.
+                  </Text>
                 </View>
-              </View>
-            </View>
+              </LinearGradient>
+            </ImageBackground>
           </View>
 
-          {/* Headline Text */}
-          <Text style={styles.heroHeadlineText}>
-            Where skilled talent meets the factory floor.
-          </Text>
-
-          {/* 3 Metric Stat Glass Cards Row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>42K+</Text>
-              <Text style={styles.statLabelText}>Workers Placed</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>860+</Text>
-              <Text style={styles.statLabelText}>Plants Hiring</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statNumberText}>36</Text>
-              <Text style={styles.statLabelText}>Districts</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* BOTTOM FORM SHEET CARD (Solid White with Curved Top Corners) */}
-        <View style={styles.whiteSheetCard}>
-          {/* Drag Handle Bar Indicator */}
-          <View style={styles.dragHandleBar} />
-
-          {/* Title & Subtitle */}
-          <Text style={styles.sheetTitle}>Create your new account</Text>
-          <Text style={styles.sheetSubtitle}>
-            {role === 'candidate' ? 'Candidate & job seeker registration' : 'Recruiter & company workspace setup'}
-          </Text>
-
-          {/* Segmented Role Switcher: Employer vs Employee */}
-          <View style={styles.roleSegmentContainer}>
+          {/* SCROLLABLE FORM SECTION */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollableFormArea}
+            contentContainerStyle={styles.cardBody}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Back Navigation Button */}
             <TouchableOpacity
-              activeOpacity={0.85}
-              style={[styles.roleSegmentTab, role === 'employer' && styles.roleSegmentTabActive]}
-              onPress={() => setRole('employer')}
+              style={styles.backButton}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate('EmployerLogin');
+                }
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
             >
-              <Briefcase size={16} color={role === 'employer' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
-                Employer
-              </Text>
+              <ArrowLeft size={22} color="#0F172A" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={[styles.roleSegmentTab, role === 'candidate' && styles.roleSegmentTabActive]}
-              onPress={() => setRole('candidate')}
-            >
-              <UserIcon size={16} color={role === 'candidate' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
-                Employee
+            {/* Heading */}
+            <Text style={styles.welcomeHeading}>Create Account</Text>
+
+            {/* Subtitle & Sign in Link */}
+            <View style={styles.signupPromptRow}>
+              <Text style={styles.promptText}>Already have an account? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('EmployerLogin', { initialRole: role })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.signupLinkText}>Sign in</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Role Switcher (Candidate vs Employer) */}
+            <View style={styles.roleSegmentContainer}>
+              <TouchableOpacity
+                style={[styles.roleSegmentTab, role === 'candidate' && styles.roleSegmentTabActive]}
+                onPress={() => setRole('candidate')}
+                activeOpacity={0.8}
+              >
+                <UserIcon size={14} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
+                  Candidate
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roleSegmentTab, role === 'employer' && styles.roleSegmentTabActive]}
+                onPress={() => setRole('employer')}
+                activeOpacity={0.8}
+              >
+                <Briefcase size={14} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
+                  Employer
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {error ? <ErrorBanner message={error} style={{ marginBottom: 13 }} /> : null}
+
+            {/* Input: Full Name */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Full Name<Text style={{ color: '#EF4444' }}>*</Text>
               </Text>
-            </TouchableOpacity>
-          </View>
-
-          {error ? <ErrorBanner message={error} style={{ marginBottom: 14 }} /> : null}
-
-          {/* Name Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Full name<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <UserIcon size={18} color="#94A3B8" />
               <TextInput
                 style={styles.textInput}
                 placeholder="Ramesh Sharma"
@@ -293,15 +253,12 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 }}
               />
             </View>
-          </View>
 
-          {/* Email Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Official email address<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <Mail size={18} color="#94A3B8" />
+            {/* Input: Email Address */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Email Address<Text style={{ color: '#EF4444' }}>*</Text>
+              </Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="candidate@email.com"
@@ -315,15 +272,12 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 keyboardType="email-address"
               />
             </View>
-          </View>
 
-          {/* Phone Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Mobile phone number<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <Phone size={18} color="#94A3B8" />
+            {/* Input: Mobile Phone Number */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Mobile Phone Number<Text style={{ color: '#EF4444' }}>*</Text>
+              </Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="9876543210"
@@ -338,17 +292,14 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 }}
               />
             </View>
-          </View>
 
-          {/* Role specific inputs */}
-          {role === 'employer' ? (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>
-                  Company name<Text style={{ color: '#EF4444' }}>*</Text>
-                </Text>
-                <View style={styles.inputBox}>
-                  <Building2 size={18} color="#94A3B8" />
+            {/* Role specific inputs */}
+            {role === 'employer' ? (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Company / Factory Name<Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
                   <TextInput
                     style={styles.textInput}
                     placeholder="Tata Motors Ltd"
@@ -357,12 +308,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                     onChangeText={setCompanyName}
                   />
                 </View>
-              </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>GSTIN / Business Registration (Optional)</Text>
-                <View style={styles.inputBox}>
-                  <FileText size={18} color="#94A3B8" />
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>GSTIN / Business Registration (Optional)</Text>
                   <TextInput
                     style={styles.textInput}
                     placeholder="27AAAAA0000A1Z5"
@@ -372,13 +320,10 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                     onChangeText={setGstNumber}
                   />
                 </View>
-              </View>
-            </>
-          ) : (
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Trade / Skill Specialization (Optional)</Text>
-              <View style={styles.inputBox}>
-                <Wrench size={18} color="#94A3B8" />
+              </>
+            ) : (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Trade / Skill Specialization (Optional)</Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="CNC Operator / Turner / Welder"
@@ -387,123 +332,103 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   onChangeText={setTradeSpecialization}
                 />
               </View>
-            </View>
-          )}
-
-          {/* Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Account password<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <Lock size={18} color="#94A3B8" />
-              <TextInput
-                style={styles.textInput}
-                placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(t) => {
-                  setPassword(t);
-                  if (error) setError(null);
-                }}
-                onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Confirm Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Confirm password<Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <View style={styles.inputBox}>
-              <Lock size={18} color="#94A3B8" />
-              <TextInput
-                style={styles.textInput}
-                placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={(t) => {
-                  setConfirmPassword(t);
-                  if (error) setError(null);
-                }}
-                onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {showConfirmPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Primary CTA Button: Create Account -> */}
-          <TouchableOpacity
-            style={styles.primarySignUpBtn}
-            onPress={handleSignup}
-            disabled={loading}
-            activeOpacity={0.88}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.primarySignUpBtnText}>Create Account</Text>
-                <ArrowRight size={18} color="#FFFFFF" />
-              </>
             )}
-          </TouchableOpacity>
 
-          {/* OR CONTINUE WITH Divider */}
-          <View style={styles.orDividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.orDividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.dividerLine} />
-          </View>
+            {/* Input: Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Account Password<Text style={{ color: '#EF4444' }}>*</Text>
+              </Text>
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordTextInput}
+                  placeholder="••••••••"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(t) => {
+                    setPassword(t);
+                    if (error) setError(null);
+                  }}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? <EyeOff size={18} color="#0F172A" /> : <Eye size={18} color="#0F172A" />}
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          {/* Social / Alternate Registration Row */}
-          <View style={styles.socialButtonsRow}>
+            {/* Input: Confirm Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Confirm Password<Text style={{ color: '#EF4444' }}>*</Text>
+              </Text>
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordTextInput}
+                  placeholder="••••••••"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={(t) => {
+                    setConfirmPassword(t);
+                    if (error) setError(null);
+                  }}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} color="#0F172A" /> : <Eye size={18} color="#0F172A" />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Primary CTA: Create Account Button */}
             <TouchableOpacity
-              style={styles.socialBtn}
+              style={styles.primarySignUpBtn}
+              onPress={handleSignup}
+              disabled={loading}
+              activeOpacity={0.88}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primarySignUpBtnText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* OR Divider */}
+            <View style={styles.orDividerContainer}>
+              <View style={styles.orDividerLine} />
+              <Text style={styles.orDividerText}>OR</Text>
+              <View style={styles.orDividerLine} />
+            </View>
+
+            {/* Google Sign In Button */}
+            <TouchableOpacity
+              style={styles.googleSignInBtn}
               onPress={handleGoogleSignUp}
               disabled={loading}
               activeOpacity={0.8}
             >
-              <GoogleGLogo size={18} />
-              <Text style={styles.socialBtnText}>Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={() => navigation.navigate('VerifyOTP')}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <View style={styles.phoneIconBadge}>
-                <Phone size={12} color="#16A34A" />
+              <View style={styles.googleIconContainer}>
+                <GoogleGLogo size={20} />
               </View>
-              <Text style={styles.socialBtnText}>Phone Number</Text>
+              <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Footer Login Link */}
-          <View style={styles.footerLinkRow}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('EmployerLogin')}>
-              <Text style={styles.footerLinkBold}>Sign in</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
+
     </KeyboardAvoidingView>
   );
 };
@@ -511,307 +436,228 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#F1F5F9',
   },
-  scrollContent: {
-    flexGrow: 1,
-    backgroundColor: COLORS.primary,
-  },
-
-  // Brand Header (Primary Blue)
-  brandHeader: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-  },
-  brandTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logoTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  backBtnSquare: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  mainWrapper: {
+    flex: 1,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoSquare: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  unifiedCard: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 440,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  titleBadgeColumn: {
-    gap: 2,
+  heroImageContainer: {
+    height: 180,
+    width: '100%',
+    backgroundColor: '#0F172A',
+    flexShrink: 0,
   },
-  brandTitleText: {
-    fontSize: 22,
+  scrollableFormArea: {
+    flex: 1,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroGradient: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+  },
+  heroTextContainer: {
+    gap: 4,
+  },
+  heroHeadline: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
+    lineHeight: 25,
   },
-  enterprisePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+  heroSubheadline: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 16,
   },
-  enterprisePillText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  helpCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroHeadlineText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    lineHeight: 28,
-    marginTop: 20,
-    marginBottom: 18,
-    maxWidth: '92%',
-  },
-
-  // 3 Metric Stat Cards
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.22)',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statNumberText: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  statLabelText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#CBD5E1',
-    marginTop: 2,
-  },
-
-  // White Card Sheet
-  whiteSheetCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  cardBody: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
-    marginTop: -4,
+    paddingTop: 14,
+    paddingBottom: 24,
   },
-  dragHandleBar: {
-    width: 36,
-    height: 4,
-    backgroundColor: '#CBD5E1',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+    paddingRight: 10,
+    marginBottom: 8,
   },
-  sheetTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+  welcomeHeading: {
+    fontSize: 23,
+    fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.4,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    marginBottom: 4,
   },
-  sheetSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+  signupPromptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  promptText: {
+    fontSize: 12.5,
     color: '#64748B',
-    marginTop: 2,
-    marginBottom: 16,
+    fontWeight: '400',
   },
-
-  // Role Segmented Selector
+  signupLinkText: {
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
   roleSegmentContainer: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 3,
-    marginBottom: 18,
+    borderRadius: 10,
+    padding: 2.5,
+    marginBottom: 14,
   },
   roleSegmentTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 40,
-    borderRadius: 6,
+    gap: 5,
+    paddingVertical: 6.5,
+    borderRadius: 8,
   },
   roleSegmentTabActive: {
     backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   roleSegmentTabText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#475569',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
   },
   roleSegmentTabTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '700',
   },
-
-  // Form Inputs
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 13,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 6,
-  },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 48,
-    gap: 10,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 5,
   },
   textInput: {
+    backgroundColor: '#F6F4EE',
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+    fontSize: 13.5,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6F4EE',
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+  },
+  passwordTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13.5,
     color: '#0F172A',
-    paddingVertical: 0,
-    margin: 0,
+    fontWeight: '500',
   },
-
-  // Primary Sign Up Button
+  eyeIconButton: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   primarySignUpBtn: {
-    flexDirection: 'row',
+    backgroundColor: COLORS.primary,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    height: 50,
-    borderRadius: 12,
+    marginTop: 4,
+    marginBottom: 14,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-    marginTop: 8,
+    shadowRadius: 5,
+    elevation: 2,
   },
   primarySignUpBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
-
-  // OR CONTINUE WITH Divider
-  orDividerRow: {
+  orDividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
     gap: 10,
+    marginBottom: 14,
   },
-  dividerLine: {
+  orDividerLine: {
     flex: 1,
     height: 1,
     backgroundColor: '#E2E8F0',
   },
   orDividerText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 10.5,
+    fontWeight: '600',
     color: '#94A3B8',
     letterSpacing: 0.8,
   },
-
-  // Social Buttons
-  socialButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  socialBtn: {
-    flex: 1,
+  googleSignInBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
     height: 46,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 23,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  socialBtnText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
+  googleIconContainer: {
+    marginRight: 8,
   },
-  phoneIconBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Footer Link
-  footerLinkRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  footerText: {
-    fontSize: 13.5,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  footerLinkBold: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: COLORS.primary,
+  googleSignInBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
   },
 });

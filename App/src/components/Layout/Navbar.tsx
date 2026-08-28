@@ -229,7 +229,7 @@ export const Navbar: React.FC = () => {
                   )}
 
                   {/* Security & Sessions for ALL Logged In Users */}
-                  <Link to="/dashboard?tab=security" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/security" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -415,7 +415,7 @@ export const Navbar: React.FC = () => {
                       </button>
                     </>
                   ) : null}
-                  <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=security')}>
+                  <button className="dropdown-item" onClick={() => navigate('/security')}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />

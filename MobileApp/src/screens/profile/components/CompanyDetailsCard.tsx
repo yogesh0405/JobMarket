@@ -19,7 +19,7 @@ import {
   MapPin,
   ExternalLink,
 } from 'lucide-react-native';
-import { RADIUS } from '../../../constants/theme';
+import { RADIUS, COLORS } from '../../../constants/theme';
 
 interface CompanyDetailsCardProps {
   company: any;
@@ -81,102 +81,90 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company 
 
   return (
     <View style={styles.cardContainer}>
-      <Text style={styles.cardTitle}>Company Details & Verification</Text>
-
-      {/* Divider */}
-      <View style={styles.divider} />
+      <Text style={styles.cardTitle}>Company Details</Text>
 
       <View style={styles.detailsList}>
-
         {/* Plant Location & Address */}
         {fullLocation && fullLocation.trim() ? (
-          <View style={styles.detailRow}>
-            <MapPin size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Plant Address & Location</Text>
-              <Text style={styles.detailValue}>{fullLocation.trim()}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Plant Address & Location</Text>
+            <View style={[styles.fieldValueBox, styles.fieldValueBoxMultiline]}>
+              <Text style={styles.fieldValueTextMultiline}>{fullLocation.trim()}</Text>
             </View>
           </View>
         ) : null}
 
         {/* Legal Type */}
         {companyType ? (
-          <View style={styles.detailRow}>
-            <Building2 size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Company Legal Type</Text>
-              <Text style={styles.detailValue}>{companyType}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Company Legal Type</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>{companyType}</Text>
             </View>
           </View>
         ) : null}
 
         {/* Company Size */}
         {companySize ? (
-          <View style={styles.detailRow}>
-            <Users size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Company Size</Text>
-              <Text style={styles.detailValue}>{companySize}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Company Size</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>{companySize}</Text>
             </View>
           </View>
         ) : null}
 
         {/* Founded Year */}
         {foundedYear ? (
-          <View style={styles.detailRow}>
-            <Calendar size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Founded Year</Text>
-              <Text style={styles.detailValue}>{foundedYear}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Founded Year</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>{foundedYear}</Text>
             </View>
           </View>
         ) : null}
 
         {/* GST Registration Number */}
         {gstNumber && gstNumber.trim() ? (
-          <View style={styles.detailRow}>
-            <FileText size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>GST Registration Number</Text>
-              <Text style={[styles.detailValue, styles.monoText]}>{gstNumber.trim()}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>GST Registration Number</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={[styles.fieldValueText, styles.monoText]} numberOfLines={1}>{gstNumber.trim()}</Text>
             </View>
           </View>
         ) : null}
 
         {/* Official HR Email */}
         {email && email.trim() ? (
-          <View style={styles.detailRow}>
-            <Mail size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Official HR Email</Text>
-              <Text style={styles.detailValue}>{email.trim()}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Official HR Email</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>{email.trim()}</Text>
             </View>
           </View>
         ) : null}
 
         {/* Helpline Phone */}
         {phone && phone.trim() ? (
-          <View style={styles.detailRow}>
-            <Phone size={16} color="#64748B" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Helpline Phone Number</Text>
-              <Text style={styles.detailValue}>{phone.trim()}</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Helpline Phone Number</Text>
+            <View style={styles.fieldValueBox}>
+              <Text style={styles.fieldValueText} numberOfLines={1}>{phone.trim()}</Text>
             </View>
           </View>
         ) : null}
 
-        {/* Official Website - ONLY shown if website is provided by company */}
+        {/* Official Website */}
         {website && website.trim() ? (
-          <TouchableOpacity activeOpacity={0.8} onPress={handleOpenWebsite} style={styles.detailRow}>
-            <Globe size={16} color="#2563EB" />
-            <View style={styles.detailTextWrap}>
-              <Text style={styles.detailLabel}>Official Website</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Official Website</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleOpenWebsite} style={styles.fieldValueBox}>
               <View style={styles.websiteLinkRow}>
                 <Text style={styles.websiteLinkText} numberOfLines={1}>{website.trim()}</Text>
                 <ExternalLink size={13} color="#2563EB" />
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         ) : null}
       </View>
     </View>
@@ -188,63 +176,73 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 14,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 6,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 6,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.2,
+    marginBottom: 12,
   },
   detailsList: {
-    gap: 14,
-    marginTop: 8,
+    gap: 10,
   },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+  fieldGroup: {
+    gap: 5,
   },
-  detailTextWrap: {
-    flex: 1,
-  },
-  detailLabel: {
+  fieldLabel: {
     fontSize: 11.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#475569',
   },
-  detailValue: {
-    fontSize: 13.5,
-    fontWeight: '700',
+  fieldValueBox: {
+    backgroundColor: COLORS.softWarmBg,
+    borderWidth: 1,
+    borderColor: COLORS.softWarmBorder,
+    borderRadius: 12,
+    height: 42,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  fieldValueText: {
+    fontSize: 12.5,
+    fontWeight: '500',
     color: '#0F172A',
-    marginTop: 1,
+  },
+  fieldValueBoxMultiline: {
+    height: 'auto',
+    minHeight: 52,
+    paddingVertical: 10,
+  },
+  fieldValueTextMultiline: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#0F172A',
+    lineHeight: 16,
   },
   monoText: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.5,
     color: '#1E40AF',
+    fontWeight: '700',
   },
   websiteLinkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 1,
+    justifyContent: 'space-between',
   },
   websiteLinkText: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#2563EB',
     textDecorationLine: 'underline',
   },

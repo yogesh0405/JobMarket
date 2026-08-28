@@ -111,6 +111,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const scrollViewRef = useRef<ScrollView>(null);
   const [previewImageModal, setPreviewImageModal] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (visible && !loadingMessages) {
@@ -122,14 +123,22 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
     const showSub = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 50);
     });
 
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
     return () => {
       showSub.remove();
+      hideSub.remove();
     };
   }, []);
 
@@ -138,7 +147,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   const canSend = (replyMessage.trim().length > 0 || !!selectedAttachment) && !sendingReply;
 
   return (
-    <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.modalContainer} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
         {/* Top Header Bar */}
@@ -166,12 +175,12 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={0}
         >
           {loadingMessages ? (
             <View style={styles.loadingStateWrapper}>
-              <ActivityIndicator size="large" color="#6366F1" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingStateText}>Loading conversation...</Text>
             </View>
           ) : (
@@ -223,7 +232,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                     <View style={styles.supportMsgRow}>
                       <View style={styles.supportBubble}>
                         <View style={styles.supportHeaderTitleRow}>
-                          <Headphones size={13} color="#2186FF" strokeWidth={2.2} />
+                          <Headphones size={13} color={COLORS.primary} strokeWidth={2.2} />
                           <Text style={styles.supportAgentName}>
                             {msg.senderName || 'Support Team'}
                           </Text>
@@ -278,7 +287,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
             </Modal>
           )}
 
-          <View style={[styles.inputBarOuterContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={[styles.inputBarOuterContainer, { paddingBottom: isKeyboardVisible ? 0 : (Platform.OS === 'ios' ? insets.bottom : 6) }]}>
             {selectedAttachment ? (
               <View style={styles.attachmentPreviewStrip}>
                 <Text style={styles.attachmentPreviewText} numberOfLines={1}>
@@ -301,20 +310,29 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                 <Paperclip size={20} color="#94A3B8" strokeWidth={2} />
               </TouchableOpacity>
 
-              {/* Text Input with 'Enter Message' placeholder */}
+              {/* Text Input with 'Enter Message' placeholder (Standard Text type, not password, non-scrollable) */}
               <TextInput
-                style={[styles.textInput, { maxHeight: 90 }]}
+                style={styles.textInput}
                 placeholder="Enter Message"
                 placeholderTextColor="#94A3B8"
                 value={replyMessage}
                 onChangeText={setReplyMessage}
+                secureTextEntry={false}
+                keyboardType="default"
+                autoCapitalize="sentences"
+                autoCorrect={true}
+                multiline={false}
+                returnKeyType="send"
+                onSubmitEditing={() => {
+                  if (canSend) onSendReply();
+                }}
+                blurOnSubmit={false}
                 onFocus={() => {
                   setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 60);
                 }}
-                multiline
               />
 
-              {/* Direct Send Icon Button on Right (Matching Image) */}
+              {/* Direct Send Icon Button on Right */}
               <TouchableOpacity
                 activeOpacity={0.75}
                 style={styles.sendIconButton}
@@ -323,9 +341,9 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 {sendingReply ? (
-                  <ActivityIndicator size="small" color="#6366F1" />
+                  <ActivityIndicator size="small" color={COLORS.primary} />
                 ) : (
-                  <Send size={20} color={canSend ? '#6366F1' : '#94A3B8'} />
+                  <Send size={20} color={canSend ? COLORS.primary : '#94A3B8'} />
                 )}
               </TouchableOpacity>
             </View>
@@ -347,10 +365,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 12,
+    borderBottomColor: COLORS.border,
+    gap: 10,
   },
   backBtn: {
     width: 36,
@@ -371,13 +389,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: COLORS.textPrimary,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     letterSpacing: -0.2,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+    fontSize: 11.5,
+    color: COLORS.textSecondary,
+    marginTop: 1,
   },
   statusPill: {
     paddingHorizontal: 6,
@@ -392,7 +411,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontSize: 9.5,
-    fontWeight: '800',
+    fontWeight: '700',
     textTransform: 'uppercase',
   },
   statusPillTextOpen: {
@@ -404,86 +423,94 @@ const styles = StyleSheet.create({
 
   /* Messages Scroll View */
   messagesContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 14,
+    paddingTop: 10,
   },
 
-  /* Centered Date / Time Stamp (Matching Reference Image) */
+  /* Centered Date / Time Stamp */
   dateStampContainer: {
     alignItems: 'center',
-    marginVertical: 14,
+    marginVertical: 12,
   },
   dateStampText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '400',
+    fontSize: 10.5,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+    backgroundColor: COLORS.softWarmBg,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.softWarmBorder,
   },
 
-  /* Outbound User Message Styles (Matching Reference Image) */
+  /* Outbound User Message Styles */
   userMsgWrapper: {
     alignSelf: 'flex-end',
     alignItems: 'flex-end',
-    marginBottom: 12,
+    marginBottom: 10,
     maxWidth: '82%',
   },
   userBubble: {
-    backgroundColor: '#2186FF', // Vibrant reference blue
-    borderRadius: 22,
-    paddingVertical: 13,
-    paddingHorizontal: 18,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
   },
   userBubbleText: {
-    fontSize: 14.5,
-    color: '#FFFFFF',
-    lineHeight: 20,
+    fontSize: 12,
+    color: COLORS.textWhite,
+    lineHeight: 17,
     fontWeight: '400',
   },
   userBubbleTimeRow: {
     alignSelf: 'flex-end',
-    marginTop: 4,
+    marginTop: 3,
   },
   userBubbleTimeText: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 9.5,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
 
-  /* Inbound Support Message Styles (Matching Reference Image) */
+  /* Inbound Support Message Styles */
   supportMsgRow: {
     alignSelf: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 10,
     maxWidth: '82%',
   },
   supportBubble: {
-    backgroundColor: '#EEF2F6', // Soft cool gray-blue from reference
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.softWarmBg,
+    borderWidth: 1,
+    borderColor: COLORS.softWarmBorder,
+    borderRadius: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
   },
   supportHeaderTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 5,
+    marginBottom: 3,
   },
   supportAgentName: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#2186FF',
+    color: COLORS.primary,
   },
   supportBubbleText: {
-    fontSize: 14.5,
-    color: '#0F172A',
-    lineHeight: 20,
+    fontSize: 12,
+    color: COLORS.textPrimary,
+    lineHeight: 17,
     fontWeight: '400',
   },
   supportBubbleTimeRow: {
     alignSelf: 'flex-end',
-    marginTop: 4,
+    marginTop: 3,
   },
   supportBubbleTimeText: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: 9.5,
+    color: COLORS.textMuted,
     fontWeight: '500',
   },
 
@@ -493,35 +520,35 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   imageAttachmentWrapperLeft: {
-    marginTop: 8,
+    marginTop: 6,
   },
   imageAttachmentCard: {
-    width: 240,
-    height: 140,
-    borderRadius: 16,
-    backgroundColor: '#E2E8F0',
+    width: 220,
+    height: 130,
+    borderRadius: 14,
+    backgroundColor: COLORS.border,
   },
 
-  /* Bottom Input Bar (Matching Reference Image) */
+  /* Bottom Input Bar */
   inputBarOuterContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    borderTopColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingTop: 6,
   },
   attachmentPreviewStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   attachmentPreviewText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#DC2626',
     fontWeight: '600',
     flex: 1,
@@ -529,39 +556,39 @@ const styles = StyleSheet.create({
   capsuleInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 26,
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 7,
-    minHeight: 48,
-    shadowColor: '#000000',
-    shadowOpacity: 0.03,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 7 : 4,
+    minHeight: 42,
+    shadowColor: COLORS.textPrimary,
+    shadowOpacity: 0.02,
     shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
+    shadowRadius: 2,
     elevation: 1,
   },
   clipButton: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    marginRight: 4,
   },
   textInput: {
     flex: 1,
-    fontSize: 14.5,
-    color: '#0F172A',
-    paddingVertical: 6,
+    fontSize: 12.5,
+    color: COLORS.textPrimary,
+    paddingVertical: 4,
     paddingHorizontal: 4,
-    minHeight: 36,
+    minHeight: 32,
   },
   sendIconButton: {
-    padding: 6,
+    padding: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
+    marginLeft: 4,
   },
 
   /* Fullscreen Image Lightbox Modal */
@@ -577,9 +604,9 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 48 : 24,
     right: 20,
     zIndex: 99,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -593,12 +620,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-    gap: 12,
+    gap: 10,
   },
   loadingStateText: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: '500',
-    color: '#64748B',
+    color: COLORS.textSecondary,
   },
 });
 

@@ -2,33 +2,34 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
   Platform,
   Switch,
   StatusBar,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import {
   ArrowLeft,
-  Lock,
   KeyRound,
-  ChevronRight,
+  Laptop,
+  Smartphone,
+  Send,
+  Eye,
+  EyeOff,
   ShieldCheck,
-  ShieldAlert,
-  CheckCircle2,
   LogOut,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
-import { saveTokens } from '../../utils/secureStorage';
 import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
-import { COLORS, RADIUS } from '../../constants/theme';
-import { SecuritySessionsSection } from './components/SecuritySessionsSection';
+import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { COLORS } from '../../constants/theme';
 import { SecurityPasswordModals } from './components/SecurityPasswordModals';
 
 interface Props {
@@ -46,6 +47,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     !!(user?.is_two_factor_enabled || (user as any)?.two_factor_enabled || (user as any)?.twoFactorEnabled)
   );
 
+  // Reset Password Inline Form States
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,8 +56,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
 
+  // OTP Modal State
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState(user?.email || '');
   const [otpCode, setOtpCode] = useState('');
@@ -64,6 +66,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
 
+  // Confirm Modal State
   const [confirmModalConfig, setConfirmModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -85,6 +88,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     onConfirm: () => {},
   });
 
+  // Success Modal State
   const [successModalConfig, setSuccessModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -256,7 +260,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        setIsChangePassModalOpen(false);
         setSuccessModalConfig({
           visible: true,
           title: 'Password Updated Successfully !',
@@ -327,85 +330,295 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+  const topInset = Math.max(
+    insets.top || 0,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
+  );
+  const bottomInset = Math.max(insets.bottom || 0, 16);
 
   return (
     <View style={styles.container}>
-      {/* Top Header Banner matching Reference */}
-      <View style={[styles.headerBannerWhite, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+
+      {/* Top Header matching Reference Image */}
+      <View style={[styles.headerBanner, { paddingTop: topInset + 6 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.backButton}
+          style={styles.circleBackBtn}
+          activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color="#0F172A" strokeWidth={2.4} />
+          <ArrowLeft size={20} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={styles.headerTitleTextDark}>Security & Privacy</Text>
-        <View style={{ width: 28 }} />
+        <Text style={styles.headerTitle}>Security & Sessions</Text>
       </View>
+      <View style={styles.headerDivider} />
 
       <KeyboardAwareScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomInset + 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* SECTION 1: LOGIN & CREDENTIALS */}
-        <View style={styles.sectionGroup}>
-          <Text style={styles.sectionCategoryTitle}>Login & Credentials</Text>
-
-          {/* Row 1: Change Password */}
-          <TouchableOpacity
-            style={styles.settingRow}
-            onPress={() => {
-              setPasswordError(null);
-              setIsChangePassModalOpen(true);
-            }}
-            activeOpacity={0.65}
-          >
-            <View style={styles.settingIconCol}>
-              <Lock size={20} color="#334155" strokeWidth={1.8} />
-            </View>
-            <View style={styles.settingRowTextContent}>
-              <Text style={styles.settingRowTitle}>Change password</Text>
-              <Text style={styles.settingRowSub}>
-                Update current password using existing account credentials
+        {/* CARD 1: RESET PASSWORD (MATCHING REFERENCE LAYOUT) */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <Text style={styles.cardTitle}>Reset Password</Text>
+              <Text style={styles.cardSubtitle}>
+                Update your credentials for secure ledger access.
               </Text>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <View style={styles.cardHeaderIconBox}>
+              <KeyRound size={20} color="#64748B" />
+            </View>
+          </View>
+
+          {passwordError ? (
+            <ErrorBanner message={passwordError} style={{ marginBottom: 14 }} />
+          ) : null}
+
+          {/* Current Password Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Current Password</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="Enter current password"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry={!showCurrentPass}
+                value={currentPassword}
+                onChangeText={(t) => {
+                  setCurrentPassword(t);
+                  if (passwordError) setPasswordError(null);
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowCurrentPass(!showCurrentPass)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                {showCurrentPass ? (
+                  <EyeOff size={18} color="#64748B" />
+                ) : (
+                  <Eye size={18} color="#64748B" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* New Password Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>New Password</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="Min 6 characters"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry={!showNewPass}
+                value={newPassword}
+                onChangeText={(t) => {
+                  setNewPassword(t);
+                  if (passwordError) setPasswordError(null);
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowNewPass(!showNewPass)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                {showNewPass ? (
+                  <EyeOff size={18} color="#64748B" />
+                ) : (
+                  <Eye size={18} color="#64748B" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Confirm New Password Field */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Confirm New Password</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="Re-enter new password"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry={!showConfirmPass}
+                value={confirmPassword}
+                onChangeText={(t) => {
+                  setConfirmPassword(t);
+                  if (passwordError) setPasswordError(null);
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPass(!showConfirmPass)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                {showConfirmPass ? (
+                  <EyeOff size={18} color="#64748B" />
+                ) : (
+                  <Eye size={18} color="#64748B" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Save New Password Button */}
+          <TouchableOpacity
+            style={styles.primarySaveBtn}
+            onPress={handleChangePassword}
+            disabled={passwordLoading}
+            activeOpacity={0.85}
+          >
+            {passwordLoading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.primarySaveBtnText}>Save New Password</Text>
+            )}
           </TouchableOpacity>
 
-          <View style={styles.rowDividerLine} />
+          {/* Soft Divider */}
+          <View style={styles.cardInnerDivider} />
 
-          {/* Row 2: Forgot Password */}
-          <TouchableOpacity
-            style={styles.settingRow}
-            onPress={handleOpenResetConfirm}
-            activeOpacity={0.65}
-          >
-            <View style={styles.settingIconCol}>
-              <KeyRound size={20} color="#334155" strokeWidth={1.8} />
-            </View>
-            <View style={styles.settingRowTextContent}>
-              <Text style={styles.settingRowTitle}>Forgot password?</Text>
-              <Text style={styles.settingRowSub}>
-                Send a 6-digit OTP to your registered email to reset password
+          {/* Forgot Password Section */}
+          <View style={styles.forgotSection}>
+            <Text style={styles.forgotTitle}>Forgot your password?</Text>
+            <Text style={styles.forgotSubtitle}>
+              We'll email a secure one-time reset code to your registered email.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.outlineResetBtn}
+              onPress={handleOpenResetConfirm}
+              activeOpacity={0.75}
+            >
+              <Send size={15} color="#0F172A" />
+              <Text style={styles.outlineResetBtnText}>Forgot password</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* CARD 2: ACTIVE SESSIONS (MATCHING REFERENCE LAYOUT) */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <Text style={styles.cardTitle}>Active Sessions</Text>
+              <Text style={styles.cardSubtitle}>
+                Devices currently signed in to your account.
               </Text>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <View style={styles.rowDividerLine} />
-
-          {/* Row 3: Two-Factor Authentication */}
-          <View style={styles.settingRow}>
-            <View style={styles.settingIconCol}>
-              <ShieldCheck size={20} color="#334155" strokeWidth={1.8} />
+            <View style={styles.cardHeaderIconBox}>
+              <Laptop size={20} color="#64748B" />
             </View>
-            <View style={styles.settingRowTextContent}>
-              <Text style={styles.settingRowTitle}>Two-factor authentication (2FA)</Text>
-              <Text style={styles.settingRowSub}>
+          </View>
+
+          {/* Sessions List */}
+          {sessionsLoading ? (
+            <View style={styles.sessionLoadingBox}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.sessionLoadingText}>Checking active devices...</Text>
+            </View>
+          ) : sessions.length === 0 ? (
+            <View style={styles.sessionPillItem}>
+              <View style={styles.sessionIconWrapper}>
+                <Smartphone size={18} color="#475569" />
+              </View>
+              <View style={styles.sessionInfoCol}>
+                <Text style={styles.sessionDeviceName}>Current Device</Text>
+                <Text style={styles.sessionMetaText}>Active Now</Text>
+              </View>
+              <View style={styles.thisDeviceBadge}>
+                <Text style={styles.thisDeviceBadgeText}>This Device</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.sessionsListContainer}>
+              {sessions.map((sess, idx) => {
+                const isCurrent = Boolean(sess.isCurrent || sess.is_current);
+                const dType = (sess?.deviceType || sess?.device_type || '').toLowerCase();
+                const osStr = (sess?.os || '').toLowerCase();
+                const isMobile =
+                  dType === 'mobile' ||
+                  dType === 'tablet' ||
+                  osStr.includes('android') ||
+                  osStr.includes('ios');
+
+                const DeviceIcon = isMobile ? Smartphone : Laptop;
+                const rawName =
+                  sess.deviceName ||
+                  sess.device_name ||
+                  (isMobile ? 'Mobile App' : 'Desktop Browser');
+                const cleanName =
+                  rawName.replace(/\s*\([^)]*JobMarket[^)]*\)/gi, '').trim() || rawName;
+
+                const activeTimeStr = isCurrent
+                  ? `Active Now · IP: ${sess.ipAddress || sess.ip || '198.51.100.24'}`
+                  : sess.lastUsedAt
+                  ? `Last active ${new Date(sess.lastUsedAt).toLocaleDateString('en-IN', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}`
+                  : 'Last active recently';
+
+                return (
+                  <View key={sess.id || idx} style={styles.sessionPillItem}>
+                    <View style={styles.sessionIconWrapper}>
+                      <DeviceIcon size={18} color="#475569" strokeWidth={1.8} />
+                    </View>
+                    <View style={styles.sessionInfoCol}>
+                      <Text style={styles.sessionDeviceName}>
+                        {isCurrent ? `Current Device (${cleanName})` : cleanName}
+                      </Text>
+                      <Text style={styles.sessionMetaText}>{activeTimeStr}</Text>
+                    </View>
+
+                    {isCurrent ? (
+                      <View style={styles.thisDeviceBadge}>
+                        <Text style={styles.thisDeviceBadgeText}>This Device</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => handleRevokeSession(sess.id, cleanName)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        activeOpacity={0.7}
+                      >
+                        <LogOut size={16} color="#94A3B8" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Log Out Other Devices Action */}
+          <TouchableOpacity
+            style={styles.logoutOthersBtnRow}
+            onPress={handleTerminateOtherSessions}
+            disabled={isTerminatingOtherSessions}
+            activeOpacity={0.7}
+          >
+            <LogOut size={15} color="#EF4444" strokeWidth={2} />
+            <Text style={styles.logoutOthersBtnText}>
+              {isTerminatingOtherSessions
+                ? 'Logging out other devices...'
+                : 'Log out of all other devices'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* CARD 3: TWO-FACTOR AUTHENTICATION */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <Text style={styles.cardTitle}>Two-Factor Authentication</Text>
+              <Text style={styles.cardSubtitle}>
                 {twoFactorEnabled
-                  ? 'Active: Every new login requires a 6-digit verification code sent to your email.'
+                  ? 'Active: Verification code sent to email on new device login.'
                   : 'Require an email verification code on new device login attempts.'}
               </Text>
             </View>
@@ -413,44 +626,31 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               value={twoFactorEnabled}
               onValueChange={handleToggle2FA}
               trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-              thumbColor={twoFactorEnabled ? '#2563EB' : '#94A3B8'}
+              thumbColor={twoFactorEnabled ? COLORS.primary : '#94A3B8'}
             />
           </View>
         </View>
-
-        <View style={styles.sectionSeparator} />
-
-        {/* SECTION 2: ACTIVE SESSIONS */}
-        <View style={styles.sectionGroup}>
-          <SecuritySessionsSection
-            sessions={sessions}
-            sessionsLoading={sessionsLoading}
-            onRevokeSession={handleRevokeSession}
-            onTerminateOtherSessions={handleTerminateOtherSessions}
-            isTerminatingOtherSessions={isTerminatingOtherSessions}
-          />
-        </View>
       </KeyboardAwareScrollView>
 
-      {/* Password & OTP Modals */}
+      {/* OTP Password Reset Modal */}
       <SecurityPasswordModals
-        isChangePassModalOpen={isChangePassModalOpen}
-        setIsChangePassModalOpen={setIsChangePassModalOpen}
-        currentPassword={currentPassword}
-        setCurrentPassword={setCurrentPassword}
-        newPassword={newPassword}
-        setNewPassword={setNewPassword}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        showCurrentPass={showCurrentPass}
-        setShowCurrentPass={setShowCurrentPass}
-        showNewPass={showNewPass}
-        setShowNewPass={setShowNewPass}
-        showConfirmPass={showConfirmPass}
-        setShowConfirmPass={setShowConfirmPass}
-        passwordLoading={passwordLoading}
-        passwordError={passwordError}
-        onChangePassword={handleChangePassword}
+        isChangePassModalOpen={false}
+        setIsChangePassModalOpen={() => {}}
+        currentPassword=""
+        setCurrentPassword={() => {}}
+        newPassword=""
+        setNewPassword={() => {}}
+        confirmPassword=""
+        setConfirmPassword={() => {}}
+        showCurrentPass={false}
+        setShowCurrentPass={() => {}}
+        showNewPass={false}
+        setShowNewPass={() => {}}
+        showConfirmPass={false}
+        setShowConfirmPass={() => {}}
+        passwordLoading={false}
+        passwordError={null}
+        onChangePassword={() => {}}
         isOtpModalOpen={isOtpModalOpen}
         setIsOtpModalOpen={setIsOtpModalOpen}
         resetEmail={resetEmail}
@@ -464,6 +664,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         otpError={otpError}
         onResetWithOtp={handleResetWithOtp}
       />
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         visible={confirmModalConfig.visible}
@@ -478,6 +679,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
         onConfirm={confirmModalConfig.onConfirm}
       />
+
       {/* Success Modal */}
       <SuccessModal
         visible={successModalConfig.visible}
@@ -500,79 +702,227 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  headerBannerWhite: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingTop: 12,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitleTextDark: {
-    fontSize: 16.5,
-    fontWeight: '700',
-    color: '#0F172A',
-    textAlign: 'center',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 100,
-  },
-  sectionGroup: {
-    gap: 2,
-  },
-  sectionCategoryTitle: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    gap: 12,
-  },
-  settingIconCol: {
-    width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingRowTextContent: {
-    flex: 1,
-    gap: 3,
-  },
-  settingRowTitle: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    color: '#0F172A',
-    lineHeight: 20,
-  },
-  settingRowSub: {
-    fontSize: 12,
-    color: '#64748B',
-    lineHeight: 17,
-  },
-  rowDividerLine: {
-    height: 1,
     backgroundColor: '#F8FAFC',
   },
-  sectionSeparator: {
+  headerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    gap: 12,
+  },
+  circleBackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.3,
+  },
+  headerDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginVertical: 16,
+  },
+  scrollContent: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    gap: 12,
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  cardHeaderCol: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    letterSpacing: -0.2,
+    marginBottom: 3,
+  },
+  cardSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 15,
+  },
+  cardHeaderIconBox: {
+    paddingTop: 2,
+  },
+  inputGroup: {
+    marginBottom: 10,
+  },
+  inputLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 5,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7F6F2',
+    borderWidth: 1,
+    borderColor: '#EAE7E0',
+    borderRadius: 12,
+    height: 42,
+    paddingHorizontal: 12,
+  },
+  inputField: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+  primarySaveBtn: {
+    backgroundColor: COLORS.primary,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    marginBottom: 4,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  primarySaveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  cardInnerDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 14,
+  },
+  forgotSection: {
+    gap: 3,
+  },
+  forgotTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  forgotSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    lineHeight: 15,
+    marginBottom: 8,
+  },
+  outlineResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    gap: 6,
+  },
+  outlineResetBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  sessionLoadingBox: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  sessionLoadingText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  sessionsListContainer: {
+    gap: 8,
+    marginBottom: 10,
+  },
+  sessionPillItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7F6F2',
+    borderWidth: 1,
+    borderColor: '#EAE7E0',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  sessionIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sessionInfoCol: {
+    flex: 1,
+  },
+  sessionDeviceName: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 1,
+  },
+  sessionMetaText: {
+    fontSize: 10.5,
+    color: '#64748B',
+  },
+  thisDeviceBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  thisDeviceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#2E7D32',
+  },
+  logoutOthersBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingTop: 6,
+    paddingBottom: 2,
+  },
+  logoutOthersBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

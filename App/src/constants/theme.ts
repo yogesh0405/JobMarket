@@ -26,6 +26,10 @@ export const THEME = {
     surfaceHover: '#F1F5F9',
     border: '#CBD5E1',
     borderLight: '#E2E8F0',
+    softWarmBg: '#FAF9F6',
+    softWarmBorder: '#ECEAE4',
+    offGreenBg: '#FAF9F6',
+    offGreenBorder: '#ECEAE4',
 
     // Typography Neutral Scale
     textPrimary: '#0F172A',

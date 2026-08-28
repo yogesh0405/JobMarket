@@ -54,6 +54,10 @@ export const COLORS = {
   surface: '#FFFFFF',           // Solid White Container Surface
   border: '#E2E8F0',
   borderFocus: PRIMARY_COLOR,
+  softWarmBg: '#FAF9F6',        // Subtle warm / soft cream field & card background
+  softWarmBorder: '#ECEAE4',    // Soft matching border
+  offGreenBg: '#FAF9F6',        // Soft off-green / warm field fill
+  offGreenBorder: '#ECEAE4',    // Soft off-green matching border
 
   // ── Text Colors ─────────────────────────────────────────────────────────
   textPrimary: '#0F172A',

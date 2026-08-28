@@ -970,140 +970,151 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
+  const displayName = currentUser.companyName || currentUser.name || 'Candidate';
+  const tradeDisplay = currentUser.tradeSpecialization || currentUser.headline || 'Industrial Workforce';
+
   return (
-    <div className="profile-page" style={{ paddingTop: 0 }}>
-      <div className="container" style={{ paddingTop: 0 }}>
-        {/* Profile Header Hero Card (Exact Match to Reference UI) */}
+    <div className="profile-page" style={{ paddingTop: '12px', paddingBottom: '40px', background: '#F8FAFC', minHeight: '100vh' }}>
+      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' }}>
+        
+        {/* 1. HEADER PROFILE CARD (MATCHING USER REFERENCE) */}
         <div style={{
-          backgroundColor: '#2563EB',
-          borderRadius: '12px',
-          padding: '20px',
-          color: '#FFFFFF',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '28px',
+          border: '1px solid #E2E8F0',
+          padding: '16px',
           position: 'relative',
-          marginBottom: '14px',
-          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.2)'
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
-              {/* Circular Profile Picture Avatar with Camera Overlay Badge */}
-              <div 
-                onClick={triggerFileInput}
-                style={{
-                  position: 'relative',
-                  width: '74px',
-                  height: '74px',
-                  flexShrink: 0,
-                  cursor: 'pointer'
-                }}
-                title="Click to update photo"
-              >
-                {/* Image Circle (overflow: hidden) */}
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFFFFF',
-                  border: '3px solid #FFFFFF',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#2563EB',
-                  fontSize: '24px',
-                  fontWeight: '800'
-                }}>
-                  {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-                    <img 
-                      src={currentUser.profilePictureUrl} 
-                      alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
-                      referrerPolicy="no-referrer"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    getInitials(currentUser.name)
-                  )}
-                </div>
+          {/* Top Right Edit Button */}
+          <button
+            onClick={openEditModal}
+            style={{
+              position: 'absolute',
+              top: '14px',
+              right: '14px',
+              width: '30px',
+              height: '30px',
+              borderRadius: '15px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              color: '#475569',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+            title="Edit Profile"
+          >
+            <Edit3 size={14} strokeWidth={2} />
+          </button>
 
-                {/* Camera Badge Icon Overlay (In front, zIndex 10, not clipped) */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-2px',
-                  right: '-2px',
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFFFFF',
-                  border: '1.5px solid #2563EB',
-                  color: '#2563EB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  zIndex: 10
-                }}>
-                  <Camera size={13} strokeWidth={2.5} />
-                </div>
-
-                {/* Loading overlay */}
-                {isUploading && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 11
-                  }}>
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Identity Name & Verified Email Details */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
-                    {currentUser.companyName || currentUser.name}
-                  </h1>
-                  <CheckCircle size={18} color="#FFFFFF" fill="#3B82F6" />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#DBEAFE', marginTop: '6px' }}>
-                  <Mail size={14} color="#DBEAFE" />
-                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {currentUser.email}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Top-Right Circular Pencil Edit Button */}
-            <button
-              onClick={openEditModal}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {/* Avatar with Camera Badge */}
+            <div
+              onClick={triggerFileInput}
               style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: '60px',
+                height: '60px',
+                borderRadius: '30px',
+                position: 'relative',
                 cursor: 'pointer',
                 flexShrink: 0
               }}
-              title="Edit Profile"
+              title="Click to update photo"
             >
-              <Edit3 size={18} />
-            </button>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '30px',
+                backgroundColor: '#3D4A3E',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+                fontSize: '18px',
+                fontWeight: '800',
+                letterSpacing: '0.5px',
+                overflow: 'hidden'
+              }}>
+                {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                  <img
+                    src={currentUser.profilePictureUrl}
+                    alt={displayName}
+                    referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  getInitials(displayName)
+                )}
+              </div>
+
+              {/* Camera Badge Icon */}
+              <div style={{
+                position: 'absolute',
+                bottom: '-2px',
+                right: '-2px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '11px',
+                backgroundColor: '#EFF6FF',
+                border: '1.5px solid #FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#1B4FDF',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <Camera size={11} strokeWidth={2.5} />
+              </div>
+
+              {/* Loading overlay */}
+              {isUploading && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '30px',
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Loader2 size={16} color="#FFFFFF" className="animate-spin" />
+                </div>
+              )}
+            </div>
+
+            {/* Info Col */}
+            <div style={{ flex: 1, minWidth: 0, paddingRight: '28px' }}>
+              <div style={{
+                fontSize: '16px',
+                fontWeight: '800',
+                color: '#0F172A',
+                fontFamily: 'Georgia, serif',
+                letterSpacing: '-0.2px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {displayName}
+              </div>
+              <div style={{
+                fontSize: '12px',
+                fontWeight: '500',
+                color: '#64748B',
+                marginTop: '2px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {currentUser.email || '—'}
+              </div>
+            </div>
           </div>
+
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -1113,431 +1124,342 @@ export const ProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* 3-Stat Metric Bar Below Blue Card */}
+        {/* 2. QUICK STATS ROW */}
         <div style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#F8FAFC',
+          borderRadius: '16px',
           border: '1px solid #E2E8F0',
-          borderRadius: '12px',
-          padding: '14px 18px',
+          padding: '10px 0',
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '12px',
-          marginBottom: '20px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+          alignItems: 'center'
         }}>
-          <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+          <div style={{ textAlign: 'center', borderRight: '1px solid #CBD5E1' }}>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
               {experienceList.length}
             </div>
-            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
               Work Exp
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+          <div style={{ textAlign: 'center', borderRight: '1px solid #CBD5E1' }}>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
               {completionPercentage}%
             </div>
-            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
               Completeness
             </div>
           </div>
 
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
               {skillsList.length}
             </div>
-            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
               Key Skills
             </div>
           </div>
         </div>
 
+        {/* 3. PERSONAL DETAILS CARD (EXACT MATCH REFERENCE UI) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '9px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', marginBottom: '2px' }}>
+            Personal Details
+          </h2>
 
-
-        {/* SECTION 1: ABOUT ME & PERSONAL INFORMATION */}
-        <div className="profile-section">
-          <div className="profile-section-header">
-            <div className="profile-section-title-wrap">
-              <div className="icon-box-head icon-box-blue">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <h2>Personal Info & Contact</h2>
+          {/* Full Name */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Full Name</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
+              {displayName}
             </div>
           </div>
-          
-          <div className="profile-section-body">
-            <div className="profile-details-grid">
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Full Name</span>
-                <p className="profile-detail-value">{currentUser.name}</p>
-              </div>
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Headline / Specialty Title</span>
-                <p className="profile-detail-value">{currentUser.headline || 'Not provided'}</p>
-              </div>
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Location / City</span>
-                <p className="profile-detail-value">{currentUser.location || 'Not provided'}</p>
-              </div>
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Registered Email</span>
-                <p className="profile-detail-value">{currentUser.email}</p>
-              </div>
-              <div className="profile-detail-tile">
-                <span className="profile-detail-label">Mobile Phone</span>
-                <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
-              </div>
+
+          {/* Role / Specialization */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Role / Trade Specialization</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
+              {tradeDisplay}
+            </div>
+          </div>
+
+          {/* Registered Email */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Registered Email</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
+              {currentUser.email || '—'}
+            </div>
+          </div>
+
+          {/* Phone / WhatsApp */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Phone / WhatsApp</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
+              {currentUser.phone ? `+91 ${currentUser.phone}` : '—'}
+            </div>
+          </div>
+
+          {/* Home City / Location Base */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Home City / Location Base</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
+              {currentUser.location || '—'}
+            </div>
+          </div>
+
+          {/* Bio & Notes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Professional Bio & Notes</label>
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', minHeight: '52px', padding: '9px 12px', fontSize: '11.5px', fontWeight: '400', color: '#0F172A', lineHeight: '16px' }}>
+              {currentUser.headline || 'No professional bio summary added yet. Tap Edit Profile to add a summary.'}
             </div>
           </div>
         </div>
 
-        {/* SECTION 2: INDUSTRIAL PREFERENCES (Candidate) OR COMPANY DETAILS (Employer) */}
-        {currentUser.role === 'candidate' && (
-          <div className="profile-section">
-            <div className="profile-section-header">
-              <div className="profile-section-title-wrap">
-                <div className="icon-box-head icon-box-emerald">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
+        {/* 4. SKILLS & EXPERTISE CARD */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+            Skills & Expertise
+          </h2>
+
+          {skillsList.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {skillsList.map((s, idx) => (
+                <div key={idx} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '10px', padding: '5px 10px', fontSize: '11px', fontWeight: '600', color: '#0F172A' }}>
+                  {s}
                 </div>
-                <h2>Job & Shift Preferences</h2>
-              </div>
+              ))}
             </div>
-            
-            <div className="profile-section-body">
-              <div className="profile-details-grid">
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Trade Specialization</span>
-                  <p className="profile-detail-value" style={{ color: '#059669' }}>{currentUser.tradeSpecialization || 'Not specified'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Preferred Shift</span>
-                  <p className="profile-detail-value">{currentUser.preferredShift || 'Any Shift'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Bus Transport Required</span>
-                  <p className="profile-detail-value">{currentUser.requiresBus ? 'Yes (Bus Facility Required)' : 'No (Self Transport)'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Hostel Accommodation Required</span>
-                  <p className="profile-detail-value">{currentUser.requiresAccommodation ? 'Yes (Hostel Stay Required)' : 'No (Local Stay)'}</p>
-                </div>
-              </div>
+          ) : (
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
+              No key skills added yet.
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {currentUser.role === 'employer' && (
-          <div className="profile-section">
-            <div className="profile-section-header">
-              <div className="profile-section-title-wrap">
-                <div className="icon-box-head icon-box-emerald">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                </div>
-                <h2>Company Details</h2>
-              </div>
+        {/* 5. WORK EXPERIENCE CARD (VERTICAL TIMELINE) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+            Work Experience
+          </h2>
+
+          {experienceList.length === 0 ? (
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
+              No work experience entries added yet.
             </div>
+          ) : (
+            <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '4px' }}>
+              {/* Continuous vertical line */}
+              <div style={{ position: 'absolute', left: '8px', top: '12px', bottom: '12px', width: '1.5px', backgroundColor: '#CBD5E1' }} />
 
-            <div className="profile-section-body">
-              <div className="profile-details-grid">
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Company Name</span>
-                  <p className="profile-detail-value" style={{ fontSize: '15.5px', color: '#0f172a' }}>{currentUser.companyName || 'Not provided'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">GST Tax Number</span>
-                  <p className="profile-detail-value">{currentUser.gstNumber || 'Not provided'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Recruiter / Contact Person</span>
-                  <p className="profile-detail-value">{currentUser.name}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Official Contact Phone</span>
-                  <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {experienceList.map((item: any, idx: number) => {
+                  const isCurrent = idx === 0;
+                  const itemSkills = Array.isArray(item.skills) ? item.skills : [];
+                  const achievementsList = Array.isArray(item.achievements) ? item.achievements : [];
+                  const durationText = item.duration || '2020 - Present';
+                  const roleCompanyTitle = item.company ? `${item.title || 'Role'} at ${item.company}` : (item.title || 'Role Position');
 
-        {/* SECTION 3: WORK EXPERIENCE TIMELINE */}
-        {currentUser.role === 'candidate' && (
-          <>
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <div className="profile-section-title-wrap">
-                  <div className="icon-box-head icon-box-amber">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M20 7h-3V4a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM9 4h6v3H9V4z"/>
-                    </svg>
-                  </div>
-                  <h2>Work Experience</h2>
-                </div>
-              </div>
-
-              <div className="profile-section-body">
-                {experienceList && experienceList.length > 0 ? (
-                  <div className="timeline-list">
-                    {experienceList.map((exp: any, index: number) => (
-                      <div key={index} className="timeline-item">
-                        <div className="timeline-dot-col">
-                          <div className="timeline-dot" />
-                          <div className="timeline-line" />
-                        </div>
-                        <div className="timeline-card">
-                          <div className="timeline-title-row">
-                            <div>
-                              <h4 className="timeline-title">{exp.title}</h4>
-                              <div className="timeline-subtitle">{exp.company}</div>
-                            </div>
-                            <span className="timeline-date-pill">{exp.duration}</span>
-                          </div>
-                          {exp.description && <p className="timeline-description">{exp.description}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No work experience added yet.</p>
-                    <p style={{ margin: '4px 0 12px 0', fontSize: '12.5px', color: '#64748b' }}>Adding plant or industrial work experience increases recruiter responses by 3x.</p>
-                    <button onClick={() => setExpModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px' }}>
-                      + Add Work Experience
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* SECTION 4: EDUCATION & CERTIFICATIONS */}
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <div className="profile-section-title-wrap">
-                  <div className="icon-box-head icon-box-purple">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/>
-                    </svg>
-                  </div>
-                  <h2>Education & Trade Certs</h2>
-                </div>
-              </div>
-
-              <div className="profile-section-body">
-                {educationList && educationList.length > 0 ? (
-                  <div className="timeline-list">
-                    {educationList.map((edu: any, index: number) => (
-                      <div key={index} className="timeline-item">
-                        <div className="timeline-dot-col">
-                          <div className="timeline-dot" />
-                          <div className="timeline-line" />
-                        </div>
-                        <div className="timeline-card">
-                          <div className="timeline-title-row">
-                            <div>
-                              <h4 className="timeline-title">{edu.degree}</h4>
-                              <div className="timeline-subtitle">{edu.institution}</div>
-                            </div>
-                            <span className="timeline-date-pill">{edu.year}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No education or trade certificates added.</p>
-                    <button onClick={() => setEduModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px', marginTop: '10px' }}>
-                      + Add Education
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* SECTION 5: SKILLS MATRIX */}
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <div className="profile-section-title-wrap">
-                  <div className="icon-box-head">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
-                  </div>
-                  <h2>Skills & Competencies</h2>
-                </div>
-              </div>
-
-              <div className="profile-section-body">
-                {skillsList && skillsList.length > 0 ? (
-                  <div className="skills-grid">
-                    {skillsList.map(s => (
-                      <span key={s} className="skill-chip">
-                        <span>{s}</span>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No skills added yet.</p>
-                    <p style={{ margin: '4px 0 12px 0', fontSize: '12.5px', color: '#64748b' }}>Add at least 5 industrial skills (e.g. MIG Welding, CNC Operating, Fitting) for full profile rank.</p>
-                    <button onClick={() => setSkillsModalOpen(true)} className="btn btn-secondary btn-sm" style={{ borderRadius: '8px' }}>
-                      + Add Industrial Skills
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* SECTION 6: RESUME DOCUMENT */}
-            <div className="profile-section">
-              <div className="profile-section-header">
-                <div className="profile-section-title-wrap">
-                  <div className="icon-box-head icon-box-rose">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                  </div>
-                  <h2>Resume / CV Document</h2>
-                </div>
-              </div>
-
-              <div className="profile-section-body">
-                {(() => {
-                  const resume = currentUser.resume;
-                  if (resume && (resume.name || resume.url)) {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                        <div 
-                          style={{
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            width: '100%', 
-                            padding: '16px', 
-                            background: '#F8FAFC', 
-                            borderRadius: '12px', 
-                            border: '1px solid #E2E8F0',
-                            gap: '12px'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#FFE4E6', color: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #FECDD3' }}>
-                              <FileText size={22} color="#E11D48" />
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '800', color: '#0F172A', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                                {resume.name}
-                              </h4>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                                Verified {(resume.type?.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(resume.name || '')) ? 'Image' : 'PDF'} Document {resume.size ? `• ${resume.size}` : ''}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '8px', borderTop: '1px dashed #CBD5E1' }}>
-                            <button
-                              onClick={() => setPreviewResume(resume)}
-                              className="btn btn-secondary btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '6px', padding: '6px 14px', fontSize: '12.5px', fontWeight: '700' }}
-                            >
-                              <Eye size={14} />
-                              <span>View Document</span>
-                            </button>
-
-                            <button
-                              onClick={handleDeleteResume}
-                              className="btn btn-danger btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '6px', padding: '6px 14px', background: '#EF4444', color: '#FFFFFF', border: 'none', fontSize: '12.5px', fontWeight: '700' }}
-                              disabled={isDeleting}
-                            >
-                              {isDeleting ? (
-                                <Loader2 size={14} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={14} />
-                              )}
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Public Resume Visibility Toggle Box */}
-                        <div 
-                          style={{
-                            background: currentUser.isResumePublic !== false ? '#EFF6FF' : '#F8FAFC',
-                            border: `1.5px solid ${currentUser.isResumePublic !== false ? '#BFDBFE' : '#E2E8F0'}`,
-                            borderRadius: '12px',
-                            padding: '14px 16px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '8px'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                              {currentUser.isResumePublic !== false ? (
-                                <Eye size={18} color="#2563EB" style={{ flexShrink: 0 }} />
-                              ) : (
-                                <Lock size={18} color="#64748B" style={{ flexShrink: 0 }} />
-                              )}
-                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                Public Resume Search Visibility
-                              </h4>
-                            </div>
-
-                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
-                              <input 
-                                type="checkbox"
-                                checked={currentUser.isResumePublic !== false}
-                                onChange={async (e) => {
-                                  const checked = e.target.checked;
-                                  try {
-                                    const res = await updateUser({ isResumePublic: checked });
-                                    if (res.success) {
-                                      showToast(checked ? 'Resume is now public to employers' : 'Resume is now hidden from public search', 'info');
-                                    } else {
-                                      showToast(res.error || 'Failed to update visibility', 'error');
-                                    }
-                                  } catch (err) {
-                                    showToast('Failed to update visibility', 'error');
-                                  }
-                                }}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#2563EB' }}
-                              />
-                              <span style={{ fontSize: '12.5px', fontWeight: 700, color: currentUser.isResumePublic !== false ? '#1D4ED8' : '#64748B' }}>
-                                {currentUser.isResumePublic !== false ? 'Public' : 'Private'}
-                              </span>
-                            </label>
-                          </div>
-
-                          <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: '1.4' }}>
-                            {currentUser.isResumePublic !== false 
-                              ? 'Employers can search and view your resume in the public candidate talent directory.' 
-                              : 'Hidden from public search. Visible only to employers when you apply for their jobs.'}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }
                   return (
-                    <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
-                      <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>No resume document uploaded yet.</p>
-                      <p style={{ margin: '4px 0 14px 0', fontSize: '12.5px', color: '#64748b' }}>Upload your PDF resume to let employers review your trade experience instantly.</p>
-                      <button onClick={() => setResumeModalOpen(true)} className="btn btn-primary btn-sm" style={{ borderRadius: '8px', padding: '8px 18px', background: 'var(--gradient-accent)' }}>
-                        + Upload PDF Resume
-                      </button>
+                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      {/* Node Indicator Dot */}
+                      <div style={{ width: '10px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#0F172A' }} />
+                      </div>
+
+                      {/* Timeline Experience Card */}
+                      <div style={{ flex: 1, backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0F172A' }}>{durationText}</span>
+                          {isCurrent && (
+                            <span style={{ backgroundColor: '#E8F5E9', color: '#2E7D32', padding: '1.5px 6px', borderRadius: '5px', fontSize: '9px', fontWeight: '700' }}>
+                              Current Role
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', marginTop: '1px' }}>
+                          {roleCompanyTitle}
+                        </div>
+
+                        {item.location && (
+                          <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>
+                            {item.location}
+                          </div>
+                        )}
+
+                        {item.description && (
+                          <div style={{ fontSize: '10.5px', color: '#334155', lineHeight: '15px', marginTop: '2px' }}>
+                            {item.description}
+                          </div>
+                        )}
+
+                        {achievementsList.length > 0 && (
+                          <div style={{ marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#0F172A' }}>Key Achievements</span>
+                            {achievementsList.map((ach: string, achIdx: number) => (
+                              <div key={achIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', paddingLeft: '2px' }}>
+                                <span style={{ fontSize: '10px', color: '#1B4FDF', fontWeight: '700' }}>•</span>
+                                <span style={{ fontSize: '10px', color: '#475569', lineHeight: '14px' }}>{ach}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {itemSkills.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '3px' }}>
+                            {itemSkills.map((sk: string, skIdx: number) => (
+                              <span key={skIdx} style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', fontSize: '9.5px', fontWeight: '600', color: '#475569' }}>
+                                {sk}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
-                })()}
+                })}
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
+
+        {/* 6. EDUCATION & QUALIFICATIONS CARD (VERTICAL TIMELINE) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+            Education & Qualifications
+          </h2>
+
+          {educationList.length === 0 ? (
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
+              No education or ITI certificate added yet.
+            </div>
+          ) : (
+            <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '4px' }}>
+              <div style={{ position: 'absolute', left: '8px', top: '12px', bottom: '12px', width: '1.5px', backgroundColor: '#CBD5E1' }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {educationList.map((item: any, idx: number) => {
+                  const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      <div style={{ width: '10px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#0F172A' }} />
+                      </div>
+
+                      <div style={{ flex: 1, backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#0F172A' }}>{yearText}</span>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A' }}>
+                          {item.degree || 'Degree / ITI Certification'}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>
+                          {item.institution || 'Institution / Board'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 7. RESUME & BIO-DATA */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          padding: '14px',
+          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          marginBottom: '16px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+            Resume & Bio-Data
+          </h2>
+
+          {currentUser.resume ? (
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '8px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
+                  <FileText size={16} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentUser.resume.name || 'Candidate_Resume.pdf'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#059669', fontWeight: '600', marginTop: '1px' }}>
+                    ✓ Document Attached
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setPreviewResume(currentUser.resume)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 10px',
+                  backgroundColor: '#1B4FDF',
+                  borderRadius: '14px',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontSize: '10.5px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+              >
+                <span>View PDF</span>
+              </button>
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
+              No resume document attached yet.
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Resume Preview Modal */}
