@@ -267,7 +267,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         .interviews-page-root {
           width: 100%;
           min-height: 100vh;
-          background: #FFFFFF;
+          background: #F8FAFC;
           box-sizing: border-box;
         }
 
@@ -282,14 +282,14 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           box-sizing: border-box;
         }
 
+        /* ── METRICS STRIP (Matches Mobile App 100%) ── */
         .interviews-metrics-bar {
           display: flex;
           align-items: center;
           background-color: #FFFFFF;
-          padding: 14px 20px;
-          border: 1px solid #E2E8F0;
-          border-radius: 0px;
-          margin-bottom: 14px;
+          padding: 12px 16px;
+          border-bottom: 1px solid #E2E8F0;
+          margin-bottom: 10px;
           width: 100%;
           box-sizing: border-box;
         }
@@ -319,37 +319,37 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           background-color: #E2E8F0;
         }
 
+        /* ── TABS & SEARCH BAR (Matches Mobile App 100%) ── */
         .interviews-toolbar-row {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
+          flex-direction: column;
           gap: 10px;
-          margin-bottom: 14px;
+          margin-bottom: 10px;
           width: 100%;
         }
 
         .interviews-tab-strip {
           display: flex;
-          gap: 6px;
+          gap: 10px;
           background-color: #FFFFFF;
-          padding: 4px;
-          border: 1px solid #E2E8F0;
-          border-radius: 0px;
+          padding: 8px 16px;
+          border-bottom: 1px solid #E2E8F0;
+          box-sizing: border-box;
         }
 
         .interviews-tab-btn {
+          flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 8px 14px;
-          border-radius: 0px;
+          padding: 8px 12px;
+          border-radius: 8px;
           font-size: 12.5px;
           font-weight: 600;
           cursor: pointer;
           border: 1px solid transparent;
-          background-color: #F8FAFC;
+          background-color: #F1F5F9;
           color: #64748B;
           transition: all 0.15s ease;
         }
@@ -366,7 +366,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           color: #334155;
           font-size: 10px;
           padding: 1px 6px;
-          border-radius: 2px;
+          border-radius: 10px;
           font-weight: 700;
         }
 
@@ -380,70 +380,73 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           align-items: center;
           background-color: #FFFFFF;
           border: 1px solid #E2E8F0;
-          border-radius: 0px;
-          padding: 8px 12px;
-          min-width: 280px;
-          flex: 0 1 auto;
+          border-radius: 8px;
+          padding: 6px 12px;
+          margin: 0 16px 4px 16px;
+          box-sizing: border-box;
         }
 
+        /* ── INTERVIEW CARD (Exact Mobile App Match: borderRadius: 8, padding: 14) ── */
         .interview-standard-card {
           background-color: #FFFFFF;
           border: 1px solid #E2E8F0;
-          border-radius: 0px;
-          padding: 14px 16px;
+          border-radius: 8px;
+          padding: 14px;
           margin-bottom: 12px;
           width: 100%;
           box-sizing: border-box;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
         }
 
         .interview-rule-divider {
           height: 1px;
           background-color: #94A3B8;
-          margin: 6px 0;
+          margin: 8px 0;
         }
 
-        /* Mobile View Rules: Clean, Solid White, Square Corners */
+        /* Responsive Breakpoints */
+        @media (min-width: 768px) {
+          .interviews-page-root {
+            background: #FFFFFF;
+          }
+          .interviews-metrics-bar {
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            margin-bottom: 14px;
+          }
+          .interviews-toolbar-row {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .interviews-tab-strip {
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 6px;
+          }
+          .interviews-search-input-wrap {
+            margin: 0;
+            min-width: 320px;
+          }
+        }
+
         @media (max-width: 767px) {
           .interviews-mobile-header-wrap {
             display: block;
           }
           .interviews-inner-content {
-            padding: 12px 14px 40px 14px;
-            max-width: 580px;
+            padding: 0 0 40px 0;
           }
-          .interviews-metrics-bar {
-            padding: 10px 12px;
-            margin-bottom: 10px;
-          }
-          .interviews-toolbar-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-            margin-bottom: 10px;
-          }
-          .interviews-tab-strip {
-            width: 100%;
-            padding: 4px;
-          }
-          .interviews-tab-btn {
-            flex: 1;
-            padding: 8px 6px;
-            font-size: 12px;
+          .interview-list-wrap {
+            padding: 12px 16px;
           }
           .interviews-search-input-wrap {
-            width: 100%;
-            min-width: 100%;
-            box-sizing: border-box;
-            padding: 6px 10px;
-          }
-          .interview-standard-card {
-            padding: 12px 14px;
-            margin-bottom: 10px;
+            margin: 0 16px;
           }
         }
       `}</style>
 
-      {/* Mobile Top Header */}
+      {/* Mobile Top Header Bar */}
       <div className="interviews-mobile-header-wrap">
         <MobileHeader
           title="Scheduled Interviews"
@@ -488,8 +491,8 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               className={`interviews-tab-btn ${activeTab === 'upcoming' ? 'active' : ''}`}
               onClick={() => setActiveTab('upcoming')}
             >
-              <CalendarClock size={15} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
-              <span>Upcoming</span>
+              <CalendarClock size={16} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
+              <span>Upcoming Interviews</span>
               {upcomingList.length > 0 && (
                 <span className="interviews-tab-counter">{upcomingList.length}</span>
               )}
@@ -500,7 +503,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               className={`interviews-tab-btn ${activeTab === 'past' ? 'active' : ''}`}
               onClick={() => setActiveTab('past')}
             >
-              <CalendarCheck2 size={15} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
+              <CalendarCheck2 size={16} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
               <span>Past & Evaluated</span>
               {pastList.length > 0 && (
                 <span className="interviews-tab-counter">{pastList.length}</span>
@@ -510,16 +513,16 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
           {/* Search Bar */}
           <div className="interviews-search-input-wrap">
-            <Search size={15} color="#64748B" style={{ marginRight: '6px', flexShrink: 0 }} />
+            <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
             <input
               type="text"
-              placeholder="Search candidate, trade, job..."
+              placeholder="Search by candidate name, trade, job..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 border: 'none',
                 outline: 'none',
-                fontSize: '12.5px',
+                fontSize: '13px',
                 color: '#0F172A',
                 width: '100%',
                 backgroundColor: 'transparent'
@@ -531,360 +534,360 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 onClick={() => setSearchQuery('')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748B' }}
               >
-                <X size={14} />
+                <X size={16} />
               </button>
             )}
           </div>
         </div>
 
         {/* Main List Body */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px 0', color: '#64748B' }}>
-            <div className="spinner" style={{ margin: '0 auto 10px auto' }} />
-            <div style={{ fontSize: '12.5px', fontWeight: 500 }}>Loading interview schedule...</div>
-          </div>
-        ) : filteredList.length === 0 ? (
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '0px',
-            border: '1px solid #E2E8F0',
-            padding: '32px 16px',
-            textAlign: 'center',
-            marginTop: '8px',
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '0px',
-              backgroundColor: '#F1F5F9',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '12px'
-            }}>
-              <Calendar size={28} color="#94A3B8" />
+        <div className="interview-list-wrap">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '50px 0', color: '#64748B' }}>
+              <div className="spinner" style={{ margin: '0 auto 10px auto' }} />
+              <div style={{ fontSize: '13px', fontWeight: 500 }}>Loading interview schedule...</div>
             </div>
-            <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
-              {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
-            </h3>
-            <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '17px' }}>
-              {activeTab === 'upcoming'
-                ? 'When you schedule interviews from candidate applications, they will appear here.'
-                : 'Completed and historic interviews with candidate ratings will be listed here.'}
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-            {filteredList.map((item) => {
-              const days = getDaysFromToday(item.interview_date);
-              const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
-              const isPostponed = item.interview_status === 'postponed';
+          ) : filteredList.length === 0 ? (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              padding: '32px 16px',
+              textAlign: 'center',
+              marginTop: '10px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '32px',
+                backgroundColor: '#F1F5F9',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '14px'
+              }}>
+                <Calendar size={32} color="#94A3B8" />
+              </div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
+              </h3>
+              <p style={{ fontSize: '12.5px', color: '#64748B', margin: 0, lineHeight: '18px' }}>
+                {activeTab === 'upcoming'
+                  ? 'When you schedule interviews from candidate applications, they will appear here.'
+                  : 'Completed and historic interviews with candidate ratings will be listed here.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+              {filteredList.map((item) => {
+                const days = getDaysFromToday(item.interview_date);
+                const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
+                const isPostponed = item.interview_status === 'postponed';
 
-              return (
-                <div
-                  key={item.application_id}
-                  className="interview-standard-card"
-                >
-                  {/* Header Row: Date & Countdown Tag */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
-                      <Calendar size={13} color="#1764E8" />
-                      <span>{formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}</span>
-                    </div>
+                return (
+                  <div
+                    key={item.application_id}
+                    className="interview-standard-card"
+                  >
+                    {/* Header Row: Date & Countdown Tag (Exact Mobile App Typography) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                        <Calendar size={13} color="#1764E8" />
+                        <span>{formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}</span>
+                      </div>
 
-                    {isCompleted ? (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        backgroundColor: '#DCFCE7',
-                        color: '#16A34A',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: '0px'
-                      }}>
-                        <CheckCircle2 size={12} color="#16A34A" />
-                        <span>Interviewed</span>
-                      </span>
-                    ) : isPostponed ? (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        backgroundColor: '#FEF3C7',
-                        color: '#D97706',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: '0px'
-                      }}>
-                        <Clock3 size={12} color="#D97706" />
-                        <span>Postponed</span>
-                      </span>
-                    ) : days === 0 ? (
-                      <span style={{
-                        backgroundColor: '#FEF2F2',
-                        color: '#DC2626',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        padding: '2px 7px',
-                        borderRadius: '0px'
-                      }}>
-                        TODAY
-                      </span>
-                    ) : days === 1 ? (
-                      <span style={{
-                        backgroundColor: '#EFF6FF',
-                        color: '#1764E8',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        padding: '2px 7px',
-                        borderRadius: '0px'
-                      }}>
-                        TOMORROW
-                      </span>
-                    ) : (
-                      <span style={{
-                        backgroundColor: '#F1F5F9',
-                        color: '#475569',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: '0px'
-                      }}>
-                        {days > 0 ? `${days}d left` : 'Upcoming'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Mandated Clean Divider: height: 1, backgroundColor: #94A3B8, margin: 6px 0 */}
-                  <div className="interview-rule-divider" />
-
-                  {/* Candidate Info Block */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}>
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '0px',
-                      backgroundColor: '#1764E8',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '16px',
-                      fontWeight: 800,
-                      flexShrink: 0
-                    }}>
-                      {(item.candidate_name || 'C').charAt(0).toUpperCase()}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
-                          {item.candidate_name}
+                      {isCompleted ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#DCFCE7',
+                          color: '#16A34A',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          <CheckCircle2 size={12} color="#16A34A" />
+                          <span>Interviewed</span>
                         </span>
-                        {item.trade_specialization && (
-                          <span style={{
-                            backgroundColor: '#EFF6FF',
-                            color: '#1764E8',
-                            fontSize: '10.5px',
-                            fontWeight: 700,
-                            padding: '1px 5px',
-                            borderRadius: '0px'
-                          }}>
-                            {item.trade_specialization}
+                      ) : isPostponed ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#FEF3C7',
+                          color: '#D97706',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          <Clock3 size={12} color="#D97706" />
+                          <span>Postponed</span>
+                        </span>
+                      ) : days === 0 ? (
+                        <span style={{
+                          backgroundColor: '#FEF2F2',
+                          color: '#DC2626',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          TODAY
+                        </span>
+                      ) : days === 1 ? (
+                        <span style={{
+                          backgroundColor: '#EFF6FF',
+                          color: '#1764E8',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          TOMORROW
+                        </span>
+                      ) : (
+                        <span style={{
+                          backgroundColor: '#F1F5F9',
+                          color: '#475569',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          {days > 0 ? `${days}d left` : 'Upcoming'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Section Separator */}
+                    <div className="interview-rule-divider" />
+
+                    {/* Candidate Info Block (Exact Mobile App Sizing) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '22px',
+                        backgroundColor: '#1764E8',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '17px',
+                        fontWeight: 800,
+                        flexShrink: 0
+                      }}>
+                        {(item.candidate_name || 'C').charAt(0).toUpperCase()}
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
+                            {item.candidate_name}
                           </span>
+                          {item.trade_specialization && (
+                            <span style={{
+                              backgroundColor: '#EFF6FF',
+                              color: '#1764E8',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: '4px'
+                            }}>
+                              {item.trade_specialization}
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                          Applied for: <strong style={{ fontWeight: 700, color: '#1E293B' }}>{item.job_title}</strong>
+                        </div>
+
+                        {item.candidate_phone && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: '#64748B', fontWeight: 500, marginTop: '3px' }}>
+                            <Phone size={12} color="#64748B" />
+                            <span>{item.candidate_phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Venue / Location Row (Exact Mobile App Sizing) */}
+                    {item.venue_address && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '6px',
+                        backgroundColor: '#F8FAFC',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        marginTop: '4px',
+                        fontSize: '11.5px',
+                        color: '#475569',
+                        lineHeight: '16px'
+                      }}>
+                        <MapPin size={13} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <span>{item.venue_address}</span>
+                      </div>
+                    )}
+
+                    {/* Star Rating Display if Interviewed */}
+                    {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
+                      <div style={{
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FEF3C7',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        marginTop: '6px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={13}
+                              color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
+                              fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
+                            />
+                          ))}
+                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#B45309', marginLeft: '4px' }}>
+                            ({item.interview_rating}/5)
+                          </span>
+                        </div>
+                        {item.interview_feedback && (
+                          <div style={{ fontSize: '11px', color: '#78350F', marginTop: '3px', fontStyle: 'italic' }}>
+                            "{item.interview_feedback}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Postponed Reason Display */}
+                    {isPostponed && item.postponed_reason && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FCD34D',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        marginTop: '6px',
+                        fontSize: '11px',
+                        color: '#B45309',
+                        fontWeight: 600
+                      }}>
+                        <AlertCircle size={12} color="#D97706" />
+                        <span>Rescheduled: {item.postponed_reason}</span>
+                      </div>
+                    )}
+
+                    {/* Section Separator */}
+                    <div className="interview-rule-divider" />
+
+                    {/* Card Action Footer (Exact Mobile App Buttons) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {item.candidate_phone && (
+                          <a
+                            href={`tel:${item.candidate_phone}`}
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '6px',
+                              backgroundColor: '#EFF6FF',
+                              color: '#1764E8',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textDecoration: 'none'
+                            }}
+                            title="Call Candidate"
+                          >
+                            <Phone size={14} />
+                          </a>
+                        )}
+                        {item.candidate_phone && (
+                          <a
+                            href={`https://wa.me/${item.candidate_phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '6px',
+                              backgroundColor: '#E9F9EF',
+                              color: '#16A34A',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textDecoration: 'none'
+                            }}
+                            title="WhatsApp Candidate"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                              <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
+                            </svg>
+                          </a>
+                        )}
+                        {item.venue_address && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMap(item.venue_address, item.maps_link)}
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '6px',
+                              backgroundColor: '#F1F5F9',
+                              color: '#334155',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            title="Google Maps Venue"
+                          >
+                            <Navigation2 size={14} />
+                          </button>
                         )}
                       </div>
 
-                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                        Applied for: <strong style={{ fontWeight: 700, color: '#1E293B' }}>{item.job_title}</strong>
-                      </div>
-
-                      {item.candidate_phone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: '#64748B', marginTop: '2px' }}>
-                          <Phone size={11} color="#64748B" />
-                          <span>{item.candidate_phone}</span>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetailModal(item)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#1764E8',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '7px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease'
+                        }}
+                      >
+                        <span>{isCompleted ? 'View Evaluation' : 'Evaluate & Update'}</span>
+                        <ChevronRight size={13} />
+                      </button>
                     </div>
                   </div>
-
-                  {/* Venue / Location Row */}
-                  {item.venue_address && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '6px',
-                      backgroundColor: '#F8FAFC',
-                      border: '1px solid #E2E8F0',
-                      padding: '6px 8px',
-                      borderRadius: '0px',
-                      marginTop: '6px',
-                      fontSize: '11.5px',
-                      color: '#475569',
-                      lineHeight: '15px'
-                    }}>
-                      <MapPin size={12} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
-                      <span>{item.venue_address}</span>
-                    </div>
-                  )}
-
-                  {/* Star Rating Display if Interviewed */}
-                  {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
-                    <div style={{
-                      backgroundColor: '#FFFBEB',
-                      border: '1px solid #FEF3C7',
-                      padding: '6px 8px',
-                      borderRadius: '0px',
-                      marginTop: '6px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={13}
-                            color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
-                            fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
-                          />
-                        ))}
-                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#B45309', marginLeft: '4px' }}>
-                          ({item.interview_rating}/5)
-                        </span>
-                      </div>
-                      {item.interview_feedback && (
-                        <div style={{ fontSize: '11.5px', color: '#78350F', marginTop: '2px', fontStyle: 'italic' }}>
-                          "{item.interview_feedback}"
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Postponed Reason Display */}
-                  {isPostponed && item.postponed_reason && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      backgroundColor: '#FFFBEB',
-                      border: '1px solid #FCD34D',
-                      padding: '6px 8px',
-                      borderRadius: '0px',
-                      marginTop: '6px',
-                      fontSize: '11.5px',
-                      color: '#B45309',
-                      fontWeight: 600
-                    }}>
-                      <AlertCircle size={12} color="#D97706" />
-                      <span>Rescheduled: {item.postponed_reason}</span>
-                    </div>
-                  )}
-
-                  {/* Mandated Clean Divider: height: 1, backgroundColor: #94A3B8, margin: 6px 0 */}
-                  <div className="interview-rule-divider" />
-
-                  {/* Card Action Footer */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {item.candidate_phone && (
-                        <a
-                          href={`tel:${item.candidate_phone}`}
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '0px',
-                            backgroundColor: '#FFFFFF',
-                            border: '1px solid #CBD5E1',
-                            color: '#1764E8',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textDecoration: 'none'
-                          }}
-                          title="Call Candidate"
-                        >
-                          <Phone size={13} />
-                        </a>
-                      )}
-                      {item.candidate_phone && (
-                        <a
-                          href={`https://wa.me/${item.candidate_phone.replace(/[^0-9]/g, '')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '0px',
-                            backgroundColor: '#FFFFFF',
-                            border: '1px solid #CBD5E1',
-                            color: '#16A34A',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textDecoration: 'none'
-                          }}
-                          title="WhatsApp Candidate"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
-                          </svg>
-                        </a>
-                      )}
-                      {item.venue_address && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenMap(item.venue_address, item.maps_link)}
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '0px',
-                            backgroundColor: '#FFFFFF',
-                            border: '1px solid #CBD5E1',
-                            color: '#334155',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                          title="Google Maps Venue"
-                        >
-                          <Navigation2 size={13} />
-                        </button>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDetailModal(item)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        backgroundColor: '#1764E8',
-                        color: '#FFFFFF',
-                        border: 'none',
-                        borderRadius: '0px',
-                        padding: '7px 14px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <span>{isCompleted ? 'View Evaluation' : 'Evaluate & Update'}</span>
-                      <ChevronRight size={13} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Detail & Evaluation Action Modal */}
+      {/* Detail & Evaluation Action Modal (100% Mobile App Matched) */}
       {isDetailModalOpen && selectedInterview && (
         <div style={{
           position: 'fixed',
@@ -892,22 +895,21 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
-          padding: '12px'
+          padding: '16px'
         }}>
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '0px',
-            maxWidth: '520px',
+            borderRadius: '12px',
+            maxWidth: '560px',
             width: '100%',
-            maxHeight: '92vh',
+            maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            border: '1px solid #CBD5E1'
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           }}>
             {/* Modal Header */}
             <div style={{
@@ -918,19 +920,19 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               borderBottom: '1px solid #E2E8F0'
             }}>
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                   Interview Evaluation
                 </h3>
-                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '1px' }}>
+                <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 500, marginTop: '1px' }}>
                   {selectedInterview.job_title}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#64748B' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748B' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -939,15 +941,15 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               {/* Candidate Info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '0px',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '25px',
                   backgroundColor: '#1764E8',
                   color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '18px',
+                  fontSize: '20px',
                   fontWeight: 800
                 }}>
                   {(selectedInterview.candidate_name || 'C').charAt(0).toUpperCase()}
@@ -956,17 +958,17 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
                     {selectedInterview.candidate_name}
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#1764E8', marginTop: '1px' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1764E8', marginTop: '1px' }}>
                     {selectedInterview.trade_specialization || 'Skilled Industrial Technician'}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
                     {selectedInterview.candidate_phone} • {selectedInterview.candidate_email}
                   </div>
                 </div>
               </div>
 
               {/* Quick Contact Actions: Resume, Call, WhatsApp, Venue */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '14px' }}>
                 {selectedInterview.candidate_resume && (
                   <button
                     type="button"
@@ -975,18 +977,18 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '3px',
-                      padding: '7px 4px',
-                      borderRadius: '0px',
+                      gap: '4px',
+                      padding: '8px',
+                      borderRadius: '6px',
                       backgroundColor: '#EFF6FF',
                       border: '1px solid #BFDBFE',
                       color: '#1764E8',
-                      fontSize: '11.5px',
+                      fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer'
                     }}
                   >
-                    <FileText size={13} />
+                    <FileText size={14} />
                     Resume
                   </button>
                 )}
@@ -996,18 +998,18 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '3px',
-                    padding: '7px 4px',
-                    borderRadius: '0px',
+                    gap: '4px',
+                    padding: '8px',
+                    borderRadius: '6px',
                     backgroundColor: '#F0FDF4',
                     border: '1px solid #BBF7D0',
                     color: '#16A34A',
-                    fontSize: '11.5px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     textDecoration: 'none'
                   }}
                 >
-                  <Phone size={13} />
+                  <Phone size={14} />
                   Call
                 </a>
                 <a
@@ -1018,13 +1020,13 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '3px',
-                    padding: '7px 4px',
-                    borderRadius: '0px',
+                    gap: '4px',
+                    padding: '8px',
+                    borderRadius: '6px',
                     backgroundColor: '#ECFDF5',
                     border: '1px solid #A7F3D0',
                     color: '#059669',
-                    fontSize: '11.5px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     textDecoration: 'none'
                   }}
@@ -1038,49 +1040,49 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '3px',
-                    padding: '7px 4px',
-                    borderRadius: '0px',
+                    gap: '4px',
+                    padding: '8px',
+                    borderRadius: '6px',
                     backgroundColor: '#F8FAFC',
-                    border: '1px solid #CBD5E1',
+                    border: '1px solid #E2E8F0',
                     color: '#334155',
-                    fontSize: '11.5px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer'
                   }}
                 >
-                  <Navigation2 size={13} />
+                  <Navigation2 size={14} />
                   Venue
                 </button>
               </div>
 
               {/* Section Separator */}
-              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '10px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />
 
               {/* Scheduled Interview Summary Box */}
               <div style={{
                 backgroundColor: '#F8FAFC',
                 border: '1px solid #E2E8F0',
-                borderRadius: '0px',
-                padding: '10px 12px',
-                fontSize: '12px',
+                borderRadius: '8px',
+                padding: '12px',
+                fontSize: '12.5px',
                 color: '#334155',
                 marginBottom: '14px'
               }}>
-                <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '6px' }}>
                   SCHEDULED INTERVIEW TIME & VENUE
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                  <Calendar size={13} color="#1764E8" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <Calendar size={14} color="#1764E8" />
                   <span>Date: <strong>{formatDate(selectedInterview.interview_date)}</strong></span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                  <Clock size={13} color="#1764E8" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <Clock size={14} color="#1764E8" />
                   <span>Time: <strong>{selectedInterview.interview_time || '10:00 AM'}</strong></span>
                 </div>
                 {selectedInterview.venue_address && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                    <MapPin size={13} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <MapPin size={14} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
                     <span>{selectedInterview.venue_address}</span>
                   </div>
                 )}
@@ -1091,34 +1093,34 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 <div style={{
                   backgroundColor: '#FFFBEB',
                   border: '1px solid #FCD34D',
-                  borderRadius: '0px',
+                  borderRadius: '8px',
                   padding: '14px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#92400E' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#92400E' }}>
                       Reschedule / Postpone Interview
                     </span>
                     <button
                       type="button"
                       onClick={() => setIsRescheduling(false)}
-                      style={{ background: 'none', border: 'none', color: '#1764E8', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ background: 'none', border: 'none', color: '#1764E8', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Back to Evaluation
                     </button>
                   </div>
 
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '3px' }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Select New Date *
                     </label>
                     <div
                       onClick={() => setIsDatePickerOpen(true)}
                       style={{
-                        padding: '8px 10px',
+                        padding: '9px 12px',
                         backgroundColor: '#FFFFFF',
                         border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
                         cursor: 'pointer',
                         color: rescheduleDate ? '#0F172A' : '#94A3B8'
                       }}
@@ -1127,18 +1129,18 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '3px' }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Select New Time *
                     </label>
                     <div
                       onClick={() => setIsTimePickerOpen(true)}
                       style={{
-                        padding: '8px 10px',
+                        padding: '9px 12px',
                         backgroundColor: '#FFFFFF',
                         border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
                         cursor: 'pointer',
                         color: rescheduleTime ? '#0F172A' : '#94A3B8'
                       }}
@@ -1147,8 +1149,8 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '3px' }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Updated Venue / Address
                     </label>
                     <input
@@ -1158,32 +1160,32 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       onChange={(e) => setRescheduleVenue(e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '8px 10px',
+                        padding: '9px 12px',
                         backgroundColor: '#FFFFFF',
                         border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
                         boxSizing: 'border-box'
                       }}
                     />
                   </div>
 
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '3px' }}>
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Reason for Rescheduling (Included in Candidate Email)
                     </label>
                     <textarea
-                      placeholder="e.g. Technical panel unavailable today"
+                      placeholder="e.g. Technical round postponed by interviewer"
                       value={rescheduleReason}
                       onChange={(e) => setRescheduleReason(e.target.value)}
                       rows={2}
                       style={{
                         width: '100%',
-                        padding: '8px 10px',
+                        padding: '9px 12px',
                         backgroundColor: '#FFFFFF',
                         border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
                         fontFamily: 'inherit',
                         boxSizing: 'border-box'
                       }}
@@ -1203,20 +1205,20 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       backgroundColor: '#D97706',
                       color: '#FFFFFF',
                       border: 'none',
-                      padding: '10px',
-                      borderRadius: '0px',
-                      fontSize: '13px',
+                      padding: '11px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
                       fontWeight: 700,
                       cursor: 'pointer'
                     }}
                   >
-                    <RotateCcw size={15} />
+                    <RotateCcw size={16} />
                     <span>{submittingReschedule ? 'Rescheduling...' : 'Confirm Reschedule & Send Email'}</span>
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '8px' }}>
                     CANDIDATE INTERVIEW RATING
                   </div>
 
@@ -1225,27 +1227,27 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '10px',
-                    padding: '10px',
+                    gap: '12px',
+                    padding: '12px',
                     backgroundColor: '#F8FAFC',
-                    borderRadius: '0px'
+                    borderRadius: '8px'
                   }}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
                         onClick={() => setRating(star)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                       >
                         <Star
-                          size={28}
+                          size={30}
                           color={star <= rating ? '#F59E0B' : '#CBD5E1'}
                           fill={star <= rating ? '#F59E0B' : 'transparent'}
                         />
                       </button>
                     ))}
                   </div>
-                  <div style={{ textAlign: 'center', fontSize: '11.5px', fontWeight: 600, color: '#D97706', marginTop: '4px' }}>
+                  <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#D97706', marginTop: '6px' }}>
                     {rating === 5 && 'Outstanding candidate performance'}
                     {rating === 4 && 'Good technical fit & skills'}
                     {rating === 3 && 'Average fit, potential training needed'}
@@ -1255,28 +1257,28 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
                   {/* Evaluation Remarks */}
                   <div style={{ marginTop: '14px', marginBottom: '14px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '3px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Interview Notes & Evaluation Remarks
                     </label>
                     <textarea
-                      placeholder="Enter observations regarding technical skills and candidate evaluation..."
+                      placeholder="Enter observations regarding technical skills, trade knowledge, and salary alignment..."
                       value={feedback}
                       onChange={(e) => setFeedback(e.target.value)}
                       rows={3}
                       style={{
                         width: '100%',
-                        padding: '8px 10px',
+                        padding: '10px 12px',
                         backgroundColor: '#FFFFFF',
                         border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
                         fontFamily: 'inherit',
                         boxSizing: 'border-box'
                       }}
                     />
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <button
                       type="button"
                       onClick={handleMarkInterviewed}
@@ -1290,14 +1292,14 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                         backgroundColor: '#16A34A',
                         color: '#FFFFFF',
                         border: 'none',
-                        padding: '11px',
-                        borderRadius: '0px',
+                        padding: '12px',
+                        borderRadius: '8px',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer'
                       }}
                     >
-                      <CheckCircle2 size={15} />
+                      <CheckCircle2 size={16} />
                       <span>{submittingRating ? 'Saving...' : 'Mark as Interviewed'}</span>
                     </button>
 
@@ -1313,14 +1315,14 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                         backgroundColor: '#FFFBEB',
                         border: '1px solid #FCD34D',
                         color: '#D97706',
-                        padding: '9px',
-                        borderRadius: '0px',
+                        padding: '10px',
+                        borderRadius: '8px',
                         fontSize: '12.5px',
                         fontWeight: 700,
                         cursor: 'pointer'
                       }}
                     >
-                      <RotateCcw size={14} />
+                      <RotateCcw size={15} />
                       <span>Postpone / Reschedule</span>
                     </button>
                   </div>
@@ -1366,11 +1368,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10000,
-          padding: '16px'
+          padding: '20px'
         }}>
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '0px',
+            borderRadius: '12px',
             maxWidth: '800px',
             width: '100%',
             height: '85vh',
@@ -1382,10 +1384,10 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '10px 14px',
+              padding: '12px 16px',
               borderBottom: '1px solid #E2E8F0'
             }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
                 Candidate Resume Document
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -1399,14 +1401,14 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     gap: '4px',
                     backgroundColor: '#EFF6FF',
                     color: '#1764E8',
-                    padding: '4px 8px',
-                    borderRadius: '0px',
-                    fontSize: '11.5px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     textDecoration: 'none'
                   }}
                 >
-                  <ExternalLink size={12} />
+                  <ExternalLink size={13} />
                   Open in New Tab
                 </a>
                 <button
@@ -1414,7 +1416,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                   onClick={() => setIsResumeModalOpen(false)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
                 >
-                  <X size={18} />
+                  <X size={20} />
                 </button>
               </div>
             </div>
