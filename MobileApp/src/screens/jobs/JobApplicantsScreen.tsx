@@ -10,7 +10,10 @@ import {
   Alert,
   FlatList,
   TextInput,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Search,
   CheckCircle2,
@@ -24,6 +27,8 @@ import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerMod
 import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { JobApplication, ApplicationStatus, Job } from '../../types';
 import { Header } from '../../components/common/Header';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
+import { extractCandidateResume } from '../../utils/fileUtils';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
@@ -51,6 +56,16 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#FFFFFF', true);
+        StatusBar.setBarStyle('dark-content', true);
+        StatusBar.setTranslucent(false);
+      }
+    }, [])
+  );
 
   useEffect(() => {
     if (jobId) {
@@ -121,12 +136,22 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         const res = await applicantsApi.getApplicantsForJob(jobId);
         if (res.success && Array.isArray(res.data)) {
           const mapped = res.data.map((item: any) => {
-            const rawResume = item.resume || item.resume_url || item.resumeUrl;
+            const rawResume =
+              item.resume ||
+              item.resume_url ||
+              item.resumeUrl ||
+              item.user?.resume_url ||
+              item.user?.resumeUrl ||
+              item.user?.resume ||
+              item.candidate?.resume_url ||
+              item.candidate?.resumeUrl ||
+              item.candidate?.resume;
+
             let extractedResumeUrl = '';
             if (typeof rawResume === 'string' && rawResume.trim()) {
-              extractedResumeUrl = rawResume;
+              extractedResumeUrl = rawResume.trim();
             } else if (rawResume && typeof rawResume === 'object') {
-              extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || '';
+              extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || rawResume.path || '';
             }
 
             return {
@@ -137,17 +162,17 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
               user: {
                 id: item.userId || item.user_id,
-                name: item.name || 'Candidate',
-                email: item.email || '',
-                phone: item.phone || '',
+                name: item.name || item.user?.name || item.candidate?.name || 'Candidate',
+                email: item.email || item.user?.email || item.candidate?.email || '',
+                phone: item.phone || item.user?.phone || item.candidate?.phone || '',
                 role: 'candidate' as const,
-                headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
-                location: item.location || 'Not Specified',
-                experience: item.experience || 'Not Specified',
-                skills: Array.isArray(item.skills) ? item.skills : [],
-                profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-                aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
-                education: item.education || 'Not Specified',
+                headline: item.headline || item.tradeSpecialization || item.trade_specialization || item.user?.headline || 'Candidate',
+                location: item.location || item.user?.location || 'Not Specified',
+                experience: item.experience || item.user?.experience || 'Not Specified',
+                skills: Array.isArray(item.skills) ? item.skills : (Array.isArray(item.user?.skills) ? item.user.skills : []),
+                profilePictureUrl: item.profilePictureUrl || item.profile_picture_url || item.user?.profilePictureUrl || item.user?.profile_picture_url,
+                aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified || !!item.user?.aadhaar_verified,
+                education: item.education || item.user?.education || 'Not Specified',
                 resume_url: extractedResumeUrl,
                 resumeUrl: extractedResumeUrl,
                 resume: typeof rawResume === 'object' ? rawResume : (extractedResumeUrl ? { url: extractedResumeUrl, name: 'Candidate_Resume.pdf' } : null),
@@ -163,54 +188,57 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           setMyJobs(myJobsRes.data);
           const allApps: any[] = [];
 
-          const appPromises = myJobsRes.data.map(async (j: any) => {
-            try {
-              const res = await applicantsApi.getApplicantsForJob(j.id);
-              if (res.success && Array.isArray(res.data)) {
-                return res.data.map((item: any) => {
-                  const rawResume = item.resume || item.resume_url || item.resumeUrl;
-                  let extractedResumeUrl = '';
-                  if (typeof rawResume === 'string' && rawResume.trim()) {
-                    extractedResumeUrl = rawResume;
-                  } else if (rawResume && typeof rawResume === 'object') {
-                    extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || '';
-                  }
+          // 1. Direct extract from myJobs (already populated with applicants from PostgreSQL)
+          myJobsRes.data.forEach((j: any) => {
+            const rawApps = Array.isArray(j.applicants) ? j.applicants : [];
+            rawApps.forEach((item: any) => {
+              if (item && typeof item === 'object') {
+                const rawResume =
+                  item.resume ||
+                  item.resume_url ||
+                  item.resumeUrl ||
+                  item.user?.resume_url ||
+                  item.user?.resumeUrl ||
+                  item.user?.resume ||
+                  item.candidate?.resume_url ||
+                  item.candidate?.resumeUrl ||
+                  item.candidate?.resume;
 
-                  return {
-                    id: item.id || `app-${item.userId || item.user_id}-${j.id}`,
-                    user_id: item.userId || item.user_id,
-                    job_id: j.id,
-                    status: (item.status || 'applied').toLowerCase(),
-                    applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
-                    job: j,
-                    user: {
-                      id: item.userId || item.user_id,
-                      name: item.name || 'Candidate',
-                      email: item.email || '',
-                      phone: item.phone || '',
-                      role: 'candidate' as const,
-                      headline: item.headline || item.tradeSpecialization || item.trade_specialization || 'Candidate',
-                      location: item.location || 'Not Specified',
-                      experience: item.experience || 'Not Specified',
-                      skills: Array.isArray(item.skills) ? item.skills : [],
-                      profilePictureUrl: item.profilePictureUrl || item.profile_picture_url,
-                      aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified,
-                      education: item.education || 'Not Specified',
-                      resume_url: extractedResumeUrl,
-                      resumeUrl: extractedResumeUrl,
-                      resume: typeof rawResume === 'object' ? rawResume : (extractedResumeUrl ? { url: extractedResumeUrl, name: 'Candidate_Resume.pdf' } : null),
-                    }
-                  };
+                let extractedResumeUrl = '';
+                if (typeof rawResume === 'string' && rawResume.trim()) {
+                  extractedResumeUrl = rawResume.trim();
+                } else if (rawResume && typeof rawResume === 'object') {
+                  extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || rawResume.path || '';
+                }
+
+                allApps.push({
+                  id: item.id || `app-${item.userId || item.user_id}-${j.id}`,
+                  user_id: item.userId || item.user_id,
+                  job_id: j.id,
+                  status: (item.status || 'applied').toLowerCase(),
+                  applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+                  job: j,
+                  user: {
+                    id: item.userId || item.user_id,
+                    name: item.name || item.user?.name || item.candidate?.name || 'Candidate',
+                    email: item.email || item.user?.email || item.candidate?.email || '',
+                    phone: item.phone || item.user?.phone || item.candidate?.phone || '',
+                    role: 'candidate' as const,
+                    headline: item.headline || item.tradeSpecialization || item.trade_specialization || item.user?.headline || 'Candidate',
+                    location: item.location || item.user?.location || 'Not Specified',
+                    experience: item.experience || item.user?.experience || 'Not Specified',
+                    skills: Array.isArray(item.skills) ? item.skills : (Array.isArray(item.user?.skills) ? item.user.skills : []),
+                    profilePictureUrl: item.profilePictureUrl || item.profile_picture_url || item.user?.profilePictureUrl || item.user?.profile_picture_url,
+                    aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified || !!item.user?.aadhaar_verified,
+                    education: item.education || item.user?.education || 'Not Specified',
+                    resume_url: extractedResumeUrl,
+                    resumeUrl: extractedResumeUrl,
+                    resume: typeof rawResume === 'object' ? rawResume : (extractedResumeUrl ? { url: extractedResumeUrl, name: 'Candidate_Resume.pdf' } : null),
+                  }
                 });
               }
-            } catch (e) {
-              console.log('Error fetching applicants for job:', j.id, e);
-            }
-            return [];
+            });
           });
-
-          const results = await Promise.all(appPromises);
-          results.forEach((apps) => allApps.push(...apps));
 
           setApplicants(allApps);
           return;
@@ -363,13 +391,11 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const openApplicantModal = (applicant: JobApplication) => {
-    setSelectedApplicant(applicant);
-    setModalTab('JOB');
-    setEmailSubject(`Update regarding your application for ${jobTitle}`);
-    setEmailMessage(
-      `Dear ${applicant.user?.name || 'Candidate'},\n\nThank you for applying for the ${jobTitle} position at our company. We have reviewed your profile and would like to proceed with the next steps.\n\nBest regards,\nRecruitment Team`
-    );
-    setDetailModalVisible(true);
+    navigation.navigate('ApplicantDetail', {
+      applicant,
+      jobId: applicant.job_id || jobId,
+      jobTitle: (applicant.job as any)?.title || jobTitle,
+    });
   };
 
   const filteredApplicants = applicants.filter((app) => {
@@ -413,12 +439,13 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {/* Real-Time Search Bar */}
       <View style={styles.searchBarWrapper}>
         <View style={styles.searchBarContainer}>
-          <Search size={16} color={COLORS.slate400} style={{ marginRight: 8 }} />
+          <Search size={14} color="#91A0BA" style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
             placeholder={APPLICANT_SEARCH_SUGGESTIONS[suggestionIndex]}
@@ -428,7 +455,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           />
           {searchQuery.length > 0 ? (
             <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={{ padding: 4 }}>
-              <X size={16} color={COLORS.slate400} />
+              <X size={14} color="#91A0BA" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -441,14 +468,14 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             activeOpacity={0.8}
             onPress={() => setJobDropdownVisible(true)}
             style={[
-              styles.industryTabPill,
-              selectedJobId !== 'ALL' && styles.industryTabPillActive,
+              styles.jobSelectPill,
+              selectedJobId !== 'ALL' && styles.jobSelectPillActive,
             ]}
           >
             <Text
               style={[
-                styles.industryTabText,
-                selectedJobId !== 'ALL' && styles.industryTabTextActive,
+                styles.jobSelectPillText,
+                selectedJobId !== 'ALL' && styles.jobSelectPillTextActive,
               ]}
               numberOfLines={1}
             >
@@ -456,7 +483,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
                 ? 'All Jobs'
                 : (myJobs.find((j) => j.id === selectedJobId)?.title?.replace(/^job-[\d]+$/i, 'Selected Job') || 'Selected Job')}
             </Text>
-            <ChevronDown size={14} color={selectedJobId !== 'ALL' ? COLORS.primary : '#64748B'} />
+            <ChevronDown size={13} color={selectedJobId !== 'ALL' ? '#1764E8' : '#657796'} />
           </TouchableOpacity>
 
           {[
@@ -593,69 +620,6 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         />
       )}
 
-      {/* Comprehensive Candidate Full Screen View Modal */}
-      <JobApplicantsDetailModal
-        visible={detailModalVisible}
-        onClose={() => setDetailModalVisible(false)}
-        selectedApplicant={selectedApplicant}
-        jobTitle={jobTitle}
-        jobId={jobId}
-        jobDetails={jobDetails}
-        myJobs={myJobs}
-        modalTab={modalTab}
-        setModalTab={setModalTab}
-        onUpdateStatus={handleUpdateStatus}
-        interviewDate={interviewDate}
-        setInterviewDate={setInterviewDate}
-        interviewTime={interviewTime}
-        setInterviewTime={setInterviewTime}
-        interviewMode={interviewMode}
-        setInterviewMode={setInterviewMode}
-        interviewLocation={interviewLocation}
-        setInterviewLocation={setInterviewLocation}
-        interviewNotes={interviewNotes}
-        setInterviewNotes={setInterviewNotes}
-        onScheduleInterview={handleScheduleInterview}
-        setTimePickerVisible={setTimePickerVisible}
-        emailSubject={emailSubject}
-        setEmailSubject={setEmailSubject}
-        emailMessage={emailMessage}
-        setEmailMessage={setEmailMessage}
-        selectedTemplateLabel={selectedTemplateLabel}
-        setSelectedTemplateLabel={setSelectedTemplateLabel}
-        onSendCustomEmail={handleSendCustomEmail}
-        onOpenPdfModal={() => setPdfModalVisible(true)}
-        modalLoading={modalLoading}
-      />
-
-      {/* Resume PDF Viewer Modal */}
-      {selectedApplicant ? (
-        <ResumePdfViewerModal
-          visible={pdfModalVisible}
-          onClose={() => setPdfModalVisible(false)}
-          candidateName={selectedApplicant.user?.name || 'Applicant'}
-          candidateRole={jobTitle}
-          pdfUrl={
-            selectedApplicant?.user?.resume_url ||
-            (selectedApplicant?.user as any)?.resumeUrl ||
-            (typeof (selectedApplicant?.user as any)?.resume === 'object' ? (selectedApplicant?.user as any)?.resume?.url : (selectedApplicant?.user as any)?.resume) ||
-            selectedApplicant?.resume_url ||
-            (selectedApplicant as any)?.resumeUrl ||
-            (typeof (selectedApplicant as any)?.resume === 'object' ? (selectedApplicant as any)?.resume?.url : (selectedApplicant as any)?.resume)
-          }
-        />
-      ) : null}
-
-      {/* Clock Time Picker Modal */}
-      <ClockTimePickerModal
-        visible={timePickerVisible}
-        onClose={() => setTimePickerVisible(false)}
-        initialTime={interviewTime || '10:00 AM'}
-        onSelectTime={(formattedTime) => {
-          setInterviewTime(formattedTime);
-          setTimePickerVisible(false);
-        }}
-      />
     </View>
   );
 };
@@ -663,81 +627,121 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F7F9FC',
   },
   searchBarWrapper: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E7EBF2',
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 12,
-    height: 40,
+    height: 38,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    color: '#0F172A',
+    fontSize: 12.5,
+    color: '#102A5C',
   },
+  /* Filter Tabs Bar with Underline Active State */
   tabsBarWrapper: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingVertical: 8,
+    borderBottomColor: '#E7EBF2',
+    paddingTop: 4,
+    paddingBottom: 0,
   },
   tabsScrollContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  industryTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    gap: 14,
+  },
+  jobSelectPill: {
+    height: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    paddingHorizontal: 9,
+    borderRadius: 6,
+    marginRight: 2,
+  },
+  jobSelectPillActive: {
+    backgroundColor: '#EEF4FF',
+    borderColor: '#DBEAFE',
+  },
+  jobSelectPillText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#657796',
+    maxWidth: 130,
+  },
+  jobSelectPillTextActive: {
+    color: '#1764E8',
+    fontWeight: '700',
+  },
+  industryTabPill: {
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    paddingHorizontal: 2,
+    marginBottom: -1,
   },
   industryTabPillActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: COLORS.primary,
+    backgroundColor: 'transparent',
+    borderBottomColor: '#1764E8',
   },
   industryTabText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#657796',
   },
   industryTabTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
+    color: '#1764E8',
+    fontWeight: '700',
   },
   tabCountBadge: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
+    paddingVertical: 1.5,
+    borderRadius: 8,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabCountBadgeActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#EEF4FF',
   },
   tabCountText: {
     fontSize: 10.5,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '600',
+    color: '#657796',
   },
   tabCountTextActive: {
-    color: '#FFFFFF',
+    color: '#1764E8',
+    fontWeight: '700',
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 130,
   },
   dropdownModalOverlay: {
     flex: 1,
@@ -749,7 +753,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E7EBF2',
     padding: 14,
   },
   dropdownHeaderRow: {
@@ -759,13 +763,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E7EBF2',
   },
   dropdownTitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.6,
+    fontWeight: '700',
+    color: '#657796',
+    letterSpacing: 0.5,
   },
   dropdownOptionRow: {
     flexDirection: 'row',
@@ -779,17 +783,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dropdownOptionSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: '#EEF4FF',
+    borderColor: '#DBEAFE',
   },
   dropdownOptionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0F172A',
+    color: '#102A5C',
   },
   dropdownOptionSub: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#657796',
     marginTop: 1,
   },
 });

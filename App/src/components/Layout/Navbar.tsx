@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { MoreVertical } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
@@ -79,18 +80,23 @@ export const Navbar: React.FC = () => {
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection;
+  const isAppliedSection = location.pathname.startsWith('/dashboard') && location.search.includes('tab=applied');
+  const isProfileSection = location.pathname === '/profile' || location.pathname === '/my-profile' || (location.pathname.startsWith('/dashboard') && (location.search.includes('tab=profile') || location.search.includes('tab=my-profile')));
+  const isCompaniesRoute = location.pathname === '/companies' || location.pathname.startsWith('/companies');
+  const isJobsRoute = location.pathname === '/jobs' || (location.pathname.startsWith('/jobs') && location.pathname !== '/jobs/map');
+  const isHomeRoute = location.pathname === '/';
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute;
 
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''} ${hideNavbarMobile ? 'hide-navbar-mobile' : ''}`}>
       <div className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
       <div className="navbar-inner">
         <div className="navbar-header-row">
-          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" title={isEmployer ? "Employer Workspace" : "JobMarket Home"}>
-            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '40px', height: '40px', objectFit: 'contain', marginRight: '8px' }} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '22px', lineHeight: 1.1 }}>{t.brand}</span>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '0', fontWeight: 'bold' }}>{isEmployer ? "Employer Portal" : t.tagline}</span>
+          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: 0 }} title={isEmployer ? "Employer Workspace" : "JobMarket Home"}>
+            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '6px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', margin: 0, padding: 0 }}>
+              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '17px', lineHeight: 1.15, margin: 0, padding: 0 }}>{t.brand}</span>
+              <span style={{ fontSize: '9.5px', color: 'var(--text-secondary)', marginTop: '1px', fontWeight: 'bold', lineHeight: 1 }}>{isEmployer ? "Employer Portal" : t.tagline}</span>
             </div>
           </Link>
 
@@ -219,7 +225,7 @@ export const Navbar: React.FC = () => {
                         {t.profile}
                       </Link>
                       {/* Resume */}
-                      <Link to="/dashboard?tab=resume" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/resume" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                         </svg>
@@ -401,7 +407,7 @@ export const Navbar: React.FC = () => {
                         </svg>
                         {t.profile}
                       </button>
-                      <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=resume')}>
+                      <button className="dropdown-item" onClick={() => navigate('/resume')}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                         </svg>
@@ -439,8 +445,12 @@ export const Navbar: React.FC = () => {
             </div>
           )}
 
-          <div className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            <span></span><span></span><span></span>
+          <div 
+            className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            title="Menu"
+          >
+            <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
           </div>
         </div>
       </div>

@@ -27,6 +27,7 @@ import { ExtendedCandidate, safeString } from './CandidatesUtils';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 import { WhatsAppIcon } from '../../../components/common/WhatsAppIcon';
 import { COLORS } from '../../../constants/theme';
+import { extractCandidateResume } from '../../../utils/fileUtils';
 
 interface CandidateDetailModalProps {
   candidate: ExtendedCandidate | null;
@@ -134,12 +135,8 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   style={styles.toolbarBtn}
                   activeOpacity={0.8}
                   onPress={() => {
-                    const rawUrl = candidate.resume_url || candidate.resumeUrl || candidate.resume;
-                    let urlStr = '';
-                    if (typeof rawUrl === 'string') urlStr = rawUrl.trim();
-                    else if (rawUrl && typeof rawUrl === 'object') urlStr = (rawUrl as any).url || (rawUrl as any).fileUrl || (rawUrl as any).uri || '';
-
-                    if (urlStr && urlStr.length > 0) {
+                    const ext = extractCandidateResume(candidate);
+                    if (ext.url) {
                       onOpenPdfModal();
                     } else {
                       Alert.alert('Notice', "Candidate hasn't uploaded the resume yet.");

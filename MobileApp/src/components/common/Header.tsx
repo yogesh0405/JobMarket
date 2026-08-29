@@ -46,6 +46,7 @@ import { NotificationModal } from './NotificationModal';
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import { resolveMobileNotificationRoute } from '../../utils/notificationRouter';
+import { FocusAwareStatusBar } from './FocusAwareStatusBar';
 
 interface HeaderProps {
   title: string;
@@ -87,6 +88,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [modalMounted, setModalMounted] = useState(false);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
+
+  React.useEffect(() => {
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor('#FFFFFF', true);
+      StatusBar.setBarStyle('dark-content', true);
+      StatusBar.setTranslucent(false);
+    }
+  }, []);
   
   const openDrawer = () => {
     setModalMounted(true);
@@ -158,6 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.content}>
           {/* Back propagation arrow */}
@@ -541,8 +551,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 2,
     borderBottomColor: '#CBD5E1',
-    paddingBottom: 6,
-    paddingHorizontal: 14,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -554,7 +564,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 36,
+    minHeight: 38,
   },
   backButton: {
     marginRight: SPACING.xs,
@@ -564,11 +574,12 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   brandHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   headerLogoBadge: {
     width: 36,
@@ -593,11 +604,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     letterSpacing: -0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   subtitle: {
     fontSize: 13.5,
     fontWeight: '500',
     color: '#64748B',
+    includeFontPadding: false,
     marginTop: 1,
   },
   rightSlot: {

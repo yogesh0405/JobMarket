@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -18,11 +18,14 @@ import { CandidateEditProfileModal } from '../profile/CandidateEditProfileModal'
 import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
 import { ResumePage } from '../profile/ResumePage';
 import { JobPostPage } from '../jobs/JobPostPage';
+import { safeValue } from '../jobs/JobApplicantsPage';
 import { AboutPage } from '../static/AboutPage';
 import { ContactPage } from '../static/ContactPage';
 import { SavedJobsPage } from './SavedJobsPage';
 import { EmployerAdvertisements } from './EmployerAdvertisements';
 import { SecuritySettings } from '../../components/profile/SecuritySettings';
+import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
+import { MobileHeader } from '../../components/common/MobileHeader';
 import {
   Briefcase,
   Users,
@@ -47,7 +50,16 @@ import {
   Calendar,
   IndianRupee,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Send,
+  AlertCircle,
+  Bell,
+  MoreVertical,
+  SlidersHorizontal,
+  Trash2,
+  Edit3,
+  Share2,
+  XCircle
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -91,6 +103,12 @@ export const DashboardPage: React.FC = () => {
       navigate('/login');
     }
   }, [currentUser, navigate, showToast]);
+
+  useEffect(() => {
+    if (rawTab === 'resume') {
+      navigate('/resume', { replace: true });
+    }
+  }, [rawTab, navigate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -288,7 +306,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <>
-      <div className="dashboard-page">
+      <div className={`dashboard-page ${['applied', 'resume'].includes(tab) ? 'bg-white-page' : ''}`} style={['applied', 'resume'].includes(tab) ? { background: '#FFFFFF' } : undefined}>
       <div className="container">
         <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
           {/* Sidebar */}
@@ -481,7 +499,7 @@ export const DashboardPage: React.FC = () => {
                   <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
                   <button
                     className={`dashboard-nav-item tab-resume ${tab === 'resume' ? 'active' : ''}`}
-                    onClick={() => setTab('resume')}
+                    onClick={() => navigate('/resume')}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -570,7 +588,7 @@ export const DashboardPage: React.FC = () => {
                 )}
               </div>
             ) : isEmployer ? (
-              <EmployerDashboard tab={tab} currentUser={currentUser} getJobsByEmployer={getJobsByEmployer} deleteJob={deleteJob} updateApplicantStatus={updateApplicantStatus} showToast={showToast} navigate={navigate} setTab={setTab} t={t} />
+              <EmployerDashboard tab={tab} currentUser={currentUser} getJobsByEmployer={getJobsByEmployer} deleteJob={deleteJob} updateApplicantStatus={updateApplicantStatus} fetchEmployerJobs={fetchEmployerJobs} showToast={showToast} navigate={navigate} setTab={setTab} t={t} />
             ) : (
               <CandidateDashboard tab={tab} currentUser={currentUser} getAppliedJobs={getAppliedJobs} getSavedJobs={getSavedJobs} toggleSaveJob={toggleSaveJob} setTab={setTab} t={t} />
             )}
@@ -610,15 +628,47 @@ interface CandidateProps {
 
 const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getAppliedJobs, getSavedJobs, toggleSaveJob, setTab, t }) => {
   const [removedSavedIds, setRemovedSavedIds] = useState<string[]>([]);
+  const [filterTab, setFilterTab] = useState<'ALL' | 'INTERVIEW' | 'REVIEW' | 'DECISIONS'>('ALL');
   const appliedJobs = getAppliedJobs();
   const savedJobs = getSavedJobs().filter(j => !removedSavedIds.includes(j.id));
+
+  const interviewCount = appliedJobs.filter(job => {
+    const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+    const status = (appDetails?.status || 'applied').toLowerCase();
+    return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
+  }).length;
+
+  const reviewCount = appliedJobs.filter(job => {
+    const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+    const status = (appDetails?.status || 'applied').toLowerCase();
+    return status === 'applied' || status === 'reviewed' || status === 'under_review';
+  }).length;
+
+  const decisionsCount = appliedJobs.filter(job => {
+    const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+    const status = (appDetails?.status || 'applied').toLowerCase();
+    return status === 'hired' || status === 'accepted' || status === 'selected' || status === 'rejected';
+  }).length;
+
+  const filteredAppliedJobs = appliedJobs.filter(job => {
+    const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
+    const status = (appDetails?.status || 'applied').toLowerCase();
+    if (filterTab === 'INTERVIEW') {
+      return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
+    }
+    if (filterTab === 'REVIEW') {
+      return status === 'applied' || status === 'reviewed' || status === 'under_review';
+    }
+    if (filterTab === 'DECISIONS') {
+      return status === 'hired' || status === 'accepted' || status === 'selected' || status === 'rejected';
+    }
+    return true;
+  });
 
   switch (tab) {
     case 'overview':
       return (
         <>
-
-
           <div className="dashboard-stats">
             <div className="stat-card">
               <div className="stat-icon primary">
@@ -639,10 +689,10 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
             <div className="stat-card">
               <div className="stat-icon success">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
               </div>
-              <div className="stat-info"><h3>{currentUser.profileViews || (currentUser.viewedBy ? currentUser.viewedBy.length : 0)}</h3><p>Profile Views</p></div>
+              <div className="stat-info"><h3>{currentUser.role === 'candidate' ? 'Active' : 'Verified'}</h3><p>Profile Status</p></div>
             </div>
             <div className="stat-card">
               <div className="stat-icon warning">
@@ -654,25 +704,23 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
             </div>
           </div>
 
-          <div className="activity-card">
-            <div className="activity-header">
-              <h3>Recent Applications</h3>
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2>Recent Applications</h2>
               <button className="btn btn-ghost btn-sm" onClick={() => setTab('applied')}>View All</button>
             </div>
             {appliedJobs.length > 0 ? (
-              <div style={{ overflowX: 'auto', width: '100%' }}>
-                <table className="activity-table">
+              <div className="table-responsive">
+                <table className="dashboard-table">
                   <thead>
                     <tr><th>Job Title</th><th>Company</th><th>Applied</th><th>Status</th></tr>
                   </thead>
                   <tbody>
                     {appliedJobs.slice(0, 5).map(job => {
-                      const app = (job.applicants || []).find(a => a.userId === currentUser.id);
+                      const app = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
                       return (
                         <tr key={job.id}>
-                          <td>
-                            <Link to={`/job/${job.id}`} className="table-job-title">{job.title}</Link>
-                          </td>
+                          <td><strong>{job.title}</strong></td>
                           <td>{job.company}</td>
                           <td>{app ? timeAgo(app.appliedAt) : 'N/A'}</td>
                           <td>
@@ -687,8 +735,15 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                 </table>
               </div>
             ) : (
-              <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
-                <p>No applications yet. <Link to="/jobs">Start applying!</Link></p>
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  </svg>
+                </div>
+                <h3>No applications yet</h3>
+                <p>Start exploring and applying to industrial jobs across Maharashtra</p>
+                <button className="btn btn-primary btn-sm" onClick={() => window.location.href = '/jobs'}>Browse Jobs</button>
               </div>
             )}
           </div>
@@ -697,297 +752,369 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
 
     case 'applied':
       return (
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '30px', boxSizing: 'border-box' }}>
-          {/* Section Header Card */}
+        <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
+          {/* Reusable Mobile-Identical Top Header Bar */}
+          <MobileHeader title="Applied Jobs" />
+
+          {/* Main Content Area */}
           <div style={{
-            background: '#ffffff',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '6px',
-            padding: '14px 16px',
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)',
+            maxWidth: '580px',
+            margin: '0 auto',
+            padding: '16px',
+            paddingBottom: '40px',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            flexWrap: 'wrap'
+            flexDirection: 'column',
+            gap: '16px',
+            boxSizing: 'border-box',
           }}>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Briefcase size={20} style={{ color: '#344BFD' }} />
-                <span>Applied Jobs</span>
-              </h2>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                Track your application progress and scheduled interviews in real time
-              </p>
-            </div>
-            <div style={{
-              background: '#eff6ff',
-              border: '1px solid #bfdbfe',
-              color: '#1d4ed8',
-              padding: '5px 10px',
-              borderRadius: '4px',
-              fontWeight: '700',
-              fontSize: '12px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <ClipboardList size={14} />
-              <span>{appliedJobs.length} Applied</span>
-            </div>
+
+          {/* Standard Underline Tabular Menu Bar Immediately Under Header */}
+          <div 
+            className="no-scrollbar applied-tab-bar" 
+            style={{ 
+              backgroundColor: '#FFFFFF', 
+              borderBottom: '1px solid #E2E8F0', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '22px', 
+              overflowX: 'auto', 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch', 
+              width: '100%', 
+              boxSizing: 'border-box',
+              padding: '0 4px',
+            }}
+          >
+            <button
+              onClick={() => setFilterTab('ALL')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '12px 2px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: filterTab === 'ALL' ? 800 : 600,
+                color: filterTab === 'ALL' ? '#1B4FDF' : '#64748B',
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              All ({appliedJobs.length})
+              {filterTab === 'ALL' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }} />}
+            </button>
+
+            <button
+              onClick={() => setFilterTab('INTERVIEW')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '12px 2px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: filterTab === 'INTERVIEW' ? 800 : 600,
+                color: filterTab === 'INTERVIEW' ? '#1B4FDF' : '#64748B',
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Interviews ({interviewCount})
+              {filterTab === 'INTERVIEW' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }} />}
+            </button>
+
+            <button
+              onClick={() => setFilterTab('REVIEW')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '12px 2px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: filterTab === 'REVIEW' ? 800 : 600,
+                color: filterTab === 'REVIEW' ? '#1B4FDF' : '#64748B',
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Under Review ({reviewCount})
+              {filterTab === 'REVIEW' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }} />}
+            </button>
+
+            <button
+              onClick={() => setFilterTab('DECISIONS')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '12px 2px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: filterTab === 'DECISIONS' ? 800 : 600,
+                color: filterTab === 'DECISIONS' ? '#1B4FDF' : '#64748B',
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Decisions ({decisionsCount})
+              {filterTab === 'DECISIONS' && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }} />}
+            </button>
           </div>
 
-          {appliedJobs.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {appliedJobs.map(job => {
+          {filteredAppliedJobs.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {filteredAppliedJobs.map(job => {
                 const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
                 const status = (appDetails?.status || 'applied').toLowerCase();
+                const isShortlisted = status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
                 
-                let badgeBg = '#eff6ff';
-                let badgeColor = '#1d4ed8';
-                let badgeBorder = '#bfdbfe';
+                let badgeBg = '#EFF6FF';
+                let badgeBorder = '#DBEAFE';
+                let badgeColor = '#1B4FDF';
                 let badgeLabel = 'APPLIED';
-                
-                if (status === 'shortlisted' || status === 'accepted') {
-                  badgeBg = '#dcfce7';
-                  badgeColor = '#15803d';
-                  badgeBorder = '#86efac';
-                  badgeLabel = status === 'accepted' ? 'HIRED' : 'SHORTLISTED';
-                } else if (status === 'reviewed') {
-                  badgeBg = '#fef3c7';
-                  badgeColor = '#b45309';
-                  badgeBorder = '#fde68a';
+                let IconComp = Send;
+
+                if (status === 'reviewed' || status === 'under_review') {
+                  badgeBg = '#EFF6FF';
+                  badgeBorder = '#DBEAFE';
+                  badgeColor = '#1B4FDF';
                   badgeLabel = 'UNDER REVIEW';
+                  IconComp = Clock;
+                } else if (status === 'shortlisted') {
+                  badgeBg = '#F0FDF4';
+                  badgeBorder = '#BBF7D0';
+                  badgeColor = '#15803D';
+                  badgeLabel = 'SHORTLISTED';
+                  IconComp = Award;
+                } else if (status === 'interview' || status === 'interview_scheduled') {
+                  badgeBg = '#FEF3C7';
+                  badgeBorder = '#FDE68A';
+                  badgeColor = '#D97706';
+                  badgeLabel = 'INTERVIEW';
+                  IconComp = Calendar;
+                } else if (status === 'hired' || status === 'selected' || status === 'accepted') {
+                  badgeBg = '#DCFCE7';
+                  badgeBorder = '#86EFAC';
+                  badgeColor = '#16A34A';
+                  badgeLabel = 'HIRED';
+                  IconComp = CheckCircle2;
                 } else if (status === 'rejected') {
-                  badgeBg = '#fef2f2';
-                  badgeColor = '#dc2626';
-                  badgeBorder = '#fca5a5';
+                  badgeBg = '#FEF2F2';
+                  badgeBorder = '#FECACA';
+                  badgeColor = '#DC2626';
                   badgeLabel = 'REJECTED';
+                  IconComp = AlertCircle;
                 }
 
+                const rawDate = appDetails?.appliedAt || job.postedAt;
+                const appliedDateFormatted = rawDate
+                  ? new Date(rawDate).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'Recently';
+
+                const hasSalary = Boolean(
+                  (job.salary_max && Number(job.salary_max) > 0) ||
+                  (job.salaryMax && Number(job.salaryMax) > 0) ||
+                  (job.salary_min && Number(job.salary_min) > 0) ||
+                  (job.salaryMin && Number(job.salaryMin) > 0)
+                );
+
                 return (
-                  <div 
-                    key={job.id} 
-                    style={{ 
-                      background: '#ffffff', 
-                      border: '1px solid #e2e8f0', 
-                      borderRadius: '8px', 
-                      padding: '12px 14px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '8px',
-                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
-                      position: 'relative'
-                    }}
+                  <Link
+                    key={job.id}
+                    to={`/job/${job.id}`}
+                    className="applied-job-card"
                   >
-                    {/* Top Row: Job Title + Status Badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                      <CompanyDefaultLogo
+                        logoUrl={job.companyLogo || (job as any).company_logo}
+                        companyName={job.company}
+                        size={44}
+                        borderRadius="6px"
+                      />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ margin: '0 0 3px 0', fontSize: '14.5px', fontWeight: '800', color: '#0f172a', lineHeight: 1.25 }}>
+                        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {job.title}
                         </h3>
-                        
-                        {/* Company Pill */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', margin: '2px 0 0 0' }}>
-                          <CompanyDefaultLogo 
-                            logoUrl={job.companyLogo || (job as any).company_logo} 
-                            companyName={job.company} 
-                            size={18} 
-                            borderRadius="4px"
-                          />
-                          <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
-                            {job.company || 'Industrial Partner'}
-                          </span>
-                        </div>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', fontWeight: 500, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {job.company || 'Manufacturing Partner'} • {job.location || 'MIDC Zone'}
+                        </p>
                       </div>
-
-                      {/* Status Badge */}
-                      <span style={{ 
-                        background: badgeBg, 
-                        color: badgeColor, 
-                        border: `1px solid ${badgeBorder}`, 
-                        fontSize: '10.5px', 
-                        fontWeight: '800', 
-                        padding: '3px 8px', 
-                        borderRadius: '4px',
-                        letterSpacing: '0.4px',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        {badgeLabel}
-                      </span>
+                      <ChevronRight size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
                     </div>
 
-                    {/* Metadata Chips: Location */}
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', fontSize: '11.5px' }}>
-                      <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', padding: '3px 8px', borderRadius: '4px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <MapPin size={12} style={{ color: '#2563eb' }} />
-                        <span>{job.location}</span>
-                        <span style={{ color: '#cbd5e1' }}>•</span>
-                        <span>{job.workMode || 'On-site'}</span>
-                      </span>
+                    <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '2px 0' }} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', width: '100%' }}>
+                      {job.location ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#475569', flexShrink: 1, maxWidth: '100%' }}>
+                          <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.location}</span>
+                        </div>
+                      ) : null}
+
+                      {hasSalary ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, color: '#1B4FDF', flexShrink: 1, maxWidth: '100%' }}>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {job.salary_min || job.salaryMin ? `₹${job.salary_min || job.salaryMin}` : ''}
+                            {(job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax) ? ' - ' : ''}
+                            {job.salary_max || job.salaryMax ? `₹${job.salary_max || job.salaryMax}` : ''}/mo
+                          </span>
+                        </div>
+                      ) : null}
+
+                      {(job.workMode || job.job_type || job.jobType) ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#475569', flexShrink: 1, maxWidth: '100%' }}>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.workMode || job.job_type || job.jobType}</span>
+                        </div>
+                      ) : null}
                     </div>
 
-                    {/* Interview Details Card (If Shortlisted) */}
-                    {appDetails && appDetails.status === 'shortlisted' && appDetails.interviewDate && (
-                      <div style={{ 
-                        background: '#f0fdf4', 
-                        border: '1px solid #86efac', 
-                        borderRadius: '6px', 
-                        padding: '10px 12px',
-                        fontSize: '12.5px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        boxShadow: '0 2px 4px rgba(22, 163, 74, 0.04)'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#15803d', fontWeight: '800', fontSize: '12.5px' }}>
-                            <Calendar size={14} />
-                            <span>Interview Scheduled</span>
-                          </div>
-                          <span style={{ fontSize: '10px', color: '#15803d', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', border: '1px solid #86efac', textTransform: 'uppercase' }}>
-                            Action Required
+                    {isShortlisted && (appDetails?.interviewDate || (appDetails as any)?.interview_date) && (
+                      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px', width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%' }}>
+                          <Calendar size={14} color="#1B4FDF" strokeWidth={2.2} />
+                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A', flex: 1 }}>Interview Scheduled</span>
+                          <span style={{ background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '1.5px 5px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, color: '#1B4FDF', flexShrink: 0 }}>CONFIRMED</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', width: '100%' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', flexShrink: 0, marginTop: '1px' }}>DATE & TIME:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A', flex: 1 }}>
+                            {appDetails.interviewDate || (appDetails as any).interview_date} {appDetails.interviewTime || (appDetails as any).interview_time ? `(${appDetails.interviewTime || (appDetails as any).interview_time})` : ''}
                           </span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', background: '#ffffff', borderRadius: '4px', padding: '8px 10px', border: '1px solid #bbf7d0' }}>
-                          <div>
-                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
-                              <Calendar size={11} style={{ color: '#16a34a' }} />
-                              <span>Date</span>
-                            </span>
-                            <strong style={{ color: '#0f172a', fontSize: '12px' }}>{appDetails.interviewDate}</strong>
+                        {(appDetails.venueAddress || (appDetails as any).venue_address) && (
+                          <div style={{ marginTop: '2px', width: '100%' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', display: 'block', marginBottom: '2px' }}>VENUE ADDRESS:</span>
+                            <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.45, fontWeight: 600, flexShrink: 1, width: '100%' }}>
+                              {appDetails.venueAddress || (appDetails as any).venue_address}
+                            </p>
                           </div>
+                        )}
 
-                          <div>
-                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
-                              <Clock size={11} style={{ color: '#16a34a' }} />
-                              <span>Time</span>
-                            </span>
-                            <strong style={{ color: '#0f172a', fontSize: '12px' }}>{appDetails.interviewTime}</strong>
-                          </div>
-
-                          <div style={{ gridColumn: '1 / -1' }}>
-                            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
-                              <MapPin size={11} style={{ color: '#16a34a' }} />
-                              <span>Venue Address</span>
-                            </span>
-                            <strong style={{ color: '#0f172a', fontSize: '12px', lineHeight: 1.25 }}>{appDetails.venueAddress}</strong>
-                          </div>
-                        </div>
-
-                        {appDetails.mapsLink && (
-                          <div>
-                            <a 
-                              href={appDetails.mapsLink} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              style={{ 
-                                background: '#16a34a', 
-                                color: '#ffffff', 
-                                textDecoration: 'none', 
-                                fontWeight: '700',
-                                fontSize: '11.5px',
-                                padding: '5px 10px',
-                                borderRadius: '4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                boxShadow: '0 2px 4px rgba(22, 163, 74, 0.2)'
-                              }}
-                            >
-                              <MapPin size={13} />
-                              <span>Open Google Maps</span>
-                            </a>
-                          </div>
+                        {(appDetails.mapsLink || (appDetails as any).maps_link) && (
+                          <a
+                            href={appDetails.mapsLink || (appDetails as any).maps_link}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '5px',
+                              background: '#1B4FDF',
+                              color: '#FFFFFF',
+                              padding: '7px 10px',
+                              borderRadius: '6px',
+                              fontSize: '11.5px',
+                              fontWeight: 800,
+                              textDecoration: 'none',
+                              marginTop: '3px',
+                              width: 'fit-content'
+                            }}
+                          >
+                            <MapPin size={13} color="#FFFFFF" />
+                            <span>Open Directions in Maps</span>
+                            <ExternalLink size={12} color="#FFFFFF" />
+                          </a>
                         )}
                       </div>
                     )}
 
-                    {/* Footer Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '2px', flexWrap: 'wrap', gap: '6px' }}>
-                      <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={12} style={{ color: '#94a3b8' }} />
-                        <span>Applied on {new Date(job.postedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #F1F5F9', marginTop: '1px', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} color="#94A3B8" />
+                        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
+                          Applied {appliedDateFormatted}
+                        </span>
+                      </div>
 
-                      <Link 
-                        to={`/job/${job.id}`} 
-                        style={{ 
-                          padding: '5px 12px', 
-                          fontSize: '11.5px', 
-                          fontWeight: '700', 
-                          borderRadius: '6px', 
-                          background: '#ffffff', 
-                          border: '1px solid #344BFD', 
-                          color: '#344BFD', 
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          boxShadow: '0 1px 3px rgba(52, 75, 253, 0.1)'
-                        }}
-                      >
-                        <span>View Job Details</span>
-                        <ArrowRight size={13} />
-                      </Link>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: badgeBg,
+                        border: `1px solid ${badgeBorder}`,
+                        color: badgeColor,
+                        padding: '3px 7px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        letterSpacing: '0.2px',
+                        flexShrink: 0
+                      }}>
+                        <IconComp size={11} strokeWidth={2.2} />
+                        {badgeLabel}
+                      </span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
           ) : (
             <div style={{
-              background: '#ffffff',
-              border: '1.5px solid #cbd5e1',
+              background: '#FFFFFF',
               borderRadius: '6px',
-              padding: '40px 20px',
+              border: '1px solid #E2E8F0',
+              padding: '32px 20px',
               textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)'
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '8px'
             }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '6px',
-                background: '#eff6ff',
-                color: '#344BFD',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px auto',
-                border: '1px solid #bfdbfe'
-              }}>
-                <ClipboardList size={26} />
+              <div style={{ width: '52px', height: '52px', borderRadius: '26px', backgroundColor: '#EFF6FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
+                <Briefcase size={26} color="#1B4FDF" strokeWidth={2.2} />
               </div>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0' }}>
-                No Applications Submitted Yet
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                {filterTab === 'ALL' ? 'No Active Applications' : 'No Applications Found'}
               </h3>
-              <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '360px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
-                Explore active industrial job vacancies across Maharashtra MIDC zones and submit your applications.
+              <p style={{ fontSize: '11.5px', color: '#64748B', margin: 0, maxWidth: '280px', lineHeight: 1.45 }}>
+                {filterTab === 'ALL'
+                  ? "You haven't submitted any job applications yet. Browse factory vacancies and apply today!"
+                  : `No job applications currently match the "${filterTab.toLowerCase()}" filter.`}
               </p>
-              <Link 
-                to="/jobs" 
+              <Link
+                to="/jobs"
                 style={{
-                  padding: '10px 20px',
-                  borderRadius: '4px',
-                  background: '#344BFD',
-                  color: '#ffffff',
+                  background: '#1B4FDF',
+                  color: '#FFFFFF',
+                  padding: '9px 18px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 800,
                   textDecoration: 'none',
-                  fontWeight: '700',
-                  fontSize: '13px',
-                  boxShadow: '0 2px 6px rgba(52, 75, 253, 0.25)',
+                  marginTop: '6px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
               >
-                <span>Browse Vacancies →</span>
+                Explore Jobs & Vacancies
               </Link>
             </div>
           )}
         </div>
-      );
+      </div>
+    );
 
     case 'saved':
       return (
@@ -1026,7 +1153,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
       return <ProfilePage />;
 
     case 'resume':
-      return <ResumePage />;
+      return null;
 
     default:
       return null;
@@ -1045,6 +1172,8 @@ const CandidatesTab: React.FC<{
   const [selectedTrade, setSelectedTrade] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
+
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -1104,80 +1233,146 @@ const CandidatesTab: React.FC<{
   const hasActiveFilters = searchQuery !== '' || selectedTrade !== '' || selectedLocation !== '';
 
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box' }}>
-      <div style={{ marginBottom: '14px' }}>
-        <h2 style={{ fontSize: '18px', margin: 0, fontWeight: '800', color: '#0f172a' }}>Browse Candidates</h2>
-        <p style={{ color: '#64748b', fontSize: '12px', margin: '2px 0 0', fontWeight: '500' }}>
-          Discover verified factory workers, ITI technicians, and industrial specialists.
-        </p>
-      </div>
-
-      {/* Search & Filter Bar (Matching Mobile App Screenshot) */}
-      <div style={{ 
-        background: '#ffffff', 
-        padding: '8px 12px', 
-        borderRadius: '12px', 
-        border: showFilterPanel || hasActiveFilters ? '1.5px solid #2563EB' : '1.5px solid #cbd5e1', 
-        marginBottom: '10px',
-        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        width: '100%',
-        boxSizing: 'border-box'
+    <div style={{
+      width: '100%',
+      maxWidth: '680px',
+      margin: '0 auto',
+      padding: '0px 16px 40px',
+      boxSizing: 'border-box'
+    }}>
+      {/* Sticky Top Search Bar (Exact Mobile App Behavior - 0px Gap) */}
+      <div style={{
+        position: 'sticky',
+        top: 'var(--navbar-height)',
+        zIndex: 40,
+        backgroundColor: '#FFFFFF',
+        margin: '0px -16px 12px -16px',
+        padding: '10px 16px 10px 16px',
+        borderBottom: '1px solid #E7EBF2',
+        boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
       }}>
-        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" style={{ position: 'absolute', left: '8px', pointerEvents: 'none', zIndex: 2 }}>
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+        <div style={{ 
+          background: '#F8FAFC', 
+          padding: '0 12px', 
+          borderRadius: '8px', 
+          border: (isSearchFocused || searchQuery || showFilterPanel || hasActiveFilters) ? '1px solid #1764E8' : '1px solid #E2E8F0', 
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          alignItems: 'center',
+          height: '38px',
+          width: '100%',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.15s ease'
+        }}>
+          <Search size={14} color={isSearchFocused ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
           <input 
             type="text" 
-            placeholder="Search by location (e.g. MIDC)..."
+            placeholder="Search by Skills (e.g. CNC, Vernier, AutoCAD)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%', paddingLeft: '34px', fontSize: '13px', height: '38px', borderRadius: '8px', border: 'none', outline: 'none', background: 'transparent', color: '#0f172a' }}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            style={{
+              flex: 1,
+              width: '100%',
+              fontSize: '12.5px',
+              height: '100%',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: '#102A5C',
+              fontWeight: 500
+            }}
           />
           {searchQuery && (
             <button 
               type="button" 
               onClick={() => setSearchQuery('')}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', padding: '2px' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#91A0BA',
+                cursor: 'pointer',
+                fontSize: '13px',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '2px'
+              }}
             >
               ✕
             </button>
           )}
+
+          <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0', margin: '0 6px', flexShrink: 0 }} />
+
+          {/* Filter Sliders Action Icon Toggle */}
+          <button 
+            type="button"
+            onClick={() => setShowFilterPanel(prev => !prev)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              cursor: 'pointer', 
+              padding: '4px',
+              background: 'none',
+              border: 'none',
+              color: showFilterPanel || hasActiveFilters ? '#1764E8' : '#657796',
+              position: 'relative'
+            }} 
+            title="Toggle Filters"
+          >
+            <SlidersHorizontal size={14} />
+            {hasActiveFilters && (
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#1764E8', borderWidth: '1.5px', borderColor: '#FFFFFF', position: 'absolute', top: '0px', right: '0px' }} />
+            )}
+          </button>
         </div>
 
-        <div style={{ width: '1px', height: '24px', backgroundColor: '#CBD5E1' }} />
-
-        {/* Filter Sliders Action Icon Toggle */}
-        <div 
-          onClick={() => setShowFilterPanel(prev => !prev)}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            cursor: 'pointer', 
-            padding: '4px',
-            color: showFilterPanel || hasActiveFilters ? '#2563EB' : '#64748B',
-            position: 'relative'
-          }} 
-          title="Toggle Filters"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
-          </svg>
-          {hasActiveFilters && (
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#2563EB', position: 'absolute', top: '2px', right: '2px' }} />
-          )}
-        </div>
+        {/* Results Info Row */}
+        {(searchQuery || hasActiveFilters) && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '8px',
+            marginBottom: '0px'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#657796' }}>
+              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'}
+              {selectedTrade ? ` • ${selectedTrade}` : ''}
+              {selectedLocation ? ` • ${selectedLocation}` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedTrade('');
+                setSelectedLocation('');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#1764E8',
+                cursor: 'pointer'
+              }}
+            >
+              Reset All
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Expandable Filter Drawer Panel */}
       {showFilterPanel && (
         <div style={{
           backgroundColor: '#FFFFFF',
-          border: '1.5px solid #CBD5E1',
-          borderRadius: '10px',
+          border: '1px solid #E2E8F0',
+          borderRadius: '8px',
           padding: '12px',
           marginBottom: '14px',
           display: 'flex',
@@ -1192,7 +1387,7 @@ const CandidatesTab: React.FC<{
                 className="form-select"
                 value={selectedTrade}
                 onChange={(e) => setSelectedTrade(e.target.value)}
-                style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '6px', border: '1px solid #CBD5E1' }}
+                style={{ width: '100%', fontSize: '12px', height: '34px', borderRadius: '6px', border: '1px solid #E2E8F0' }}
               >
                 <option value="">All Specializations</option>
                 {uniqueTrades.map(trade => (
@@ -1207,7 +1402,7 @@ const CandidatesTab: React.FC<{
                 className="form-select"
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                style={{ width: '100%', fontSize: '12px', height: '36px', borderRadius: '6px', border: '1px solid #CBD5E1' }}
+                style={{ width: '100%', fontSize: '12px', height: '34px', borderRadius: '6px', border: '1px solid #E2E8F0' }}
               >
                 <option value="">All Locations</option>
                 {uniqueLocations.map(loc => (
@@ -1228,7 +1423,7 @@ const CandidatesTab: React.FC<{
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#2563EB',
+                  color: '#1764E8',
                   fontWeight: '700',
                   fontSize: '11.5px',
                   cursor: 'pointer',
@@ -1243,15 +1438,15 @@ const CandidatesTab: React.FC<{
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px 16px', background: '#ffffff', borderRadius: '6px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)' }}>
+        <div style={{ textAlign: 'center', padding: '48px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)' }}>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', border: '3.5px solid #cbd5e1', borderTopColor: '#344BFD', animation: 'spin 0.8s linear infinite' }}></div>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #E2E8F0', borderTopColor: '#1764E8', animation: 'spin 0.8s linear infinite' }}></div>
           </div>
-          <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>Loading Candidate Profiles...</h4>
-          <p style={{ margin: 0, fontSize: '12.5px', fontWeight: '600', color: '#64748b' }}>Fetching verified industrial workers and ITI technicians</p>
+          <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '700', color: '#102A5C' }}>Loading Candidate Profiles...</h4>
+          <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Fetching verified industrial workers and ITI technicians</p>
         </div>
       ) : filteredCandidates.length > 0 ? (
-        <div className="candidates-grid-responsive">
+        <div className="candidates-grid-responsive" style={{ gap: '10px' }}>
           {filteredCandidates.map(c => {
             const skillsList: string[] = Array.isArray(c.skills)
               ? c.skills
@@ -1266,36 +1461,35 @@ const CandidatesTab: React.FC<{
                 key={c.id || c.email} 
                 style={{ 
                   backgroundColor: '#FFFFFF', 
-                  border: '1.5px solid #CBD5E1', 
-                  borderRadius: '12px', 
-                  padding: '12px 8px 10px 8px', 
+                  border: '1px solid #CBD5E1', 
+                  borderRadius: '8px', 
+                  padding: '10px', 
                   display: 'flex', 
                   flexDirection: 'column', 
                   alignItems: 'center', 
-                  textAlign: 'center',
-                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
-                  position: 'relative',
+                  textAlign: 'center', 
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)', 
+                  position: 'relative', 
                   width: '100%', 
-                  minWidth: 0,
-                  maxWidth: '100%',
-                  boxSizing: 'border-box',
-                  overflow: 'hidden'
-                }}
+                  minWidth: 0, 
+                  maxWidth: '100%', 
+                  boxSizing: 'border-box', 
+                  overflow: 'hidden', 
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease' 
+                }} 
               >
-                {/* Circular Candidate Avatar */}
+                {/* Centered Profile Avatar */}
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1E3A8A',
-                  color: '#FFFFFF',
-                  border: '2px solid #FFFFFF',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '24px',
+                  backgroundColor: '#EEF4FF',
+                  border: '1px solid #DBEAFE',
                   overflow: 'hidden',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 8px auto',
+                  margin: '2px auto 0 auto',
                   flexShrink: 0
                 }}>
                   {c.profilePictureUrl && typeof c.profilePictureUrl === 'string' ? (
@@ -1308,7 +1502,7 @@ const CandidatesTab: React.FC<{
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.5px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#1764E8' }}>
                       {initials}
                     </span>
                   )}
@@ -1316,10 +1510,10 @@ const CandidatesTab: React.FC<{
 
                 {/* Candidate Name */}
                 <h4 style={{
-                  margin: '0 0 2px 0',
-                  fontSize: '13.5px',
+                  margin: '4px 0 2px 0',
+                  fontSize: '12.5px',
                   fontWeight: '700',
-                  color: '#0F172A',
+                  color: '#102A5C',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1332,34 +1526,34 @@ const CandidatesTab: React.FC<{
 
                 {/* Role / Specialization */}
                 <div style={{
-                  fontSize: '11.5px',
-                  fontWeight: '700',
-                  color: '#2563EB',
+                  fontSize: '10.5px',
+                  fontWeight: '500',
+                  color: '#1764E8',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   width: '100%',
                   textAlign: 'center',
-                  marginBottom: '3px',
+                  marginTop: '1px',
                   lineHeight: '1.2'
                 }}>
-                  {c.headline || c.tradeSpecialization || 'Industrial Worker'}
+                  {c.headline || c.tradeSpecialization || 'Technician'}
                 </div>
 
-                {/* Location Address */}
+                {/* Company / Location */}
                 <div style={{
-                  fontSize: '10.5px',
-                  color: '#64748B',
-                  fontWeight: '500',
+                  fontSize: '10px',
+                  color: '#657796',
+                  fontWeight: '400',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   width: '100%',
                   textAlign: 'center',
-                  marginBottom: '8px',
+                  marginTop: '1px',
                   lineHeight: '1.2'
                 }}>
-                  {c.location || 'Waluj MIDC, Chhatrapati Sambhajinagar'}
+                  {c.location || 'MIDC Zone'}
                 </div>
 
                 {/* Skill Badges Row */}
@@ -1369,17 +1563,19 @@ const CandidatesTab: React.FC<{
                   justifyContent: 'center',
                   gap: '4px',
                   width: '100%',
-                  marginBottom: '10px',
-                  minHeight: '22px',
+                  height: '20px',
+                  marginTop: '4px',
+                  marginBottom: '4px',
                   overflow: 'hidden'
                 }}>
                   {skillsList.length > 0 ? (
                     <>
                       <span style={{
-                        backgroundColor: '#F1F5F9',
-                        color: '#334155',
-                        fontSize: '10px',
-                        fontWeight: '600',
+                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        color: '#475569',
+                        fontSize: '9.5px',
+                        fontWeight: '500',
                         padding: '2px 6px',
                         borderRadius: '4px',
                         whiteSpace: 'nowrap',
@@ -1391,9 +1587,10 @@ const CandidatesTab: React.FC<{
                       </span>
                       {skillsList.length > 1 && (
                         <span style={{
-                          backgroundColor: '#EFF6FF',
-                          color: '#2563EB',
-                          fontSize: '10px',
+                          backgroundColor: '#EEF4FF',
+                          border: '1px solid #DBEAFE',
+                          color: '#1764E8',
+                          fontSize: '9.5px',
                           fontWeight: '700',
                           padding: '2px 5px',
                           borderRadius: '4px',
@@ -1404,7 +1601,17 @@ const CandidatesTab: React.FC<{
                       )}
                     </>
                   ) : (
-                    <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '500' }}>No skills listed</span>
+                    <span style={{
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      color: '#475569',
+                      fontSize: '9.5px',
+                      fontWeight: '500',
+                      padding: '2px 6px',
+                      borderRadius: '4px'
+                    }}>
+                      Industrial Trade
+                    </span>
                   )}
                 </div>
 
@@ -1420,19 +1627,19 @@ const CandidatesTab: React.FC<{
                   }}
                   style={{
                     width: '100%',
-                    height: '32px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1.5px solid #2563EB',
+                    height: '28px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
                     borderRadius: '6px',
-                    color: '#2563EB',
-                    fontWeight: '700',
-                    fontSize: '11.5px',
+                    color: '#1764E8',
+                    fontWeight: '600',
+                    fontSize: '10.5px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                    marginTop: 'auto'
+                    transition: 'all 0.15s ease',
+                    marginTop: '6px'
                   }}
                 >
                   View Profile
@@ -1472,15 +1679,72 @@ interface EmployerProps {
   getJobsByEmployer: (id: string) => Job[];
   deleteJob: (id: string) => void;
   updateApplicantStatus: (jobId: string, applicantUserId: string, newStatus: string) => void;
+  fetchEmployerJobs?: () => Promise<any>;
   showToast: any;
   navigate: any;
   setTab: (tab: string) => void;
   t: any;
 }
 
-const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsByEmployer, deleteJob, updateApplicantStatus, showToast, navigate, setTab, t }) => {
-  const myJobs = getJobsByEmployer(currentUser.id);
+const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsByEmployer, deleteJob, updateApplicantStatus, fetchEmployerJobs, showToast, navigate, setTab, t }) => {
+  const [employerJobs, setEmployerJobs] = useState<Job[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+
+  const loadEmployerJobs = useCallback(async () => {
+    try {
+      setLoadingJobs(true);
+      const res = await apiFetch('/api/v1/jobs/my-jobs/all');
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        setEmployerJobs(json.data);
+      }
+      if (fetchEmployerJobs) {
+        await fetchEmployerJobs();
+      }
+    } catch (e) {
+      console.error('Error fetching employer jobs in EmployerDashboard:', e);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [fetchEmployerJobs]);
+
+  useEffect(() => {
+    loadEmployerJobs();
+  }, [loadEmployerJobs, tab]);
+
+  const storeJobs = getJobsByEmployer(currentUser.id);
+  const myJobs = employerJobs.length > 0 ? employerJobs : storeJobs;
   const activeJobs = myJobs.filter(j => j.status === 'active' || (j as any).dbStatus === 'APPROVED');
+  const [manageActiveTab, setManageActiveTab] = useState<'ALL' | 'APPROVED' | 'PENDING_REVIEW' | 'REJECTED'>('ALL');
+
+  const isPendingJobStatus = (status?: string) => {
+    const s = (status || '').toUpperCase();
+    return s === 'PENDING' || s === 'PENDING_REVIEW' || s === 'PENDING_APPROVAL' || s === 'DRAFT' || s === 'IN_REVIEW' || s === 'UNDER_APPROVAL' || status === 'pending';
+  };
+
+  const isApprovedJobStatus = (status?: string) => {
+    const s = (status || '').toUpperCase();
+    return s === 'APPROVED' || s === 'ACTIVE' || status === 'active';
+  };
+
+  const isRejectedJobStatus = (status?: string) => {
+    const s = (status || '').toUpperCase();
+    return s === 'REJECTED' || s === 'CLOSED' || status === 'rejected';
+  };
+
+  const filteredManageJobs = myJobs.filter((j) => {
+    const status = (j.dbStatus || j.status || '') as string;
+    if (manageActiveTab === 'ALL') return true;
+    if (manageActiveTab === 'APPROVED') return isApprovedJobStatus(status);
+    if (manageActiveTab === 'PENDING_REVIEW') return isPendingJobStatus(status);
+    if (manageActiveTab === 'REJECTED') return isRejectedJobStatus(status);
+    return true;
+  });
+
+  const pendingJobsCount = myJobs.filter((j) => isPendingJobStatus((j.dbStatus || j.status || '') as string)).length;
+  const approvedJobsCount = myJobs.filter((j) => isApprovedJobStatus((j.dbStatus || j.status || '') as string)).length;
+  const rejectedJobsCount = myJobs.filter((j) => isRejectedJobStatus((j.dbStatus || j.status || '') as string)).length;
+
   const rejectedJobs = myJobs.filter(j => ((j.dbStatus || j.status || '') as string).toUpperCase() === 'REJECTED' || j.status === 'rejected' || !!j.rejectReason);
   const totalApplicants = myJobs.reduce((sum, j) => sum + (j.applicants?.length || 0), 0);
   const totalViews = myJobs.reduce((sum, j) => sum + (j.views || 0), 0);
@@ -1657,20 +1921,20 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleOpenDetails = (applicant: any, jobId: string, jobTitle: string) => {
-    setViewWorker({ ...applicant, jobId, jobTitle, job: myJobs.find(j => j.id === jobId) });
-    setEmailSubject(`Regarding your application for ${jobTitle || applicant.headline || 'Job Opening'}`);
-    setEmailMessage(`Hi ${applicant.name},\n\nWe would like to connect with you regarding your application for the ${jobTitle || applicant.headline || 'Position'} at ${currentUser?.companyName || currentUser?.name}.\n\nBest regards,\nRecruitment Team\n${currentUser?.companyName || currentUser?.name}`);
-    setActiveSubTab('job_details');
-    setInterviewDate(applicant.interviewDate || '');
-    setInterviewTime(applicant.interviewTime || '');
-    setVenueAddress(applicant.venueAddress || '');
-    setMapsLink(applicant.mapsLink || '');
-
-    // Increment profile view metric for candidate
-    const targetUserId = applicant.userId || applicant.id;
+    const targetUserId = applicant.userId || applicant.id || applicant.user?.id;
     if (targetUserId) {
       apiFetch(`/api/v1/users/${targetUserId}/view`, { method: 'POST' }).catch(() => {});
     }
+
+    if (jobId && targetUserId) {
+      navigate(`/job/${jobId}/applicant/${targetUserId}`);
+      return;
+    } else if (targetUserId) {
+      navigate(`/applicant/${targetUserId}`);
+      return;
+    }
+
+    setViewWorker({ ...applicant, jobId, jobTitle, job: myJobs.find(j => j.id === jobId) });
   };
 
   const handleDelete = (jobId: string) => {
@@ -1942,240 +2206,365 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'manage': {
       const renderJobStatusBadge = (job: Job) => {
         const rawStatus = ((job.dbStatus || job.status || '') as string).toUpperCase();
-        if (rawStatus === 'PENDING_REVIEW' || rawStatus === 'PENDING' || rawStatus === 'UNDER_APPROVAL' || job.status === 'pending') {
+        if (rawStatus === 'PENDING_REVIEW' || rawStatus === 'PENDING' || rawStatus === 'UNDER_APPROVAL' || rawStatus === 'DRAFT' || rawStatus === 'IN_REVIEW' || job.status === 'pending') {
           return (
-            <span style={{ padding: '4px 9px', borderRadius: '9999px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>Under Approval</span>
+            <span style={{ padding: '3px 8px', borderRadius: '6px', background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <Clock size={11} color="#B45309" />
+              <span>Under Review</span>
             </span>
           );
         }
         if (rawStatus === 'REJECTED' || job.status === 'rejected') {
           return (
-            <span style={{ padding: '4px 9px', borderRadius: '9999px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span style={{ padding: '3px 8px', borderRadius: '6px', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <XCircle size={11} color="#DC2626" />
               <span>Rejected</span>
             </span>
           );
         }
         if (rawStatus === 'CLOSED' || job.status === 'closed') {
           return (
-            <span style={{ padding: '4px 9px', borderRadius: '9999px', background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <span style={{ padding: '3px 8px', borderRadius: '6px', background: '#F1F5F9', color: '#64748B', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Closed
             </span>
           );
         }
         return (
-          <span style={{ padding: '4px 9px', borderRadius: '9999px', background: '#dbeafe', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <span>Active (Live)</span>
+          <span style={{ padding: '3px 8px', borderRadius: '6px', background: '#EFF6FF', color: '#1764E8', border: '1px solid #BFDBFE', fontSize: '11px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <CheckCircle2 size={11} color="#1764E8" />
+            <span>Active</span>
           </span>
         );
       };
 
       return (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Manage Jobs</h2>
-            <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>Track applications, edit vacancies & manage listings</p>
+        <div style={{
+          width: '100%',
+          maxWidth: '680px',
+          margin: '0 auto',
+          padding: '0px 16px 40px',
+          boxSizing: 'border-box'
+        }}>
+          {/* Filter Tabs Bar - 100% Mobile App Underline Tab Navigation */}
+          <div style={{
+            position: 'sticky',
+            top: 'var(--navbar-height)',
+            zIndex: 40,
+            backgroundColor: '#FFFFFF',
+            margin: '0px -16px 12px -16px',
+            padding: '0px 16px 0px 16px',
+            borderBottom: '1px solid #E7EBF2',
+            boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              paddingTop: '4px'
+            }}>
+              {[
+                { key: 'ALL', label: 'All Jobs', count: myJobs.length },
+                { key: 'APPROVED', label: 'Active', count: approvedJobsCount },
+                { key: 'PENDING_REVIEW', label: 'Pending', count: pendingJobsCount },
+                { key: 'REJECTED', label: 'Rejected', count: rejectedJobsCount },
+              ].map((tab) => {
+                const isSelected = manageActiveTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setManageActiveTab(tab.key as any)}
+                    style={{
+                      height: '38px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderBottom: isSelected ? '2px solid #1764E8' : '2px solid transparent',
+                      padding: '0 2px',
+                      marginBottom: '-1px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
+                    }}
+                  >
+                    <span style={{
+                      fontSize: '12.5px',
+                      fontWeight: isSelected ? 700 : 600,
+                      color: isSelected ? '#1764E8' : '#657796'
+                    }}>
+                      {tab.label}
+                    </span>
+                    <span style={{
+                      backgroundColor: isSelected ? '#EEF4FF' : '#F1F5F9',
+                      color: isSelected ? '#1764E8' : '#657796',
+                      padding: '1.5px 6px',
+                      borderRadius: '8px',
+                      minWidth: '18px',
+                      fontSize: '10.5px',
+                      fontWeight: isSelected ? 700 : 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {myJobs.length > 0 ? (
-            <>
-              {/* Desktop Table View */}
-              <div className="manage-jobs-card desktop-manage-jobs-table">
-                <div style={{ overflowX: 'auto', width: '100%' }}>
-                  <table className="manage-table">
-                    <thead>
-                      <tr><th>Job Title</th><th>Vacancies</th><th>Applicants</th><th>Views</th><th>Status</th><th>Posted</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody>
-                      {myJobs.map(job => (
-                        <tr key={job.id}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <div style={{ width: '38px', height: '38px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {job.companyLogo || (job as any).company_logo ? (
-                                  <img src={job.companyLogo || (job as any).company_logo} alt={job.company || job.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                  <CompanyDefaultLogo companyName={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={38} />
-                                )}
-                              </div>
-                              <div>
-                                <span className="table-job-title" style={{ fontWeight: '700', color: '#0f172a', display: 'block' }}>{job.title}</span>
-                                <span className="table-company" style={{ color: '#64748b', fontSize: '12px' }}>{job.company ? `${job.company} · ` : ''}{job.location} · {job.jobType}</span>
-                              </div>
-                            </div>
-                            {(job.rejectReason || ((job.dbStatus || job.status || '') as string).toUpperCase() === 'REJECTED') && (
-                              <div style={{ fontSize: '11.5px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '4px 8px', borderRadius: '6px', marginTop: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                ⚠️ <strong>Admin Note:</strong> {job.rejectReason || 'Correction required'}
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: '700' }}>{job.filledOpenings || 0}</span> / <span>{job.openings}</span>
-                            {job.openings > (job.filledOpenings || 0) ? (
-                              <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: '600', marginTop: '2px' }}>
-                                ({job.openings - (job.filledOpenings || 0)} open)
-                              </div>
-                            ) : (
-                              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                                (0 open)
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            <Link to={`/job/${job.id}/applicants`} style={{ textDecoration: 'none', color: '#344BFD', fontWeight: '800' }}>
-                              {job.applicants?.length || 0} candidates
-                            </Link>
-                          </td>
-                          <td>{job.views || 0}</td>
-                          <td>{renderJobStatusBadge(job)}</td>
-                          <td>{timeAgo(job.postedAt)}</td>
-                          <td>
-                            <div className="table-actions">
-                              {(((job.dbStatus || job.status || '') as string).toUpperCase() === 'REJECTED' || job.status === 'rejected') && (
-                                <button className="table-action-btn" title="Edit & Resubmit" style={{ background: '#DC2626', color: 'white', border: 'none' }} onClick={() => navigate(`/edit-job/${job.id}`)}>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                </button>
-                              )}
-                              <button className="table-action-btn" title="Manage Vacancies" onClick={() => setManageVacanciesJob(job)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                                  <polyline points="9 13 11 15 15 11"/>
-                                </svg>
-                              </button>
-                              <button className="table-action-btn" title="View Applicants" onClick={() => navigate(`/job/${job.id}/applicants`)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                </svg>
-                              </button>
-                              <button className="table-action-btn" title="Edit" onClick={() => navigate(`/edit-job/${job.id}`)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                              </button>
-                              <button className="table-action-btn" title="View Listing" onClick={() => navigate(`/job/${job.id}`)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                                </svg>
-                              </button>
-                              <button 
-                                className="table-action-btn" 
-                                title="Share Job Link" 
-                                onClick={() => {
-                                  const jobUrl = `${window.location.origin}/job/${job.id}`;
-                                  shareContent(
-                                    job.title,
-                                    `Check out this job: ${job.title} at ${job.company || 'JobMarket'}`,
-                                    jobUrl,
-                                    () => showToast('Job link copied to clipboard! 📋', 'success')
-                                  );
-                                }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                                </svg>
-                              </button>
-                              <button className="table-action-btn danger" title="Delete" onClick={() => handleDelete(job.id)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+          {filteredManageJobs.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+              {filteredManageJobs.map((job) => {
+                const pending = isPendingJobStatus((job.dbStatus || job.status || '') as string);
+                const isRejected = isRejectedJobStatus((job.dbStatus || job.status || '') as string);
+                const logoUri = job.companyLogo || (job as any).company_logo || currentUser?.companyLogo || currentUser?.company_logo;
 
-              {/* Mobile Responsive Cards View */}
-              <div className="mobile-manage-jobs-list" style={{ width: '100%', boxSizing: 'border-box' }}>
-                {myJobs.map(job => (
-                  <div key={job.id} style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '14px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)', display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: '#eff6ff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {job.companyLogo || (job as any).company_logo ? (
-                          <img src={job.companyLogo || (job as any).company_logo} alt={job.company || job.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                const salMin = job.salary_min ?? (job as any).salaryMin ?? (job as any).salary_min;
+                const salMax = job.salary_max ?? (job as any).salaryMax ?? (job as any).salary_max;
+
+                let salaryStr = 'Salary Undisclosed';
+                if (salMin && salMax) {
+                  salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
+                } else if (salMin || salMax) {
+                  salaryStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')}`;
+                }
+
+                const totalVacancies = job.openings ?? (job as any).openings ?? 1;
+                const filledVacancies = job.filledOpenings ?? (job as any).filled_openings ?? 0;
+                const actualApplicantCount = typeof (job as any).applicants_count === 'number'
+                  ? (job as any).applicants_count
+                  : (typeof (job as any).applicantsCount === 'number'
+                      ? (job as any).applicantsCount
+                      : (Array.isArray(job.applicants) ? job.applicants.length : 0));
+
+                const locationText = job.location || (job as any).midcZone || (job as any).midc_zone || 'MIDC Area';
+                const tradeText = (job as any).tradeSpecialization || (job as any).trade_specialization || job.industry;
+
+                return (
+                  <div
+                    key={job.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      padding: '12px',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)',
+                      transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {/* Header Row with Logo, Title & Status */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {/* Company Logo Box */}
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EEF4FF',
+                        border: '1px solid #DBEAFE',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}>
+                        {logoUri ? (
+                          <img src={logoUri} alt={job.company || job.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <CompanyDefaultLogo companyName={job.company || currentUser?.companyName || 'Company'} logoUrl={null} size={44} />
+                          <Building2 size={18} color="#1764E8" strokeWidth={2} />
                         )}
                       </div>
 
+                      {/* Header Text Column */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', width: '100%' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a', lineHeight: 1.25 }}>{job.title}</h4>
-                            {job.company && <div style={{ fontSize: '12px', color: '#334155', fontWeight: '600', marginBottom: '3px' }}>{job.company}</div>}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>
-                              <MapPin size={12} style={{ color: '#2563eb', flexShrink: 0 }} />
-                              <span>{job.location || 'Onsite'}</span>
-                              <span style={{ color: '#cbd5e1' }}>•</span>
-                              <span>{job.jobType}</span>
-                            </div>
-                          </div>
-
-                          <div style={{ flexShrink: 0 }}>
-                            {renderJobStatusBadge(job)}
-                          </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                          <h4
+                            onClick={() => navigate(`/job/${job.id}/applicants`)}
+                            style={{
+                              fontSize: '13.5px',
+                              fontWeight: 700,
+                              color: '#102A5C',
+                              letterSpacing: '-0.2px',
+                              margin: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {job.title}
+                          </h4>
+                          {renderJobStatusBadge(job)}
                         </div>
 
-                        {(job.rejectReason || ((job.dbStatus || job.status || '') as string).toUpperCase() === 'REJECTED') && (
-                          <div style={{ fontSize: '11.5px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '6px 8px', borderRadius: '6px', marginTop: '8px', fontWeight: '600' }}>
-                            ⚠️ <strong>Admin Note:</strong> {job.rejectReason || 'Correction required by admin'}
-                          </div>
-                        )}
+                        <div style={{
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: '#657796',
+                          marginTop: '1.5px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {job.company || currentUser?.companyName || 'Company'}
+                          {tradeText ? ` • ${tradeText}` : ''}
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9', textAlign: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Vacancies</div>
-                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '1px' }}>
-                          {job.filledOpenings || 0} / {job.openings}
+                    {/* Chips / Meta Details Row */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        padding: '2.5px 7px',
+                        borderRadius: '6px',
+                        fontSize: '10.5px',
+                        fontWeight: 500,
+                        color: '#657796'
+                      }}>
+                        <MapPin size={11} color="#657796" />
+                        <span>{locationText}</span>
+                      </div>
+
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        padding: '2.5px 7px',
+                        borderRadius: '6px',
+                        fontSize: '10.5px',
+                        fontWeight: 500,
+                        color: '#657796'
+                      }}>
+                        <span>{salaryStr}</span>
+                      </div>
+
+                      {(job.jobType || job.job_type) && (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          padding: '2.5px 7px',
+                          borderRadius: '6px',
+                          fontSize: '10.5px',
+                          fontWeight: 500,
+                          color: '#657796'
+                        }}>
+                          <span>{job.jobType || job.job_type}</span>
                         </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Applicants</div>
-                        <Link to={`/job/${job.id}/applicants`} style={{ fontSize: '13px', fontWeight: '800', color: '#344BFD', textDecoration: 'none', display: 'block', marginTop: '1px' }}>
-                          {job.applicants?.length || 0}
-                        </Link>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Views</div>
-                        <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '1px' }}>{job.views || 0}</div>
-                      </div>
+                      )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '2px' }}>
-                      {/* Tier 1: Primary Action Button (Full Width) */}
-                      <button 
-                        onClick={() => navigate(`/job/${job.id}/applicants`)} 
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#344BFD', color: '#ffffff', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        <span>View Applicants ({job.applicants?.length || 0})</span>
-                      </button>
+                    {/* Pending Notice Banner */}
+                    {pending && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        padding: '5px 8px',
+                        borderRadius: '6px',
+                        marginTop: '8px',
+                        fontSize: '10.5px',
+                        fontWeight: 600,
+                        color: '#B45309'
+                      }}>
+                        <Clock size={12} color="#D97706" style={{ flexShrink: 0 }} />
+                        <span>Pending Admin Approval — Under review. Will go live once verified.</span>
+                      </div>
+                    )}
 
-                      {/* Tier 2: Secondary Action Toolbar (4 items aligned in 1 row) */}
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <button 
-                          onClick={() => setManageVacanciesJob(job)} 
-                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    {/* Rejected Notice Banner */}
+                    {isRejected && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        padding: '5px 8px',
+                        borderRadius: '6px',
+                        marginTop: '8px',
+                        fontSize: '10.5px',
+                        fontWeight: 600,
+                        color: '#B91C1C'
+                      }}>
+                        <XCircle size={12} color="#DC2626" style={{ flexShrink: 0 }} />
+                        <span>Job Rejected — {job.rejectReason || (job as any).reject_reason || 'Does not meet posting requirements.'}</span>
+                      </div>
+                    )}
+
+                    {/* Card Row Divider */}
+                    <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '9px 0' }} />
+
+                    {/* Action Footer Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                      {/* Left: Clean Borderless Text Buttons (Applicants & Vacancies/Openings) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/job/${job.id}/applicants`)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4.5px',
+                            background: 'none',
+                            border: 'none',
+                            padding: '4px 0',
+                            cursor: 'pointer',
+                            color: '#334155',
+                            fontSize: '11.5px',
+                            fontWeight: 600
+                          }}
+                          title="View Applicants"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                          <span>Openings</span>
+                          <Users size={13} color="#475569" strokeWidth={2} />
+                          <span>{actualApplicantCount} {actualApplicantCount === 1 ? 'Applicant' : 'Applicants'}</span>
                         </button>
-                        <button 
+
+                        <button
+                          type="button"
+                          onClick={() => setManageVacanciesJob(job)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4.5px',
+                            background: 'none',
+                            border: 'none',
+                            padding: '4px 0',
+                            color: '#334155',
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                          title="Manage Vacancies"
+                        >
+                          <Briefcase size={12} color="#475569" strokeWidth={2} />
+                          <span>{filledVacancies}/{totalVacancies} Vacancies</span>
+                        </button>
+                      </div>
+
+                      {/* Right: Actions Group (Share, Edit, Delete) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+                        {/* Share Button */}
+                        <button
+                          type="button"
                           onClick={() => {
                             const jobUrl = `${window.location.origin}/job/${job.id}`;
                             shareContent(
@@ -2184,90 +2573,122 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                               jobUrl,
                               () => showToast('Job link copied to clipboard! 📋', 'success')
                             );
-                          }} 
-                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                          }}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '6px',
+                            backgroundColor: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#475569',
+                            cursor: 'pointer'
+                          }}
                           title="Share Job Link"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                          </svg>
-                          <span>Share</span>
+                          <Share2 size={13} color="#475569" strokeWidth={2} />
                         </button>
-                        <button 
-                          onClick={() => navigate(`/edit-job/${job.id}`)} 
-                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+
+                        {/* Edit Button */}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/edit-job/${job.id}`)}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '6px',
+                            backgroundColor: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#475569',
+                            cursor: 'pointer'
+                          }}
+                          title="Edit Job"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          <span>Edit</span>
+                          <Edit3 size={13} color="#475569" strokeWidth={2} />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(job.id)} 
-                          style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', fontWeight: '700', fontSize: '11.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          title="Delete Listing"
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(job.id)}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '6px',
+                            backgroundColor: '#FEF2F2',
+                            border: '1px solid #FECACA',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#EF4444',
+                            cursor: 'pointer'
+                          }}
+                          title="Delete Job"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/></svg>
+                          <Trash2 size={13} color="#EF4444" strokeWidth={2} />
                         </button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </>
+                );
+              })}
+            </div>
           ) : (
             <div style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '16px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #E7EBF2',
               padding: '40px 20px',
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+              textAlign: 'center'
             }}>
               <div style={{
-                width: '64px',
-                height: '64px',
+                width: '48px',
+                height: '48px',
                 borderRadius: '50%',
-                background: '#eff6ff',
-                color: '#344BFD',
+                backgroundColor: '#EFF6FF',
+                color: '#1764E8',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 16px auto',
-                border: '1px solid #bfdbfe'
+                margin: '0 auto 12px'
               }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
+                <Briefcase size={22} color="#1764E8" strokeWidth={2} />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0' }}>
-                No Job Listings Posted Yet
-              </h3>
-              <p style={{ fontSize: '13.5px', color: '#64748b', maxWidth: '360px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
-                Start posting industrial job openings to reach thousands of verified candidates in your MIDC zone.
-              </p>
-              <button 
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#102A5C', marginBottom: '4px' }}>
+                No Job Postings Found
+              </div>
+              <div style={{ fontSize: '12px', color: '#657796', marginBottom: '16px' }}>
+                {manageActiveTab === 'ALL'
+                  ? 'You have not created any job postings yet.'
+                  : `No jobs currently found under the "${manageActiveTab === 'PENDING_REVIEW' ? 'Pending' : manageActiveTab === 'APPROVED' ? 'Active' : 'Rejected'}" filter.`}
+              </div>
+              <button
+                type="button"
                 onClick={() => setTab('post-job')}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: '10px',
-                  background: '#344BFD',
-                  color: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
                   border: 'none',
-                  fontWeight: '700',
-                  fontSize: '14px',
+                  backgroundColor: '#1764E8',
+                  color: '#FFFFFF',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(52, 75, 253, 0.3)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
               >
-                + Post Your First Job →
+                + Post Your First Job
               </button>
             </div>
           )}
-        </>
+        </div>
       );
     }
 
@@ -2277,11 +2698,17 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'applicants': {
       const allApplicants = getRecentApplicants();
       const filteredApplicants = allApplicants.filter(a => {
-        const matchesSearch = appSearchQuery === '' ||
-          a.name.toLowerCase().includes(appSearchQuery.toLowerCase()) ||
-          a.email.toLowerCase().includes(appSearchQuery.toLowerCase()) ||
-          a.jobTitle.toLowerCase().includes(appSearchQuery.toLowerCase());
-        const matchesStatus = appStatusFilter === 'all' || a.status === appStatusFilter;
+        const q = appSearchQuery.toLowerCase().trim();
+        const matchesSearch = !q ||
+          safeValue(a.name || a.user?.name).toLowerCase().includes(q) ||
+          safeValue(a.email || a.user?.email).toLowerCase().includes(q) ||
+          safeValue(a.jobTitle).toLowerCase().includes(q) ||
+          safeValue(a.headline || a.tradeSpecialization || a.trade_specialization || a.user?.headline).toLowerCase().includes(q) ||
+          safeValue(a.location || a.user?.location).toLowerCase().includes(q) ||
+          safeValue(a.skills || a.user?.skills).toLowerCase().includes(q);
+
+        const s = (a.status || 'applied').toLowerCase();
+        const matchesStatus = appStatusFilter === 'all' || s === appStatusFilter || (appStatusFilter === 'accepted' && s === 'hired') || (appStatusFilter === 'interviewed' && (s === 'interview' || s === 'interviewed'));
         const matchesJob = appJobFilter === 'all' || a.jobId === appJobFilter;
         return matchesSearch && matchesStatus && matchesJob;
       });
@@ -2289,258 +2716,434 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
       const totalReceived = allApplicants.length;
       const reviewedCount = allApplicants.filter(a => a.status === 'reviewed').length;
       const shortlistedCount = allApplicants.filter(a => a.status === 'shortlisted').length;
-      const acceptedCount = allApplicants.filter(a => a.status === 'accepted').length;
+      const acceptedCount = allApplicants.filter(a => a.status === 'accepted' || a.status === 'hired').length;
 
       return (
-        <div style={{ width: '100%', boxSizing: 'border-box' }}>
-          <div style={{ marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '17px', margin: 0, fontWeight: '700', color: '#0f172a' }}>Recent Job Applications</h2>
-            <p style={{ color: '#64748b', fontSize: '11.5px', margin: '2px 0 0' }}>
-              Track candidate applications, review job details, schedule interviews, and communicate directly with applicants.
-            </p>
-          </div>
-
-          {/* Metric Summary Cards (Compact 2x2 Grid) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '14px', width: '100%', boxSizing: 'border-box' }}>
-            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#eff6ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/>
-                </svg>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{totalReceived}</h3>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Total Received</p>
-              </div>
-            </div>
-
-            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                </svg>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{reviewedCount}</h3>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Under Review</p>
-              </div>
-            </div>
-
-            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{shortlistedCount}</h3>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Shortlisted</p>
-              </div>
-            </div>
-
-            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a', lineHeight: 1.2 }}>{acceptedCount}</h3>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Hired</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Filter Bar */}
-          <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ flex: '1 1 180px', position: 'relative' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', zIndex: 2 }}>
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+        <div style={{
+          width: '100%',
+          maxWidth: '680px',
+          margin: '0 auto',
+          padding: '0px 16px 40px',
+          boxSizing: 'border-box'
+        }}>
+          {/* Sticky Top Search & Filter Bar Section (0px Gap) */}
+          <div style={{
+            position: 'sticky',
+            top: 'var(--navbar-height)',
+            zIndex: 40,
+            backgroundColor: '#FFFFFF',
+            margin: '0px -16px 12px -16px',
+            padding: '10px 16px 8px 16px',
+            borderBottom: '1px solid #E7EBF2',
+            boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
+          }}>
+            {/* ── 1. SEARCH BAR ── */}
+            <div style={{ position: 'relative', marginBottom: '8px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#F8FAFC',
+                borderRadius: '8px',
+                border: appSearchQuery ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                padding: '0 12px',
+                height: '38px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                transition: 'border-color 0.15s ease'
+              }}>
+                <Search size={14} color={appSearchQuery ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
                 <input
                   type="text"
-                  className="form-input input-has-icon-left"
-                  placeholder="Search candidate name, email, job..."
                   value={appSearchQuery}
                   onChange={(e) => setAppSearchQuery(e.target.value)}
-                  style={{ width: '100%', paddingLeft: '38px', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  placeholder="Search by Skills (e.g. CNC, Vernier, AutoCAD)..."
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    width: '100%',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
+                    color: '#102A5C',
+                    backgroundColor: 'transparent'
+                  }}
                 />
+                {appSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAppSearchQuery('')}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      color: '#94A3B8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <div style={{ flex: '1 1 160px' }}>
+            </div>
+
+            {/* ── 2. FILTER & STATUS TABS ROW ── */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              overflowX: 'auto',
+              paddingBottom: '2px',
+              scrollbarWidth: 'none'
+            }}>
+              {/* Job Selector Dropdown Pill */}
+              <div style={{ flexShrink: 0 }}>
                 <select
-                  className="form-select"
                   value={appJobFilter}
                   onChange={(e) => setAppJobFilter(e.target.value)}
-                  style={{ width: '100%', height: '36px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  style={{
+                    height: '32px',
+                    padding: '0 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: '#FFFFFF',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#334155',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
                 >
                   <option value="all">All Jobs ({activeJobs.length})</option>
-                  {activeJobs.map(job => (
-                    <option key={job.id} value={job.id}>{job.title} ({(job.applicants || []).length})</option>
+                  {activeJobs.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.title} ({(job.applicants || []).length})
+                    </option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* Status Pills Container */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Status:</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {[
-                  { label: 'All', value: 'all' },
-                  { label: 'Applied', value: 'applied' },
-                  { label: 'Reviewed', value: 'reviewed' },
-                  { label: 'Shortlisted', value: 'shortlisted' },
-                  { label: 'Accepted', value: 'accepted' },
-                  { label: 'Rejected', value: 'rejected' },
-                ].map(st => (
+              {/* Status Tabs with Counts */}
+              {[
+                { label: 'All', value: 'all', count: allApplicants.length },
+                { label: 'Applied', value: 'applied', count: allApplicants.filter((a) => (a.status || 'applied') === 'applied').length },
+                { label: 'Shortlisted', value: 'shortlisted', count: allApplicants.filter((a) => a.status === 'shortlisted').length },
+                { label: 'Interviewed', value: 'interviewed', count: allApplicants.filter((a) => a.status === 'interviewed' || a.status === 'interview').length },
+                { label: 'Hired', value: 'accepted', count: allApplicants.filter((a) => a.status === 'accepted' || a.status === 'hired').length },
+                { label: 'Rejected', value: 'rejected', count: allApplicants.filter((a) => a.status === 'rejected').length },
+              ].map((tab) => {
+                const isActive = appStatusFilter === tab.value;
+                return (
                   <button
-                    key={st.value}
-                    onClick={() => setAppStatusFilter(st.value)}
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setAppStatusFilter(tab.value)}
                     style={{
-                      padding: '5px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11.5px',
-                      fontWeight: appStatusFilter === st.value ? '700' : '500',
-                      background: appStatusFilter === st.value ? '#344BFD' : '#f1f5f9',
-                      color: appStatusFilter === st.value ? '#ffffff' : '#475569',
-                      border: appStatusFilter === st.value ? '1px solid #344BFD' : '1px solid #cbd5e1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      height: '32px',
+                      padding: '0 8px',
+                      border: 'none',
+                      background: 'transparent',
+                      borderBottom: isActive ? '2px solid #1764E8' : '2px solid transparent',
+                      color: isActive ? '#1764E8' : '#64748B',
+                      fontSize: '12px',
+                      fontWeight: isActive ? 700 : 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      lineHeight: '1.2'
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
                     }}
                   >
-                    {st.label}
+                    <span>{tab.label}</span>
+                    <span style={{
+                      backgroundColor: isActive ? '#EFF6FF' : '#E2E8F0',
+                      color: isActive ? '#1764E8' : '#475569',
+                      borderRadius: '10px',
+                      padding: '1px 6px',
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}>
+                      {tab.count}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Applications List */}
+          {/* ── 3. CANDIDATE APPLICANTS LIST ── */}
           {filteredApplicants.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {filteredApplicants.map((a, i) => (
-                <div key={i} className="applicant-card-item">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    
-                    {/* Top Row: Candidate Header + Status Pill & Dropdown */}
-                    <div className="applicant-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: '1 1 220px' }}>
-                        <div className="applicant-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
-                          {a.profilePictureUrl && typeof a.profilePictureUrl === 'string' ? (
-                            <img 
-                              src={a.profilePictureUrl} 
-                              alt={a.name} 
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'white' }}>
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                              <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                          )}
-                        </div>
-                        
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text)', wordBreak: 'break-word' }}>{a.name}</h4>
-                            {a.aadhaarVerified && (
-                              <span className="candidate-badge" style={{ fontSize: '10px', padding: '1px 6px', background: '#dcfce7', color: '#15803d', borderRadius: '10px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {filteredApplicants.map((a, i) => {
+                const candidateName = safeValue(a.name) || 'Applicant';
+                const candidateTrade = safeValue(a.headline || a.tradeSpecialization || a.trade_specialization || a.jobTitle) || 'Candidate';
+                const candidateExp = safeValue(a.experience || a.user?.experience);
+                const candidateLocation = safeValue(a.location || a.user?.location || (a as any).midc_zone);
+                const avatarUri = a.profilePictureUrl || a.user?.profilePictureUrl;
+                const shiftVal = a.preferredShift || a.preferred_shift || a.user?.preferredShift ? safeValue(a.preferredShift || a.preferred_shift || a.user?.preferredShift) : '';
+                const s = (a.status || 'applied').toLowerCase();
+
+                return (
+                  <div
+                    key={i}
+                    onClick={() => handleOpenDetails(a, a.jobId, a.jobTitle)}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      padding: '12px',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                    }}
+                  >
+                    {/* Header Row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {/* Avatar Box */}
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EEF4FF',
+                        border: '1px solid #DBEAFE',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}>
+                        {avatarUri ? (
+                          <img
+                            src={avatarUri}
+                            alt={candidateName}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1764E8" strokeWidth="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Candidate Info Text */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                          <div style={{
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            color: '#102A5C',
+                            letterSpacing: '-0.2px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {candidateName}
+                          </div>
+
+                          {/* Status Badge */}
+                          <div style={{ flexShrink: 0 }}>
+                            {s === 'shortlisted' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#0284C7', fontSize: '12px', fontWeight: 700 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>
                                 </svg>
-                                Verified
-                              </span>
+                                <span>Shortlisted</span>
+                              </div>
+                            ) : s === 'interviewed' || s === 'interview' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#9333EA', fontSize: '12px', fontWeight: 700 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <span>Interview</span>
+                              </div>
+                            ) : s === 'accepted' || s === 'hired' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#16A34A', fontSize: '12px', fontWeight: 700 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                                <span>Hired</span>
+                              </div>
+                            ) : s === 'rejected' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#DC2626', fontSize: '12px', fontWeight: 700 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                                </svg>
+                                <span>Rejected</span>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1764E8', fontSize: '12px', fontWeight: 700 }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                                <span>Applied</span>
+                              </div>
                             )}
                           </div>
-                          <p style={{ margin: '1px 0 0', color: 'var(--primary)', fontWeight: '600', fontSize: '13px', wordBreak: 'break-word' }}>
-                            Applied for: <Link to={`/job/${a.jobId}`} style={{ color: 'var(--primary)', textDecoration: 'underline' }}>{a.jobTitle}</Link>
-                          </p>
-                          <p style={{ margin: '1px 0 0', color: 'var(--text-secondary)', fontSize: '12px', wordBreak: 'break-word' }}>
-                            {a.email} {a.phone ? `· ${a.phone}` : ''} · Applied {timeAgo(a.appliedAt)}
-                          </p>
+                        </div>
+
+                        <div style={{
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: '#657796',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginTop: '2px'
+                        }}>
+                          {candidateTrade}
                         </div>
                       </div>
 
-                      {/* Status Selector & Badge */}
-                      <div className="applicant-status-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className={`status-badge-desktop status-badge status-${a.status}`} style={{ fontSize: '11px', padding: '3px 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          {capitalize(a.status)}
-                        </span>
-                        <select
-                          value={a.status}
-                          onChange={(e) => updateApplicantStatus(a.jobId, a.userId, e.target.value)}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--border)',
-                            fontSize: '12px',
-                            background: 'var(--surface)',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer',
-                            fontWeight: '600'
-                          }}
-                        >
-                          <option value="applied">Applied</option>
-                          <option value="reviewed">Reviewed</option>
-                          <option value="shortlisted">Shortlisted</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="rejected">Rejected</option>
-                        </select>
-                      </div>
+                      {/* Chevron Right */}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#91A0BA" strokeWidth="2" style={{ flexShrink: 0, marginLeft: '4px' }}>
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
                     </div>
 
-                    {/* Scheduled Interview Info Banner (If set) */}
-                    {a.interviewDate && (
-                      <div style={{ padding: '6px 10px', background: 'rgba(37, 99, 235, 0.06)', borderRadius: '6px', border: '1px solid rgba(37, 99, 235, 0.15)', fontSize: '12px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                        </svg>
-                        <span><strong>Interview Scheduled:</strong> {a.interviewDate} at {a.interviewTime}</span>
-                        {a.venueAddress && <span style={{ opacity: 0.85 }}>({a.venueAddress})</span>}
-                      </div>
-                    )}
+                    {/* Meta Chips Row */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                      marginTop: '10px'
+                    }}>
+                      {candidateExp ? (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '4px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          color: '#475569',
+                          fontWeight: 500,
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#657796" strokeWidth="2" style={{ flexShrink: 0 }}>
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                          </svg>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {candidateExp}
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '4px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          color: '#475569',
+                          fontWeight: 500
+                        }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#657796" strokeWidth="2" style={{ flexShrink: 0 }}>
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                          </svg>
+                          <span>Not Provided</span>
+                        </div>
+                      )}
 
-                    {/* Bottom Action Bar */}
-                    <div className="applicant-action-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => handleOpenDetails(a, a.jobId, a.jobTitle)}
-                        className="btn btn-primary btn-sm btn-mobile-full"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '6px 12px', fontWeight: '600', borderRadius: '6px' }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        View Job & Candidate Details
-                      </button>
+                      {candidateLocation ? (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '4px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          color: '#475569',
+                          fontWeight: 500
+                        }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#657796" strokeWidth="2" style={{ flexShrink: 0 }}>
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          <span>{candidateLocation}</span>
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '4px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          color: '#475569',
+                          fontWeight: 500
+                        }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#657796" strokeWidth="2" style={{ flexShrink: 0 }}>
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          <span>Not Specified</span>
+                        </div>
+                      )}
+
+                      {shiftVal && shiftVal !== 'Not Provided' && (
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '4px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          color: '#475569',
+                          fontWeight: 500
+                        }}>
+                          <span>{shiftVal}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/>
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #E7EBF2',
+              padding: '40px 20px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: '#EFF6FF',
+                color: '#1764E8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 12px'
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1764E8" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
-              <h3>No applications match your search or filter</h3>
-              <p>Try resetting filters or searching for another candidate.</p>
-              <button
-                className="btn btn-ghost btn-sm mt-4"
-                onClick={() => {
-                  setAppSearchQuery('');
-                  setAppStatusFilter('all');
-                  setAppJobFilter('all');
-                }}
-              >
-                Reset Filters
-              </button>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#102A5C', marginBottom: '4px' }}>
+                No Applicants Found
+              </div>
+              <div style={{ fontSize: '12px', color: '#657796' }}>
+                {appSearchQuery ? 'Try adjusting your search criteria.' : 'No candidates in this category yet.'}
+              </div>
             </div>
           )}
         </div>

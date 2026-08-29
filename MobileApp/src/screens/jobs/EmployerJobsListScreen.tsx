@@ -5,16 +5,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Alert,
   FlatList,
   ScrollView,
   Image,
+  Alert,
+  Platform,
+  StatusBar,
+  Share,
 } from 'react-native';
 import {
   Plus,
   Users,
   Edit3,
   Trash2,
+  Share2,
   Clock,
   Briefcase,
   CheckCircle2,
@@ -30,6 +34,7 @@ import { Job } from '../../types';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Header } from '../../components/common/Header';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
@@ -72,6 +77,11 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#FFFFFF', true);
+        StatusBar.setBarStyle('dark-content', true);
+        StatusBar.setTranslucent(false);
+      }
       fetchJobs();
     }, [fetchJobs])
   );
@@ -120,6 +130,33 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Error', err.message || 'Failed to delete job posting.');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleShareJob = async (job: Job) => {
+    const jobUrl = `https://jobmarket.in/job/${job.id}`;
+    const locationStr = job.location || (job as any).midcZone || 'MIDC Industrial Area';
+
+    const salMin = job.salary_min ?? job.salaryMin ?? (job as any).salary_min;
+    const salMax = job.salary_max ?? job.salaryMax ?? (job as any).salary_max;
+    let salStr = 'Salary Undisclosed';
+    if (salMin && salMax) {
+      salStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
+    } else if (salMin || salMax) {
+      salStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')}`;
+    }
+
+    const shareMsg = `🔥 Open Industrial Job Role!\n\n📋 Role: ${job.title}\n🏢 Company: ${job.company || 'JobMarket'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n👉 Apply / View Details:\n${jobUrl}`;
+    const shareTitle = `Job Opportunity: ${job.title} at ${job.company || 'JobMarket'}`;
+
+    try {
+      if (Platform.OS === 'ios') {
+        await Share.share({ title: shareTitle, message: shareMsg, url: jobUrl });
+      } else {
+        await Share.share({ title: shareTitle, message: shareMsg }, { dialogTitle: shareTitle });
+      }
+    } catch (err: any) {
+      console.warn('Share error:', err);
     }
   };
 
@@ -173,22 +210,23 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           : (Array.isArray((item as any).applicants) ? (item as any).applicants.length : 0));
 
     const locationText = item.location || (item as any).midcZone || 'MIDC Area';
+    const tradeText = (item as any).tradeSpecialization || (item as any).trade_specialization || item.industry;
 
     return (
       <TouchableOpacity
-        activeOpacity={0.9}
+        activeOpacity={0.85}
         onPress={() => {
           navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
         }}
         style={styles.jobCard3D}
       >
-        {/* Header Row with Logo */}
+        {/* Header Row with Logo, Title & Status */}
         <View style={styles.cardHeaderRow}>
           <View style={styles.companyLogoBox}>
             {logoUri ? (
               <Image source={{ uri: logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
             ) : (
-              <Building2 size={20} color={COLORS.primary} />
+              <Building2 size={18} color="#1764E8" strokeWidth={2} />
             )}
           </View>
 
@@ -201,21 +239,39 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             <Text style={styles.companyNameText} numberOfLines={1}>
-              {item.company}{item.industry ? ` • ${item.industry}` : ''}
+              {item.company}{tradeText ? ` • ${tradeText}` : ''}
             </Text>
           </View>
         </View>
 
+        {/* Chips / Meta Details Row */}
+        <View style={styles.metaChipsRow}>
+          <View style={styles.metaChip}>
+            <MapPin size={11} color="#657796" />
+            <Text style={styles.metaChipText} numberOfLines={1}>
+              {locationText}
+            </Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaChipText}>{salaryStr}</Text>
+          </View>
+          {item.job_type || item.jobType || (item as any).type ? (
+            <View style={styles.metaChip}>
+              <Text style={styles.metaChipText}>{item.job_type || item.jobType || (item as any).type}</Text>
+            </View>
+          ) : null}
+        </View>
+
         {pending ? (
           <View style={styles.pendingNoticeBanner}>
-            <Clock size={13} color="#D97706" />
+            <Clock size={12} color="#D97706" />
             <Text style={styles.pendingNoticeBannerText}>
-              Pending Admin Approval — Under review by JobMarket team. Will go live once verified.
+              Pending Admin Approval — Under review. Will go live once verified.
             </Text>
           </View>
         ) : isRejectedStatus(item.status) ? (
           <View style={styles.rejectedNoticeBanner}>
-            <XCircle size={13} color="#DC2626" />
+            <XCircle size={12} color="#DC2626" />
             <Text style={styles.rejectedNoticeBannerText}>
               Job Rejected — {(item as any).rejectReason || (item as any).reject_reason || 'Does not meet posting requirements.'}
             </Text>
@@ -224,49 +280,59 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.cardRowDivider} />
 
-        {/* Action Footer Bar - Single Card Sub-Layout (NO CARDS IN CARDS) */}
+        {/* Action Footer Bar */}
         <View style={styles.cardFooterInline}>
-          <TouchableOpacity
-            style={styles.applicantBtnInline}
-            activeOpacity={0.8}
-            onPress={() => {
-              navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
-            }}
-          >
-            <Users size={14} color="#0F172A" />
-            <Text style={styles.applicantBtnTextInline}>
-              {actualApplicantCount} {actualApplicantCount === 1 ? 'Candidate' : 'Candidates'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.footerLeftPills}>
+            <TouchableOpacity
+              style={styles.applicantPillBtn}
+              activeOpacity={0.7}
+              onPress={() => {
+                navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
+              }}
+            >
+              <Users size={13} color="#475569" strokeWidth={2} />
+              <Text style={styles.applicantPillText}>
+                {actualApplicantCount} {actualApplicantCount === 1 ? 'Applicant' : 'Applicants'}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.vacanciesBtnInline}
-            activeOpacity={0.8}
-            onPress={() => setManageVacanciesJob(item)}
-          >
-            <Briefcase size={13} color="#0F172A" />
-            <Text style={styles.vacanciesBtnTextInline}>
-              {filledVacancies} / {totalVacancies} Vacancies
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.vacanciesPillBtn}
+              activeOpacity={0.7}
+              onPress={() => setManageVacanciesJob(item)}
+            >
+              <Briefcase size={12} color="#475569" strokeWidth={2} />
+              <Text style={styles.vacanciesPillText}>
+                {filledVacancies}/{totalVacancies} Vacancies
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.actionsGroupInline}>
             <TouchableOpacity
-              style={styles.actionIconButtonInline}
+              style={styles.actionBtnSmall}
+              activeOpacity={0.7}
+              onPress={() => handleShareJob(item)}
+            >
+              <Share2 size={13} color="#475569" strokeWidth={2} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionBtnSmall}
               activeOpacity={0.7}
               onPress={() => {
                 navigation.navigate('PostTab', { jobId: item.id });
               }}
             >
-              <Edit3 size={15} color="#475569" />
+              <Edit3 size={13} color="#475569" strokeWidth={2} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionIconButtonInline}
+              style={[styles.actionBtnSmall, styles.deleteBtnSmall]}
               activeOpacity={0.7}
               onPress={() => handleDeleteJob(item.id, item.title)}
             >
-              <Trash2 size={15} color="#EF4444" />
+              <Trash2 size={13} color="#EF4444" strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -276,6 +342,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {/* Filter Tabs Bar - Industry Grade LinkedIn / iPhone Underline Tab Navigation */}
@@ -381,91 +448,86 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F7F9FC',
   },
-  addHeaderBtn: {
-    backgroundColor: COLORS.primary,
-    padding: SPACING.xs,
-    borderRadius: RADIUS.md,
-  },
-  /* Industry Grade LinkedIn / iPhone Underline Status Filter Bar */
+  /* Industry Grade Status Filter Bar */
   tabsBarWrapper: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E7EBF2',
     paddingTop: 4,
     paddingBottom: 0,
   },
   tabsScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 18,
+    paddingHorizontal: 16,
+    gap: 16,
   },
   industryTabPill: {
-    height: 40,
+    height: 38,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     backgroundColor: 'transparent',
     borderWidth: 0,
-    borderBottomWidth: 2.5,
+    borderBottomWidth: 2,
     borderBottomColor: 'transparent',
     paddingHorizontal: 2,
     marginBottom: -1,
   },
   industryTabPillActive: {
     backgroundColor: 'transparent',
-    borderBottomColor: COLORS.primary,
+    borderBottomColor: '#1764E8',
   },
   industryTabText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#657796',
   },
   industryTabTextActive: {
-    color: COLORS.primary,
+    color: '#1764E8',
     fontWeight: '700',
   },
   tabCountBadge: {
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 8,
+    minWidth: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabCountBadgeActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF4FF',
   },
   tabCountText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#657796',
   },
   tabCountTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
+    color: '#1764E8',
+    fontWeight: '700',
   },
   listContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 130,
   },
   jobCard3D: {
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E7EBF2',
     padding: 12,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 1,
-    elevation: 1,
+    marginBottom: 10,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -473,12 +535,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   companyLogoBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#EEF4FF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -499,39 +561,40 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   jobTitleText: {
-    ...TYPOGRAPHY.subtitle,
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#102A5C',
     letterSpacing: -0.2,
     flex: 1,
   },
   companyNameText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#64748B',
-    marginTop: 1,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#657796',
+    marginTop: 1.5,
   },
-  cardMetaInlineRow: {
+  metaChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
-    marginTop: 6,
+    marginTop: 8,
   },
-  inlineMetaItem: {
+  metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
-  cardMetaText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  dotSeparator: {
-    color: COLORS.primary,
-    fontWeight: '800',
+  metaChipText: {
+    fontSize: 10.5,
+    fontWeight: '500',
+    color: '#657796',
   },
   pendingNoticeBanner: {
     flexDirection: 'row',
@@ -542,12 +605,12 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 0,
+    borderRadius: 6,
     marginTop: 8,
   },
   pendingNoticeBannerText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '600',
     color: '#B45309',
     flex: 1,
   },
@@ -560,19 +623,19 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 0,
+    borderRadius: 6,
     marginTop: 8,
   },
   rejectedNoticeBannerText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '600',
     color: '#B91C1C',
     flex: 1,
   },
   cardRowDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 8,
+    backgroundColor: '#E7EBF2',
+    marginVertical: 9,
   },
   cardFooterInline: {
     flexDirection: 'row',
@@ -580,99 +643,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  applicantBtnInline: {
+  footerLeftPills: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 2,
+    gap: 6,
+    flex: 1,
   },
-  applicantBtnTextInline: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  vacanciesBtnInline: {
+  applicantPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 2,
+    gap: 4.5,
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
+    paddingRight: 6,
   },
-  vacanciesBtnTextInline: {
+  applicantPillText: {
     fontSize: 11.5,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  actionsGroupInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  actionIconButtonInline: {
-    padding: 4,
+    fontWeight: '600',
+    color: '#334155',
   },
   vacanciesPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    borderRadius: 8,
+    gap: 4.5,
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
   vacanciesPillText: {
     fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0284C7',
+    fontWeight: '600',
+    color: '#334155',
   },
-  actionsGroup: {
+  actionsGroupInline: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  actionIconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+  actionBtnSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteBtn: {
+  deleteBtnSmall: {
     backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
-  },
-  locationIndustryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  industryTagPill: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-  industryTagText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  metaInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaInlineText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11.5,
-    color: '#64748B',
+    borderColor: '#FECACA',
   },
 });

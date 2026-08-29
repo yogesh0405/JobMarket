@@ -13,6 +13,7 @@ import { CandidateEditProfileModal } from './CandidateEditProfileModal';
 import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { calculateCandidateProfileCompletion } from '../../utils/profileCompleteness';
+import { MobileHeader } from '../../components/common/MobileHeader';
 import { 
   Camera, 
   Mail, 
@@ -25,6 +26,11 @@ import {
   ShieldCheck, 
   Briefcase, 
   PlusCircle, 
+  Plus,
+  Star,
+  Calendar,
+  ChevronRight,
+  Check,
   Share2, 
   FileText, 
   Users,
@@ -33,8 +39,10 @@ import {
   Lock,
   Loader2,
   CheckCircle2,
+  Headphones,
   Trash2
 } from 'lucide-react';
+import companyHeaderBg from '../../assets/company_header_bg.jpg';
 import { Resume } from '../../types';
 
 const TRADES_LIST = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
@@ -688,275 +696,608 @@ export const ProfilePage: React.FC = () => {
   if (currentUser.role === 'employer') {
     const myJobs = getJobsByEmployer(currentUser.id) || [];
     const activeJobs = myJobs.filter((j: any) => !j.status || j.status.toLowerCase() === 'active' || j.status.toLowerCase() === 'approved');
-    const totalApplicants = myJobs.reduce((sum: number, j: any) => sum + (j.applicants?.length || 0), 0);
-    const totalViews = myJobs.reduce((sum: number, j: any) => sum + (j.views || j.viewsCount || 0), 0);
+    const companyName = currentUser.companyName || currentUser.name || 'Industrial Organization';
+    const completionPct = currentUser.completion_percentage || 75;
+    const formattedLocation = currentUser.midcZone || currentUser.location || 'Waluj MIDC, Chhatrapati Sambhajinagar';
 
     return (
-      <div className="profile-page">
-        <div className="container">
-          {/* Company Hero Card */}
-          <div className="company-hero-card">
-            {/* Top-Right Circular Share Icon */}
-            <button
-              onClick={handleShare}
-              style={{
-                position: 'absolute',
-                top: '14px',
-                right: '14px',
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 10,
-                padding: 0
-              }}
-              title="Share Profile"
-            >
-              <Share2 size={16} />
-            </button>
+      <div style={{
+        width: '100%',
+        minHeight: '100vh',
+        backgroundColor: '#F7F9FC',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{
+          maxWidth: '720px',
+          margin: '0 auto',
+          paddingBottom: '60px',
+          boxSizing: 'border-box'
+        }}>
+          {/* 1. Primary Blue Hero Header Banner with Exact Mobile App Background Image */}
+          <div style={{
+            backgroundColor: '#0A58E2',
+            backgroundImage: `url(${companyHeaderBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            padding: '16px 16px 48px 16px',
+            color: '#FFFFFF',
+            position: 'relative',
+            boxSizing: 'border-box'
+          }}>
+            {/* Top Controls Row */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              padding: '4px 0',
+              marginBottom: '6px'
+            }}>
+              <button
+                onClick={openEditModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '6px',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+                title="Edit Company Profile"
+              >
+                <Edit3 size={15} strokeWidth={2} />
+              </button>
 
-            <div className="company-hero-flex">
-              <div className="company-hero-info">
-                {/* Company Logo Avatar with Edit Badge */}
-                <div 
-                  className="company-logo-wrap"
-                  onClick={openEditModal}
-                  title="Click to edit company profile"
-                >
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '12px',
-                    backgroundColor: '#FFFFFF',
-                    border: '3px solid #FFFFFF',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              <button
+                onClick={handleShare}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '6px',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+                title="Share Profile"
+              >
+                <Share2 size={19} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Company Identity Hero Row */}
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px' }}>
+              {/* Large Circular White Logo Container (72px Exact Mobile Match) */}
+              <div 
+                onClick={openEditModal}
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '36px',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '14px',
+                  flexShrink: 0,
+                  boxShadow: '0 3px 8px rgba(16, 42, 92, 0.2)',
+                  overflow: 'hidden',
+                  cursor: 'pointer'
+                }}
+                title="Edit Company Logo"
+              >
+                {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                  <img 
+                    src={currentUser.profilePictureUrl} 
+                    alt={companyName} 
+                    referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <CompanyDefaultLogo logoUrl={null} companyName={companyName} size={68} borderRadius="34px" />
+                )}
+              </div>
+
+              {/* Company Info Column */}
+              <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <h1 style={{
+                    fontSize: '22px',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    margin: 0,
                     overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '-0.2px'
                   }}>
-                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-                      <img 
-                        src={currentUser.profilePictureUrl} 
-                        alt={typeof (currentUser.companyName || currentUser.name) === 'string' ? (currentUser.companyName || currentUser.name) : 'Company Logo'} 
-                        referrerPolicy="no-referrer"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <CompanyDefaultLogo logoUrl={null} companyName={currentUser.companyName || currentUser.name} size={54} />
-                    )}
-                  </div>
+                    {companyName}
+                  </h1>
                   <div style={{
-                    position: 'absolute',
-                    bottom: '-4px',
-                    right: '-4px',
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    border: '1.5px solid #2563EB',
-                    color: '#2563EB',
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '9px',
+                    backgroundColor: '#1764E8',
+                    color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                    zIndex: 10
-                  }}>
-                    <Edit3 size={13} strokeWidth={2.5} />
+                    flexShrink: 0
+                  }} title="Verified Employer">
+                    <Check size={11} strokeWidth={3} />
                   </div>
                 </div>
 
-                {/* Company Name & Details */}
-                <div style={{ flex: 1, minWidth: 0, paddingRight: '40px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
-                      {currentUser.companyName || currentUser.name}
-                    </h1>
+                {/* Subtitle Category Pills */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                    padding: '3.5px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    flexShrink: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {currentUser.industry || 'Industrial Manufacturing'}
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#DBEAFE', marginTop: '6px', flexWrap: 'wrap' }}>
-                    {currentUser.industry && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Building2 size={14} color="#DBEAFE" />
-                        <span>{currentUser.industry}</span>
-                      </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                    padding: '3.5px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    flexShrink: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    <Lock size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(currentUser as any).companyType || 'Private Limited'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Floating Metrics Bar (Exact Mobile App UI - 32px Overlap) */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E7EBF2',
+            borderRadius: '8px',
+            padding: '10px 12px',
+            margin: '-32px 16px 16px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'relative',
+            zIndex: 10,
+            boxShadow: '0 3px 8px rgba(20, 42, 80, 0.06)'
+          }}>
+            {/* Stat 1: Jobs Posted */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#EFF5FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Briefcase size={15} color="#1764E8" strokeWidth={2} />
+              </div>
+              <div style={{ flex: 1, justifyContent: 'center' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{myJobs.length || 0}</div>
+                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Jobs Posted</div>
+              </div>
+            </div>
+
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+
+            {/* Stat 2: Profile Score */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#ECF9F6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Star size={15} color="#21A99B" strokeWidth={2} />
+              </div>
+              <div style={{ flex: 1, justifyContent: 'center' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{completionPct}%</div>
+                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Profile Score</div>
+              </div>
+            </div>
+
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+
+            {/* Stat 3: Post Job CTA */}
+            <div
+              onClick={() => navigate('/post-job')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 2px',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#EEF4FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Plus size={16} color="#1764E8" strokeWidth={2.4} />
+              </div>
+              <div style={{ flex: 1, justifyContent: 'center' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>Post Job</div>
+                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>New Vacancy</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. About Company & Operations Card */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E7EBF2',
+            padding: '16px',
+            margin: '0 16px 12px 16px',
+            boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#EEF4FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Building2 size={16} color="#1764E8" strokeWidth={2.2} />
+              </div>
+              <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                About {companyName}
+              </h3>
+            </div>
+
+            <p style={{
+              fontSize: '13px',
+              color: '#66789B',
+              lineHeight: '20px',
+              margin: 0,
+              whiteSpace: 'pre-line'
+            }}>
+              {currentUser.companyDescription || `${companyName} is a leading industrial organization operating in manufacturing and engineering operations.`}
+            </p>
+          </div>
+
+          {/* 4. Company Details & Verification Card */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E7EBF2',
+            padding: '16px',
+            margin: '0 16px 12px 16px',
+            boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                Company Details & Verification
+              </h3>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EAF8F5',
+                padding: '3px 8px',
+                borderRadius: '6px'
+              }}>
+                <ShieldCheck size={13} color="#19A98F" strokeWidth={2.4} />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#E2E7EF', margin: '12px 0' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Row 1: Location & Legal Type */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <MapPin size={14} color="#1764E8" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {formattedLocation}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Building2 size={14} color="#625CEB" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {(currentUser as any).companyType || 'Private Limited'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+
+              {/* Row 2: Company Size & Founded Year */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Users size={14} color="#21A99B" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {(currentUser as any).companySize || '200–500 employees'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Calendar size={14} color="#D97706" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                    {(currentUser as any).foundedYear || '2005'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+
+              {/* Row 3: GST Number & Email */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <FileText size={14} color="#1764E8" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    {currentUser.gstNumber || '27AABCU9603R1ZN'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Mail size={14} color="#1764E8" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Official Contact Email</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                    <a
+                      href={`mailto:${currentUser.email}`}
+                      style={{
+                        color: '#1764E8',
+                        textDecoration: 'none',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={currentUser.email}
+                    >
+                      {currentUser.email}
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+
+              {/* Row 4: Phone & Website */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Phone size={14} color="#21A99B" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Globe size={14} color="#1764E8" strokeWidth={2} />
+                    </div>
+                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#1764E8', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                    {currentUser.website ? (
+                      <a
+                        href={currentUser.website.startsWith('http') ? currentUser.website : `https://${currentUser.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#1764E8',
+                          textDecoration: 'none',
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%'
+                        }}
+                        title={currentUser.website}
+                      >
+                        {currentUser.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    ) : (
+                      <span style={{ color: '#657796' }}>jobmarket.in</span>
                     )}
-                    {(currentUser.location || currentUser.midcZone) && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <MapPin size={14} color="#DBEAFE" />
-                        <span>{currentUser.midcZone || currentUser.location}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Active Job Openings Section */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E7EBF2',
+            padding: '16px',
+            margin: '0 16px 12px 16px',
+            boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                  Active Job Openings
+                </h3>
+                <div style={{
+                  backgroundColor: '#EFF6FF',
+                  color: '#1764E8',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: '8px'
+                }}>
+                  {activeJobs.length}
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/jobs')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1764E8',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <span>View all</span>
+                <ChevronRight size={14} strokeWidth={2.4} />
+              </button>
+            </div>
+
+            {activeJobs.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {activeJobs.map((jobItem: any, idx: number) => (
+                  <div
+                    key={jobItem.id || idx}
+                    onClick={() => navigate(`/job/${jobItem.id}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 0',
+                      borderTop: idx > 0 ? '1px solid #DFE5EE' : 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        backgroundColor: idx % 2 === 0 ? '#F2F1FF' : '#ECFAF7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Building2 size={16} color={idx % 2 === 0 ? '#625CEB' : '#21A99B'} strokeWidth={2} />
                       </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Mail size={14} color="#DBEAFE" />
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser.email}</span>
+
+                      <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                        <h4 style={{
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          color: '#102A5C',
+                          margin: '0 0 1px 0',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {jobItem.title}
+                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <MapPin size={10} color="#66789B" />
+                          <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                            {jobItem.location || 'Waluj MIDC, Maharashtra'} • {jobItem.jobType || jobItem.job_type || 'Full Time'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, paddingLeft: '8px' }}>
+                      <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                        {idx === 0 ? '2d ago' : '5d ago'}
+                      </span>
+                      <ChevronRight size={14} color="#94A3B8" />
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            </div>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              style={{ display: 'none' }} 
-            />
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#657796', fontSize: '12px' }}>
+                No active job postings right now. Click "Post Job" to add vacancies.
+              </div>
+            )}
           </div>
-
-          {/* Quick Metrics Cards */}
-          <div className="company-metrics-grid">
-            <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-                {currentUser.gstNumber ? 'Verified GST' : 'Registered'}
-              </div>
-              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                GST Verification
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-                {currentUser.midcZone ? 'MIDC Zone' : (currentUser.location || 'Maharashtra')}
-              </div>
-              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                Industrial Region
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'center' }}>
-              <div className="metric-val" style={{ fontSize: '16px', fontWeight: '800', color: '#2563EB' }}>
-                Verified
-              </div>
-              <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                Account Status
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 1: COMPANY OVERVIEW & CORE DETAILS */}
-          <div className="profile-section">
-            <div className="profile-section-header">
-              <div className="profile-section-title-wrap">
-                <div className="icon-box-head icon-box-blue">
-                  <Building2 size={20} />
-                </div>
-                <h2>Company Profile Details</h2>
-              </div>
-            </div>
-
-            <div className="profile-section-body">
-              <div className="profile-details-grid">
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Official Company Name</span>
-                  <p className="profile-detail-value" style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
-                    {currentUser.companyName || currentUser.name}
-                  </p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">GSTIN / Tax Registration</span>
-                  <p className="profile-detail-value">{currentUser.gstNumber || 'Not provided'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Industrial Sector / Industry</span>
-                  <p className="profile-detail-value">{currentUser.industry || 'Industrial Manufacturing'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">MIDC Zone / Location</span>
-                  <p className="profile-detail-value">{currentUser.midcZone || currentUser.location || 'Not provided'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Company Workforce Size</span>
-                  <p className="profile-detail-value">{currentUser.employeeCount || currentUser.size || '50-200 employees'}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Contact Person / HR Lead</span>
-                  <p className="profile-detail-value">{currentUser.name}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Official Contact Email</span>
-                  <p className="profile-detail-value">{currentUser.email}</p>
-                </div>
-                <div className="profile-detail-tile">
-                  <span className="profile-detail-label">Official Contact Phone</span>
-                  <p className="profile-detail-value">{currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}</p>
-                </div>
-                {currentUser.website && (
-                  <div className="profile-detail-tile">
-                    <span className="profile-detail-label">Official Website / Portal</span>
-                    <p className="profile-detail-value">
-                      <a href={currentUser.website.startsWith('http') ? currentUser.website : `https://${currentUser.website}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>
-                        {currentUser.website}
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 2: OVERVIEW & RECRUITMENT ACTIVITY */}
-          <div className="profile-section" style={{ marginTop: '20px' }}>
-            <div className="profile-section-header">
-              <div className="profile-section-title-wrap">
-                <div className="icon-box-head icon-box-emerald">
-                  <BarChart3 size={20} />
-                </div>
-                <h2>Overview & Recruitment Activity</h2>
-              </div>
-            </div>
-
-            <div className="profile-section-body">
-              {/* Stats Grid */}
-              <div className="company-metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
-                    {activeJobs.length}
-                  </div>
-                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                    Active Jobs
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
-                    {totalApplicants}
-                  </div>
-                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                    Total Applicants
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
-                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
-                    {totalViews}
-                  </div>
-                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                    Total Views
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'center' }}>
-                  <div className="metric-val" style={{ fontSize: '18px', fontWeight: '800', color: '#2563EB' }}>
-                    {myJobs.length}
-                  </div>
-                  <div className="metric-lbl" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748B', marginTop: '2px' }}>
-                    Total Posted
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Edit Company Profile Modal */}
@@ -974,8 +1315,21 @@ export const ProfilePage: React.FC = () => {
   const tradeDisplay = currentUser.tradeSpecialization || currentUser.headline || 'Industrial Workforce';
 
   return (
-    <div className="profile-page" style={{ paddingTop: '12px', paddingBottom: '40px', background: '#F8FAFC', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' }}>
+    <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
+      {/* Reusable Mobile-Identical Top Header Bar */}
+      <MobileHeader title="My Profile" />
+
+      {/* Main Content Area */}
+      <div style={{
+        maxWidth: '580px',
+        margin: '0 auto',
+        padding: '16px',
+        paddingBottom: '40px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        boxSizing: 'border-box',
+      }}>
         
         {/* 1. HEADER PROFILE CARD (MATCHING USER REFERENCE) */}
         <div style={{
@@ -1414,7 +1768,7 @@ export const ProfilePage: React.FC = () => {
           marginBottom: '16px'
         }}>
           <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
-            Resume & Bio-Data
+            Resume
           </h2>
 
           {currentUser.resume ? (

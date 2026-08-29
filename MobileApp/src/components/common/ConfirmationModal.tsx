@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { AlertTriangle } from 'lucide-react-native';
+import { AlertTriangle, AlertCircle, HelpCircle, CheckCircle2 } from 'lucide-react-native';
 import { COLORS } from '../../constants/theme';
 
 export interface ConfirmationModalProps {
@@ -43,15 +43,19 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   children,
 }) => {
   const confirmBtnBg =
-    type === 'danger' ? '#DC2626' : type === 'warning' ? '#D97706' : COLORS.primary;
+    type === 'danger' ? '#DC2626' : type === 'warning' ? '#D97706' : '#1764E8';
 
   const defaultIconBg =
-    type === 'danger' || type === 'warning' ? '#FEF3C7' : '#EFF6FF';
+    type === 'danger' ? '#FEF2F2' : type === 'warning' ? '#FEF3C7' : '#EEF4FF';
 
   const defaultIcon =
-    type === 'danger' || type === 'warning' ? (
-      <AlertTriangle size={26} color="#D97706" strokeWidth={2.2} />
-    ) : null;
+    type === 'danger' ? (
+      <AlertCircle size={28} color="#DC2626" strokeWidth={2.4} />
+    ) : type === 'warning' ? (
+      <AlertTriangle size={28} color="#D97706" strokeWidth={2.4} />
+    ) : (
+      <HelpCircle size={28} color="#1764E8" strokeWidth={2.4} />
+    );
 
   return (
     <Modal

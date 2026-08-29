@@ -11,6 +11,7 @@ import { JobDetailPage } from './features/jobs/JobDetailPage';
 import { JobApplyPage } from './features/jobs/JobApplyPage';
 import { JobPostPage } from './features/jobs/JobPostPage';
 import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
+import { ApplicantDetailPage } from './features/jobs/ApplicantDetailPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { PublicProfilePage } from './features/profile/PublicProfilePage';
@@ -131,6 +132,7 @@ export const App: React.FC = () => {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
         <Route path="/security" element={<SecurityPage />} />
+        <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
 
         {/* 2. Admin Module Routes (Isolated Portal) */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -165,13 +167,13 @@ export const App: React.FC = () => {
           <Route path="/jobs/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
           <Route path="/companies" element={<CandidateOrGuestOnly><CompaniesDirectoryPage /></CandidateOrGuestOnly>} />
           <Route path="/company/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
-          <Route path="/companies/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
-          <Route path="/resume" element={<CandidateOrGuestOnly><Navigate to="/dashboard?tab=resume" replace /></CandidateOrGuestOnly>} />
 
           {/* Employer Only Routes */}
           <Route path="/post-job" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
           <Route path="/edit-job/:id" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
           <Route path="/job/:id/applicants" element={<EmployerOnly><JobApplicantsPage /></EmployerOnly>} />
+          <Route path="/job/:jobId/applicant/:applicantId" element={<EmployerOnly><ApplicantDetailPage /></EmployerOnly>} />
+          <Route path="/applicant/:applicantId" element={<EmployerOnly><ApplicantDetailPage /></EmployerOnly>} />
 
           {/* Shared Workspaces */}
           <Route path="/dashboard" element={<DashboardPage />} />

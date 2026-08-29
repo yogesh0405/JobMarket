@@ -19,6 +19,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CandidateProfileHeroCard } from './components/CandidateProfileHeroCard';
 import { CandidateProfileExperienceSection } from './components/CandidateProfileExperienceSection';
+import { extractCandidateResume } from '../../utils/fileUtils';
 
 const TRADES = [
   'VMC Operator',
@@ -153,16 +154,10 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const rawResume = user?.resume;
-  let parsedObj: any = null;
-  if (typeof rawResume === 'object' && rawResume !== null) {
-    parsedObj = rawResume;
-  } else if (typeof rawResume === 'string') {
-    try { parsedObj = JSON.parse(rawResume); } catch (_) {}
-  }
+  const extracted = extractCandidateResume(user);
   const profilePhotoUrl = user?.profile_picture_url || user?.profilePictureUrl || (user as any)?.avatar_url || (user as any)?.avatarUrl || (user as any)?.avatar;
-  const resumeUrl = user?.resume_url || user?.resumeUrl || parsedObj?.url;
-  const resumeName = user?.resumeName || parsedObj?.name || 'Candidate_Resume.pdf';
+  const resumeUrl = extracted.url;
+  const resumeName = extracted.name;
 
   if (loading) {
     return (

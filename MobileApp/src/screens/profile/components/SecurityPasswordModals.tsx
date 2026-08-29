@@ -186,7 +186,7 @@ export const SecurityPasswordModals: React.FC<SecurityPasswordModalsProps> = ({
                     title="Update Password"
                     onPress={onChangePassword}
                     loading={passwordLoading}
-                    style={{ marginTop: 10, height: 46, borderRadius: 8 }}
+                    style={{ marginTop: 10, height: 42, borderRadius: 6, backgroundColor: '#1764E8' }}
                   />
                 </View>
               </ScrollView>
@@ -290,7 +290,7 @@ export const SecurityPasswordModals: React.FC<SecurityPasswordModalsProps> = ({
                     title="Reset Password"
                     onPress={onResetWithOtp}
                     loading={otpLoading}
-                    style={{ marginTop: 10, height: 46, borderRadius: 8 }}
+                    style={{ marginTop: 10, height: 42, borderRadius: 6, backgroundColor: '#1764E8' }}
                   />
                 </View>
               </ScrollView>
@@ -323,26 +323,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 12,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E7EBF2',
   },
   sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitleText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   modalSubtitleText: {
-    fontSize: 11.5,
-    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#657796',
     marginTop: 1,
   },
   inputWithIconRow: {

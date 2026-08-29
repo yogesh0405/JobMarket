@@ -150,38 +150,38 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const renderStatusBadge = (status?: string) => {
     const s = (status || 'applied').toLowerCase();
     let bg = '#EFF6FF';
-    let border = '#BFDBFE';
+    let border = '#DBEAFE';
     let color = COLORS.primary;
     let label = 'APPLIED';
     let IconComp = Send;
 
     if (s === 'reviewed' || s === 'under_review') {
       bg = '#EFF6FF';
-      border = '#BFDBFE';
+      border = '#DBEAFE';
       color = COLORS.primary;
       label = 'UNDER REVIEW';
       IconComp = Clock;
     } else if (s === 'shortlisted') {
-      bg = '#F0F9FF';
-      border = '#BAE6FD';
-      color = '#0284C7';
+      bg = '#F0FDF4';
+      border = '#BBF7D0';
+      color = '#15803D';
       label = 'SHORTLISTED';
       IconComp = Award;
     } else if (s === 'interview' || s === 'interview_scheduled') {
       bg = '#FEF3C7';
-      border = '#FCD34D';
+      border = '#FDE68A';
       color = '#D97706';
       label = 'INTERVIEW';
       IconComp = Calendar;
     } else if (s === 'hired' || s === 'selected' || s === 'accepted') {
-      bg = '#F0FDF4';
-      border = '#BBF7D0';
+      bg = '#DCFCE7';
+      border = '#86EFAC';
       color = '#16A34A';
       label = 'HIRED';
       IconComp = CheckCircle2;
     } else if (s === 'rejected') {
-      bg = '#F8FAFC';
-      border = '#CBD5E1';
+      bg = '#FEF2F2';
+      border = '#FECACA';
       color = '#DC2626';
       label = 'REJECTED';
       IconComp = AlertCircle;
@@ -189,7 +189,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
       <View style={[styles.statusPillBadge, { backgroundColor: bg, borderColor: border }]}>
-        <IconComp size={12} color={color} />
+        <IconComp size={11} color={color} strokeWidth={2.2} />
         <Text style={[styles.statusPillBadgeText, { color }]}>{label}</Text>
       </View>
     );
@@ -197,34 +197,74 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="Applied Jobs" showBack={false} />
+
+      {/* Standard Underline Tabular Menu Bar */}
+      <View style={styles.tabBarContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarScroll}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.tabItem, filterTab === 'ALL' && styles.tabItemActive]}
+            onPress={() => setFilterTab('ALL')}
+          >
+            <Text style={[styles.tabItemText, filterTab === 'ALL' && styles.tabItemTextActive]}>
+              All ({appliedList.length})
+            </Text>
+            {filterTab === 'ALL' && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.tabItem, filterTab === 'INTERVIEW' && styles.tabItemActive]}
+            onPress={() => setFilterTab('INTERVIEW')}
+          >
+            <Text style={[styles.tabItemText, filterTab === 'INTERVIEW' && styles.tabItemTextActive]}>
+              Interviews ({interviewCount})
+            </Text>
+            {filterTab === 'INTERVIEW' && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.tabItem, filterTab === 'REVIEW' && styles.tabItemActive]}
+            onPress={() => setFilterTab('REVIEW')}
+          >
+            <Text style={[styles.tabItemText, filterTab === 'REVIEW' && styles.tabItemTextActive]}>
+              Under Review ({reviewCount})
+            </Text>
+            {filterTab === 'REVIEW' && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.tabItem, filterTab === 'DECISIONS' && styles.tabItemActive]}
+            onPress={() => setFilterTab('DECISIONS')}
+          >
+            <Text style={[styles.tabItemText, filterTab === 'DECISIONS' && styles.tabItemTextActive]}>
+              Decisions ({decisionsCount})
+            </Text>
+            {filterTab === 'DECISIONS' && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
       {loading && !refreshing ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Summary bar skeleton */}
-          <View style={styles.summaryBar}>
-            <View style={{ flex: 1, gap: 6 }}>
-              <SkeletonLoader width="60%" height={16} style={{ borderRadius: 0 }} />
-              <SkeletonLoader width="85%" height={12} style={{ borderRadius: 0 }} />
-            </View>
-            <SkeletonLoader width={70} height={24} style={{ borderRadius: 0 }} />
-          </View>
-
-          {/* 3 Realistic Applied card skeletons */}
+          {/* Realistic Applied card skeletons */}
           {[1, 2, 3].map((key) => (
             <View key={key} style={styles.appliedCardSquare}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <SkeletonLoader width={40} height={40} style={{ borderRadius: 0 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <SkeletonLoader width={44} height={44} style={{ borderRadius: RADIUS.card }} />
                 <View style={{ flex: 1, gap: 6 }}>
-                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: 0 }} />
-                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: 0 }} />
+                  <SkeletonLoader width="70%" height={16} style={{ borderRadius: RADIUS.xs }} />
+                  <SkeletonLoader width="50%" height={12} style={{ borderRadius: RADIUS.xs }} />
                 </View>
-                <SkeletonLoader width={75} height={22} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={80} height={22} style={{ borderRadius: RADIUS.sm }} />
               </View>
 
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                <SkeletonLoader width={95} height={22} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width={120} height={22} style={{ borderRadius: 0 }} />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                <SkeletonLoader width={95} height={22} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={120} height={22} style={{ borderRadius: RADIUS.xs }} />
               </View>
             </View>
           ))}
@@ -235,67 +275,12 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
-          {/* Header summary bar */}
-          <View style={styles.summaryBar}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.summaryTitle}>Job Application Progress</Text>
-              <Text style={styles.summarySub}>Track status & interview calls</Text>
-            </View>
-            <View style={styles.countBadge}>
-              <ClipboardList size={14} color={COLORS.primary} />
-              <Text style={styles.countBadgeText}>{appliedList.length} Total</Text>
-            </View>
-          </View>
-
-          {/* Status Filter Segment Tabs */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterTabsRow}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterSegmentBtn, filterTab === 'ALL' && styles.filterSegmentBtnActive]}
-              onPress={() => setFilterTab('ALL')}
-            >
-              <Text style={[styles.filterSegmentText, filterTab === 'ALL' && styles.filterSegmentTextActive]}>
-                All ({appliedList.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterSegmentBtn, filterTab === 'INTERVIEW' && styles.filterSegmentBtnActive]}
-              onPress={() => setFilterTab('INTERVIEW')}
-            >
-              <Calendar size={12} color={filterTab === 'INTERVIEW' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.filterSegmentText, filterTab === 'INTERVIEW' && styles.filterSegmentTextActive]}>
-                Interviews ({interviewCount})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterSegmentBtn, filterTab === 'REVIEW' && styles.filterSegmentBtnActive]}
-              onPress={() => setFilterTab('REVIEW')}
-            >
-              <Clock size={12} color={filterTab === 'REVIEW' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.filterSegmentText, filterTab === 'REVIEW' && styles.filterSegmentTextActive]}>
-                Under Review ({reviewCount})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterSegmentBtn, filterTab === 'DECISIONS' && styles.filterSegmentBtnActive]}
-              onPress={() => setFilterTab('DECISIONS')}
-            >
-              <CheckCircle2 size={12} color={filterTab === 'DECISIONS' ? '#FFFFFF' : '#475569'} />
-              <Text style={[styles.filterSegmentText, filterTab === 'DECISIONS' && styles.filterSegmentTextActive]}>
-                Decisions ({decisionsCount})
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
 
           {filteredApplications.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Briefcase size={40} color="#94A3B8" />
+              <View style={styles.emptyIconCircle}>
+                <Briefcase size={28} color={COLORS.primary} strokeWidth={2.2} />
+              </View>
               <Text style={styles.emptyTitle}>
                 {filterTab === 'ALL' ? 'No Active Applications' : 'No Applications Found'}
               </Text>
@@ -320,6 +305,20 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               const isShortlisted = status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
               const rawLogo = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo || (job as any).companyLogoUrl;
               const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
+              const appliedDateFormatted = item.appliedAt
+                ? new Date(item.appliedAt).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'Recently';
+
+              const hasSalary = Boolean(
+                (job.salary_max && Number(job.salary_max) > 0) ||
+                (job.salaryMax && Number(job.salaryMax) > 0) ||
+                (job.salary_min && Number(job.salary_min) > 0) ||
+                (job.salaryMin && Number(job.salaryMin) > 0)
+              );
 
               return (
                 <TouchableOpacity
@@ -333,8 +332,8 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <CompanyLogoAvatar
                       logoUrl={logoUrl}
                       companyName={job.company}
-                      size={42}
-                      borderRadius={6}
+                      size={44}
+                      borderRadius={RADIUS.card}
                     />
 
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -349,34 +348,45 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <ChevronRight size={18} color="#94A3B8" />
                   </View>
 
-                  {/* Section Separator Rule */}
+                  {/* Section Separator */}
                   <View style={styles.sectionDividerSlate} />
 
-                  {/* Metadata Info Row */}
+                  {/* Metadata Info Tags */}
                   <View style={styles.metaRow}>
-                    <View style={styles.metaInlineItem}>
-                      <MapPin size={13} color={COLORS.primary} style={{ flexShrink: 0 }} />
-                      <Text style={styles.metaInlineText} numberOfLines={1} ellipsizeMode="tail">
-                        {job.location || 'MIDC Zone'}
-                      </Text>
-                    </View>
+                    {job.location ? (
+                      <View style={styles.metaTagPill}>
+                        <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                        <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
+                          {job.location}
+                        </Text>
+                      </View>
+                    ) : null}
 
-                    {job.salary_max || job.salaryMax ? (
-                      <View style={styles.metaInlineItem}>
-                        <IndianRupee size={13} color="#0F172A" style={{ flexShrink: 0 }} />
-                        <Text style={[styles.metaInlineText, { color: '#0F172A', fontWeight: '800' }]} numberOfLines={1}>
-                          ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
+                    {hasSalary ? (
+                      <View style={[styles.metaTagPill, styles.salaryTagPill]}>
+                        <IndianRupee size={12} color={COLORS.primary} style={{ flexShrink: 0 }} />
+                        <Text style={[styles.metaTagText, { color: COLORS.primary, fontWeight: '700' }]} numberOfLines={1} ellipsizeMode="tail">
+                          {job.salary_min || job.salaryMin ? `₹${job.salary_min || job.salaryMin}` : ''}
+                          {(job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax) ? ' - ' : ''}
+                          {job.salary_max || job.salaryMax ? `₹${job.salary_max || job.salaryMax}` : ''}/mo
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {job.job_type || job.jobType ? (
+                      <View style={styles.metaTagPill}>
+                        <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
+                          {job.job_type || job.jobType}
                         </Text>
                       </View>
                     ) : null}
                   </View>
 
-                  {/* Interview Schedule Sub-Layout (No card-in-card nesting) */}
+                  {/* Interview Schedule Sub-Layout */}
                   {isShortlisted && (item.interviewDate || item.interview_date) ? (
                     <View style={styles.interviewSubLayout}>
-                      <View style={styles.sectionDividerSlate} />
                       <View style={styles.interviewHeaderRow}>
-                        <Calendar size={14} color={COLORS.primary} />
+                        <Calendar size={14} color={COLORS.primary} strokeWidth={2.2} />
                         <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
                         <View style={styles.actionPill}>
                           <Text style={styles.actionPillText}>CONFIRMED</Text>
@@ -385,7 +395,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                       <View style={styles.interviewDetailsRow}>
                         <Text style={styles.detailLabel}>DATE & TIME:</Text>
-                        <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="tail">
+                        <Text style={styles.detailValue} numberOfLines={2} ellipsizeMode="tail">
                           {item.interviewDate || item.interview_date} {item.interviewTime || item.interview_time ? `(${item.interviewTime || item.interview_time})` : ''}
                         </Text>
                       </View>
@@ -393,7 +403,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                       {item.venueAddress || item.venue_address ? (
                         <View style={styles.venueContainer}>
                           <Text style={styles.venueLabel}>VENUE ADDRESS:</Text>
-                          <Text style={styles.venueAddressText} numberOfLines={3} ellipsizeMode="tail">
+                          <Text style={styles.venueAddressText} numberOfLines={4} ellipsizeMode="tail">
                             {item.venueAddress || item.venue_address}
                           </Text>
                         </View>
@@ -418,9 +428,12 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
                   {/* Footer Action Row with Status Badge */}
                   <View style={styles.cardFooterRow}>
-                    <Text style={styles.appliedDateText}>
-                      Applied {item.appliedAt ? new Date(item.appliedAt).toLocaleDateString() : 'Recently'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Clock size={12} color="#94A3B8" />
+                      <Text style={styles.appliedDateText}>
+                        Applied {appliedDateFormatted}
+                      </Text>
+                    </View>
 
                     {renderStatusBadge(item.status)}
                   </View>
@@ -437,187 +450,199 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 110,
-    gap: 12,
+    gap: 16,
   },
-  summaryBar: {
+  tabBarContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  tabBarScroll: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    marginBottom: 2,
+    paddingHorizontal: 16,
+    gap: 22,
   },
-  summaryTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.3,
+  tabItem: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  summarySub: {
+  tabItemActive: {},
+  tabItemText: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#64748B',
-    marginTop: 2,
   },
-  filterTabsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginVertical: 4,
-  },
-  filterSegmentBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  filterSegmentBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterSegmentText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  filterSegmentTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  countBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 0,
-  },
-  countBadgeText: {
-    fontSize: 11.5,
+  tabItemTextActive: {
     fontWeight: '800',
     color: COLORS.primary,
   },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: COLORS.primary,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    marginTop: 10,
+    gap: 8,
+    marginTop: 8,
+  },
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
   emptyDesc: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 17,
+    maxWidth: 280,
   },
   findJobsBtn: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 0,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: RADIUS.card,
     marginTop: 6,
   },
   findJobsBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   appliedCardSquare: {
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     padding: 14,
-    gap: 10,
+    gap: 9,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+    overflow: 'hidden',
+    width: '100%',
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    width: '100%',
   },
   jobTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.15,
   },
   companyName: {
-    fontSize: 12.5,
-    fontWeight: '600',
+    fontSize: 11.5,
+    fontWeight: '500',
     color: '#64748B',
     marginTop: 2,
+    flexShrink: 1,
   },
   sectionDividerSlate: {
     height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 4,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 2,
   },
   statusPillBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: RADIUS.xs,
     borderWidth: 1,
+    flexShrink: 0,
   },
   statusPillBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 6,
     width: '100%',
   },
-  metaInlineItem: {
+  metaTagPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3.5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: RADIUS.xs,
     flexShrink: 1,
     maxWidth: '100%',
   },
-  metaInlineText: {
-    fontSize: 12,
-    fontWeight: '700',
+  salaryTagPill: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#DBEAFE',
+  },
+  metaTagText: {
+    fontSize: 11,
+    fontWeight: '600',
     color: '#475569',
     flexShrink: 1,
   },
   interviewSubLayout: {
-    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: RADIUS.card,
+    padding: 10,
+    gap: 5,
     width: '100%',
+    overflow: 'hidden',
   },
   interviewHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     width: '100%',
   },
   interviewHeaderTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
     flex: 1,
@@ -625,32 +650,33 @@ const styles = StyleSheet.create({
   actionPill: {
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    borderColor: '#DBEAFE',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: RADIUS.xs,
     flexShrink: 0,
   },
   actionPillText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '800',
     color: COLORS.primary,
   },
   interviewDetailsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    alignItems: 'flex-start',
+    gap: 5,
     width: '100%',
   },
   detailLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
     flexShrink: 0,
+    marginTop: 1,
   },
   detailValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
     flex: 1,
@@ -661,34 +687,34 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   venueLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   venueAddressText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#334155',
-    lineHeight: 17,
+    lineHeight: 16,
     fontWeight: '600',
     width: '100%',
-    flexWrap: 'wrap',
+    flexShrink: 1,
   },
   openMapsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginTop: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.sm,
+    marginTop: 3,
   },
   openMapsBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
   },
   cardFooterRow: {
@@ -697,12 +723,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    marginTop: 2,
+    borderTopColor: '#F1F5F9',
+    marginTop: 1,
   },
   appliedDateText: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

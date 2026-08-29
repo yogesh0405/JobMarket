@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Share,
   StatusBar,
+  Platform,
 } from 'react-native';
 import {
   Building2,
@@ -17,6 +18,7 @@ import {
   Share2,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
 import { Header } from '../../components/common/Header';
@@ -30,6 +32,7 @@ import { CompanyDetailsCard } from './components/CompanyDetailsCard';
 import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection';
 import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
 import { EditCompanyProfileModal } from './components/EditCompanyProfileModal';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 
 interface Props {
   navigation: any;
@@ -58,6 +61,24 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Apply blue status bar ONLY while on Employer Company Profile, restore on exit
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#0A58E2', true);
+        StatusBar.setBarStyle('light-content', true);
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor('#FFFFFF', true);
+          StatusBar.setBarStyle('dark-content', true);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [])
+  );
 
   // Live Backend Analytics State
   const [analyticsData, setAnalyticsData] = useState({
@@ -302,25 +323,12 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   }, [company]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={false} />
-
-      {/* 1. Unscrollable Fixed Primary Blue Header Banner with Integrated Tabs */}
-      {!loadingCompany && (
-        <CompanyHeaderCard
-          company={company}
-          isOwner={isOwner}
-          onEditPress={() => setIsEditModalOpen(true)}
-          onSharePress={handleShare}
-          onBackPress={() => navigation.goBack()}
-          formattedLocation={formattedLocation}
-          profileTab={profileTab}
-          onTabChange={(tab) => setProfileTab(tab)}
-        />
-      )}
+    <View style={[styles.container, { backgroundColor: '#0A58E2' }]}>
+      <FocusAwareStatusBar barStyle="light-content" backgroundColor="#0A58E2" translucent={true} />
 
       {/* Main Body Scroll Area */}
       <ScrollView
+        style={{ flex: 1, backgroundColor: '#F7F9FC' }}
         contentContainerStyle={[
           styles.scrollContentBody,
           { paddingBottom: Math.max(insets.bottom + 140, 160) },
@@ -328,6 +336,20 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
+        {/* 1. Primary Blue Header Banner */}
+        {!loadingCompany && (
+          <CompanyHeaderCard
+            company={company}
+            isOwner={isOwner}
+            onEditPress={() => setIsEditModalOpen(true)}
+            onSharePress={handleShare}
+            onBackPress={() => navigation.goBack()}
+            formattedLocation={formattedLocation}
+            profileTab={profileTab}
+            onTabChange={(tab) => setProfileTab(tab)}
+          />
+        )}
+
         {error ? <ErrorBanner message={error} /> : null}
 
         {loadingCompany ? (
@@ -336,13 +358,14 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           <CompanyProfileAnalyticsTab analyticsData={analyticsData} />
         ) : (
           <>
-            {/* 2. Metrics Bar with Jobs Posted, Profile Score %, and MIDC Location */}
+            {/* 2. Metrics Bar with Jobs Posted, Profile Score %, and Post Job Action */}
             <CompanyMetricsBar
               jobsCount={jobs.length}
-              completionPct={company?.completion_percentage || 85}
+              completionPct={company?.completion_percentage || 75}
               midcZone={company?.midc_zone || company?.midcZone}
               isVerified={company?.verified !== false}
               isOwner={isOwner}
+              onPostJobPress={() => navigation.navigate('JobPost')}
             />
 
             {/* 3. About Company & Operations Section */}
@@ -353,18 +376,20 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             />
 
             {/* 4. Company Details Sidebar Card */}
-            <CompanyDetailsCard company={company} />
+            <CompanyDetailsCard
+              company={company}
+              formattedLocation={formattedLocation}
+            />
 
             {/* 5. Active Job Openings Section */}
             <CompanyActiveJobsSection
               jobs={jobs}
-              loadingJobs={loadingJobs}
-              isOwner={isOwner}
-              onPostJobPress={() => {
-                navigation.navigate('JobPost');
-              }}
-              onSelectJob={(job) => {
+              companyName={company?.name}
+              onJobPress={(job: any) => {
                 navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
+              }}
+              onViewAllPress={() => {
+                navigation.navigate('CandidateJobSearch');
               }}
             />
           </>
@@ -385,7 +410,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F7F9FC',
   },
   topTabBarRow: {
     flexDirection: 'row',
@@ -417,7 +442,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   scrollContentBody: {
-    padding: 16,
+    paddingHorizontal: 0,
+    paddingTop: 0,
     paddingBottom: 100,
   },
 });

@@ -128,7 +128,7 @@
 
   /* Layout */
   --container-max: 1140px;
-  --navbar-height: 76px;
+  --navbar-height: 58px;
   --sidebar-width: 280px;
 }
 
@@ -499,17 +499,17 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 768px) {
   :root {
-    --navbar-height: 72px;
+    --navbar-height: 58px;
   }
   #page-content {
-    padding-top: calc(var(--navbar-height) + max(10px, env(safe-area-inset-top, 10px)));
+    padding-top: var(--navbar-height) !important;
   }
   #page-content.no-navbar-padding {
     padding-top: 0 !important;
   }
   .navbar.has-search-strip + #page-content,
   body:has(.mobile-search-strip) #page-content {
-    padding-top: calc(128px + max(10px, env(safe-area-inset-top, 10px))) !important;
+    padding-top: 110px !important;
   }
   html { font-size: 15px; }
   .grid-4,
@@ -554,3 +554,15 @@ h1, h2, h3, h4, h5, h6 {
   perspective: none !important;
   filter: none !important;
 }
+
+/* Hide scrollbars cleanly */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+

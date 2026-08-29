@@ -1,792 +1,689 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
-  ArrowLeft, Search, Filter, CheckCircle2, XCircle, Clock, 
-  UserCheck, Mail, Phone, MapPin, FileText, Sparkles, Calendar, 
-  Briefcase, Building, ExternalLink, ShieldCheck, ChevronRight, UserX, MessageSquare, RefreshCw, Eye
+  Search, Briefcase, MapPin, ChevronRight, ChevronDown, 
+  User as UserIcon, FileText, UserCheck, Calendar, CheckCircle2, 
+  XCircle, RefreshCw, X, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
-import { getInitials, timeAgo, capitalize } from '../../utils/helpers';
-import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
-import { CandidateDetailsModal } from '../../components/candidate/CandidateDetailsModal';
+
+const APPLICANT_SEARCH_SUGGESTIONS = [
+  'Search by Skills (e.g. CNC, Vernier, AutoCAD)...',
+  'Search by Trade (e.g. Fitter, Welder, Electrician)...',
+  'Search by Candidate Name or Location...'
+];
+
+export const safeValue = (val?: any): string => {
+  if (val === null || val === undefined || val === '') return 'Not Provided';
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    return trimmed.length > 0 && trimmed !== '[object Object]' && trimmed !== 'object Object' ? trimmed : 'Not Provided';
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) return 'Not Provided';
+    const items = val
+      .map((item) => safeValue(item))
+      .filter((x) => x && x !== 'Not Provided' && x !== '[object Object]' && x !== 'object Object');
+    return items.length > 0 ? items.join(' • ') : 'Not Provided';
+  }
+
+  if (typeof val === 'object') {
+    if (val.title || val.company || val.years || val.duration) {
+      const expParts = [val.title, val.company, val.years ? `${val.years} Yrs` : val.duration].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (expParts.length > 0) return expParts.join(' - ');
+    }
+    if (val.degree || val.trade || val.qualification || val.institution) {
+      const eduParts = [val.degree || val.qualification, val.trade, val.institution, val.year].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (eduParts.length > 0) return eduParts.join(' - ');
+    }
+    if (val.city || val.state || val.midc || val.address || val.locality) {
+      const locParts = [val.locality || val.midc || val.address, val.city, val.state].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (locParts.length > 0) return locParts.join(', ');
+    }
+    const primitives = Object.values(val)
+      .map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : (typeof v === 'object' && v ? safeValue(v) : '')))
+      .filter((v) => v.length > 0 && v !== 'Not Provided' && v !== '[object Object]' && v !== 'object Object');
+
+    return primitives.length > 0 ? primitives.join(' • ') : 'Not Provided';
+  }
+
+  return String(val);
+};
+
+type TabType = 'ALL' | 'applied' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
 
 export const JobApplicantsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: routeJobId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { updateApplicantStatus, scheduleInterview, sendCustomEmail } = useJobs();
   const { showToast } = useToast();
 
-  const [job, setJob] = useState<any>(null);
   const [applicants, setApplicants] = useState<any[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [previewResume, setPreviewResume] = useState<any>(null);
-  const [viewWorker, setViewWorker] = useState<any>(null);
-
-  // Filters and search state
+  const [myJobs, setMyJobs] = useState<any[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>(routeJobId || 'ALL');
+  const [jobDropdownOpen, setJobDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'applied' | 'reviewed' | 'shortlisted' | 'accepted' | 'rejected'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
 
-  const [searchParams] = useSearchParams();
-  const targetApplicantId = searchParams.get('applicantId');
-  const hasAutoOpened = useRef(false);
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load job and applicants data safely without full page blinking
-  const loadData = useCallback(async (isSilentRefresh = false) => {
-    if (!id) return;
-    if (!isSilentRefresh && !job) {
-      setIsInitialLoading(true);
-    } else {
-      setIsRefreshing(true);
+  // Rotating search placeholder timer
+  useEffect(() => {
+    if (searchQuery) return;
+    const interval = setInterval(() => {
+      setSuggestionIndex((prev) => (prev + 1) % APPLICANT_SEARCH_SUGGESTIONS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [searchQuery]);
+
+  // Helper to map backend applicant format
+  const mapApplicantItem = (item: any, jobId: string, jobTitle?: string) => ({
+    id: item.id || `app-${item.userId || item.user_id || item.user?.id}-${jobId}`,
+    userId: item.userId || item.user_id || item.user?.id,
+    jobId: jobId,
+    jobTitle: jobTitle || item.jobTitle || item.job_title || '',
+    status: (item.status || 'applied').toLowerCase(),
+    appliedAt: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+    user: {
+      id: item.userId || item.user_id || item.user?.id,
+      name: item.name || item.user?.name || item.candidate?.name || 'Applicant',
+      email: item.email || item.user?.email || item.candidate?.email || '',
+      phone: item.phone || item.user?.phone || item.candidate?.phone || '',
+      headline: item.headline || item.tradeSpecialization || item.trade_specialization || item.user?.headline || 'Candidate',
+      location: item.location || item.user?.location || (item.user as any)?.midc_zone || 'Not Specified',
+      experience: item.experience || item.user?.experience || 'Not Provided',
+      skills: Array.isArray(item.skills) ? item.skills : (Array.isArray(item.user?.skills) ? item.user.skills : []),
+      profilePictureUrl: item.profilePictureUrl || item.profile_picture_url || item.user?.profilePictureUrl || item.user?.profile_picture_url || item.avatar,
+      preferredShift: item.preferred_shift || item.preferredShift || item.user?.preferred_shift || (item.user as any)?.preferredShift,
     }
+  });
+
+  // Fetch employer's jobs and applicants in ONE fast call
+  const fetchMyJobsAndApplicants = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
+    else setIsRefreshing(true);
 
     try {
-      // 1. Fetch job details
-      const jobRes = await apiFetch(`/api/v1/jobs/${id}`);
-      const jobJson = await jobRes.json();
-      if (!jobRes.ok) throw new Error(jobJson.message || 'Failed to fetch job details');
-      
-      const jobData = jobJson.data;
-      if (currentUser && jobData.employerId !== currentUser.id) {
-        showToast('Unauthorized access to this job listing', 'error');
-        navigate('/dashboard');
-        return;
-      }
-      setJob(jobData);
+      const myJobsRes = await apiFetch('/api/v1/jobs/my-jobs/all');
+      const myJobsJson = await myJobsRes.json();
 
-      // 2. Fetch applicants list
-      const appsRes = await apiFetch(`/api/v1/jobs/${id}/applicants`);
-      const appsJson = await appsRes.json();
-      if (appsRes.ok && appsJson.success) {
-        const fetchedApplicants = appsJson.data || [];
-        setApplicants(fetchedApplicants);
+      if (myJobsRes.ok && myJobsJson.success && Array.isArray(myJobsJson.data)) {
+        const jobsList = myJobsJson.data;
+        setMyJobs(jobsList);
 
-        // Auto-open worker details drawer if targetApplicantId URL parameter exists (once)
-        if (targetApplicantId && !hasAutoOpened.current) {
-          const matchedApplicant = fetchedApplicants.find((a: any) => (a.userId === targetApplicantId || a.id === targetApplicantId));
-          if (matchedApplicant) {
-            hasAutoOpened.current = true;
-            setViewWorker({ ...matchedApplicant, jobId: jobData.id, jobTitle: jobData.title, job: jobData });
-          }
+        const allApps: any[] = [];
+        jobsList.forEach((j: any) => {
+          const rawApps = Array.isArray(j.applicants) ? j.applicants : [];
+          rawApps.forEach((item: any) => {
+            if (item && typeof item === 'object') {
+              allApps.push(mapApplicantItem(item, j.id, j.title));
+            }
+          });
+        });
+
+        if (selectedJobId && selectedJobId !== 'ALL') {
+          // If specific job is selected, show that job's applicants
+          const specific = allApps.filter((a) => a.jobId === selectedJobId);
+          setApplicants(specific);
+
+          // In parallel, also fetch /applicants endpoint for freshest data
+          apiFetch(`/api/v1/jobs/${selectedJobId}/applicants`)
+            .then(async (res) => {
+              const json = await res.json();
+              if (res.ok && json.success && Array.isArray(json.data) && json.data.length > 0) {
+                const mapped = json.data.map((item: any) => mapApplicantItem(item, selectedJobId));
+                setApplicants(mapped);
+              }
+            })
+            .catch(() => {});
+        } else {
+          setApplicants(allApps);
         }
       }
     } catch (err: any) {
-      console.error(err);
-      if (!isSilentRefresh) {
-        showToast(err.message || 'Failed to load applicants', 'error');
-      }
+      console.error('Error fetching applicants:', err);
+      if (!isSilent) showToast(err.message || 'Failed to load applicants', 'error');
     } finally {
-      setIsInitialLoading(false);
+      setLoading(false);
       setIsRefreshing(false);
     }
-  }, [id, currentUser?.id]);
+  }, [selectedJobId]);
 
   useEffect(() => {
     if (!currentUser) {
-      showToast('Please log in to view this page', 'warning');
       navigate('/login');
       return;
     }
-    if (currentUser.role !== 'employer') {
-      showToast('Access denied: Employers only', 'error');
-      navigate('/dashboard');
-      return;
-    }
-    loadData();
-  }, [currentUser?.id, id]);
+    fetchMyJobsAndApplicants();
+  }, [currentUser, selectedJobId]);
 
-  const handleStatusChange = async (userId: string, newStatus: string, applicantName: string) => {
-    if (!id) return;
-    
-    // Optimistic local state update for zero latency
-    setApplicants(prev => 
-      prev.map(a => (a.userId === userId || a.id === userId) ? { ...a, status: newStatus } : a)
-    );
-
-    try {
-      await updateApplicantStatus(id, userId, newStatus);
-      showToast(`Updated ${applicantName || 'candidate'} status to ${capitalize(newStatus)}`, 'success');
-    } catch (err: any) {
-      // Rollback on error
-      loadData(true);
-      showToast(err.message || 'Failed to update status', 'error');
-    }
-  };
-
-  const handleOpenDetails = (applicant: any) => {
-    setViewWorker({ ...applicant, jobId: job?.id, jobTitle: job?.title, job });
-  };
-
-  // Pipeline Metric Counts
+  // Tab counts
   const counts = useMemo(() => {
     return {
-      total: applicants.length,
-      applied: applicants.filter(a => (a.status || 'applied') === 'applied').length,
-      reviewed: applicants.filter(a => a.status === 'reviewed').length,
-      shortlisted: applicants.filter(a => a.status === 'shortlisted').length,
-      accepted: applicants.filter(a => a.status === 'accepted').length,
-      rejected: applicants.filter(a => a.status === 'rejected').length,
+      ALL: applicants.length,
+      applied: applicants.filter((a) => (a.status || 'applied') === 'applied').length,
+      shortlisted: applicants.filter((a) => a.status === 'shortlisted').length,
+      interviewed: applicants.filter((a) => a.status === 'interviewed' || a.status === 'interview').length,
+      hired: applicants.filter((a) => a.status === 'hired' || a.status === 'accepted').length,
+      rejected: applicants.filter((a) => a.status === 'rejected').length,
     };
   }, [applicants]);
 
-  // Filtered & sorted applicants
+  // Filtered applicants
   const filteredApplicants = useMemo(() => {
-    return applicants
-      .filter(a => {
-        // Status filter
-        if (statusFilter !== 'all') {
-          const currentStatus = a.status || 'applied';
-          if (currentStatus !== statusFilter) return false;
+    return applicants.filter((item) => {
+      // Tab status filter
+      if (activeTab !== 'ALL') {
+        const s = (item.status || 'applied').toLowerCase();
+        if (activeTab === 'hired' && (s === 'hired' || s === 'accepted')) {
+          // match
+        } else if (activeTab === 'interviewed' && (s === 'interviewed' || s === 'interview')) {
+          // match
+        } else if (s !== activeTab) {
+          return false;
         }
-        // Search query filter
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const name = (a.name || '').toLowerCase();
-          const email = (a.email || '').toLowerCase();
-          const phone = (a.phone || '').toLowerCase();
-          const trade = (a.tradeSpecialization || a.headline || '').toLowerCase();
-          const skills = Array.isArray(a.skills) ? a.skills.join(' ').toLowerCase() : (a.skills || '').toLowerCase();
-          return name.includes(q) || email.includes(q) || phone.includes(q) || trade.includes(q) || skills.includes(q);
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        const timeA = new Date(a.appliedAt || 0).getTime();
-        const timeB = new Date(b.appliedAt || 0).getTime();
-        return sortBy === 'newest' ? timeB - timeA : timeA - timeB;
-      });
-  }, [applicants, statusFilter, searchQuery, sortBy]);
+      }
 
-  if (isInitialLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '75vh', gap: '14px' }}>
-        <div style={{ width: '42px', height: '42px', borderRadius: '50%', border: '3.5px solid #e2e8f0', borderTopColor: '#344BFD', animation: 'spin 0.8s linear infinite' }}></div>
-        <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#475569' }}>Loading Candidate Pipeline...</p>
-      </div>
-    );
-  }
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const name = (item.user?.name || '').toLowerCase();
+        const headline = (item.user?.headline || '').toLowerCase();
+        const location = (item.user?.location || '').toLowerCase();
+        const experience = (item.user?.experience || '').toLowerCase();
+        const skills = Array.isArray(item.user?.skills) ? item.user.skills.join(' ').toLowerCase() : '';
+        return name.includes(q) || headline.includes(q) || location.includes(q) || experience.includes(q) || skills.includes(q);
+      }
 
-  if (!job) return null;
+      return true;
+    });
+  }, [applicants, activeTab, searchQuery]);
+
+  const handleCardClick = (item: any) => {
+    const targetJobId = item.jobId || selectedJobId || 'ALL';
+    const targetUserId = item.userId || item.user?.id || item.id;
+    if (targetJobId && targetJobId !== 'ALL' && targetUserId) {
+      navigate(`/job/${targetJobId}/applicant/${targetUserId}`);
+    } else if (targetUserId) {
+      navigate(`/applicant/${targetUserId}`);
+    }
+  };
+
+  const selectedJobTitle = useMemo(() => {
+    if (selectedJobId === 'ALL') return 'All Jobs';
+    const found = myJobs.find((j) => j.id === selectedJobId);
+    return found ? found.title : 'All Jobs';
+  }, [selectedJobId, myJobs]);
+
+  const renderStatusBadge = (status: string) => {
+    const s = (status || 'applied').toLowerCase();
+    switch (s) {
+      case 'shortlisted':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#0284C7', fontSize: '12px', fontWeight: 700 }}>
+            <UserCheck size={13} strokeWidth={2.2} />
+            <span>Shortlisted</span>
+          </div>
+        );
+      case 'interviewed':
+      case 'interview':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#9333EA', fontSize: '12px', fontWeight: 700 }}>
+            <Calendar size={13} strokeWidth={2.2} />
+            <span>Interview</span>
+          </div>
+        );
+      case 'hired':
+      case 'accepted':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#16A34A', fontSize: '12px', fontWeight: 700 }}>
+            <CheckCircle2 size={13} strokeWidth={2.2} />
+            <span>Hired</span>
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#DC2626', fontSize: '12px', fontWeight: 700 }}>
+            <XCircle size={13} strokeWidth={2.2} />
+            <span>Rejected</span>
+          </div>
+        );
+      case 'applied':
+      default:
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1764E8', fontSize: '12px', fontWeight: 700 }}>
+            <FileText size={13} strokeWidth={2.2} />
+            <span>Applied</span>
+          </div>
+        );
+    }
+  };
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: 'calc(100vh - 64px)', padding: '24px 16px 100px' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        
-        {/* Top Navigation & Breadcrumbs */}
-        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <Link 
-            to="/dashboard?tab=manage" 
-            style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              color: '#475569', 
-              textDecoration: 'none', 
-              fontWeight: '700', 
-              fontSize: '13px',
-              background: '#ffffff',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1.5px solid #cbd5e1',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-            }}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
-          </Link>
+    <div style={{ backgroundColor: '#F8FAFC', minHeight: 'calc(100vh - 64px)', padding: '0px 12px 60px' }}>
+      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
 
-          <button
-            onClick={() => loadData(true)}
-            disabled={isRefreshing}
-            style={{
-              display: 'inline-flex',
+        {/* Sticky Top Search & Filter Bar Section (0px Gap) */}
+        <div style={{
+          position: 'sticky',
+          top: 'var(--navbar-height)',
+          zIndex: 40,
+          backgroundColor: '#FFFFFF',
+          margin: '0px -12px 12px -12px',
+          padding: '10px 12px 8px 12px',
+          borderBottom: '1px solid #E7EBF2',
+          boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
+        }}>
+          {/* ── 1. SEARCH BAR ── */}
+          <div style={{ position: 'relative', marginBottom: '8px' }}>
+            <div style={{
+              display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
+              backgroundColor: '#F8FAFC',
               borderRadius: '8px',
-              border: '1.5px solid #cbd5e1',
-              background: '#ffffff',
-              color: '#334155',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
-          >
-            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} style={{ color: '#344BFD' }} />
-            <span>{isRefreshing ? 'Refreshing...' : 'Refresh Pipeline'}</span>
-          </button>
-        </div>
-
-        {/* Job Header Summary Card */}
-        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #cbd5e1', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0, lineHeight: '1.2' }}>
-                  {job.title}
-                </h1>
-                <span className={`status-badge status-${job.status?.toLowerCase()}`} style={{ fontSize: '12px', padding: '4px 10px', fontWeight: '700' }}>
-                  {capitalize(job.status)}
-                </span>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', color: '#64748b', fontSize: '13.5px', fontWeight: '600', flexWrap: 'wrap' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <Building size={15} style={{ color: '#344BFD' }} />
-                  <span>{job.company}</span>
-                </span>
-                <span>•</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  <MapPin size={15} style={{ color: '#dc2626' }} />
-                  <span>{job.location}</span>
-                </span>
-                {job.workMode && (
-                  <>
-                    <span>•</span>
-                    <span style={{ background: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '700' }}>
-                      {job.workMode}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div style={{ background: '#f8fafc', padding: '10px 16px', borderRadius: '8px', border: '1.5px solid #e2e8f0', textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>VACANCY FILL STATUS</div>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
-                <span style={{ color: '#344BFD' }}>{job.filledOpenings || 0}</span> / {job.openings || 1} Positions Allotted
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pipeline Analytics Metrics Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-          
-          <div 
-            onClick={() => setStatusFilter('all')}
-            style={{ 
-              background: statusFilter === 'all' ? '#1e293b' : '#ffffff', 
-              color: statusFilter === 'all' ? '#ffffff' : '#0f172a', 
-              padding: '14px 16px', 
-              borderRadius: '10px', 
-              border: statusFilter === 'all' ? '2px solid #1e293b' : '1.5px solid #cbd5e1', 
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', opacity: 0.8 }}>TOTAL APPLICANTS</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', marginTop: '4px' }}>{counts.total}</div>
-          </div>
-
-          <div 
-            onClick={() => setStatusFilter('applied')}
-            style={{ 
-              background: statusFilter === 'applied' ? '#eff6ff' : '#ffffff', 
-              padding: '14px 16px', 
-              borderRadius: '10px', 
-              border: statusFilter === 'applied' ? '2px solid #344BFD' : '1.5px solid #cbd5e1', 
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#2563eb' }}>APPLIED / NEW</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#1e40af', marginTop: '4px' }}>{counts.applied}</div>
-          </div>
-
-          <div 
-            onClick={() => setStatusFilter('shortlisted')}
-            style={{ 
-              background: statusFilter === 'shortlisted' ? '#faf5ff' : '#ffffff', 
-              padding: '14px 16px', 
-              borderRadius: '10px', 
-              border: statusFilter === 'shortlisted' ? '2px solid #9333ea' : '1.5px solid #cbd5e1', 
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#9333ea' }}>SHORTLISTED</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#6b21a8', marginTop: '4px' }}>{counts.shortlisted}</div>
-          </div>
-
-          <div 
-            onClick={() => setStatusFilter('accepted')}
-            style={{ 
-              background: statusFilter === 'accepted' ? '#f0fdf4' : '#ffffff', 
-              padding: '14px 16px', 
-              borderRadius: '10px', 
-              border: statusFilter === 'accepted' ? '2px solid #16a34a' : '1.5px solid #cbd5e1', 
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#16a34a' }}>ACCEPTED / HIRED</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#15803d', marginTop: '4px' }}>{counts.accepted}</div>
-          </div>
-
-          <div 
-            onClick={() => setStatusFilter('rejected')}
-            style={{ 
-              background: statusFilter === 'rejected' ? '#fef2f2' : '#ffffff', 
-              padding: '14px 16px', 
-              borderRadius: '10px', 
-              border: statusFilter === 'rejected' ? '2px solid #dc2626' : '1.5px solid #cbd5e1', 
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#dc2626' }}>REJECTED</div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#991b1b', marginTop: '4px' }}>{counts.rejected}</div>
-          </div>
-
-        </div>
-
-        {/* Search & Filter Control Bar */}
-        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #cbd5e1', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-            
-            {/* Search Input */}
-            <div style={{ position: 'relative', flex: '1 1 260px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              border: searchQuery ? '1px solid #1764E8' : '1px solid #E2E8F0',
+              padding: '0 12px',
+              height: '38px',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+              transition: 'border-color 0.15s ease'
+            }}>
+              <Search size={14} color={searchQuery ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Search candidates by name, phone, trade, or skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={APPLICANT_SEARCH_SUGGESTIONS[suggestionIndex]}
                 style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 38px',
-                  borderRadius: '8px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13.5px',
+                  border: 'none',
                   outline: 'none',
-                  background: '#f8fafc',
-                  fontWeight: '600',
-                  color: '#0f172a'
+                  width: '100%',
+                  fontSize: '12.5px',
+                  fontWeight: 500,
+                  color: '#102A5C',
+                  backgroundColor: 'transparent'
                 }}
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', fontSize: '14px', fontWeight: '700' }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    color: '#94A3B8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
-                  ✕
+                  <X size={15} />
                 </button>
               )}
             </div>
-
-            {/* Sort Order Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13px',
-                  background: '#ffffff',
-                  fontWeight: '700',
-                  color: '#0f172a',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-              </select>
-            </div>
-
           </div>
 
-          {/* Pipeline Status Filter Pill Bar */}
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
-            {[
-              { id: 'all', label: `All (${counts.total})` },
-              { id: 'applied', label: `Applied (${counts.applied})` },
-              { id: 'reviewed', label: `Reviewed (${counts.reviewed})` },
-              { id: 'shortlisted', label: `Shortlisted (${counts.shortlisted})` },
-              { id: 'accepted', label: `Accepted (${counts.accepted})` },
-              { id: 'rejected', label: `Rejected (${counts.rejected})` },
-            ].map(tab => (
+          {/* ── 2. FILTER & STATUS TABS ROW ── */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            overflowX: 'auto',
+            paddingBottom: '2px',
+            scrollbarWidth: 'none'
+          }}>
+            {/* Job Dropdown Selector Pill */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
               <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id as any)}
+                type="button"
+                onClick={() => setJobDropdownOpen(!jobDropdownOpen)}
                 style={{
-                  padding: '7px 14px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  background: statusFilter === tab.id ? '#344BFD' : '#f1f5f9',
-                  color: statusFilter === tab.id ? '#ffffff' : '#475569',
-                  fontWeight: statusFilter === tab.id ? '700' : '600',
-                  fontSize: '12.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  height: '32px',
+                  padding: '0 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#334155',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s ease'
+                  whiteSpace: 'nowrap'
                 }}
               >
-                {tab.label}
+                <span>{selectedJobTitle}</span>
+                <ChevronDown size={14} color="#64748B" />
               </button>
-            ))}
-          </div>
 
-        </div>
-
-        {/* Candidate List Container */}
-        {filteredApplicants.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {filteredApplicants.map((a, i) => {
-              const currentStatus = a.status || 'applied';
-              const targetUserId = a.userId || a.id;
-              const phoneClean = a.phone ? a.phone.replace(/[^0-9]/g, '') : '';
-              const whatsappLink = phoneClean ? `https://wa.me/${phoneClean.length === 10 ? '91' + phoneClean : phoneClean}?text=${encodeURIComponent(`Hi ${a.name},\n\nWe reviewed your application for the ${job.title} role at ${job.company}. We would like to discuss the opportunity with you.`)}` : '';
-
-              return (
-                <div 
-                  key={targetUserId || i} 
-                  style={{ 
-                    background: '#ffffff', 
-                    borderRadius: '12px', 
-                    border: '1.5px solid #cbd5e1', 
-                    padding: '18px', 
-                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.04)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
-                    
-                    {/* Left Candidate Info Block */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: '1 1 300px' }}>
-                      <div 
-                        style={{ 
-                          width: '52px', 
-                          height: '52px', 
-                          borderRadius: '10px', 
-                          background: 'linear-gradient(135deg, #1e3a8a 0%, #344BFD 100%)',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '20px',
-                          fontWeight: '800',
+              {jobDropdownOpen && (
+                <>
+                  <div
+                    onClick={() => setJobDropdownOpen(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: '38px',
+                    left: 0,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '8px',
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                    minWidth: '200px',
+                    maxWidth: '280px',
+                    maxHeight: '260px',
+                    overflowY: 'auto',
+                    zIndex: 100,
+                    padding: '4px'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedJobId('ALL');
+                        setJobDropdownOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: selectedJobId === 'ALL' ? '#EFF6FF' : 'transparent',
+                        color: selectedJobId === 'ALL' ? '#1764E8' : '#102A5C',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      All Jobs ({applicants.length})
+                    </button>
+                    {myJobs.map((j) => (
+                      <button
+                        key={j.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedJobId(j.id);
+                          setJobDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '8px 12px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          backgroundColor: selectedJobId === j.id ? '#EFF6FF' : 'transparent',
+                          color: selectedJobId === j.id ? '#1764E8' : '#102A5C',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
                           overflow: 'hidden',
-                          flexShrink: 0,
-                          border: '1.5px solid #cbd5e1'
+                          textOverflow: 'ellipsis'
                         }}
                       >
-                        {a.profilePictureUrl && typeof a.profilePictureUrl === 'string' ? (
-                          <img 
-                            src={a.profilePictureUrl} 
-                            alt={typeof a.name === 'string' ? a.name : 'Applicant'} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          getInitials(a.name || 'C')
-                        )}
+                        {j.title}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Status Tabs with counts */}
+            {(
+              [
+                { key: 'ALL', label: 'All', count: counts.ALL },
+                { key: 'applied', label: 'Applied', count: counts.applied },
+                { key: 'shortlisted', label: 'Shortlisted', count: counts.shortlisted },
+                { key: 'interviewed', label: 'Interviewed', count: counts.interviewed },
+                { key: 'hired', label: 'Hired', count: counts.hired },
+                { key: 'rejected', label: 'Rejected', count: counts.rejected },
+              ] as const
+            ).map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    height: '32px',
+                    padding: '0 8px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderBottom: isActive ? '2px solid #1764E8' : '2px solid transparent',
+                    color: isActive ? '#1764E8' : '#64748B',
+                    fontSize: '12px',
+                    fontWeight: isActive ? 700 : 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span style={{
+                    backgroundColor: isActive ? '#EFF6FF' : '#E2E8F0',
+                    color: isActive ? '#1764E8' : '#475569',
+                    borderRadius: '10px',
+                    padding: '1px 6px',
+                    fontSize: '11px',
+                    fontWeight: 700
+                  }}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── 3. CANDIDATE APPLICANTS LIST ── */}
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', gap: '10px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '3px solid #E2E8F0', borderTopColor: '#1764E8', animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>Loading applicants...</span>
+          </div>
+        ) : filteredApplicants.length === 0 ? (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E7EBF2',
+            padding: '40px 20px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#EFF6FF',
+              color: '#1764E8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px'
+            }}>
+              <UserIcon size={24} />
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#102A5C', marginBottom: '4px' }}>
+              No Applicants Found
+            </div>
+            <div style={{ fontSize: '12px', color: '#657796' }}>
+              {searchQuery ? 'Try adjusting your search criteria.' : 'No candidates in this category yet.'}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filteredApplicants.map((item) => {
+              const candidateName = safeValue(item.user?.name) || 'Applicant';
+              const candidateTrade = safeValue(item.user?.headline || item.user?.tradeSpecialization || item.user?.trade_specialization) || 'Candidate';
+              const candidateExp = safeValue(item.user?.experience);
+              const candidateLocation = safeValue(item.user?.location || (item.user as any)?.midc_zone);
+              const avatarUri = item.user?.profilePictureUrl;
+              const shiftVal = item.user?.preferredShift ? safeValue(item.user?.preferredShift) : '';
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => handleCardClick(item)}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    padding: '12px',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                  }}
+                >
+                  {/* Header Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Avatar Box */}
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      backgroundColor: '#EEF4FF',
+                      border: '1px solid #DBEAFE',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      {avatarUri ? (
+                        <img
+                          src={avatarUri}
+                          alt={candidateName}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <UserIcon size={18} color="#1764E8" strokeWidth={2} />
+                      )}
+                    </div>
+
+                    {/* Candidate Info Text */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <div style={{
+                          fontSize: '13.5px',
+                          fontWeight: 700,
+                          color: '#102A5C',
+                          letterSpacing: '-0.2px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {candidateName}
+                        </div>
+
+                        {/* Status Badge */}
+                        <div style={{ flexShrink: 0 }}>
+                          {renderStatusBadge(item.status)}
+                        </div>
                       </div>
 
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
-                            {a.name}
-                          </h3>
-                          {a.aadhaarVerified && (
-                            <span style={{ fontSize: '11px', padding: '2px 8px', background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '4px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <ShieldCheck size={12} />
-                              <span>Verified</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#475569', fontWeight: '600' }}>
-                          {a.tradeSpecialization || a.headline || 'Industrial Specialist'} • {a.location || 'Location Not Specified'}
-                        </p>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', fontSize: '12px', color: '#64748b' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock size={13} style={{ color: '#94a3b8' }} />
-                            <span>Applied {timeAgo(a.appliedAt)}</span>
-                          </span>
-                        </div>
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: '#657796',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        marginTop: '2px'
+                      }}>
+                        {candidateTrade}
                       </div>
                     </div>
 
-                    {/* Right Pipeline Status Pill */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className={`status-badge status-${currentStatus}`} style={{ fontSize: '12px', padding: '6px 14px', fontWeight: '800', textTransform: 'uppercase' }}>
-                        {capitalize(currentStatus)}
+                    {/* Chevron Right */}
+                    <ChevronRight size={14} color="#91A0BA" style={{ flexShrink: 0, marginLeft: '4px' }} />
+                  </div>
+
+                  {/* Meta Chips Row */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    marginTop: '10px'
+                  }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '4px',
+                      padding: '3px 8px',
+                      fontSize: '11px',
+                      color: '#475569',
+                      fontWeight: 500,
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <Briefcase size={11} color="#657796" style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {candidateExp}
                       </span>
                     </div>
 
-                  </div>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '4px',
+                      padding: '3px 8px',
+                      fontSize: '11px',
+                      color: '#475569',
+                      fontWeight: 500
+                    }}>
+                      <MapPin size={11} color="#657796" style={{ flexShrink: 0 }} />
+                      <span>{candidateLocation}</span>
+                    </div>
 
-                  {/* Multi-Channel Contact & Document Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-                    
-                    {/* WhatsApp Action */}
-                    {whatsappLink && (
-                      <a
-                        href={whatsappLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          background: '#f0fdf4',
-                          color: '#16a34a',
-                          border: '1px solid #bbf7d0',
-                          fontSize: '12.5px',
-                          fontWeight: '700',
-                          textDecoration: 'none'
-                        }}
-                      >
-                        <MessageSquare size={14} />
-                        <span>WhatsApp Chat ({a.phone})</span>
-                      </a>
-                    )}
-
-                    {/* Phone Call */}
-                    {a.phone && (
-                      <a
-                        href={`tel:${a.phone}`}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          background: '#f8fafc',
-                          color: '#334155',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '12.5px',
-                          fontWeight: '700',
-                          textDecoration: 'none'
-                        }}
-                      >
-                        <Phone size={13} style={{ color: '#2563eb' }} />
-                        <span>Call</span>
-                      </a>
-                    )}
-
-                    {/* Resume Action */}
-                    {(() => {
-                      const rawRes = a.resume || a.resumeUrl || a.resume_url;
-                      const resObj = typeof rawRes === 'string' && rawRes.trim()
-                        ? { url: rawRes, name: `${a.name || 'Candidate'}_Resume.pdf` }
-                        : rawRes && typeof rawRes === 'object'
-                        ? rawRes
-                        : null;
-
-                      if (!resObj || (!resObj.url && !resObj.name)) return null;
-
-                      return (
-                        <button
-                          onClick={() => setPreviewResume({ ...resObj, userId: targetUserId })}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            background: '#eff6ff',
-                            color: '#2563eb',
-                            border: '1px solid #bfdbfe',
-                            fontSize: '12.5px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <FileText size={14} />
-                          <span>View Resume PDF</span>
-                        </button>
-                      );
-                    })()}
-
-                    {/* Full Profile Trigger */}
-                    <button
-                      onClick={() => handleOpenDetails(a)}
-                      style={{
+                    {shiftVal && shiftVal !== 'Not Provided' && (
+                      <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        background: '#f8fafc',
-                        color: '#344BFD',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '12.5px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        marginLeft: 'auto'
-                      }}
-                    >
-                      <Eye size={14} />
-                      <span>Full Profile & Actions</span>
-                    </button>
-
+                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                        fontSize: '11px',
+                        color: '#475569',
+                        fontWeight: 500
+                      }}>
+                        <span>{shiftVal}</span>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Status Pipeline Action Controls Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0', flexWrap: 'wrap' }}>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>Quick Status Change:</span>
-                      
-                      {/* Status Dropdown */}
-                      <select
-                        value={currentStatus}
-                        onChange={(e) => handleStatusChange(targetUserId, e.target.value, a.name)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: '1.5px solid #cbd5e1',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          background: '#ffffff',
-                          color: '#0f172a',
-                          outline: 'none',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="applied">Applied (New)</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="shortlisted">Shortlisted</option>
-                        <option value="accepted">Accepted / Hired</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
-
-                    {/* One-Click Action Buttons */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      {currentStatus !== 'shortlisted' && (
-                        <button
-                          onClick={() => handleStatusChange(targetUserId, 'shortlisted', a.name)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #d8b4fe',
-                            background: '#faf5ff',
-                            color: '#9333ea',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          + Shortlist
-                        </button>
-                      )}
-
-                      {currentStatus !== 'accepted' && (
-                        <button
-                          onClick={() => handleStatusChange(targetUserId, 'accepted', a.name)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #bbf7d0',
-                            background: '#f0fdf4',
-                            color: '#16a34a',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✓ Accept / Hire
-                        </button>
-                      )}
-
-                      {currentStatus !== 'rejected' && (
-                        <button
-                          onClick={() => handleStatusChange(targetUserId, 'rejected', a.name)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #fca5a5',
-                            background: '#fef2f2',
-                            color: '#dc2626',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ✕ Reject
-                        </button>
-                      )}
-                    </div>
-
-                  </div>
-
                 </div>
               );
             })}
           </div>
-        ) : (
-          /* Empty State */
-          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #cbd5e1', padding: '48px 24px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#eff6ff', color: '#344BFD', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid #bfdbfe' }}>
-              <UserX size={26} />
-            </div>
-            <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
-              {searchQuery || statusFilter !== 'all' ? 'No matching applicants found' : 'No applicants have applied yet'}
-            </h3>
-            <p style={{ margin: '0 0 18px', fontSize: '13.5px', color: '#64748b', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try clearing your search query or switching your pipeline status filter to view other candidates.'
-                : 'Candidates who apply for this job listing will appear here in real-time.'}
-            </p>
-            {(searchQuery || statusFilter !== 'all') && (
-              <button
-                onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#344BFD', color: '#ffffff', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
-              >
-                Clear All Filters
-              </button>
-            )}
-          </div>
         )}
 
       </div>
-
-      {/* Preview Resume Modal */}
-      {previewResume && (
-        <ResumePreviewModal 
-          resume={previewResume} 
-          onClose={() => setPreviewResume(null)} 
-          userId={previewResume?.userId} 
-        />
-      )}
-
-      {/* Candidate Details Modal */}
-      {viewWorker && (
-        <CandidateDetailsModal
-          viewWorker={viewWorker}
-          onClose={() => setViewWorker(null)}
-          updateApplicantStatus={updateApplicantStatus}
-          scheduleInterview={scheduleInterview}
-          sendCustomEmail={sendCustomEmail}
-          showToast={showToast}
-          myJobs={job ? [job] : []}
-        />
-      )}
     </div>
   );
 };

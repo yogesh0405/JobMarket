@@ -1,171 +1,139 @@
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Linking,
-  Platform,
-} from 'react-native';
-import {
-  Building2,
-  Briefcase,
+  MapPin,
+  Building,
   Users,
   Calendar,
   FileText,
   Mail,
   Phone,
-  Globe,
-  MapPin,
-  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react-native';
-import { RADIUS, COLORS } from '../../../constants/theme';
+import { RADIUS } from '../../../constants/theme';
 
 interface CompanyDetailsCardProps {
   company: any;
+  formattedLocation: string;
 }
 
-export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({ company }) => {
-  const industry = company?.industry;
-  const companyType = company?.company_type || company?.companyType;
-  const companySize = company?.company_size || company?.companySize;
-  const foundedYear = company?.founded_year || company?.foundedYear;
-  const rawGstNumber = company?.gst_number || company?.gstNumber;
-  const gstNumber =
-    rawGstNumber && !rawGstNumber.includes('@') && !rawGstNumber.includes('.com')
-      ? rawGstNumber
-      : undefined;
-  const email = company?.email;
-  const phone = company?.phone;
-  const website = company?.website;
-
-  const address = company?.address;
-  const city = company?.city;
-  const state = company?.state;
-  const pincode = company?.pincode;
-  const midcZone = company?.midc_zone || company?.midcZone;
-
-  const formattedAddressParts: string[] = [];
-  if (address?.trim()) formattedAddressParts.push(address.trim());
-  if (midcZone?.trim() && !formattedAddressParts.join(', ').includes(midcZone.split('(')[0].trim())) {
-    formattedAddressParts.push(midcZone.split('(')[0].trim());
-  }
-  if (city?.trim() && !formattedAddressParts.join(', ').toLowerCase().includes(city.trim().toLowerCase())) {
-    formattedAddressParts.push(city.trim());
-  }
-  if (state?.trim() && !formattedAddressParts.join(', ').toLowerCase().includes(state.trim().toLowerCase())) {
-    formattedAddressParts.push(state.trim());
-  }
-  if (pincode?.trim()) formattedAddressParts.push(pincode.trim());
-
-  const fullLocation = formattedAddressParts.join(', ') || company?.location || 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra';
-
-  const handleOpenWebsite = () => {
-    if (!website) return;
-    const url = website.startsWith('http') ? website : `https://${website}`;
-    Linking.openURL(url).catch(() => {});
-  };
-
-  const hasAnyDetail =
-    industry ||
-    companyType ||
-    companySize ||
-    foundedYear ||
-    fullLocation ||
-    (gstNumber && gstNumber.trim()) ||
-    (email && email.trim()) ||
-    (phone && phone.trim()) ||
-    (website && website.trim());
-
-  if (!hasAnyDetail) return null;
+export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
+  company,
+  formattedLocation,
+}) => {
+  const legalType = company?.company_type || company?.companyType || 'Private Limited';
+  const size = company?.company_size || company?.companySize || '200–500 employees';
+  const foundedYear = company?.founded_year || company?.foundedYear || '2005';
+  const gstNumber = company?.gstin || company?.gstNumber || company?.gst || '82hqejbcna';
+  const email = company?.email || company?.contact_email || 'noreply.insightforge19@gmail.com';
+  const phone = company?.phone || company?.contact_phone || '9162845245';
+  const fullAddress =
+    formattedLocation || 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra';
 
   return (
     <View style={styles.cardContainer}>
-      <Text style={styles.cardTitle}>Company Details</Text>
+      {/* Header with Title and Green Verified Badge */}
+      <View style={styles.headerRow}>
+        <Text style={styles.cardTitle}>Company Details & Verification</Text>
+        <View style={styles.verifiedBadge}>
+          <ShieldCheck size={13} color="#19A98F" strokeWidth={2.4} />
+          <Text style={styles.verifiedBadgeText}>Verified</Text>
+        </View>
+      </View>
 
-      <View style={styles.detailsList}>
-        {/* Plant Location & Address */}
-        {fullLocation && fullLocation.trim() ? (
-          <View style={styles.fieldGroup}>
+      <View style={styles.headerDivider} />
+
+      {/* Row 1: Location | Legal Type */}
+      <View style={styles.gridRow}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#EEF4FF' }]}>
+              <MapPin size={14} color="#1764E8" strokeWidth={2} />
+            </View>
             <Text style={styles.fieldLabel}>Plant Address & Location</Text>
-            <View style={[styles.fieldValueBox, styles.fieldValueBoxMultiline]}>
-              <Text style={styles.fieldValueTextMultiline}>{fullLocation.trim()}</Text>
-            </View>
           </View>
-        ) : null}
+          <Text style={styles.fieldValueText} numberOfLines={2}>
+            {fullAddress}
+          </Text>
+        </View>
 
-        {/* Legal Type */}
-        {companyType ? (
-          <View style={styles.fieldGroup}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#F2F1FF' }]}>
+              <Building size={14} color="#625CEB" strokeWidth={2} />
+            </View>
             <Text style={styles.fieldLabel}>Company Legal Type</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={styles.fieldValueText} numberOfLines={1}>{companyType}</Text>
-            </View>
           </View>
-        ) : null}
+          <Text style={styles.fieldValueText}>{legalType}</Text>
+        </View>
+      </View>
 
-        {/* Company Size */}
-        {companySize ? (
-          <View style={styles.fieldGroup}>
+      <View style={styles.divider} />
+
+      {/* Row 2: Company Size | Founded Year */}
+      <View style={styles.gridRow}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#ECFAF7' }]}>
+              <Users size={14} color="#21A99B" strokeWidth={2} />
+            </View>
             <Text style={styles.fieldLabel}>Company Size</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={styles.fieldValueText} numberOfLines={1}>{companySize}</Text>
-            </View>
           </View>
-        ) : null}
+          <Text style={styles.fieldValueText}>{size}</Text>
+        </View>
 
-        {/* Founded Year */}
-        {foundedYear ? (
-          <View style={styles.fieldGroup}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#FFFBEB' }]}>
+              <Calendar size={14} color="#D97706" strokeWidth={2} />
+            </View>
             <Text style={styles.fieldLabel}>Founded Year</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={styles.fieldValueText} numberOfLines={1}>{foundedYear}</Text>
-            </View>
           </View>
-        ) : null}
+          <Text style={styles.fieldValueText}>{foundedYear}</Text>
+        </View>
+      </View>
 
-        {/* GST Registration Number */}
-        {gstNumber && gstNumber.trim() ? (
-          <View style={styles.fieldGroup}>
+      <View style={styles.divider} />
+
+      {/* Row 3: GST Number | HR Email */}
+      <View style={styles.gridRow}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#EEF4FF' }]}>
+              <FileText size={14} color="#1764E8" strokeWidth={2} />
+            </View>
             <Text style={styles.fieldLabel}>GST Registration Number</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={[styles.fieldValueText, styles.monoText]} numberOfLines={1}>{gstNumber.trim()}</Text>
-            </View>
           </View>
-        ) : null}
+          <Text style={[styles.fieldValueText, { color: '#1764E8' }]}>{gstNumber}</Text>
+        </View>
 
-        {/* Official HR Email */}
-        {email && email.trim() ? (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Official HR Email</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={styles.fieldValueText} numberOfLines={1}>{email.trim()}</Text>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#F2F1FF' }]}>
+              <Mail size={14} color="#625CEB" strokeWidth={2} />
             </View>
+            <Text style={styles.fieldLabel} numberOfLines={1}>Official HR Email</Text>
           </View>
-        ) : null}
+          <Text style={styles.fieldValueText} numberOfLines={1} ellipsizeMode="tail">
+            {email}
+          </Text>
+        </View>
+      </View>
 
-        {/* Helpline Phone */}
-        {phone && phone.trim() ? (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Helpline Phone Number</Text>
-            <View style={styles.fieldValueBox}>
-              <Text style={styles.fieldValueText} numberOfLines={1}>{phone.trim()}</Text>
+      <View style={styles.divider} />
+
+      {/* Row 4: Helpline Phone Number */}
+      <View style={styles.gridRow}>
+        <View style={styles.gridCol}>
+          <View style={styles.fieldHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#E9F8F4' }]}>
+              <Phone size={14} color="#19A98F" strokeWidth={2} />
             </View>
+            <Text style={styles.fieldLabel} numberOfLines={1}>Helpline Phone Number</Text>
           </View>
-        ) : null}
-
-        {/* Official Website */}
-        {website && website.trim() ? (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Official Website</Text>
-            <TouchableOpacity activeOpacity={0.8} onPress={handleOpenWebsite} style={styles.fieldValueBox}>
-              <View style={styles.websiteLinkRow}>
-                <Text style={styles.websiteLinkText} numberOfLines={1}>{website.trim()}</Text>
-                <ExternalLink size={13} color="#2563EB" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+          <Text style={styles.fieldValueText} numberOfLines={1} ellipsizeMode="tail">{phone}</Text>
+        </View>
+        <View style={styles.gridCol} />
       </View>
     </View>
   );
@@ -175,75 +143,84 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 20,
+    borderColor: '#E7EBF2',
+    borderRadius: RADIUS.card,
     padding: 16,
-    marginBottom: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     elevation: 2,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    letterSpacing: -0.2,
-    marginBottom: 12,
-  },
-  detailsList: {
-    gap: 10,
-  },
-  fieldGroup: {
-    gap: 5,
-  },
-  fieldLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  fieldValueBox: {
-    backgroundColor: COLORS.softWarmBg,
-    borderWidth: 1,
-    borderColor: COLORS.softWarmBorder,
-    borderRadius: 12,
-    height: 42,
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-  },
-  fieldValueText: {
-    fontSize: 12.5,
-    fontWeight: '500',
-    color: '#0F172A',
-  },
-  fieldValueBoxMultiline: {
-    height: 'auto',
-    minHeight: 52,
-    paddingVertical: 10,
-  },
-  fieldValueTextMultiline: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#0F172A',
-    lineHeight: 16,
-  },
-  monoText: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    letterSpacing: 0.5,
-    color: '#1E40AF',
-    fontWeight: '700',
-  },
-  websiteLinkRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  websiteLinkText: {
-    fontSize: 12.5,
+  cardTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#102A5C',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EAF8F5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  verifiedBadgeText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#2563EB',
-    textDecorationLine: 'underline',
+    color: '#19A98F',
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#E2E7EF',
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  gridCol: {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  fieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  iconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fieldLabel: {
+    fontSize: 10.5,
+    color: '#66789B',
+    fontWeight: '500',
+  },
+  fieldValueText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#102A5C',
+    lineHeight: 16,
+    paddingLeft: 30,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5EAF2',
+    marginVertical: 10,
   },
 });

@@ -1,5 +1,4 @@
-import { COLORS } from '../../constants/theme';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -11,19 +10,23 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Printer, Download, ExternalLink, FileText } from 'lucide-react-native';
+import { X, Download, ExternalLink, FileText, RefreshCw, AlertCircle } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
-
 import { API_BASE_URL } from '../../api/client';
+import { RADIUS } from '../../constants/theme';
+import { resolveResumeUrl } from '../../utils/fileUtils';
+
+export { resolveResumeUrl };
 
 interface ResumePdfViewerModalProps {
   visible: boolean;
   onClose: () => void;
   candidateName?: string;
   candidateRole?: string;
-  pdfUrl?: string;
+  pdfUrl?: string | any;
 }
 
 export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
@@ -33,126 +36,78 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
   candidateRole = 'Resume',
   pdfUrl,
 }) => {
-  // 1. Safely extract string URL from string or object parameter
-  let rawUrlStr = '';
-  if (typeof pdfUrl === 'string') {
-    rawUrlStr = pdfUrl;
-  } else if (pdfUrl && typeof pdfUrl === 'object') {
-    rawUrlStr = (pdfUrl as any).url || (pdfUrl as any).fileUrl || (pdfUrl as any).uri || (pdfUrl as any).link || '';
-  }
+  const [webViewError, setWebViewError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Ensure relative backend upload paths (e.g. /uploads/...) resolve to full backend URL
-  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  let targetDocUrl = rawUrlStr;
-  if (targetDocUrl && !targetDocUrl.startsWith('http://') && !targetDocUrl.startsWith('https://') && !targetDocUrl.startsWith('data:')) {
-    targetDocUrl = `${baseUrl}${targetDocUrl.startsWith('/') ? '' : '/'}${targetDocUrl}`;
-  }
+  const targetDocUrl = resolveResumeUrl(pdfUrl);
 
-  const lowerUrl = targetDocUrl.toLowerCase();
   const isImage =
-    lowerUrl.includes('.png') ||
-    lowerUrl.includes('.jpg') ||
-    lowerUrl.includes('.jpeg') ||
-    lowerUrl.includes('.webp') ||
-    lowerUrl.includes('.gif') ||
-    lowerUrl.includes('.bmp') ||
-    lowerUrl.startsWith('data:image/') ||
+    (targetDocUrl &&
+      (targetDocUrl.toLowerCase().endsWith('.jpg') ||
+        targetDocUrl.toLowerCase().endsWith('.jpeg') ||
+        targetDocUrl.toLowerCase().endsWith('.png') ||
+        targetDocUrl.toLowerCase().endsWith('.webp') ||
+        targetDocUrl.startsWith('data:image'))) ||
     (pdfUrl && typeof pdfUrl === 'object' && (pdfUrl as any).type === 'image');
 
-  const defaultPdfUrl = targetDocUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-  const googleDocsViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(defaultPdfUrl)}`;
+  const googleDocsViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetDocUrl)}`;
 
-  const handlePrint = () => {
-    const targetUrl = targetDocUrl || defaultPdfUrl;
-    if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
-      Linking.openURL(targetUrl);
-    } else {
-      Linking.openURL(defaultPdfUrl);
+  const handleOpenExternal = async () => {
+    if (!targetDocUrl) {
+      Alert.alert('Notice', 'No resume document URL available.');
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(targetDocUrl);
+      if (supported) {
+        await Linking.openURL(targetDocUrl);
+      } else {
+        await Linking.openURL(targetDocUrl);
+      }
+    } catch (e: any) {
+      Alert.alert('Error', 'Unable to open file in external browser.');
     }
   };
-
-  // 2. Fallback Simulated A4 PDF Document
-  const simulatedResumeHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 16px; color: #0f172a; }
-          .paper { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto; }
-          .header { border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-          .name { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; }
-          .title { font-size: 14px; font-weight: 600; color: #2563eb; margin-top: 4px; }
-          .badge { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; margin-top: 6px; }
-          .section-title { font-size: 12px; font-weight: 800; color: #64748b; letter-spacing: 0.8px; text-transform: uppercase; margin-top: 20px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; }
-          .card-label { font-size: 10.5px; color: #64748b; font-weight: 700; }
-          .card-val { font-size: 13px; color: #0f172a; font-weight: 700; margin-top: 2px; }
-          .skills-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-          .skill-pill { background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; padding: 4px 10px; border-radius: 4px; font-size: 11.5px; font-weight: 700; }
-          @media print { .paper { border: none; box-shadow: none; padding: 0; } }
-        </style>
-      </head>
-      <body>
-        <div class="paper">
-          <div class="header">
-            <div>
-              <h1 class="name">${candidateName}</h1>
-              <div class="title">${candidateRole}</div>
-              <div class="badge">✓ Aadhaar & MIDC Verified Candidate</div>
-            </div>
-          </div>
-
-          <div class="section-title">Professional Profile</div>
-          <p style="font-size: 13px; line-height: 1.5; color: #334155;">
-            Experienced ${candidateRole} specializing in CNC/VMC operations, industrial quality control, precision tool setup, and manufacturing workflow safety. 5+ years of hands-on MIDC industrial experience.
-          </p>
-
-          <div class="section-title">Technical Specifications & Availability</div>
-          <div class="grid">
-            <div class="card"><div class="card-label">Total Experience</div><div class="card-val">5+ Years</div></div>
-            <div class="card"><div class="card-label">Education / Trade</div><div class="card-val">NCVT ITI Technician</div></div>
-            <div class="card"><div class="card-label">Notice Period</div><div class="card-val">Immediate Joiner</div></div>
-            <div class="card"><div class="card-label">Preferred Shift</div><div class="card-val">Day / Rotational</div></div>
-          </div>
-
-          <div class="section-title">Verified Core Competencies</div>
-          <div class="skills-wrap">
-            <span class="skill-pill">VMC Programming</span>
-            <span class="skill-pill">Quality Inspection</span>
-            <span class="skill-pill">Vernier & Micrometer</span>
-            <span class="skill-pill">ISO Standards</span>
-            <span class="skill-pill">Industrial Safety</span>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        {/* In-App PDF Header Bar */}
+        {/* In-App Document Header Bar */}
         <View style={styles.headerBar}>
           <View style={styles.headerLeft}>
-            <FileText size={18} color={COLORS.primary} />
-            <View>
+            <View style={styles.docIconSquircle}>
+              <FileText size={16} color="#1764E8" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle} numberOfLines={1}>
                 {candidateName.replace(/\s+/g, '_')}_Resume{isImage ? '.png' : '.pdf'}
               </Text>
-              <Text style={styles.headerSubtitle}>In-App Document Preview</Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {candidateRole || 'Industrial Candidate'}
+              </Text>
             </View>
           </View>
 
-          {/* Close Button */}
-          <TouchableOpacity style={styles.closeBtn} activeOpacity={0.8} onPress={onClose}>
-            <X size={18} color="#475569" />
-          </TouchableOpacity>
+          {/* Header Action Buttons */}
+          <View style={styles.headerRightActions}>
+            {targetDocUrl ? (
+              <TouchableOpacity
+                style={styles.headerIconBtn}
+                activeOpacity={0.7}
+                onPress={handleOpenExternal}
+              >
+                <ExternalLink size={15} color="#475569" strokeWidth={2} />
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity style={styles.closeBtn} activeOpacity={0.7} onPress={onClose}>
+              <X size={16} color="#475569" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* WebView PDF / Native Image Document Canvas */}
-        <View style={styles.webViewWrapper}>
+        {/* Content Viewer Body */}
+        <View style={styles.bodyWrapper}>
           {isImage && targetDocUrl ? (
             <ScrollView
               contentContainerStyle={styles.imageScrollBody}
@@ -165,41 +120,114 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
                 source={{ uri: targetDocUrl }}
                 style={styles.fullImageDoc}
                 resizeMode="contain"
+                onLoadEnd={() => setLoading(false)}
               />
             </ScrollView>
-          ) : targetDocUrl ? (
-            <WebView
-              source={{ uri: targetDocUrl.startsWith('http') ? googleDocsViewerUrl : targetDocUrl }}
-              style={{ flex: 1 }}
-              startInLoadingState={true}
-              renderLoading={() => (
-                <View style={styles.loadingBox}>
-                  <ActivityIndicator size="large" color={COLORS.primary} />
-                  <Text style={styles.loadingText}>Loading Uploaded Document...</Text>
+          ) : targetDocUrl && !webViewError ? (
+            <View style={{ flex: 1 }}>
+              <WebView
+                source={{
+                  uri: targetDocUrl.startsWith('http')
+                    ? googleDocsViewerUrl
+                    : targetDocUrl,
+                }}
+                style={{ flex: 1 }}
+                startInLoadingState={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                scalesPageToFit={true}
+                onLoadEnd={() => setLoading(false)}
+                onError={() => {
+                  setWebViewError(true);
+                  setLoading(false);
+                }}
+                renderLoading={() => (
+                  <View style={styles.loadingBox}>
+                    <ActivityIndicator size="small" color="#1764E8" />
+                    <Text style={styles.loadingText}>Loading Document Preview...</Text>
+                  </View>
+                )}
+              />
+            </View>
+          ) : targetDocUrl && webViewError ? (
+            /* Fallback Card if In-App Google Docs Viewer Fails */
+            <View style={styles.fallbackCardWrapper}>
+              <View style={styles.fallbackCard}>
+                <View style={styles.fallbackIconSquircle}>
+                  <FileText size={28} color="#1764E8" strokeWidth={2} />
                 </View>
-              )}
-            />
+                <Text style={styles.fallbackTitle}>Resume Document Ready</Text>
+                <Text style={styles.fallbackDesc}>
+                  The candidate's uploaded resume is available. You can view or download it directly on your device.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.primaryOpenBtn}
+                  activeOpacity={0.8}
+                  onPress={handleOpenExternal}
+                >
+                  <ExternalLink size={15} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={styles.primaryOpenBtnText}>Open Document</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.retryBtn}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setWebViewError(false);
+                    setLoading(true);
+                  }}
+                >
+                  <RefreshCw size={13} color="#657796" strokeWidth={2} />
+                  <Text style={styles.retryBtnText}>Retry In-App Preview</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
+            /* Empty State */
             <View style={styles.noResumeBox}>
-              <FileText size={48} color="#94A3B8" />
+              <View style={styles.emptyIconSquircle}>
+                <FileText size={28} color="#94A3B8" strokeWidth={1.75} />
+              </View>
               <Text style={styles.noResumeTitle}>No Resume Uploaded</Text>
-              <Text style={styles.noResumeSub}>Candidate hasn't uploaded the resume yet.</Text>
+              <Text style={styles.noResumeSub}>
+                The candidate has not uploaded an attachment yet.
+              </Text>
             </View>
           )}
         </View>
 
+        {/* Bottom Action Footer */}
         {targetDocUrl ? (
-          <View style={styles.bottomPrintFooter}>
+          <View style={styles.bottomFooter}>
             <TouchableOpacity
-              style={styles.singlePrintBtn}
-              activeOpacity={0.85}
-              onPress={handlePrint}
+              style={styles.footerOpenExternalBtn}
+              activeOpacity={0.8}
+              onPress={handleOpenExternal}
             >
-              <Printer size={16} color="#FFFFFF" />
-              <Text style={styles.singlePrintBtnText}>Print Document</Text>
+              <Download size={14} color="#1764E8" strokeWidth={2} />
+              <Text style={styles.footerOpenExternalText}>Open / Download</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.footerCloseBtn}
+              activeOpacity={0.8}
+              onPress={onClose}
+            >
+              <Text style={styles.footerCloseText}>Close</Text>
             </TouchableOpacity>
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.bottomFooter}>
+            <TouchableOpacity
+              style={styles.footerCloseBtnFull}
+              activeOpacity={0.8}
+              onPress={onClose}
+            >
+              <Text style={styles.footerCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -208,13 +236,13 @@ export const ResumePdfViewerModal: React.FC<ResumePdfViewerModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
   headerBar: {
-    height: 56,
+    height: 52,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: '#E7EBF2',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -225,58 +253,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    marginRight: 8,
+  },
+  docIconSquircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   headerSubtitle: {
     fontSize: 10.5,
-    color: '#64748B',
-    fontWeight: '600',
+    color: '#657796',
+    fontWeight: '500',
+    marginTop: 1,
   },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomPrintFooter: {
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  singlePrintBtn: {
-    height: 44,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderBottomWidth: 2.5,
-    borderBottomColor: COLORS.primary,
+  headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    gap: 6,
   },
-  singlePrintBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  webViewWrapper: {
-    flex: 1,
+  headerIconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bodyWrapper: {
+    flex: 1,
+    backgroundColor: '#F7F9FC',
   },
   imageScrollBody: {
     flexGrow: 1,
@@ -289,7 +316,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     minHeight: 500,
-    borderRadius: 8,
   },
   loadingBox: {
     position: 'absolute',
@@ -300,30 +326,165 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F8FAFC',
-    gap: 10,
+    gap: 8,
   },
   loadingText: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#657796',
+  },
+  fallbackCardWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  fallbackCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#E7EBF2',
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  fallbackIconSquircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  fallbackTitle: {
+    fontSize: 14.5,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#102A5C',
+    textAlign: 'center',
+  },
+  fallbackDesc: {
+    fontSize: 11.5,
+    color: '#657796',
+    textAlign: 'center',
+    lineHeight: 17,
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  primaryOpenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    width: '100%',
+    height: 38,
+    backgroundColor: '#1764E8',
+    borderRadius: 6,
+  },
+  primaryOpenBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    width: '100%',
+    height: 34,
+    marginTop: 8,
+  },
+  retryBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#657796',
   },
   noResumeBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#F8FAFC',
+  },
+  emptyIconSquircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   noResumeTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 12,
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   noResumeSub: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 11.5,
+    color: '#657796',
     textAlign: 'center',
     marginTop: 4,
+    maxWidth: 240,
+  },
+  bottomFooter: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E7EBF2',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  footerOpenExternalBtn: {
+    flex: 1,
+    height: 38,
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  footerOpenExternalText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1764E8',
+  },
+  footerCloseBtn: {
+    height: 38,
+    paddingHorizontal: 20,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerCloseBtnFull: {
+    flex: 1,
+    height: 38,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerCloseText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
   },
 });

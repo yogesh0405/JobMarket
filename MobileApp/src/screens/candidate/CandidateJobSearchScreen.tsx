@@ -370,7 +370,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   return (
     <View style={styles.container}>
-      <Header title="Browse Industrial Vacancies" subtitle="Find factory, trade & engineering jobs" showBack={false} />
+      <Header title="Find Jobs" showBack={false} />
 
       <CandidateJobSearchFilterHeader
         searchQuery={searchQuery}
@@ -501,15 +501,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   resultsCountText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   emptyStateBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 30,
     alignItems: 'center',
     marginTop: 20,
@@ -521,20 +521,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   emptySub: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#64748B',
     textAlign: 'center',
     marginTop: 4,
+    lineHeight: 16,
   },
   resetFilterBtn: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 4,
     marginTop: 14,
   },
   resetFilterBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },

@@ -19,9 +19,11 @@ import {
   Wrench,
   Plus,
   X,
+  Clock,
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { DatePickerField } from '../../../components/common/DatePickerField';
+import { ClockTimePickerModal } from '../../../components/common/ClockTimePickerModal';
 import { COLORS, SPACING, RADIUS } from '../../../constants/theme';
 
 interface JobPostStep4EligibilityProps {
@@ -65,7 +67,7 @@ interface JobPostStep4EligibilityProps {
   onAddCustomSkill: () => void;
   onToggleSkill: (skill: string) => void;
   availableSkills: string[];
-  onFocusInput?: (e: any) => void;
+  onFocusInput?: (e?: any) => void;
 }
 
 export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = ({
@@ -111,6 +113,8 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
   availableSkills,
   onFocusInput,
 }) => {
+  const [timePickerTarget, setTimePickerTarget] = React.useState<'start' | 'end' | null>(null);
+
   return (
     <View style={styles.formCard}>
       <View style={styles.cardHeaderRow}>
@@ -145,7 +149,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
                   onPress={() => setGenderPreference(g)}
                 >
                   <IconComp size={14} color={isSelected ? '#FFFFFF' : '#64748B'} />
-                  <Text style={[styles.hiringTabText, isSelected && styles.hiringTabTextActive]} numberOfLines={1}>
+                  <Text style={[styles.hiringTabText, isSelected && { color: '#FFFFFF', fontWeight: '800' }]}>
                     {g}
                   </Text>
                 </TouchableOpacity>
@@ -153,22 +157,28 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
             })}
           </View>
 
-          <View style={[styles.rowTwo, { marginTop: SPACING.md }]}>
+          <View style={styles.rowTwo}>
             <View style={{ flex: 1 }}>
               <Input
-                label="Min Age (Years)"
-                keyboardType="numeric"
+                label="Minimum Age (Yrs)"
+                placeholder="18"
                 value={minAgeInput}
                 onChangeText={setMinAgeInput}
+                keyboardType="number-pad"
+                maxLength={2}
+                onFocus={onFocusInput}
                 inputContainerStyle={{ borderRadius: 8 }}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Input
-                label="Max Age (Years)"
-                keyboardType="numeric"
+                label="Maximum Age (Yrs)"
+                placeholder="45"
                 value={maxAgeInput}
                 onChangeText={setMaxAgeInput}
+                keyboardType="number-pad"
+                maxLength={2}
+                onFocus={onFocusInput}
                 inputContainerStyle={{ borderRadius: 8 }}
               />
             </View>
@@ -176,16 +186,14 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
         </View>
       </View>
 
-      <View style={styles.sectionSeparator} />
-
-      <View style={styles.sectionBlock}>
+      {/* Hiring Method Section */}
+      <View style={[styles.sectionBlock, { marginTop: SPACING.lg }]}>
         <View style={styles.sectionHeaderRow}>
-          <FileText size={16} color={COLORS.primary} />
-          <Text style={styles.sectionTitleText}>Application and Hiring Mode</Text>
+          <Building2 size={16} color={COLORS.primary} />
+          <Text style={styles.sectionTitleText}>Hiring Method</Text>
         </View>
 
         <View style={styles.cardBody}>
-          <Text style={styles.fieldLabel}>Select Hiring Mode</Text>
           <View style={styles.hiringSegmentedTrack}>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -196,23 +204,30 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               ]}
               onPress={() => setHiringMethod('STANDARD')}
             >
-              <Building2 size={14} color={hiringMethod === 'STANDARD' ? '#FFFFFF' : '#64748B'} />
-              <Text style={[styles.hiringTabText, hiringMethod === 'STANDARD' && styles.hiringTabTextActive]} numberOfLines={1}>
-                Standard Online
+              <FileText size={14} color={hiringMethod === 'STANDARD' ? '#FFFFFF' : '#64748B'} />
+              <Text
+                style={[
+                  styles.hiringTabText,
+                  hiringMethod === 'STANDARD' && { color: '#FFFFFF', fontWeight: '800' },
+                ]}
+              >
+                Standard
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
-              style={[
-                styles.hiringTabBtn,
-                hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive,
-              ]}
+              style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
               onPress={() => setHiringMethod('WALK_IN')}
             >
-              <UserCheck size={14} color={hiringMethod === 'WALK_IN' ? '#FFFFFF' : '#64748B'} />
-              <Text style={[styles.hiringTabText, hiringMethod === 'WALK_IN' && styles.hiringTabTextActive]} numberOfLines={1}>
-                Direct Walk-in Drive
+              <Building2 size={14} color={hiringMethod === 'WALK_IN' ? '#FFFFFF' : '#64748B'} />
+              <Text
+                style={[
+                  styles.hiringTabText,
+                  hiringMethod === 'WALK_IN' && { color: '#FFFFFF', fontWeight: '800' },
+                ]}
+              >
+                Walk-In Drive
               </Text>
             </TouchableOpacity>
           </View>
@@ -228,22 +243,30 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               />
               <View style={styles.rowTwo}>
                 <View style={{ flex: 1 }}>
-                  <Input
-                    label="Start Time"
-                    placeholder="10:00 AM"
-                    value={walkInStartTime}
-                    onChangeText={setWalkInStartTime}
-                    inputContainerStyle={{ borderRadius: 8 }}
-                  />
+                  <Text style={styles.timeFieldLabel}>Start Time</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.timeTriggerBtn}
+                    onPress={() => setTimePickerTarget('start')}
+                  >
+                    <Clock size={15} color="#1764E8" strokeWidth={1.8} />
+                    <Text style={[styles.timeTriggerText, !walkInStartTime && styles.timeTriggerPlaceholder]}>
+                      {walkInStartTime || '10:00 AM'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Input
-                    label="End Time"
-                    placeholder="04:00 PM"
-                    value={walkInEndTime}
-                    onChangeText={setWalkInEndTime}
-                    inputContainerStyle={{ borderRadius: 8 }}
-                  />
+                  <Text style={styles.timeFieldLabel}>End Time</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={styles.timeTriggerBtn}
+                    onPress={() => setTimePickerTarget('end')}
+                  >
+                    <Clock size={15} color="#1764E8" strokeWidth={1.8} />
+                    <Text style={[styles.timeTriggerText, !walkInEndTime && styles.timeTriggerPlaceholder]}>
+                      {walkInEndTime || '04:00 PM'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               <Input
@@ -431,11 +454,56 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
           ) : null}
         </View>
       </View>
+
+      {/* Clock Time Picker Modal */}
+      <ClockTimePickerModal
+        visible={timePickerTarget !== null}
+        onClose={() => setTimePickerTarget(null)}
+        initialTime={
+          timePickerTarget === 'start'
+            ? walkInStartTime || '10:00 AM'
+            : walkInEndTime || '04:00 PM'
+        }
+        onSelectTime={(timeStr) => {
+          if (timePickerTarget === 'start') {
+            setWalkInStartTime(timeStr);
+          } else if (timePickerTarget === 'end') {
+            setWalkInEndTime(timeStr);
+          }
+          setTimePickerTarget(null);
+        }}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  timeFieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 5,
+  },
+  timeTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  timeTriggerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  timeTriggerPlaceholder: {
+    color: '#94A3B8',
+    fontWeight: '400',
+  },
   formCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,

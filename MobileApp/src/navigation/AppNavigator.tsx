@@ -6,6 +6,7 @@ import { EmployerSignupScreen } from '../screens/auth/EmployerSignupScreen';
 import { VerifyOTPScreen } from '../screens/auth/VerifyOTPScreen';
 import { GoogleAuthScreen } from '../screens/auth/GoogleAuthScreen';
 import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
+import { ApplicantDetailScreen } from '../screens/jobs/ApplicantDetailScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerTabNavigator } from './EmployerTabNavigator';
 import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
@@ -80,6 +81,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="EmployerBanners" component={EmployerBannersScreen} />
           <Stack.Screen name="CreateBanner" component={CreateBannerScreen} />
           <Stack.Screen name="JobApplicants" component={JobApplicantsScreen} />
+          <Stack.Screen name="ApplicantDetail" component={ApplicantDetailScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />

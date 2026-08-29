@@ -157,7 +157,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                       style={styles.avatarImg}
                     />
                   ) : (
-                    <UserIcon size={22} color={COLORS.primary} />
+                    <UserIcon size={18} color="#1764E8" strokeWidth={2} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -165,16 +165,16 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     {safeValue(selectedApplicant?.user?.name || 'Applicant Profile')}
                   </Text>
                   <Text style={styles.modalCandidateHeadline} numberOfLines={1}>
-                    {safeValue(selectedApplicant?.user?.headline || selectedApplicant?.user?.trade_specialization)}
+                    {safeValue(selectedApplicant?.user?.headline || selectedApplicant?.user?.trade_specialization || 'Technical Candidate')}
                   </Text>
                 </View>
 
                 <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-                  <X size={20} color={COLORS.slate600} />
+                  <X size={15} color="#475569" strokeWidth={2} />
                 </TouchableOpacity>
               </View>
 
-              {/* 5-Tab Segmented Control */}
+              {/* 5-Tab Segmented Control with Clean Active Underline */}
               <View style={styles.menuTabBarWrapperInline}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.menuTabBarContent}>
                   <TouchableOpacity
@@ -182,7 +182,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     onPress={() => setModalTab('JOB')}
                     style={[styles.menuTabItem, modalTab === 'JOB' && styles.menuTabItemActive]}
                   >
-                    <Briefcase size={14} color={modalTab === 'JOB' ? COLORS.primary : '#64748B'} />
+                    <Briefcase size={13} color={modalTab === 'JOB' ? '#1764E8' : '#657796'} />
                     <Text style={[styles.menuTabText, modalTab === 'JOB' && styles.menuTabTextActive]}>Job Info</Text>
                   </TouchableOpacity>
 
@@ -191,7 +191,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     onPress={() => setModalTab('CANDIDATE')}
                     style={[styles.menuTabItem, modalTab === 'CANDIDATE' && styles.menuTabItemActive]}
                   >
-                    <UserIcon size={14} color={modalTab === 'CANDIDATE' ? COLORS.primary : '#64748B'} />
+                    <UserIcon size={13} color={modalTab === 'CANDIDATE' ? '#1764E8' : '#657796'} />
                     <Text style={[styles.menuTabText, modalTab === 'CANDIDATE' && styles.menuTabTextActive]}>Candidate Info</Text>
                   </TouchableOpacity>
 
@@ -200,7 +200,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     onPress={() => setModalTab('STATUS')}
                     style={[styles.menuTabItem, modalTab === 'STATUS' && styles.menuTabItemActive]}
                   >
-                    <Zap size={14} color={modalTab === 'STATUS' ? COLORS.primary : '#64748B'} />
+                    <Zap size={13} color={modalTab === 'STATUS' ? '#1764E8' : '#657796'} />
                     <Text style={[styles.menuTabText, modalTab === 'STATUS' && styles.menuTabTextActive]}>Status</Text>
                   </TouchableOpacity>
 
@@ -209,7 +209,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     onPress={() => setModalTab('INTERVIEW')}
                     style={[styles.menuTabItem, modalTab === 'INTERVIEW' && styles.menuTabItemActive]}
                   >
-                    <Calendar size={14} color={modalTab === 'INTERVIEW' ? COLORS.primary : '#64748B'} />
+                    <Calendar size={13} color={modalTab === 'INTERVIEW' ? '#1764E8' : '#657796'} />
                     <Text style={[styles.menuTabText, modalTab === 'INTERVIEW' && styles.menuTabTextActive]}>Interview</Text>
                   </TouchableOpacity>
 
@@ -218,7 +218,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     onPress={() => setModalTab('EMAIL')}
                     style={[styles.menuTabItem, modalTab === 'EMAIL' && styles.menuTabItemActive]}
                   >
-                    <Mail size={14} color={modalTab === 'EMAIL' ? COLORS.primary : '#64748B'} />
+                    <Mail size={13} color={modalTab === 'EMAIL' ? '#1764E8' : '#657796'} />
                     <Text style={[styles.menuTabText, modalTab === 'EMAIL' && styles.menuTabTextActive]}>Send Email</Text>
                   </TouchableOpacity>
                 </ScrollView>
@@ -228,7 +228,7 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
             {/* Modal Body Tabs */}
             <ScrollView
               style={styles.modalBodyScroll}
-              contentContainerStyle={{ paddingBottom: 64 }}
+              contentContainerStyle={{ padding: 14, paddingBottom: 64 }}
               showsVerticalScrollIndicator={false}
             >
               {modalTab === 'JOB' ? (
@@ -295,16 +295,19 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
       </Modal>
 
       {/* Date Picker Modal */}
-      <Modal visible={datePickerVisible} transparent animationType="fade" onRequestClose={() => setDatePickerVisible(false)}>
-        <TouchableOpacity style={styles.datePickerModalOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
-          <TouchableOpacity activeOpacity={1} style={styles.datePickerModalCard} onPress={(e) => e.stopPropagation()}>
+      <Modal visible={datePickerVisible} transparent animationType="fade">
+        <View style={styles.datePickerModalOverlay}>
+          <View style={styles.datePickerModalCard}>
             <View style={styles.calendarHeaderRow}>
               <TouchableOpacity
                 style={styles.calendarNavBtn}
-                activeOpacity={0.7}
-                onPress={() => setCurrentPickerMonth(new Date(currentPickerMonth.getFullYear(), currentPickerMonth.getMonth() - 1, 1))}
+                onPress={() => {
+                  const prev = new Date(currentPickerMonth);
+                  prev.setMonth(prev.getMonth() - 1);
+                  setCurrentPickerMonth(prev);
+                }}
               >
-                <ChevronLeft size={18} color="#0F172A" />
+                <ChevronLeft size={16} color="#334155" />
               </TouchableOpacity>
 
               <Text style={styles.calendarMonthTitle}>
@@ -313,46 +316,52 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
 
               <TouchableOpacity
                 style={styles.calendarNavBtn}
-                activeOpacity={0.7}
-                onPress={() => setCurrentPickerMonth(new Date(currentPickerMonth.getFullYear(), currentPickerMonth.getMonth() + 1, 1))}
+                onPress={() => {
+                  const next = new Date(currentPickerMonth);
+                  next.setMonth(next.getMonth() + 1);
+                  setCurrentPickerMonth(next);
+                }}
               >
-                <ChevronRight size={18} color="#0F172A" />
+                <ChevronRight size={16} color="#334155" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.calendarWeekRow}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w, idx) => (
-                <Text key={idx} style={styles.calendarWeekLabel}>{w}</Text>
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                <Text key={d} style={styles.calendarWeekLabel}>
+                  {d}
+                </Text>
               ))}
             </View>
 
             <View style={styles.calendarGridWrap}>
-              {getDaysInMonthGrid(currentPickerMonth).map((dObj, idx) => {
-                if (!dObj) return <View key={`emp-${idx}`} style={styles.calendarDayCellEmpty} />;
-                const isSelected = interviewDate === dObj.dateStr;
+              {getDaysInMonthGrid(currentPickerMonth).map((item, idx) => {
+                if (!item) {
+                  return <View key={`empty-${idx}`} style={styles.calendarDayCellEmpty} />;
+                }
+                const isSelected = interviewDate === item.dateStr;
                 return (
                   <TouchableOpacity
-                    key={dObj.dateStr}
-                    disabled={dObj.isPast}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.calendarDayCell,
-                      dObj.isPast && styles.calendarDayCellPast,
-                      isSelected && styles.calendarDayCellSelected,
-                    ]}
+                    key={item.dateStr}
+                    disabled={item.isPast}
                     onPress={() => {
-                      setInterviewDate(dObj.dateStr);
+                      setInterviewDate(item.dateStr);
                       setDatePickerVisible(false);
                     }}
+                    style={[
+                      styles.calendarDayCell,
+                      isSelected && styles.calendarDayCellSelected,
+                      item.isPast && styles.calendarDayCellPast,
+                    ]}
                   >
                     <Text
                       style={[
                         styles.calendarDayText,
-                        dObj.isPast && styles.calendarDayTextPast,
                         isSelected && styles.calendarDayTextSelected,
+                        item.isPast && styles.calendarDayTextPast,
                       ]}
                     >
-                      {dObj.day}
+                      {item.day}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -360,49 +369,49 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
             </View>
 
             <TouchableOpacity style={styles.calendarCloseBtn} onPress={() => setDatePickerVisible(false)}>
-              <Text style={styles.calendarCloseBtnText}>Close Calendar</Text>
+              <Text style={styles.calendarCloseBtnText}>Cancel</Text>
             </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
-      {/* Email Template Bottom Sheet */}
-      <Modal visible={templateDropdownVisible} transparent animationType="slide" onRequestClose={() => setTemplateDropdownVisible(false)}>
-        <TouchableOpacity style={styles.sheetOverlayBottom} activeOpacity={1} onPress={() => setTemplateDropdownVisible(false)}>
+      {/* Email Template Selection Dropdown Modal */}
+      <Modal visible={templateDropdownVisible} transparent animationType="slide">
+        <View style={styles.sheetOverlayBottom}>
           <View style={styles.cleanIosSheetCard}>
             <View style={styles.sheetGrabHandle} />
             <View style={styles.sheetHeaderRow}>
               <View>
-                <Text style={styles.sheetTitle}>Select Email Template</Text>
-                <Text style={styles.sheetSubtitle}>Choose from standard recruiter templates</Text>
+                <Text style={styles.sheetTitle}>Choose Email Template</Text>
+                <Text style={styles.sheetSubtitle}>Select pre-drafted message for applicant</Text>
               </View>
               <TouchableOpacity onPress={() => setTemplateDropdownVisible(false)} style={styles.closeHeaderBtn}>
-                <X size={16} color="#64748B" />
+                <X size={15} color="#475569" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 300 }}>
+            <ScrollView style={{ maxHeight: 320 }}>
               {EMAIL_TEMPLATES.map((tpl) => (
                 <TouchableOpacity
                   key={tpl.key}
                   style={styles.cleanIosDropdownOptionRow}
+                  activeOpacity={0.7}
                   onPress={() => {
                     applyEmailTemplate(tpl.key);
                     setTemplateDropdownVisible(false);
                   }}
                 >
-                  <View style={styles.dropdownIconBadge}>
-                    <FileText size={16} color={COLORS.primary} />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 10 }}>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.cleanStatusOptionText}>{tpl.label}</Text>
-                    <Text style={styles.cleanStatusOptionDesc}>{tpl.desc}</Text>
+                    <Text style={styles.cleanStatusOptionDesc} numberOfLines={2}>
+                      {tpl.message(selectedApplicant?.user?.name || 'Candidate', jobTitle)}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </>
   );
@@ -411,29 +420,27 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
 const styles = StyleSheet.create({
   fullScreenPageContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   fullPageHeader: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
-    paddingTop: 10,
-    paddingBottom: 4,
+    borderBottomColor: '#E7EBF2',
   },
   fullPageHeaderTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
     gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   modalAvatarBox: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF4FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -444,58 +451,60 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   modalCandidateName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   modalCandidateHeadline: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 11,
+    color: '#657796',
+    fontWeight: '500',
     marginTop: 1,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F1F5F9',
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuTabBarWrapperInline: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   menuTabBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingBottom: 4,
+    gap: 12,
+    paddingBottom: 0,
   },
   menuTabItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+    marginBottom: -1,
   },
   menuTabItemActive: {
-    borderBottomColor: COLORS.primary,
-    backgroundColor: '#EFF6FF',
+    borderBottomColor: '#1764E8',
   },
   menuTabText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#657796',
   },
   menuTabTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
+    color: '#1764E8',
+    fontWeight: '700',
   },
   modalBodyScroll: {
     flex: 1,
-    padding: 14,
+    backgroundColor: '#F7F9FC',
   },
   datePickerModalOverlay: {
     flex: 1,
@@ -508,9 +517,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 340,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E7EBF2',
     padding: 16,
   },
   calendarHeaderRow: {
@@ -520,22 +529,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E7EBF2',
   },
   calendarNavBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   calendarMonthTitle: {
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   calendarWeekRow: {
     flexDirection: 'row',
@@ -545,8 +554,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
+    fontWeight: '700',
+    color: '#657796',
   },
   calendarGridWrap: {
     flexDirection: 'row',
@@ -554,46 +563,46 @@ const styles = StyleSheet.create({
   },
   calendarDayCellEmpty: {
     width: '14.28%',
-    height: 36,
+    height: 34,
   },
   calendarDayCell: {
     width: '14.28%',
-    height: 36,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 6,
     marginVertical: 2,
   },
   calendarDayCellSelected: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#1764E8',
   },
   calendarDayCellPast: {
     opacity: 0.35,
   },
   calendarDayText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#102A5C',
   },
   calendarDayTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '700',
   },
   calendarDayTextPast: {
     color: '#94A3B8',
   },
   calendarCloseBtn: {
     marginTop: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    paddingVertical: 9,
     alignItems: 'center',
   },
   calendarCloseBtnText: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#334155',
   },
   sheetOverlayBottom: {
@@ -603,11 +612,10 @@ const styles = StyleSheet.create({
   },
   cleanIosSheetCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingHorizontal: 18,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 24,
     width: '100%',
   },
@@ -615,58 +623,54 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#E2E8F0',
     alignSelf: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sheetHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E7EBF2',
   },
   sheetTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   sheetSubtitle: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '500',
-    color: '#64748B',
+    color: '#657796',
     marginTop: 1,
   },
   closeHeaderBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cleanIosDropdownOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 4,
-  },
-  dropdownIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 0,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
   },
   cleanStatusOptionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#102A5C',
   },
   cleanStatusOptionDesc: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#64748B',
+    color: '#657796',
     marginTop: 1,
   },
 });

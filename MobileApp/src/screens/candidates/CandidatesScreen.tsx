@@ -10,7 +10,9 @@ import {
   Modal,
   TextInput,
   Platform,
+  StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Search,
   X,
@@ -21,6 +23,7 @@ import { apiFetch } from '../../api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { Header } from '../../components/common/Header';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { COLORS, SPACING } from '../../constants/theme';
@@ -31,6 +34,7 @@ import {
 } from './components/CandidatesUtils';
 import { CandidateCardItem } from './components/CandidateCardItem';
 import { CandidateDetailModal } from './components/CandidateDetailModal';
+import { extractCandidateResume } from '../../utils/fileUtils';
 
 export const CandidatesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -51,12 +55,15 @@ export const CandidatesScreen: React.FC = () => {
   const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
   const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSuggestionIndex((prev) => (prev + 1) % CANDIDATE_SEARCH_SUGGESTIONS.length);
-    }, 1200);
-    return () => clearInterval(timer);
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#FFFFFF', true);
+        StatusBar.setBarStyle('dark-content', true);
+        StatusBar.setTranslucent(false);
+      }
+    }, [])
+  );
 
   const fetchCandidates = async () => {
     setError(null);
@@ -85,6 +92,20 @@ export const CandidatesScreen: React.FC = () => {
             item.photo ||
             item.image ||
             fallbackPhoto;
+          const resumeRaw =
+            item.resume_url ||
+            item.resumeUrl ||
+            item.resume ||
+            item.user?.resume_url ||
+            item.user?.resumeUrl ||
+            item.user?.resume;
+          const resolvedResume =
+            typeof resumeRaw === 'string'
+              ? resumeRaw
+              : resumeRaw && typeof resumeRaw === 'object'
+              ? resumeRaw.url || resumeRaw.fileUrl || resumeRaw.uri || ''
+              : '';
+
           return {
             id: item.id || `candidate-${idx}`,
             name: item.name || 'Industrial Candidate',
@@ -105,6 +126,9 @@ export const CandidatesScreen: React.FC = () => {
             preferred_shift: item.preferredShift || item.preferred_shift || 'Day Shift',
             notice_period: item.noticePeriod || item.notice_period || 'Immediate',
             bio: item.bio || `Certified technician with ${expYears} experience in industrial plant operations.`,
+            resume_url: resolvedResume,
+            resumeUrl: resolvedResume,
+            resume: typeof resumeRaw === 'object' ? resumeRaw : resolvedResume,
           };
         });
         setCandidates(formatted);
@@ -160,6 +184,7 @@ export const CandidatesScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
 
       {/* Search Bar + Filter Section */}
@@ -172,7 +197,7 @@ export const CandidatesScreen: React.FC = () => {
             (isSearchFocused || !!searchQuery) && styles.searchBarContainerActive,
           ]}
         >
-          <Search size={18} color={isSearchFocused ? COLORS.primary : '#64748B'} style={{ marginRight: 8 }} />
+          <Search size={14} color={isSearchFocused ? '#1764E8' : '#91A0BA'} style={{ marginRight: 8 }} />
           <TextInput
             ref={searchInputRef}
             style={styles.searchInput}
@@ -188,7 +213,7 @@ export const CandidatesScreen: React.FC = () => {
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4, marginRight: 2 }}>
-              <X size={16} color="#64748B" />
+              <X size={14} color="#91A0BA" />
             </TouchableOpacity>
           ) : null}
 
@@ -200,7 +225,7 @@ export const CandidatesScreen: React.FC = () => {
             style={styles.inlineFilterBtnIconOnly}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <SlidersHorizontal size={18} color={hasActiveFilters ? COLORS.primary : '#64748B'} />
+            <SlidersHorizontal size={14} color={hasActiveFilters ? '#1764E8' : '#657796'} />
             {hasActiveFilters ? <View style={styles.inlineFilterBadgeDotOnly} /> : null}
           </TouchableOpacity>
         </TouchableOpacity>
@@ -269,7 +294,7 @@ export const CandidatesScreen: React.FC = () => {
           onClose={() => setPdfModalVisible(false)}
           candidateName={selectedCandidate.name}
           candidateRole={selectedCandidate.title || 'Technical Specialist'}
-          pdfUrl={selectedCandidate.resume_url || selectedCandidate.resumeUrl || selectedCandidate.resume}
+          pdfUrl={extractCandidateResume(selectedCandidate).url}
         />
       ) : null}
 
@@ -353,58 +378,54 @@ export const CandidatesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F7F9FC',
   },
   searchBarWrapper: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
-    marginBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E7EBF2',
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 44,
+    height: 38,
   },
   searchBarContainerActive: {
-    borderColor: COLORS.primary,
-    borderBottomColor: COLORS.primary,
+    borderColor: '#1764E8',
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    color: '#0F172A',
+    fontSize: 12.5,
+    color: '#102A5C',
   },
   inlineFilterDivider: {
     width: 1,
-    height: 22,
-    backgroundColor: '#CBD5E1',
-    marginHorizontal: 8,
+    height: 18,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 6,
   },
   inlineFilterBtnIconOnly: {
-    padding: 6,
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   inlineFilterBadgeDotOnly: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
+    top: 0,
+    right: 0,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#1764E8',
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
@@ -412,43 +433,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 8,
   },
   searchResultsCountText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#657796',
   },
   clearSearchText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1764E8',
   },
   gridColumnWrapper: {
     justifyContent: 'space-between',
     marginBottom: 10,
   },
   gridListContentContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 110,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 130,
   },
   loadMoreFooterBox: {
     alignItems: 'center',
     marginVertical: 14,
   },
   loadMoreBtn: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF4FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    borderColor: '#DBEAFE',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderRadius: 6,
   },
   loadMoreBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#1764E8',
   },
   sheetOverlayBottom: {
     flex: 1,
@@ -467,7 +488,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 10,
   },
@@ -477,90 +498,85 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E7EBF2',
   },
   sheetTitleText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   filterSectionTitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontWeight: '700',
+    color: '#1764E8',
     marginTop: 10,
     marginBottom: 8,
   },
   filterOptionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   filterChip: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   filterChipActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: COLORS.primary,
+    backgroundColor: '#EEF4FF',
+    borderColor: '#DBEAFE',
   },
   filterChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#334155',
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#657796',
   },
   filterChipTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
+    color: '#1764E8',
+    fontWeight: '700',
   },
   rowDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E7EBF2',
     marginVertical: 8,
   },
 
   sheetActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 18,
+    gap: 10,
+    marginTop: 16,
     marginBottom: Platform.OS === 'android' ? 12 : 4,
   },
   sheetResetBtn: {
     flex: 1,
-    height: 48,
+    height: 42,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 6,
   },
   sheetResetText: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#475569',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#657796',
   },
   sheetApplyBtn: {
     flex: 1.5,
-    height: 48,
-    backgroundColor: COLORS.primary,
+    height: 42,
+    backgroundColor: '#1764E8',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 6,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
   },
   sheetApplyText: {
-    fontSize: 13.5,
-    fontWeight: '800',
+    fontSize: 12.5,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

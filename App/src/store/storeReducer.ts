@@ -23,7 +23,10 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       incoming.forEach(j => {
         if (j && j.id) {
           const prev = jobsMap.get(j.id);
-          jobsMap.set(j.id, prev ? { ...prev, ...j } : j);
+          const safeApplicants = (Array.isArray(j.applicants) && j.applicants.length > 0)
+            ? j.applicants
+            : (prev && Array.isArray(prev.applicants) && prev.applicants.length > 0 ? prev.applicants : (j.applicants || []));
+          jobsMap.set(j.id, prev ? { ...prev, ...j, applicants: safeApplicants } : j);
         }
       });
       return {

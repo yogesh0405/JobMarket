@@ -284,11 +284,17 @@
   top: 0;
   left: 0;
   right: 0;
-  height: var(--navbar-height);
-  background: rgba(255,255,255,0.92);
+  height: 58px !important;
+  max-height: 58px !important;
+  min-height: 58px !important;
+  background: rgba(255,255,255,0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-light);
+  margin: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
   z-index: var(--z-fixed);
   transition: all var(--transition-base);
 }
@@ -301,11 +307,14 @@
 .navbar-inner {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: 0 var(--space-6);
-  height: 100%;
+  padding: 0 16px !important;
+  height: 58px !important;
+  max-height: 58px !important;
+  min-height: 58px !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .navbar-header-row {
@@ -335,20 +344,20 @@
 }
 
 .navbar-logo {
-  width: 46px;
-  height: 46px;
+  width: 36px;
+  height: 36px;
   background: var(--gradient-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: var(--fw-extrabold);
-  font-size: var(--fs-xl);
+  font-size: 16px;
 }
 
 .navbar-brand-text {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: var(--fw-extrabold);
   background: var(--gradient-primary);
   -webkit-background-clip: text;
@@ -436,37 +445,20 @@
   color: var(--text-primary);
 }
 
-/* Mobile Menu Toggle */
+/* Mobile Menu Toggle (Three-Dot Menu) */
 .navbar-toggle {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
+  display: none !important;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   padding: 4px;
-}
-
-.navbar-toggle span {
-  width: 24px;
-  height: 2px;
-  background: var(--text-primary);
-  border-radius: var(--radius-full);
-  transition: all var(--transition-fast);
-}
-
-.navbar-toggle.open span:nth-child(1) {
-  transform: rotate(45deg) translate(5px, 5px);
-}
-
-.navbar-toggle.open span:nth-child(2) {
-  opacity: 0;
-}
-
-.navbar-toggle.open span:nth-child(3) {
-  transform: rotate(-45deg) translate(5px, -5px);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {
-  .navbar-toggle { display: flex; }
+  .navbar-toggle { display: flex !important; }
   
   .navbar-nav {
     position: fixed;
@@ -1096,7 +1088,6 @@
   }
 }
 
-.dashboard-main .profile-page,
 .dashboard-main .resume-page {
   padding: 0 !important;
   margin: 0 !important;
@@ -1104,7 +1095,6 @@
   min-height: auto !important;
 }
 
-.dashboard-main .profile-page .container,
 .dashboard-main .resume-page .container {
   max-width: 100% !important;
   padding: 0 !important;
@@ -2125,17 +2115,53 @@
 @media (max-width: 768px) {
   .navbar {
     height: auto !important;
-    padding-top: max(10px, env(safe-area-inset-top, 10px)) !important;
-    padding-bottom: 6px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .navbar-inner {
-    padding: 0 12px !important;
+    padding: 0 16px !important;
+    height: auto !important;
+    min-height: unset !important;
   }
 
   .navbar-header-row {
-    height: 52px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    display: flex !important;
     align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .navbar-brand {
+    display: flex !important;
+    align-items: center !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .navbar-actions {
+    display: flex !important;
+    align-items: center !important;
+    height: 36px !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .navbar-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .desktop-search-container {
@@ -2145,7 +2171,7 @@
   .mobile-search-strip {
     display: block !important;
     width: 100%;
-    padding: 6px 8px 8px 8px !important;
+    padding: 8px 16px 4px 16px !important;
     box-sizing: border-box !important;
   }
 

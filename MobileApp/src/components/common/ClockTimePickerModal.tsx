@@ -1,16 +1,18 @@
-import { COLORS } from '../../constants/theme';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Modal,
-  ScrollView,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  Platform,
+  GestureResponderEvent,
 } from 'react-native';
-import { Clock } from 'lucide-react-native';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { Keyboard as KeyboardIcon } from 'lucide-react-native';
 
 interface Props {
   visible: boolean;
@@ -19,222 +21,316 @@ interface Props {
   initialTime?: string;
 }
 
-const HOURS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 1;
-  return h < 10 ? `0${h}` : String(h);
-});
-const MINUTES = Array.from({ length: 60 }, (_, i) => (i < 10 ? `0${i}` : String(i)));
-const PERIODS = ['AM', 'PM'];
+const CLOCK_SIZE = 246;
+const RADIUS = 92;
+const CENTER = CLOCK_SIZE / 2; // 123
+const NODE_SIZE = 36;
 
-const ITEM_HEIGHT = 42;
-const WHEEL_HEIGHT = 180;
-const PADDING_VERTICAL = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2; // 69px
+const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+const parseTimeToDate = (timeStr?: string): Date => {
+  const d = new Date();
+  if (!timeStr) return d;
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3] ? match[3].toUpperCase() : undefined;
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    d.setHours(hours, minutes, 0, 0);
+  }
+  return d;
+};
+
+const formatTimeFromDate = (date: Date): string => {
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const hrStr = hours < 10 ? `0${hours}` : `${hours}`;
+  const minStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+  return `${hrStr}:${minStr} ${period}`;
+};
 
 export const ClockTimePickerModal: React.FC<Props> = ({
   visible,
   onClose,
   onSelectTime,
-  initialTime = '10:00 AM',
+  initialTime = '07:00 AM',
 }) => {
-  const [selectedHourIndex, setSelectedHourIndex] = useState(9); // Default '10'
-  const [selectedMinIndex, setSelectedMinIndex] = useState(0);  // Default '00'
-  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // Default 'AM'
+  const [activeMode, setActiveMode] = useState<'hour' | 'minute'>('hour');
+  const [selectedHour, setSelectedHour] = useState<number>(7);
+  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
 
-  const hourScrollRef = useRef<ScrollView>(null);
-  const minScrollRef = useRef<ScrollView>(null);
-  const periodScrollRef = useRef<ScrollView>(null);
+  // Launch Native Android Material 3 Time Picker when on Android platform
+  useEffect(() => {
+    if (visible && Platform.OS === 'android') {
+      const initialDate = parseTimeToDate(initialTime);
+      DateTimePickerAndroid.open({
+        value: initialDate,
+        mode: 'time',
+        is24Hour: false,
+        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
+          if (event.type === 'set' && selectedDate) {
+            onSelectTime(formatTimeFromDate(selectedDate));
+          }
+          onClose();
+        },
+      });
+    }
+  }, [visible, initialTime]);
 
   useEffect(() => {
     if (initialTime) {
       const match = initialTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
       if (match) {
-        let hrStr = match[1];
-        if (hrStr.length === 1) hrStr = `0${hrStr}`;
-        const hrIdx = HOURS.indexOf(hrStr);
-        if (hrIdx !== -1) setSelectedHourIndex(hrIdx);
-
-        const minIdx = MINUTES.indexOf(match[2]);
-        if (minIdx !== -1) setSelectedMinIndex(minIdx);
-
-        const periodIdx = PERIODS.indexOf(match[3].toUpperCase());
-        if (periodIdx !== -1) setSelectedPeriodIndex(periodIdx);
+        let hr = parseInt(match[1], 10);
+        if (hr === 0) hr = 12;
+        setSelectedHour(hr);
+        setSelectedMinute(parseInt(match[2], 10));
+        setPeriod((match[3].toUpperCase() as 'AM' | 'PM') || 'AM');
       }
     }
+    setActiveMode('hour');
   }, [initialTime, visible]);
 
-  useEffect(() => {
-    if (visible) {
-      setTimeout(() => {
-        hourScrollRef.current?.scrollTo({ y: selectedHourIndex * ITEM_HEIGHT, animated: false });
-        minScrollRef.current?.scrollTo({ y: selectedMinIndex * ITEM_HEIGHT, animated: false });
-        periodScrollRef.current?.scrollTo({ y: selectedPeriodIndex * ITEM_HEIGHT, animated: false });
-      }, 80);
+  if (Platform.OS === 'android') {
+    // Android is handled natively via DateTimePickerAndroid above
+    return null;
+  }
+
+  // Calculate coordinates on the circle for Cross-Platform / iOS / Web fallback
+  const getClockCoordinates = (index: number, total: number) => {
+    const angle = (index * (360 / total) - 90) * (Math.PI / 180);
+    const x = CENTER + RADIUS * Math.cos(angle) - NODE_SIZE / 2;
+    const y = CENTER + RADIUS * Math.sin(angle) - NODE_SIZE / 2;
+    return { x, y };
+  };
+
+  const handleTouch = (event: GestureResponderEvent) => {
+    const { locationX, locationY } = event.nativeEvent;
+    const dx = locationX - CENTER;
+    const dy = locationY - CENTER;
+    let deg = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+    if (deg < 0) deg += 360;
+
+    if (activeMode === 'hour') {
+      let hr = Math.round(deg / 30);
+      if (hr === 0) hr = 12;
+      setSelectedHour(hr);
+    } else {
+      let min = Math.round(deg / 6) % 60;
+      const nearest5 = (Math.round(min / 5) * 5) % 60;
+      if (Math.abs(min - nearest5) <= 1) {
+        min = nearest5;
+      }
+      setSelectedMinute(min);
     }
-  }, [visible]);
-
-  const handleHourScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const idx = Math.min(Math.max(0, Math.round(y / ITEM_HEIGHT)), HOURS.length - 1);
-    setSelectedHourIndex(idx);
   };
 
-  const handleMinScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const idx = Math.min(Math.max(0, Math.round(y / ITEM_HEIGHT)), MINUTES.length - 1);
-    setSelectedMinIndex(idx);
+  const handleTouchEnd = () => {
+    if (activeMode === 'hour') {
+      setTimeout(() => {
+        setActiveMode('minute');
+      }, 250);
+    }
   };
 
-  const handlePeriodScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const idx = Math.min(Math.max(0, Math.round(y / ITEM_HEIGHT)), PERIODS.length - 1);
-    setSelectedPeriodIndex(idx);
-  };
+  const currentAngleDeg =
+    activeMode === 'hour'
+      ? selectedHour * 30
+      : selectedMinute * 6;
 
-  const currentCustomTimeStr = () => {
-    const hr = HOURS[selectedHourIndex] || '10';
-    const min = MINUTES[selectedMinIndex] || '00';
-    const pd = PERIODS[selectedPeriodIndex] || 'AM';
-    return `${hr}:${min} ${pd}`;
-  };
+  const formattedHour = selectedHour < 10 ? `0${selectedHour}` : `${selectedHour}`;
+  const formattedMinute = selectedMinute < 10 ? `0${selectedMinute}` : `${selectedMinute}`;
+  const formattedTimeString = `${formattedHour}:${formattedMinute} ${period}`;
 
   const handleConfirm = () => {
-    onSelectTime(currentCustomTimeStr());
+    onSelectTime(formattedTimeString);
     onClose();
   };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={styles.pickerCard} onPress={(e) => e.stopPropagation()}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={styles.dialogCard} onPress={(e) => e.stopPropagation()}>
           {/* Header Title */}
-          <View style={styles.headerBox}>
-            <Clock size={16} color={COLORS.primary} />
-            <Text style={styles.headerTitle}>SELECT INTERVIEW TIME</Text>
-          </View>
+          <Text style={styles.headerLabel}>Select time</Text>
 
-          {/* Digital Time Preview Badge */}
-          <View style={styles.digitalBadgeContainer}>
-            <Text style={styles.digitalBadgeText}>{currentCustomTimeStr()}</Text>
-          </View>
-
-          {/* Column Labels */}
-          <View style={styles.columnLabelsRow}>
-            <Text style={styles.colLabelText}>HOUR</Text>
-            <Text style={styles.colLabelText}>MINUTE</Text>
-            <Text style={styles.colLabelText}>PERIOD</Text>
-          </View>
-
-          {/* Wheel Spinner Container */}
-          <View style={styles.spinnerContainer}>
-            {/* Center Selection Highlight Overlay */}
-            <View style={styles.selectionHighlightBar} />
-
-            {/* Column 1: Hour */}
-            <View style={styles.columnWrapper}>
-              <ScrollView
-                ref={hourScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onMomentumScrollEnd={handleHourScroll}
-                onScrollEndDrag={handleHourScroll}
-                contentContainerStyle={{ paddingVertical: PADDING_VERTICAL }}
+          {/* Time & AM/PM Row */}
+          <View style={styles.timeDisplayRow}>
+            {/* Hour Block */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[
+                styles.timeBlock,
+                activeMode === 'hour' ? styles.timeBlockActive : styles.timeBlockInactive,
+              ]}
+              onPress={() => setActiveMode('hour')}
+            >
+              <Text
+                style={[
+                  styles.timeNumberText,
+                  activeMode === 'hour' ? styles.timeTextActive : styles.timeTextInactive,
+                ]}
               >
-                {HOURS.map((hr, idx) => {
-                  const isSelected = selectedHourIndex === idx;
+                {formattedHour}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Separator Colon */}
+            <Text style={styles.colonText}>:</Text>
+
+            {/* Minute Block */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[
+                styles.timeBlock,
+                activeMode === 'minute' ? styles.timeBlockActive : styles.timeBlockInactive,
+              ]}
+              onPress={() => setActiveMode('minute')}
+            >
+              <Text
+                style={[
+                  styles.timeNumberText,
+                  activeMode === 'minute' ? styles.timeTextActive : styles.timeTextInactive,
+                ]}
+              >
+                {formattedMinute}
+              </Text>
+            </TouchableOpacity>
+
+            {/* AM / PM Segmented Box */}
+            <View style={styles.amPmContainer}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.amPmHalf, period === 'AM' && styles.amPmActive]}
+                onPress={() => setPeriod('AM')}
+              >
+                <Text style={[styles.amPmText, period === 'AM' && styles.amPmTextActive]}>
+                  AM
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.amPmDivider} />
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.amPmHalf, period === 'PM' && styles.amPmActive]}
+                onPress={() => setPeriod('PM')}
+              >
+                <Text style={[styles.amPmText, period === 'PM' && styles.amPmTextActive]}>
+                  PM
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Analog Circular Clock Face */}
+          <View
+            style={styles.clockCircle}
+            onStartShouldSetResponder={() => true}
+            onResponderGrant={handleTouch}
+            onResponderMove={handleTouch}
+            onResponderRelease={handleTouchEnd}
+          >
+            {/* Center Pivot Point */}
+            <View style={styles.centerPivotDot} />
+
+            {/* Rotating Clock Hand */}
+            <View
+              style={[
+                styles.handLineWrapper,
+                { transform: [{ rotate: `${currentAngleDeg}deg` }] },
+              ]}
+            >
+              <View style={styles.handLine} />
+              <View style={styles.handEndCircle}>
+                <Text style={styles.handEndText}>
+                  {activeMode === 'hour'
+                    ? selectedHour
+                    : selectedMinute < 10
+                    ? `0${selectedMinute}`
+                    : selectedMinute}
+                </Text>
+              </View>
+            </View>
+
+            {/* Clock Numbers */}
+            {activeMode === 'hour'
+              ? HOURS.map((hr, idx) => {
+                  const isSelected = selectedHour === hr;
+                  const { x, y } = getClockCoordinates(idx, 12);
                   return (
                     <TouchableOpacity
                       key={hr}
                       activeOpacity={0.7}
-                      style={styles.spinnerItem}
+                      style={[styles.nodeBox, { left: x, top: y }]}
                       onPress={() => {
-                        setSelectedHourIndex(idx);
-                        hourScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
+                        setSelectedHour(hr);
+                        setTimeout(() => setActiveMode('minute'), 250);
                       }}
                     >
-                      <Text style={[styles.spinnerText, isSelected && styles.spinnerTextSelected]}>
+                      <Text
+                        style={[
+                          styles.nodeText,
+                          isSelected && styles.nodeTextSelected,
+                        ]}
+                      >
                         {hr}
                       </Text>
                     </TouchableOpacity>
                   );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Column 2: Minute */}
-            <View style={styles.columnWrapper}>
-              <ScrollView
-                ref={minScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onMomentumScrollEnd={handleMinScroll}
-                onScrollEndDrag={handleMinScroll}
-                contentContainerStyle={{ paddingVertical: PADDING_VERTICAL }}
-              >
-                {MINUTES.map((mn, idx) => {
-                  const isSelected = selectedMinIndex === idx;
+                })
+              : MINUTES.map((min, idx) => {
+                  const isSelected = selectedMinute === min;
+                  const { x, y } = getClockCoordinates(idx, 12);
+                  const displayMin = min < 10 ? `0${min}` : `${min}`;
                   return (
                     <TouchableOpacity
-                      key={mn}
+                      key={min}
                       activeOpacity={0.7}
-                      style={styles.spinnerItem}
-                      onPress={() => {
-                        setSelectedMinIndex(idx);
-                        minScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
-                      }}
+                      style={[styles.nodeBox, { left: x, top: y }]}
+                      onPress={() => setSelectedMinute(min)}
                     >
-                      <Text style={[styles.spinnerText, isSelected && styles.spinnerTextSelected]}>
-                        {mn}
+                      <Text
+                        style={[
+                          styles.nodeText,
+                          isSelected && styles.nodeTextSelected,
+                        ]}
+                      >
+                        {displayMin}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
-            </View>
-
-            {/* Column 3: Period (AM/PM) */}
-            <View style={styles.columnWrapper}>
-              <ScrollView
-                ref={periodScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onMomentumScrollEnd={handlePeriodScroll}
-                onScrollEndDrag={handlePeriodScroll}
-                contentContainerStyle={{ paddingVertical: PADDING_VERTICAL }}
-              >
-                {PERIODS.map((pd, idx) => {
-                  const isSelected = selectedPeriodIndex === idx;
-                  return (
-                    <TouchableOpacity
-                      key={pd}
-                      activeOpacity={0.7}
-                      style={styles.spinnerItem}
-                      onPress={() => {
-                        setSelectedPeriodIndex(idx);
-                        periodScrollRef.current?.scrollTo({ y: idx * ITEM_HEIGHT, animated: true });
-                      }}
-                    >
-                      <Text style={[styles.spinnerText, isSelected && styles.spinnerTextSelected]}>
-                        {pd}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
           </View>
 
-          {/* Action Footer Buttons (CANCEL / OK) */}
-          <View style={styles.footerRowActions}>
-            <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.actionBtn}>
-              <Text style={styles.cancelBtnText}>CANCEL</Text>
+          {/* Footer Actions */}
+          <View style={styles.footerRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.keyboardBtn}
+              onPress={() => {
+                setActiveMode(activeMode === 'hour' ? 'minute' : 'hour');
+              }}
+            >
+              <KeyboardIcon size={22} color="#49454F" strokeWidth={1.8} />
             </TouchableOpacity>
 
-            <TouchableOpacity activeOpacity={0.7} onPress={handleConfirm} style={styles.actionBtn}>
-              <Text style={styles.okBtnText}>OK</Text>
-            </TouchableOpacity>
+            <View style={styles.footerRightBtns}>
+              <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.actionBtn}>
+                <Text style={styles.actionBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity activeOpacity={0.7} onPress={handleConfirm} style={styles.actionBtn}>
+                <Text style={styles.actionBtnText}>OK</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -243,136 +339,198 @@ export const ClockTimePickerModal: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  pickerCard: {
-    width: 300,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+  dialogCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#F3EEFA',
+    borderRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  headerBox: {
+  headerLabel: {
+    alignSelf: 'flex-start',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#49454F',
+    marginBottom: 16,
+  },
+
+  // ── Digital Time Display ──
+  timeDisplayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 0.8,
-  },
-  digitalBadgeContainer: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 0,
-    marginBottom: 14,
-  },
-  digitalBadgeText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  columnLabelsRow: {
-    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
     width: '100%',
-    justifyContent: 'space-around',
-    marginBottom: 4,
-    paddingHorizontal: 10,
   },
-  colLabelText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    textAlign: 'center',
-    flex: 1,
-  },
-  spinnerContainer: {
-    width: '100%',
-    height: WHEEL_HEIGHT,
-    flexDirection: 'row',
-    position: 'relative',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    overflow: 'hidden',
-  },
-  selectionHighlightBar: {
-    position: 'absolute',
-    top: PADDING_VERTICAL,
-    left: 0,
-    right: 0,
-    height: ITEM_HEIGHT,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 0,
-    zIndex: 1,
-  },
-  columnWrapper: {
-    flex: 1,
-    height: WHEEL_HEIGHT,
-    zIndex: 2,
-  },
-  spinnerItem: {
-    height: ITEM_HEIGHT,
+  timeBlock: {
+    width: 86,
+    height: 72,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  spinnerText: {
-    fontSize: 16,
+  timeBlockActive: {
+    backgroundColor: '#E8DEF8',
+  },
+  timeBlockInactive: {
+    backgroundColor: '#E6E0E9',
+  },
+  timeNumberText: {
+    fontSize: 48,
+    fontWeight: '400',
+    letterSpacing: -1,
+  },
+  timeTextActive: {
+    color: '#1D192B',
     fontWeight: '500',
-    color: '#64748B',
   },
-  spinnerTextSelected: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
+  timeTextInactive: {
+    color: '#1D1B20',
   },
-  footerRowActions: {
+  colonText: {
+    fontSize: 42,
+    fontWeight: '600',
+    color: '#1D1B20',
+    marginBottom: 6,
+  },
+
+  // ── AM / PM Segmented Box ──
+  amPmContainer: {
+    width: 48,
+    height: 72,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#79747E',
+    overflow: 'hidden',
+    marginLeft: 4,
+    backgroundColor: '#E6E0E9',
+  },
+  amPmHalf: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E6E0E9',
+  },
+  amPmActive: {
+    backgroundColor: '#FFD8E4',
+  },
+  amPmDivider: {
+    height: 1,
+    backgroundColor: '#79747E',
+  },
+  amPmText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#49454F',
+  },
+  amPmTextActive: {
+    color: '#31111D',
+  },
+
+  // ── Analog Clock Face ──
+  clockCircle: {
+    width: CLOCK_SIZE,
+    height: CLOCK_SIZE,
+    borderRadius: CLOCK_SIZE / 2,
+    backgroundColor: '#ECE6F0',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  centerPivotDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#6750A4',
+    zIndex: 5,
+  },
+  handLineWrapper: {
+    position: 'absolute',
+    width: 2,
+    height: RADIUS * 2,
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  handLine: {
+    width: 2,
+    height: RADIUS,
+    backgroundColor: '#6750A4',
+    position: 'absolute',
+    bottom: RADIUS,
+  },
+  handEndCircle: {
+    position: 'absolute',
+    top: 0,
+    width: NODE_SIZE,
+    height: NODE_SIZE,
+    borderRadius: NODE_SIZE / 2,
+    backgroundColor: '#6750A4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  handEndText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  nodeBox: {
+    position: 'absolute',
+    width: NODE_SIZE,
+    height: NODE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+  nodeText: {
+    fontSize: 14.5,
+    fontWeight: '500',
+    color: '#1D1B20',
+  },
+  nodeTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  // ── Footer ──
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     width: '100%',
-    gap: 16,
-    marginTop: 16,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    paddingTop: 4,
+  },
+  keyboardBtn: {
+    padding: 6,
+  },
+  footerRightBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   actionBtn: {
-    paddingVertical: 6,
     paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  cancelBtnText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  okBtnText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 0.5,
+  actionBtnText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#6750A4',
   },
 });

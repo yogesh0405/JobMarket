@@ -511,21 +511,11 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
 
           {/* Right Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="btn btn-secondary btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '12.5px' }}
-            >
-              <Printer size={15} />
-              <span>Print</span>
-            </button>
-
             <button 
               type="button"
               onClick={handleDownload}
               disabled={isDownloading}
-              className="btn btn-primary btn-sm"
+              className="btn btn-secondary btn-sm"
               style={{ 
                 display: 'inline-flex', 
                 alignItems: 'center', 
@@ -535,10 +525,9 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
                 fontWeight: '700', 
                 fontSize: '12.5px', 
                 cursor: 'pointer', 
-                background: '#2563EB', 
-                color: '#FFFFFF', 
-                border: 'none',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+                background: '#F8FAFC', 
+                color: '#0F172A', 
+                border: '1px solid #CBD5E1'
               }}
             >
               {isDownloading ? (
@@ -556,20 +545,25 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
 
             <button 
               type="button"
-              className="btn btn-secondary btn-sm" 
+              className="btn btn-primary btn-sm" 
               onClick={onClose} 
               style={{ 
-                padding: '7px 14px', 
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 18px', 
                 borderRadius: '6px', 
                 fontWeight: '700', 
                 fontSize: '12.5px', 
-                background: '#E2E8F0', 
-                color: '#334155', 
+                background: '#1B4FDF', 
+                color: '#FFFFFF', 
                 border: 'none', 
-                cursor: 'pointer' 
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(27, 79, 223, 0.25)'
               }}
             >
-              Close
+              <X size={15} />
+              <span>Close</span>
             </button>
           </div>
         </div>

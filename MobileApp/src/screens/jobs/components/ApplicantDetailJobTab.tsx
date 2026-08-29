@@ -1,15 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
-  Briefcase,
   IndianRupee,
   Building2,
   MapPin,
   Clock,
-  CheckCircle2,
+  Briefcase,
 } from 'lucide-react-native';
 import { Job, JobApplication } from '../../../types';
-import { COLORS } from '../../../constants/theme';
+import { RADIUS } from '../../../constants/theme';
 import { safeValue } from './JobApplicantsUtils';
 
 interface ApplicantDetailJobTabProps {
@@ -30,189 +29,217 @@ export const ApplicantDetailJobTab: React.FC<ApplicantDetailJobTabProps> = ({
   return (
     <View style={styles.container}>
       {/* 1. Header Information */}
-      <View style={styles.headerBlock}>
-        <Text style={styles.jobTitleLarge}>
-          {appliedJob?.title || jobTitle || 'Industrial Operator'}
-        </Text>
-        <Text style={styles.jobCompanySub}>
-          {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
-        </Text>
+      <View style={styles.sectionCard}>
+        <View style={styles.headerBlock}>
+          <Text style={styles.jobTitleLarge}>
+            {appliedJob?.title || jobTitle || 'Industrial Operator'}
+          </Text>
+          <Text style={styles.jobCompanySub}>
+            {safeValue(appliedJob?.company || 'Industrial Enterprise')} • {safeValue(appliedJob?.trade || appliedJob?.industry || 'Industrial Trade')}
+          </Text>
+        </View>
+
+        <View style={styles.sectionDivider} />
+
+        {/* 2. Specifications List */}
+        <Text style={styles.sectionHeadingTitle}>JOB SPECIFICATIONS</Text>
+
+        <View style={styles.specRowsContainer}>
+          {/* Salary */}
+          <View style={styles.specRowItem}>
+            <View style={styles.specIconBox}>
+              <IndianRupee size={13} color="#1764E8" strokeWidth={2} />
+            </View>
+            <View style={styles.specTextCol}>
+              <Text style={styles.specGridLabel}>Salary Offer</Text>
+              <Text style={styles.specGridValue}>
+                {appliedJob?.salary_min
+                  ? `₹${appliedJob.salary_min.toLocaleString()} - ₹${appliedJob.salary_max?.toLocaleString()} / mo`
+                  : '₹25,000 - ₹35,000 / mo'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.rowDivider} />
+
+          {/* Vacancies */}
+          <View style={styles.specRowItem}>
+            <View style={styles.specIconBox}>
+              <Building2 size={13} color="#1764E8" strokeWidth={2} />
+            </View>
+            <View style={styles.specTextCol}>
+              <Text style={styles.specGridLabel}>Open Vacancies</Text>
+              <Text style={styles.specGridValue}>
+                {appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.rowDivider} />
+
+          {/* Location */}
+          <View style={styles.specRowItem}>
+            <View style={styles.specIconBox}>
+              <MapPin size={13} color="#1764E8" strokeWidth={2} />
+            </View>
+            <View style={styles.specTextCol}>
+              <Text style={styles.specGridLabel}>Work Location</Text>
+              <Text style={styles.specGridValue}>
+                {safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC Industrial Area')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.rowDivider} />
+
+          {/* Shift */}
+          <View style={styles.specRowItem}>
+            <View style={styles.specIconBox}>
+              <Clock size={13} color="#1764E8" strokeWidth={2} />
+            </View>
+            <View style={styles.specTextCol}>
+              <Text style={styles.specGridLabel}>Work Shift & Mode</Text>
+              <Text style={styles.specGridValue}>
+                {safeValue((appliedJob as any)?.shift_timing || (appliedJob as any)?.shift_category || 'Day Shift')} • {appliedJob?.work_mode || 'On-site'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 3. Job Description */}
+        {appliedJob?.description ? (
+          <>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.sectionHeadingTitle}>JOB DESCRIPTION</Text>
+            <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
+          </>
+        ) : null}
+
+        {/* 4. Required Skills */}
+        {appliedJob?.skills && appliedJob.skills.length > 0 ? (
+          <>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.sectionHeadingTitle}>REQUIRED SKILLS</Text>
+            <View style={styles.skillsWrapRow}>
+              {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
+                <View key={i} style={styles.borderlessSkillTag}>
+                  <View style={styles.skillDot} />
+                  <Text style={styles.borderlessSkillText}>{safeValue(skill)}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
-
-      <View style={styles.sectionDivider} />
-
-      {/* 2. Specifications List (Minimal - No Icon Background Boxes) */}
-      <Text style={styles.sectionHeadingTitle}>JOB SPECIFICATIONS</Text>
-
-      <View style={styles.specRowsContainer}>
-        {/* Salary */}
-        <View style={styles.specRowItem}>
-          <IndianRupee size={16} color={COLORS.primary} strokeWidth={2.2} />
-          <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>Salary Offer</Text>
-            <Text style={styles.specGridValue}>
-              {appliedJob?.salary_min
-                ? `₹${appliedJob.salary_min.toLocaleString()} - ₹${appliedJob.salary_max?.toLocaleString()} / mo`
-                : '₹25,000 - ₹35,000 / mo'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.rowDivider} />
-
-        {/* Vacancies */}
-        <View style={styles.specRowItem}>
-          <Building2 size={16} color={COLORS.primary} strokeWidth={2.2} />
-          <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>Open Vacancies</Text>
-            <Text style={styles.specGridValue}>
-              {appliedJob?.openings || (appliedJob as any)?.vacancies || 1} Openings
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.rowDivider} />
-
-        {/* Location */}
-        <View style={styles.specRowItem}>
-          <MapPin size={16} color={COLORS.primary} strokeWidth={2.2} />
-          <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>Work Location</Text>
-            <Text style={styles.specGridValue}>
-              {safeValue(appliedJob?.location || (appliedJob as any)?.midcZone || 'Waluj MIDC Industrial Area')}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.rowDivider} />
-
-        {/* Shift */}
-        <View style={styles.specRowItem}>
-          <Clock size={16} color={COLORS.primary} strokeWidth={2.2} />
-          <View style={styles.specTextCol}>
-            <Text style={styles.specGridLabel}>Work Shift & Mode</Text>
-            <Text style={styles.specGridValue}>
-              {safeValue((appliedJob as any)?.shift_timing || (appliedJob as any)?.shift_category || 'Day Shift')} • {appliedJob?.work_mode || 'On-site'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 3. Job Description */}
-      {appliedJob?.description ? (
-        <>
-          <View style={styles.sectionDivider} />
-          <Text style={styles.sectionHeadingTitle}>JOB DESCRIPTION</Text>
-          <Text style={styles.infoSectionBody}>{appliedJob.description}</Text>
-        </>
-      ) : null}
-
-      {/* 4. Required Skills */}
-      {appliedJob?.skills && appliedJob.skills.length > 0 ? (
-        <>
-          <View style={styles.sectionDivider} />
-          <Text style={styles.sectionHeadingTitle}>REQUIRED SKILLS</Text>
-          <View style={styles.skillsWrapRow}>
-            {(Array.isArray(appliedJob.skills) ? appliedJob.skills : [appliedJob.skills]).map((skill: any, i: number) => (
-              <View key={i} style={styles.borderlessSkillTag}>
-                <View style={styles.skillDot} />
-                <Text style={styles.borderlessSkillText}>{safeValue(skill)}</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    paddingBottom: 50,
-    backgroundColor: '#F8FAFC',
+    padding: 14,
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#E7EBF2',
+    padding: 14,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   headerBlock: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   jobTitleLarge: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 24,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#102A5C',
+    lineHeight: 21,
   },
   jobCompanySub: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 4,
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#657796',
+    marginTop: 3,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 14,
+    backgroundColor: '#E7EBF2',
+    marginVertical: 12,
   },
   sectionHeadingTitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    fontWeight: '700',
+    color: '#657796',
+    letterSpacing: 0.5,
+    marginBottom: 8,
   },
   specRowsContainer: {
-    gap: 4,
+    gap: 2,
   },
   specRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 6,
+    gap: 10,
+    paddingVertical: 5,
+  },
+  specIconBox: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   specTextCol: {
     flex: 1,
   },
   specGridLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
+    fontSize: 10.5,
+    color: '#657796',
+    fontWeight: '500',
   },
   specGridValue: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#102A5C',
     marginTop: 1,
   },
   rowDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
   },
   infoSectionBody: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#334155',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   skillsWrapRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     marginTop: 2,
   },
   borderlessSkillTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   skillDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#1764E8',
   },
   borderlessSkillText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#334155',
   },

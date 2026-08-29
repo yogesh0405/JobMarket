@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Mail, FileText, ChevronRight, Send, CheckCircle2, User, Sparkles, AlertCircle } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Mail, User, Send, ChevronDown } from 'lucide-react-native';
 import { JobApplication } from '../../../types';
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
-import { COLORS, FONTS } from '../../../constants/theme';
-import { safeValue, EMAIL_TEMPLATES } from './JobApplicantsUtils';
+import { RADIUS } from '../../../constants/theme';
+import { safeValue } from './JobApplicantsUtils';
 
 interface ApplicantDetailEmailTabProps {
   selectedApplicant: JobApplication | null;
@@ -25,7 +25,6 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
   selectedApplicant,
   selectedTemplateLabel,
   onOpenTemplateDropdown,
-  onSelectTemplateKey,
   emailSubject,
   setEmailSubject,
   emailMessage,
@@ -35,69 +34,87 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
   jobTitle,
 }) => {
   const candidateName = safeValue(selectedApplicant?.user?.name || 'Applicant');
-  const candidateEmail = safeValue(selectedApplicant?.user?.email);
+  const candidateEmail = safeValue(selectedApplicant?.user?.email || 'No email provided');
   const activeJobTitle = safeValue(selectedApplicant?.job?.title || jobTitle || 'Position');
 
   const isFormValid = emailSubject.trim().length > 0 && emailMessage.trim().length > 0;
 
   return (
     <View style={styles.container}>
-      <View style={styles.contentPadding}>
-        {/* Candidate Recipient Card Container (No nested cards, clean square border) */}
-        <View style={styles.recipientCardContainer}>
-          <View style={styles.recipientHeaderRow}>
-            <View style={styles.avatarSquircle}>
-              <User size={18} color={COLORS.primary} />
+      <View style={styles.sectionCard}>
+        {/* Candidate Recipient Card */}
+        <View style={styles.recipientHeaderRow}>
+          <View style={styles.avatarSquircle}>
+            <User size={18} color="#1764E8" strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.candidateNameText} numberOfLines={1}>
+              {candidateName}
+            </Text>
+            <View style={styles.emailBadgeRow}>
+              <Mail size={11} color="#657796" />
+              <Text style={styles.candidateEmailText} numberOfLines={1}>
+                {candidateEmail}
+              </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.candidateNameText} numberOfLines={1}>{candidateName}</Text>
-              <View style={styles.emailBadgeRow}>
-                <Mail size={12} color={COLORS.primary} />
-                <Text style={styles.candidateEmailText} numberOfLines={1}>{candidateEmail}</Text>
-              </View>
-            </View>
-            <View style={styles.jobTagBadge}>
-              <Text style={styles.jobTagText} numberOfLines={1}>{activeJobTitle}</Text>
-            </View>
+          </View>
+          <View style={styles.jobTagBadge}>
+            <Text style={styles.jobTagText} numberOfLines={1}>
+              {activeJobTitle}
+            </Text>
           </View>
         </View>
 
-        {/* Crisp Slate 400 Section Divider */}
-        <View style={styles.slateSectionDivider} />
+        <View style={styles.sectionDivider} />
+
+        {/* Template Quick Selection */}
+        <View style={{ marginBottom: 12 }}>
+          <Text style={styles.sectionHeadingTitle}>EMAIL TEMPLATES</Text>
+          <TouchableOpacity
+            style={styles.templateDropdownBtn}
+            activeOpacity={0.8}
+            onPress={onOpenTemplateDropdown}
+          >
+            <Text style={styles.templateDropdownText} numberOfLines={1}>
+              {selectedTemplateLabel || 'Select Quick Email Template...'}
+            </Text>
+            <ChevronDown size={14} color="#657796" />
+          </TouchableOpacity>
+        </View>
 
         {/* Form Inputs: Subject & Body */}
         <View style={styles.formInputsWrap}>
           <Input
             label="Email Subject Line *"
-            placeholder="e.g. Interview Invitation: Mechanical Fitter"
+            placeholder="e.g. Technical Interview Call: Industrial Fitter"
             value={emailSubject}
             onChangeText={setEmailSubject}
-            containerStyle={styles.inputSpacing}
           />
 
-          <Input
-            label="Email Message Body *"
-            placeholder="Write official email message to candidate..."
-            value={emailMessage}
-            onChangeText={setEmailMessage}
-            multiline
-            numberOfLines={10}
-            style={styles.multilineInputBox}
-            inputContainerStyle={styles.multilineInputContainerStyle}
-            containerStyle={{ marginBottom: 4 }}
-          />
+          <View style={styles.messageInputGroup}>
+            <Text style={styles.inputLabelText}>Email Message Body *</Text>
+            <View style={styles.multilineInputBoxContainer}>
+              <Input
+                placeholder="Write official email message to candidate..."
+                value={emailMessage}
+                onChangeText={setEmailMessage}
+                multiline
+                numberOfLines={10}
+                style={styles.multilineInputBox}
+                inputContainerStyle={styles.multilineInputContainerStyle}
+                containerStyle={{ flex: 1, marginBottom: 0 }}
+              />
+            </View>
+          </View>
         </View>
-      </View>
 
-      {/* Primary Action Sticky Callout Bar */}
-      <View style={styles.stickyActionCalloutBar}>
         <Button
           title="Send Custom Email"
           onPress={onSendCustomEmail}
           loading={modalLoading}
           disabled={!isFormValid || modalLoading}
-          icon={<Send size={16} color="#FFFFFF" />}
-          style={!isFormValid || modalLoading ? styles.sendSubmitBtnDisabled : styles.sendSubmitBtn}
+          icon={<Send size={14} color="#FFFFFF" />}
+          style={styles.sendSubmitBtn}
         />
       </View>
     </View>
@@ -107,17 +124,21 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  contentPadding: {
-    padding: 16,
-  },
-  recipientCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 0,
     padding: 14,
+  },
+  sectionCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#E7EBF2',
+    padding: 14,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    justifyContent: 'space-between',
   },
   recipientHeaderRow: {
     flexDirection: 'row',
@@ -125,19 +146,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   avatarSquircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 0,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    width: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   candidateNameText: {
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#102A5C',
   },
   emailBadgeRow: {
     flexDirection: 'row',
@@ -146,71 +162,89 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   candidateEmailText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#657796',
   },
   jobTagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 0,
-    maxWidth: 110,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    maxWidth: 120,
   },
   jobTagText: {
     fontSize: 10.5,
-    fontWeight: '700',
-    color: '#475569',
+    fontWeight: '500',
+    color: '#657796',
   },
-
-  slateSectionDivider: {
+  sectionDivider: {
     height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 14,
+    backgroundColor: '#E7EBF2',
+    marginVertical: 12,
   },
-
-  formInputsWrap: {
-    marginTop: 6,
+  sectionHeadingTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#657796',
+    letterSpacing: 0.5,
+    marginBottom: 6,
   },
-  inputSpacing: {
-    marginBottom: 12,
-  },
-  multilineInputContainerStyle: {
-    borderRadius: 0,
+  templateDropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 180,
-    alignItems: 'flex-start',
+    height: 38,
+  },
+  templateDropdownText: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    color: '#102A5C',
+    flex: 1,
+  },
+  formInputsWrap: {
+    flex: 1,
+    marginTop: 2,
+  },
+  messageInputGroup: {
+    flex: 1,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  inputLabelText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#657796',
+    marginBottom: 5,
+  },
+  multilineInputBoxContainer: {
+    flex: 1,
+    minHeight: 200,
   },
   multilineInputBox: {
-    minHeight: 160,
+    flex: 1,
+    minHeight: 200,
     textAlignVertical: 'top',
-    fontSize: 13.5,
-    color: '#0F172A',
-    lineHeight: 20,
-    paddingTop: 0,
-    paddingBottom: 0,
+    fontSize: 12,
+    color: '#102A5C',
   },
-
-  stickyActionCalloutBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+  multilineInputContainerStyle: {
+    flex: 1,
+    minHeight: 200,
+    alignItems: 'flex-start',
+    paddingVertical: 8,
   },
   sendSubmitBtn: {
-    width: '100%',
-    height: 48,
-    borderRadius: 0,
-    backgroundColor: COLORS.primary,
-  },
-  sendSubmitBtnDisabled: {
-    backgroundColor: '#94A3B8',
+    marginTop: 10,
+    height: 42,
+    borderRadius: 6,
+    backgroundColor: '#1764E8',
   },
 });

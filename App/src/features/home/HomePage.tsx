@@ -1,796 +1,1591 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
+import {
+  Search,
+  MapPin,
+  Briefcase,
+  ChevronRight,
+  ArrowRight,
+  X,
+  Award,
+  SlidersHorizontal,
+  GraduationCap,
+  ChevronDown,
+  Star,
+  Clock,
+  Building2,
+  Users,
+  Bookmark,
+  HeartPulse,
+  Utensils,
+  BookOpen,
+  CheckCircle2,
+  ShieldCheck,
+  Zap,
+  Wrench,
+  Cog,
+  Package,
+} from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
-import { JobCard } from '../../components/job/JobCard';
-import { formatNumber } from '../../utils/helpers';
-import { useTranslation } from '../../utils/translations';
-import { initialHospitalCategories, initialHotelCategories, initialSchoolCategories } from '../../store/seedData';
+import { MobileHeader } from '../../components/common/MobileHeader';
+import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { BannerSlider } from '../../components/home/BannerSlider';
-import { JobTabbedSection } from '../../components/home/JobTabbedSection';
-import THEME from '../../constants/theme';
+import { Job } from '../../types';
+
+// Constants matching Mobile App
+export const INDUSTRIES = [
+  'Select Industry',
+  'Automotive & Auto Components',
+  'Industrial Manufacturing & Assembly',
+  'CNC Machining & Tooling',
+  'Welding & Metal Fabrication',
+  'Electronics & Electricals',
+  'Quality & Inspection',
+  'Logistics & Warehousing',
+  'Pharmaceuticals & Chemicals',
+  'Textiles & Garments',
+  'Construction & Infrastructure',
+  'Services & General Engineering',
+];
+
+export const EDUCATIONS = [
+  'Select Education',
+  '10th Pass',
+  '12th Pass',
+  'ITI Certificate (Fitter / Welder / Electrician / CNC / Turner)',
+  'Diploma (Mechanical / Electrical / Civil / Automobile)',
+  'B.E. / B.Tech (Mechanical / Production / Electrical / ECE)',
+  'Graduate (BA / B.Com / B.Sc / BCA / BBA)',
+  'Post Graduate (M.Tech / MBA / MCA)',
+];
+
+export const MIDC_ZONES = [
+  'Waluj MIDC, Chhatrapati Sambhajinagar',
+  'Shendra MIDC, Chhatrapati Sambhajinagar',
+  'Chikalthana MIDC, Chhatrapati Sambhajinagar',
+  'Chakan MIDC, Pune',
+  'Bhosari MIDC, Pune',
+  'Taloja MIDC, Navi Mumbai',
+  'Thane Belapur MIDC',
+  'Ranjangaon MIDC',
+  'Pimpri Industrial Zone',
+];
+
+const DEFAULT_ROLE_TABS = [
+  { id: 'All Opportunities', label: '1. All Opportunities', keyword: '' },
+  { id: 'CNC Operator', label: '2. CNC Operator', keyword: 'cnc' },
+  { id: 'Welder', label: '3. Welder', keyword: 'welder' },
+  { id: 'Fitter', label: '4. Fitter', keyword: 'fitter' },
+  { id: 'Electrician', label: '5. Electrician', keyword: 'electrician' },
+  { id: 'Quality Inspector', label: '6. Quality Inspector', keyword: 'quality' },
+  { id: 'Assembly Operator', label: '7. Assembly Operator', keyword: 'assembly' },
+];
+
+const ITI_TRADES_GRID = [
+  { name: 'CNC / VMC Operator', icon: Cog, keyword: 'cnc' },
+  { name: 'Welder / Fabricator', icon: Zap, keyword: 'welder' },
+  { name: 'Fitter & Assembly', icon: Wrench, keyword: 'fitter' },
+  { name: 'Electrician & Wireman', icon: Zap, keyword: 'electrician' },
+  { name: 'Quality Inspector', icon: Award, keyword: 'quality' },
+  { name: 'Machine Operator', icon: Cog, keyword: 'operator' },
+  { name: 'Turner / Machinist', icon: Wrench, keyword: 'machinist' },
+  { name: 'Tool & Die Maker', icon: Cog, keyword: 'tool' },
+  { name: 'Store & Inventory', icon: Package, keyword: 'store' },
+];
+
+const EDUCATION_GRID = [
+  { name: '10th / 12th Pass', icon: GraduationCap, keyword: 'pass' },
+  { name: 'ITI Certified', icon: Award, keyword: 'iti' },
+  { name: 'Diploma Holder', icon: GraduationCap, keyword: 'diploma' },
+  { name: 'B.E. / B.Tech', icon: GraduationCap, keyword: 'engineering' },
+  { name: 'Graduate Degree', icon: GraduationCap, keyword: 'graduate' },
+  { name: 'Post Graduate', icon: GraduationCap, keyword: 'master' },
+];
+
+const HOSPITAL_GRID = [
+  { name: 'Staff Nurse', icon: HeartPulse, keyword: 'nurse' },
+  { name: 'Ward Attendant', icon: HeartPulse, keyword: 'ward' },
+  { name: 'Lab Technician', icon: HeartPulse, keyword: 'lab' },
+  { name: 'Pharmacy Assistant', icon: HeartPulse, keyword: 'pharmacy' },
+  { name: 'Hospital Admin', icon: HeartPulse, keyword: 'hospital' },
+  { name: 'Radiology Tech', icon: HeartPulse, keyword: 'radiology' },
+];
+
+const HOTEL_GRID = [
+  { name: 'Chef & Cook', icon: Utensils, keyword: 'cook' },
+  { name: 'Housekeeping Staff', icon: Utensils, keyword: 'housekeeping' },
+  { name: 'F&B Server', icon: Utensils, keyword: 'waiter' },
+  { name: 'Front Desk / Reception', icon: Utensils, keyword: 'reception' },
+  { name: 'Kitchen Helper', icon: Utensils, keyword: 'kitchen' },
+  { name: 'Hotel Maintenance', icon: Utensils, keyword: 'hotel' },
+];
+
+const SCHOOL_GRID = [
+  { name: 'Subject Teacher', icon: BookOpen, keyword: 'teacher' },
+  { name: 'Office Assistant / Clerk', icon: BookOpen, keyword: 'clerk' },
+  { name: 'Peon & Attendant', icon: BookOpen, keyword: 'peon' },
+  { name: 'Lab Assistant', icon: BookOpen, keyword: 'assistant' },
+  { name: 'Campus Security Guard', icon: BookOpen, keyword: 'security' },
+  { name: 'School Bus Driver', icon: BookOpen, keyword: 'driver' },
+];
+
+const SEARCH_PLACEHOLDERS = [
+  'Search jobs...',
+  'Search trades (CNC, Welder, Fitter)...',
+  'Search locations (Waluj, Chakan, Pune)...',
+];
+
+function formatTimeAgo(dateString?: string): string {
+  if (!dateString) return '1d ago';
+  const now = new Date();
+  const posted = new Date(dateString);
+  const diffMs = now.getTime() - posted.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return 'Just now';
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 7)}w ago`;
+}
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { state } = useStore();
   const { getJobs } = useJobs();
   const { currentUser } = useAuth();
-  const t = useTranslation(state.language);
 
-  const [keyword, setKeyword] = useState('');
-  const [location, setLocation] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [education, setEducation] = useState('');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [topSearch, setTopSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [homeFilterDrawerOpen, setHomeFilterDrawerOpen] = useState(false);
 
-  const getCategoryIcon = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('fitter')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>;
+  // Hero Card State
+  const [selectedIndustry, setSelectedIndustry] = useState('Select Industry');
+  const [selectedEducation, setSelectedEducation] = useState('Select Education');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+
+  // Active Role Tab
+  const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
+
+  // Saved Jobs
+  const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem('saved_jobs_ids');
+      return s ? JSON.parse(s) : [];
+    } catch {
+      return [];
     }
-    if (n.includes('welder')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>;
+  });
+
+  const toggleSaveJob = (jobId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    if (n.includes('cnc')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>;
-    }
-    if (n.includes('electrician')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M18.36 6.64a9 9 0 1 1-12.73 0" /><line x1="12" y1="2" x2="12" y2="12" /></svg>;
-    }
-    if (n.includes('machinist')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
-    }
-    if (n.includes('helper') || n.includes('loader')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>;
-    }
-    if (n.includes('inspector')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v5" /><line x1="11" y1="16" x2="11" y2="16" /></svg>;
-    }
-    if (n.includes('apprentice')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>;
-    }
-    if (n.includes('driver') || n.includes('forklift')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="2" /><path d="M12 2v20M2 12h20" /></svg>;
-    }
-    if (n.includes('security')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
-    }
-    if (n.includes('store') || n.includes('keeper')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
-    }
-    if (n.includes('technician')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>;
-    }
-    if (n.includes('hospital') || n.includes('nurse') || n.includes('ward') || n.includes('assistant')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>;
-    }
-    if (n.includes('hotel') || n.includes('cook') || n.includes('waiter') || n.includes('housekeeping')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" /></svg>;
-    }
-    if (n.includes('school') || n.includes('college') || n.includes('teacher') || n.includes('librarian') || n.includes('peon')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
-    }
-    if (n.includes('office') || n.includes('clerk') || n.includes('receptionist')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>;
-    }
-    return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>;
+    setSavedJobIds((prev) => {
+      const exists = prev.includes(jobId);
+      const updated = exists ? prev.filter((id) => id !== jobId) : [...prev, jobId];
+      try {
+        localStorage.setItem('saved_jobs_ids', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
   };
 
-  const getQualificationIcon = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('pass') || n.includes('10th') || n.includes('12th')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>;
-    }
-    if (n.includes('com') || n.includes('bba') || n.includes('mba') || n.includes('commerce') || n.includes('business')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
-    }
-    if (n.includes('ba') && !n.includes('bba')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>;
-    }
-    if (n.includes('b.e') || n.includes('tech') || n.includes('engineering')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
-    }
-    if (n.includes('diploma') || n.includes('vocational') || n.includes('course')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M8 12l3 3 5-5" /></svg>;
-    }
-    if (n.includes('bca') || n.includes('mca') || n.includes('b.sc') || n.includes('computer') || n.includes('science')) {
-      return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>;
-    }
-    return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)' }}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>;
-  };
-
-  const [industryDropdownOpen, setIndustryDropdownOpen] = useState(false);
-  const industryRef = useRef<HTMLDivElement>(null);
-  
-  const [educationDropdownOpen, setEducationDropdownOpen] = useState(false);
-  const educationRef = useRef<HTMLDivElement>(null);
-
-  const [midcDropdownOpen, setMidcDropdownOpen] = useState(false);
-  const midcRef = useRef<HTMLDivElement>(null);
-
+  // Rotating placeholder
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (industryRef.current && !industryRef.current.contains(e.target as Node)) {
-        setIndustryDropdownOpen(false);
-      }
-      if (educationRef.current && !educationRef.current.contains(e.target as Node)) {
-        setEducationDropdownOpen(false);
-      }
-      if (midcRef.current && !midcRef.current.contains(e.target as Node)) {
-        setMidcDropdownOpen(false);
-      }
+    const timer = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const allJobs = useMemo(() => {
+    return getJobs({});
+  }, [getJobs]);
+
+  const getRealJobCount = useCallback(
+    (keyword: string) => {
+      const q = keyword.toLowerCase().trim();
+      if (!q) return allJobs.length;
+      return allJobs.filter((j) => {
+        const titleMatch = (j.title || '').toLowerCase().includes(q);
+        const indMatch = (j.industry || '').toLowerCase().includes(q);
+        const tradeMatch = (j.trade || '').toLowerCase().includes(q);
+        return titleMatch || indMatch || tradeMatch;
+      }).length;
+    },
+    [allJobs]
+  );
+
+  const matchedSuggestions = useMemo(() => {
+    const trimmed = topSearch.trim().toLowerCase();
+    if (!trimmed) {
+      return { jobs: [], trades: [], locations: [] };
+    }
+
+    const matchedJobs = allJobs
+      .filter((j) => {
+        const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
+        const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
+        const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
+        return titleMatch || companyMatch || tradeMatch;
+      })
+      .slice(0, 4);
+
+    const popularTrades = [
+      'CNC Operator',
+      'VMC Operator',
+      'Fitter',
+      'Welder',
+      'Electrician',
+      'Quality Inspector',
+      'Assembly Operator',
+      'Turner',
+      'Maintenance Technician',
+    ];
+    const matchedTrades = popularTrades.filter((t) => t.toLowerCase().includes(trimmed)).slice(0, 3);
+
+    const matchedLocations = MIDC_ZONES.filter((l) => l.toLowerCase().includes(trimmed)).slice(0, 3);
+
+    return {
+      jobs: matchedJobs,
+      trades: matchedTrades,
+      locations: matchedLocations,
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [topSearch, allJobs]);
 
-  const industries = [
-    "IT & Software",
-    "Marketing",
-    "Finance",
-    "Healthcare",
-    "Education",
-    "Design & Creative",
-    "Logistics",
-    "Construction",
-    "Automotive",
-    "FMCG",
-    "Agriculture",
-    "HR & Admin",
-    "Manufacturing",
-    "Mechanical & Assembly",
-    "Electricals"
-  ];
+  const roleFilteredJobs = useMemo(() => {
+    if (activeRoleTab === 'All Opportunities') {
+      return allJobs;
+    }
+    const tabObj = DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab);
+    const keyword = tabObj?.keyword || activeRoleTab.toLowerCase();
+    return allJobs.filter((j) => {
+      const titleMatch = (j.title || '').toLowerCase().includes(keyword);
+      const tradeMatch = (j.trade || '').toLowerCase().includes(keyword);
+      const indMatch = (j.industry || '').toLowerCase().includes(keyword);
+      return titleMatch || tradeMatch || indMatch;
+    });
+  }, [activeRoleTab, allJobs]);
 
-  const educations = [
-    "10th Pass",
-    "12th Pass",
-    "ITI",
-    "Diploma",
-    "Graduate"
-  ];
-
-  const midcZones = [
-    "Waluj MIDC",
-    "Shendra MIDC",
-    "Chakan MIDC",
-    "Bhosari MIDC",
-    "Chikalthana MIDC",
-    "Waluj Industrial Area",
-    "Chhatrapati Sambhajinagar"
-  ];
-
-  const featuredJobs = getJobs().filter(j => j.featured).slice(0, 6);
-
-  const handleSearch = (e?: React.FormEvent) => {
+  const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    let query = '/jobs?';
-    if (keyword) query += `keyword=${encodeURIComponent(keyword)}&`;
-    if (location) query += `location=${encodeURIComponent(location)}&`;
-    if (industry) query += `industry=${encodeURIComponent(industry)}&`;
-    if (education) query += `education=${encodeURIComponent(education)}&`;
-    navigate(query.slice(0, -1) || '/jobs');
+    const params = new URLSearchParams();
+    if (topSearch.trim()) params.set('keyword', topSearch.trim());
+    if (selectedIndustry !== 'Select Industry') params.set('industry', selectedIndustry);
+    if (selectedEducation !== 'Select Education') params.set('education', selectedEducation);
+    if (locationQuery.trim()) params.set('location', locationQuery.trim());
+    navigate(`/jobs?${params.toString()}`);
   };
 
-  const quickSearch = (kw: string) => {
-    navigate(`/jobs?keyword=${encodeURIComponent(kw)}`);
+  const handleQuickTradeSearch = (tradeName: string) => {
+    navigate(`/jobs?keyword=${encodeURIComponent(tradeName)}`);
   };
 
-  // Scroll-reveal animation
-  useEffect(() => {
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    );
-    reveals.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
+  // Home Filters state for side drawer
+  const [homeFilters, setHomeFilters] = useState({
+    industry: 'All Industries',
+    jobType: 'All Types',
+    workMode: 'All Modes',
+    midcZone: 'All MIDC Zones',
+    busFacility: false,
+    canteen: false,
+    accommodation: false,
+    overtime: false,
+  });
+
+  const matchingMidcZones = useMemo(() => {
+    const query = locationQuery.trim().toLowerCase();
+    if (!query) return MIDC_ZONES.slice(0, 4);
+    return MIDC_ZONES.filter((zone) => zone.toLowerCase().includes(query)).slice(0, 5);
+  }, [locationQuery]);
 
   return (
-    <div className="homepage-wrapper" style={{ backgroundColor: THEME.colors.offWhite }}>
-      {/* Enterprise Promotional Banner Carousel Slider - Immediately below Header */}
-      <div style={{ paddingTop: '0.5rem' }}>
-        <BannerSlider />
+    <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
+      {/* Mobile Top Header (100% matching MobileApp & other tabs, hidden on desktop) */}
+      <MobileHeader title="JobMarket" />
+
+      {/* Main Content Area */}
+      <div style={{
+        maxWidth: '580px',
+        margin: '0 auto',
+        padding: '14px 16px 120px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        boxSizing: 'border-box',
+      }}>
+        {/* Top Search Bar & Live Autocomplete */}
+        <div style={{ position: 'relative', width: '100%', zIndex: 100 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#FFFFFF',
+            border: isInputFocused ? '1px solid #1B4FDF' : '1px solid #CBD5E1',
+            borderRadius: '6px',
+            padding: '0 12px',
+            height: '48px',
+            gap: '10px',
+            boxSizing: 'border-box',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+            transition: 'all 0.15s ease',
+          }}>
+            <Search
+              size={18}
+              color={isInputFocused ? '#1B4FDF' : '#64748B'}
+              style={{ flexShrink: 0, cursor: 'pointer' }}
+              onClick={() => handleSearchSubmit()}
+            />
+
+            <input
+              type="text"
+              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+              value={topSearch}
+              onChange={(e) => {
+                setTopSearch(e.target.value);
+                setShowSuggestions(e.target.value.trim().length > 0);
+              }}
+              onFocus={() => {
+                setIsInputFocused(true);
+                setShowSuggestions(topSearch.trim().length > 0);
+              }}
+              onBlur={() => {
+                setTimeout(() => setIsInputFocused(false), 200);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setShowSuggestions(false);
+                  handleSearchSubmit();
+                }
+              }}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: '14.5px',
+                color: '#0F172A',
+                fontWeight: 600,
+                padding: 0,
+                margin: 0,
+                width: '100%',
+              }}
+            />
+
+            {topSearch.length > 0 && (
+              <button
+                onClick={() => {
+                  setTopSearch('');
+                  setShowSuggestions(false);
+                }}
+                style={{
+                  background: '#F1F5F9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                <X size={14} color="#64748B" />
+              </button>
+            )}
+
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0', flexShrink: 0 }} />
+
+            <button
+              onClick={() => setHomeFilterDrawerOpen(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#1B4FDF',
+                flexShrink: 0,
+              }}
+              title="Filter Options"
+            >
+              <SlidersHorizontal size={18} color="#1B4FDF" />
+            </button>
+          </div>
+
+          {/* Autocomplete Dropdown Overlay */}
+          {showSuggestions && topSearch.trim().length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '52px',
+              left: 0,
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+              maxHeight: '300px',
+              overflowY: 'auto',
+              zIndex: 999,
+              padding: '8px 0',
+            }}>
+              <div
+                onClick={() => {
+                  setShowSuggestions(false);
+                  handleSearchSubmit();
+                }}
+                style={{
+                  padding: '10px 14px',
+                  borderBottom: '1px solid #F1F5F9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  backgroundColor: '#F8FAFC',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1B4FDF' }}>
+                  <Search size={15} />
+                  <span>Search all jobs matching "<strong>{topSearch.trim()}</strong>"</span>
+                </div>
+                <ArrowRight size={14} color="#1B4FDF" />
+              </div>
+
+              {matchedSuggestions.jobs.length > 0 && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
+                    MATCHING LIVE JOBS
+                  </div>
+                  {matchedSuggestions.jobs.map((j) => (
+                    <div
+                      key={j.id}
+                      onClick={() => {
+                        setShowSuggestions(false);
+                        navigate(`/job/${j.id}`);
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <Briefcase size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {j.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {j.company} • {j.location}
+                        </div>
+                      </div>
+                      <ChevronRight size={14} color="#94A3B8" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {matchedSuggestions.trades.length > 0 && (
+                <div style={{ padding: '8px 0', borderTop: '1px solid #F1F5F9' }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
+                    POPULAR TRADES & SKILLS
+                  </div>
+                  {matchedSuggestions.trades.map((trade) => (
+                    <div
+                      key={trade}
+                      onClick={() => {
+                        setTopSearch(trade);
+                        setShowSuggestions(false);
+                        handleQuickTradeSearch(trade);
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <Award size={16} color="#059669" style={{ flexShrink: 0 }} />
+                      <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                        {trade}
+                      </div>
+                      <ChevronRight size={14} color="#94A3B8" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Promotional Banner Carousel Slider */}
+        <div style={{ width: '100%', overflow: 'hidden', borderRadius: '6px' }}>
+          <BannerSlider />
+        </div>
+
+        {/* Hero Search Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          {/* Badge & Title */}
+          <div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              backgroundColor: '#EFF6FF',
+              padding: '3px 8px',
+              borderRadius: '4px',
+              border: '1px solid #DBEAFE',
+              marginBottom: '6px',
+            }}>
+              <Star size={12} color="#1B4FDF" />
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#1B4FDF' }}>
+                Industrial & Factory Jobs
+              </span>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.2px' }}>
+              Discover Factory & Technical Jobs near you
+            </h2>
+            <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '17px' }}>
+              Direct hiring for ITI, CNC operators, Welders, Fitters & Helpers in MIDC industrial clusters.
+            </p>
+          </div>
+
+          {/* Form Fields */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Industry Selector */}
+            <div style={{ position: 'relative' }}>
+              <select
+                value={selectedIndustry}
+                onChange={(e) => setSelectedIndustry(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  padding: '0 12px 0 36px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#F8FAFC',
+                  fontSize: '13px',
+                  fontWeight: selectedIndustry !== 'Select Industry' ? 700 : 500,
+                  color: selectedIndustry !== 'Select Industry' ? '#0F172A' : '#64748B',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                {INDUSTRIES.map((ind) => (
+                  <option key={ind} value={ind}>
+                    {ind}
+                  </option>
+                ))}
+              </select>
+              <Briefcase size={15} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '13px', pointerEvents: 'none' }} />
+              <ChevronDown size={15} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '13px', pointerEvents: 'none' }} />
+            </div>
+
+            {/* Education Selector */}
+            <div style={{ position: 'relative' }}>
+              <select
+                value={selectedEducation}
+                onChange={(e) => setSelectedEducation(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  padding: '0 12px 0 36px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#F8FAFC',
+                  fontSize: '13px',
+                  fontWeight: selectedEducation !== 'Select Education' ? 700 : 500,
+                  color: selectedEducation !== 'Select Education' ? '#0F172A' : '#64748B',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                {EDUCATIONS.map((ed) => (
+                  <option key={ed} value={ed}>
+                    {ed}
+                  </option>
+                ))}
+              </select>
+              <GraduationCap size={15} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '13px', pointerEvents: 'none' }} />
+              <ChevronDown size={15} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '13px', pointerEvents: 'none' }} />
+            </div>
+
+            {/* Location Query Input with Auto MIDC Suggestions */}
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                height: '42px',
+                padding: '0 12px',
+                borderRadius: '6px',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#F8FAFC',
+                gap: '8px',
+              }}>
+                <MapPin size={15} color="#1B4FDF" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Enter location / MIDC area (e.g. Waluj, Chakan)"
+                  value={locationQuery}
+                  onChange={(e) => {
+                    setLocationQuery(e.target.value);
+                    setShowLocationSuggestions(true);
+                  }}
+                  onFocus={() => setShowLocationSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: '13px',
+                    color: '#0F172A',
+                    fontWeight: 500,
+                    padding: 0,
+                    margin: 0,
+                    width: '100%',
+                  }}
+                />
+                {locationQuery.length > 0 && (
+                  <button
+                    onClick={() => setLocationQuery('')}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px' }}
+                  >
+                    <X size={13} color="#64748B" />
+                  </button>
+                )}
+              </div>
+
+              {showLocationSuggestions && (
+                <div style={{
+                  position: 'absolute',
+                  top: '46px',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.1)',
+                  zIndex: 200,
+                  overflow: 'hidden',
+                }}>
+                  {matchingMidcZones.map((zone) => (
+                    <div
+                      key={zone}
+                      onClick={() => {
+                        setLocationQuery(zone);
+                        setShowLocationSuggestions(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        color: '#334155',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderBottom: '1px solid #F1F5F9',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <MapPin size={12} color="#94A3B8" />
+                      <span>{zone}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search Submit Button */}
+            <button
+              onClick={() => handleSearchSubmit()}
+              style={{
+                backgroundColor: '#1B4FDF',
+                color: '#FFFFFF',
+                height: '44px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                marginTop: '4px',
+                boxShadow: '0 2px 6px rgba(27, 79, 223, 0.25)',
+              }}
+            >
+              <Search size={16} color="#FFFFFF" />
+              Find Matching Jobs
+            </button>
+          </div>
+        </div>
+
+        {/* Popular Role Picks Section */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
+                backgroundColor: '#EFF6FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Briefcase size={17} color="#1B4FDF" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                  Popular Role Picks
+                </h3>
+                <span style={{ fontSize: '11px', color: '#64748B' }}>
+                  Explore top verified industrial openings
+                </span>
+              </div>
+            </div>
+            <span style={{
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#DCFCE7',
+              color: '#15803D',
+              padding: '2px 6px',
+              borderRadius: '4px',
+            }}>
+              VERIFIED JOBS
+            </span>
+          </div>
+
+          {/* Role Filter Tabs Horizontal Scroll */}
+          <div
+            className="no-scrollbar"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: '2px',
+            }}
+          >
+            {DEFAULT_ROLE_TABS.map((tab) => {
+              const isActive = activeRoleTab === tab.id;
+              const count = tab.id === 'All Opportunities' ? allJobs.length : getRealJobCount(tab.keyword);
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveRoleTab(tab.id)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '4px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    border: isActive ? '1px solid #1B4FDF' : '1px solid #E2E8F0',
+                    backgroundColor: isActive ? '#1B4FDF' : '#F8FAFC',
+                    color: isActive ? '#FFFFFF' : '#475569',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span style={{
+                    fontSize: '10px',
+                    padding: '1px 5px',
+                    borderRadius: '3px',
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#E2E8F0',
+                    color: isActive ? '#FFFFFF' : '#64748B',
+                    fontWeight: 800,
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Role Jobs List (CandidateJobCardItem design) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {roleFilteredJobs.slice(0, 4).map((job) => {
+              const isSaved = savedJobIds.includes(job.id);
+              const expText =
+                job.minExperience !== undefined
+                  ? `${job.minExperience}-${job.maxExperience ?? job.minExperience + 2} Yrs Exp`
+                  : '0-2 Yrs Exp';
+              const salaryText =
+                job.salaryMin && job.salaryMax
+                  ? `${(job.salaryMin / 100000).toFixed(1)}-${(job.salaryMax / 100000).toFixed(1)} Lacs PA`
+                  : '3.5-5.5 Lacs PA';
+              const locationText = job.midcZone || job.location || 'Chhatrapati Sambhajinagar';
+              const openings = job.openings || 4;
+
+              return (
+                <Link
+                  key={job.id}
+                  to={`/job/${job.id}`}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '6px',
+                    border: '1px solid #CBD5E1',
+                    overflow: 'hidden',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Top Section */}
+                  <div style={{ padding: '12px 14px', borderBottom: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <h4 style={{
+                        margin: 0,
+                        fontSize: '13.5px',
+                        fontWeight: 800,
+                        color: '#0F172A',
+                        letterSpacing: '-0.15px',
+                        flex: 1,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
+                        {job.title}
+                      </h4>
+                      <button
+                        onClick={(e) => toggleSaveJob(job.id, e)}
+                        style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer' }}
+                      >
+                        <Bookmark
+                          size={16}
+                          color={isSaved ? '#1B4FDF' : '#94A3B8'}
+                          fill={isSaved ? '#1B4FDF' : 'transparent'}
+                        />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                        <Briefcase size={12} color="#64748B" />
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{expText}</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '11px' }}>₹</span>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{salaryText}</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {locationText}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle Specs Band */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 14px',
+                    backgroundColor: '#F8FAFC',
+                    borderBottom: '1px solid #F1F5F9',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                      <Clock size={12} color="#64748B" />
+                      <span>{job.jobType || 'Full-time'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                      <Building2 size={12} color="#64748B" />
+                      <span>{job.workMode || 'On-site'}</span>
+                    </div>
+                    {openings && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                        <Users size={12} color="#64748B" />
+                        <span>{openings} Vacancies</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Employer Row */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 14px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={32} borderRadius="6px" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {job.company}
+                        </div>
+                        <div style={{ fontSize: '9.5px', color: '#64748B' }}>Posted by Recruiter</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: 600, color: '#94A3B8' }}>
+                      {formatTimeAgo(job.postedAt || (job as any).created_at)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <Link
+            to={`/jobs?keyword=${encodeURIComponent(DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab)?.keyword || '')}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '10px',
+              backgroundColor: '#EFF6FF',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontSize: '12.5px',
+              fontWeight: 800,
+              color: '#1B4FDF',
+              marginTop: '4px',
+            }}
+          >
+            <span>View All {activeRoleTab} Jobs</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {/* Live Stats 2x2 Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Active Listings</div>
+          </div>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#059669' }}>120+</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Factories Hiring</div>
+          </div>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#7C3AED' }}>10,000+</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Verified Workers</div>
+          </div>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#EA580C' }}>4,500+</div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Monthly Placements</div>
+          </div>
+        </div>
+
+        {/* Browse by ITI Trade / Specialty */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#EFF6FF',
+              color: '#1B4FDF',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginBottom: '4px',
+            }}>
+              POPULAR TRADES
+            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Browse by ITI Trade / Specialty
+            </h3>
+            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+              Direct vacancies in production, quality, maintenance & logistics
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {ITI_TRADES_GRID.map((trade, idx) => {
+              const IconComp = trade.icon;
+              const count = getRealJobCount(trade.keyword);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleQuickTradeSearch(trade.keyword)}
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '6px',
+                    padding: '10px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#1B4FDF';
+                    e.currentTarget.style.backgroundColor = '#EFF6FF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '6px',
+                  }}>
+                    <IconComp size={16} color="#1B4FDF" />
+                  </div>
+                  <div style={{
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: '#0F172A',
+                    lineHeight: '14px',
+                    height: '28px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {trade.name}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                    {count} Openings
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Browse Jobs by Qualification */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#F0FDF4',
+              color: '#16A34A',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginBottom: '4px',
+            }}>
+              EDUCATION
+            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Browse Jobs by Qualification
+            </h3>
+            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+              Find jobs matching your school education or college degree
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {EDUCATION_GRID.map((qual, idx) => {
+              const IconComp = qual.icon;
+              const count = getRealJobCount(qual.keyword);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleQuickTradeSearch(qual.keyword)}
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '6px',
+                    padding: '10px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#16A34A';
+                    e.currentTarget.style.backgroundColor = '#F0FDF4';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '6px',
+                  }}>
+                    <IconComp size={16} color="#16A34A" />
+                  </div>
+                  <div style={{
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: '#0F172A',
+                    lineHeight: '14px',
+                    height: '28px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {qual.name}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                    {count} Openings
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hospital & Healthcare Jobs */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#FEF2F2',
+              color: '#DC2626',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginBottom: '4px',
+            }}>
+              HEALTHCARE
+            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Hospital & Healthcare Jobs
+            </h3>
+            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+              Browse medical, nursing, administration and support staff jobs
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {HOSPITAL_GRID.map((h, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleQuickTradeSearch(h.keyword)}
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '6px',
+                  padding: '10px 8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '6px',
+                }}>
+                  <HeartPulse size={16} color="#DC2626" />
+                </div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                  {h.name}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Hotel & Hospitality Jobs */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#FFFBEB',
+              color: '#D97706',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginBottom: '4px',
+            }}>
+              HOSPITALITY
+            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Hotel & Hospitality Jobs
+            </h3>
+            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+              Opportunities in kitchen, housekeeping, food service & front desk
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {HOTEL_GRID.map((h, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleQuickTradeSearch(h.keyword)}
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '6px',
+                  padding: '10px 8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '6px',
+                }}>
+                  <Utensils size={16} color="#D97706" />
+                </div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                  {h.name}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Applicant Advantage Section */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '6px',
+          border: '1px solid #CBD5E1',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box',
+        }}>
+          <div>
+            <div style={{
+              display: 'inline-block',
+              fontSize: '10px',
+              fontWeight: 800,
+              backgroundColor: '#EFF6FF',
+              color: '#1B4FDF',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginBottom: '4px',
+            }}>
+              JOBMARKET ADVANTAGE
+            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+              Why Industrial Workers Choose JobMarket
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                  Direct MIDC Plant Hiring
+                </div>
+                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                  Connect straight with plant HR without middle consultants or commission cuts.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                  100% Free Job Applications
+                </div>
+                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                  No registration charges or hidden fees for workers and job seekers.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                  Bus & Canteen Verified Facilities
+                </div>
+                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                  All job openings specify company bus routes, subsidized canteen, and OT perks.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-mesh-overlay"></div>
-        <div className="hero-particles">
-          <div className="hero-particle"></div>
-          <div className="hero-particle"></div>
-          <div className="hero-particle"></div>
-          <div className="hero-particle"></div>
-          <div className="hero-particle"></div>
-        </div>
-
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-              <span>{t.tagline}</span>
-            </div>
-            <h1>{t.heroTitle}</h1>
-            <p className="hero-subtitle">
-              {t.heroSubtitle}
-            </p>
-
-            <div className="hero-search">
-              <form className="search-bar" onSubmit={handleSearch}>
-                {/* 1. Industry Select Field */}
-                <div className="search-field select-field industry-field" ref={industryRef}>
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                  <div className="select-container">
-                    <div
-                      onClick={() => setIndustryDropdownOpen(!industryDropdownOpen)}
-                      className="custom-select-trigger"
-                    >
-                      <span className={industry ? "select-value" : "select-placeholder"}>
-                        {industry || 'Select Industry'}
-                      </span>
-                      <svg 
-                        className={`select-arrow ${industryDropdownOpen ? 'open' : ''}`}
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                      >
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                    {industryDropdownOpen && (
-                      <div className="custom-select-dropdown">
-                        <div
-                          onClick={() => {
-                            setIndustry('');
-                            setIndustryDropdownOpen(false);
-                          }}
-                          className={`custom-select-option ${industry === '' ? 'active' : ''}`}
-                        >
-                          Select Industry
-                        </div>
-                        {industries.map((ind) => (
-                          <div
-                            key={ind}
-                            onClick={() => {
-                              setIndustry(ind);
-                              setIndustryDropdownOpen(false);
-                            }}
-                            className={`custom-select-option ${industry === ind ? 'active' : ''}`}
-                          >
-                            {ind}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Education Select Field */}
-                <div className="search-field select-field education-field" ref={educationRef}>
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                    <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
-                  </svg>
-                  <div className="select-container">
-                    <div
-                      onClick={() => setEducationDropdownOpen(!educationDropdownOpen)}
-                      className="custom-select-trigger"
-                    >
-                      <span className={education ? "select-value" : "select-placeholder"}>
-                        {education || 'Select Education'}
-                      </span>
-                      <svg 
-                        className={`select-arrow ${educationDropdownOpen ? 'open' : ''}`}
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                      >
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                    {educationDropdownOpen && (
-                      <div className="custom-select-dropdown">
-                        <div
-                          onClick={() => {
-                            setEducation('');
-                            setEducationDropdownOpen(false);
-                          }}
-                          className={`custom-select-option ${education === '' ? 'active' : ''}`}
-                        >
-                          Select Education
-                        </div>
-                        {educations.map((ed) => (
-                          <div
-                            key={ed}
-                            onClick={() => {
-                              setEducation(ed);
-                              setEducationDropdownOpen(false);
-                            }}
-                            className={`custom-select-option ${education === ed ? 'active' : ''}`}
-                          >
-                            {ed}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. MIDC Zone Location Select Field */}
-                <div className="search-field select-field location-field" ref={midcRef}>
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  <div className="select-container">
-                    <div
-                      onClick={() => setMidcDropdownOpen(!midcDropdownOpen)}
-                      className="custom-select-trigger"
-                    >
-                      <span className={location ? "select-value" : "select-placeholder"}>
-                        {location || 'Select MIDC Zone'}
-                      </span>
-                      <svg 
-                        className={`select-arrow ${midcDropdownOpen ? 'open' : ''}`}
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                      >
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                    {midcDropdownOpen && (
-                      <div className="custom-select-dropdown">
-                        <div
-                          onClick={() => {
-                            setLocation('');
-                            setMidcDropdownOpen(false);
-                          }}
-                          className={`custom-select-option ${location === '' ? 'active' : ''}`}
-                        >
-                          Select MIDC Zone
-                        </div>
-                        {midcZones.map((zone) => (
-                          <div
-                            key={zone}
-                            onClick={() => {
-                              setLocation(zone);
-                              setMidcDropdownOpen(false);
-                            }}
-                            className={`custom-select-option ${location === zone ? 'active' : ''}`}
-                          >
-                            {zone}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <button type="submit" className="search-btn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <span>{t.searchBtn}</span>
-                </button>
-              </form>
-            </div>
-
-            <div className="hero-tags">
-              <span>{t.popular}:</span>
-              <span className="hero-tag" onClick={() => quickSearch('Fitter')}>Fitter</span>
-              <span className="hero-tag" onClick={() => quickSearch('Welder')}>Welder</span>
-              <span className="hero-tag" onClick={() => quickSearch('CNC Operator')}>CNC Operator</span>
-              <span className="hero-tag" onClick={() => quickSearch('Electrician')}>Electrician</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Role Picks Section - Passing all available DB jobs */}
-      <JobTabbedSection jobs={getJobs()} />
-
-      {/* Stats Section */}
-      <StatsSection totalJobs={Array.isArray(state.jobs) ? state.jobs.length : 0} totalCompanies={Array.isArray(state.companies) ? state.companies.length : 0} totalCandidates={Array.isArray(state.users) ? state.users.length : 0} t={t} />
-
-      <hr className="section-divider" />
-
-      {/* Categories Section */}
-      <section className="categories-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">{t.popular}</span>
-            <h2 className="section-title">{t.categoriesHeader}</h2>
-            <p className="section-subtitle">{t.categoriesSubtitle}</p>
-          </div>
-          <div className="grid grid-4" style={{ gap: 'var(--space-6)' }}>
-            {(Array.isArray(state.categories) ? state.categories : []).map((cat) => (
-              <div
-                key={cat.name}
-                className="category-card"
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(cat.name)}`)}
+      {/* Filter Side Drawer Modal */}
+      {homeFilterDrawerOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '380px',
+            backgroundColor: '#FFFFFF',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+          }}>
+            <div style={{
+              padding: '16px',
+              borderBottom: '1px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
+                Filter Home Vacancies
+              </h3>
+              <button
+                onClick={() => setHomeFilterDrawerOpen(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
               >
-                <div className="category-header" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div className="category-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', background: 'var(--primary-50)', borderRadius: 'var(--radius-lg)', flexShrink: 0 }}>
-                    {getCategoryIcon(cat.name)}
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>{cat.name}</h3>
-                </div>
-                <p className="category-count-text" style={{ marginTop: '12px' }}>
-                  <strong>{formatNumber(cat.count)}</strong> open positions
-                </p>
+                <X size={20} color="#64748B" />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  MIDC Zone / Industrial Area
+                </label>
+                <select
+                  value={homeFilters.midcZone}
+                  onChange={(e) => setHomeFilters((prev) => ({ ...prev, midcZone: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px', backgroundColor: '#F8FAFC' }}
+                >
+                  <option value="All MIDC Zones">All MIDC Zones</option>
+                  {MIDC_ZONES.map((z) => (
+                    <option key={z} value={z}>
+                      {z}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <hr className="section-divider" />
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Job Type
+                </label>
+                <select
+                  value={homeFilters.jobType}
+                  onChange={(e) => setHomeFilters((prev) => ({ ...prev, jobType: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px', backgroundColor: '#F8FAFC' }}
+                >
+                  <option value="All Types">All Types</option>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Apprenticeship">Apprenticeship</option>
+                </select>
+              </div>
 
-      {/* Qualifications Section */}
-      <section className="qualifications-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">Education</span>
-            <h2 className="section-title">Browse Jobs by Qualification</h2>
-            <p className="section-subtitle">Find jobs matching your school education or college degree</p>
-          </div>
-          
-          <div className="qualifications-grid">
-            {(state.qualifications || []).map((q, i) => (
-              <div
-                key={q.name}
-                className={`qualification-card color-index-${i % 6}`}
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(q.name.replace(' Jobs', ''))}`)}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  Plant Facilities & Perks
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={homeFilters.busFacility}
+                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, busFacility: e.target.checked }))}
+                    />
+                    Bus Transport Facility
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={homeFilters.canteen}
+                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, canteen: e.target.checked }))}
+                    />
+                    Canteen / Subsidized Food
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={homeFilters.accommodation}
+                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, accommodation: e.target.checked }))}
+                    />
+                    Hostel / Accommodation
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={homeFilters.overtime}
+                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, overtime: e.target.checked }))}
+                    />
+                    Overtime Pay Available
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setHomeFilters({
+                    industry: 'All Industries',
+                    jobType: 'All Types',
+                    workMode: 'All Modes',
+                    midcZone: 'All MIDC Zones',
+                    busFacility: false,
+                    canteen: false,
+                    accommodation: false,
+                    overtime: false,
+                  });
+                }}
+                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
               >
-                <div className="qualification-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="qualification-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', flexShrink: 0 }}>
-                    {getQualificationIcon(q.name)}
-                  </span>
-                  <h4 style={{ margin: 0 }}>{q.name}</h4>
-                </div>
-                <p className="qualification-count-text" style={{ marginTop: '10px' }}>
-                  <strong>{formatNumber(q.count)}</strong> Job Openings
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* Hospital Jobs Section */}
-      <section className="qualifications-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">Hospital</span>
-            <h2 className="section-title">Hospital & Healthcare Jobs</h2>
-            <p className="section-subtitle">Browse medical, nursing, administration and support staff jobs</p>
-          </div>
-          
-          <div className="qualifications-grid">
-            {initialHospitalCategories.slice(0, 3).map((q, i) => (
-              <div
-                key={q.name}
-                className={`qualification-card color-index-${i % 6}`}
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(q.name)}`)}
+                Reset
+              </button>
+              <button
+                onClick={() => {
+                  setHomeFilterDrawerOpen(false);
+                  const params = new URLSearchParams();
+                  if (homeFilters.midcZone !== 'All MIDC Zones') params.set('location', homeFilters.midcZone);
+                  if (homeFilters.jobType !== 'All Types') params.set('jobType', homeFilters.jobType);
+                  if (homeFilters.busFacility) params.set('bus', 'true');
+                  if (homeFilters.canteen) params.set('canteen', 'true');
+                  if (homeFilters.accommodation) params.set('hostel', 'true');
+                  if (homeFilters.overtime) params.set('ot', 'true');
+                  navigate(`/jobs?${params.toString()}`);
+                }}
+                style={{ flex: 2, padding: '10px', borderRadius: '6px', border: 'none', backgroundColor: '#1B4FDF', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
               >
-                <div className="qualification-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="qualification-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', flexShrink: 0 }}>
-                    {getCategoryIcon(q.name)}
-                  </span>
-                  <h4 style={{ margin: 0 }}>{q.name}</h4>
-                </div>
-                <p className="qualification-count-text" style={{ marginTop: '10px' }}>
-                  <strong>{formatNumber(q.count)}</strong> Job Openings
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* Hotel Jobs Section */}
-      <section className="qualifications-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">Hotel</span>
-            <h2 className="section-title">Hotel, Restaurant & Catering Jobs</h2>
-            <p className="section-subtitle">Find jobs in top hotels, cafes, pantries, and food companies</p>
-          </div>
-          
-          <div className="qualifications-grid">
-            {initialHotelCategories.slice(0, 3).map((q, i) => (
-              <div
-                key={q.name}
-                className={`qualification-card color-index-${(i + 2) % 6}`}
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(q.name)}`)}
-              >
-                <div className="qualification-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="qualification-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', flexShrink: 0 }}>
-                    {getCategoryIcon(q.name)}
-                  </span>
-                  <h4 style={{ margin: 0 }}>{q.name}</h4>
-                </div>
-                <p className="qualification-count-text" style={{ marginTop: '10px' }}>
-                  <strong>{formatNumber(q.count)}</strong> Job Openings
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* School & College Jobs Section */}
-      <section className="qualifications-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">School & College</span>
-            <h2 className="section-title">School, College & Education Jobs</h2>
-            <p className="section-subtitle">Browse teaching, clerical, administrative and security roles in academic institutes</p>
-          </div>
-          
-          <div className="qualifications-grid">
-            {initialSchoolCategories.slice(0, 3).map((q, i) => (
-              <div
-                key={q.name}
-                className={`qualification-card color-index-${(i + 4) % 6}`}
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(q.name)}`)}
-              >
-                <div className="qualification-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="qualification-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', flexShrink: 0 }}>
-                    {getCategoryIcon(q.name)}
-                  </span>
-                  <h4 style={{ margin: 0 }}>{q.name}</h4>
-                </div>
-                <p className="qualification-count-text" style={{ marginTop: '10px' }}>
-                  <strong>{formatNumber(q.count)}</strong> Job Openings
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* Featured Jobs Section */}
-      <section className="featured-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">{t.findJobs}</span>
-            <h2 className="section-title">Urgent Factory Vacancies</h2>
-            <p className="section-subtitle">Verified plant positions with direct walk-in dates and OT options</p>
-          </div>
-          <div className="grid grid-2" style={{ gap: 'var(--space-6)' }}>
-            {featuredJobs.map(job => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-          <div className="featured-action-bar">
-            <Link to="/jobs" className="btn btn-primary btn-lg btn-pill btn-glow">
-              {t.findJobs}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 8 }}>
-                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* Companies Section */}
-      <section className="companies-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">{t.statsFactories}</span>
-            <h2 className="section-title">Industrial Companies Hiring</h2>
-            <p className="section-subtitle">Apply directly to top manufacturing plants and engineering factories</p>
-          </div>
-          <div className="company-logo-grid">
-            {state.companies.slice(0, 12).map(c => (
-              <div
-                key={c.name}
-                className="company-logo-card"
-                onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(c.name)}`)}
-              >
-                <div className="company-logo-icon" style={{ background: c.color }}>
-                  {c.name[0]}
-                </div>
-                <h4>{c.name}</h4>
-                <p>{c.industry}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* How it Works */}
-      <section className="how-section reveal">
-        <div className="container">
-          <div className="section-header">
-            <span className="section-tag">FAQ</span>
-            <h2 className="section-title">{t.stepsHeader}</h2>
-            <p className="section-subtitle">Get connected directly to factory managers and supervisors</p>
-          </div>
-          <div className="steps-grid">
-            <div className="step-card">
-              <div className="step-number-wrapper">
-                <div className="step-number">1</div>
-              </div>
-              <h3>1. Register Profile</h3>
-              <p>Enter your ITI trade, preferred shifts, and select transport or accommodation needs.</p>
-            </div>
-            <div className="step-card">
-              <div className="step-number-wrapper">
-                <div className="step-number">2</div>
-              </div>
-              <h3>2. Direct Apply</h3>
-              <p>Review factory details (hostels, canteen, OT pay) and apply with one click.</p>
-            </div>
-            <div className="step-card">
-              <div className="step-number-wrapper">
-                <div className="step-number">3</div>
-              </div>
-              <h3>3. Attend Walk-in</h3>
-              <p>Receive interview dates and walk-in locations via WhatsApp automatically.</p>
+                Apply & Search
+              </button>
             </div>
           </div>
         </div>
-      </section>
-
-      <hr className="section-divider" />
-
-      {/* Categories Directory */}
-      <section className="categories-directory-section reveal">
-        <div className="container">
-          <div className="directory-grid">
-            <div className="directory-column">
-              <h3>Popular categories</h3>
-              <ul className="directory-list">
-                <li><span className="directory-item" onClick={() => quickSearch('IT')}>IT jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Sales')}>Sales jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Marketing')}>Marketing jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Data Science')}>Data Science jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('HR')}>HR jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Engineering')}>Engineering jobs</span></li>
-              </ul>
-            </div>
-            <div className="directory-column">
-              <h3>Jobs in demand</h3>
-              <ul className="directory-list">
-                <li><span className="directory-item" onClick={() => quickSearch('Fresher')}>Fresher jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('MNC')}>MNC jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Remote')}>Remote jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Work from home')}>Work from home jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Walk-in')}>Walk-in jobs</span></li>
-                <li><span className="directory-item" onClick={() => quickSearch('Part-time')}>Part-time jobs</span></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA (Shown only before user login/signup) */}
-      {!currentUser && (
-        <>
-          <hr className="section-divider" />
-          <section className="cta-section reveal">
-            <div className="container">
-              <div className="cta-card">
-                <div className="cta-glow-effect"></div>
-                <h2>{t.ctaHeader}</h2>
-                <p>{t.ctaSub}</p>
-                <div className="cta-buttons">
-                  <Link to="/signup?role=candidate" className="btn btn-primary btn-lg btn-pill btn-white">{t.signup}</Link>
-                  <Link to="/signup?role=employer" className="btn btn-secondary btn-lg btn-pill btn-outline-white">{t.postJob}</Link>
-                </div>
-              </div>
-            </div>
-          </section>
-        </>
       )}
     </div>
   );
 };
-
-// Animated Stats Section sub-component
-interface StatsSectionProps {
-  totalJobs: number;
-  totalCompanies: number;
-  totalCandidates: number;
-  t: any;
-}
-
-const StatsSection: React.FC<StatsSectionProps> = ({ totalJobs, totalCompanies, totalCandidates, t }) => {
-  const [jobsCount, setJobsCount] = useState(0);
-  const [companiesCount, setCompaniesCount] = useState(0);
-  const [candidatesCount, setCandidatesCount] = useState(0);
-  const [placementsCount, setPlacementsCount] = useState(0);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          animate(totalJobs, setJobsCount);
-          animate(totalCompanies, setCompaniesCount);
-          animate(totalCandidates, setCandidatesCount);
-          animate(totalJobs, setPlacementsCount);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (sectionRef.current) observer.observe(sectionRef.current);
-
-    return () => observer.disconnect();
-  }, [totalJobs, totalCompanies, totalCandidates, hasAnimated]);
-
-  const animate = (target: number, setter: React.Dispatch<React.SetStateAction<number>>, duration = 1500) => {
-    let start = 0;
-    const step = (timestamp: number) => {
-      if (!start) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-      setter(Math.floor(eased * target));
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        setter(target);
-      }
-    };
-    requestAnimationFrame(step);
-  };
-
-  return (
-    <section className="stats-section" ref={sectionRef}>
-      <div className="container">
-        <div className="stats-grid">
-          <div className="stat-item glow-blue">
-            <div className="stat-number">{formatNumber(jobsCount)}+</div>
-            <div className="stat-label">{t.statsActiveJobs}</div>
-          </div>
-          <div className="stat-item glow-green">
-            <div className="stat-number">{formatNumber(companiesCount)}+</div>
-            <div className="stat-label">{t.statsFactories}</div>
-          </div>
-          <div className="stat-item glow-violet">
-            <div className="stat-number">{formatNumber(candidatesCount)}+</div>
-            <div className="stat-label">{t.statsWorkers}</div>
-          </div>
-          <div className="stat-item glow-orange">
-            <div className="stat-number">{formatNumber(placementsCount)}+</div>
-            <div className="stat-label">{t.statsPlacements}</div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-export default HomePage;

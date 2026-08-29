@@ -39,6 +39,7 @@ import {
   Lightbulb,
   AlertTriangle
 } from 'lucide-react';
+import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { 
   INDUSTRY_LIST, 
   INDUSTRY_ROLE_MAPPINGS, 
@@ -270,6 +271,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [walkInTime, setWalkInTime] = useState('');
   const [walkInStartTime, setWalkInStartTime] = useState<string>('10:00 AM');
   const [walkInEndTime, setWalkInEndTime] = useState<string>('05:00 PM');
+  const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
   const [interviewAddress, setInterviewAddress] = useState('');
   const [walkInContactPerson, setWalkInContactPerson] = useState<string>('');
   const [walkInContactNumber, setWalkInContactNumber] = useState<string>('');
@@ -2194,27 +2196,47 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       <label className="form-label" style={{ fontWeight: '700' }}>
                         Start Time <span className="required">*</span>
                       </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. 10:00 AM"
-                        value={walkInStartTime}
-                        onChange={(e) => setWalkInStartTime(e.target.value)}
-                        required
-                      />
+                      <div
+                        onClick={() => setTimePickerTarget('start')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          padding: '8px 12px',
+                          backgroundColor: '#FFFFFF',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Clock size={16} color="#1764E8" />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: walkInStartTime ? '#102A5C' : '#94A3B8' }}>
+                          {walkInStartTime || 'Select Start Time'}
+                        </span>
+                      </div>
                     </div>
                     <div style={{ flex: 1 }}>
                       <label className="form-label" style={{ fontWeight: '700' }}>
                         End Time <span className="required">*</span>
                       </label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. 05:00 PM"
-                        value={walkInEndTime}
-                        onChange={(e) => setWalkInEndTime(e.target.value)}
-                        required
-                      />
+                      <div
+                        onClick={() => setTimePickerTarget('end')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          padding: '8px 12px',
+                          backgroundColor: '#FFFFFF',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Clock size={16} color="#1764E8" />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: walkInEndTime ? '#102A5C' : '#94A3B8' }}>
+                          {walkInEndTime || 'Select End Time'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -2791,6 +2813,23 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             </div>
           </div>
         </div>
+      )}
+
+      {/* Material 3 Clock Time Picker Modal */}
+      {timePickerTarget && (
+        <ClockTimePickerModal
+          visible={!!timePickerTarget}
+          initialTime={timePickerTarget === 'start' ? walkInStartTime : walkInEndTime}
+          onClose={() => setTimePickerTarget(null)}
+          onSelectTime={(timeStr) => {
+            if (timePickerTarget === 'start') {
+              setWalkInStartTime(timeStr);
+            } else {
+              setWalkInEndTime(timeStr);
+            }
+            setTimePickerTarget(null);
+          }}
+        />
       )}
     </div>
   );

@@ -116,18 +116,7 @@ export const MobileBottomNav: React.FC = () => {
             <span>{t.home}</span>
           </NavLink>
 
-          {/* 2. Find Jobs */}
-          <NavLink to="/jobs" className={() => `mobile-bottom-item ${isTabActive('/jobs') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              </svg>
-            </div>
-            <span>{t.findJobs}</span>
-          </NavLink>
-
-          {/* 3. Companies */}
+          {/* 2. Companies */}
           <NavLink to="/companies" className={() => `mobile-bottom-item ${isTabActive('/companies') ? 'active' : ''}`}>
             <div className="mobile-bottom-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -139,6 +128,17 @@ export const MobileBottomNav: React.FC = () => {
               </svg>
             </div>
             <span>Companies</span>
+          </NavLink>
+
+          {/* 3. Find Jobs */}
+          <NavLink to="/jobs" className={() => `mobile-bottom-item ${isTabActive('/jobs') ? 'active' : ''}`}>
+            <div className="mobile-bottom-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+            </div>
+            <span>{t.findJobs}</span>
           </NavLink>
 
           {/* 4. Applied Jobs (if logged in) */}

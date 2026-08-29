@@ -19,11 +19,13 @@ import {
   ChevronRight,
   Filter,
   Users,
+  Calendar,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { apiFetch } from '../../api/client';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 
 interface CandidateCompaniesScreenProps {
   navigation: any;
@@ -187,17 +189,17 @@ const ZONE_FILTERS = [
 export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> = ({
   navigation,
 }) => {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [companies, setCompanies] = useState<any[]>(FALLBACK_COMPANIES);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedZone, setSelectedZone] = useState('All Companies');
 
   const fetchCompanies = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const json = await apiFetch('/api/v1/companies');
-      const list = Array.isArray(json) ? json : (json?.data || []);
+      const list = Array.isArray(json) ? json : (json?.data || json?.companies || []);
       if (Array.isArray(list) && list.length > 0) {
         setCompanies(list);
       } else {
@@ -222,50 +224,34 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   };
 
   const filteredCompanies = useMemo(() => {
-    const seenKeys = new Set<string>();
-    const uniqueList: any[] = [];
-
-    companies.forEach((c) => {
-      const uniqueId = String(c.name || c.id || '').trim().toLowerCase();
-      if (!uniqueId || !seenKeys.has(uniqueId)) {
-        if (uniqueId) seenKeys.add(uniqueId);
-        uniqueList.push(c);
-      }
-    });
-
-    return uniqueList.filter((c) => {
-      // 1. Zone filter
-      if (selectedZone !== 'All Companies') {
-        const zoneStr = (c.midc_zone || c.midcZone || '').toLowerCase();
-        if (!zoneStr.includes(selectedZone.toLowerCase())) {
+    return companies.filter((c) => {
+      if (selectedZone && selectedZone !== 'All Companies' && selectedZone !== 'All Zones') {
+        const zoneStr = (c.midc_zone || c.midcZone || c.address || c.city || c.location || '').toLowerCase();
+        const filterKeyword = selectedZone.toLowerCase().replace(' midc', '').trim();
+        if (!zoneStr.includes(filterKeyword)) {
           return false;
         }
       }
 
-      // 2. Search query filter
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = (c.name || '').toLowerCase().includes(q);
+        const q = searchQuery.toLowerCase().trim();
+        const matchName = (c.name || c.companyName || '').toLowerCase().includes(q);
         const matchIndustry = (c.industry || '').toLowerCase().includes(q);
         const matchCity = (c.city || '').toLowerCase().includes(q);
-        const matchZone = (c.midc_zone || c.midcZone || '').toLowerCase().includes(q);
+        const matchZone = (c.midc_zone || c.midcZone || c.location || '').toLowerCase();
         return matchName || matchIndustry || matchCity || matchZone;
       }
-
       return true;
     });
   }, [companies, selectedZone, searchQuery]);
 
   return (
     <View style={styles.container}>
-      {/* Page Header */}
       <Header
-        title="Industrial Companies"
-        subtitle="Explore verified manufacturers & employers in MIDC zones"
-        hideRightActions
+        title="Top Companies"
+        showBack={false}
       />
 
-      {/* Main Virtualized List */}
       <FlatList
         data={loading ? [] : filteredCompanies}
         keyExtractor={(item, index) => `company-${item.id || item.name}-${index}`}
@@ -277,7 +263,7 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
 
           return (
             <TouchableOpacity
-              activeOpacity={0.85}
+              activeOpacity={0.88}
               style={styles.companyCard}
               onPress={() => {
                 navigation.navigate('CompanyProfile', {
@@ -287,55 +273,74 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
                 });
               }}
             >
-              {/* Card Header Row */}
-              <View style={styles.cardHeaderRow}>
+              {/* Card Top Distinct Header Band */}
+              <View style={styles.cardTopHeader}>
                 <CompanyLogoAvatar
                   logoUrl={comp.logo || comp.logoUrl}
                   companyName={comp.name}
                   size={48}
-                  borderRadius={24}
+                  borderRadius={RADIUS.card}
                 />
 
                 <View style={styles.cardHeaderTextWrap}>
-                  <View style={styles.companyTitleRow}>
-                    <Text style={styles.companyNameText} numberOfLines={1}>
-                      {comp.name}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.industryText} numberOfLines={1}>
-                    {comp.industry || 'Industrial Manufacturing'}
+                  <Text style={styles.companyNameText} numberOfLines={1}>
+                    {comp.name}
                   </Text>
+                  <Text style={styles.industryText} numberOfLines={1}>
+                    {comp.industry || 'Industrial Manufacturing'} • {companyType}
+                  </Text>
+                </View>
 
-                  <View style={styles.locationRow}>
-                    <MapPin size={13} color="#64748B" />
-                    <Text style={styles.locationText} numberOfLines={1}>
+                <ChevronRight size={18} color="#94A3B8" />
+              </View>
+
+              {/* Card Body Area */}
+              <View style={styles.cardBody}>
+                {/* Row 1: Address & Estd Year (Clean Plain Text with Icons) */}
+                <View style={styles.fixedMetaRow}>
+                  <View style={[styles.plainMetaItem, { flexShrink: 1 }]}>
+                    <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                    <Text style={styles.plainMetaText} numberOfLines={1} ellipsizeMode="tail">
                       {locationText}
                     </Text>
                   </View>
-                </View>
-              </View>
 
-              {/* Inline Metadata Sub-line */}
-              <View style={styles.metaSubRow}>
-                <Text style={styles.metaSubText} numberOfLines={1}>
-                  {companyType}  •  {companySize}
-                </Text>
-              </View>
-
-              {/* Crisp Section Divider */}
-              <View style={styles.divider} />
-
-              {/* Card Footer */}
-              <View style={styles.cardFooterRow}>
-                <View style={styles.jobsNormalRow}>
-                  <Briefcase size={14} color="#2563EB" />
-                  <Text style={styles.jobsNormalText}>{jobsCount} Vacancies Available</Text>
+                  {(comp.founded_year || comp.founded) ? (
+                    <View style={[styles.plainMetaItem, { flexShrink: 0 }]}>
+                      <Calendar size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                      <Text style={[styles.plainMetaText, { flexShrink: 0 }]} numberOfLines={1}>
+                        Estd. {comp.founded_year || comp.founded}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
 
-                <View style={styles.viewBtn}>
-                  <Text style={styles.viewBtnText}>View Profile</Text>
-                  <ChevronRight size={14} color="#2563EB" />
+                {/* Row 2: Employee Count Pill */}
+                <View style={styles.fixedMetaRow}>
+                  <View style={[styles.metaTagPill, { flexShrink: 1 }]}>
+                    <Users size={11} color="#64748B" style={{ flexShrink: 0 }} />
+                    <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
+                      {companySize}
+                    </Text>
+                  </View>
+                </View>
+
+                {comp.description ? (
+                  <Text style={styles.companyDescription} numberOfLines={2} ellipsizeMode="tail">
+                    {comp.description}
+                  </Text>
+                ) : null}
+
+                <View style={styles.cardFooterRow}>
+                  <View style={styles.jobsNormalRow}>
+                    <Briefcase size={12} color={COLORS.primary} />
+                    <Text style={styles.jobsNormalText}>{jobsCount} Vacancies Available</Text>
+                  </View>
+
+                  <View style={styles.viewBtn}>
+                    <Text style={styles.viewBtnText}>View Details</Text>
+                    <ChevronRight size={13} color={COLORS.primary} strokeWidth={2.5} />
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -343,26 +348,24 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563EB']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={11}
         removeClippedSubviews={true}
         ListHeaderComponent={
           <View>
-            {/* Search Input Bar */}
             <View style={styles.searchBar}>
-              <Search size={18} color="#64748B" />
+              <Search size={16} color="#64748B" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search companies by name, MIDC zone, industry..."
+                placeholder="Search companies by name, MIDC zone..."
                 placeholderTextColor="#94A3B8"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
             </View>
 
-            {/* Zone Filter Chips Scroll */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -386,10 +389,9 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
               })}
             </ScrollView>
 
-            {/* Count Summary */}
             <View style={styles.countRow}>
               <Text style={styles.countText}>
-                Showing <Text style={{ fontWeight: '800', color: '#0F172A' }}>{filteredCompanies.length}</Text> Verified Companies
+                Showing {filteredCompanies.length} Verified Companies
               </Text>
             </View>
           </View>
@@ -397,12 +399,14 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         ListEmptyComponent={
           loading ? (
             <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#2563EB" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Loading verified industrial companies...</Text>
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Building2 size={36} color="#94A3B8" />
+              <View style={styles.emptyIconCircle}>
+                <Building2 size={26} color={COLORS.primary} strokeWidth={2.2} />
+              </View>
               <Text style={styles.emptyTitle}>No Companies Found</Text>
               <Text style={styles.emptySubtitle}>
                 No industrial companies match your current search query or zone filter.
@@ -410,7 +414,6 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
             </View>
           )
         }
-        ListFooterComponent={<View style={{ height: 32 }} />}
       />
     </View>
   );
@@ -419,52 +422,52 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 16,
     paddingBottom: 110,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     paddingHorizontal: 12,
-    height: 44,
-    marginBottom: 10,
+    height: 40,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 12.5,
     color: '#0F172A',
     paddingVertical: 0,
     margin: 0,
   },
   filterChipScroll: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   filterChipContainer: {
-    gap: 8,
+    gap: 6,
   },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 4,
+    borderColor: '#E2E8F0',
+    borderRadius: RADIUS.xs,
   },
   filterChipActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#475569',
   },
@@ -472,10 +475,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   countRow: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   countText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
+    fontWeight: '500',
     color: '#64748B',
   },
   loadingBox: {
@@ -484,122 +488,157 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
-  },
-  companiesList: {
-    gap: 14,
   },
   companyCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 16,
-    marginBottom: 12,
+    borderColor: '#CBD5E1',
+    borderRadius: RADIUS.card,
+    marginBottom: 16,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
   },
-  cardHeaderRow: {
+  cardTopHeader: {
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   cardHeaderTextWrap: {
     flex: 1,
-  },
-  companyTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    minWidth: 0,
   },
   companyNameText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    flex: 1,
-  },
-  verifiedBadgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#2563EB',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 0,
-  },
-  verifiedText: {
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    color: '#0F172A',
+    letterSpacing: -0.2,
   },
   industryText: {
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: '500',
     color: '#64748B',
     marginTop: 2,
   },
-  locationRow: {
+  cardBody: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  fixedMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  plainMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
-  locationText: {
-    fontSize: 12.5,
+  plainMetaText: {
+    fontSize: 11.5,
     fontWeight: '500',
-    color: '#475569',
-    flex: 1,
-  },
-  metaSubRow: {
-    marginTop: 8,
-  },
-  metaSubText: {
-    fontSize: 12,
-    fontWeight: '600',
     color: '#64748B',
+    flexShrink: 1,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 10,
+  metaTagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: RADIUS.xs,
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
+  metaTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  verifiedTagPill: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  companyDescription: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
+    marginTop: 2,
   },
   cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    marginTop: 1,
   },
   jobsNormalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   jobsNormalText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#2563EB',
+    color: COLORS.primary,
   },
   viewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
+    gap: 3,
   },
   viewBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2563EB',
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.primary,
   },
   emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 32,
     alignItems: 'center',
-    paddingVertical: 40,
     gap: 8,
+    marginTop: 8,
+  },
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   emptyTitle: {
     fontSize: 15,
@@ -607,9 +646,10 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   emptySubtitle: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#64748B',
     textAlign: 'center',
-    paddingHorizontal: 20,
+    lineHeight: 16,
+    paddingHorizontal: 12,
   },
 });

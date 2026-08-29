@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Users, ClipboardCheck, Plus, Briefcase, Building2, TrendingUp } from 'lucide-react-native';
@@ -46,6 +47,22 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
   const { user } = useAuth();
   const userName = user?.name || user?.companyName || user?.company_name || 'Employer';
   const firstInitial = userName.charAt(0).toUpperCase();
+
+  // Enforce Status Bar styling strictly based on the active tab
+  React.useEffect(() => {
+    const activeRouteName = state.routes[state.index]?.name;
+    if (Platform.OS === 'android') {
+      if (activeRouteName === 'ProfileTab') {
+        StatusBar.setBackgroundColor('#0A58E2', true);
+        StatusBar.setBarStyle('light-content', true);
+        StatusBar.setTranslucent(true);
+      } else {
+        StatusBar.setBackgroundColor('#FFFFFF', true);
+        StatusBar.setBarStyle('dark-content', true);
+        StatusBar.setTranslucent(false);
+      }
+    }
+  }, [state.index]);
 
   const dockWidth = windowWidth;
   const dockHeight = 58 + Math.max(insets.bottom, 10);

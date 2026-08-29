@@ -19,8 +19,13 @@ import {
   Check,
   ChevronRight,
   AlertCircle,
+  Lock,
+  Star,
+  Plus,
+  Headphones,
   X
 } from 'lucide-react';
+import companyHeaderBg from '../../assets/company_header_bg.jpg';
 import { apiFetch } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '../../store/useStore';
@@ -314,442 +319,685 @@ export const CompanyProfilePage: React.FC = () => {
     );
   }
 
-  const completionPct = company.completion_percentage || 85;
+  const completionPct = company.completion_percentage || 75;
 
   return (
-    <div className="company-profile-wrapper">
-      {/* Main Container */}
-      <div className="company-main-container">
-
-        {/* Single Executive Hero Header Card with Solid Blue Cover Banner */}
-        <div className="company-hero-card">
-          {/* Top Solid Blue Cover Banner */}
-          <div className="company-cover-banner">
-            {/* Top-Left Back Button inside Blue Section (No Background Box) */}
+    <div style={{
+      width: '100%',
+      minHeight: '100vh',
+      backgroundColor: '#F7F9FC',
+      boxSizing: 'border-box'
+    }}>
+      {/* Container matching Mobile/Responsive Width */}
+      <div style={{
+        maxWidth: '720px',
+        margin: '0 auto',
+        paddingBottom: '60px',
+        boxSizing: 'border-box'
+      }}>
+        {/* 1. Primary Blue Hero Header Banner with Exact Mobile App Background Image */}
+        <div style={{
+          backgroundColor: '#0A58E2',
+          backgroundImage: `url(${companyHeaderBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          padding: '16px 16px 48px 16px',
+          color: '#FFFFFF',
+          position: 'relative',
+          boxSizing: 'border-box'
+        }}>
+          {/* Top Controls Row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 0',
+            marginBottom: '6px'
+          }}>
             <button
               onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/companies')}
               style={{
                 background: 'transparent',
                 border: 'none',
-                padding: 0,
+                padding: '6px',
                 color: '#FFFFFF',
-                fontSize: '12px',
-                fontWeight: '700',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer',
-                marginTop: '-4px',
-                marginLeft: '-4px',
-                marginBottom: '24px',
-                opacity: 0.9,
-                transition: 'opacity 0.15s ease'
+                justifyContent: 'center',
+                cursor: 'pointer'
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.9')}
+              title="Go Back"
             >
-              <ArrowLeft size={15} />
-              <span>Back</span>
+              <ArrowLeft size={20} strokeWidth={2.4} />
             </button>
 
-            {/* Top Single Row Header: Logo + Title/Type (Left) | Actions/Share (Right) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%', marginBottom: '6px' }}>
-              {/* Left Side: Logo + Title & Industry/Type */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                <div 
-                  onClick={isOwner ? triggerFileInput : undefined}
-                  style={{
-                    position: 'relative',
-                    width: '44px',
-                    height: '44px',
-                    flexShrink: 0,
-                    cursor: isOwner ? 'pointer' : 'default'
-                  }}
-                  title={isOwner ? "Click to update logo" : displayCompanyName}
-                >
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
-                    border: '1.5px solid #FFFFFF',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <CompanyDefaultLogo
-                      logoUrl={company.logo}
-                      companyName={displayCompanyName}
-                      size={40}
-                      borderRadius="50%"
-                    />
-                  </div>
-
-                  {isOwner && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '-2px',
-                      right: '-2px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #2563EB',
-                      color: '#2563EB',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-                      zIndex: 10
-                    }}>
-                      <Camera size={10} strokeWidth={2.5} />
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h1 className="company-hero-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {displayCompanyName}
-                  </h1>
-                  <p className="company-tagline" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {company.industry || 'Industrial Manufacturing & Engineering Operations'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Side: Share Icon (& Edit Profile button if owner) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                {isOwner && (
-                  <button onClick={() => setIsEditModalOpen(true)} className="company-btn-action company-btn-outline-white" style={{ padding: '4px 8px', fontSize: '12px' }}>
-                    <Edit3 size={13} />
-                    <span>Edit</span>
-                  </button>
-                )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {isOwner && (
                 <button
-                  onClick={handleShare}
-                  title={copiedLink ? 'Link Copied!' : 'Share Profile'}
+                  onClick={() => setIsEditModalOpen(true)}
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    padding: '4px',
+                    padding: '6px',
                     color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer'
                   }}
+                  title="Edit Profile"
                 >
-                  {copiedLink ? <Check size={18} strokeWidth={2.5} style={{ color: '#4ADE80' }} /> : <Share2 size={18} strokeWidth={2.2} />}
+                  <Edit3 size={15} strokeWidth={2} />
                 </button>
-              </div>
+              )}
+
+              <button
+                onClick={handleShare}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '6px',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+                title={copiedLink ? 'Link Copied!' : 'Share Profile'}
+              >
+                {copiedLink ? <Check size={18} strokeWidth={2.8} color="#4ADE80" /> : <Share2 size={19} strokeWidth={2} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Company Identity Hero Row */}
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px' }}>
+            {/* Large Circular White Logo Container (72px Exact Mobile Match) */}
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '36px',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: '14px',
+              flexShrink: 0,
+              boxShadow: '0 3px 8px rgba(16, 42, 92, 0.2)',
+              overflow: 'hidden'
+            }}>
+              {company.logo ? (
+                <CompanyDefaultLogo
+                  logoUrl={company.logo}
+                  companyName={displayCompanyName}
+                  size={68}
+                  borderRadius="34px"
+                />
+              ) : (
+                <Headphones size={38} color="#1764E8" strokeWidth={2.3} />
+              )}
             </div>
 
-            {/* Employer Owner Profile Completion Banner */}
-            {isOwner && (
-              <div style={{
-                marginTop: '16px',
-                paddingTop: '14px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ flex: 1, minWidth: '240px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', color: '#FFFFFF', marginBottom: '4px' }}>
-                    <span>Employer Profile Completion</span>
-                    <span style={{ color: '#93C5FD' }}>{completionPct}%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '5px', backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: '0px', overflow: 'hidden' }}>
-                    <div style={{ width: `${completionPct}%`, height: '100%', backgroundColor: '#FFFFFF', transition: 'width 0.3s ease' }} />
-                  </div>
-                </div>
-                <div style={{ fontSize: '12px', color: '#DBEAFE', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '600' }}>
-                  <span>✓ Logo & Name</span>
-                  <span>✓ Industry & Location</span>
-                  <span>{company.website ? '✓ Website' : '○ Website'}</span>
+            {/* Company Info Column */}
+            <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <h1 style={{
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  margin: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '-0.2px'
+                }}>
+                  {displayCompanyName}
+                </h1>
+                <div style={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '9px',
+                  backgroundColor: '#1764E8',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }} title="Verified Employer">
+                  <Check size={11} strokeWidth={3} />
                 </div>
               </div>
-            )}
 
-            {/* Integrated Stats Row inside Single Blue Hero Card (Only rendered when provided) */}
-            {(company.company_size || company.companySize || company.founded_year || company.foundedYear || company.city || company.address || formattedLocation) && (
-              <>
-                <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', margin: '10px 0' }} />
-                <div className="company-hero-stats-row">
-                  {(company.company_size || company.companySize) && (
-                    <div className="company-hero-stat-item">
-                      <div className="company-stat-icon">
-                        <Users size={18} />
-                      </div>
-                      <div className="company-stat-text-container">
-                        <div className="company-stat-label">EMPLOYEES</div>
-                        <div className="company-stat-value">{company.company_size || company.companySize}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {(company.founded_year || company.foundedYear) && (
-                    <div className="company-hero-stat-item">
-                      <div className="company-stat-icon">
-                        <Calendar size={18} />
-                      </div>
-                      <div className="company-stat-text-container">
-                        <div className="company-stat-label">FOUNDED</div>
-                        <div className="company-stat-value">{company.founded_year || company.foundedYear}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {(company.city || company.address || formattedLocation) && (
-                    <div className="company-hero-stat-item full-width-stat">
-                      <div className="company-stat-icon">
-                        <MapPin size={16} />
-                      </div>
-                      <div className="company-stat-text-container">
-                        <div className="company-stat-label">HEADQUARTERS</div>
-                        <div className="company-stat-value">{formattedLocation || company.city || company.address}</div>
-                      </div>
-                    </div>
-                  )}
+              {/* Subtitle Category Pills */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                  padding: '3.5px 8px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {company.industry || 'Industrial Manufacturing'}
+                  </span>
                 </div>
-              </>
-            )}
+
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                  padding: '3.5px 8px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  <Lock size={12} color="#FFFFFF" strokeWidth={2.2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {company.company_type || 'Private Limited'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Content Layout Grid */}
-        <div className="company-content-grid">
-          {/* Left Column: About & Active Jobs List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* 2. Floating Metrics Bar (Exact Mobile App UI - 32px Overlap) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E7EBF2',
+          borderRadius: '8px',
+          padding: '10px 12px',
+          margin: '-32px 16px 16px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          zIndex: 10,
+          boxShadow: '0 3px 8px rgba(20, 42, 80, 0.06)'
+        }}>
+          {/* Stat 1: Jobs Posted */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#EFF5FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Briefcase size={15} color="#1764E8" strokeWidth={2} />
+            </div>
+            <div style={{ flex: 1, justifyContent: 'center' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{jobs.length || 0}</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Jobs Posted</div>
+            </div>
+          </div>
 
-            {/* About Section */}
-            <div className="company-card-surface">
-              <h2 className="company-section-title">
-                <Building2 size={18} color="#2563EB" />
-                About {displayCompanyName}
-              </h2>
-              {(() => {
-                const fullText = (company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`).trim();
-                const MAX_ABOUT_CHARS = 110;
-                const isExceedingCapacity = fullText.length > MAX_ABOUT_CHARS;
-                const displayedAboutText = isExceedingCapacity 
-                  ? `${fullText.slice(0, MAX_ABOUT_CHARS).trim()}...` 
-                  : fullText;
+          <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
 
-                return (
-                  <p className="company-description-text" style={{ margin: 0, whiteSpace: 'pre-line' }}>
-                    {displayedAboutText}
-                    {isExceedingCapacity && (
-                      <button
-                        onClick={() => setShowAboutModal(true)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#2563EB',
-                          fontWeight: '700',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          padding: '0 0 0 6px',
-                          textDecoration: 'underline'
-                        }}
-                      >
-                        More...
-                      </button>
-                    )}
-                  </p>
-                );
-              })()}
+          {/* Stat 2: Profile Score */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#ECF9F6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Star size={15} color="#21A99B" strokeWidth={2} />
+            </div>
+            <div style={{ flex: 1, justifyContent: 'center' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{completionPct}%</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Profile Score</div>
+            </div>
+          </div>
 
-              {Array.isArray(company.specializations) && company.specializations.length > 0 && (
-                <>
-                  <div className="company-slate-divider" />
-                  <div>
-                    <h4 style={{ fontSize: '10.5px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Key Specializations</h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {company.specializations.map((spec: string, idx: number) => (
-                        <span key={idx} style={{
-                          padding: '4px 10px',
-                          backgroundColor: '#EFF6FF',
-                          border: '1px solid #BFDBFE',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          color: '#1D4ED8'
-                        }}>
-                          {spec}
-                        </span>
-                      ))}
-                    </div>
+          <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+
+          {/* Stat 3: Post Job / Open Vacancies */}
+          <div
+            onClick={isOwner ? () => navigate('/post-job') : undefined}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '0 2px',
+              cursor: isOwner ? 'pointer' : 'default'
+            }}
+          >
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#EEF4FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Plus size={16} color="#1764E8" strokeWidth={2.4} />
+            </div>
+            <div style={{ flex: 1, justifyContent: 'center' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>{isOwner ? 'Post Job' : 'Vacancies'}</div>
+              <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>{isOwner ? 'New Vacancy' : 'Live Openings'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. About Company & Operations Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E7EBF2',
+          padding: '16px',
+          margin: '0 16px 12px 16px',
+          boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              backgroundColor: '#EEF4FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Building2 size={16} color="#1764E8" strokeWidth={2.2} />
+            </div>
+            <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              About {displayCompanyName}
+            </h3>
+          </div>
+
+          <p style={{
+            fontSize: '13px',
+            color: '#66789B',
+            lineHeight: '20px',
+            margin: 0,
+            whiteSpace: 'pre-line'
+          }}>
+            {company.description || `${displayCompanyName} is a leading industrial organization operating in manufacturing and engineering operations.`}
+          </p>
+
+          {Array.isArray(company.specializations) && company.specializations.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+              {company.specializations.map((spec: string, idx: number) => (
+                <span
+                  key={idx}
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#475569',
+                    fontWeight: 600
+                  }}
+                >
+                  {spec}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Company Details & Verification Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E7EBF2',
+          padding: '16px',
+          margin: '0 16px 12px 16px',
+          boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+        }}>
+          {/* Card Header with Title and Verified Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              Company Details & Verification
+            </h3>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              backgroundColor: '#EAF8F5',
+              padding: '3px 8px',
+              borderRadius: '6px'
+            }}>
+              <ShieldCheck size={13} color="#19A98F" strokeWidth={2.4} />
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
+            </div>
+          </div>
+
+          <div style={{ height: '1px', backgroundColor: '#E2E7EF', margin: '12px 0' }} />
+
+          {/* Details 2-Column Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Row 1: Location & Legal Type */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <MapPin size={14} color="#1764E8" strokeWidth={2} />
                   </div>
-                </>
-              )}
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  {formattedLocation || 'Waluj MIDC, Chhatrapati Sambhajinagar'}
+                </div>
+              </div>
+
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Building2 size={14} color="#625CEB" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  {company.company_type || 'Private Limited'}
+                </div>
+              </div>
             </div>
 
-            {/* Active Job Openings Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="company-card-surface" style={{ padding: '18px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: jobs.length > 0 ? '12px' : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Briefcase size={20} color="#2563EB" />
-                    <h2 className="company-section-title" style={{ margin: 0 }}>
-                      Active Job Openings
-                    </h2>
-                    <span style={{
-                      padding: '2px 8px',
-                      backgroundColor: '#EFF6FF',
-                      color: '#2563EB',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      border: '1px solid #BFDBFE'
-                    }}>
-                      {filteredJobs.length}
-                    </span>
-                  </div>
+            <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
 
-                  {isOwner && (
-                    <button
-                      onClick={() => navigate('/post-job')}
-                      className="company-btn-action company-btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '12.5px' }}
-                    >
-                      + Post New Job
-                    </button>
+            {/* Row 2: Company Size & Founded Year */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Users size={14} color="#21A99B" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  {company.company_size || '200–500 employees'}
+                </div>
+              </div>
+
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Calendar size={14} color="#D97706" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  {company.founded_year || '2005'}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+
+            {/* Row 3: GST Number & Email */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FileText size={14} color="#1764E8" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {company.gst_number || company.gstin || '27AABCU9603R1ZN'}
+                </div>
+              </div>
+
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Mail size={14} color="#1764E8" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>HR / Contact Email</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                  <a
+                    href={`mailto:${company.email || 'hr@jobmarket.in'}`}
+                    style={{
+                      color: '#1764E8',
+                      textDecoration: 'none',
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '100%'
+                    }}
+                    title={company.email || 'hr@jobmarket.in'}
+                  >
+                    {company.email || 'hr@jobmarket.in'}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+
+            {/* Row 4: Phone & Website */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Phone size={14} color="#21A99B" strokeWidth={2} />
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {company.phone ? (
+                    <a href={`tel:${company.phone}`} style={{ color: '#102A5C', textDecoration: 'none' }}>
+                      {company.phone}
+                    </a>
+                  ) : (
+                    'Provided upon application'
                   )}
                 </div>
+              </div>
 
-                {jobs.length > 0 && (
-                  <div style={{ position: 'relative' }}>
-                    <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search openings by title, trade, or location..."
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px 9px 36px',
-                        border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '13px',
-                        outline: 'none',
-                        backgroundColor: '#FFFFFF',
-                        color: '#0F172A'
-                      }}
-                    />
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Globe size={14} color="#1764E8" strokeWidth={2} />
                   </div>
-                )}
+                  <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1764E8', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                  {company.website ? (
+                    <a
+                      href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#1764E8',
+                        textDecoration: 'none',
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '100%'
+                      }}
+                      title={company.website}
+                    >
+                      {company.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  ) : (
+                    <span style={{ color: '#657796' }}>jobmarket.in</span>
+                  )}
+                </div>
               </div>
-
-              {loadingJobs ? (
-                <div className="company-card-surface" style={{ padding: '32px', textAlign: 'center', color: '#64748B' }}>
-                  Loading active job postings...
-                </div>
-              ) : filteredJobs.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {filteredJobs.map((jobItem) => (
-                    <JobCard key={jobItem.id} job={jobItem} />
-                  ))}
-                </div>
-              ) : (
-                <div className="company-card-surface" style={{ padding: '40px 24px', textAlign: 'center' }}>
-                  <Briefcase size={36} color="#94A3B8" style={{ margin: '0 auto 12px' }} />
-                  <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', marginBottom: '6px' }}>
-                    No Active Job Postings
-                  </h3>
-                  <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-                    {searchQuery ? 'No openings match your search filter.' : 'This company currently has no active openings listed on JobMarket.'}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
+        </div>
 
-          {/* Right Column: Company Details Sidebar */}
-          <div className="company-card-surface">
-            <h2 className="company-section-title">
-              <FileText size={18} color="#2563EB" />
-              Company Details
-            </h2>
+        {/* 5. Active Job Openings Section (Exact Mobile App UI) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E7EBF2',
+          padding: '16px',
+          margin: '0 16px 12px 16px',
+          boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
+        }}>
+          {/* Header Row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                Active Job Openings
+              </h3>
+              <div style={{
+                backgroundColor: '#EFF6FF',
+                color: '#1764E8',
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '1px 6px',
+                borderRadius: '8px'
+              }}>
+                {filteredJobs.length}
+              </div>
+            </div>
 
+            <button
+              onClick={() => navigate('/jobs')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#1764E8',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                cursor: 'pointer',
+                padding: 0
+              }}
+            >
+              <span>View all</span>
+              <ChevronRight size={14} strokeWidth={2.4} />
+            </button>
+          </div>
+
+          {/* Search Box */}
+          <div style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #DCE3EE',
+            borderRadius: '12px',
+            padding: '0 10px',
+            height: '38px',
+            gap: '8px',
+            marginBottom: '8px'
+          }}>
+            <Search size={12} color="#91A0BA" strokeWidth={2} style={{ flexShrink: 0 }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vacancies by title, trade, location..."
+              style={{
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#102A5C',
+                width: '100%',
+                padding: 0
+              }}
+            />
+          </div>
+
+          {/* Jobs List */}
+          {loadingJobs ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#657796', fontSize: '12px' }}>
+              Loading active job vacancies...
+            </div>
+          ) : filteredJobs.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {company.website && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">Website</span>
-                  <a
-                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="company-kv-value"
-                    style={{ color: '#2563EB', textDecoration: 'none' }}
-                  >
-                    {company.website.replace(/^https?:\/\//, '')}
-                  </a>
+              {filteredJobs.map((jobItem, idx) => (
+                <div
+                  key={jobItem.id || idx}
+                  onClick={() => navigate(`/job/${jobItem.id}`)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 0',
+                    borderTop: idx > 0 ? '1px solid #DFE5EE' : 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: idx % 2 === 0 ? '#F2F1FF' : '#ECFAF7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <Building2 size={16} color={idx % 2 === 0 ? '#625CEB' : '#21A99B'} strokeWidth={2} />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <h4 style={{
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        color: '#102A5C',
+                        margin: '0 0 1px 0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {jobItem.title}
+                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <MapPin size={10} color="#66789B" />
+                        <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                          {jobItem.location || 'Waluj MIDC, Maharashtra'} • {jobItem.jobType || jobItem.job_type || 'Full Time'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, paddingLeft: '8px' }}>
+                    <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                      {idx === 0 ? '2d ago' : '5d ago'}
+                    </span>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </div>
                 </div>
-              )}
-
-              {company.phone && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">Phone</span>
-                  <a href={`tel:${company.phone}`} className="company-kv-value" style={{ color: '#2563EB', textDecoration: 'none' }}>
-                    {company.phone}
-                  </a>
-                </div>
-              )}
-
-              {company.email && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">Email</span>
-                  <a href={`mailto:${company.email}`} className="company-kv-value" style={{ color: '#2563EB', textDecoration: 'none' }}>
-                    {company.email}
-                  </a>
-                </div>
-              )}
-
-              <div className="company-kv-row">
-                <span className="company-kv-key">Industry</span>
-                <span className="company-kv-value">{company.industry || 'Industrial Manufacturing'}</span>
-              </div>
-
-              <div className="company-kv-row">
-                <span className="company-kv-key">Company Type</span>
-                <span className="company-kv-value">{company.company_type || 'Private Limited'}</span>
-              </div>
-
-              <div className="company-kv-row">
-                <span className="company-kv-key">Company Size</span>
-                <span className="company-kv-value">{company.company_size || '100-500 employees'}</span>
-              </div>
-
-              <div className="company-kv-row">
-                <span className="company-kv-key">Founded Year</span>
-                <span className="company-kv-value">{company.founded_year || '2010'}</span>
-              </div>
-
-              {company.midc_zone && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">MIDC Zone</span>
-                  <span className="company-kv-value">{company.midc_zone}</span>
-                </div>
-              )}
-
-              {company.gst_number && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">GST Registration</span>
-                  <span className="company-kv-value" style={{ fontFamily: 'monospace' }}>{company.gst_number}</span>
-                </div>
-              )}
-
-              {formattedLocation && (
-                <div className="company-kv-row">
-                  <span className="company-kv-key">Headquarters</span>
-                  <span className="company-kv-value">{formattedLocation}</span>
-                </div>
-              )}
+              ))}
             </div>
-          </div>
+          ) : (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#657796', fontSize: '12px' }}>
+              No vacancies match your search filter.
+            </div>
+          )}
         </div>
       </div>
 
@@ -761,90 +1009,6 @@ export const CompanyProfilePage: React.FC = () => {
           company={company}
           onSaveSuccess={(updated) => setCompany(updated)}
         />
-      )}
-
-      {/* About Company Full Text Popup Modal */}
-      {showAboutModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.65)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 25000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}>
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #CBD5E1',
-            maxWidth: '600px',
-            width: '100%',
-            maxHeight: '85vh',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden'
-          }}>
-            {/* Modal Header */}
-            <div style={{
-              padding: '14px 18px',
-              backgroundColor: '#2563EB',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '800' }}>
-                <Building2 size={18} />
-                <span>About {displayCompanyName}</span>
-              </div>
-              <button
-                onClick={() => setShowAboutModal(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '20px', overflowY: 'auto', flex: 1, fontSize: '14px', lineHeight: '1.7', color: '#334155', whiteSpace: 'pre-line' }}>
-              {company.description || `${displayCompanyName} is a premier organization operating in the ${company.industry || 'industrial'} sector located in ${formattedLocation || 'Chhatrapati Sambhajinagar'}, specializing in high-quality manufacturing operations, engineering standards, and career growth.`}
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{ padding: '12px 18px', borderTop: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowAboutModal(false)}
-                style={{
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  padding: '8px 18px',
-                  borderRadius: '6px',
-                  fontWeight: '700',
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -5,14 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Platform,
   Switch,
-  StatusBar,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
 import {
-  ArrowLeft,
   KeyRound,
   Laptop,
   Smartphone,
@@ -25,11 +22,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
+import { Header } from '../../components/common/Header';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { KeyboardAwareScrollView } from '../../components/common/KeyboardAwareScrollView';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { SecurityPasswordModals } from './components/SecurityPasswordModals';
 
 interface Props {
@@ -115,7 +114,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       cancelText: 'Cancel',
       type: 'primary',
       iconBgColor: '#EFF6FF',
-      icon: <KeyRound size={26} color={COLORS.primary} />,
+      icon: <KeyRound size={24} color="#1764E8" />,
       onConfirm: async () => {
         setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
         setOtpError(null);
@@ -175,7 +174,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       cancelText: 'Cancel',
       type: 'danger',
       iconBgColor: '#FEE2E2',
-      icon: <LogOut size={26} color="#DC2626" />,
+      icon: <LogOut size={24} color="#DC2626" />,
       onConfirm: async () => {
         setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
         try {
@@ -199,7 +198,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       cancelText: 'Cancel',
       type: 'danger',
       iconBgColor: '#FEE2E2',
-      icon: <LogOut size={26} color="#DC2626" />,
+      icon: <LogOut size={24} color="#DC2626" />,
       onConfirm: async () => {
         setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
         setIsTerminatingOtherSessions(true);
@@ -248,63 +247,62 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+      setPasswordError('New password must be at least 6 characters.');
       return;
     }
 
     setPasswordLoading(true);
     try {
-      const res: any = await authApi.changePassword({ currentPassword, newPassword });
-      setPasswordLoading(false);
+      const res = await authApi.changePassword({
+        currentPassword,
+        newPassword,
+      });
+
       if (res.success) {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setSuccessModalConfig({
           visible: true,
-          title: 'Password Updated Successfully !',
-          message: 'Your account password has been updated securely. Please log in with your new password.',
-          buttonText: 'Log In',
-          onButtonPress: async () => {
-            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
-            await logout();
-          },
+          title: 'Password Updated',
+          message: 'Your account password has been changed successfully. Please keep your new credentials secure.',
+          buttonText: 'Done',
+          onButtonPress: () => setSuccessModalConfig((prev) => ({ ...prev, visible: false })),
         });
       } else {
-        setPasswordError(res.message || res.error || 'Failed to update password');
+        setPasswordError(res.message || 'Failed to update password. Please check your current password.');
       }
     } catch (err: any) {
+      setPasswordError(err.message || 'Network error occurred while updating password.');
+    } finally {
       setPasswordLoading(false);
-      setPasswordError(err.message || 'Error updating password');
     }
   };
 
   const handleResetWithOtp = async () => {
     setOtpError(null);
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setOtpError('Please enter the full 6-digit verification code.');
-      return;
-    }
-    if (!otpNewPass || !otpConfirmPass) {
-      setOtpError('Please enter and confirm your new password.');
-      return;
-    }
-    if (otpNewPass.length < 6) {
-      setOtpError('New password must be at least 6 characters.');
+
+    if (!otpCode || !otpNewPass || !otpConfirmPass) {
+      setOtpError('Please fill in all OTP and password fields.');
       return;
     }
     if (otpNewPass !== otpConfirmPass) {
-      setOtpError('Passwords do not match.');
+      setOtpError('New password and confirm password do not match.');
+      return;
+    }
+    if (otpNewPass.length < 6) {
+      setOtpError('Password must be at least 6 characters.');
       return;
     }
 
     setOtpLoading(true);
     try {
-      const res: any = await authApi.resetPassword({
-        email: resetEmail.trim(),
+      const res = await authApi.resetPassword({
+        email: resetEmail,
         otpCode: otpCode.trim(),
         newPassword: otpNewPass,
       });
+
       if (res.success) {
         setIsOtpModalOpen(false);
         setOtpCode('');
@@ -312,72 +310,58 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         setOtpConfirmPass('');
         setSuccessModalConfig({
           visible: true,
-          title: 'Password Reset Successfully !',
-          message: 'Your account password has been reset. Please log in with your new password.',
-          buttonText: 'Log In',
-          onButtonPress: async () => {
-            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
-            await logout();
-          },
+          title: 'Password Reset Successful',
+          message: 'Your password has been reset with OTP. You can now use your new credentials.',
+          buttonText: 'Done',
+          onButtonPress: () => setSuccessModalConfig((prev) => ({ ...prev, visible: false })),
         });
       } else {
-        setOtpError(res.message || 'Failed to reset password.');
+        setOtpError(res.message || 'Invalid verification code or expired session.');
       }
     } catch (err: any) {
-      setOtpError(err.message || 'Failed to reset password.');
+      setOtpError(err.message || 'Failed to verify OTP code.');
     } finally {
       setOtpLoading(false);
     }
   };
 
-  const topInset = Math.max(
-    insets.top || 0,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
-  );
-  const bottomInset = Math.max(insets.bottom || 0, 16);
-
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
-      {/* Top Header matching Reference Image */}
-      <View style={[styles.headerBanner, { paddingTop: topInset + 6 }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={styles.circleBackBtn}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={20} color="#0F172A" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Security & Sessions</Text>
-      </View>
-      <View style={styles.headerDivider} />
+      <Header
+        title="Security & Sessions"
+        showBack={true}
+        onBack={() => navigation.goBack()}
+        hideRightActions={true}
+        hideBell={true}
+        hideMenu={true}
+      />
 
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: bottomInset + 24 },
+          { paddingBottom: insets.bottom + 28 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* CARD 1: RESET PASSWORD (MATCHING REFERENCE LAYOUT) */}
+        {/* CARD 1: RESET PASSWORD */}
         <View style={styles.sectionCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderCol}>
               <Text style={styles.cardTitle}>Reset Password</Text>
               <Text style={styles.cardSubtitle}>
-                Update your credentials for secure ledger access.
+                Update your account password for secure access.
               </Text>
             </View>
             <View style={styles.cardHeaderIconBox}>
-              <KeyRound size={20} color="#64748B" />
+              <KeyRound size={18} color="#1764E8" />
             </View>
           </View>
 
           {passwordError ? (
-            <ErrorBanner message={passwordError} style={{ marginBottom: 14 }} />
+            <ErrorBanner message={passwordError} style={{ marginBottom: 12 }} />
           ) : null}
 
           {/* Current Password Field */}
@@ -401,9 +385,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 activeOpacity={0.7}
               >
                 {showCurrentPass ? (
-                  <EyeOff size={18} color="#64748B" />
+                  <EyeOff size={16} color="#64748B" />
                 ) : (
-                  <Eye size={18} color="#64748B" />
+                  <Eye size={16} color="#64748B" />
                 )}
               </TouchableOpacity>
             </View>
@@ -430,9 +414,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 activeOpacity={0.7}
               >
                 {showNewPass ? (
-                  <EyeOff size={18} color="#64748B" />
+                  <EyeOff size={16} color="#64748B" />
                 ) : (
-                  <Eye size={18} color="#64748B" />
+                  <Eye size={16} color="#64748B" />
                 )}
               </TouchableOpacity>
             </View>
@@ -459,134 +443,146 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 activeOpacity={0.7}
               >
                 {showConfirmPass ? (
-                  <EyeOff size={18} color="#64748B" />
+                  <EyeOff size={16} color="#64748B" />
                 ) : (
-                  <Eye size={18} color="#64748B" />
+                  <Eye size={16} color="#64748B" />
                 )}
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Save New Password Button */}
           <TouchableOpacity
             style={styles.primarySaveBtn}
+            activeOpacity={0.8}
             onPress={handleChangePassword}
             disabled={passwordLoading}
-            activeOpacity={0.85}
           >
             {passwordLoading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.primarySaveBtnText}>Save New Password</Text>
+              <Text style={styles.primarySaveBtnText}>Update Password</Text>
             )}
           </TouchableOpacity>
 
-          {/* Soft Divider */}
           <View style={styles.cardInnerDivider} />
 
-          {/* Forgot Password Section */}
+          {/* Forgot Password Alternative Option */}
           <View style={styles.forgotSection}>
-            <Text style={styles.forgotTitle}>Forgot your password?</Text>
+            <Text style={styles.forgotTitle}>Trouble remembering current password?</Text>
             <Text style={styles.forgotSubtitle}>
-              We'll email a secure one-time reset code to your registered email.
+              Request a 6-digit OTP verification code sent directly to your email address.
             </Text>
 
             <TouchableOpacity
               style={styles.outlineResetBtn}
+              activeOpacity={0.8}
               onPress={handleOpenResetConfirm}
-              activeOpacity={0.75}
             >
-              <Send size={15} color="#0F172A" />
-              <Text style={styles.outlineResetBtnText}>Forgot password</Text>
+              <Send size={14} color="#102A5C" />
+              <Text style={styles.outlineResetBtnText}>Reset via Email OTP</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* CARD 2: ACTIVE SESSIONS (MATCHING REFERENCE LAYOUT) */}
+        {/* CARD 2: TWO FACTOR AUTHENTICATION */}
         <View style={styles.sectionCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderCol}>
-              <Text style={styles.cardTitle}>Active Sessions</Text>
+              <Text style={styles.cardTitle}>Two-Factor Authentication (2FA)</Text>
               <Text style={styles.cardSubtitle}>
-                Devices currently signed in to your account.
+                Add an extra layer of security requiring an OTP verification code on sign in.
               </Text>
             </View>
             <View style={styles.cardHeaderIconBox}>
-              <Laptop size={20} color="#64748B" />
+              <ShieldCheck size={18} color="#1764E8" />
             </View>
           </View>
 
-          {/* Sessions List */}
+          <View style={styles.twoFactorRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.twoFactorStatusText}>
+                {twoFactorEnabled ? '2FA Protection Enabled' : '2FA Protection Disabled'}
+              </Text>
+              <Text style={styles.twoFactorStatusSub}>
+                {twoFactorEnabled
+                  ? 'Verification codes are sent to your registered email or phone upon login.'
+                  : 'Enable this setting to secure your account against unauthorized access.'}
+              </Text>
+            </View>
+            <Switch
+              value={twoFactorEnabled}
+              onValueChange={handleToggle2FA}
+              trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+              thumbColor={twoFactorEnabled ? '#1764E8' : '#F8FAFC'}
+            />
+          </View>
+        </View>
+
+        {/* CARD 3: ACTIVE DEVICE SESSIONS */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <Text style={styles.cardTitle}>Active Device Sessions</Text>
+              <Text style={styles.cardSubtitle}>
+                Review and manage devices logged into your account.
+              </Text>
+            </View>
+            <View style={styles.cardHeaderIconBox}>
+              <Smartphone size={18} color="#1764E8" />
+            </View>
+          </View>
+
           {sessionsLoading ? (
             <View style={styles.sessionLoadingBox}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.sessionLoadingText}>Checking active devices...</Text>
+              <ActivityIndicator color="#1764E8" size="small" />
+              <Text style={styles.sessionLoadingText}>Checking live device connections...</Text>
             </View>
           ) : sessions.length === 0 ? (
             <View style={styles.sessionPillItem}>
-              <View style={styles.sessionIconWrapper}>
-                <Smartphone size={18} color="#475569" />
+              <View style={[styles.sessionIconWrapper, { backgroundColor: '#EEF4FF' }]}>
+                <Smartphone size={14} color="#1764E8" />
               </View>
               <View style={styles.sessionInfoCol}>
-                <Text style={styles.sessionDeviceName}>Current Device</Text>
-                <Text style={styles.sessionMetaText}>Active Now</Text>
+                <Text style={styles.sessionDeviceName}>Current Mobile Device</Text>
+                <Text style={styles.sessionMetaText}>Active Session • Verified</Text>
               </View>
               <View style={styles.thisDeviceBadge}>
-                <Text style={styles.thisDeviceBadgeText}>This Device</Text>
+                <Text style={styles.thisDeviceBadgeText}>Current</Text>
               </View>
             </View>
           ) : (
             <View style={styles.sessionsListContainer}>
-              {sessions.map((sess, idx) => {
-                const isCurrent = Boolean(sess.isCurrent || sess.is_current);
-                const dType = (sess?.deviceType || sess?.device_type || '').toLowerCase();
-                const osStr = (sess?.os || '').toLowerCase();
-                const isMobile =
-                  dType === 'mobile' ||
-                  dType === 'tablet' ||
-                  osStr.includes('android') ||
-                  osStr.includes('ios');
-
-                const DeviceIcon = isMobile ? Smartphone : Laptop;
-                const rawName =
-                  sess.deviceName ||
-                  sess.device_name ||
-                  (isMobile ? 'Mobile App' : 'Desktop Browser');
-                const cleanName =
-                  rawName.replace(/\s*\([^)]*JobMarket[^)]*\)/gi, '').trim() || rawName;
-
-                const activeTimeStr = isCurrent
-                  ? `Active Now · IP: ${sess.ipAddress || sess.ip || '198.51.100.24'}`
-                  : sess.lastUsedAt
-                  ? `Last active ${new Date(sess.lastUsedAt).toLocaleDateString('en-IN', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}`
-                  : 'Last active recently';
+              {sessions.map((session, index) => {
+                const isCurrent = session.isCurrent || session.is_current;
+                const isDesktop = session.deviceType === 'desktop' || session.device_type === 'desktop' || (session.browser && !session.os);
+                const IconComponent = isDesktop ? Laptop : Smartphone;
+                const deviceLabel = session.deviceName || session.device_name || session.browser || (isDesktop ? 'Desktop Web' : 'Mobile App');
+                const locationLabel = session.location || session.ipAddress || session.ip || 'Active Session';
 
                 return (
-                  <View key={sess.id || idx} style={styles.sessionPillItem}>
-                    <View style={styles.sessionIconWrapper}>
-                      <DeviceIcon size={18} color="#475569" strokeWidth={1.8} />
+                  <View key={session.id || index} style={styles.sessionPillItem}>
+                    <View style={[styles.sessionIconWrapper, { backgroundColor: isCurrent ? '#EEF4FF' : '#F1F5F9' }]}>
+                      <IconComponent size={14} color={isCurrent ? '#1764E8' : '#64748B'} />
                     </View>
                     <View style={styles.sessionInfoCol}>
-                      <Text style={styles.sessionDeviceName}>
-                        {isCurrent ? `Current Device (${cleanName})` : cleanName}
+                      <Text style={styles.sessionDeviceName} numberOfLines={1}>
+                        {deviceLabel}
                       </Text>
-                      <Text style={styles.sessionMetaText}>{activeTimeStr}</Text>
+                      <Text style={styles.sessionMetaText} numberOfLines={1}>
+                        {locationLabel}
+                      </Text>
                     </View>
-
                     {isCurrent ? (
                       <View style={styles.thisDeviceBadge}>
-                        <Text style={styles.thisDeviceBadgeText}>This Device</Text>
+                        <Text style={styles.thisDeviceBadgeText}>Current</Text>
                       </View>
                     ) : (
                       <TouchableOpacity
-                        onPress={() => handleRevokeSession(sess.id, cleanName)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={styles.revokeSessionBtn}
                         activeOpacity={0.7}
+                        onPress={() => handleRevokeSession(session.id, deviceLabel)}
                       >
-                        <LogOut size={16} color="#94A3B8" />
+                        <Text style={styles.revokeSessionBtnText}>Revoke</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -595,62 +591,45 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           )}
 
-          {/* Log Out Other Devices Action */}
-          <TouchableOpacity
-            style={styles.logoutOthersBtnRow}
-            onPress={handleTerminateOtherSessions}
-            disabled={isTerminatingOtherSessions}
-            activeOpacity={0.7}
-          >
-            <LogOut size={15} color="#EF4444" strokeWidth={2} />
-            <Text style={styles.logoutOthersBtnText}>
-              {isTerminatingOtherSessions
-                ? 'Logging out other devices...'
-                : 'Log out of all other devices'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* CARD 3: TWO-FACTOR AUTHENTICATION */}
-        <View style={styles.sectionCard}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.cardHeaderCol}>
-              <Text style={styles.cardTitle}>Two-Factor Authentication</Text>
-              <Text style={styles.cardSubtitle}>
-                {twoFactorEnabled
-                  ? 'Active: Verification code sent to email on new device login.'
-                  : 'Require an email verification code on new device login attempts.'}
-              </Text>
-            </View>
-            <Switch
-              value={twoFactorEnabled}
-              onValueChange={handleToggle2FA}
-              trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-              thumbColor={twoFactorEnabled ? COLORS.primary : '#94A3B8'}
-            />
-          </View>
+          {sessions.filter((s) => !s.isCurrent && !s.is_current).length > 0 ? (
+            <TouchableOpacity
+              style={styles.logoutOthersBtnRow}
+              activeOpacity={0.7}
+              onPress={handleTerminateOtherSessions}
+              disabled={isTerminatingOtherSessions}
+            >
+              {isTerminatingOtherSessions ? (
+                <ActivityIndicator size="small" color="#DC2626" />
+              ) : (
+                <>
+                  <LogOut size={13} color="#DC2626" />
+                  <Text style={styles.logoutOthersBtnText}>Log Out from All Other Devices</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : null}
         </View>
       </KeyboardAwareScrollView>
 
-      {/* OTP Password Reset Modal */}
+      {/* Password Modals Component */}
       <SecurityPasswordModals
         isChangePassModalOpen={false}
         setIsChangePassModalOpen={() => {}}
-        currentPassword=""
-        setCurrentPassword={() => {}}
-        newPassword=""
-        setNewPassword={() => {}}
-        confirmPassword=""
-        setConfirmPassword={() => {}}
-        showCurrentPass={false}
-        setShowCurrentPass={() => {}}
-        showNewPass={false}
-        setShowNewPass={() => {}}
-        showConfirmPass={false}
-        setShowConfirmPass={() => {}}
-        passwordLoading={false}
-        passwordError={null}
-        onChangePassword={() => {}}
+        currentPassword={currentPassword}
+        setCurrentPassword={setCurrentPassword}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        showCurrentPass={showCurrentPass}
+        setShowCurrentPass={setShowCurrentPass}
+        showNewPass={showNewPass}
+        setShowNewPass={setShowNewPass}
+        showConfirmPass={showConfirmPass}
+        setShowConfirmPass={setShowConfirmPass}
+        passwordLoading={passwordLoading}
+        passwordError={passwordError}
+        onChangePassword={handleChangePassword}
         isOtpModalOpen={isOtpModalOpen}
         setIsOtpModalOpen={setIsOtpModalOpen}
         resetEmail={resetEmail}
@@ -665,7 +644,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         onResetWithOtp={handleResetWithOtp}
       />
 
-      {/* Confirmation Modal */}
+      {/* Reusable Confirmation Modal */}
       <ConfirmationModal
         visible={confirmModalConfig.visible}
         title={confirmModalConfig.title}
@@ -676,24 +655,18 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         type={confirmModalConfig.type}
         icon={confirmModalConfig.icon}
         iconBgColor={confirmModalConfig.iconBgColor}
-        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
         onConfirm={confirmModalConfig.onConfirm}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
       />
 
-      {/* Success Modal */}
+      {/* Reusable Success Modal */}
       <SuccessModal
         visible={successModalConfig.visible}
+        onClose={() => setSuccessModalConfig((prev) => ({ ...prev, visible: false }))}
         title={successModalConfig.title}
         message={successModalConfig.message}
-        buttonText={successModalConfig.buttonText || 'Done'}
-        onButtonPress={successModalConfig.onButtonPress}
-        onClose={() => {
-          if (successModalConfig.onButtonPress) {
-            successModalConfig.onButtonPress();
-          } else {
-            setSuccessModalConfig({ visible: false, title: '' });
-          }
-        }}
+        buttonText={successModalConfig.buttonText}
+        onButtonPress={successModalConfig.onButtonPress || (() => setSuccessModalConfig((prev) => ({ ...prev, visible: false })))}
       />
     </View>
   );
@@ -702,75 +675,46 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  headerBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    gap: 12,
-  },
-  circleBackBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#0F172A',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    letterSpacing: -0.3,
-  },
-  headerDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F7F9FC',
   },
   scrollContent: {
     paddingHorizontal: 14,
     paddingTop: 12,
-    gap: 12,
+    gap: 15,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: '#E7EBF2',
+    padding: 14,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardHeaderCol: {
     flex: 1,
     paddingRight: 8,
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    letterSpacing: -0.2,
-    marginBottom: 3,
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#102A5C',
+    letterSpacing: -0.1,
+    marginBottom: 2,
   },
   cardSubtitle: {
-    fontSize: 11.5,
-    color: '#64748B',
+    fontSize: 11,
+    color: '#657796',
+    fontWeight: '500',
     lineHeight: 15,
   },
   cardHeaderIconBox: {
@@ -780,63 +724,63 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   inputLabel: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#334155',
+    color: '#657796',
     marginBottom: 5,
   },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F6F2',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#EAE7E0',
-    borderRadius: 12,
-    height: 42,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    height: 40,
     paddingHorizontal: 12,
   },
   inputField: {
     flex: 1,
     fontSize: 12.5,
-    color: '#0F172A',
+    color: '#102A5C',
     fontWeight: '500',
     paddingVertical: 0,
   },
   primarySaveBtn: {
-    backgroundColor: COLORS.primary,
-    height: 42,
-    borderRadius: 21,
+    backgroundColor: '#1764E8',
+    height: 40,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
-    marginBottom: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    marginTop: 4,
+    marginBottom: 2,
   },
   primarySaveBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
   },
   cardInnerDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
+    backgroundColor: '#E7EBF2',
+    marginTop: 14,
+    marginBottom: 12,
   },
   forgotSection: {
-    gap: 3,
+    marginTop: 4,
+    gap: 2,
   },
   forgotTitle: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#102A5C',
+    letterSpacing: -0.1,
+    marginBottom: 2,
   },
   forgotSubtitle: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#657796',
+    fontWeight: '500',
     lineHeight: 15,
     marginBottom: 8,
   },
@@ -844,47 +788,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 40,
-    borderRadius: 20,
+    height: 38,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
     gap: 6,
   },
   outlineResetBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#102A5C',
+  },
+  twoFactorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    gap: 10,
+  },
+  twoFactorStatusText: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#0F172A',
+    color: '#102A5C',
+    marginBottom: 2,
+  },
+  twoFactorStatusSub: {
+    fontSize: 10.5,
+    color: '#657796',
+    lineHeight: 14,
   },
   sessionLoadingBox: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   sessionLoadingText: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#657796',
   },
   sessionsListContainer: {
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   sessionPillItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F6F2',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#EAE7E0',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
   },
   sessionIconWrapper: {
     width: 28,
     height: 28,
-    borderRadius: 7,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -892,25 +854,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sessionDeviceName: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#102A5C',
     marginBottom: 1,
   },
   sessionMetaText: {
     fontSize: 10.5,
-    color: '#64748B',
+    color: '#657796',
   },
   thisDeviceBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    backgroundColor: '#EEF4FF',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   thisDeviceBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#2E7D32',
+    color: '#1764E8',
+  },
+  revokeSessionBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+  },
+  revokeSessionBtnText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#DC2626',
   },
   logoutOthersBtnRow: {
     flexDirection: 'row',
@@ -921,8 +896,8 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   logoutOthersBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
-    color: '#EF4444',
+    color: '#DC2626',
   },
 });

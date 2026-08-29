@@ -542,7 +542,7 @@ export const NavbarNotificationBell: React.FC = () => {
 
   return (
     <div className="notification-bell-container" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      {/* Circular Bell Button for 1:1 Parity with Profile Avatar */}
+      {/* Transparent Bell Button (Exact Mobile App Match - No Background) */}
       <button
         type="button"
         className="notification-bell-btn"
@@ -553,20 +553,19 @@ export const NavbarNotificationBell: React.FC = () => {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          background: isOpen ? '#eff6ff' : '#f8fafc',
-          border: '1px solid #e2e8f0',
+          width: '32px',
+          height: '32px',
+          background: 'transparent',
+          border: 'none',
           padding: 0,
-          color: isOpen ? '#2563eb' : '#475569',
+          color: '#334155',
           cursor: 'pointer',
           outline: 'none',
           boxShadow: 'none',
-          transition: 'all 0.2s ease'
+          transition: 'color 0.15s ease'
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
         </svg>
@@ -576,21 +575,21 @@ export const NavbarNotificationBell: React.FC = () => {
             className="notification-badge-count"
             style={{
               position: 'absolute',
-              top: '-3px',
-              right: '-3px',
-              minWidth: '18px',
-              height: '18px',
-              padding: '0 4px',
+              top: '-2px',
+              right: '-4px',
+              minWidth: '15px',
+              height: '15px',
+              padding: '0 3px',
               borderRadius: '999px',
               background: '#ef4444',
               color: '#ffffff',
-              fontSize: '10px',
+              fontSize: '8.5px',
               fontWeight: '800',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               lineHeight: 1,
-              boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.35)',
               boxSizing: 'border-box'
             }}
           >

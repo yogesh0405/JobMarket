@@ -1,3 +1,5 @@
+import { extractCandidateResume } from './fileUtils';
+
 export interface SectionCompletionStatus {
   totalScore: number;
   sections: {
@@ -67,7 +69,7 @@ export function calculateCandidateProfileCompletion(user: any): SectionCompletio
 
   // 6. Resume Document & Bio Summary (10%)
   const hasBio = !!(user?.bio || user?.about);
-  const hasResume = !!(user?.resume_url || user?.resumeUrl || user?.resume);
+  const hasResume = !!extractCandidateResume(user).url;
   let resumeScore = 0;
   const resumeMissing: string[] = [];
   if (hasBio) resumeScore += 5; else resumeMissing.push('About Bio Summary');

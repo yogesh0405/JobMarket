@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Image,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -70,6 +72,15 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
   const dockHeight = 58 + Math.max(insets.bottom, 10);
   const center = dockWidth / 2;
 
+  // Enforce white dark-content StatusBar across all candidate tabs
+  React.useEffect(() => {
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor('#FFFFFF', true);
+      StatusBar.setBarStyle('dark-content', true);
+      StatusBar.setTranslucent(false);
+    }
+  }, [state.index]);
+
   // Ultra-Smooth iOS-Style Concave Notch Curve
   const pathD = `
     M 0,0
@@ -119,7 +130,7 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                       end={{ x: 1, y: 1 }}
                       style={styles.fabCircleGradient}
                     >
-                      <Search size={22} color="#FFFFFF" fill="none" strokeWidth={2.4} />
+                      <Search size={18} color="#FFFFFF" fill="none" strokeWidth={2.2} />
                     </LinearGradient>
                     <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive, { marginTop: 4 }]}>Find Jobs</Text>
                   </TouchableOpacity>

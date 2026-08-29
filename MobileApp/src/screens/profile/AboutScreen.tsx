@@ -438,9 +438,8 @@ const styles = StyleSheet.create({
   },
   topNavTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     letterSpacing: -0.2,
   },
 
@@ -458,14 +457,14 @@ const styles = StyleSheet.create({
   /* Section Containers */
   sectionCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 14,
     shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
     gap: 8,
   },
@@ -476,18 +475,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   serifCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
   serifCardTitleInline: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
   cardSubtitleText: {
     fontSize: 12,
@@ -507,7 +504,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#DBEAFE',
   },
@@ -519,12 +516,11 @@ const styles = StyleSheet.create({
 
   /* Hero Items */
   heroTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    lineHeight: 22,
-    letterSpacing: -0.3,
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
   heroSubtitle: {
     fontSize: 12,

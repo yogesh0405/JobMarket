@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { View, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  LinkingOptions,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
 import {
@@ -47,6 +51,7 @@ const linking: LinkingOptions<any> = {
 function MainAppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { isLoading: isLoadingAuth } = useAuth();
+  const navigationRef = useNavigationContainerRef<any>();
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -57,12 +62,44 @@ function MainAppContent() {
     Inter_900Black,
   });
 
+  // Global Centralized Navigation Route Listener for Strict Status Bar Synchronization
+  const handleStateChange = () => {
+    try {
+      const currentRoute = navigationRef.getCurrentRoute();
+      const routeName = (currentRoute as any)?.name || '';
+
+      // Only specific detail / hero screens are allowed to have a blue status bar
+      const isBlueHeaderScreen =
+        routeName === 'CompanyProfile' ||
+        routeName === 'CandidateJobDetail' ||
+        routeName === 'JobDetail' ||
+        routeName === 'JobDetails' ||
+        routeName === 'CompanyDetails';
+
+      if (Platform.OS === 'android') {
+        if (isBlueHeaderScreen) {
+          RNStatusBar.setBackgroundColor('#0A58E2', true);
+          RNStatusBar.setBarStyle('light-content', true);
+          RNStatusBar.setTranslucent(true);
+        } else {
+          RNStatusBar.setBackgroundColor('#FFFFFF', true);
+          RNStatusBar.setBarStyle('dark-content', true);
+          RNStatusBar.setTranslucent(false);
+        }
+      }
+    } catch (_) {}
+  };
+
   // Keep splash visible while fonts + auth are loading
   const isReady = fontsLoaded && !isLoadingAuth;
 
   return (
     <View style={{ flex: 1 }}>
-      <NavigationContainer linking={linking}>
+      <NavigationContainer
+        ref={navigationRef}
+        linking={linking}
+        onStateChange={handleStateChange}
+      >
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>

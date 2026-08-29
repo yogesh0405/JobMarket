@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ExtendedCandidate, safeString } from './CandidatesUtils';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
-import { COLORS, RADIUS } from '../../../constants/theme';
+import { RADIUS } from '../../../constants/theme';
 
 interface CandidateCardItemProps {
   item: ExtendedCandidate;
@@ -29,8 +29,8 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
         <CompanyLogoAvatar
           logoUrl={photoUrl}
           companyName={item.name}
-          size={58}
-          borderRadius={29}
+          size={48}
+          borderRadius={24}
         />
       </View>
 
@@ -73,7 +73,7 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
 
       {/* Primary CTA Contact Button Pinned at Bottom */}
       <TouchableOpacity
-        activeOpacity={0.8}
+        activeOpacity={0.7}
         onPress={() => onSelectCandidate(item)}
         style={styles.gridContactButton}
       >
@@ -86,13 +86,18 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
 const styles = StyleSheet.create({
   candidateGridCard: {
     width: '48.5%',
-    height: 200,
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 10,
     alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   avatarCenterBox: {
     alignItems: 'center',
@@ -106,23 +111,23 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   gridCandidateName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#102A5C',
     textAlign: 'center',
     width: '100%',
   },
   gridCandidateTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 10.5,
+    fontWeight: '500',
+    color: '#1764E8',
     marginTop: 1,
     textAlign: 'center',
     width: '100%',
   },
   gridCandidateCompany: {
-    fontSize: 10.5,
-    color: '#64748B',
+    fontSize: 10,
+    color: '#657796',
     marginTop: 1,
     textAlign: 'center',
     width: '100%',
@@ -138,42 +143,46 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   gridSkillTag: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 7,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     maxWidth: '75%',
   },
   gridSkillTagText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 9.5,
+    fontWeight: '500',
     color: '#475569',
   },
   gridSkillTagPlus: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
   },
   gridSkillTagPlusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#1764E8',
   },
   gridContactButton: {
     width: '100%',
-    height: 26,
-    backgroundColor: '#FFFFFF',
+    height: 28,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: 5,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 7,
+    marginTop: 6,
   },
   gridContactButtonText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.primary,
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#1764E8',
   },
 });
