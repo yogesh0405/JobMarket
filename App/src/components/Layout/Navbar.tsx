@@ -85,7 +85,11 @@ export const Navbar: React.FC = () => {
   const isCompaniesRoute = location.pathname === '/companies' || location.pathname.startsWith('/companies');
   const isJobsRoute = location.pathname === '/jobs' || (location.pathname.startsWith('/jobs') && location.pathname !== '/jobs/map');
   const isHomeRoute = location.pathname === '/';
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute;
+  const isInterviewsSection = location.pathname.startsWith('/dashboard') && (
+    location.search.includes('tab=interviews') ||
+    location.search.includes('tab=scheduled-interviews')
+  );
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute || isInterviewsSection;
 
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''} ${hideNavbarMobile ? 'hide-navbar-mobile' : ''}`}>

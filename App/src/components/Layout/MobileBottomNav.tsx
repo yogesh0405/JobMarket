@@ -19,8 +19,12 @@ export const MobileBottomNav: React.FC = () => {
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
+  const isInterviewsSection = location.pathname.startsWith('/dashboard') && (
+    location.search.includes('tab=interviews') ||
+    location.search.includes('tab=scheduled-interviews')
+  );
 
-  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail, company profile & promotional banners
+  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail, company profile, promotional banners, & interview section
   if (
     location.pathname.startsWith('/profile/') ||
     location.pathname.startsWith('/candidate/') ||
@@ -29,7 +33,8 @@ export const MobileBottomNav: React.FC = () => {
     location.pathname.startsWith('/edit-job') ||
     isJobDetailRoute ||
     isCompanyProfileRoute ||
-    isBannersSection
+    isBannersSection ||
+    isInterviewsSection
   ) {
     return null;
   }
