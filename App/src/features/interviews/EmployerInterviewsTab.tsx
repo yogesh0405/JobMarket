@@ -217,7 +217,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
       );
 
       if (res.ok) {
-        if (showToast) showToast(`Interview rescheduled to ${rescheduleDate} at ${rescheduleTime}. Candidate notified via email.`, 'success');
+        if (showToast) showToast(`Interview rescheduled to ${rescheduleDate} at ${rescheduleTime}. Candidate notified via email & in-app.`, 'success');
         setIsDetailModalOpen(false);
         fetchInterviews();
       } else {
@@ -261,80 +261,87 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
   }, [currentList, searchQuery]);
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 8px 40px 8px' }}>
-      {/* Top Metrics Strip */}
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 4px 40px 4px' }}>
+      {/* Metrics Summary Strip (100% Mobile App Matched) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '12px',
+        display: 'flex',
+        alignItems: 'center',
         backgroundColor: '#FFFFFF',
-        border: '1px solid #E2E8F0',
+        padding: '12px 16px',
+        borderBottom: '1px solid #E2E8F0',
         borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '16px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        marginBottom: '10px'
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A' }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
             {upcomingList.length + pastList.length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Total Scheduled
           </div>
         </div>
-        <div style={{ textAlign: 'center', borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#1764E8' }}>
+        <div style={{ width: '1px', height: '24px', backgroundColor: '#E2E8F0' }} />
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#1764E8', lineHeight: 1.2 }}>
             {upcomingList.length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Upcoming
           </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#16A34A' }}>
+        <div style={{ width: '1px', height: '24px', backgroundColor: '#E2E8F0' }} />
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#16A34A', lineHeight: 1.2 }}>
             {pastList.filter(p => p.interview_status === 'interviewed' || p.application_status === 'interviewed').length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Evaluated
           </div>
         </div>
       </div>
 
-      {/* Tab Switcher & Search Bar Row */}
+      {/* Tab Switcher & Search Row */}
       <div style={{
         display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        marginBottom: '16px'
+        flexDirection: 'column',
+        gap: '8px',
+        marginBottom: '12px'
       }}>
-        <div style={{ display: 'flex', gap: '8px', flex: '1 1 auto' }}>
+        <div style={{
+          display: 'flex',
+          backgroundColor: '#FFFFFF',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          border: '1px solid #E2E8F0',
+          gap: '8px'
+        }}>
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
             style={{
+              flex: 1,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 12px',
               borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
+              fontSize: '12.5px',
+              fontWeight: activeTab === 'upcoming' ? 700 : 600,
               cursor: 'pointer',
-              border: activeTab === 'upcoming' ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
-              backgroundColor: activeTab === 'upcoming' ? '#EFF6FF' : '#FFFFFF',
+              border: activeTab === 'upcoming' ? '1px solid #BFDBFE' : '1px solid transparent',
+              backgroundColor: activeTab === 'upcoming' ? '#EFF6FF' : '#F1F5F9',
               color: activeTab === 'upcoming' ? '#1764E8' : '#64748B',
               transition: 'all 0.15s ease'
             }}
           >
-            <CalendarClock size={16} />
+            <CalendarClock size={16} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
             <span>Upcoming Interviews</span>
             {upcomingList.length > 0 && (
               <span style={{
                 backgroundColor: activeTab === 'upcoming' ? '#1764E8' : '#CBD5E1',
                 color: activeTab === 'upcoming' ? '#FFFFFF' : '#334155',
-                fontSize: '11px',
+                fontSize: '10px',
                 padding: '1px 6px',
                 borderRadius: '10px',
                 fontWeight: 700
@@ -348,27 +355,29 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             type="button"
             onClick={() => setActiveTab('past')}
             style={{
+              flex: 1,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 12px',
               borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
+              fontSize: '12.5px',
+              fontWeight: activeTab === 'past' ? 700 : 600,
               cursor: 'pointer',
-              border: activeTab === 'past' ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
-              backgroundColor: activeTab === 'past' ? '#EFF6FF' : '#FFFFFF',
+              border: activeTab === 'past' ? '1px solid #BFDBFE' : '1px solid transparent',
+              backgroundColor: activeTab === 'past' ? '#EFF6FF' : '#F1F5F9',
               color: activeTab === 'past' ? '#1764E8' : '#64748B',
               transition: 'all 0.15s ease'
             }}
           >
-            <CalendarCheck2 size={16} />
+            <CalendarCheck2 size={16} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
             <span>Past & Evaluated</span>
             {pastList.length > 0 && (
               <span style={{
                 backgroundColor: activeTab === 'past' ? '#1764E8' : '#CBD5E1',
                 color: activeTab === 'past' ? '#FFFFFF' : '#334155',
-                fontSize: '11px',
+                fontSize: '10px',
                 padding: '1px 6px',
                 borderRadius: '10px',
                 fontWeight: 700
@@ -386,13 +395,12 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           backgroundColor: '#FFFFFF',
           border: '1px solid #E2E8F0',
           borderRadius: '8px',
-          padding: '6px 12px',
-          minWidth: '260px'
+          padding: '6px 12px'
         }}>
-          <Search size={16} color="#64748B" style={{ marginRight: '8px' }} />
+          <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
           <input
             type="text"
-            placeholder="Search candidate, trade, job..."
+            placeholder="Search by candidate name, trade, job..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -416,43 +424,44 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         </div>
       </div>
 
-      {/* Main List */}
+      {/* Main List Body */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748B' }}>
           <div className="spinner" style={{ margin: '0 auto 12px auto' }} />
-          <div style={{ fontSize: '14px', fontWeight: 600 }}>Loading interview schedule...</div>
+          <div style={{ fontSize: '13px', fontWeight: 500 }}>Loading interview schedule...</div>
         </div>
       ) : filteredList.length === 0 ? (
         <div style={{
           backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
           borderRadius: '8px',
-          padding: '48px 24px',
-          textAlign: 'center'
+          border: '1px solid #E2E8F0',
+          padding: '32px 16px',
+          textAlign: 'center',
+          marginTop: '10px'
         }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '28px',
+            width: '64px',
+            height: '64px',
+            borderRadius: '32px',
             backgroundColor: '#F1F5F9',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '14px'
           }}>
-            <Calendar size={28} color="#94A3B8" />
+            <Calendar size={32} color="#94A3B8" />
           </div>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
             {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
           </h3>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
+          <p style={{ fontSize: '12.5px', color: '#64748B', margin: 0, lineHeight: '18px' }}>
             {activeTab === 'upcoming'
-              ? 'Interviews scheduled with candidates from applications will appear here.'
-              : 'Completed interviews with candidate ratings and evaluation notes will appear here.'}
+              ? 'When you schedule interviews from candidate applications, they will appear here.'
+              : 'Completed and historic interviews with candidate ratings will be listed here.'}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredList.map((item) => {
             const days = getDaysFromToday(item.interview_date);
             const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
@@ -463,22 +472,21 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 key={item.application_id}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
                   borderRadius: '8px',
-                  padding: '16px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                  transition: 'border-color 0.15s ease'
+                  border: '1px solid #E2E8F0',
+                  padding: '14px',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
                 }}
               >
                 {/* Header Row: Date & Countdown Tag */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                    <Calendar size={14} color="#1764E8" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                    <Calendar size={13} color="#1764E8" />
                     <span>{formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}</span>
                   </div>
 
                   {isCompleted ? (
-                    <span style={{
+                    <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
@@ -489,11 +497,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       padding: '3px 8px',
                       borderRadius: '6px'
                     }}>
-                      <CheckCircle2 size={12} />
-                      Interviewed
-                    </span>
+                      <CheckCircle2 size={12} color="#16A34A" />
+                      <span>Interviewed</span>
+                    </div>
                   ) : isPostponed ? (
-                    <span style={{
+                    <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
@@ -504,11 +512,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       padding: '3px 8px',
                       borderRadius: '6px'
                     }}>
-                      <Clock3 size={12} />
-                      Postponed
-                    </span>
+                      <Clock3 size={12} color="#D97706" />
+                      <span>Postponed</span>
+                    </div>
                   ) : days === 0 ? (
-                    <span style={{
+                    <div style={{
                       backgroundColor: '#FEF2F2',
                       color: '#DC2626',
                       fontSize: '11px',
@@ -517,9 +525,9 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       borderRadius: '6px'
                     }}>
                       TODAY
-                    </span>
+                    </div>
                   ) : days === 1 ? (
-                    <span style={{
+                    <div style={{
                       backgroundColor: '#EFF6FF',
                       color: '#1764E8',
                       fontSize: '11px',
@@ -528,9 +536,9 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       borderRadius: '6px'
                     }}>
                       TOMORROW
-                    </span>
+                    </div>
                   ) : (
-                    <span style={{
+                    <div style={{
                       backgroundColor: '#F1F5F9',
                       color: '#475569',
                       fontSize: '11px',
@@ -539,10 +547,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       borderRadius: '6px'
                     }}>
                       {days > 0 ? `${days}d left` : 'Upcoming'}
-                    </span>
+                    </div>
                   )}
                 </div>
 
+                {/* Section Separator */}
                 <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '8px 0' }} />
 
                 {/* Candidate Info Block */}
@@ -583,12 +592,12 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     </div>
 
                     <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px' }}>
-                      Applied for: <strong style={{ color: '#1E293B' }}>{item.job_title}</strong>
+                      Applied for: <strong style={{ fontWeight: 700, color: '#1E293B' }}>{item.job_title}</strong>
                     </div>
 
                     {item.candidate_phone && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748B', marginTop: '3px' }}>
-                        <Phone size={12} />
+                        <Phone size={12} color="#64748B" />
                         <span>{item.candidate_phone}</span>
                       </div>
                     )}
@@ -606,14 +615,15 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     borderRadius: '6px',
                     marginTop: '8px',
                     fontSize: '12px',
-                    color: '#475569'
+                    color: '#475569',
+                    lineHeight: '16px'
                   }}>
-                    <MapPin size={14} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <MapPin size={13} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
                     <span>{item.venue_address}</span>
                   </div>
                 )}
 
-                {/* Rating display if interviewed */}
+                {/* Star Rating Display if Interviewed */}
                 {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
                   <div style={{
                     backgroundColor: '#FFFBEB',
@@ -643,7 +653,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                   </div>
                 )}
 
-                {/* Postponed notice */}
+                {/* Postponed Reason Display */}
                 {isPostponed && item.postponed_reason && (
                   <div style={{
                     display: 'flex',
@@ -657,14 +667,15 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     color: '#B45309',
                     fontWeight: 600
                   }}>
-                    <AlertCircle size={14} color="#D97706" />
+                    <AlertCircle size={12} color="#D97706" />
                     <span>Rescheduled: {item.postponed_reason}</span>
                   </div>
                 )}
 
+                {/* Section Separator */}
                 <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '8px 0' }} />
 
-                {/* Action Footer */}
+                {/* Card Action Footer */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {item.candidate_phone && (
@@ -760,7 +771,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         </div>
       )}
 
-      {/* Evaluation & Detail Modal */}
+      {/* Detail & Evaluation Action Modal (100% Mobile App Matched) */}
       {isDetailModalOpen && selectedInterview && (
         <div style={{
           position: 'fixed',
@@ -840,7 +851,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Contact Actions: Resume, Call, WhatsApp, Venue */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '14px' }}>
                 {selectedInterview.candidate_resume && (
                   <button
@@ -929,9 +940,10 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 </button>
               </div>
 
+              {/* Section Separator */}
               <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '14px 0' }} />
 
-              {/* Schedule Box */}
+              {/* Scheduled Interview Summary Box */}
               <div style={{
                 backgroundColor: '#F8FAFC',
                 border: '1px solid #E2E8F0',
@@ -960,7 +972,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                 )}
               </div>
 
-              {/* Reschedule View vs Evaluation View */}
+              {/* Reschedule Section vs Evaluation Section */}
               {isRescheduling ? (
                 <div style={{
                   backgroundColor: '#FFFBEB',
@@ -1092,7 +1104,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     CANDIDATE INTERVIEW RATING
                   </div>
 
-                  {/* 5 Star interactive rating */}
+                  {/* 5 Star Interactive Rating */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1125,7 +1137,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                     {rating === 1 && 'Not suitable for role'}
                   </div>
 
-                  {/* Remarks Input */}
+                  {/* Evaluation Remarks */}
                   <div style={{ marginTop: '16px', marginBottom: '16px' }}>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
                       Interview Notes & Evaluation Remarks
