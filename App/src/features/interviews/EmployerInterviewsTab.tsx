@@ -261,18 +261,112 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
   }, [currentList, searchQuery]);
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 4px 40px 4px' }}>
-      {/* Metrics Summary Strip (100% Mobile App Matched) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        padding: '12px 16px',
-        borderBottom: '1px solid #E2E8F0',
-        borderRadius: '8px',
-        marginBottom: '10px'
-      }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
+    <div className="interviews-responsive-wrapper">
+      <style>{`
+        .interviews-responsive-wrapper {
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+          padding: 0 0 40px 0;
+        }
+
+        .interviews-metrics-strip {
+          display: flex;
+          align-items: center;
+          background-color: #FFFFFF;
+          padding: 14px 20px;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          width: 100%;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        }
+
+        .interviews-metric-item {
+          flex: 1;
+          text-align: center;
+        }
+
+        .interviews-metric-divider {
+          width: 1px;
+          height: 24px;
+          background-color: #E2E8F0;
+        }
+
+        .interviews-controls-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 16px;
+          width: 100%;
+        }
+
+        .interviews-tab-group {
+          display: flex;
+          gap: 8px;
+          background-color: #FFFFFF;
+          padding: 6px;
+          border-radius: 8px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .interviews-search-box {
+          display: flex;
+          align-items: center;
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 8px 14px;
+          min-width: 320px;
+          flex: 0 1 auto;
+        }
+
+        .interview-card-container {
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 16px 18px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          margin-bottom: 12px;
+          width: 100%;
+          transition: border-color 0.15s ease;
+        }
+
+        /* Mobile View (< 768px): Exact Compact Mobile App Layout */
+        @media (max-width: 767px) {
+          .interviews-responsive-wrapper {
+            padding: 0 4px 40px 4px;
+          }
+          .interviews-metrics-strip {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+          }
+          .interviews-controls-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            margin-bottom: 12px;
+          }
+          .interviews-tab-group {
+            width: 100%;
+            padding: 8px 12px;
+          }
+          .interviews-search-box {
+            width: 100%;
+            min-width: 100%;
+            padding: 6px 12px;
+          }
+          .interview-card-container {
+            padding: 14px;
+          }
+        }
+      `}</style>
+
+      {/* Metrics Summary Strip */}
+      <div className="interviews-metrics-strip">
+        <div className="interviews-metric-item">
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
             {upcomingList.length + pastList.length}
           </div>
@@ -280,8 +374,8 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             Total Scheduled
           </div>
         </div>
-        <div style={{ width: '1px', height: '24px', backgroundColor: '#E2E8F0' }} />
-        <div style={{ flex: 1, textAlign: 'center' }}>
+        <div className="interviews-metric-divider" />
+        <div className="interviews-metric-item">
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#1764E8', lineHeight: 1.2 }}>
             {upcomingList.length}
           </div>
@@ -289,8 +383,8 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             Upcoming
           </div>
         </div>
-        <div style={{ width: '1px', height: '24px', backgroundColor: '#E2E8F0' }} />
-        <div style={{ flex: 1, textAlign: 'center' }}>
+        <div className="interviews-metric-divider" />
+        <div className="interviews-metric-item">
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#16A34A', lineHeight: 1.2 }}>
             {pastList.filter(p => p.interview_status === 'interviewed' || p.application_status === 'interviewed').length}
           </div>
@@ -300,31 +394,19 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         </div>
       </div>
 
-      {/* Tab Switcher & Search Row */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        marginBottom: '12px'
-      }}>
-        <div style={{
-          display: 'flex',
-          backgroundColor: '#FFFFFF',
-          padding: '8px 12px',
-          borderRadius: '8px',
-          border: '1px solid #E2E8F0',
-          gap: '8px'
-        }}>
+      {/* Tab Switcher & Search Bar Row */}
+      <div className="interviews-controls-row">
+        <div className="interviews-tab-group">
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
             style={{
-              flex: 1,
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 12px',
+              padding: '8px 14px',
               borderRadius: '8px',
               fontSize: '12.5px',
               fontWeight: activeTab === 'upcoming' ? 700 : 600,
@@ -355,12 +437,12 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             type="button"
             onClick={() => setActiveTab('past')}
             style={{
-              flex: 1,
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 12px',
+              padding: '8px 14px',
               borderRadius: '8px',
               fontSize: '12.5px',
               fontWeight: activeTab === 'past' ? 700 : 600,
@@ -389,14 +471,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         </div>
 
         {/* Search Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '8px',
-          padding: '6px 12px'
-        }}>
+        <div className="interviews-search-box">
           <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
           <input
             type="text"
@@ -437,7 +512,8 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           border: '1px solid #E2E8F0',
           padding: '32px 16px',
           textAlign: 'center',
-          marginTop: '10px'
+          marginTop: '10px',
+          width: '100%'
         }}>
           <div style={{
             width: '64px',
@@ -461,7 +537,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
           {filteredList.map((item) => {
             const days = getDaysFromToday(item.interview_date);
             const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
@@ -470,13 +546,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             return (
               <div
                 key={item.application_id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '8px',
-                  border: '1px solid #E2E8F0',
-                  padding: '14px',
-                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-                }}
+                className="interview-card-container"
               >
                 {/* Header Row: Date & Countdown Tag */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>

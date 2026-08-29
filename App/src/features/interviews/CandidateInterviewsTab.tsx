@@ -127,80 +127,168 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
   }, [currentList, searchQuery]);
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 8px 40px 8px' }}>
+    <div className="cand-interviews-wrapper">
+      <style>{`
+        .cand-interviews-wrapper {
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+          padding: 0 0 40px 0;
+        }
+
+        .cand-metrics-strip {
+          display: flex;
+          align-items: center;
+          background-color: #FFFFFF;
+          padding: 14px 20px;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          width: 100%;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        }
+
+        .cand-metric-item {
+          flex: 1;
+          text-align: center;
+        }
+
+        .cand-metric-divider {
+          width: 1px;
+          height: 24px;
+          background-color: #E2E8F0;
+        }
+
+        .cand-controls-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 16px;
+          width: 100%;
+        }
+
+        .cand-tab-group {
+          display: flex;
+          gap: 8px;
+          background-color: #FFFFFF;
+          padding: 6px;
+          border-radius: 8px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .cand-search-box {
+          display: flex;
+          align-items: center;
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 8px 14px;
+          min-width: 300px;
+          flex: 0 1 auto;
+        }
+
+        .cand-card-container {
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 16px 18px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          margin-bottom: 12px;
+          width: 100%;
+          transition: border-color 0.15s ease;
+        }
+
+        @media (max-width: 767px) {
+          .cand-interviews-wrapper {
+            padding: 0 4px 40px 4px;
+          }
+          .cand-metrics-strip {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+          }
+          .cand-controls-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            margin-bottom: 12px;
+          }
+          .cand-tab-group {
+            width: 100%;
+            padding: 8px 12px;
+          }
+          .cand-search-box {
+            width: 100%;
+            min-width: 100%;
+            padding: 6px 12px;
+          }
+          .cand-card-container {
+            padding: 14px;
+          }
+        }
+      `}</style>
+
       {/* Top Metrics Strip */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '12px',
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '16px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A' }}>
+      <div className="cand-metrics-strip">
+        <div className="cand-metric-item">
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
             {upcomingList.length + pastList.length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Total Interviews
           </div>
         </div>
-        <div style={{ textAlign: 'center', borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#1764E8' }}>
+        <div className="cand-metric-divider" />
+        <div className="cand-metric-item">
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#1764E8', lineHeight: 1.2 }}>
             {upcomingList.length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Upcoming
           </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#16A34A' }}>
+        <div className="cand-metric-divider" />
+        <div className="cand-metric-item">
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#16A34A', lineHeight: 1.2 }}>
             {pastList.length}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
             Past / Completed
           </div>
         </div>
       </div>
 
       {/* Tab Switcher & Search Row */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        marginBottom: '16px'
-      }}>
-        <div style={{ display: 'flex', gap: '8px', flex: '1 1 auto' }}>
+      <div className="cand-controls-row">
+        <div className="cand-tab-group">
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
             style={{
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
+              fontSize: '12.5px',
+              fontWeight: activeTab === 'upcoming' ? 700 : 600,
               cursor: 'pointer',
-              border: activeTab === 'upcoming' ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
-              backgroundColor: activeTab === 'upcoming' ? '#EFF6FF' : '#FFFFFF',
+              border: activeTab === 'upcoming' ? '1px solid #BFDBFE' : '1px solid transparent',
+              backgroundColor: activeTab === 'upcoming' ? '#EFF6FF' : '#F1F5F9',
               color: activeTab === 'upcoming' ? '#1764E8' : '#64748B',
               transition: 'all 0.15s ease'
             }}
           >
-            <CalendarClock size={16} />
+            <CalendarClock size={16} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
             <span>Upcoming Interviews</span>
             {upcomingList.length > 0 && (
               <span style={{
                 backgroundColor: activeTab === 'upcoming' ? '#1764E8' : '#CBD5E1',
                 color: activeTab === 'upcoming' ? '#FFFFFF' : '#334155',
-                fontSize: '11px',
+                fontSize: '10px',
                 padding: '1px 6px',
                 borderRadius: '10px',
                 fontWeight: 700
@@ -214,27 +302,29 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             type="button"
             onClick={() => setActiveTab('past')}
             style={{
+              flex: '1 1 auto',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
+              fontSize: '12.5px',
+              fontWeight: activeTab === 'past' ? 700 : 600,
               cursor: 'pointer',
-              border: activeTab === 'past' ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
-              backgroundColor: activeTab === 'past' ? '#EFF6FF' : '#FFFFFF',
+              border: activeTab === 'past' ? '1px solid #BFDBFE' : '1px solid transparent',
+              backgroundColor: activeTab === 'past' ? '#EFF6FF' : '#F1F5F9',
               color: activeTab === 'past' ? '#1764E8' : '#64748B',
               transition: 'all 0.15s ease'
             }}
           >
-            <CalendarCheck2 size={16} />
+            <CalendarCheck2 size={16} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
             <span>Past & Completed</span>
             {pastList.length > 0 && (
               <span style={{
                 backgroundColor: activeTab === 'past' ? '#1764E8' : '#CBD5E1',
                 color: activeTab === 'past' ? '#FFFFFF' : '#334155',
-                fontSize: '11px',
+                fontSize: '10px',
                 padding: '1px 6px',
                 borderRadius: '10px',
                 fontWeight: 700
@@ -246,16 +336,8 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
         </div>
 
         {/* Search Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '8px',
-          padding: '6px 12px',
-          minWidth: '260px'
-        }}>
-          <Search size={16} color="#64748B" style={{ marginRight: '8px' }} />
+        <div className="cand-search-box">
+          <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Search company, job..."
@@ -286,39 +368,41 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748B' }}>
           <div className="spinner" style={{ margin: '0 auto 12px auto' }} />
-          <div style={{ fontSize: '14px', fontWeight: 600 }}>Loading interview schedule...</div>
+          <div style={{ fontSize: '13px', fontWeight: 500 }}>Loading interview schedule...</div>
         </div>
       ) : filteredList.length === 0 ? (
         <div style={{
           backgroundColor: '#FFFFFF',
           border: '1px solid #E2E8F0',
           borderRadius: '8px',
-          padding: '48px 24px',
-          textAlign: 'center'
+          padding: '32px 16px',
+          textAlign: 'center',
+          marginTop: '10px',
+          width: '100%'
         }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '28px',
+            width: '64px',
+            height: '64px',
+            borderRadius: '32px',
             backgroundColor: '#F1F5F9',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '14px'
           }}>
-            <Calendar size={28} color="#94A3B8" />
+            <Calendar size={32} color="#94A3B8" />
           </div>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
             {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
           </h3>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
+          <p style={{ fontSize: '12.5px', color: '#64748B', margin: 0, lineHeight: '18px' }}>
             {activeTab === 'upcoming'
               ? 'When employers schedule an in-person or virtual interview with you, it will appear here.'
               : 'Past and completed interviews will appear here with feedback.'}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
           {filteredList.map((item) => {
             const days = getDaysFromToday(item.interview_date);
             const isCompleted = item.interview_status === 'interviewed' || item.status === 'interviewed';
@@ -327,19 +411,12 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             return (
               <div
                 key={item.application_id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                  transition: 'border-color 0.15s ease'
-                }}
+                className="cand-card-container"
               >
                 {/* Header Row: Date & Countdown Tag */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                    <Calendar size={14} color="#1764E8" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                    <Calendar size={13} color="#1764E8" />
                     <span>{formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}</span>
                   </div>
 
@@ -434,7 +511,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                     <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
                       {item.job_title}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1764E8', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1764E8', marginTop: '2px' }}>
                       {item.company || item.company_name || 'Industrial Recruiter'}
                     </div>
                     {item.job_location && (
@@ -456,9 +533,10 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                     borderRadius: '6px',
                     marginTop: '8px',
                     fontSize: '12px',
-                    color: '#475569'
+                    color: '#475569',
+                    lineHeight: '16px'
                   }}>
-                    <MapPin size={14} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <MapPin size={13} color="#64748B" style={{ marginTop: '2px', flexShrink: 0 }} />
                     <span>Venue: <strong>{item.venue_address}</strong></span>
                   </div>
                 )}
@@ -507,7 +585,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                     color: '#B45309',
                     fontWeight: 600
                   }}>
-                    <AlertCircle size={14} color="#D97706" />
+                    <AlertCircle size={12} color="#D97706" />
                     <span>Reschedule Note: {item.postponed_reason}</span>
                   </div>
                 )}
