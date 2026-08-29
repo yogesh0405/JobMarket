@@ -134,6 +134,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           max-width: 100%;
           margin: 0;
           padding: 0 0 40px 0;
+          background-color: #F8FAFC !important;
         }
 
         .cand-metrics-strip {
@@ -190,7 +191,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
         }
 
         .cand-card-container {
-          background-color: #FFFFFF;
+          background-color: #FFFFFF !important;
           border: 1px solid #E2E8F0;
           border-radius: 8px;
           padding: 16px 18px;
@@ -203,6 +204,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
         @media (max-width: 767px) {
           .cand-interviews-wrapper {
             padding: 0 4px 40px 4px;
+            background-color: #F8FAFC !important;
           }
           .cand-metrics-strip {
             padding: 12px 16px;

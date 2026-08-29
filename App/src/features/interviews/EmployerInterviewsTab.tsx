@@ -267,7 +267,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         .interviews-page-root {
           width: 100%;
           min-height: 100vh;
-          background: #F8FAFC;
+          background-color: #F8FAFC !important;
           box-sizing: border-box;
         }
 
@@ -280,6 +280,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           margin: 0 auto;
           padding: 0 0 40px 0;
           box-sizing: border-box;
+          background-color: #F8FAFC !important;
         }
 
         /* ── METRICS STRIP (Matches Mobile App 100%) ── */
@@ -386,9 +387,14 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           box-sizing: border-box;
         }
 
+        .interview-list-wrap {
+          padding: 12px 16px;
+          background-color: #F8FAFC !important;
+        }
+
         /* ── INTERVIEW CARD (Exact Mobile App Match: borderRadius: 8, padding: 14) ── */
         .interview-standard-card {
-          background-color: #FFFFFF;
+          background-color: #FFFFFF !important;
           border: 1px solid #E2E8F0;
           border-radius: 8px;
           padding: 14px;
@@ -407,7 +413,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         /* Responsive Breakpoints */
         @media (min-width: 768px) {
           .interviews-page-root {
-            background: #FFFFFF;
+            background-color: #F8FAFC !important;
+          }
+          .interviews-inner-content {
+            background-color: #F8FAFC !important;
+            padding: 16px 20px 40px 20px;
           }
           .interviews-metrics-bar {
             border: 1px solid #E2E8F0;
@@ -428,6 +438,10 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             margin: 0;
             min-width: 320px;
           }
+          .interview-list-wrap {
+            padding: 0;
+            background-color: #F8FAFC !important;
+          }
         }
 
         @media (max-width: 767px) {
@@ -436,9 +450,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           }
           .interviews-inner-content {
             padding: 0 0 40px 0;
+            background-color: #F8FAFC !important;
           }
           .interview-list-wrap {
             padding: 12px 16px;
+            background-color: #F8FAFC !important;
           }
           .interviews-search-input-wrap {
             margin: 0 16px;
