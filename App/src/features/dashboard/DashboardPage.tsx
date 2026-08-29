@@ -23,6 +23,8 @@ import { AboutPage } from '../static/AboutPage';
 import { ContactPage } from '../static/ContactPage';
 import { SavedJobsPage } from './SavedJobsPage';
 import { EmployerAdvertisements } from './EmployerAdvertisements';
+import { EmployerInterviewsTab } from '../interviews/EmployerInterviewsTab';
+import { CandidateInterviewsTab } from '../interviews/CandidateInterviewsTab';
 import { SecuritySettings } from '../../components/profile/SecuritySettings';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { MobileHeader } from '../../components/common/MobileHeader';
@@ -441,6 +443,16 @@ export const DashboardPage: React.FC = () => {
                     </span>
                   </button>
                   <button
+                    className={`dashboard-nav-item tab-interviews ${tab === 'interviews' ? 'active' : ''}`}
+                    onClick={() => setTab('interviews')}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span className="desktop-only-text">Scheduled Interviews</span>
+                    <span className="mobile-only-text">Interviews</span>
+                  </button>
+                  <button
                     className={`dashboard-nav-item tab-candidates ${tab === 'candidates' ? 'active' : ''}`}
                     onClick={() => setTab('candidates')}
                   >
@@ -495,6 +507,16 @@ export const DashboardPage: React.FC = () => {
                     </svg>
                     Applied Jobs
                     <span className="nav-badge">{(currentUser.appliedJobs || []).length}</span>
+                  </button>
+                  <button
+                    className={`dashboard-nav-item tab-interviews ${tab === 'interviews' ? 'active' : ''}`}
+                    onClick={() => setTab('interviews')}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span className="desktop-only-text">Scheduled Interviews</span>
+                    <span className="mobile-only-text">Interviews</span>
                   </button>
                   <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
                   <button
@@ -635,7 +657,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
   const interviewCount = appliedJobs.filter(job => {
     const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
     const status = (appDetails?.status || 'applied').toLowerCase();
-    return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
+    return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled' || status === 'interviewed' || status === 'postponed' || !!appDetails?.interviewDate;
   }).length;
 
   const reviewCount = appliedJobs.filter(job => {
@@ -654,7 +676,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     const appDetails = currentUser.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
     const status = (appDetails?.status || 'applied').toLowerCase();
     if (filterTab === 'INTERVIEW') {
-      return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
+      return status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled' || status === 'interviewed' || status === 'postponed' || !!appDetails?.interviewDate;
     }
     if (filterTab === 'REVIEW') {
       return status === 'applied' || status === 'reviewed' || status === 'under_review';
@@ -666,6 +688,9 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
   });
 
   switch (tab) {
+    case 'interviews':
+    case 'scheduled-interviews':
+      return <CandidateInterviewsTab currentUser={currentUser} />;
     case 'overview':
       return (
         <>
@@ -1812,6 +1837,29 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
 
       <button
         type="button"
+        onClick={() => setTab('interviews')}
+        style={{
+          flex: 1,
+          padding: '7px 4px',
+          borderRadius: '6px',
+          border: 'none',
+          background: ['interviews', 'scheduled-interviews'].includes(tab) ? '#344BFD' : 'transparent',
+          color: ['interviews', 'scheduled-interviews'].includes(tab) ? '#ffffff' : '#475569',
+          fontWeight: ['interviews', 'scheduled-interviews'].includes(tab) ? '700' : '600',
+          fontSize: '11.5px',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px'
+        }}
+      >
+        <span>Interviews</span>
+      </button>
+
+      <button
+        type="button"
         onClick={() => setTab('advertisements')}
         style={{
           flex: 1,
@@ -1969,6 +2017,9 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     case 'banners':
     case 'promotions':
       return <EmployerAdvertisements employerJobs={myJobs} />;
+    case 'interviews':
+    case 'scheduled-interviews':
+      return <EmployerInterviewsTab currentUser={currentUser} showToast={showToast} navigate={navigate} />;
     case 'overview':
       return (
         <>

@@ -6,6 +6,8 @@ const router = Router();
 router.get('/applied/my-applications', ApplicationController.getMyAppliedJobs);
 router.get('/applied/me', ApplicationController.getMyAppliedJobs);
 router.get('/interviews/my-interviews', ApplicationController.getMyInterviews);
+router.get('/employer/interviews', ApplicationController.getEmployerInterviews);
+router.patch('/employer/interviews/:applicationId/status', ApplicationController.updateEmployerInterviewStatus);
 
 router.post('/:id/apply', ApplicationController.applyToJob);
 router.get('/:id/applicants', ApplicationController.getApplicantsForJob);

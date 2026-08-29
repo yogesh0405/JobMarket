@@ -31,6 +31,7 @@ import {
   ExtendedCandidate,
   CANDIDATE_SEARCH_SUGGESTIONS,
   SEED_CANDIDATES,
+  safeString,
 } from './components/CandidatesUtils';
 import { CandidateCardItem } from './components/CandidateCardItem';
 import { CandidateDetailModal } from './components/CandidateDetailModal';
@@ -81,7 +82,7 @@ export const CandidatesScreen: React.FC = () => {
 
       if (rawList.length > 0) {
         const formatted: ExtendedCandidate[] = rawList.map((item: any, idx: number) => {
-          const expYears = typeof item.experience === 'number' ? `${item.experience} Years` : (item.experience || '2 Years');
+          const expYears = typeof item.experience === 'number' ? `${item.experience} Years` : safeString(item.experience, '2 Years');
           const fallbackPhoto = SEED_CANDIDATES[idx % SEED_CANDIDATES.length]?.avatarUrl;
           const photo =
             item.profilePictureUrl ||
@@ -108,24 +109,24 @@ export const CandidatesScreen: React.FC = () => {
 
           return {
             id: item.id || `candidate-${idx}`,
-            name: item.name || 'Industrial Candidate',
-            email: item.email || '',
-            phone: item.phone || '',
+            name: safeString(item.name, 'Industrial Candidate'),
+            email: safeString(item.email, ''),
+            phone: safeString(item.phone, ''),
             role: 'candidate',
             avatarUrl: photo,
             profile_picture_url: photo,
-            headline: item.headline || item.title || 'Skilled Factory Technician',
-            title: item.title || item.headline || 'Machine Operator',
-            trade_specialization: item.tradeSpecialization || item.trade_specialization || 'CNC / VMC Machinist',
-            location: item.location || 'Waluj MIDC, Chhatrapati Sambhajinagar',
+            headline: safeString(item.headline || item.title, 'Skilled Factory Technician'),
+            title: safeString(item.title || item.headline, 'Machine Operator'),
+            trade_specialization: safeString(item.tradeSpecialization || item.trade_specialization, 'CNC / VMC Machinist'),
+            location: safeString(item.location, 'Waluj MIDC, Chhatrapati Sambhajinagar'),
             skills: Array.isArray(item.skills) && item.skills.length > 0 ? item.skills : ['CNC Operating', 'Machine Maintenance', 'Shop Safety'],
             experience: expYears,
-            education: item.education || 'ITI Certified',
+            education: safeString(item.education, 'ITI Certified'),
             aadhaar_verified: item.aadhaarVerified ?? item.aadhaar_verified ?? true,
             verified: true,
-            preferred_shift: item.preferredShift || item.preferred_shift || 'Day Shift',
-            notice_period: item.noticePeriod || item.notice_period || 'Immediate',
-            bio: item.bio || `Certified technician with ${expYears} experience in industrial plant operations.`,
+            preferred_shift: safeString(item.preferredShift || item.preferred_shift, 'Day Shift'),
+            notice_period: safeString(item.noticePeriod || item.notice_period, 'Immediate'),
+            bio: safeString(item.bio, `Certified technician with ${expYears} experience in industrial plant operations.`),
             resume_url: resolvedResume,
             resumeUrl: resolvedResume,
             resume: typeof resumeRaw === 'object' ? resumeRaw : resolvedResume,

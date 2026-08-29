@@ -46,10 +46,21 @@ export const resolveWebNotificationRoute = (
     }
   }
 
-  // 2. Candidate Job Details & Interview Pass
+  // 2. Interview Notifications (Scheduled, Rescheduled, Completed, Postponed)
   if (
     type === 'JOB_INTERVIEW' ||
     type === 'INTERVIEW_SCHEDULED' ||
+    type === 'INTERVIEW_RESCHEDULED' ||
+    type === 'INTERVIEW_POSTPONED' ||
+    type === 'INTERVIEW_COMPLETED' ||
+    combined.includes('INTERVIEW') ||
+    linkStr.includes('tab=interviews')
+  ) {
+    return `/dashboard?tab=interviews`;
+  }
+
+  // 2b. Candidate Application Status Updates
+  if (
     type === 'JOB_STATUS' ||
     type === 'APPLICATION_STATUS_UPDATED' ||
     type === 'APPLICATION_CONFIRMATION'

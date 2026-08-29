@@ -24,10 +24,111 @@ export class ApplicationController {
 
   static async getMyInterviews(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const userId = (req.headers['x-user-id'] as string) || req.user?.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
       const data = await JobRepository.getInterviewsForCandidate(userId);
       res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEmployerInterviews(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = (req.headers['x-user-id'] as string) || req.user?.userId;
+      if (!employerId) return res.status(401).json({ error: 'Unauthorized' });
+      const data = await JobRepository.getInterviewsForEmployer(employerId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateEmployerInterviewStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = (req.headers['x-user-id'] as string) || req.user?.userId;
+      const applicationId = req.params.applicationId as string;
+      if (!employerId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const {
+        status,
+        interviewRating,
+        interviewFeedback,
+        interviewDate,
+        interviewTime,
+        venueAddress,
+        mapsLink,
+        postponedReason
+      } = req.body;
+
+      const result = await JobRepository.updateEmployerInterviewStatus(employerId, applicationId, {
+        status,
+        interviewRating,
+        interviewFeedback,
+        interviewDate,
+        interviewTime,
+        venueAddress,
+        mapsLink,
+        postponedReason
+      });
+
+      const { meta, application } = result;
+
+      // Dispatch instant In-App Notification and Email to Candidate asynchronously
+      (async () => {
+        try {
+          if (status === 'interviewed') {
+            await NotificationService.sendNotification(
+              meta.candidate_id,
+              `Interview Completed: ${meta.job_title}`,
+              `Your interview for "${meta.job_title}" with ${meta.company_name} has been marked as completed.`,
+              'JOB_INTERVIEW',
+              `/jobs/${meta.job_id}`,
+              'INTERVIEW',
+              meta.job_id,
+              { applicationId, status }
+            ).catch(err => console.error('Failed to send interview completed in-app notification:', err));
+
+            if (meta.candidate_email) {
+              await EmailService.sendInterviewCompletedEmail(
+                meta.candidate_email,
+                meta.candidate_name,
+                meta.job_title,
+                meta.company_name
+              ).catch(err => console.error('Failed to send interview completed email:', err));
+            }
+          } else if (status === 'postponed' || interviewDate) {
+            await NotificationService.sendNotification(
+              meta.candidate_id,
+              `Interview Rescheduled: ${meta.job_title}`,
+              `Your interview for "${meta.job_title}" with ${meta.company_name} has been rescheduled to ${interviewDate} at ${interviewTime || '10:00 AM'}.${postponedReason ? ` Note: ${postponedReason}` : ''}`,
+              'JOB_INTERVIEW',
+              `/jobs/${meta.job_id}`,
+              'INTERVIEW',
+              meta.job_id,
+              { applicationId, status: 'postponed', interviewDate, interviewTime }
+            ).catch(err => console.error('Failed to send interview rescheduled in-app notification:', err));
+
+            if (meta.candidate_email) {
+              await EmailService.sendInterviewRescheduledEmail(
+                meta.candidate_email,
+                meta.candidate_name,
+                meta.job_title,
+                meta.company_name,
+                interviewDate,
+                interviewTime || '10:00 AM',
+                venueAddress || meta.venue_address || 'Industrial Plant Main Gate',
+                postponedReason,
+                mapsLink || (venueAddress ? `https://maps.google.com/?q=${encodeURIComponent(venueAddress)}` : undefined)
+              ).catch(err => console.error('Failed to send interview rescheduled email:', err));
+            }
+          }
+        } catch (dispatchErr) {
+          console.error('Failed in interview status notification/email dispatch:', dispatchErr);
+        }
+      })();
+
+      res.status(200).json({ success: true, data: application, meta });
     } catch (error) {
       next(error);
     }

@@ -239,7 +239,15 @@ export class JobRepository {
               'education', u.education,
               'profilePictureUrl', u.profile_picture_url,
               'aadhaarVerified', u.aadhaar_verified,
-              'createdAt', u.created_at
+              'createdAt', u.created_at,
+              'interviewDate', ja.interview_date,
+              'interviewTime', ja.interview_time,
+              'venueAddress', ja.venue_address,
+              'mapsLink', ja.maps_link,
+              'interviewStatus', ja.interview_status,
+              'interviewRating', ja.interview_rating,
+              'interviewFeedback', ja.interview_feedback,
+              'postponedReason', ja.postponed_reason
             )
           ) FILTER (WHERE ja.user_id IS NOT NULL), '[]'
         ) as applicants
@@ -914,7 +922,15 @@ export class JobRepository {
         u.education,
         u.profile_picture_url as "profilePictureUrl",
         u.aadhaar_verified as "aadhaarVerified",
-        u.created_at as "createdAt"
+        u.created_at as "createdAt",
+        ja.interview_date as "interviewDate",
+        ja.interview_time as "interviewTime",
+        ja.venue_address as "venueAddress",
+        ja.maps_link as "mapsLink",
+        ja.interview_status as "interviewStatus",
+        ja.interview_rating as "interviewRating",
+        ja.interview_feedback as "interviewFeedback",
+        ja.postponed_reason as "postponedReason"
       FROM job_applications ja
       JOIN users u ON ja.user_id = u.id
       WHERE ja.job_id = $1
@@ -940,26 +956,27 @@ export class JobRepository {
         ...row,
         resume: parsedResume,
         resume_url: resumeUrl,
-        resumeUrl: resumeUrl,
+        resumeUrl,
+        skills: safeJsonParse(row.skills, []),
         experience: safeJsonParse(row.experience, []),
         education: safeJsonParse(row.education, []),
-        skills: safeJsonParse(row.skills, []),
-        aadhaarVerified: !!row.aadhaarVerified
+        aadhaarVerified: !!row.aadhaarVerified,
       };
     });
   }
 
   static async updateApplicantStatus(jobId: string, userId: string, employerId: string, status: string): Promise<any> {
-    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND employer_id = $2';
+    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND (employer_id = $2 OR employer_id::text = $2::text)';
     const checkResult = await pool.query(checkQuery, [jobId, employerId]);
     if (checkResult.rows.length === 0) {
       throw new Error('Unauthorized or job not found');
     }
 
     const query = `
-      UPDATE job_applications
-      SET status = $1, updated_at = CURRENT_TIMESTAMP
-      WHERE job_id = $2 AND user_id = $3
+      INSERT INTO job_applications (job_id, user_id, status, updated_at)
+      VALUES ($2, $3, $1, CURRENT_TIMESTAMP)
+      ON CONFLICT (job_id, user_id)
+      DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP
       RETURNING *
     `;
     const result = await pool.query(query, [status, jobId, userId]);
@@ -972,22 +989,44 @@ export class JobRepository {
     employerId: string, 
     details: { interviewDate: string; interviewTime: string; venueAddress: string; mapsLink?: string }
   ): Promise<any> {
-    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND employer_id = $2';
+    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND (employer_id = $2 OR employer_id::text = $2::text)';
     const checkResult = await pool.query(checkQuery, [jobId, employerId]);
     if (checkResult.rows.length === 0) {
       throw new Error('Unauthorized or job not found');
     }
 
     const query = `
-      UPDATE job_applications
-      SET 
+      INSERT INTO job_applications (
+        job_id,
+        user_id,
+        status,
+        interview_status,
+        interview_date,
+        interview_time,
+        venue_address,
+        maps_link,
+        updated_at
+      )
+      VALUES (
+        $5,
+        $6,
+        'shortlisted',
+        'scheduled',
+        $1,
+        $2,
+        $3,
+        $4,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT (job_id, user_id) 
+      DO UPDATE SET 
         status = 'shortlisted', 
-        interview_date = $1, 
-        interview_time = $2, 
-        venue_address = $3, 
-        maps_link = $4, 
+        interview_status = 'scheduled',
+        interview_date = EXCLUDED.interview_date, 
+        interview_time = EXCLUDED.interview_time, 
+        venue_address = EXCLUDED.venue_address, 
+        maps_link = EXCLUDED.maps_link, 
         updated_at = CURRENT_TIMESTAMP
-      WHERE job_id = $5 AND user_id = $6
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -1074,6 +1113,10 @@ export class JobRepository {
         ja.interview_time,
         ja.venue_address,
         ja.maps_link,
+        ja.interview_rating,
+        ja.interview_feedback,
+        ja.postponed_reason,
+        ja.interview_status,
         j.title          AS job_title,
         j.company,
         j.company_logo,
@@ -1084,17 +1127,34 @@ export class JobRepository {
         j.work_mode,
         j.salary_min,
         j.salary_max,
-        u.name           AS employer_name,
-        u.company_name
+        COALESCE(u.name, j.company) AS employer_name,
+        u.company_name,
+        u.phone          AS employer_phone,
+        u.email          AS employer_email
       FROM job_applications ja
       JOIN jobs j          ON ja.job_id::text = j.id::text
-      JOIN users u         ON j.employer_id::text = u.id::text
+      LEFT JOIN users u    ON j.employer_id::text = u.id::text
       WHERE ja.user_id::text = $1::text
-        AND ja.interview_date IS NOT NULL
-        AND ja.status IN ('shortlisted', 'hired', 'rejected')
-      ORDER BY ja.interview_date DESC, ja.interview_time DESC`,
+        AND (ja.interview_date IS NOT NULL OR ja.interview_time IS NOT NULL OR ja.status IN ('shortlisted', 'interviewed', 'interview_scheduled', 'postponed', 'interview'))
+      ORDER BY ja.interview_date DESC NULLS LAST, ja.interview_time DESC NULLS LAST`,
       [userId]
     );
+
+    const parseSafeDate = (dStr: any): Date | null => {
+      if (!dStr) return null;
+      let d = new Date(dStr);
+      if (!isNaN(d.getTime())) return d;
+      const parts = String(dStr).split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else {
+          d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        }
+        if (!isNaN(d.getTime())) return d;
+      }
+      return null;
+    };
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1103,22 +1163,269 @@ export class JobRepository {
     const past: any[] = [];
 
     for (const row of result.rows) {
-      const interviewDate = row.interview_date ? new Date(row.interview_date) : null;
-      if (interviewDate) {
-        interviewDate.setHours(0, 0, 0, 0);
-        if (interviewDate >= today) {
+      const isCompleted = (row.interview_status === 'interviewed' || row.status === 'interviewed' || row.status === 'hired');
+      const parsedDate = parseSafeDate(row.interview_date);
+
+      if (isCompleted) {
+        past.push(row);
+      } else if (parsedDate) {
+        parsedDate.setHours(0, 0, 0, 0);
+        if (parsedDate >= today) {
           upcoming.push(row);
         } else {
           past.push(row);
         }
+      } else {
+        upcoming.push(row);
       }
     }
 
     // Sort upcoming: soonest first
-    upcoming.sort((a, b) => new Date(a.interview_date).getTime() - new Date(b.interview_date).getTime());
+    upcoming.sort((a, b) => {
+      const da = parseSafeDate(a.interview_date)?.getTime() || 0;
+      const db = parseSafeDate(b.interview_date)?.getTime() || 0;
+      return da - db;
+    });
     // Sort past: most recent first
-    past.sort((a, b) => new Date(b.interview_date).getTime() - new Date(a.interview_date).getTime());
+    past.sort((a, b) => {
+      const da = parseSafeDate(a.interview_date)?.getTime() || 0;
+      const db = parseSafeDate(b.interview_date)?.getTime() || 0;
+      return db - da;
+    });
 
     return { upcoming, past };
+  }
+
+  /**
+   * GET /api/v1/jobs/employer/interviews
+   * Returns all interviews scheduled by the employer across their jobs,
+   * split into { upcoming: [], past: [] } based on date & interview status.
+   */
+  static async getInterviewsForEmployer(employerId: string) {
+    const cleanId = String(employerId || '').trim();
+    if (!cleanId) {
+      return { upcoming: [], past: [] };
+    }
+
+    const result = await pool.query(
+      `SELECT
+        ja.id            AS application_id,
+        ja.job_id,
+        ja.user_id       AS candidate_id,
+        ja.status        AS application_status,
+        ja.applied_at,
+        ja.interview_date,
+        ja.interview_time,
+        ja.venue_address,
+        ja.maps_link,
+        ja.interview_rating,
+        ja.interview_feedback,
+        ja.postponed_reason,
+        ja.interview_status,
+        j.title          AS job_title,
+        j.company,
+        j.company_logo,
+        j.location       AS job_location,
+        j.industry,
+        j.job_type,
+        j.work_mode,
+        j.salary_min,
+        j.salary_max,
+        COALESCE(u.name, 'Candidate') AS candidate_name,
+        u.email          AS candidate_email,
+        u.phone          AS candidate_phone,
+        u.profile_picture_url AS candidate_avatar,
+        u.trade_specialization,
+        u.location       AS candidate_location,
+        u.experience     AS candidate_experience,
+        u.skills         AS candidate_skills,
+        u.resume         AS candidate_resume,
+        u.headline       AS candidate_headline
+      FROM job_applications ja
+      JOIN jobs j          ON ja.job_id::text = j.id::text
+      LEFT JOIN users u    ON ja.user_id::text = u.id::text
+      WHERE (j.employer_id::text = $1::text OR j.employer_id IN (SELECT id FROM users WHERE email = (SELECT email FROM users WHERE id::text = $1::text)))
+        AND (ja.interview_date IS NOT NULL OR ja.interview_time IS NOT NULL OR ja.status IN ('shortlisted', 'interviewed', 'interview', 'interview_scheduled', 'postponed'))
+      ORDER BY ja.interview_date DESC NULLS LAST, ja.interview_time DESC NULLS LAST`,
+      [cleanId]
+    );
+
+    const parseSafeDate = (dStr: any): Date | null => {
+      if (!dStr) return null;
+      let d = new Date(dStr);
+      if (!isNaN(d.getTime())) return d;
+      const parts = String(dStr).split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else {
+          d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        }
+        if (!isNaN(d.getTime())) return d;
+      }
+      return null;
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcoming: any[] = [];
+    const past: any[] = [];
+
+    for (const row of result.rows) {
+      let parsedResume: any = null;
+      if (row.candidate_resume) {
+        if (typeof row.candidate_resume === 'object') {
+          parsedResume = row.candidate_resume;
+        } else if (typeof row.candidate_resume === 'string' && row.candidate_resume.trim()) {
+          try {
+            parsedResume = JSON.parse(row.candidate_resume);
+          } catch (_) {
+            parsedResume = { url: row.candidate_resume, name: 'Candidate_Resume.pdf' };
+          }
+        }
+      }
+
+      const formatted = {
+        ...row,
+        candidate_resume: parsedResume,
+        candidate_experience: safeJsonParse(row.candidate_experience, []),
+        candidate_skills: safeJsonParse(row.candidate_skills, []),
+      };
+
+      const isCompleted = (
+        row.interview_status === 'interviewed' ||
+        row.application_status === 'interviewed' ||
+        row.application_status === 'hired'
+      );
+      const parsedDate = parseSafeDate(row.interview_date);
+
+      if (isCompleted) {
+        past.push(formatted);
+      } else if (parsedDate) {
+        parsedDate.setHours(0, 0, 0, 0);
+        if (parsedDate >= today) {
+          upcoming.push(formatted);
+        } else {
+          past.push(formatted);
+        }
+      } else {
+        upcoming.push(formatted);
+      }
+    }
+
+    upcoming.sort((a, b) => {
+      const da = parseSafeDate(a.interview_date)?.getTime() || 0;
+      const db = parseSafeDate(b.interview_date)?.getTime() || 0;
+      return da - db;
+    });
+    past.sort((a, b) => {
+      const da = parseSafeDate(a.interview_date)?.getTime() || 0;
+      const db = parseSafeDate(b.interview_date)?.getTime() || 0;
+      return db - da;
+    });
+
+    return { upcoming, past };
+  }
+
+  /**
+   * PATCH /api/v1/jobs/employer/interviews/:applicationId/status
+   */
+  static async updateEmployerInterviewStatus(
+    employerId: string,
+    applicationId: string,
+    updateData: {
+      status: 'interviewed' | 'postponed' | 'shortlisted';
+      interviewRating?: number;
+      interviewFeedback?: string;
+      interviewDate?: string;
+      interviewTime?: string;
+      venueAddress?: string;
+      mapsLink?: string;
+      postponedReason?: string;
+    }
+  ) {
+    // Validate ownership
+    const checkQuery = `
+      SELECT 
+        ja.id as application_id,
+        ja.job_id,
+        ja.user_id as candidate_id,
+        j.title as job_title,
+        j.company as company_name,
+        u.name as candidate_name,
+        u.email as candidate_email,
+        u.phone as candidate_phone
+      FROM job_applications ja
+      JOIN jobs j ON ja.job_id = j.id
+      JOIN users u ON ja.user_id = u.id
+      WHERE ja.id::text = $1::text AND j.employer_id::text = $2::text
+    `;
+    const checkRes = await pool.query(checkQuery, [applicationId, employerId]);
+    if (checkRes.rows.length === 0) {
+      throw new Error('Interview application not found or unauthorized');
+    }
+    const appInfo = checkRes.rows[0];
+
+    let updateQuery = '';
+    let params: any[] = [];
+
+    if (updateData.status === 'interviewed') {
+      updateQuery = `
+        UPDATE job_applications
+        SET 
+          status = 'interviewed',
+          interview_status = 'interviewed',
+          interview_rating = $1,
+          interview_feedback = $2,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $3
+        RETURNING *
+      `;
+      params = [
+        updateData.interviewRating !== undefined ? updateData.interviewRating : null,
+        updateData.interviewFeedback || null,
+        applicationId
+      ];
+    } else if (updateData.status === 'postponed' || updateData.interviewDate) {
+      updateQuery = `
+        UPDATE job_applications
+        SET 
+          status = 'shortlisted',
+          interview_status = 'postponed',
+          interview_date = $1,
+          interview_time = $2,
+          venue_address = COALESCE($3, venue_address),
+          maps_link = COALESCE($4, maps_link),
+          postponed_reason = $5,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING *
+      `;
+      params = [
+        updateData.interviewDate,
+        updateData.interviewTime,
+        updateData.venueAddress || null,
+        updateData.mapsLink || null,
+        updateData.postponedReason || null,
+        applicationId
+      ];
+    } else {
+      updateQuery = `
+        UPDATE job_applications
+        SET 
+          status = $1,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING *
+      `;
+      params = [updateData.status, applicationId];
+    }
+
+    const updateRes = await pool.query(updateQuery, params);
+    return {
+      application: updateRes.rows[0],
+      meta: appInfo
+    };
   }
 }

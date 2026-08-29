@@ -15,8 +15,7 @@ router.post('/geocode', JobController.triggerGeocoding);
 router.post('/resolve-map-url', JobController.resolveMapUrl);
 router.get('/admin/map-analytics', requireAuth, JobController.getAdminMapAnalytics);
 
-// Public Routes
-router.get('/', JobController.getJobs);
+// Meta & Application Schedules
 router.get('/meta/categories', JobController.getCategories);
 router.get('/meta/skills', JobController.getSkills);
 router.get('/applied/my-applications', requireAuth, JobController.getMyAppliedJobs);
@@ -24,12 +23,24 @@ router.get('/applied/me', requireAuth, JobController.getMyAppliedJobs);
 router.get('/saved/my-saved', requireAuth, JobController.getMySavedJobs);
 router.get('/saved/me', requireAuth, JobController.getMySavedJobs);
 router.get('/interviews/my-interviews', requireAuth, JobController.getMyInterviews);
-router.get('/:id', JobController.getJobById);
 
-// Protected Routes
+// Employer Specific Workspaces (Must be declared BEFORE /:id)
 router.get('/employer/analytics', requireAuth, JobController.getEmployerAnalytics);
+router.get('/employer/interviews', requireAuth, JobController.getEmployerInterviews);
+router.patch('/employer/interviews/:applicationId/status', requireAuth, actionLimiter, JobController.updateEmployerInterviewStatus);
 router.get('/my-jobs/all', requireAuth, JobController.getMyJobs);
+
+// Candidate Directory Queries
+router.get('/workers/all', requireAuth, JobController.getAllCandidates);
+router.get('/candidates/all', requireAuth, JobController.getAllCandidates);
+router.get('/candidates', requireAuth, JobController.getAllCandidates);
+
+// General Jobs Collection
+router.get('/', JobController.getJobs);
 router.post('/', requireAuth, actionLimiter, JobController.createJob);
+
+// Specific Job Actions (/:id parameter matches only after specific static routes)
+router.get('/:id', JobController.getJobById);
 router.put('/:id', requireAuth, actionLimiter, JobController.updateJob);
 router.delete('/:id', requireAuth, actionLimiter, JobController.deleteJob);
 router.post('/:id/apply', requireAuth, actionLimiter, JobController.applyToJob);
@@ -38,8 +49,5 @@ router.get('/:id/applicants', requireAuth, JobController.getApplicantsForJob);
 router.patch('/:id/applicants/:userId/status', requireAuth, actionLimiter, JobController.updateApplicantStatus);
 router.post('/:id/applicants/:userId/interview', requireAuth, actionLimiter, JobController.scheduleInterview);
 router.post('/:id/applicants/:userId/email', requireAuth, actionLimiter, JobController.sendCustomEmail);
-router.get('/workers/all', requireAuth, JobController.getAllCandidates);
-router.get('/candidates/all', requireAuth, JobController.getAllCandidates);
-router.get('/candidates', requireAuth, JobController.getAllCandidates);
 
 export default router;

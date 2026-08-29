@@ -6,6 +6,7 @@ import { EmailService } from '../../auth/services/EmailService';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { AdvertisementRepository } from '../../advertisements/repositories/advertisementRepository';
 import { NotificationService } from '../../notifications/services/NotificationService';
+import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
 import { S3Util } from '../../../utils/s3';
 import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
@@ -801,8 +802,8 @@ export class JobController {
         res.status(404).json({ success: false, message: 'Job not found' });
         return;
       }
-      if (job.employerId !== employerId) {
-        res.status(403).json({ success: false, message: 'Unauthorized' });
+      if (String(job.employerId).toLowerCase() !== String(employerId).toLowerCase() && role !== 'admin') {
+        res.status(403).json({ success: false, message: 'Unauthorized: You do not own this job vacancy' });
         return;
       }
 
@@ -955,6 +956,103 @@ export class JobController {
       const userId = req.user!.userId;
       const data = await JobRepository.getInterviewsForCandidate(userId);
       res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/jobs/employer/interviews
+   * Returns { upcoming: [...], past: [...] } for employer scheduled interviews
+   */
+  static async getEmployerInterviews(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.user!.userId;
+      const data = await JobRepository.getInterviewsForEmployer(employerId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /api/v1/jobs/employer/interviews/:applicationId/status
+   */
+  static async updateEmployerInterviewStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.user!.userId;
+      const { applicationId } = req.params;
+      const {
+        status,
+        interviewRating,
+        interviewFeedback,
+        interviewDate,
+        interviewTime,
+        venueAddress,
+        mapsLink,
+        postponedReason
+      } = req.body;
+
+      const result = await JobRepository.updateEmployerInterviewStatus(employerId, applicationId, {
+        status,
+        interviewRating,
+        interviewFeedback,
+        interviewDate,
+        interviewTime,
+        venueAddress,
+        mapsLink,
+        postponedReason
+      });
+
+      const { meta, application } = result;
+
+      // Send instant Email and Notification to Candidate
+      if (status === 'interviewed') {
+        NotificationRepository.createNotification(
+          meta.candidate_id,
+          `Interview Completed: ${meta.job_title}`,
+          `Your interview for ${meta.job_title} with ${meta.company_name} has been marked as completed.`,
+          'JOB_INTERVIEW',
+          `/jobs/${meta.job_id}`
+        ).catch((err: any) => console.error('Failed to send interview completed notification:', err));
+
+        if (meta.candidate_email) {
+          EmailService.sendInterviewCompletedEmail(
+            meta.candidate_email,
+            meta.candidate_name,
+            meta.job_title,
+            meta.company_name
+          ).catch((err: any) => console.error('Failed to send interview completed email:', err));
+        }
+      } else if (status === 'postponed' || interviewDate) {
+        NotificationRepository.createNotification(
+          meta.candidate_id,
+          `Interview Rescheduled: ${meta.job_title}`,
+          `Your interview for ${meta.job_title} with ${meta.company_name} has been rescheduled to ${interviewDate} at ${interviewTime}.`,
+          'JOB_INTERVIEW',
+          `/jobs/${meta.job_id}`
+        ).catch((err: any) => console.error('Failed to send interview rescheduled notification:', err));
+
+        if (meta.candidate_email) {
+          EmailService.sendInterviewRescheduledEmail(
+            meta.candidate_email,
+            meta.candidate_name,
+            meta.job_title,
+            meta.company_name,
+            interviewDate,
+            interviewTime,
+            venueAddress || application.venue_address || 'Industrial Plant Main Gate',
+            postponedReason,
+            mapsLink || application.maps_link
+          ).catch((err: any) => console.error('Failed to send interview rescheduled email:', err));
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: status === 'interviewed' ? 'Interview marked as completed' : 'Interview schedule updated successfully',
+        data: application
+      });
     } catch (error) {
       next(error);
     }

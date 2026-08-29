@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -53,7 +53,7 @@ function MainAppContent() {
   const { isLoading: isLoadingAuth } = useAuth();
   const navigationRef = useNavigationContainerRef<any>();
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -61,6 +61,23 @@ function MainAppContent() {
     Inter_800ExtraBold,
     Inter_900Black,
   });
+
+  // Strict Fail-safe: Never block UI on Splash Screen for more than 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && !isLoadingAuth) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [fontsLoaded, fontError, isLoadingAuth]);
 
   // Global Centralized Navigation Route Listener for Strict Status Bar Synchronization
   const handleStateChange = () => {
@@ -90,8 +107,7 @@ function MainAppContent() {
     } catch (_) {}
   };
 
-  // Keep splash visible while fonts + auth are loading
-  const isReady = fontsLoaded && !isLoadingAuth;
+  const isReady = (fontsLoaded || !!fontError) && !isLoadingAuth;
 
   return (
     <View style={{ flex: 1 }}>
@@ -103,7 +119,7 @@ function MainAppContent() {
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>
-      {(showSplash || !fontsLoaded) && (
+      {showSplash && (
         <SplashScreen
           onFinish={() => setShowSplash(false)}
           isLoadingAuth={!isReady}

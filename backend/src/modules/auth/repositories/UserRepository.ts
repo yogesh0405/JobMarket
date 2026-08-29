@@ -83,7 +83,7 @@ export class UserRepository {
 
       // Fetch applied job IDs and status
       try {
-        const appsQuery = 'SELECT job_id, status, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id = $1;';
+        const appsQuery = 'SELECT job_id, status, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id::text = $1::text;';
         const appsResult = await pool.query(appsQuery, [id]);
         user.appliedJobs = appsResult.rows.map(row => row.job_id);
         (user as any).appliedJobsWithStatus = appsResult.rows.map(row => ({
@@ -102,7 +102,7 @@ export class UserRepository {
 
       // Fetch saved job IDs
       try {
-        const savedQuery = 'SELECT job_id FROM saved_jobs WHERE user_id = $1 ORDER BY created_at DESC;';
+        const savedQuery = 'SELECT job_id FROM saved_jobs WHERE user_id::text = $1::text ORDER BY created_at DESC;';
         const savedResult = await pool.query(savedQuery, [id]);
         (user as any).savedJobs = savedResult.rows.map(row => row.job_id);
       } catch (err) {

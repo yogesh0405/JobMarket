@@ -669,6 +669,211 @@ export class EmailService {
   }
 
   /**
+   * Send interview rescheduled email to candidate
+   */
+  static async sendInterviewRescheduledEmail(
+    workerEmail: string,
+    workerName: string,
+    jobTitle: string,
+    companyName: string,
+    newInterviewDate: string,
+    newInterviewTime: string,
+    venueAddress: string,
+    postponedReason?: string,
+    mapsLink?: string
+  ): Promise<boolean> {
+    const currentYear = new Date().getFullYear();
+
+    const mapsHtml = mapsLink
+      ? `<p style="margin:16px 0 0;font-size:15px;color:#64748b;">
+          <a href="${mapsLink}" target="_blank" style="display:inline-block;background-color:#2563eb;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Updated Location on Google Maps</a>
+         </p>`
+      : '';
+
+    const reasonHtml = postponedReason
+      ? `<tr>
+          <td style="padding-bottom:12px;font-size:14px;color:#64748b;width:120px;font-weight:600;">Update Note:</td>
+          <td style="padding-bottom:12px;font-size:14px;color:#d97706;font-weight:600;">${postponedReason}</td>
+        </tr>`
+      : '';
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Interview Rescheduled - CSN-JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#1e3a8a;border-radius:12px;padding:10px 20px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">CSN-JobMarket</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+              <!-- Amber top bar -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);height:6px;"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+                    <p style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Interview Rescheduled</p>
+                    <p style="margin:0 0 28px;font-size:15px;color:#64748b;line-height:1.6;">
+                      Hi <strong style="color:#0f172a;">${workerName}</strong>, your upcoming interview for the <strong style="color:#1e3a8a;">${jobTitle}</strong> position with <strong style="color:#0f172a;">${companyName}</strong> has been rescheduled to a new date/time.
+                    </p>
+
+                    <!-- Details Table -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border-radius:12px;padding:24px;margin-bottom:28px;border:1px solid #e2e8f0;">
+                      <tr>
+                        <td style="padding-bottom:12px;font-size:14px;color:#64748b;width:120px;font-weight:600;">New Date:</td>
+                        <td style="padding-bottom:12px;font-size:14px;color:#0f172a;font-weight:700;">${newInterviewDate}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom:12px;font-size:14px;color:#64748b;width:120px;font-weight:600;">New Time:</td>
+                        <td style="padding-bottom:12px;font-size:14px;color:#0f172a;font-weight:700;">${newInterviewTime}</td>
+                      </tr>
+                      ${reasonHtml}
+                      <tr>
+                        <td style="font-size:14px;color:#64748b;width:120px;font-weight:600;vertical-align:top;">Venue / Address:</td>
+                        <td style="font-size:14px;color:#0f172a;line-height:1.5;">
+                          ${(venueAddress || 'Industrial Plant Main Gate').replace(/\n/g, '<br />')}
+                          ${mapsHtml}
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0;font-size:15px;color:#64748b;line-height:1.6;">
+                      Please note the new schedule and plan your visit accordingly.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">
+                &copy; ${currentYear} CSN-JobMarket. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    return EmailService.dispatchEmail(workerEmail, workerName, `Interview Rescheduled: ${jobTitle} at ${companyName}`, htmlContent);
+  }
+
+  /**
+   * Send interview completed confirmation email to candidate
+   */
+  static async sendInterviewCompletedEmail(
+    workerEmail: string,
+    workerName: string,
+    jobTitle: string,
+    companyName: string
+  ): Promise<boolean> {
+    const currentYear = new Date().getFullYear();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Interview Completed - CSN-JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#1e3a8a;border-radius:12px;padding:10px 20px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">CSN-JobMarket</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+              <!-- Emerald top bar -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);height:6px;"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+                    <p style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Interview Completed</p>
+                    <p style="margin:0 0 20px;font-size:15px;color:#64748b;line-height:1.6;">
+                      Hi <strong style="color:#0f172a;">${workerName}</strong>, your interview for the <strong style="color:#1e3a8a;">${jobTitle}</strong> position with <strong style="color:#0f172a;">${companyName}</strong> has been marked as completed.
+                    </p>
+                    <p style="margin:0;font-size:15px;color:#64748b;line-height:1.6;">
+                      The recruiter is reviewing their candidate evaluations. You will be notified regarding the next steps or final selection decisions soon.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">
+                &copy; ${currentYear} CSN-JobMarket. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    return EmailService.dispatchEmail(workerEmail, workerName, `Interview Completed: ${jobTitle} at ${companyName}`, htmlContent);
+  }
+
+  /**
    * Send a custom email from the employer to the candidate
    */
   static async sendCustomEmployerEmail(

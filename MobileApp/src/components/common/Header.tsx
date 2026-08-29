@@ -429,6 +429,24 @@ export const Header: React.FC<HeaderProps> = ({
                     onPress={() => {
                       closeDrawer(() => {
                         if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('EmployerInterviews');
+                        }
+                      });
+                    }}
+                  >
+                    <View style={styles.iconSquircle}>
+                      <Calendar size={17} color="#334155" />
+                    </View>
+                    <Text style={styles.menuItemTitle}>Scheduled Interviews</Text>
+                    <ChevronRight size={16} color={COLORS.slate400} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItemRow}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      closeDrawer(() => {
+                        if (navigation && typeof navigation.navigate === 'function') {
                           navigation.navigate('EmployerBanners');
                         }
                       });

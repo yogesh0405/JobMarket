@@ -20,7 +20,13 @@ export const kafka = new Kafka({
       password,
     } as any,
   } : {}),
-  connectionTimeout: 10000,
+  connectionTimeout: 15000,
+  requestTimeout: 60000,
+  retry: {
+    initialRetryTime: 300,
+    retries: 10,
+    maxRetryTime: 30000,
+  },
   logLevel: logLevel.ERROR,
 });
 
@@ -91,7 +97,14 @@ export async function publishKafkaEvent(topic: string, eventData: any, key?: str
 export function createKafkaConsumer(groupId: string): Consumer {
   return kafka.consumer({
     groupId: `${groupId}-group`,
-    sessionTimeout: 30000,
+    sessionTimeout: 45000,
+    rebalanceTimeout: 60000,
     heartbeatInterval: 3000,
+    maxWaitTimeInMs: 5000,
+    retry: {
+      retries: 10,
+      initialRetryTime: 500,
+      maxRetryTime: 30000,
+    },
   });
 }

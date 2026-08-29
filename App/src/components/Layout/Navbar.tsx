@@ -184,6 +184,12 @@ export const Navbar: React.FC = () => {
                         </svg>
                         Applicants
                       </Link>
+                      <Link to="/dashboard?tab=interviews" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        Scheduled Interviews
+                      </Link>
                       <Link to="/dashboard?tab=candidates" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                           <circle cx="12" cy="7" r="4"/><path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2"/>
@@ -205,14 +211,22 @@ export const Navbar: React.FC = () => {
                     </>
                   )}
 
-                  {/* Saved Jobs (Candidates / Guests Only) */}
+                  {/* Saved Jobs & Interviews (Candidates / Guests Only) */}
                   {currentUser.role !== 'employer' && (
-                    <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                      </svg>
-                      {t.savedJobs}
-                    </Link>
+                    <>
+                      <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        {t.savedJobs}
+                      </Link>
+                      <Link to="/dashboard?tab=interviews" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        Scheduled Interviews
+                      </Link>
+                    </>
                   )}
 
                   {currentUser.role === 'candidate' && (

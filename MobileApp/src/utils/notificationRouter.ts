@@ -51,7 +51,26 @@ export const resolveMobileNotificationRoute = (
     }
   }
 
-  // 2. Direct Web Link / Deep-Link Router
+  // 2. Interview Priority Routing (Scheduled, Rescheduled, Postponed, Completed)
+  if (
+    type === 'JOB_INTERVIEW' ||
+    type === 'INTERVIEW_SCHEDULED' ||
+    type === 'INTERVIEW_RESCHEDULED' ||
+    type === 'INTERVIEW_POSTPONED' ||
+    type === 'INTERVIEW_CANCELLED' ||
+    type === 'INTERVIEW_PASSED' ||
+    type === 'INTERVIEW_COMPLETED' ||
+    combined.includes('INTERVIEW') ||
+    combined.includes('WALK-IN') ||
+    (linkStr && (linkStr.toLowerCase().includes('/interviews') || linkStr.toLowerCase().includes('tab=interviews')))
+  ) {
+    if (role === 'employer') {
+      return { screen: 'EmployerInterviews' };
+    }
+    return { screen: 'MyInterviews' };
+  }
+
+  // 3. Direct Web Link / Deep-Link Router
   if (linkStr) {
     const lowerLink = linkStr.toLowerCase();
 
@@ -83,13 +102,6 @@ export const resolveMobileNotificationRoute = (
         screen: 'CandidateMain',
         params: { screen: 'CandidateAppliedTab' },
       };
-    }
-
-    // Interviews Link
-    if (lowerLink.includes('/interviews') || lowerLink.includes('tab=interviews')) {
-      return role === 'employer'
-        ? { screen: 'EmployerMain', params: { screen: 'ApplicantsTab' } }
-        : { screen: 'MyInterviews' };
     }
 
     // Saved Jobs Link
@@ -148,16 +160,7 @@ export const resolveMobileNotificationRoute = (
     combined.includes('WALK-IN')
   ) {
     if (role === 'employer') {
-      if (extractedJobId) {
-        return {
-          screen: 'JobApplicants',
-          params: { jobId: extractedJobId, jobTitle: item.title || 'Applicants' },
-        };
-      }
-      return {
-        screen: 'EmployerMain',
-        params: { screen: 'ApplicantsTab' },
-      };
+      return { screen: 'EmployerInterviews' };
     }
     return { screen: 'MyInterviews' };
   }

@@ -360,6 +360,15 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                   </div>
 
                   <div 
+                    onClick={() => closeDrawer(() => navigate('/dashboard?tab=interviews'))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px', cursor: 'pointer', color: '#334155' }}
+                  >
+                    <Calendar size={18} color="#64748B" />
+                    <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600 }}>Scheduled Interviews</span>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </div>
+
+                  <div 
                     onClick={() => closeDrawer(() => navigate('/resume'))}
                     style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px', cursor: 'pointer', color: '#334155' }}
                   >
@@ -403,6 +412,15 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                   >
                     <Users size={18} color="#64748B" />
                     <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600 }}>Candidate Applications</span>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </div>
+
+                  <div 
+                    onClick={() => closeDrawer(() => navigate('/dashboard?tab=interviews'))}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px', cursor: 'pointer', color: '#334155' }}
+                  >
+                    <Calendar size={18} color="#64748B" />
+                    <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 600 }}>Scheduled Interviews</span>
                     <ChevronRight size={14} color="#94A3B8" />
                   </div>
                 </>
