@@ -120,18 +120,20 @@ export class AdminApiService {
     return json.data;
   }
 
-  static async unpublishJob(id: string) {
+  static async unpublishJob(id: string, reason?: string) {
     const res = await apiFetch(`/api/v1/admin/jobs/${id}/unpublish`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      body: JSON.stringify({ reason })
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to unpublish job');
     return json.data;
   }
 
-  static async deleteJob(id: string) {
+  static async deleteJob(id: string, reason?: string) {
     const res = await apiFetch(`/api/v1/admin/jobs/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      body: JSON.stringify({ reason })
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to delete job');

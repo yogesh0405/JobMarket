@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation, Language } from '../../utils/translations';
 import { getInitials } from '../../utils/helpers';
+import { apiFetch } from '../../utils/api';
 import { HeaderSearchBar } from './HeaderSearchBar';
 import { NavbarNotificationBell } from './NavbarNotificationBell';
 
@@ -20,8 +21,29 @@ export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState<{ logo_url?: string; platform_name?: string }>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadSettings = () => {
+      apiFetch('/api/v1/settings')
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+          if (res?.data) {
+            setPlatformSettings({
+              logo_url: res.data.logo_url || '',
+              platform_name: res.data.platform_name || ''
+            });
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadSettings();
+    window.addEventListener('settings-updated', loadSettings);
+    return () => window.removeEventListener('settings-updated', loadSettings);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,10 +121,22 @@ export const Navbar: React.FC = () => {
       <div className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
       <div className="navbar-inner">
         <div className="navbar-header-row">
-          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: 0 }} title={isEmployer ? "Employer Workspace" : "JobMarket Home"}>
-            <img src="/logo.svg" alt="JobMarket Logo" style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '6px', flexShrink: 0 }} />
+          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: 0 }} title={isEmployer ? "Employer Workspace" : `${platformSettings.platform_name || 'JobMarket'} Home`}>
+            <img 
+              src={platformSettings.logo_url || "/logo.svg"} 
+              alt={`${platformSettings.platform_name || 'JobMarket'} Logo`} 
+              style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '6px', flexShrink: 0, borderRadius: '4px' }} 
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/logo.svg')) {
+                  target.src = '/logo.svg';
+                }
+              }}
+            />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', margin: 0, padding: 0 }}>
-              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '17px', lineHeight: 1.15, margin: 0, padding: 0 }}>{t.brand}</span>
+              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '17px', lineHeight: 1.15, margin: 0, padding: 0 }}>
+                {platformSettings.platform_name || t.brand}
+              </span>
               <span style={{ fontSize: '9.5px', color: 'var(--text-secondary)', marginTop: '1px', fontWeight: 'bold', lineHeight: 1 }}>{isEmployer ? "Employer Portal" : t.tagline}</span>
             </div>
           </Link>

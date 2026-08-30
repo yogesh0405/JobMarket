@@ -327,90 +327,117 @@
 
 .admin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-6);
-  margin-bottom: var(--space-8);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .admin-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 580px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card-premium {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5) var(--space-6);
+  border-radius: 8px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 80px;
 }
 
 .stat-card-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-3);
+  margin-bottom: 6px;
 }
 
 .stat-card-title {
-  font-size: var(--fs-xs);
-  color: var(--text-secondary);
-  font-weight: var(--fw-semibold);
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 6px;
 }
 
 .stat-card-icon-wrapper {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-md);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: var(--primary-50);
   color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .stat-card-body {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .stat-card-number {
-  font-size: var(--fs-3xl);
-  font-weight: var(--fw-extrabold);
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.1;
 }
 
 .stat-card-trend {
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-bold);
+  font-size: 10px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 2px;
+  white-space: nowrap;
 }
 
 .trend-up {
-  color: var(--success);
+  color: #059669;
 }
 
 .trend-down {
-  color: var(--danger);
+  color: #DC2626;
 }
 
 /* Tables styling */
 .admin-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  margin-bottom: var(--space-8);
+  margin-bottom: 20px;
 }
 
 .admin-card-header {

@@ -1,5 +1,4 @@
-import { COLORS, RADIUS } from '../../constants/theme';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,26 +6,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
-  Image,
+  TextInput,
 } from 'react-native';
 import {
   Bookmark,
-  Building2,
-  MapPin,
-  Briefcase,
-  IndianRupee,
-  ChevronRight,
-  Trash2,
   Search,
+  X,
+  Layers,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
-import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { useToast } from '../../context/ToastContext';
 import { savedJobsStore } from '../../utils/savedJobsStore';
+import { COLORS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -37,6 +32,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const [savedJobs, setSavedJobs] = useState<Job[]>(savedJobsStore.getSavedJobs());
   const [loading, setLoading] = useState(savedJobsStore.getSavedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   React.useEffect(() => {
     setSavedJobs(savedJobsStore.getSavedJobs());
@@ -72,30 +68,78 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
     fetchSavedData(false);
   };
 
-  const handleUnsave = useCallback((jobId: string) => {
-    savedJobsStore.toggleSave(jobId);
-    showToast('Job removed from saved bookmarks', 'info');
-  }, [showToast]);
+  const handleToggleSave = useCallback(
+    (jobId: string) => {
+      savedJobsStore.toggleSave(jobId);
+      showToast('Removed from saved vacancies', 'info');
+    },
+    [showToast]
+  );
+
+  const filteredJobs = useMemo(() => {
+    if (!searchQuery.trim()) return savedJobs;
+    const q = searchQuery.toLowerCase().trim();
+    return savedJobs.filter((job) => {
+      const title = (job.title || '').toLowerCase();
+      const company = (job.company || '').toLowerCase();
+      const loc = (job.location || '').toLowerCase();
+      const trade = ((job as any).trade || (job as any).industry || '').toLowerCase();
+
+      return title.includes(q) || company.includes(q) || loc.includes(q) || trade.includes(q);
+    });
+  }, [savedJobs, searchQuery]);
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Saved Jobs" showBack={false} />
+      <Header
+        title="Saved Jobs"
+        subtitle="Bookmarked industrial vacancies"
+        showBack={false}
+      />
 
+      {/* Search Toolbar */}
+      {savedJobs.length > 0 && (
+        <View style={styles.toolbarContainer}>
+          <View style={styles.searchBarWrapper}>
+            <Search size={14} color="#94A3B8" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search saved jobs by title, company, MIDC..."
+              placeholderTextColor="#94A3B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X size={14} color="#64748B" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Main Content Area */}
       {loading && !refreshing ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.gridRowContainer}>
-            {[1, 2, 3, 4].map((key) => (
-              <View key={key} style={styles.gridCardSkeleton}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <SkeletonLoader width={36} height={36} style={{ borderRadius: 6 }} />
-                  <SkeletonLoader width={24} height={24} style={{ borderRadius: 12 }} />
-                </View>
-                <SkeletonLoader width="85%" height={15} style={{ borderRadius: 4, marginTop: 8 }} />
-                <SkeletonLoader width="60%" height={12} style={{ borderRadius: 4, marginTop: 4 }} />
-                <SkeletonLoader width="75%" height={12} style={{ borderRadius: 4, marginTop: 10 }} />
+          {[1, 2, 3].map((key) => (
+            <View key={key} style={styles.cardSkeleton}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                <SkeletonLoader width="70%" height={18} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={22} height={22} style={{ borderRadius: 0 }} />
               </View>
-            ))}
-          </View>
+              <SkeletonLoader width="45%" height={14} style={{ borderRadius: 0, marginBottom: 14 }} />
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+                <SkeletonLoader width={80} height={12} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={90} height={12} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={70} height={12} style={{ borderRadius: 0 }} />
+              </View>
+              <View style={{ paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <SkeletonLoader width={120} height={14} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={60} height={14} style={{ borderRadius: 0 }} />
+              </View>
+            </View>
+          ))}
         </ScrollView>
       ) : (
         <ScrollView
@@ -103,111 +147,56 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
-          {/* Header summary bar */}
-          <View style={styles.summaryBar}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.summaryTitle}>Saved Vacancies</Text>
-              <Text style={styles.summarySub}>Jobs saved for quick reference</Text>
-            </View>
-            <View style={styles.countBadge}>
-              <Bookmark size={14} color={COLORS.primary} fill={COLORS.primary} />
-              <Text style={styles.countBadgeText}>{savedJobs.length} Saved</Text>
-            </View>
-          </View>
-
           {savedJobs.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Bookmark size={44} color="#94A3B8" />
+            /* Empty State when no jobs are saved */
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconBox}>
+                <Bookmark size={36} color="#94A3B8" />
+              </View>
               <Text style={styles.emptyTitle}>No Saved Jobs Yet</Text>
               <Text style={styles.emptyDesc}>
-                Tap the bookmark icon on any job card to save it for quick reference later.
+                Tap the bookmark icon on any job card while browsing to save it for quick reference here.
               </Text>
               <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.browseBtn}
+                activeOpacity={0.85}
+                style={styles.browseJobsCtaBtn}
                 onPress={() => navigation.navigate('CandidateJobsTab')}
               >
-                <Search size={14} color="#FFFFFF" />
-                <Text style={styles.browseBtnText}>Browse Industrial Jobs</Text>
+                <Search size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.browseJobsCtaText}>Browse Industrial Jobs</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredJobs.length === 0 ? (
+            /* Empty Search Results */
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconBox}>
+                <Layers size={36} color="#94A3B8" />
+              </View>
+              <Text style={styles.emptyTitle}>No Matching Saved Jobs</Text>
+              <Text style={styles.emptyDesc}>
+                No saved vacancies matched "{searchQuery}". Try a different keyword.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.resetSearchBtn}
+                onPress={() => setSearchQuery('')}
+              >
+                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.gridRowContainer}>
-              {savedJobs.map((job) => {
-                const logoUrl = job.companyLogo || (job as any).company_logo;
-                return (
-                  <TouchableOpacity
-                    key={job.id}
-                    activeOpacity={0.88}
-                    style={styles.gridCard}
-                    onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
-                  >
-                    {/* Role Title & Bookmark Row (First Line) */}
-                    <View style={styles.gridCardTitleRow}>
-                      <Text style={styles.jobTitle} numberOfLines={2}>
-                        {job.title}
-                      </Text>
-
-                      <TouchableOpacity
-                        style={styles.bookmarkBtn}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleUnsave(job.id);
-                        }}
-                      >
-                        <Bookmark size={15} color={COLORS.primary} fill={COLORS.primary} />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Company Name with Small Logo */}
-                    <View style={styles.companyRow}>
-                      <CompanyLogoAvatar
-                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
-                        companyName={job.company || 'Industrial Enterprise'}
-                        size={22}
-                        borderRadius={4}
-                      />
-                      <Text style={styles.companyName} numberOfLines={1}>
-                        {job.company || 'Industrial Enterprise'}
-                      </Text>
-                    </View>
-
-                    {/* Job Type & Shift Pills Directly Below Company Name */}
-                    <View style={styles.pillBadgeRow}>
-                      <View style={styles.typePill}>
-                        <Briefcase size={10} color="#475569" />
-                        <Text style={styles.typePillText} numberOfLines={1}>{job.job_type || job.jobType || 'Full-time'}</Text>
-                      </View>
-                      {(job as any).shift_type || (job as any).shiftType ? (
-                        <View style={styles.shiftPill}>
-                          <Text style={styles.shiftPillText} numberOfLines={1}>{(job as any).shift_type || (job as any).shiftType}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-
-                    <View style={styles.gridCardDivider} />
-
-                    {/* Location & Salary Below Divider */}
-                    <View style={styles.gridCardFooterInfo}>
-                      <View style={styles.metaItemRow}>
-                        <MapPin size={11} color={COLORS.primary} />
-                        <Text style={styles.metaText} numberOfLines={1}>{job.location || 'MIDC Industrial Zone'}</Text>
-                      </View>
-
-                      {job.salary_max || job.salaryMax ? (
-                        <View style={styles.metaItemRow}>
-                          <IndianRupee size={11} color="#0F172A" />
-                          <Text style={styles.salaryText} numberOfLines={1}>
-                            ₹{job.salary_min || job.salaryMin || 15000} - ₹{job.salary_max || job.salaryMax}/mo
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            /* Saved Job Cards List */
+            filteredJobs.map((job) => (
+              <CandidateJobCardItem
+                key={job.id}
+                job={job}
+                viewMode="grid"
+                isSaved={true}
+                onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
+                onToggleSave={handleToggleSave}
+                onCompanyPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
+              />
+            ))
           )}
         </ScrollView>
       )}
@@ -218,202 +207,110 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F8FAFC',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 130,
-    gap: 14,
-  },
-  summaryBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    paddingVertical: 4,
-    marginBottom: 4,
-  },
-  summaryTitle: {
-    fontSize: 17.5,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.3,
-  },
-  summarySub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  countBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  countBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  emptyCard: {
+
+  /* ── SEARCH TOOLBAR ── */
+  toolbarContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  emptyDesc: {
-    fontSize: 12.5,
-    color: '#64748B',
-    textAlign: 'center',
-  },
-  browseBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: RADIUS.card,
-    marginTop: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  browseBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '800',
-  },
-  /* 2-Column Grid Layout */
-  gridRowContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  gridCard: {
-    width: '48.5%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 12,
-    gap: 8,
-    justifyContent: 'space-between',
-  },
-  gridCardSkeleton: {
-    width: '48.5%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 12,
-    height: 150,
-  },
-  gridCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  jobTitle: {
-    flex: 1,
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 18,
-  },
-  companyRow: {
+  searchBarWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: -2,
-  },
-  smallCompanyIconSquare: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
     backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 38,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+
+  /* ── SCROLL CONTENT & SKELETONS ── */
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 120,
+    gap: 12,
+  },
+  cardSkeleton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 14,
+  },
+
+  /* ── EMPTY STATES ── */
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  emptyIconBox: {
+    width: 68,
+    height: 68,
+    borderRadius: 0,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    marginBottom: 4,
   },
-  smallCompanyLogoImg: {
-    width: 18,
-    height: 18,
-    borderRadius: 3,
-  },
-  companyName: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#64748B',
-    flex: 1,
-  },
-  bookmarkBtn: {
-    padding: 2,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gridCardDivider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  gridCardFooterInfo: {
-    gap: 4,
-  },
-  metaItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    flex: 1,
-  },
-  pillBadgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginVertical: 2,
-  },
-  typePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'transparent',
-  },
-  typePillText: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  shiftPill: {
-    backgroundColor: 'transparent',
-  },
-  shiftPillText: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  salaryText: {
-    fontSize: 11.5,
+  emptyTitle: {
+    fontSize: 15.5,
     fontWeight: '800',
     color: '#0F172A',
-    flex: 1,
+    textAlign: 'center',
+  },
+  emptyDesc: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 12,
+  },
+  browseJobsCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 0,
+    marginTop: 10,
+  },
+  browseJobsCtaText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  resetSearchBtn: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 0,
+    marginTop: 8,
+  },
+  resetSearchBtnText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

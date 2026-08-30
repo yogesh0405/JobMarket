@@ -112,6 +112,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [interviewMode, setInterviewMode] = useState('In-Person Walk-in');
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [interviewLocation, setInterviewLocation] = useState('');
+  const [interviewMapsLink, setInterviewMapsLink] = useState('');
   const [interviewNotes, setInterviewNotes] = useState('');
 
   // Email Form States
@@ -312,7 +313,15 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleScheduleInterview = async () => {
     if (!selectedApplicant) return;
     if (!interviewDate) {
-      Alert.alert('Validation Error', 'Please enter the interview date.');
+      Alert.alert('Required Field', 'Please select the interview date.');
+      return;
+    }
+    if (!interviewLocation || !interviewLocation.trim()) {
+      Alert.alert('Required Field', 'Please enter the Venue Address for the interview.');
+      return;
+    }
+    if (!interviewMapsLink || !interviewMapsLink.trim()) {
+      Alert.alert('Required Field', 'Please enter the Google Maps Location link for the candidate.');
       return;
     }
     const targetJobId = selectedApplicant?.job_id || (selectedApplicant as any)?.jobId || jobId;
@@ -323,7 +332,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
 
     setModalLoading(true);
     try {
-      const venue = interviewLocation.trim() || 'Industrial Plant Main Gate';
+      const venue = interviewLocation.trim();
       const targetUserId =
         selectedApplicant.user_id ||
         (selectedApplicant as any).userId ||
@@ -335,6 +344,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         interviewTime: interviewTime || '10:00 AM',
         venueAddress: venue,
         interviewLocation: venue,
+        mapsLink: interviewMapsLink.trim(),
         interviewMode,
         notes: interviewNotes,
       });
@@ -642,7 +652,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#94A3B8',
+    borderColor: '#CBD5E1',
     paddingHorizontal: 12,
     height: 38,
   },

@@ -155,11 +155,21 @@ export const SecuritySettings: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  // 1. Direct Password Change Handler
+  const userHasPassword = Boolean(
+    currentUser?.has_password !== false &&
+    (currentUser as any)?.hasPassword !== false &&
+    ((currentUser as any)?.auth_provider !== 'google' || currentUser?.has_password === true)
+  );
+
+  // 1. Direct Password Change / Set Handler
   const handleDirectPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('Please fill in all password fields.', 'error');
+    if (userHasPassword && !currentPassword) {
+      showToast('Please enter your current password.', 'error');
+      return;
+    }
+    if (!newPassword || !confirmPassword) {
+      showToast('Please fill in both new password fields.', 'error');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -175,12 +185,15 @@ export const SecuritySettings: React.FC = () => {
     try {
       const res = await apiFetch('/api/v1/auth/change-password', {
         method: 'POST',
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify({
+          currentPassword: userHasPassword ? currentPassword : '',
+          newPassword
+        })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to update password');
 
-      showToast('Password changed successfully!', 'success');
+      showToast(userHasPassword ? 'Password changed successfully!' : 'Password set successfully!', 'success');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -659,13 +672,15 @@ export const SecuritySettings: React.FC = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 12px' }}>
 
-        {/* CARD 1: RESET PASSWORD */}
+        {/* CARD 1: SET OR CHANGE PASSWORD */}
         <div className="sec-card-box">
           <div className="sec-card-header-row">
             <div>
-              <h2 className="sec-card-title">Reset Password</h2>
+              <h2 className="sec-card-title">{userHasPassword ? 'Change Password' : 'Set Password'}</h2>
               <p className="sec-card-subtitle">
-                Update your account password for secure access.
+                {userHasPassword
+                  ? 'Update your account password for secure access.'
+                  : 'You signed in with Google. Set a password to also log in directly with your email and password.'}
               </p>
             </div>
             <div className="sec-card-icon-box">
@@ -674,30 +689,32 @@ export const SecuritySettings: React.FC = () => {
           </div>
 
           <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
-            {/* Current Password */}
-            <div>
-              <label className="sec-input-label">Current Password</label>
-              <div className="sec-input-wrapper">
-                <input
-                  type={showCurrentPass ? 'text' : 'password'}
-                  className="sec-input-field"
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="sec-eye-btn"
-                  onClick={() => setShowCurrentPass(!showCurrentPass)}
-                >
-                  {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+            {/* Current Password - ONLY for users with existing password */}
+            {userHasPassword && (
+              <div>
+                <label className="sec-input-label">Current Password</label>
+                <div className="sec-input-wrapper">
+                  <input
+                    type={showCurrentPass ? 'text' : 'password'}
+                    className="sec-input-field"
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="sec-eye-btn"
+                    onClick={() => setShowCurrentPass(!showCurrentPass)}
+                  >
+                    {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* New Password */}
             <div>
-              <label className="sec-input-label">New Password</label>
+              <label className="sec-input-label">{userHasPassword ? 'New Password' : 'Create Password'}</label>
               <div className="sec-input-wrapper">
                 <input
                   type={showNewPass ? 'text' : 'password'}
@@ -718,12 +735,12 @@ export const SecuritySettings: React.FC = () => {
 
             {/* Confirm New Password */}
             <div>
-              <label className="sec-input-label">Confirm New Password</label>
+              <label className="sec-input-label">Confirm {userHasPassword ? 'New ' : ''}Password</label>
               <div className="sec-input-wrapper">
                 <input
                   type={showConfirmPass ? 'text' : 'password'}
                   className="sec-input-field"
-                  placeholder="Re-enter new password"
+                  placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
@@ -742,31 +759,37 @@ export const SecuritySettings: React.FC = () => {
               className="sec-primary-save-btn"
               disabled={isSubmittingChangePass}
             >
-              {isSubmittingChangePass ? 'Updating...' : 'Update Password'}
+              {isSubmittingChangePass
+                ? (userHasPassword ? 'Updating...' : 'Setting Password...')
+                : (userHasPassword ? 'Update Password' : 'Set Password')}
             </button>
           </form>
 
-          <div className="sec-card-divider" />
+          {userHasPassword && (
+            <>
+              <div className="sec-card-divider" />
 
-          {/* Trouble remembering current password? */}
-          <div>
-            <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
-              Trouble remembering current password?
-            </div>
-            <p style={{ fontSize: '10.5px', color: '#64748B', lineHeight: '15px', margin: '2px 0 4px', fontWeight: 400 }}>
-              Request a 6-digit OTP verification code sent directly to your email address.
-            </p>
+              {/* Trouble remembering current password? */}
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
+                  Trouble remembering current password?
+                </div>
+                <p style={{ fontSize: '10.5px', color: '#64748B', lineHeight: '15px', margin: '2px 0 4px', fontWeight: 400 }}>
+                  Request a 6-digit OTP verification code sent directly to your email address.
+                </p>
 
-            <button
-              type="button"
-              className="sec-outline-reset-btn"
-              onClick={handleSendResetOtp}
-              disabled={isSendingOtp}
-            >
-              <Send size={12} color="#1B4FDF" />
-              <span>{isSendingOtp ? 'Sending Code...' : 'Reset via Email OTP'}</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  className="sec-secondary-action-btn"
+                  onClick={handleSendResetOtp}
+                  disabled={isSendingOtp}
+                >
+                  <Send size={13} />
+                  {isSendingOtp ? 'Sending Code...' : 'Send Reset Code to Email'}
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Inline OTP Input Section if open */}
           {isOtpOpen && (

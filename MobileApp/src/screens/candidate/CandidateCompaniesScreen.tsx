@@ -326,12 +326,6 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
                   </View>
                 </View>
 
-                {comp.description ? (
-                  <Text style={styles.companyDescription} numberOfLines={2} ellipsizeMode="tail">
-                    {comp.description}
-                  </Text>
-                ) : null}
-
                 <View style={styles.cardFooterRow}>
                   <View style={styles.jobsNormalRow}>
                     <Briefcase size={12} color={COLORS.primary} />

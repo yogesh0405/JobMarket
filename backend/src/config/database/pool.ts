@@ -36,7 +36,11 @@ export const checkDatabaseConnection = async () => {
   try {
     const client = await pool.connect();
     console.log('✅ Database connected successfully');
-    await client.query('SELECT 1');
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS has_password BOOLEAN DEFAULT TRUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'email';
+    `);
     client.release();
   } catch (err) {
     console.error('❌ Database connection error', err);

@@ -73,18 +73,44 @@ const CountdownBadge: React.FC<{ days: number; isPast?: boolean }> = ({ days, is
   );
 };
 
+const isValidMapLink = (url?: string | null): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('geo:') ||
+    trimmed.includes('maps.google.') ||
+    trimmed.includes('goo.gl/maps') ||
+    trimmed.includes('maps.app.goo.gl')
+  );
+};
+
 const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigation: any }> = ({ item, isPast, navigation }) => {
   const days = getDaysFromToday(item.interview_date);
+  const hasValidMap = isValidMapLink(item.maps_link);
 
   const handleOpenMap = () => {
-    const url = item.maps_link || (item.venue_address
-      ? `https://maps.google.com/?q=${encodeURIComponent(item.venue_address)}`
-      : null);
-    if (url) Linking.openURL(url);
+    if (hasValidMap && item.maps_link) {
+      Linking.openURL(item.maps_link.trim()).catch((err) =>
+        console.warn('Failed to open map link:', err)
+      );
+    }
   };
 
   const handleOpenJobDetails = () => {
-    navigation.navigate('CandidateJobDetail', { jobId: item.job_id, job: item });
+    navigation.navigate('CandidateJobDetail', {
+      jobId: item.job_id,
+      job: {
+        ...item,
+        id: item.job_id,
+        title: item.job_title,
+        job_title: item.job_title,
+        company: item.company_name || item.company,
+        company_name: item.company_name || item.company,
+        location: item.job_location || item.venue_address,
+      },
+    });
   };
 
   return (
@@ -98,13 +124,20 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigatio
         <View style={styles.companyDot}>
           <Building2 size={16} color={isPast ? '#94A3B8' : COLORS.primary} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.companyName, isPast && styles.textMuted]} numberOfLines={1}>
             {item.company_name || item.company}
           </Text>
-          <Text style={[styles.jobTitle, isPast && styles.textMuted2]} numberOfLines={1}>
-            {item.job_title}
-          </Text>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={handleOpenJobDetails}
+            style={styles.jobTitleLinkRow}
+          >
+            <Text style={[styles.jobTitle, isPast ? styles.textMuted2 : styles.jobTitleLink]} numberOfLines={1}>
+              {item.job_title}
+            </Text>
+            <ExternalLink size={10} color={isPast ? '#94A3B8' : COLORS.primary} style={{ marginLeft: 3 }} />
+          </TouchableOpacity>
         </View>
         <CountdownBadge days={days} isPast={isPast} />
       </View>
@@ -134,11 +167,21 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigatio
 
       {/* Venue Row */}
       {item.venue_address ? (
-        <TouchableOpacity style={styles.venueRow} onPress={handleOpenMap} activeOpacity={0.7}>
-          <MapPin size={13} color={isPast ? '#94A3B8' : '#EF4444'} />
-          <Text style={[styles.venueText, isPast && styles.textMuted]} numberOfLines={2}>{item.venue_address}</Text>
-          <Navigation2 size={13} color={isPast ? '#CBD5E1' : COLORS.primary} />
-        </TouchableOpacity>
+        hasValidMap ? (
+          <TouchableOpacity style={styles.venueRow} onPress={handleOpenMap} activeOpacity={0.7}>
+            <MapPin size={13} color={isPast ? '#94A3B8' : COLORS.primary} />
+            <Text style={[styles.venueText, isPast && styles.textMuted]} numberOfLines={2}>{item.venue_address}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingLeft: 4 }}>
+              <Navigation2 size={13} color={isPast ? '#94A3B8' : COLORS.primary} />
+              <Text style={{ fontSize: 11, fontWeight: '800', color: isPast ? '#94A3B8' : COLORS.primary }}>Map</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.venueRow}>
+            <MapPin size={13} color={isPast ? '#94A3B8' : COLORS.primary} />
+            <Text style={[styles.venueText, isPast && styles.textMuted]} numberOfLines={2}>{item.venue_address}</Text>
+          </View>
+        )
       ) : null}
     </TouchableOpacity>
   );
@@ -270,8 +313,8 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
 // --- Badge styles ---
 const badgeStyles = StyleSheet.create({
   base: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-start' },
-  today: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
-  todayText: { fontSize: 10, fontWeight: '900', color: '#DC2626', letterSpacing: 0.5 },
+  today: { backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' },
+  todayText: { fontSize: 10, fontWeight: '900', color: COLORS.primary, letterSpacing: 0.5 },
   tomorrow: { backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FED7AA' },
   tomorrowText: { fontSize: 10, fontWeight: '900', color: '#EA580C', letterSpacing: 0.5 },
   soon: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
@@ -344,7 +387,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   companyName: { fontSize: 13, fontWeight: '800', color: '#0F172A' },
-  jobTitle: { fontSize: 11, fontWeight: '600', color: '#475569', marginTop: 1 },
+  jobTitleLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  jobTitle: { fontSize: 11.5, fontWeight: '600', color: '#475569' },
+  jobTitleLink: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
   inlineDivider: { height: 1, backgroundColor: '#F1F5F9' },
 
   // Info Grid

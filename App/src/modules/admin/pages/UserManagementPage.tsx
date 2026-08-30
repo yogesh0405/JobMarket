@@ -192,8 +192,6 @@ export const UserManagementPage: React.FC = () => {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Role</th>
-                  <th>Status</th>
-                  <th>Verification</th>
                   <th>Joined Date</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -216,16 +214,6 @@ export const UserManagementPage: React.FC = () => {
                     <td>
                       <span className="status-badge" style={{ background: u.role === 'admin' ? '#e0e4ff' : u.role === 'employer' ? '#fef3c7' : '#d1fae5', color: u.role === 'admin' ? '#1a2eb8' : u.role === 'employer' ? '#b45309' : '#047857' }}>
                         {u.role === 'candidate' ? 'Worker' : u.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${u.status === 'ACTIVE' ? 'status-active' : u.status === 'BLOCKED' ? 'status-blocked' : 'status-pending'}`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${u.aadhaar_verified ? 'status-verified' : 'status-rejected'}`}>
-                        {u.aadhaar_verified ? 'Verified' : 'Not Verified'}
                       </span>
                     </td>
                     <td>{new Date(u.created_at).toLocaleDateString()}</td>

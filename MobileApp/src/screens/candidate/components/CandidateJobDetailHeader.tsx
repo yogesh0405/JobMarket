@@ -45,7 +45,22 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
     (job as any).company_logo ||
     (job as any).logoUrl ||
     (job as any).logo_url ||
-    (job as any).logo;
+    (job as any).logo ||
+    null;
+
+  const companyName =
+    job.company ||
+    (job as any).company_name ||
+    (job as any).companyName ||
+    'Industrial Partner';
+
+  const jobTitle =
+    job.title ||
+    (job as any).job_title ||
+    (job as any).jobTitle ||
+    (job as any).role ||
+    (job as any).trade ||
+    'Job Opportunity';
 
   return (
     <View style={styles.profileHeaderMasterCard}>
@@ -87,7 +102,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
             onPress={onCompanyPress}
             style={styles.bannerAvatarBox}
           >
-            <CompanyLogoAvatar logoUrl={logoUrl} companyName={job.company} size={46} borderRadius={23} />
+            <CompanyLogoAvatar logoUrl={logoUrl} companyName={companyName} size={46} borderRadius={23} />
           </TouchableOpacity>
 
           <View style={styles.bannerTitleTextStack}>
@@ -97,13 +112,13 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
               style={styles.bannerCompanyRow}
             >
               <Text style={styles.bannerCompanyNameText} numberOfLines={1}>
-                {job.company || 'Industrial Partner'}
+                {companyName}
               </Text>
               <ExternalLink size={12} color="#BFDBFE" strokeWidth={2.2} />
             </TouchableOpacity>
 
             <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
-              {job.title}
+              {jobTitle}
             </Text>
 
             {/* Clean Inline Industry & Job Type Metadata without Chips/Backgrounds */}

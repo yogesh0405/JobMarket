@@ -73,6 +73,19 @@ const formatDate = (dateStr: string): string => {
   });
 };
 
+const isValidMapLink = (url?: string | null): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('geo:') ||
+    trimmed.includes('maps.google.') ||
+    trimmed.includes('goo.gl/maps') ||
+    trimmed.includes('maps.app.goo.gl')
+  );
+};
+
 interface Props {
   currentUser: any;
   showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
@@ -631,9 +644,9 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                         </span>
                       ) : days === 0 ? (
                         <span className="cand-countdown-pill" style={{
-                          backgroundColor: '#FEF2F2',
-                          border: '1px solid #FECACA',
-                          color: '#DC2626',
+                          backgroundColor: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          color: '#1764E8',
                           fontSize: '10px',
                           fontWeight: 900,
                           padding: '3px 8px',
@@ -709,32 +722,58 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
 
                     {/* Venue Row */}
                     {item.venue_address && (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenMap(item.venue_address, item.maps_link);
-                        }}
-                        className="cand-venue-text"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '6px',
-                          backgroundColor: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          padding: '8px',
-                          borderRadius: '6px',
-                          marginTop: '6px',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: isPast ? '#94A3B8' : '#475569',
-                          lineHeight: '17px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <MapPin size={13} color={isPast ? '#94A3B8' : '#EF4444'} style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <span style={{ flex: 1 }}>{item.venue_address}</span>
-                        <Navigation2 size={13} color={isPast ? '#CBD5E1' : '#1764E8'} style={{ marginTop: '2px', flexShrink: 0 }} />
-                      </div>
+                      isValidMapLink(item.maps_link) ? (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.maps_link?.trim(), '_blank');
+                          }}
+                          className="cand-venue-text"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '6px',
+                            backgroundColor: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            marginTop: '6px',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: isPast ? '#94A3B8' : '#475569',
+                            lineHeight: '17px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <MapPin size={13} color={isPast ? '#94A3B8' : '#1764E8'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>{item.venue_address}</span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: isPast ? '#94A3B8' : '#1764E8', fontSize: '11px', fontWeight: 700 }}>
+                            <Navigation2 size={13} style={{ flexShrink: 0 }} />
+                            <span>Map</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="cand-venue-text"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '6px',
+                            backgroundColor: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            marginTop: '6px',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: isPast ? '#94A3B8' : '#475569',
+                            lineHeight: '17px'
+                          }}
+                        >
+                          <MapPin size={13} color={isPast ? '#94A3B8' : '#1764E8'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>{item.venue_address}</span>
+                        </div>
+                      )
                     )}
 
                     {/* Reschedule Note */}

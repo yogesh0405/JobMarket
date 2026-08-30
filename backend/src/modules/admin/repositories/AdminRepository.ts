@@ -216,7 +216,26 @@ export class AdminRepository {
 
     if (!user) return null;
 
-    // Fetch user's job applications
+    const compIdentifier = (user.company_name || user.name || '').trim();
+
+    // 1. Fetch real company information from companies table
+    let company: any = {};
+    try {
+      const companyQuery = `
+        SELECT * FROM companies 
+        WHERE (employer_id = $1) 
+           OR ($2 != '' AND LOWER(name) = LOWER($2))
+        LIMIT 1;
+      `;
+      const compRes = await pool.query(companyQuery, [userId, compIdentifier]);
+      if (compRes.rows.length > 0) {
+        company = compRes.rows[0];
+      }
+    } catch (err) {
+      // Table fallback
+    }
+
+    // 2. Fetch user's job applications (if candidate)
     const appsQuery = `
       SELECT ja.*, j.title as job_title, j.company as job_company
       FROM job_applications ja
@@ -225,23 +244,44 @@ export class AdminRepository {
       ORDER BY ja.applied_at DESC;
     `;
 
-    // Fetch jobs posted (if employer)
+    // 3. Fetch real-time jobs posted with complete compensation and location details (if employer)
     const jobsQuery = `
-      SELECT id, title, status, openings, (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count, posted_at
+      SELECT id, title, company, status, openings, salary_min, salary_max, location, industry, midc_zone, 
+             (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count, 
+             posted_at
       FROM jobs
-      WHERE employer_id = $1
+      WHERE (employer_id = $1) 
+         OR ($2 != '' AND LOWER(company) = LOWER($2))
       ORDER BY posted_at DESC;
     `;
 
     const [appsRes, jobsRes] = await Promise.all([
       pool.query(appsQuery, [userId]),
-      pool.query(jobsQuery, [userId])
+      pool.query(jobsQuery, [userId, compIdentifier])
     ]);
 
+    const enrichedProfile = {
+      ...user,
+      company_name: user.company_name || company.name || user.name,
+      company_logo: user.profile_picture_url || company.logo,
+      company_description: company.description || user.headline,
+      company_type: company.company_type || 'Private Limited',
+      industry: company.industry || user.trade_specialization || 'Manufacturing & Industrial',
+      website: company.website,
+      address: company.address,
+      location: company.address || company.city || user.location,
+      city: company.city,
+      company_size: company.company_size,
+      founded_year: company.founded_year,
+      midc_zone: company.midc_zone,
+      gst_number: user.gst_number || company.gst_number
+    };
+
     return {
-      profile: user,
+      profile: enrichedProfile,
       applications: appsRes.rows,
-      postedJobs: jobsRes.rows
+      postedJobs: jobsRes.rows,
+      jobs: jobsRes.rows
     };
   }
 

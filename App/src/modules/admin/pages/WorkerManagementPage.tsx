@@ -55,17 +55,6 @@ export const WorkerManagementPage: React.FC = () => {
     }
   };
 
-  const handleVerifyAadhaar = async (userId: string, toggleVerify: boolean) => {
-    try {
-      // Toggle verified state on backend status update (acting as verification hook)
-      await AdminApiService.updateUserStatus(userId, toggleVerify ? 'ACTIVE' : 'INACTIVE');
-      showToast(toggleVerify ? 'Worker Aadhaar verified successfully!' : 'Aadhaar credentials unverified', 'success');
-      fetchWorkers();
-    } catch (err: any) {
-      showToast('Failed to update Aadhaar verification status', 'error');
-    }
-  };
-
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
@@ -121,7 +110,6 @@ export const WorkerManagementPage: React.FC = () => {
                   <th>Name</th>
                   <th>Contact Details</th>
                   <th>Trade Specialization</th>
-                  <th>Aadhaar Status</th>
                   <th>Status</th>
                   <th>Resume</th>
                   <th>Registration Date</th>
@@ -143,11 +131,6 @@ export const WorkerManagementPage: React.FC = () => {
                     <td><strong>{worker.name}</strong></td>
                     <td>{worker.email} <br /><span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{worker.phone || '—'}</span></td>
                     <td><span className="status-badge" style={{ background: '#e0e4ff', color: '#1a2eb8' }}>{worker.trade_specialization || 'General Labor'}</span></td>
-                    <td>
-                      <span className={`status-badge ${worker.aadhaar_verified ? 'status-verified' : 'status-pending'}`}>
-                        {worker.aadhaar_verified ? 'Verified ✓' : 'Unverified'}
-                      </span>
-                    </td>
                     <td>
                       <span className={`status-badge ${worker.status === 'ACTIVE' ? 'status-active' : worker.status === 'BLOCKED' ? 'status-blocked' : 'status-pending'}`}>
                         {worker.status}
@@ -171,15 +154,6 @@ export const WorkerManagementPage: React.FC = () => {
                     <td>{new Date(worker.created_at).toLocaleDateString()}</td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        {worker.aadhaar_verified ? (
-                          <button className="btn" style={{ padding: '4px 8px', fontSize: '11px', background: 'var(--danger)', color: 'white' }} onClick={() => handleVerifyAadhaar(worker.id, false)}>
-                            Revoke Aadhaar
-                          </button>
-                        ) : (
-                          <button className="btn" style={{ padding: '4px 8px', fontSize: '11px', background: 'var(--success)', color: 'white' }} onClick={() => handleVerifyAadhaar(worker.id, true)}>
-                            Verify Aadhaar
-                          </button>
-                        )}
                         {worker.status === 'BLOCKED' ? (
                           <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleStatusChange(worker.id, 'ACTIVE')}>
                             Activate

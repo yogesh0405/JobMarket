@@ -42,6 +42,7 @@ import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
+import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { NotificationModal } from './NotificationModal';
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
@@ -129,12 +130,17 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const { logoUrl, platformName } = usePlatformSettings();
+  const [logoLoadError, setLogoLoadError] = useState(false);
+
   const canGoBackInNav = navigation && typeof navigation.canGoBack === 'function' ? navigation.canGoBack() : false;
   const isBackAvailable = (showBack || !!onBack) && (onBack || canGoBackInNav);
 
   const displayName = user?.companyName || user?.company_name || user?.name || 'User';
   const displayEmail = user?.email || 'user@jobmarket.com';
   const initialLetter = displayName.charAt(0).toUpperCase() || 'U';
+
+  const headerDisplayTitle = (title === 'JobMarket' && platformName && platformName !== 'JobMarket') ? platformName : title;
 
   const userPhotoUri =
     user?.profilePictureUrl ||
@@ -187,11 +193,19 @@ export const Header: React.FC<HeaderProps> = ({
             <View style={styles.brandHeaderLeft}>
               {!isBackAvailable ? (
                 <View style={{ marginRight: 8 }}>
-                  <JobMarketLogoSvg size={34} />
+                  {logoUrl && !logoLoadError ? (
+                    <Image
+                      source={{ uri: logoUrl }}
+                      style={{ width: 34, height: 34, borderRadius: 6, resizeMode: 'contain' }}
+                      onError={() => setLogoLoadError(true)}
+                    />
+                  ) : (
+                    <JobMarketLogoSvg size={34} />
+                  )}
                 </View>
               ) : null}
               <View style={{ flex: 1 }}>
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                <Text style={styles.title} numberOfLines={1}>{headerDisplayTitle}</Text>
                 {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
               </View>
             </View>
@@ -655,7 +669,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#1764E8',
     minWidth: 20,
     height: 18,
     borderRadius: 9,

@@ -15,7 +15,7 @@ import {
   UploadCloud,
   Eye,
 } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateEditStep4SkillsResumeProps {
   skills: string[];
@@ -179,7 +179,7 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
 const styles = StyleSheet.create({
   masterEditCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 16,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   inputField: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     paddingHorizontal: 12,
     height: 42,
     fontSize: 13,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     justifyContent: 'center',
   },
   addSkillBtnText: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
   },
   skillChipText: {
     fontSize: 12,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -292,13 +292,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     padding: 12,
   },
   resumeIconWrap: {
     width: 38,
     height: 38,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   viewPdfBtn: {
     width: 34,
     height: 34,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   changePdfBtn: {
     width: 34,
     height: 34,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   deletePdfBtn: {
     width: 34,
     height: 34,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     backgroundColor: '#FEE2E2',
     alignItems: 'center',
     justifyContent: 'center',

@@ -6,6 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CandidateProfileHeroCard } from './components/CandidateProfileHeroCard';
 import { CandidateProfileExperienceSection } from './components/CandidateProfileExperienceSection';
 import { extractCandidateResume } from '../../utils/fileUtils';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 
 const TRADES = [
   'VMC Operator',
@@ -42,12 +45,18 @@ interface Props {
 
 export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top || 0,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0,
+    Platform.OS === 'ios' ? 44 : 24
+  );
   const { user, updateUserProfile, refreshUser } = useAuth();
   const { showToast } = useToast();
 
   const initialTrade = user?.tradeSpecialization || user?.trade_specialization || 'VMC Operator';
   const initialIsOther = !TRADES.filter((t) => t !== 'Other').includes(initialTrade);
 
+  const [activeTab, setActiveTab] = useState<'PERSONAL' | 'PROFESSIONAL'>('PERSONAL');
   const [name, setName] = useState(user?.name || '');
   const [headline, setHeadline] = useState(user?.headline || '');
   const [location, setLocation] = useState(user?.location || '');
@@ -63,7 +72,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
 
   useEffect(() => {
@@ -76,21 +85,6 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
     setExperience(Array.isArray(user?.experience) ? (user?.experience as any[]) : []);
     setEducation(Array.isArray(user?.education) ? (user?.education as any[]) : []);
   }, [user]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const timer = setTimeout(() => {
-      refreshUser()
-        .catch(() => {})
-        .finally(() => {
-          if (isMounted) setLoading(false);
-        });
-    }, 400);
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -111,7 +105,7 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
       }
 
       const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -161,20 +155,16 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Header
-          title="My Profile"
-          showBack={true}
-          onBack={() => {
-            if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
-              navigation.goBack();
-            } else if (navigation) {
-              navigation.navigate('CandidateMain');
-            }
-          }}
-        />
-
-        <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
+      <View style={[styles.container, { backgroundColor: '#174CB6' }]}>
+        <FocusAwareStatusBar barStyle="light-content" backgroundColor="#174CB6" translucent={true} />
+        <ScrollView
+          style={{ flex: 1, backgroundColor: '#F7F9FC' }}
+          contentContainerStyle={[
+            styles.scrollContentBody,
+            { paddingTop: topInset + 14, paddingHorizontal: 16 }
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           <ProfileSkeleton />
         </ScrollView>
       </View>
@@ -182,21 +172,16 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <Header
-        title="My Profile"
-        showBack={true}
-        onBack={() => {
-          if (navigation && typeof navigation.goBack === 'function' && navigation.canGoBack()) {
-            navigation.goBack();
-          } else if (navigation) {
-            navigation.navigate('CandidateMain');
-          }
-        }}
-      />
-
+    <View style={[styles.container, { backgroundColor: '#174CB6' }]}>
+      <FocusAwareStatusBar barStyle="light-content" backgroundColor="#174CB6" translucent={true} />
       <ScrollView
-        contentContainerStyle={[styles.scrollContentBody, { paddingBottom: Math.max(insets.bottom + 90, 120) }]}
+        style={{ flex: 1, backgroundColor: '#F7F9FC' }}
+        contentContainerStyle={[
+          styles.scrollContentBody,
+          {
+            paddingBottom: Math.max(insets.bottom + 90, 120),
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
@@ -219,16 +204,22 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           profilePhotoUrl={profilePhotoUrl}
           onPickPhoto={handlePickPhoto}
           onEditPress={() => navigation.navigate('CandidateEditProfile')}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
 
-        <CandidateProfileExperienceSection
-          skills={skills}
-          experience={experience}
-          education={education}
-          resumeUrl={resumeUrl}
-          resumeName={resumeName}
-          onOpenPdf={() => setShowPdfModal(true)}
-        />
+        {activeTab === 'PROFESSIONAL' && (
+          <View style={styles.professionalSectionContainer}>
+            <CandidateProfileExperienceSection
+              skills={skills}
+              experience={experience}
+              education={education}
+              resumeUrl={resumeUrl}
+              resumeName={resumeName}
+              onOpenPdf={() => setShowPdfModal(true)}
+            />
+          </View>
+        )}
       </ScrollView>
 
       <ResumePdfViewerModal
@@ -245,26 +236,14 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
-  },
-  topHeaderBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  topHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
+    backgroundColor: '#174CB6',
   },
   scrollContentBody: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingHorizontal: 0,
+    paddingTop: 0,
     paddingBottom: 90,
+  },
+  professionalSectionContainer: {
+    paddingHorizontal: 16,
   },
 });

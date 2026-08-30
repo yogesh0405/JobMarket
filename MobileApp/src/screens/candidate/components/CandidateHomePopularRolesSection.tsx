@@ -14,7 +14,7 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import { Job } from '../../../types';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { Skeleton as SkeletonLoader } from '../../../components/common/SkeletonLoader';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 import { RoleTabItem } from './CandidateHomeConstants';
@@ -331,9 +331,9 @@ const styles = StyleSheet.create({
   emptyRoleBox: {
     padding: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
   },
   emptyRoleText: {
@@ -348,10 +348,15 @@ const styles = StyleSheet.create({
   webPopularJobCard: {
     width: 270,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     padding: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   webCardTitleRow: {
     flexDirection: 'row',
@@ -398,7 +403,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: RADIUS.xs,
   },
   webBadgeGrayText: {
     fontSize: 10.5,
@@ -412,7 +417,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3E8FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: RADIUS.xs,
     marginTop: 8,
   },
   webShiftText: {
@@ -446,17 +451,17 @@ const styles = StyleSheet.create({
   exploreMoreEndCard: {
     width: 140,
     backgroundColor: '#EFF6FF',
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 14,
   },
   exploreMoreCircleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',

@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Paperclip, Send, X, Headphones } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { useAuth } from '../../../hooks/useAuth';
 import { SupportTicket, TicketMessage } from './HelpSupportConstants';
 
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   imageAttachmentCard: {
     width: 220,
     height: 130,
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     backgroundColor: COLORS.border,
   },
 
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: RADIUS.xs,
     marginBottom: 6,
   },
   attachmentPreviewText: {
@@ -557,13 +557,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 22,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#CBD5E1',
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 7 : 4,
     minHeight: 42,
-    shadowColor: COLORS.textPrimary,
+    shadowColor: '#0F172A',
     shadowOpacity: 0.02,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,

@@ -52,6 +52,8 @@ interface JobApplicantsDetailModalProps {
   setInterviewMode: (m: string) => void;
   interviewLocation: string;
   setInterviewLocation: (l: string) => void;
+  interviewMapsLink: string;
+  setInterviewMapsLink: (link: string) => void;
   interviewNotes: string;
   setInterviewNotes: (n: string) => void;
   onScheduleInterview: () => void;
@@ -87,6 +89,8 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
   setInterviewMode,
   interviewLocation,
   setInterviewLocation,
+  interviewMapsLink,
+  setInterviewMapsLink,
   interviewNotes,
   setInterviewNotes,
   onScheduleInterview,
@@ -265,6 +269,8 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                   interviewTime={interviewTime}
                   interviewLocation={interviewLocation}
                   setInterviewLocation={setInterviewLocation}
+                  interviewMapsLink={interviewMapsLink}
+                  setInterviewMapsLink={setInterviewMapsLink}
                   interviewNotes={interviewNotes}
                   setInterviewNotes={setInterviewNotes}
                   onScheduleInterview={onScheduleInterview}

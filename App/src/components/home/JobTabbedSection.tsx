@@ -1,10 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '../../types';
 import { JobCard } from '../job/JobCard';
-import { getStoredRoleTabSettings, RoleTabSetting } from '../../modules/admin/utils/roleTabSettings';
-
-import { apiFetch, safeParseJson } from '../../utils/api';
 
 interface JobTabbedSectionProps {
   jobs: Job[];
@@ -19,43 +16,24 @@ interface DynamicCategory {
   filterFn: (job: Job) => boolean;
 }
 
+const DEFAULT_ROLE_TABS = [
+  { id: 'all', label: 'All Jobs', priority: 1 },
+  { id: 'vmc_operator', label: 'VMC Operator', priority: 2 },
+  { id: 'cnc_machinist', label: 'CNC Machinist', priority: 3 },
+  { id: 'welder', label: 'Welder', priority: 4 },
+  { id: 'fitter', label: 'Fitter', priority: 5 },
+  { id: 'electrician', label: 'Electrician', priority: 6 },
+  { id: 'quality_inspector', label: 'Quality Inspector', priority: 7 },
+  { id: 'tool_die_maker', label: 'Tool & Die Maker', priority: 8 },
+  { id: 'plant_maintenance', label: 'Plant Maintenance', priority: 9 },
+  { id: 'store_keeper', label: 'Store Keeper', priority: 10 },
+  { id: 'assembly_operator', label: 'Assembly Operator', priority: 11 },
+];
+
 export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs = [] }) => {
   const navigate = useNavigate();
   const [activeTabId, setActiveTabId] = useState<string>('all');
   const scrollRowRef = useRef<HTMLDivElement>(null);
-  const [tabSettings, setTabSettings] = useState<RoleTabSetting[]>([]);
-
-  // Load and listen for real-time Admin Role Tab Settings from DB & LocalStorage
-  useEffect(() => {
-    const loadSettings = () => {
-      setTabSettings(getStoredRoleTabSettings());
-
-      // Sync from Database API (Public Settings Endpoint)
-      apiFetch('/api/v1/settings')
-        .then(res => safeParseJson(res))
-        .then(({ ok, data: json }) => {
-          if (ok && json.success && json.data && json.data.role_tabs_config) {
-            try {
-              const parsed = JSON.parse(json.data.role_tabs_config);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setTabSettings(parsed);
-                localStorage.setItem('jobmarket_role_tab_settings', JSON.stringify(parsed));
-              }
-            } catch (e) {
-              console.error('Error parsing backend role_tabs_config:', e);
-            }
-          }
-        })
-        .catch(err => console.error('Error fetching settings in JobTabbedSection:', err));
-    };
-    loadSettings();
-    window.addEventListener('roleTabSettingsUpdated', loadSettings);
-    window.addEventListener('storage', loadSettings);
-    return () => {
-      window.removeEventListener('roleTabSettingsUpdated', loadSettings);
-      window.removeEventListener('storage', loadSettings);
-    };
-  }, []);
 
   // Active jobs in DB
   const activeJobs = useMemo(() => {
@@ -63,28 +41,12 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs = [] })
     return safeJobs.filter(j => j && (j.status === 'active' || !j.status));
   }, [jobs]);
 
-  // Dynamically extract and order categories strictly according to Admin Tab Settings!
+  // Dynamically extract and order categories
   const categories: DynamicCategory[] = useMemo(() => {
-    // Effective settings: Admin settings from DB/LocalStorage OR Defaults
-    const effectiveSettings = (tabSettings && tabSettings.length > 0) 
-      ? tabSettings 
-      : getStoredRoleTabSettings();
-
-    // Sort settings by priority (1, 2, 3...)
-    const sortedSettings = [...effectiveSettings].sort((a, b) => a.priority - b.priority);
-
     const result: DynamicCategory[] = [];
     const processedIds = new Set<string>();
 
-    // 1. Process configured tabs in exact Admin Priority Order
-    sortedSettings.forEach(setting => {
-      // If disabled by Admin, skip it completely!
-      if (!setting.enabled) {
-        processedIds.add(setting.id.toLowerCase());
-        processedIds.add(setting.label.toLowerCase());
-        return;
-      }
-
+    DEFAULT_ROLE_TABS.forEach(setting => {
       processedIds.add(setting.id.toLowerCase());
       processedIds.add(setting.label.toLowerCase());
 
@@ -151,7 +113,7 @@ export const JobTabbedSection: React.FC<JobTabbedSectionProps> = ({ jobs = [] })
     });
 
     return result;
-  }, [activeJobs, tabSettings]);
+  }, [activeJobs]);
 
   // Active selected category
   const activeCategory = useMemo(() => {

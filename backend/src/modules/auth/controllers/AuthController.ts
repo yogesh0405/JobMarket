@@ -68,6 +68,16 @@ export function sanitizeUserForResponse(user: any) {
     safeUser.skills = [];
   }
 
+  const hasPassword = Boolean(
+    user.has_password !== false &&
+    user.hasPassword !== false &&
+    user.password_hash &&
+    !String(user.password_hash).startsWith('google_')
+  );
+  safeUser.has_password = hasPassword;
+  safeUser.hasPassword = hasPassword;
+  safeUser.auth_provider = user.auth_provider || (user.google_id || !hasPassword ? 'google' : 'email');
+
   return safeUser;
 }
 
@@ -562,17 +572,13 @@ export class AuthController {
     }
   }
 
-  // 3. Change password (for logged-in user)
+  // 3. Change or Set password (for logged-in user)
   static async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.userId;
       const { currentPassword, newPassword } = req.body;
 
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Current password and new password are required' });
-      }
-
-      if (newPassword.length < 6) {
+      if (!newPassword || newPassword.length < 6) {
         return res.status(400).json({ error: 'New password must be at least 6 characters long' });
       }
 
@@ -581,13 +587,27 @@ export class AuthController {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-      if (!isMatch) {
-        return res.status(400).json({ error: 'Incorrect current password' });
+      const userHasPassword = Boolean(
+        user.has_password !== false &&
+        (user as any).hasPassword !== false &&
+        user.password_hash &&
+        !String(user.password_hash).startsWith('google_')
+      );
+
+      // If user already has a password, verify current password
+      if (userHasPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Current password is required' });
+        }
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isMatch) {
+          return res.status(400).json({ error: 'Incorrect current password' });
+        }
       }
 
       const newHash = await bcrypt.hash(newPassword, 12);
-      await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
+      await pool.query('UPDATE users SET password_hash = $1, has_password = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newHash, userId]);
+      await CacheService.invalidate(`user:profile:${userId}`).catch(() => {});
 
       // Generate refreshed tokens for the user so current session remains completely intact
       const { accessToken, refreshToken } = generateTokens({
@@ -601,10 +621,13 @@ export class AuthController {
         await pool.query('UPDATE sessions SET refresh_token_hash = $1 WHERE id = $2', [refreshTokenHash, req.sessionId]).catch(() => {});
       }
 
+      const updatedUser = await UserRepository.findById(userId);
+
       res.status(200).json({
         success: true,
-        message: 'Password changed successfully',
+        message: userHasPassword ? 'Password changed successfully' : 'Password set successfully',
         tokens: { accessToken, refreshToken },
+        user: sanitizeUserForResponse(updatedUser),
         sessionId: req.sessionId
       });
     } catch (error) {
@@ -954,6 +977,14 @@ export class AuthController {
           status: 'ACTIVE',
           profile_picture_url: permanentAvatarUrl || null,
         } as any);
+
+        await pool.query(
+          'UPDATE users SET has_password = FALSE, google_id = $1, auth_provider = $2 WHERE id = $3',
+          [userGoogleId || null, 'google', user.id]
+        ).catch(() => {});
+        user.has_password = false;
+        user.google_id = userGoogleId;
+        user.auth_provider = 'google';
       } else if (!user.profile_picture_url && userPicture) {
         // Only if user had NO profile picture previously, store Google photo once in S3
         let permanentAvatarUrl = userPicture;

@@ -72,6 +72,7 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
   const [interviewTime, setInterviewTime] = useState('');
   const [interviewMode, setInterviewMode] = useState('In-Person Walk-in');
   const [interviewLocation, setInterviewLocation] = useState('');
+  const [interviewMapsLink, setInterviewMapsLink] = useState('');
   const [interviewNotes, setInterviewNotes] = useState('');
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -255,7 +256,15 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
   const handleScheduleInterview = async () => {
     if (!currentApplicant) return;
     if (!interviewDate) {
-      Alert.alert('Validation Error', 'Please select the interview date.');
+      Alert.alert('Required Field', 'Please select the interview date.');
+      return;
+    }
+    if (!interviewLocation || !interviewLocation.trim()) {
+      Alert.alert('Required Field', 'Please enter the Venue Address for the interview.');
+      return;
+    }
+    if (!interviewMapsLink || !interviewMapsLink.trim()) {
+      Alert.alert('Required Field', 'Please enter the Google Maps Location link for the candidate.');
       return;
     }
     const targetJobId = currentApplicant?.job_id || (currentApplicant as any)?.jobId || jobId;
@@ -266,7 +275,7 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
 
     setLoading(true);
     try {
-      const venue = interviewLocation.trim() || 'Industrial Plant Main Gate';
+      const venue = interviewLocation.trim();
       const targetUserId =
         currentApplicant.user_id ||
         (currentApplicant as any).userId ||
@@ -279,6 +288,7 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
         interviewTime: interviewTime || '10:00 AM',
         venueAddress: venue,
         interviewLocation: venue,
+        mapsLink: interviewMapsLink.trim(),
         interviewMode,
         notes: interviewNotes,
       });
@@ -558,6 +568,8 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
               setInterviewTime={setInterviewTime}
               interviewLocation={interviewLocation}
               setInterviewLocation={setInterviewLocation}
+              interviewMapsLink={interviewMapsLink}
+              setInterviewMapsLink={setInterviewMapsLink}
               interviewNotes={interviewNotes}
               setInterviewNotes={setInterviewNotes}
               onScheduleInterview={handleScheduleInterview}

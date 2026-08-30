@@ -165,7 +165,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                       position: 'absolute',
                       top: '0px',
                       right: '0px',
-                      backgroundColor: '#EF4444',
+                      backgroundColor: '#1764E8',
                       color: '#FFFFFF',
                       fontSize: '8.5px',
                       fontWeight: 800,

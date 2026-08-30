@@ -54,27 +54,13 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyboardPadding, setKeyboardPadding] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        setKeyboardPadding(e.endCoordinates ? Math.max(e.endCoordinates.height, 220) : 220);
-      }
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setKeyboardPadding(0);
-      }
-    );
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
+  const handleInputFocus = (offset: number) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 100);
+  };
 
   const handleGoogleSignUp = () => {
     setError(null);
@@ -144,7 +130,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
-            paddingBottom: safeBottomPadding + keyboardPadding,
+            paddingBottom: safeBottomPadding,
           },
         ]}
       >
@@ -175,9 +161,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollableFormArea}
-            contentContainerStyle={styles.cardBody}
+            contentContainerStyle={[styles.cardBody, { paddingBottom: 100 }]}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
             showsVerticalScrollIndicator={false}
           >
             {/* Heading */}
@@ -231,6 +217,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholder="Ramesh Sharma"
                 placeholderTextColor="#94A3B8"
                 value={name}
+                onFocus={() => handleInputFocus(40)}
                 onChangeText={(t) => {
                   setName(t);
                   if (error) setError(null);
@@ -248,6 +235,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholder="candidate@email.com"
                 placeholderTextColor="#94A3B8"
                 value={email}
+                onFocus={() => handleInputFocus(100)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -269,6 +257,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 keyboardType="number-pad"
                 maxLength={10}
                 value={phone}
+                onFocus={() => handleInputFocus(160)}
                 onChangeText={(t) => {
                   const sanitized = t.replace(/[^0-9]/g, '').slice(0, 10);
                   setPhone(sanitized);
@@ -289,6 +278,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                     placeholder="Tata Motors Ltd"
                     placeholderTextColor="#94A3B8"
                     value={companyName}
+                    onFocus={() => handleInputFocus(220)}
                     onChangeText={setCompanyName}
                   />
                 </View>
@@ -301,6 +291,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                     placeholderTextColor="#94A3B8"
                     autoCapitalize="characters"
                     value={gstNumber}
+                    onFocus={() => handleInputFocus(280)}
                     onChangeText={setGstNumber}
                   />
                 </View>
@@ -313,6 +304,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholder="CNC Operator / Turner / Welder"
                   placeholderTextColor="#94A3B8"
                   value={tradeSpecialization}
+                  onFocus={() => handleInputFocus(220)}
                   onChangeText={setTradeSpecialization}
                 />
               </View>
@@ -330,11 +322,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
+                  onFocus={() => handleInputFocus(290)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
                   }}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
@@ -359,11 +351,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
+                  onFocus={() => handleInputFocus(360)}
                   onChangeText={(t) => {
                     setConfirmPassword(t);
                     if (error) setError(null);
                   }}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 160)}
                 />
                 <TouchableOpacity
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -509,7 +501,7 @@ const styles = StyleSheet.create({
   },
   signupLinkText: {
     fontSize: 12.5,
-    color: '#0F172A',
+    color: COLORS.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

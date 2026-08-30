@@ -13,6 +13,7 @@ export const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [pendingBannerCount, setPendingBannerCount] = useState<number>(0);
   const [pendingJobCount, setPendingJobCount] = useState<number>(0);
+  const [platformSettings, setPlatformSettings] = useState<{ logo_url?: string; platform_name?: string }>({});
 
   // Enforce ADMIN role check on mount and update
   useEffect(() => {
@@ -27,9 +28,10 @@ export const AdminLayout: React.FC = () => {
   // Fetch real-time pending moderation metrics for sidebar badge indicators
   const fetchPendingCounts = async () => {
     try {
-      const [adsRes, dashRes] = await Promise.all([
+      const [adsRes, dashRes, settingsRes] = await Promise.all([
         apiFetch('/api/v1/admin/advertisements/analytics').catch(() => null),
         apiFetch('/api/v1/admin/dashboard').catch(() => null),
+        apiFetch('/api/v1/settings').catch(() => null),
       ]);
 
       if (adsRes && adsRes.ok) {
@@ -45,6 +47,16 @@ export const AdminLayout: React.FC = () => {
           setPendingJobCount(json.data.stats.pending_jobs || 0);
         }
       }
+
+      if (settingsRes && settingsRes.ok) {
+        const json = await settingsRes.json();
+        if (json.success && json.data) {
+          setPlatformSettings({
+            logo_url: json.data.logo_url || '',
+            platform_name: json.data.platform_name || ''
+          });
+        }
+      }
     } catch (err) {
       console.error('Failed to sync admin badge counts', err);
     }
@@ -57,6 +69,7 @@ export const AdminLayout: React.FC = () => {
     const handleUpdate = () => fetchPendingCounts();
     window.addEventListener('notifications-updated', handleUpdate);
     window.addEventListener('banner-count-updated', handleUpdate);
+    window.addEventListener('settings-updated', handleUpdate);
 
     // Live background polling every 20s
     const pollInterval = setInterval(() => {
@@ -68,6 +81,7 @@ export const AdminLayout: React.FC = () => {
     return () => {
       window.removeEventListener('notifications-updated', handleUpdate);
       window.removeEventListener('banner-count-updated', handleUpdate);
+      window.removeEventListener('settings-updated', handleUpdate);
       clearInterval(pollInterval);
     };
   }, [currentUser?.id]);
@@ -105,14 +119,11 @@ export const AdminLayout: React.FC = () => {
     if (path.includes('/dashboard')) return 'Dashboard';
     if (path.includes('/job-approvals')) return 'Job Approvals';
     if (path.includes('/advertisements')) return 'Advertisement Approval';
-    if (path.includes('/map-analytics')) return 'Map & Location Analytics';
     if (path.includes('/jobs')) return 'Platform Jobs';
     if (path.includes('/users')) return 'User Management';
     if (path.includes('/employers')) return 'Employer Directory';
     if (path.includes('/workers')) return 'Worker Roster';
     if (path.includes('/categories')) return 'Categories & Skills';
-    if (path.includes('/role-tabs')) return 'Homepage Role Tabs Manager';
-    if (path.includes('/reports')) return 'User Reports';
     if (path.includes('/settings')) return 'System Settings';
     if (path.includes('/support')) return 'Support Tickets';
     if (path.includes('/broadcast')) return 'Broadcast Notifications';
@@ -163,15 +174,6 @@ export const AdminLayout: React.FC = () => {
               <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
             </svg>
           )
-        },
-        {
-          label: 'Map Analytics',
-          path: '/admin/map-analytics',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="1 6 1 22 8 18 15 22 22 18 22 2 15 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>
-            </svg>
-          )
         }
       ]
     },
@@ -220,24 +222,6 @@ export const AdminLayout: React.FC = () => {
           )
         },
         {
-          label: 'Role Tabs Manager',
-          path: '/admin/role-tabs',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
-            </svg>
-          )
-        },
-        {
-          label: 'System Settings',
-          path: '/admin/settings',
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          )
-        },
-        {
           label: 'Support Tickets',
           path: '/admin/support',
           icon: (
@@ -254,6 +238,15 @@ export const AdminLayout: React.FC = () => {
               <path d="M22 12A10 10 0 0 0 12 2v10z"/><path d="M12 2A10 10 0 0 0 2 12h10z"/><path d="M12 12L2.1 12.1"/>
             </svg>
           )
+        },
+        {
+          label: 'System Settings',
+          path: '/admin/settings',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          )
         }
       ]
     }
@@ -266,18 +259,17 @@ export const AdminLayout: React.FC = () => {
         <div className="sidebar-header">
           <div className="sidebar-brand" onClick={() => navigate('/admin/dashboard')}>
             <img
-              src="/logo.png"
-              alt="JobMarket"
+              src={platformSettings.logo_url || "/logo.png"}
+              alt={platformSettings.platform_name || "JobMarket"}
               className="sidebar-brand-logo"
               onError={(e) => {
-                // Fallback to /icon.png if logo.png is not found
                 const target = e.currentTarget;
                 if (!target.src.endsWith('/icon.png')) {
                   target.src = '/icon.png';
                 }
               }}
             />
-            <span className="sidebar-brand-text">JobMarket</span>
+            <span className="sidebar-brand-text">{platformSettings.platform_name || "JobMarket"}</span>
           </div>
           <button className="sidebar-collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
             {collapsed ? (

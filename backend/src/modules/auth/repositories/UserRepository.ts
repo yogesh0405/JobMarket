@@ -29,6 +29,9 @@ export interface User {
   appliedJobs?: string[];
   profile_picture_url?: string;
   is_two_factor_enabled?: boolean;
+  has_password?: boolean;
+  google_id?: string;
+  auth_provider?: string;
 }
 
 export class UserRepository {

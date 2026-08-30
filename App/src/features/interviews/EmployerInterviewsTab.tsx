@@ -113,6 +113,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
   const [rescheduleDate, setRescheduleDate] = useState<string>('');
   const [rescheduleTime, setRescheduleTime] = useState<string>('');
   const [rescheduleVenue, setRescheduleVenue] = useState<string>('');
+  const [rescheduleMapsLink, setRescheduleMapsLink] = useState<string>('');
   const [rescheduleReason, setRescheduleReason] = useState<string>('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
@@ -153,6 +154,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
     setRescheduleDate(item.interview_date || '');
     setRescheduleTime(item.interview_time || '');
     setRescheduleVenue(item.venue_address || '');
+    setRescheduleMapsLink(item.maps_link || '');
     setRescheduleReason('');
     setIsDetailModalOpen(true);
   };
@@ -205,6 +207,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         interviewDate: rescheduleDate,
         interviewTime: rescheduleTime,
         venueAddress: rescheduleVenue.trim() || selectedInterview.venue_address || 'Industrial Plant Main Gate',
+        mapsLink: rescheduleMapsLink.trim() || selectedInterview.maps_link || '',
         postponedReason: rescheduleReason.trim() || 'Schedule adjustment by recruiter.',
       };
 
@@ -1281,6 +1284,27 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       placeholder="Industrial Plant Main Gate or Office Address"
                       value={rescheduleVenue}
                       onChange={(e) => setRescheduleVenue(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                      Updated Google Maps Link
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/..."
+                      value={rescheduleMapsLink}
+                      onChange={(e) => setRescheduleMapsLink(e.target.value)}
                       style={{
                         width: '100%',
                         padding: '9px 12px',

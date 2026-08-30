@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,13 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const [role, setRole] = useState<'employer' | 'candidate'>('candidate');
   const [email, setEmail] = useState('');
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleInputFocus = (offset: number) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 100);
+  };
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
@@ -229,9 +236,11 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {/* INNER SCROLLABLE FORM SECTION */}
           <ScrollView
+            ref={scrollViewRef}
             style={styles.scrollableFormArea}
-            contentContainerStyle={styles.cardBody}
+            contentContainerStyle={[styles.cardBody, { paddingBottom: 60 }]}
             keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
             showsVerticalScrollIndicator={false}
           >
             {/* Welcome Back Heading */}
@@ -283,6 +292,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
+                onFocus={() => handleInputFocus(50)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -307,6 +317,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
+                  onFocus={() => handleInputFocus(120)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -520,7 +531,7 @@ const styles = StyleSheet.create({
   },
   signupLinkText: {
     fontSize: 12.5,
-    color: '#0F172A',
+    color: COLORS.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

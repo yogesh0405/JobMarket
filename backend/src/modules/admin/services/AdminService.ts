@@ -8,6 +8,7 @@ import { SupportRepository } from '../../support/repositories/SupportRepository'
 import { EmailService } from '../../auth/services/EmailService';
 import { NotificationService } from '../../notifications/services/NotificationService';
 import { logger } from '../../../utils/logger';
+import { S3Util } from '../../../utils/s3';
 
 export class AdminService {
   // Stats & Charts
@@ -136,26 +137,50 @@ export class AdminService {
     return { success: true, job: updatedJob };
   }
 
-  static async unpublishJob(jobId: string, adminId: string, ip?: string, ua?: string) {
+  static async unpublishJob(jobId: string, reason?: string, adminId?: string, ip?: string, ua?: string) {
     const job = await AdminRepository.getJobDetails(jobId);
     if (!job) {
       throw new NotFoundError('Job listing not found');
     }
 
     const updatedJob = await AdminRepository.updateJobStatus(jobId, 'UNPUBLISHED');
-    await AuditRepository.logAction('JOB_UNPUBLISHED', adminId, 'Admin', ip, ua, { jobId, title: job.title });
+    if (adminId) {
+      await AuditRepository.logAction('JOB_UNPUBLISHED', adminId, 'Admin', ip, ua, { jobId, title: job.title, reason });
+    }
+
+    if (job.employer_id || job.employerId) {
+      NotificationService.sendNotification(
+        job.employer_id || job.employerId,
+        'Job Listing Unpublished',
+        `Your job opening "${job.title}" was unpublished by the administrator${reason ? `: "${reason}"` : '.'}`,
+        'JOB_STATUS',
+        '/dashboard?tab=manage'
+      ).catch(err => logger.error('Failed to notify employer on job unpublish:', err));
+    }
 
     return { success: true, job: updatedJob };
   }
 
-  static async deleteJob(jobId: string, adminId: string, ip?: string, ua?: string) {
+  static async deleteJob(jobId: string, reason?: string, adminId?: string, ip?: string, ua?: string) {
     const job = await AdminRepository.getJobDetails(jobId);
     if (!job) {
       throw new NotFoundError('Job listing not found');
     }
 
     await pool.query('DELETE FROM jobs WHERE id = $1', [jobId]);
-    await AuditRepository.logAction('JOB_DELETED', adminId, 'Admin', ip, ua, { jobId, title: job.title });
+    if (adminId) {
+      await AuditRepository.logAction('JOB_DELETED', adminId, 'Admin', ip, ua, { jobId, title: job.title, reason });
+    }
+
+    if (job.employer_id || job.employerId) {
+      NotificationService.sendNotification(
+        job.employer_id || job.employerId,
+        'Job Listing Removed',
+        `Your job opening "${job.title}" was removed by the administrator${reason ? `: "${reason}"` : '.'}`,
+        'JOB_STATUS',
+        '/dashboard?tab=manage'
+      ).catch(err => logger.error('Failed to notify employer on job deletion:', err));
+    }
 
     return { success: true, message: 'Job listing deleted successfully' };
   }
@@ -380,6 +405,33 @@ export class AdminService {
   static async updateSettings(settings: Record<string, string>, adminId: string, ip?: string, ua?: string) {
     const previousSettings = await AdminRepository.getSettings();
 
+    // If logo_url is a base64 encoded image, upload directly to S3 bucket in existing static/ folder
+    if (settings.logo_url && settings.logo_url.startsWith('data:image/')) {
+      try {
+        const customKey = `platform_logo_${Date.now()}`;
+        const s3Url = await S3Util.uploadImage(settings.logo_url, 'static', customKey);
+        
+        // Clean up previous S3 logo object if it existed
+        if (previousSettings.logo_url) {
+          const oldKey = S3Util.extractKey(previousSettings.logo_url);
+          if (oldKey) {
+            await S3Util.deleteImage(oldKey).catch(() => {});
+          }
+        }
+
+        settings.logo_url = s3Url;
+      } catch (uploadErr) {
+        logger.error('Failed to upload platform logo to S3:', uploadErr);
+        // Fallback: continue with existing URL if S3 upload failed
+      }
+    } else if (settings.logo_url === '' && previousSettings.logo_url) {
+      // If logo is reset to default, delete old S3 image
+      const oldKey = S3Util.extractKey(previousSettings.logo_url);
+      if (oldKey) {
+        await S3Util.deleteImage(oldKey).catch(() => {});
+      }
+    }
+
     for (const [key, value] of Object.entries(settings)) {
       await AdminRepository.updateSetting(key, value);
       await AuditRepository.logAction('SETTINGS_UPDATED', adminId, 'Admin', ip, ua, {
@@ -389,7 +441,7 @@ export class AdminService {
       });
     }
 
-    return { success: true };
+    return { success: true, data: settings };
   }
 
   // Reports

@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   companyTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,

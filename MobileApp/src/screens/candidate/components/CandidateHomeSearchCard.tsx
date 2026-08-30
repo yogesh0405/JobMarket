@@ -19,7 +19,7 @@ import {
   X,
   Star,
 } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { INDUSTRIES, EDUCATIONS, MIDC_ZONES } from './CandidateHomeConstants';
 
 interface CandidateHomeSearchCardProps {
@@ -287,22 +287,27 @@ const styles = StyleSheet.create({
   },
   heroSearchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 8,
-    gap: 6,
+    padding: 12,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   heroInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    height: 34,
-    gap: 6,
+    borderColor: '#CBD5E1',
+    borderRadius: RADIUS.card,
+    paddingHorizontal: 12,
+    height: 38,
+    gap: 8,
   },
   heroInputRowActive: {
     borderColor: COLORS.primary,
@@ -310,11 +315,11 @@ const styles = StyleSheet.create({
   },
   midcSuggestionsBox: {
     position: 'absolute',
-    top: 38,
+    top: 42,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingVertical: 6,
@@ -348,7 +353,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 7,
     paddingHorizontal: 6,
-    borderRadius: 4,
+    borderRadius: RADIUS.xs,
     backgroundColor: '#F8FAFC',
     marginBottom: 3,
   },
@@ -360,7 +365,7 @@ const styles = StyleSheet.create({
   },
   heroInputText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#94A3B8',
   },
@@ -371,7 +376,7 @@ const styles = StyleSheet.create({
   heroTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#0F172A',
     paddingVertical: 0,
@@ -382,9 +387,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: COLORS.primary,
-    height: 34,
-    borderRadius: 6,
+    height: 38,
+    borderRadius: RADIUS.card,
     marginTop: 2,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchJobsBtnText: {
     fontSize: 13,

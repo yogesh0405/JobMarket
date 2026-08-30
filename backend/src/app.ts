@@ -20,6 +20,7 @@ import { errorHandler } from './middlewares/errorHandler';
 import publicSettingsRouter from './modules/admin/routes/publicSettingsRoutes';
 import companyRoutes from './modules/companies/routes/companyRoutes';
 import { JobRepository } from './modules/jobs/repositories/JobRepository';
+import { maintenanceMiddleware } from './middlewares/maintenanceMiddleware';
 
 const app = express();
 
@@ -107,6 +108,9 @@ app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
     message: 'JobMarket Backend API is healthy 🚀'
   });
 });
+
+// Maintenance mode enforcement (bypasses admin, health, settings, and login)
+app.use(maintenanceMiddleware);
 
 // Routes
 app.use('/api/v1/auth', authRoutes);

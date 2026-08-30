@@ -21,7 +21,9 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
+import { MaintenanceModal } from './src/components/common/MaintenanceModal';
 import { useAuth } from './src/hooks/useAuth';
+import { usePlatformSettings } from './src/hooks/usePlatformSettings';
 
 // Initialize OAuth browser session interception
 WebBrowser.maybeCompleteAuthSession();
@@ -50,8 +52,11 @@ const linking: LinkingOptions<any> = {
 
 function MainAppContent() {
   const [showSplash, setShowSplash] = useState(true);
-  const { isLoading: isLoadingAuth } = useAuth();
+  const { user, isLoading: isLoadingAuth } = useAuth();
+  const { settings, platformName, logoUrl, supportEmail, contactNumber, refreshSettings } = usePlatformSettings();
   const navigationRef = useNavigationContainerRef<any>();
+
+  const isMaintenanceActive = settings?.maintenance_mode === 'true' && (user as any)?.role !== 'admin';
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -125,6 +130,14 @@ function MainAppContent() {
           isLoadingAuth={!isReady}
         />
       )}
+      <MaintenanceModal
+        visible={isMaintenanceActive}
+        platformName={platformName}
+        logoUrl={logoUrl}
+        supportEmail={supportEmail}
+        contactNumber={contactNumber}
+        onRefresh={refreshSettings}
+      />
     </View>
   );
 }

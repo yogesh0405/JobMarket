@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
+import { MaintenancePage } from './components/common/MaintenancePage';
 import { HomePage } from './features/home/HomePage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
@@ -42,8 +43,6 @@ import { SettingsPage } from './modules/admin/pages/SettingsPage';
 import { SupportManagementPage } from './modules/admin/pages/SupportManagementPage';
 import { AdminAdvertisementPage } from './modules/admin/pages/AdminAdvertisementPage';
 import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
-import { RoleTabsManagementPage } from './modules/admin/pages/RoleTabsManagementPage';
-import { AdminMapAnalyticsPage } from './modules/admin/pages/AdminMapAnalyticsPage';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -72,8 +71,33 @@ const EmployerOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 export const App: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser, syncUser, loginWithGoogle } = useAuth();
   const { dispatch } = useStore();
+  const [platformSettings, setPlatformSettings] = useState<{
+    maintenance_mode?: string;
+    platform_name?: string;
+    logo_url?: string;
+    support_email?: string;
+    contact_number?: string;
+  }>({});
+
+  const checkMaintenance = () => {
+    apiFetch('/api/v1/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (res?.data) {
+          setPlatformSettings(res.data);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    checkMaintenance();
+    window.addEventListener('settings-updated', checkMaintenance);
+    return () => window.removeEventListener('settings-updated', checkMaintenance);
+  }, []);
 
   useEffect(() => {
     // Intercept legacy or external hash URLs (e.g. /#/job/:id) and cleanly route to path
@@ -122,6 +146,22 @@ export const App: React.FC = () => {
   }, []);
 
   const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isMaintenanceActive = platformSettings.maintenance_mode === 'true' && !isAdminRoute;
+
+  if (isMaintenanceActive) {
+    return (
+      <ErrorBoundary>
+        <MaintenancePage
+          platformName={platformSettings.platform_name}
+          logoUrl={platformSettings.logo_url}
+          supportEmail={platformSettings.support_email}
+          contactNumber={platformSettings.contact_number}
+          onRefresh={checkMaintenance}
+        />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -147,12 +187,10 @@ export const App: React.FC = () => {
           <Route path="employers" element={<EmployerManagementPage />} />
           <Route path="workers" element={<WorkerManagementPage />} />
           <Route path="categories" element={<CategorySkillManagementPage />} />
-          <Route path="role-tabs" element={<RoleTabsManagementPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="support" element={<SupportManagementPage />} />
           <Route path="broadcast" element={<BroadcastPage />} />
-          <Route path="map-analytics" element={<AdminMapAnalyticsPage />} />
         </Route>
 
         {/* 3. Main Application Routes (WITH Navbar/Footer Layout) */}

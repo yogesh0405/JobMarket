@@ -1,5 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Linking,
+  Share,
+  Pressable,
+} from 'react-native';
 import {
   MapPin,
   Building,
@@ -9,8 +18,12 @@ import {
   Mail,
   Phone,
   ShieldCheck,
+  X,
+  Send,
+  Navigation2,
+  Share2,
 } from 'lucide-react-native';
-import { RADIUS } from '../../../constants/theme';
+import { RADIUS, COLORS } from '../../../constants/theme';
 
 interface CompanyDetailsCardProps {
   company: any;
@@ -21,6 +34,18 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
   company,
   formattedLocation,
 }) => {
+  const [modalData, setModalData] = useState<{
+    visible: boolean;
+    title: string;
+    value: string;
+    type: 'address' | 'email';
+  }>({
+    visible: false,
+    title: '',
+    value: '',
+    type: 'address',
+  });
+
   const legalType = company?.company_type || company?.companyType || 'Private Limited';
   const size = company?.company_size || company?.companySize || '200–500 employees';
   const foundedYear = company?.founded_year || company?.foundedYear || '2005';
@@ -29,6 +54,41 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
   const phone = company?.phone || company?.contact_phone || '9162845245';
   const fullAddress =
     formattedLocation || 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra';
+
+  const handleOpenPopup = (type: 'address' | 'email') => {
+    if (type === 'address') {
+      setModalData({
+        visible: true,
+        title: 'Plant Address & Location',
+        value: fullAddress,
+        type: 'address',
+      });
+    } else {
+      setModalData({
+        visible: true,
+        title: 'Official HR Email',
+        value: email,
+        type: 'email',
+      });
+    }
+  };
+
+  const handleShareOrCopy = async (text: string) => {
+    try {
+      await Share.share({ message: text });
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handlePrimaryAction = (type: 'address' | 'email', value: string) => {
+    if (type === 'address') {
+      const url = `https://maps.google.com/?q=${encodeURIComponent(value)}`;
+      Linking.openURL(url).catch((err) => console.warn('Could not open map:', err));
+    } else {
+      Linking.openURL(`mailto:${value}`).catch((err) => console.warn('Could not open mail:', err));
+    }
+  };
 
   return (
     <View style={styles.cardContainer}>
@@ -45,7 +105,11 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
 
       {/* Row 1: Location | Legal Type */}
       <View style={styles.gridRow}>
-        <View style={styles.gridCol}>
+        <TouchableOpacity
+          style={styles.gridCol}
+          activeOpacity={0.7}
+          onPress={() => handleOpenPopup('address')}
+        >
           <View style={styles.fieldHeader}>
             <View style={[styles.iconBox, { backgroundColor: '#EEF4FF' }]}>
               <MapPin size={14} color="#1764E8" strokeWidth={2} />
@@ -55,7 +119,7 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
           <Text style={styles.fieldValueText} numberOfLines={2}>
             {fullAddress}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.gridCol}>
           <View style={styles.fieldHeader}>
@@ -107,7 +171,11 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
           <Text style={[styles.fieldValueText, { color: '#1764E8' }]}>{gstNumber}</Text>
         </View>
 
-        <View style={styles.gridCol}>
+        <TouchableOpacity
+          style={styles.gridCol}
+          activeOpacity={0.7}
+          onPress={() => handleOpenPopup('email')}
+        >
           <View style={styles.fieldHeader}>
             <View style={[styles.iconBox, { backgroundColor: '#F2F1FF' }]}>
               <Mail size={14} color="#625CEB" strokeWidth={2} />
@@ -117,7 +185,7 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
           <Text style={styles.fieldValueText} numberOfLines={1} ellipsizeMode="tail">
             {email}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.divider} />
@@ -135,6 +203,90 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
         </View>
         <View style={styles.gridCol} />
       </View>
+
+      {/* Pop Up Detail Modal */}
+      <Modal
+        visible={modalData.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalData((prev) => ({ ...prev, visible: false }))}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalData((prev) => ({ ...prev, visible: false }))}
+        >
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitleRow}>
+                <View
+                  style={[
+                    styles.modalIconBox,
+                    {
+                      backgroundColor:
+                        modalData.type === 'email' ? '#F2F1FF' : '#EEF4FF',
+                    },
+                  ]}
+                >
+                  {modalData.type === 'email' ? (
+                    <Mail size={18} color="#625CEB" strokeWidth={2.2} />
+                  ) : (
+                    <MapPin size={18} color="#1764E8" strokeWidth={2.2} />
+                  )}
+                </View>
+                <Text style={styles.modalTitle}>{modalData.title}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setModalData((prev) => ({ ...prev, visible: false }))}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Value Content Box */}
+            <View style={styles.modalContentBox}>
+              <Text style={styles.modalContentText} selectable={true}>
+                {modalData.value}
+              </Text>
+            </View>
+
+            {/* Action Buttons Row */}
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity
+                style={styles.modalSecondaryBtn}
+                activeOpacity={0.8}
+                onPress={() => handleShareOrCopy(modalData.value)}
+              >
+                <Share2 size={14} color="#475569" strokeWidth={2} />
+                <Text style={styles.modalSecondaryBtnText}>Share / Copy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalPrimaryBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  handlePrimaryAction(modalData.type, modalData.value);
+                  setModalData((prev) => ({ ...prev, visible: false }));
+                }}
+              >
+                {modalData.type === 'email' ? (
+                  <>
+                    <Send size={14} color="#FFFFFF" strokeWidth={2} />
+                    <Text style={styles.modalPrimaryBtnText}>Send Email</Text>
+                  </>
+                ) : (
+                  <>
+                    <Navigation2 size={14} color="#FFFFFF" strokeWidth={2} />
+                    <Text style={styles.modalPrimaryBtnText}>Open Map</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -222,5 +374,105 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E5EAF2',
     marginVertical: 10,
+  },
+  /* Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  modalHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  modalIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalContentBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+  },
+  modalContentText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#1E293B',
+    lineHeight: 20,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalSecondaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modalSecondaryBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  modalPrimaryBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 10,
+  },
+  modalPrimaryBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

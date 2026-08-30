@@ -37,6 +37,8 @@ export const JobApprovalPage: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [jobToApprove, setJobToApprove] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const { showToast } = useToast();
@@ -68,12 +70,20 @@ export const JobApprovalPage: React.FC = () => {
     }
   };
 
-  const handleApprove = async (jobId: string) => {
+  const handleApproveClick = (job: any) => {
+    setJobToApprove(job);
+    setApproveModalOpen(true);
+  };
+
+  const confirmApprove = async () => {
+    if (!jobToApprove?.id) return;
     setActionLoading(true);
     try {
-      await AdminApiService.approveJob(jobId);
-      showToast('Job listing approved successfully and published', 'success');
+      await AdminApiService.approveJob(jobToApprove.id);
+      showToast(`"${jobToApprove.title}" approved and published live!`, 'success');
+      setApproveModalOpen(false);
       setDetailsModalOpen(false);
+      setJobToApprove(null);
       fetchPendingJobs();
     } catch (err: any) {
       showToast(err.message || 'Failed to approve job', 'error');
@@ -192,7 +202,7 @@ export const JobApprovalPage: React.FC = () => {
                     <Eye size={14} /> View Details
                   </button>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', flex: 1, background: 'var(--success)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }} onClick={() => { setSelectedJob(job); handleApprove(job.id); }} disabled={actionLoading}>
+                    <button className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', flex: 1, background: 'var(--success)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }} onClick={() => handleApproveClick(job)}>
                       <CheckCircle2 size={14} /> Approve
                     </button>
                     <button className="btn" style={{ padding: '8px 12px', fontSize: '13px', flex: 1, background: 'var(--danger)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }} onClick={() => { setSelectedJob(job); handleRejectClick(); }}>
@@ -378,11 +388,11 @@ export const JobApprovalPage: React.FC = () => {
             {/* Actions Footer */}
             <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '12px' }}>
               <button 
-                onClick={() => handleApprove(selectedJob.id)} 
+                onClick={() => handleApproveClick(selectedJob)} 
                 disabled={actionLoading}
                 style={{ flex: 1, padding: '12px', borderRadius: '8px', background: '#2563eb', color: '#ffffff', border: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' }}
               >
-                <CheckCircle2 size={16} /> {actionLoading ? 'Approving...' : 'Approve & Publish Listing'}
+                <CheckCircle2 size={16} /> Approve & Publish Listing
               </button>
               <button 
                 onClick={handleRejectClick} 
@@ -395,25 +405,164 @@ export const JobApprovalPage: React.FC = () => {
         </div>
       )}
 
+      {/* Approval Confirmation Modal */}
+      {approveModalOpen && jobToApprove && (
+        <div className="drawer-backdrop" style={{ zIndex: 1000 }} onClick={() => setApproveModalOpen(false)}>
+          <div className="admin-card" style={{ width: '460px', maxWidth: '95vw', margin: '100px auto', padding: '24px', zIndex: 1001, borderRadius: '16px', border: '1px solid #bbf7d0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <CheckCircle2 size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+                  Approve & Publish Job?
+                </h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: '18px' }}>
+                  This will publish the job live on the marketplace immediately for all job seekers.
+                </p>
+              </div>
+              <button onClick={() => setApproveModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Job Summary Preview Box */}
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px', marginBottom: '18px' }}>
+              <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{jobToApprove.title}</h4>
+              <div style={{ fontSize: '12.5px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div><strong>Company:</strong> {jobToApprove.company || '—'}</div>
+                <div><strong>Location:</strong> {jobToApprove.location} ({jobToApprove.midc_zone || 'General'})</div>
+                {jobToApprove.salary_min && (
+                  <div><strong>Salary:</strong> ₹{formatNumber(jobToApprove.salary_min)} - ₹{formatNumber(jobToApprove.salary_max)} / month</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={() => setApproveModalOpen(false)} 
+                style={{ padding: '9px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={confirmApprove} 
+                disabled={actionLoading}
+                style={{ background: '#16a34a', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <CheckCircle2 size={16} /> {actionLoading ? 'Publishing...' : 'Yes, Approve & Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div className="drawer-backdrop" style={{ zIndex: 1000 }} onClick={() => setRejectModalOpen(false)}>
-          <div className="admin-card" style={{ width: '400px', margin: '100px auto', padding: '24px', zIndex: 1001, borderRadius: '16px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <XCircle size={20} style={{ color: '#dc2626' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Reject Job Posting</h3>
-            </div>
-            <form onSubmit={handleRejectSubmit}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: '600', fontSize: '13px' }}>Reason for Rejection</label>
-                <textarea className="form-input" style={{ height: '100px', padding: '10px', width: '100%', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '6px' }} placeholder="Specify why the job is rejected (e.g. invalid contact information, low wages, spam details)" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} required />
+          <div className="admin-card" style={{ width: '560px', maxWidth: '95vw', margin: '80px auto', padding: '28px', zIndex: 1001, borderRadius: '16px', border: '1px solid #fecaca', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <XCircle size={24} />
               </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setRejectModalOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <X size={14} /> Cancel
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+                  Reject Job Posting?
+                </h3>
+                <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', lineHeight: '20px' }}>
+                  The employer will be notified of this rejection so they can correct and resubmit.
+                </p>
+              </div>
+              <button onClick={() => setRejectModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {selectedJob && (
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', marginBottom: '18px' }}>
+                <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginBottom: '3px' }}>{selectedJob.title}</strong>
+                <div style={{ fontSize: '13px', color: '#64748b' }}>{selectedJob.company} • {selectedJob.location}</div>
+              </div>
+            )}
+
+            <form onSubmit={handleRejectSubmit}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13.5px', color: '#1e293b', margin: 0 }}>
+                    Reason for Rejection <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Employer feedback note</span>
+                </div>
+
+                {/* Quick Selection Chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                  {[
+                    'Below statutory minimum wage',
+                    'Incomplete or unclear job description',
+                    'Invalid recruiter contact details',
+                    'Duplicate job posting'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setRejectReason(preset)}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: rejectReason === preset ? '1px solid #dc2626' : '1px solid #e2e8f0',
+                        background: rejectReason === preset ? '#fef2f2' : '#f8fafc',
+                        color: rejectReason === preset ? '#b91c1c' : '#475569',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea 
+                  className="form-input" 
+                  style={{ 
+                    height: '140px', 
+                    padding: '14px', 
+                    width: '100%', 
+                    borderRadius: '10px', 
+                    border: '1.5px solid #cbd5e1', 
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                    color: '#0f172a',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }} 
+                  placeholder="Specify why the job is rejected (e.g. invalid contact information, low wages, spam details)..." 
+                  value={rejectReason} 
+                  onChange={(e) => setRejectReason(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => setRejectModalOpen(false)} 
+                  style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
+                >
+                  Cancel
                 </button>
-                <button type="submit" className="btn" style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }} disabled={actionLoading}>
-                  <XCircle size={14} /> {actionLoading ? 'Submitting...' : 'Submit Rejection'}
+                <button 
+                  type="submit" 
+                  className="btn" 
+                  style={{ background: '#dc2626', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }} 
+                  disabled={actionLoading}
+                >
+                  <XCircle size={16} /> {actionLoading ? 'Submitting...' : 'Submit Rejection'}
                 </button>
               </div>
             </form>

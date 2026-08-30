@@ -28,6 +28,7 @@ import { NotificationScreen } from '../screens/notifications/NotificationScreen'
 import { EmployerBannersScreen } from '../screens/advertisements/EmployerBannersScreen';
 import { CreateBannerScreen } from '../screens/advertisements/CreateBannerScreen';
 import { EmployerInterviewsScreen } from '../screens/jobs/EmployerInterviewsScreen';
+import { EmployerCandidateDetailScreen } from '../screens/candidates/EmployerCandidateDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -85,6 +86,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CreateBanner" component={CreateBannerScreen} />
           <Stack.Screen name="JobApplicants" component={JobApplicantsScreen} />
           <Stack.Screen name="ApplicantDetail" component={ApplicantDetailScreen} />
+          <Stack.Screen name="EmployerCandidateDetail" component={EmployerCandidateDetailScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />

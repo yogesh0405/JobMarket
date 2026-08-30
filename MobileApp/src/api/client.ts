@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import {
   getAccessToken,
   getRefreshToken,
@@ -8,9 +8,25 @@ import {
   clearAuthSession,
 } from '../utils/secureStorage';
 
-// CANONICAL BACKEND API URL (defaults to live Render backend: https://jobmarket-ongn.onrender.com)
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'https://jobmarket-ongn.onrender.com';
+const getDevApiBaseUrl = (): string => {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.includes('jobmarket-ongn.onrender.com')) {
+    return envUrl;
+  }
+  // Extract host IP dynamically from Metro scriptURL (e.g. http://192.168.0.103:8081/index.bundle)
+  const scriptURL = NativeModules.SourceCode?.scriptURL;
+  if (scriptURL) {
+    const match = scriptURL.match(/https?:\/\/([^:/]+)/);
+    const host = match ? match[1] : null;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:5000`;
+    }
+  }
+  return envUrl || 'https://jobmarket-ongn.onrender.com';
+};
+
+// CANONICAL BACKEND API URL (auto-resolves local LAN host during dev, falls back to live server)
+export const API_BASE_URL = getDevApiBaseUrl();
 
 const MOBILE_USER_AGENT = `JobMarketApp/1.0 (${Platform.OS === 'android' ? 'Android Mobile' : Platform.OS === 'ios' ? 'iOS Mobile' : 'Mobile App'})`;
 
@@ -239,6 +255,17 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
         throw new Error(`Server status ${response.status}: Render backend warming up or temporary error.`);
       }
       throw new Error('Server returned non-JSON response.');
+    }
+  }
+
+  // Catch 503 Maintenance Mode and immediately switch mobile UI to Maintenance state
+  if (response.status === 503 && json?.code === 'MAINTENANCE_MODE') {
+    const { triggerMaintenanceMode } = require('../hooks/usePlatformSettings');
+    if (typeof triggerMaintenanceMode === 'function') {
+      triggerMaintenanceMode({
+        support_email: json?.contact?.email,
+        contact_number: json?.contact?.phone,
+      });
     }
   }
 

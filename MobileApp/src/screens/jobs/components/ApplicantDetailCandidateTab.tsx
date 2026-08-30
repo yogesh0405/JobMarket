@@ -88,10 +88,16 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
 
   // Normalize Work Experience list
   let experienceList: any[] = [];
-  if (Array.isArray(user?.experience) && user.experience.length > 0) {
-    experienceList = user.experience;
-  } else if (typeof user?.experience === 'object' && user.experience) {
-    experienceList = [user.experience];
+  let rawExp = user?.experience ?? (selectedApplicant as any)?.experience;
+  if (typeof rawExp === 'string' && (rawExp.startsWith('[') || rawExp.startsWith('{'))) {
+    try {
+      rawExp = JSON.parse(rawExp);
+    } catch (_) {}
+  }
+  if (Array.isArray(rawExp) && rawExp.length > 0) {
+    experienceList = rawExp;
+  } else if (typeof rawExp === 'object' && rawExp) {
+    experienceList = [rawExp];
   } else if (user?.experience || user?.experience_years != null || user?.current_company || user?.trade_specialization) {
     experienceList = [
       {
@@ -106,10 +112,16 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
 
   // Normalize Education list
   let educationList: any[] = [];
-  if (Array.isArray(user?.education) && user.education.length > 0) {
-    educationList = user.education;
-  } else if (typeof user?.education === 'object' && user.education) {
-    educationList = [user.education];
+  let rawEdu = user?.education ?? (selectedApplicant as any)?.education;
+  if (typeof rawEdu === 'string' && (rawEdu.startsWith('[') || rawEdu.startsWith('{'))) {
+    try {
+      rawEdu = JSON.parse(rawEdu);
+    } catch (_) {}
+  }
+  if (Array.isArray(rawEdu) && rawEdu.length > 0) {
+    educationList = rawEdu;
+  } else if (typeof rawEdu === 'object' && rawEdu) {
+    educationList = [rawEdu];
   } else if (user?.highest_qualification || user?.education || user?.degree) {
     educationList = [
       {
@@ -211,7 +223,9 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
 
                   <View style={styles.timelineCard}>
                     <View style={styles.timelineCardHeaderRow}>
-                      <Text style={styles.timelineDurationText}>{durationText}</Text>
+                      <Text style={[styles.timelineDurationText, { flexShrink: 1 }]} numberOfLines={1}>
+                        {durationText}
+                      </Text>
                       {isCurrent ? (
                         <View style={styles.currentRoleBadge}>
                           <Text style={styles.currentRoleBadgeText}>Current Role</Text>
@@ -367,7 +381,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
               <Text style={styles.resumeFileNameText} numberOfLines={1}>
                 {resumeInfo.name || `${parseStringOrObject(user?.name, 'Candidate')}_Resume.pdf`}
               </Text>
-              <Text style={styles.resumeFileStatusText}>✓ S3 Cloud Document Verified</Text>
+              <Text style={styles.resumeFileStatusText}>✓ Document Attached</Text>
             </View>
             <TouchableOpacity
               style={styles.viewDocBtn}
@@ -589,7 +603,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     padding: 10,
     gap: 8,
   },
@@ -616,7 +630,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1764E8',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
   },
   viewDocBtnText: {
     fontSize: 11,
@@ -627,7 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     padding: 12,
     alignItems: 'center',
   },
@@ -640,7 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     padding: 10,
     alignItems: 'center',
   },

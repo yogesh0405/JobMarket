@@ -28,7 +28,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { candidateApi } from '../../api/candidateApi';
 import { Header } from '../../components/common/Header';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { useToast } from '../../context/ToastContext';
 import { isRemoteHttpUrl } from '../../utils/fileUploadHelper';
 import { extractCandidateResume } from '../../utils/fileUtils';
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   /* Card Container */
   cardContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 20,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
     paddingHorizontal: 7,
     paddingVertical: 2.5,
-    borderRadius: 4,
+    borderRadius: RADIUS.xs,
   },
   activeStatusText: {
     fontSize: 10,
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     padding: 14,
   },
   activeFileInfoRow: {
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#DBEAFE',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     paddingVertical: 5.5,
     paddingHorizontal: 12,
   },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     paddingVertical: 5.5,
     paddingHorizontal: 12,
   },
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#94A3B8',
     borderStyle: 'dashed',
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     paddingVertical: 30,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   uploadIconSquare: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: RADIUS.card,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#DBEAFE',
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: RADIUS.xs,
   },
   formatPillText: {
     fontSize: 11.5,
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     padding: 12,
     gap: 10,
   },
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   removeFileBtn: {
     width: 30,
     height: 30,
-    borderRadius: 6,
+    borderRadius: RADIUS.xs,
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
@@ -768,13 +768,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 6,
     backgroundColor: '#E2E8F0',
-    borderRadius: 3,
+    borderRadius: RADIUS.xs,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 3,
+    borderRadius: RADIUS.xs,
   },
 
   /* Action Buttons Row */
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     paddingVertical: 10,
     paddingHorizontal: 24,
     alignItems: 'center',
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     paddingVertical: 10,
     paddingHorizontal: 24,
     minWidth: 110,
@@ -836,13 +836,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     gap: 8,
   },
   fileIconSquare: {
     width: 38,
     height: 38,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#DBEAFE',
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
   actionIconBtn: {
     width: 32,
     height: 32,
-    borderRadius: 6,
+    borderRadius: RADIUS.xs,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   deleteIconBtn: {
     width: 32,
     height: 32,
-    borderRadius: 6,
+    borderRadius: RADIUS.xs,
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
   },
   modalContentCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 20,
@@ -947,7 +947,7 @@ const styles = StyleSheet.create({
   modalIconBox: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

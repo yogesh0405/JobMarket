@@ -235,11 +235,21 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const userHasPassword = Boolean(
+    (user as any)?.has_password !== false &&
+    (user as any)?.hasPassword !== false &&
+    ((user as any)?.auth_provider !== 'google' || (user as any)?.has_password === true)
+  );
+
   const handleChangePassword = async () => {
     setPasswordError(null);
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Please fill out all password fields.');
+    if (userHasPassword && !currentPassword) {
+      setPasswordError('Please enter your current password.');
+      return;
+    }
+    if (!newPassword || !confirmPassword) {
+      setPasswordError('Please fill out both new password fields.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -254,7 +264,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     setPasswordLoading(true);
     try {
       const res = await authApi.changePassword({
-        currentPassword,
+        currentPassword: userHasPassword ? currentPassword : '',
         newPassword,
       });
 
@@ -262,10 +272,13 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        await refreshUser().catch(() => {});
         setSuccessModalConfig({
           visible: true,
-          title: 'Password Updated',
-          message: 'Your account password has been changed successfully. Please keep your new credentials secure.',
+          title: userHasPassword ? 'Password Updated' : 'Password Created',
+          message: userHasPassword
+            ? 'Your account password has been changed successfully.'
+            : 'Your account password has been set successfully. You can now use it to log in with your email.',
           buttonText: 'Done',
           onButtonPress: () => setSuccessModalConfig((prev) => ({ ...prev, visible: false })),
         });
@@ -346,13 +359,15 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* CARD 1: RESET PASSWORD */}
+        {/* CARD 1: SET OR CHANGE PASSWORD */}
         <View style={styles.sectionCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderCol}>
-              <Text style={styles.cardTitle}>Reset Password</Text>
+              <Text style={styles.cardTitle}>{userHasPassword ? 'Change Password' : 'Set Password'}</Text>
               <Text style={styles.cardSubtitle}>
-                Update your account password for secure access.
+                {userHasPassword
+                  ? 'Update your account password for secure access.'
+                  : 'You signed in with Google. Set a password to also log in using your email and password.'}
               </Text>
             </View>
             <View style={styles.cardHeaderIconBox}>
@@ -364,38 +379,40 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             <ErrorBanner message={passwordError} style={{ marginBottom: 12 }} />
           ) : null}
 
-          {/* Current Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Current Password</Text>
-            <View style={styles.inputBox}>
-              <TextInput
-                style={styles.inputField}
-                placeholder="Enter current password"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showCurrentPass}
-                value={currentPassword}
-                onChangeText={(t) => {
-                  setCurrentPassword(t);
-                  if (passwordError) setPasswordError(null);
-                }}
-              />
-              <TouchableOpacity
-                onPress={() => setShowCurrentPass(!showCurrentPass)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                activeOpacity={0.7}
-              >
-                {showCurrentPass ? (
-                  <EyeOff size={16} color="#64748B" />
-                ) : (
-                  <Eye size={16} color="#64748B" />
-                )}
-              </TouchableOpacity>
+          {/* Current Password Field - Only for users with existing password */}
+          {userHasPassword && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Current Password</Text>
+              <View style={styles.inputBox}>
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Enter current password"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showCurrentPass}
+                  value={currentPassword}
+                  onChangeText={(t) => {
+                    setCurrentPassword(t);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowCurrentPass(!showCurrentPass)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
+                  {showCurrentPass ? (
+                    <EyeOff size={16} color="#64748B" />
+                  ) : (
+                    <Eye size={16} color="#64748B" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* New Password Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>New Password</Text>
+            <Text style={styles.inputLabel}>{userHasPassword ? 'New Password' : 'Create Password'}</Text>
             <View style={styles.inputBox}>
               <TextInput
                 style={styles.inputField}
@@ -424,11 +441,11 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Confirm New Password Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Confirm New Password</Text>
+            <Text style={styles.inputLabel}>Confirm {userHasPassword ? 'New ' : ''}Password</Text>
             <View style={styles.inputBox}>
               <TextInput
                 style={styles.inputField}
-                placeholder="Re-enter new password"
+                placeholder="Re-enter password"
                 placeholderTextColor="#94A3B8"
                 secureTextEntry={!showConfirmPass}
                 value={confirmPassword}
@@ -460,28 +477,34 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             {passwordLoading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.primarySaveBtnText}>Update Password</Text>
+              <Text style={styles.primarySaveBtnText}>
+                {userHasPassword ? 'Update Password' : 'Set Password'}
+              </Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.cardInnerDivider} />
+          {userHasPassword && (
+            <>
+              <View style={styles.cardInnerDivider} />
 
-          {/* Forgot Password Alternative Option */}
-          <View style={styles.forgotSection}>
-            <Text style={styles.forgotTitle}>Trouble remembering current password?</Text>
-            <Text style={styles.forgotSubtitle}>
-              Request a 6-digit OTP verification code sent directly to your email address.
-            </Text>
+              {/* Forgot Password Alternative Option */}
+              <View style={styles.forgotSection}>
+                <Text style={styles.forgotTitle}>Trouble remembering current password?</Text>
+                <Text style={styles.forgotSubtitle}>
+                  Request a 6-digit OTP verification code sent directly to your email address.
+                </Text>
 
-            <TouchableOpacity
-              style={styles.outlineResetBtn}
-              activeOpacity={0.8}
-              onPress={handleOpenResetConfirm}
-            >
-              <Send size={14} color="#102A5C" />
-              <Text style={styles.outlineResetBtnText}>Reset via Email OTP</Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity
+                  style={styles.outlineResetBtn}
+                  activeOpacity={0.8}
+                  onPress={handleOpenResetConfirm}
+                >
+                  <Send size={14} color="#102A5C" />
+                  <Text style={styles.outlineResetBtnText}>Reset via Email OTP</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
 
         {/* CARD 2: TWO FACTOR AUTHENTICATION */}

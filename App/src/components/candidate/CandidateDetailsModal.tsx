@@ -183,6 +183,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
   const [interviewDate, setInterviewDate] = useState(toSafeString(viewWorker.interviewDate || ''));
   const [interviewTime, setInterviewTime] = useState(toSafeString(viewWorker.interviewTime || '10:00 AM', '10:00 AM'));
   const [interviewLocation, setInterviewLocation] = useState(toSafeString(viewWorker.venueAddress || viewWorker.interviewLocation || 'Factory Gate #2, Industrial MIDC', 'Factory Gate #2, Industrial MIDC'));
+  const [interviewMapsLink, setInterviewMapsLink] = useState(toSafeString(viewWorker.mapsLink || viewWorker.maps_link || ''));
   const [interviewNotes, setInterviewNotes] = useState(toSafeString(viewWorker.notes || 'Bring original ITI trade certificate & Aadhaar card.', 'Bring original ITI trade certificate & Aadhaar card.'));
   const [isScheduling, setIsScheduling] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -406,11 +407,19 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
       if (showToast) showToast('Please select interview date', 'error');
       return;
     }
+    if (!interviewLocation || !interviewLocation.trim()) {
+      if (showToast) showToast('Please enter the venue address', 'error');
+      return;
+    }
+    if (!interviewMapsLink || !interviewMapsLink.trim()) {
+      if (showToast) showToast('Please enter the Google Maps Location link', 'error');
+      return;
+    }
 
     setIsScheduling(true);
     try {
       const targetUserId = toSafeString(user?.id || viewWorker?.userId || viewWorker?.id);
-      const venue = interviewLocation.trim() || 'Industrial Plant Main Gate';
+      const venue = interviewLocation.trim();
 
       if (scheduleInterview && targetJobId && targetUserId) {
         await scheduleInterview(targetJobId, targetUserId, {
@@ -418,6 +427,7 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
           interviewTime: interviewTime || '10:00 AM',
           venueAddress: venue,
           interviewLocation: venue,
+          mapsLink: interviewMapsLink.trim(),
           interviewMode,
           notes: interviewNotes,
         });
@@ -1553,13 +1563,37 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
 
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
-                  Venue Address / Video Meeting Link
+                  Venue Address <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={interviewLocation}
                   onChange={(e) => setInterviewLocation(e.target.value)}
-                  placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
+                  placeholder="e.g. Factory Gate #2, Waluj MIDC, CSN"
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    borderRadius: '6px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: '#F8FAFC',
+                    padding: '0 12px',
+                    fontSize: '12px',
+                    color: '#102A5C',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
+                  Google Maps Location Link <span style={{ color: '#EF4444' }}>*</span>
+                </label>
+                <input
+                  type="url"
+                  value={interviewMapsLink}
+                  onChange={(e) => setInterviewMapsLink(e.target.value)}
+                  placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/..."
                   style={{
                     width: '100%',
                     height: '42px',

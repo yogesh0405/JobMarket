@@ -44,6 +44,18 @@ export const JobsPage: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Modals for Publish, Unpublish & Delete with Reasons
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [jobToPublish, setJobToPublish] = useState<any>(null);
+
+  const [unpublishModalOpen, setUnpublishModalOpen] = useState(false);
+  const [jobToUnpublish, setJobToUnpublish] = useState<any>(null);
+  const [unpublishReason, setUnpublishReason] = useState('');
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<any>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+
   const { showToast } = useToast();
 
   const fetchJobs = useCallback(async () => {
@@ -84,27 +96,50 @@ export const JobsPage: React.FC = () => {
     }
   };
 
-  const handleApprove = async (jobId: string) => {
+  // 1. Publish Flow
+  const handlePublishClick = (job: any) => {
+    setJobToPublish(job);
+    setPublishModalOpen(true);
+  };
+
+  const confirmPublish = async () => {
+    if (!jobToPublish?.id) return;
     setActionLoading(true);
     try {
-      await AdminApiService.approveJob(jobId);
-      showToast('Job listing approved successfully and published', 'success');
+      await AdminApiService.approveJob(jobToPublish.id);
+      showToast(`"${jobToPublish.title}" published successfully!`, 'success');
+      setPublishModalOpen(false);
       setDetailsModalOpen(false);
+      setJobToPublish(null);
       fetchJobs();
     } catch (err: any) {
-      showToast(err.message || 'Failed to approve job', 'error');
+      showToast(err.message || 'Failed to publish job', 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleUnpublish = async (jobId: string) => {
-    if (!window.confirm('Are you sure you want to unpublish this live job listing? It will be hidden from candidates.')) return;
+  // 2. Unpublish Flow with Reason
+  const handleUnpublishClick = (job: any) => {
+    setJobToUnpublish(job);
+    setUnpublishReason('');
+    setUnpublishModalOpen(true);
+  };
+
+  const confirmUnpublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobToUnpublish?.id) return;
+    if (!unpublishReason.trim()) {
+      showToast('Please specify a reason for unpublishing', 'warning');
+      return;
+    }
     setActionLoading(true);
     try {
-      await AdminApiService.unpublishJob(jobId);
-      showToast('Job listing unpublished successfully', 'info');
+      await AdminApiService.unpublishJob(jobToUnpublish.id, unpublishReason);
+      showToast(`"${jobToUnpublish.title}" unpublished successfully.`, 'info');
+      setUnpublishModalOpen(false);
       setDetailsModalOpen(false);
+      setJobToUnpublish(null);
       fetchJobs();
     } catch (err: any) {
       showToast(err.message || 'Failed to unpublish job', 'error');
@@ -113,13 +148,27 @@ export const JobsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (jobId: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this job listing? This action cannot be undone.')) return;
+  // 3. Delete Flow with Reason
+  const handleDeleteClick = (job: any) => {
+    setJobToDelete(job);
+    setDeleteReason('');
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobToDelete?.id) return;
+    if (!deleteReason.trim()) {
+      showToast('Please specify a reason for deletion', 'warning');
+      return;
+    }
     setActionLoading(true);
     try {
-      await AdminApiService.deleteJob(jobId);
-      showToast('Job listing deleted permanently', 'success');
+      await AdminApiService.deleteJob(jobToDelete.id, deleteReason);
+      showToast(`"${jobToDelete.title}" permanently deleted.`, 'success');
+      setDeleteModalOpen(false);
       setDetailsModalOpen(false);
+      setJobToDelete(null);
       fetchJobs();
     } catch (err: any) {
       showToast(err.message || 'Failed to delete job', 'error');
@@ -221,13 +270,17 @@ export const JobsPage: React.FC = () => {
                         <Eye size={15} />
                       </button>
 
-                      {job.status === 'APPROVED' && (
-                        <button className="action-btn" title="Unpublish Job" onClick={() => handleUnpublish(job.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: '#d97706' }}>
+                      {job.status !== 'APPROVED' ? (
+                        <button className="action-btn" title="Publish Job" onClick={() => handlePublishClick(job)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: '#16a34a' }}>
+                          <CheckCircle2 size={15} />
+                        </button>
+                      ) : (
+                        <button className="action-btn" title="Unpublish Job" onClick={() => handleUnpublishClick(job)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: '#d97706' }}>
                           <EyeOff size={15} />
                         </button>
                       )}
 
-                      <button className="action-btn delete" title="Delete Job Listing" onClick={() => handleDelete(job.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
+                      <button className="action-btn delete" title="Delete Job Listing" onClick={() => handleDeleteClick(job)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
                         <Trash2 size={15} />
                       </button>
                     </td>
@@ -448,23 +501,292 @@ export const JobsPage: React.FC = () => {
             </div>
 
             <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '12px' }}>
-              {selectedJob.status === 'PENDING_REVIEW' && (
-                <button className="btn btn-primary" style={{ flex: 1, background: '#16a34a', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleApprove(selectedJob.id)} disabled={actionLoading}>
-                  <CheckCircle2 size={16} /> Approve Posting
+              {selectedJob.status !== 'APPROVED' ? (
+                <button className="btn btn-primary" style={{ flex: 1, background: '#16a34a', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handlePublishClick(selectedJob)} disabled={actionLoading}>
+                  <CheckCircle2 size={16} /> Publish Listing
                 </button>
-              )}
-              {selectedJob.status === 'APPROVED' && (
-                <button className="btn btn-warning" style={{ flex: 1, background: '#d97706', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleUnpublish(selectedJob.id)} disabled={actionLoading}>
+              ) : (
+                <button className="btn btn-warning" style={{ flex: 1, background: '#d97706', color: '#ffffff', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleUnpublishClick(selectedJob)} disabled={actionLoading}>
                   <EyeOff size={16} /> Unpublish Job
                 </button>
               )}
-              <button className="btn btn-danger" style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleDelete(selectedJob.id)} disabled={actionLoading}>
+              <button className="btn btn-danger" style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => handleDeleteClick(selectedJob)} disabled={actionLoading}>
                 <Trash2 size={16} /> Delete Job
               </button>
               <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => setDetailsModalOpen(false)}>
                 <X size={16} /> Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Publish Confirmation Modal */}
+      {publishModalOpen && jobToPublish && (
+        <div className="drawer-backdrop" style={{ zIndex: 1000 }} onClick={() => setPublishModalOpen(false)}>
+          <div className="admin-card" style={{ width: '460px', maxWidth: '95vw', margin: '100px auto', padding: '24px', zIndex: 1001, borderRadius: '16px', border: '1px solid #bbf7d0', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <CheckCircle2 size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+                  Publish Job Listing?
+                </h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: '18px' }}>
+                  This will publish the job live on the marketplace for all candidates on Web and Mobile.
+                </p>
+              </div>
+              <button onClick={() => setPublishModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px', marginBottom: '18px' }}>
+              <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{jobToPublish.title}</h4>
+              <div style={{ fontSize: '12.5px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div><strong>Company:</strong> {jobToPublish.company || '—'}</div>
+                <div><strong>Location:</strong> {jobToPublish.location}</div>
+                {jobToPublish.salary_min && (
+                  <div><strong>Salary:</strong> ₹{formatNumber(jobToPublish.salary_min)} - ₹{formatNumber(jobToPublish.salary_max)} / month</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={() => setPublishModalOpen(false)} 
+                style={{ padding: '9px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={confirmPublish} 
+                disabled={actionLoading}
+                style={{ background: '#16a34a', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <CheckCircle2 size={16} /> {actionLoading ? 'Publishing...' : 'Yes, Publish Job'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Unpublish Modal (with Reason) */}
+      {unpublishModalOpen && jobToUnpublish && (
+        <div className="drawer-backdrop" style={{ zIndex: 1000 }} onClick={() => setUnpublishModalOpen(false)}>
+          <div className="admin-card" style={{ width: '560px', maxWidth: '95vw', margin: '80px auto', padding: '28px', zIndex: 1001, borderRadius: '16px', border: '1px solid #fed7aa', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#ffedd5', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <EyeOff size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+                  Unpublish Job Listing?
+                </h3>
+                <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', lineHeight: '20px' }}>
+                  This job will be hidden immediately from candidates across Web and Mobile apps.
+                </p>
+              </div>
+              <button onClick={() => setUnpublishModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', marginBottom: '18px' }}>
+              <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginBottom: '3px' }}>{jobToUnpublish.title}</strong>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>{jobToUnpublish.company} • {jobToUnpublish.location}</div>
+            </div>
+
+            <form onSubmit={confirmUnpublish}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13.5px', color: '#1e293b', margin: 0 }}>
+                    Reason for Unpublishing <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Employer will receive this note</span>
+                </div>
+
+                {/* Quick Selection Chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                  {[
+                    'Position filled / Hiring closed',
+                    'Employer requested removal',
+                    'Job expired / Inactive vacancy',
+                    'Salary or role policy violation'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setUnpublishReason(preset)}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: unpublishReason === preset ? '1px solid #d97706' : '1px solid #e2e8f0',
+                        background: unpublishReason === preset ? '#fffbeb' : '#f8fafc',
+                        color: unpublishReason === preset ? '#b45309' : '#475569',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea 
+                  className="form-input" 
+                  style={{ 
+                    height: '140px', 
+                    padding: '14px', 
+                    width: '100%', 
+                    borderRadius: '10px', 
+                    border: '1.5px solid #cbd5e1', 
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                    color: '#0f172a',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }} 
+                  placeholder="Explain why this job is being taken down so the recruiter understands..." 
+                  value={unpublishReason} 
+                  onChange={(e) => setUnpublishReason(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => setUnpublishModalOpen(false)} 
+                  style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn" 
+                  style={{ background: '#d97706', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }} 
+                  disabled={actionLoading}
+                >
+                  <EyeOff size={16} /> {actionLoading ? 'Unpublishing...' : 'Confirm Unpublish'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Delete Modal (with Reason & Danger Confirmation) */}
+      {deleteModalOpen && jobToDelete && (
+        <div className="drawer-backdrop" style={{ zIndex: 1000 }} onClick={() => setDeleteModalOpen(false)}>
+          <div className="admin-card" style={{ width: '560px', maxWidth: '95vw', margin: '80px auto', padding: '28px', zIndex: 1001, borderRadius: '16px', border: '1px solid #fecaca', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '18px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+                  Permanently Delete Job?
+                </h3>
+                <p style={{ margin: 0, fontSize: '13.5px', color: '#dc2626', fontWeight: '600', lineHeight: '20px' }}>
+                  This action is permanent and completely deletes the job listing from the database.
+                </p>
+              </div>
+              <button onClick={() => setDeleteModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', marginBottom: '18px' }}>
+              <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block', marginBottom: '3px' }}>{jobToDelete.title}</strong>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>{jobToDelete.company} • {jobToDelete.location}</div>
+            </div>
+
+            <form onSubmit={confirmDelete}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: '700', fontSize: '13.5px', color: '#1e293b', margin: 0 }}>
+                    Reason for Permanent Deletion <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Logged in audit records</span>
+                </div>
+
+                {/* Quick Selection Chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                  {[
+                    'Spam / Fake employer posting',
+                    'Duplicate job entry',
+                    'Gross policy violation',
+                    'Employer account deleted'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setDeleteReason(preset)}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: deleteReason === preset ? '1px solid #dc2626' : '1px solid #e2e8f0',
+                        background: deleteReason === preset ? '#fef2f2' : '#f8fafc',
+                        color: deleteReason === preset ? '#b91c1c' : '#475569',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea 
+                  className="form-input" 
+                  style={{ 
+                    height: '140px', 
+                    padding: '14px', 
+                    width: '100%', 
+                    borderRadius: '10px', 
+                    border: '1.5px solid #cbd5e1', 
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                    color: '#0f172a',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }} 
+                  placeholder="Specify why this job listing is being permanently purged from the system..." 
+                  value={deleteReason} 
+                  onChange={(e) => setDeleteReason(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline" 
+                  onClick={() => setDeleteModalOpen(false)} 
+                  style={{ padding: '10px 20px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '600' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn" 
+                  style={{ background: '#dc2626', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontSize: '13.5px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }} 
+                  disabled={actionLoading}
+                >
+                  <Trash2 size={16} /> {actionLoading ? 'Deleting...' : 'Permanently Delete'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

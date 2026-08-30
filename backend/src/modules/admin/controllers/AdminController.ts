@@ -228,11 +228,12 @@ export class AdminController {
   static async unpublishJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
+      const reason = req.body?.reason as string | undefined;
       const adminId = req.user!.userId;
       const ip = req.ip;
       const ua = req.headers['user-agent'];
 
-      const result = await AdminService.unpublishJob(id, adminId, ip, ua);
+      const result = await AdminService.unpublishJob(id, reason, adminId, ip, ua);
       res.status(200).json(result);
     } catch (error) {
       next(error);
@@ -242,11 +243,12 @@ export class AdminController {
   static async deleteJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;
+      const reason = req.body?.reason as string | undefined;
       const adminId = req.user!.userId;
       const ip = req.ip;
       const ua = req.headers['user-agent'];
 
-      const result = await AdminService.deleteJob(id, adminId, ip, ua);
+      const result = await AdminService.deleteJob(id, reason, adminId, ip, ua);
       res.status(200).json(result);
     } catch (error) {
       next(error);

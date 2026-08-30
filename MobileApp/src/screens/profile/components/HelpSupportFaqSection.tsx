@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Search, ChevronDown, ChevronUp, HelpCircle, X, SlidersHorizontal } from 'lucide-react-native';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 import { FAQ_DATA } from './HelpSupportConstants';
 
 interface HelpSupportFaqSectionProps {
@@ -148,10 +148,10 @@ const styles = StyleSheet.create({
   categoryPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: RADIUS.xs,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -173,19 +173,14 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 9 : 5,
+    height: 38,
     gap: 8,
     marginBottom: 14,
-    shadowColor: COLORS.textPrimary,
-    shadowOpacity: 0.02,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
   },
   searchInput: {
     flex: 1,
@@ -197,16 +192,16 @@ const styles = StyleSheet.create({
 
   /* FAQ List */
   faqList: {
-    gap: 8,
+    gap: 12,
   },
   faqCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#CBD5E1',
     padding: 14,
-    shadowColor: COLORS.textPrimary,
-    shadowOpacity: 0.02,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 3,
     elevation: 1,
@@ -259,9 +254,9 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#CBD5E1',
   },
   emptyStateTitle: {
     fontSize: 14,

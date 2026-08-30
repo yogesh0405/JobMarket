@@ -25,6 +25,8 @@ interface ApplicantDetailInterviewTabProps {
   setInterviewTime?: (t: string) => void;
   interviewLocation: string;
   setInterviewLocation: (loc: string) => void;
+  interviewMapsLink: string;
+  setInterviewMapsLink: (link: string) => void;
   interviewNotes: string;
   setInterviewNotes: (notes: string) => void;
   onScheduleInterview: () => void;
@@ -44,6 +46,8 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
   setInterviewTime,
   interviewLocation,
   setInterviewLocation,
+  interviewMapsLink,
+  setInterviewMapsLink,
   interviewNotes,
   setInterviewNotes,
   onScheduleInterview,
@@ -147,10 +151,19 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
         <Text style={styles.sectionHeadingTitle}>3. VENUE & INSTRUCTIONS</Text>
 
         <Input
-          label="Venue Address / Video Meeting Link"
-          placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
+          label="Venue Address *"
+          placeholder="e.g. Factory Gate #2, Waluj MIDC, CSN"
           value={interviewLocation}
           onChangeText={setInterviewLocation}
+        />
+
+        <Input
+          label="Google Maps Location Link *"
+          placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/..."
+          value={interviewMapsLink}
+          onChangeText={setInterviewMapsLink}
+          keyboardType="url"
+          autoCapitalize="none"
         />
 
         <Input

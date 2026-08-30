@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 
 // Real high-resolution professional stock photos (Guaranteed fast loading URLs)
 const REAL_IMAGES = {
@@ -123,12 +123,12 @@ const styles = StyleSheet.create({
   imageBadgeBox: {
     width: '92%',
     height: 94,
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     borderWidth: 2,
-    borderColor: '#C084FC', // Purple-pink border ring matching reference image
+    borderColor: '#93C5FD',
     backgroundColor: '#F1F5F9',
     overflow: 'hidden',
-    marginBottom: -34, // Negative margin pulls text box up to overlap cleanly
+    marginBottom: -34,
     zIndex: 10,
     alignSelf: 'center',
   },
@@ -142,19 +142,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: COLORS.primary,
   },
   whiteCardBox: {
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 0, // Strict rule: square corners
-    paddingTop: 44, // Clean top padding under overlapping image badge
+    borderRadius: RADIUS.card,
+    paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 10,
     alignItems: 'center',
     zIndex: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardTitleText: {
     fontSize: 13,

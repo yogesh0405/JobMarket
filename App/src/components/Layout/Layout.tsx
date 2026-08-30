@@ -1,13 +1,39 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { MobileBottomNav } from './MobileBottomNav';
+import { MaintenancePage } from '../common/MaintenancePage';
 import { useAuth } from '../../hooks/useAuth';
+import { apiFetch } from '../../utils/api';
 
 export const Layout: React.FC = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
+  const [platformSettings, setPlatformSettings] = useState<{
+    maintenance_mode?: string;
+    platform_name?: string;
+    logo_url?: string;
+    support_email?: string;
+    contact_number?: string;
+  }>({});
+
+  const checkMaintenance = () => {
+    apiFetch('/api/v1/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (res?.data) {
+          setPlatformSettings(res.data);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    checkMaintenance();
+    window.addEventListener('settings-updated', checkMaintenance);
+    return () => window.removeEventListener('settings-updated', checkMaintenance);
+  }, []);
 
   // Scroll to top of viewport on route change unless hash anchor exists
   useEffect(() => {
@@ -22,6 +48,19 @@ export const Layout: React.FC = () => {
   // Admin users are strictly restricted to /admin/* and cannot access public user pages or user dashboards.
   if (currentUser && currentUser.role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // If maintenance mode is active (and user is not admin navigating admin pages), show maintenance landing page
+  if (platformSettings.maintenance_mode === 'true' && currentUser?.role !== 'admin') {
+    return (
+      <MaintenancePage
+        platformName={platformSettings.platform_name}
+        logoUrl={platformSettings.logo_url}
+        supportEmail={platformSettings.support_email}
+        contactNumber={platformSettings.contact_number}
+        onRefresh={checkMaintenance}
+      />
+    );
   }
 
   // Site footer is hidden for Employers, Dashboard, Company, Post-Job, Job Details, Contact/Support, Settings, & Map View pages

@@ -45,6 +45,7 @@ import { DatePickerField } from '../../components/common/DatePickerField';
 import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { WhatsAppIcon } from '../../components/common/WhatsAppIcon';
+import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS, SPACING } from '../../constants/theme';
 
@@ -57,6 +58,12 @@ export interface EmployerInterviewItem {
   application_id: string;
   job_id: string;
   candidate_id: string;
+  candidate_name: string;
+  candidate_email?: string;
+  candidate_phone?: string;
+  candidate_avatar?: string;
+  trade_specialization?: string;
+  candidate_location?: string;
   application_status: string;
   applied_at: string;
   interview_date: string;
@@ -69,19 +76,8 @@ export interface EmployerInterviewItem {
   interview_status?: string;
   job_title: string;
   company: string;
-  company_logo?: string;
-  job_location?: string;
-  industry?: string;
-  job_type?: string;
-  work_mode?: string;
-  salary_min?: number;
-  salary_max?: number;
-  candidate_name: string;
-  candidate_email?: string;
-  candidate_phone?: string;
-  candidate_avatar?: string;
-  trade_specialization?: string;
-  candidate_location?: string;
+  company_name?: string;
+  candidate_education?: any[];
   candidate_experience?: any[];
   candidate_skills?: string[];
   candidate_resume?: any;
@@ -113,6 +109,7 @@ const formatDate = (dateStr: string): string => {
 };
 
 export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -135,6 +132,7 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
   const [rescheduleDate, setRescheduleDate] = useState<string>('');
   const [rescheduleTime, setRescheduleTime] = useState<string>('');
   const [rescheduleVenue, setRescheduleVenue] = useState<string>('');
+  const [rescheduleMapsLink, setRescheduleMapsLink] = useState<string>('');
   const [rescheduleReason, setRescheduleReason] = useState<string>('');
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [submittingReschedule, setSubmittingReschedule] = useState(false);
@@ -180,6 +178,7 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
     setRescheduleDate(item.interview_date || '');
     setRescheduleTime(item.interview_time || '');
     setRescheduleVenue(item.venue_address || '');
+    setRescheduleMapsLink(item.maps_link || '');
     setRescheduleReason('');
     setIsDetailModalOpen(true);
   };
@@ -235,6 +234,7 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         interviewDate: rescheduleDate,
         interviewTime: rescheduleTime,
         venueAddress: rescheduleVenue.trim() || selectedInterview.venue_address || 'Industrial Plant Main Gate',
+        mapsLink: rescheduleMapsLink.trim() || selectedInterview.maps_link || '',
         postponedReason: rescheduleReason.trim() || 'Schedule adjustment by recruiter.',
       };
 
@@ -453,10 +453,10 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
 
             return (
               <View key={item.application_id} style={styles.interviewCard}>
-                {/* Header Row: Date & Countdown Tag */}
-                <View style={styles.cardHeaderRow}>
+                {/* Distinct Date & Status Header Band with soft grey background */}
+                <View style={styles.cardTopHeader}>
                   <View style={styles.dateTimeBadge}>
-                    <Calendar size={13} color="#1764E8" />
+                    <Calendar size={13} color="#1764E8" strokeWidth={2} />
                     <Text style={styles.dateTimeText}>
                       {formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}
                     </Text>
@@ -487,126 +487,147 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
                   )}
                 </View>
 
-                <View style={styles.sectionSeparator} />
-
-                {/* Candidate Info Block */}
-                <View style={styles.candidateRow}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarInitials}>
-                      {(item.candidate_name || 'C').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-
-                  <View style={styles.candidateDetails}>
-                    <View style={styles.candidateNameRow}>
-                      <Text style={styles.candidateName} numberOfLines={1}>
-                        {item.candidate_name}
+                {/* Card Main Body */}
+                <View style={styles.cardBody}>
+                  {/* Candidate Info Block */}
+                  <View style={styles.candidateRow}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarInitials}>
+                        {(item.candidate_name || 'C').charAt(0).toUpperCase()}
                       </Text>
-                      {item.trade_specialization && (
-                        <View style={styles.tradeBadge}>
-                          <Text style={styles.tradeBadgeText} numberOfLines={1}>
-                            {item.trade_specialization}
-                          </Text>
+                    </View>
+
+                    <View style={styles.candidateDetails}>
+                      <View style={styles.candidateNameRow}>
+                        <Text style={styles.candidateName} numberOfLines={1}>
+                          {item.candidate_name}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        activeOpacity={0.75}
+                        onPress={() => {
+                          if (item.job_id) {
+                            navigation.navigate('CandidateJobDetail', {
+                              jobId: item.job_id,
+                              job: {
+                                ...item,
+                                id: item.job_id,
+                                title: item.job_title,
+                                job_title: item.job_title,
+                                company: (item as any).company_name || user?.companyName || user?.company_name || 'Industrial Partner',
+                                location: item.venue_address,
+                              },
+                            });
+                          }
+                        }}
+                        style={styles.jobAppliedLinkRow}
+                      >
+                        <Text style={styles.jobAppliedTitle} numberOfLines={1}>
+                          Applied for: <Text style={styles.jobAppliedLinkText}>{item.job_title}</Text>
+                        </Text>
+                        <ExternalLink size={11} color="#1764E8" style={{ marginLeft: 4 }} />
+                      </TouchableOpacity>
+
+                      {item.candidate_phone && (
+                        <View style={styles.metaRow}>
+                          <Phone size={12} color="#64748B" />
+                          <Text style={styles.metaText}>{item.candidate_phone}</Text>
                         </View>
                       )}
                     </View>
-
-                    <Text style={styles.jobAppliedTitle} numberOfLines={1}>
-                      Applied for: <Text style={{ fontWeight: '700', color: '#1E293B' }}>{item.job_title}</Text>
-                    </Text>
-
-                    {item.candidate_phone && (
-                      <View style={styles.metaRow}>
-                        <Phone size={12} color="#64748B" />
-                        <Text style={styles.metaText}>{item.candidate_phone}</Text>
-                      </View>
-                    )}
                   </View>
-                </View>
 
-                {/* Venue / Location Row */}
-                {item.venue_address && (
-                  <View style={styles.venueRow}>
-                    <MapPin size={13} color="#64748B" style={{ marginTop: 2 }} />
-                    <Text style={styles.venueText} numberOfLines={2}>
-                      {item.venue_address}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Star Rating Display if Interviewed */}
-                {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
-                  <View style={styles.ratingDisplayBlock}>
-                    <View style={styles.starsRow}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star
-                          key={star}
-                          size={14}
-                          color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
-                          fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
-                        />
-                      ))}
-                      <Text style={styles.ratingScoreText}>({item.interview_rating}/5)</Text>
-                    </View>
-                    {item.interview_feedback && (
-                      <Text style={styles.feedbackSnippet} numberOfLines={1}>
-                        "{item.interview_feedback}"
+                  {/* Venue / Location Row */}
+                  {item.venue_address && (
+                    <View style={styles.venueRow}>
+                      <MapPin size={13} color="#64748B" style={{ marginTop: 2 }} />
+                      <Text style={styles.venueText} numberOfLines={2}>
+                        {item.venue_address}
                       </Text>
-                    )}
+                    </View>
+                  )}
+
+                  {/* Star Rating Display if Interviewed */}
+                  {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
+                    <View style={styles.ratingDisplayBlock}>
+                      <View style={styles.starsRow}>
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            size={14}
+                            color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
+                            fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
+                          />
+                        ))}
+                        <Text style={styles.ratingScoreText}>({item.interview_rating}/5)</Text>
+                      </View>
+                      {item.interview_feedback && (
+                        <Text style={styles.feedbackSnippet} numberOfLines={1}>
+                          "{item.interview_feedback}"
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Postponed Reason Display */}
+                  {isPostponed && item.postponed_reason && (
+                    <View style={styles.postponedNotice}>
+                      <AlertCircle size={12} color="#D97706" />
+                      <Text style={styles.postponedReasonText} numberOfLines={1}>
+                        Rescheduled: {item.postponed_reason}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.sectionSeparator} />
+
+                  {/* Card Action Footer */}
+                  <View style={styles.cardFooterRow}>
+                    <View style={styles.quickActionIcons}>
+                      {item.candidate_phone && (
+                        <TouchableOpacity
+                          style={styles.quickIconBtn}
+                          onPress={() => handleCallCandidate(item.candidate_phone)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.7}
+                        >
+                          <Phone size={16} color="#1764E8" />
+                        </TouchableOpacity>
+                      )}
+                      {item.candidate_phone && (
+                        <TouchableOpacity
+                          style={styles.quickIconBtn}
+                          onPress={() => handleWhatsAppCandidate(item.candidate_phone, item.candidate_name)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.7}
+                        >
+                          <WhatsAppIcon size={16} />
+                        </TouchableOpacity>
+                      )}
+                      {item.venue_address && (
+                        <TouchableOpacity
+                          style={styles.quickIconBtn}
+                          onPress={() => handleOpenMap(item.venue_address, item.maps_link)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.7}
+                        >
+                          <Navigation2 size={16} color="#334155" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.actionCtaBtn}
+                      activeOpacity={0.8}
+                      onPress={() => handleOpenDetailModal(item)}
+                    >
+                      <Text style={styles.actionCtaText}>
+                        {isCompleted ? 'View Evaluation' : 'Evaluate & Update'}
+                      </Text>
+                      <ChevronRight size={14} color="#FFFFFF" />
+                    </TouchableOpacity>
                   </View>
-                )}
-
-                {/* Postponed Reason Display */}
-                {isPostponed && item.postponed_reason && (
-                  <View style={styles.postponedNotice}>
-                    <AlertCircle size={12} color="#D97706" />
-                    <Text style={styles.postponedReasonText} numberOfLines={1}>
-                      Rescheduled: {item.postponed_reason}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.sectionSeparator} />
-
-                {/* Card Action Footer */}
-                <View style={styles.cardFooterRow}>
-                  <View style={styles.quickActionIcons}>
-                    {item.candidate_phone && (
-                      <TouchableOpacity
-                        style={styles.quickIconBtn}
-                        onPress={() => handleCallCandidate(item.candidate_phone)}
-                      >
-                        <Phone size={14} color="#1764E8" />
-                      </TouchableOpacity>
-                    )}
-                    {item.candidate_phone && (
-                      <TouchableOpacity
-                        style={[styles.quickIconBtn, { backgroundColor: '#E9F9EF' }]}
-                        onPress={() => handleWhatsAppCandidate(item.candidate_phone, item.candidate_name)}
-                      >
-                        <WhatsAppIcon size={14} />
-                      </TouchableOpacity>
-                    )}
-                    {item.venue_address && (
-                      <TouchableOpacity
-                        style={[styles.quickIconBtn, { backgroundColor: '#F1F5F9' }]}
-                        onPress={() => handleOpenMap(item.venue_address, item.maps_link)}
-                      >
-                        <Navigation2 size={14} color="#334155" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.actionCtaBtn}
-                    activeOpacity={0.8}
-                    onPress={() => handleOpenDetailModal(item)}
-                  >
-                    <Text style={styles.actionCtaText}>
-                      {isCompleted ? 'View Evaluation' : 'Evaluate & Update'}
-                    </Text>
-                    <ChevronRight size={14} color="#FFFFFF" />
-                  </TouchableOpacity>
                 </View>
               </View>
             );
@@ -627,9 +648,31 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>Interview Evaluation</Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedInterview?.job_title || 'Position'}
-                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    if (selectedInterview?.job_id) {
+                      setIsDetailModalOpen(false);
+                      navigation.navigate('CandidateJobDetail', {
+                        jobId: selectedInterview.job_id,
+                        job: {
+                          ...selectedInterview,
+                          id: selectedInterview.job_id,
+                          title: selectedInterview.job_title,
+                          job_title: selectedInterview.job_title,
+                          company: (selectedInterview as any).company_name || user?.companyName || user?.company_name || 'Industrial Partner',
+                          location: selectedInterview.venue_address,
+                        },
+                      });
+                    }
+                  }}
+                  style={styles.modalJobLinkRow}
+                >
+                  <Text style={styles.modalJobSubtitleText} numberOfLines={1}>
+                    {selectedInterview?.job_title || 'Position'}
+                  </Text>
+                  <ExternalLink size={11} color="#1764E8" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
               </View>
               <TouchableOpacity
                 onPress={() => setIsDetailModalOpen(false)}
@@ -761,6 +804,17 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
                     placeholderTextColor="#94A3B8"
                     value={rescheduleVenue}
                     onChangeText={setRescheduleVenue}
+                  />
+
+                  <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Updated Google Maps Link</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/..."
+                    placeholderTextColor="#94A3B8"
+                    value={rescheduleMapsLink}
+                    onChangeText={setRescheduleMapsLink}
+                    autoCapitalize="none"
+                    keyboardType="url"
                   />
 
                   <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Reason for Rescheduling (Included in Email)</Text>
@@ -1039,20 +1093,30 @@ const styles = StyleSheet.create({
   },
   interviewCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 14,
+    borderColor: '#CBD5E1',
+    marginBottom: 14,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
+    overflow: 'hidden',
   },
-  cardHeaderRow: {
+  cardTopHeader: {
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  cardBody: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   dateTimeBadge: {
     flexDirection: 'row',
@@ -1174,10 +1238,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1764E8',
   },
+  jobAppliedLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
   jobAppliedTitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+  },
+  jobAppliedLinkText: {
+    fontWeight: '700',
+    color: '#1764E8',
+    textDecorationLine: 'underline',
   },
   metaRow: {
     flexDirection: 'row',
@@ -1256,12 +1330,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickIconBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   actionCtaBtn: {
     flexDirection: 'row',
@@ -1303,11 +1376,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  modalSubtitle: {
+  modalJobLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  modalJobSubtitleText: {
     fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 1,
+    color: '#1764E8',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   modalCloseBtn: {
     padding: 4,

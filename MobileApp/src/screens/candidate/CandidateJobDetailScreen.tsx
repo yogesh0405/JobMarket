@@ -57,8 +57,19 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     return str;
   };
 
+  const normalizeJob = (raw: any): Job | null => {
+    if (!raw) return null;
+    return {
+      ...raw,
+      id: raw.id || raw.job_id || raw.jobId || String(raw._id || ''),
+      title: raw.title || raw.job_title || raw.jobTitle || raw.role || 'Job Opportunity',
+      company: raw.company || raw.company_name || raw.companyName || 'Industrial Partner',
+      location: raw.location || raw.job_location || raw.venue_address || 'MIDC Area',
+    };
+  };
+
   const rawParamId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
-  const passedJob = route?.params?.job as Job | undefined;
+  const passedJob = normalizeJob(route?.params?.job);
   const initialJobId = extractJobIdFromUrl(rawParamId) || passedJob?.id;
 
   const findSeedJob = (targetId?: string): Job | undefined => {
@@ -88,7 +99,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   // Synchronize state whenever screen receives new navigation parameters
   useEffect(() => {
     const pId = route?.params?.jobId || route?.params?.id || route?.params?.job_id;
-    const pJob = route?.params?.job as Job | undefined;
+    const pJob = normalizeJob(route?.params?.job);
     const resolvedId = extractJobIdFromUrl(pId) || pJob?.id;
 
     if (pJob) {

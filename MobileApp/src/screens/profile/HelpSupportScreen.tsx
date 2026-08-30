@@ -35,7 +35,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { SupportTicket, TicketMessage } from './components/HelpSupportConstants';
 import { HelpSupportFaqSection } from './components/HelpSupportFaqSection';
 import { HelpSupportTicketsView } from './components/HelpSupportTicketsView';
@@ -1012,21 +1012,21 @@ const styles = StyleSheet.create({
 
   /* 4 Contact Options List */
   contactOptionsList: {
-    gap: 8,
+    gap: 12,
     marginTop: 2,
   },
   contactOptionCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 14,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: 12,
+    borderColor: '#CBD5E1',
+    paddingVertical: 14,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: COLORS.textPrimary,
-    shadowOpacity: 0.02,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 3,
     elevation: 1,
@@ -1046,7 +1046,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: RADIUS.xs,
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
