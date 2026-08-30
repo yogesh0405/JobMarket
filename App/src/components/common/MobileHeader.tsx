@@ -393,14 +393,6 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 </>
               ) : (
                 <>
-                  <div 
-                    onClick={() => closeDrawer(() => navigate('/dashboard?tab=profile'))}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px', cursor: 'pointer', backgroundColor: '#EFF6FF', color: '#1764E8' }}
-                  >
-                    <Building2 size={18} color="#1764E8" />
-                    <span style={{ flex: 1, fontSize: '13.5px', fontWeight: 700 }}>Company Profile</span>
-                    <ChevronRight size={14} color="#1764E8" />
-                  </div>
 
                   <div 
                     onClick={() => closeDrawer(() => navigate('/post-job'))}

@@ -393,24 +393,6 @@ export const Header: React.FC<HeaderProps> = ({
                     onPress={() => {
                       closeDrawer(() => {
                         if (navigation && typeof navigation.navigate === 'function') {
-                          navigation.navigate('CompanyProfile');
-                        }
-                      });
-                    }}
-                  >
-                    <View style={styles.iconSquircle}>
-                      <UserIcon size={17} color="#334155" />
-                    </View>
-                    <Text style={styles.menuItemTitle}>Company Profile</Text>
-                    <ChevronRight size={16} color={COLORS.slate400} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItemRow}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      closeDrawer(() => {
-                        if (navigation && typeof navigation.navigate === 'function') {
                           navigation.navigate('EmployerMain', { screen: 'PostTab' });
                         }
                       });
