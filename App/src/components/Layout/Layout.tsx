@@ -58,10 +58,7 @@ export const Layout: React.FC = () => {
 
   const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
 
-  const isAboutRoute = location.pathname.startsWith('/about');
-  const isContactRoute = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help');
-
-  const hideNavbar = isCandidateProfileRoute || isPostJobRoute || isJobDetailRoute || isCompanyProfileRoute || isAboutRoute || isContactRoute;
+  const hideNavbar = isCandidateProfileRoute || isPostJobRoute || isJobDetailRoute || isCompanyProfileRoute;
 
   return (
     <>
@@ -70,7 +67,7 @@ export const Layout: React.FC = () => {
         id="page-content" 
         className={`page-enter ${hideNavbar ? 'no-navbar-padding' : ''}`} 
         style={
-          (isPostJobRoute || isContactRoute)
+          (isPostJobRoute)
             ? { height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingTop: 0 } 
             : hideNavbar 
             ? { paddingTop: 0 } 
@@ -80,7 +77,7 @@ export const Layout: React.FC = () => {
         <Outlet />
       </div>
       {!hideFooter && <Footer />}
-      {!isAboutRoute && !isContactRoute && !isPostJobRoute && <MobileBottomNav />}
+      <MobileBottomNav />
     </>
   );
 };

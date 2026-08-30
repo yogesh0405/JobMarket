@@ -89,7 +89,10 @@ export const Navbar: React.FC = () => {
     location.search.includes('tab=interviews') ||
     location.search.includes('tab=scheduled-interviews')
   );
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute || isInterviewsSection;
+  const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
+  const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
+  const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute || isInterviewsSection || isAboutSection || isContactSection || isSecuritySection;
 
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''} ${hideNavbarMobile ? 'hide-navbar-mobile' : ''}`}>

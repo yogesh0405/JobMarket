@@ -23,8 +23,11 @@ export const MobileBottomNav: React.FC = () => {
     location.search.includes('tab=interviews') ||
     location.search.includes('tab=scheduled-interviews')
   );
+  const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
+  const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
+  const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
 
-  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail, company profile, promotional banners, & interview section
+  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail, company profile, promotional banners, interviews, about, support, & security sections
   if (
     location.pathname.startsWith('/profile/') ||
     location.pathname.startsWith('/candidate/') ||
@@ -34,7 +37,10 @@ export const MobileBottomNav: React.FC = () => {
     isJobDetailRoute ||
     isCompanyProfileRoute ||
     isBannersSection ||
-    isInterviewsSection
+    isInterviewsSection ||
+    isAboutSection ||
+    isContactSection ||
+    isSecuritySection
   ) {
     return null;
   }
