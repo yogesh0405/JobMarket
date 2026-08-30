@@ -328,15 +328,76 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             display: block;
           }
           .cand-inner-content {
-            padding: 0 0 40px 0;
+            padding: 0 0 32px 0;
             background-color: #F8FAFC !important;
           }
           .cand-list-wrap {
-            padding: 12px 16px;
+            padding: 8px 12px;
             background-color: #F8FAFC !important;
           }
+          .cand-metrics-bar {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+          }
+          .cand-metric-num {
+            font-size: 15px !important;
+          }
+          .cand-metric-tag {
+            font-size: 10px !important;
+          }
+          .cand-toolbar-row {
+            gap: 6px;
+            margin-bottom: 6px;
+          }
+          .cand-tab-strip {
+            padding: 6px 12px;
+            gap: 6px;
+          }
+          .cand-tab-btn {
+            padding: 6px 8px !important;
+            font-size: 11px !important;
+          }
+          .cand-tab-counter {
+            font-size: 9px !important;
+            padding: 0 5px !important;
+          }
           .cand-search-input-wrap {
-            margin: 0 16px;
+            margin: 0 12px;
+            padding: 4px 10px;
+          }
+          .cand-search-input-wrap input {
+            font-size: 11.5px !important;
+          }
+          .cand-standard-card {
+            padding: 10px 12px !important;
+            margin-bottom: 8px !important;
+            border-radius: 6px !important;
+          }
+          .cand-card-company-name {
+            font-size: 12px !important;
+          }
+          .cand-card-job-title {
+            font-size: 10.5px !important;
+          }
+          .cand-countdown-pill {
+            font-size: 9px !important;
+            padding: 2px 6px !important;
+          }
+          .cand-info-label {
+            font-size: 10.5px !important;
+          }
+          .cand-venue-text {
+            font-size: 10.5px !important;
+            padding: 6px 8px !important;
+            line-height: 14px !important;
+          }
+          .cand-quick-btn {
+            width: 26px !important;
+            height: 26px !important;
+          }
+          .cand-direction-btn {
+            font-size: 10.5px !important;
+            padding: 4px 8px !important;
           }
         }
       `}</style>
@@ -506,17 +567,17 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: isPast ? '#94A3B8' : '#0F172A' }}>
+                        <div className="cand-card-company-name" style={{ fontSize: '13px', fontWeight: 800, color: isPast ? '#94A3B8' : '#0F172A' }}>
                           {item.company_name || item.company}
                         </div>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: isPast ? '#CBD5E1' : '#475569', marginTop: '1px' }}>
+                        <div className="cand-card-job-title" style={{ fontSize: '11px', fontWeight: 600, color: isPast ? '#CBD5E1' : '#475569', marginTop: '1px' }}>
                           {item.job_title}
                         </div>
                       </div>
 
                       {/* Countdown Badge */}
                       {isCompleted ? (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#DCFCE7',
                           border: '1px solid #BBF7D0',
                           color: '#16A34A',
@@ -528,7 +589,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           Completed
                         </span>
                       ) : isPostponed ? (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#FEF3C7',
                           border: '1px solid #FDE68A',
                           color: '#D97706',
@@ -540,7 +601,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           Rescheduled
                         </span>
                       ) : days === 0 ? (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#FEF2F2',
                           border: '1px solid #FECACA',
                           color: '#DC2626',
@@ -553,7 +614,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           TODAY
                         </span>
                       ) : days === 1 ? (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#FFF7ED',
                           border: '1px solid #FED7AA',
                           color: '#EA580C',
@@ -566,7 +627,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           TOMORROW
                         </span>
                       ) : isPast || days < 0 ? (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#F1F5F9',
                           border: '1px solid #CBD5E1',
                           color: '#64748B',
@@ -578,7 +639,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           {Math.abs(days)} {Math.abs(days) === 1 ? 'day' : 'days'} ago
                         </span>
                       ) : (
-                        <span style={{
+                        <span className="cand-countdown-pill" style={{
                           backgroundColor: '#EFF6FF',
                           border: '1px solid #BFDBFE',
                           color: '#1764E8',
@@ -597,20 +658,20 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
 
                     {/* Date / Time / Location Info Grid (Exact Mobile App Match) */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: isPast ? '#94A3B8' : '#334155' }}>
+                      <div className="cand-info-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: isPast ? '#94A3B8' : '#334155' }}>
                         <Calendar size={13} color={isPast ? '#94A3B8' : '#1764E8'} />
                         <span>{formatDate(item.interview_date)}</span>
                       </div>
 
                       {item.interview_time && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: isPast ? '#94A3B8' : '#64748B' }}>
+                        <div className="cand-info-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 600, color: isPast ? '#94A3B8' : '#64748B' }}>
                           <Clock size={13} color={isPast ? '#94A3B8' : '#64748B'} />
                           <span>{item.interview_time}</span>
                         </div>
                       )}
 
                       {(item.job_type || item.job_location) && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#94A3B8' }}>
+                        <div className="cand-info-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#94A3B8' }}>
                           <Briefcase size={13} color="#94A3B8" />
                           <span>{item.job_type || item.job_location}</span>
                         </div>
@@ -624,6 +685,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           e.stopPropagation();
                           handleOpenMap(item.venue_address, item.maps_link);
                         }}
+                        className="cand-venue-text"
                         style={{
                           display: 'flex',
                           alignItems: 'flex-start',
@@ -712,6 +774,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                           <a
                             href={`tel:${item.employer_phone}`}
                             onClick={(e) => e.stopPropagation()}
+                            className="cand-quick-btn"
                             style={{
                               width: '30px',
                               height: '30px',
@@ -734,6 +797,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
+                            className="cand-quick-btn"
                             style={{
                               width: '30px',
                               height: '30px',
@@ -761,6 +825,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                             e.stopPropagation();
                             handleOpenMap(item.venue_address, item.maps_link);
                           }}
+                          className="cand-direction-btn"
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',

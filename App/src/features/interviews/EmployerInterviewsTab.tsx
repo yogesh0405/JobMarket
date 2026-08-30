@@ -449,15 +449,88 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             display: block;
           }
           .interviews-inner-content {
-            padding: 0 0 40px 0;
+            padding: 0 0 32px 0;
             background-color: #F8FAFC !important;
           }
           .interview-list-wrap {
-            padding: 12px 16px;
+            padding: 8px 12px;
             background-color: #F8FAFC !important;
           }
+          .interviews-metrics-bar {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+          }
+          .interviews-metric-num {
+            font-size: 15px !important;
+          }
+          .interviews-metric-tag {
+            font-size: 10px !important;
+          }
+          .interviews-toolbar-row {
+            gap: 6px;
+            margin-bottom: 6px;
+          }
+          .interviews-tab-strip {
+            padding: 6px 12px;
+            gap: 6px;
+          }
+          .interviews-tab-btn {
+            padding: 6px 8px !important;
+            font-size: 11px !important;
+          }
+          .interviews-tab-counter {
+            font-size: 9px !important;
+            padding: 0 5px !important;
+          }
           .interviews-search-input-wrap {
-            margin: 0 16px;
+            margin: 0 12px;
+            padding: 4px 10px;
+          }
+          .interviews-search-input-wrap input {
+            font-size: 11.5px !important;
+          }
+          .interview-standard-card {
+            padding: 10px 12px !important;
+            margin-bottom: 8px !important;
+            border-radius: 6px !important;
+          }
+          .interview-date-label {
+            font-size: 11px !important;
+          }
+          .interview-status-tag {
+            font-size: 9.5px !important;
+            padding: 2px 6px !important;
+          }
+          .interview-avatar-circle {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 14px !important;
+          }
+          .interview-cand-title {
+            font-size: 12.5px !important;
+          }
+          .interview-trade-pill {
+            font-size: 9px !important;
+            padding: 1px 4px !important;
+          }
+          .interview-job-applied-text {
+            font-size: 10.5px !important;
+          }
+          .interview-phone-meta {
+            font-size: 10.5px !important;
+          }
+          .interview-venue-box {
+            font-size: 10.5px !important;
+            padding: 6px 8px !important;
+            line-height: 14px !important;
+          }
+          .interview-quick-btn {
+            width: 26px !important;
+            height: 26px !important;
+          }
+          .interview-cta-action-btn {
+            font-size: 11px !important;
+            padding: 5px 10px !important;
           }
         }
       `}</style>
@@ -610,13 +683,13 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                   >
                     {/* Header Row: Date & Countdown Tag (Exact Mobile App Typography) */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                      <div className="interview-date-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
                         <Calendar size={13} color="#1764E8" />
                         <span>{formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}</span>
                       </div>
 
                       {isCompleted ? (
-                        <span style={{
+                        <span className="interview-status-tag" style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
@@ -631,7 +704,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           <span>Interviewed</span>
                         </span>
                       ) : isPostponed ? (
-                        <span style={{
+                        <span className="interview-status-tag" style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
@@ -646,7 +719,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           <span>Postponed</span>
                         </span>
                       ) : days === 0 ? (
-                        <span style={{
+                        <span className="interview-status-tag" style={{
                           backgroundColor: '#FEF2F2',
                           color: '#DC2626',
                           fontSize: '11px',
@@ -657,7 +730,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           TODAY
                         </span>
                       ) : days === 1 ? (
-                        <span style={{
+                        <span className="interview-status-tag" style={{
                           backgroundColor: '#EFF6FF',
                           color: '#1764E8',
                           fontSize: '11px',
@@ -668,7 +741,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           TOMORROW
                         </span>
                       ) : (
-                        <span style={{
+                        <span className="interview-status-tag" style={{
                           backgroundColor: '#F1F5F9',
                           color: '#475569',
                           fontSize: '11px',
@@ -686,7 +759,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
                     {/* Candidate Info Block (Exact Mobile App Sizing) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
+                      <div className="interview-avatar-circle" style={{
                         width: '44px',
                         height: '44px',
                         borderRadius: '22px',
@@ -704,11 +777,11 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
+                          <span className="interview-cand-title" style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
                             {item.candidate_name}
                           </span>
                           {item.trade_specialization && (
-                            <span style={{
+                            <span className="interview-trade-pill" style={{
                               backgroundColor: '#EFF6FF',
                               color: '#1764E8',
                               fontSize: '10px',
@@ -721,12 +794,12 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           )}
                         </div>
 
-                        <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                        <div className="interview-job-applied-text" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
                           Applied for: <strong style={{ fontWeight: 700, color: '#1E293B' }}>{item.job_title}</strong>
                         </div>
 
                         {item.candidate_phone && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: '#64748B', fontWeight: 500, marginTop: '3px' }}>
+                          <div className="interview-phone-meta" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: '#64748B', fontWeight: 500, marginTop: '3px' }}>
                             <Phone size={12} color="#64748B" />
                             <span>{item.candidate_phone}</span>
                           </div>
@@ -736,7 +809,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
                     {/* Venue / Location Row (Exact Mobile App Sizing) */}
                     {item.venue_address && (
-                      <div style={{
+                      <div className="interview-venue-box" style={{
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '6px',
@@ -812,6 +885,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                         {item.candidate_phone && (
                           <a
                             href={`tel:${item.candidate_phone}`}
+                            className="interview-quick-btn"
                             style={{
                               width: '30px',
                               height: '30px',
@@ -833,6 +907,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                             href={`https://wa.me/${item.candidate_phone.replace(/[^0-9]/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
+                            className="interview-quick-btn"
                             style={{
                               width: '30px',
                               height: '30px',
@@ -855,6 +930,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                           <button
                             type="button"
                             onClick={() => handleOpenMap(item.venue_address, item.maps_link)}
+                            className="interview-quick-btn"
                             style={{
                               width: '30px',
                               height: '30px',
@@ -877,6 +953,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
                       <button
                         type="button"
                         onClick={() => handleOpenDetailModal(item)}
+                        className="interview-cta-action-btn"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
