@@ -370,7 +370,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   return (
     <View style={styles.container}>
-      <Header title="Find Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Find Jobs" showBack={false} />
 
       <CandidateJobSearchFilterHeader
         searchQuery={searchQuery}

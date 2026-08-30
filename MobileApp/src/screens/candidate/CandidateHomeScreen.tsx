@@ -339,7 +339,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Home" showBack={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

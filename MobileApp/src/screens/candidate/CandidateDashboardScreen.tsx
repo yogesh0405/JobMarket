@@ -331,7 +331,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
   return (
     <View style={styles.container}>
       {!hideHeader && (
-        <Header title="Candidate Dashboard" subtitle="Application status, job activity & metrics" showBack={false} />
+        <Header title="JobMarket" subtitle="Candidate Dashboard" showBack={false} />
       )}
 
       <ScrollView

@@ -168,7 +168,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Employer Dashboard" subtitle="Overview of jobs & candidates" showBack={false} />
+      <Header title="JobMarket" subtitle="Employer Dashboard" showBack={false} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

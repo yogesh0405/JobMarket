@@ -186,7 +186,7 @@ export const CandidatesScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Browse Candidates" showBack={false} />
 
       {/* Search Bar + Filter Section */}
       <View style={styles.searchBarWrapper}>

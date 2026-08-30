@@ -17,7 +17,6 @@ import {
   MapPin,
   Building2,
   Briefcase,
-  ArrowLeft,
   ExternalLink,
   CheckCircle2,
   XCircle,
@@ -27,6 +26,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { candidateApi, InterviewItem } from '../../api/candidateApi';
+import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS, RADIUS } from '../../constants/theme';
 
@@ -194,31 +194,18 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const displayList = activeTab === 'upcoming' ? upcoming : past;
-  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
-
   return (
-    <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>My Interviews</Text>
-          <Text style={styles.headerSub}>Interview schedule & history</Text>
-        </View>
-        {upcoming.length > 0 && (
-          <View style={styles.upcomingBadge}>
-            <Text style={styles.upcomingBadgeText}>{upcoming.length}</Text>
-          </View>
-        )}
-      </View>
+      <Header
+        title="My Interviews"
+        subtitle="Interview schedule & history"
+        showBack={true}
+        onBack={() => navigation.goBack()}
+        hideBell={true}
+        hideMenu={true}
+        hideRightActions={true}
+      />
 
       {/* Tab Toggle */}
       <View style={styles.tabRow}>
@@ -308,37 +295,6 @@ const chipStyles = StyleSheet.create({
 // --- Main styles ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F7' },
-
-  // Header
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  backBtn: {
-    padding: 4,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
-  headerSub: { fontSize: 12, fontWeight: '500', color: '#64748B', marginTop: 1 },
-  upcomingBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    minWidth: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  upcomingBadgeText: { fontSize: 11, fontWeight: '900', color: '#FFFFFF' },
 
   // Tabs
   tabRow: {

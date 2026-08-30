@@ -343,7 +343,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Manage Jobs" showBack={false} />
 
       {/* Filter Tabs Bar - Industry Grade LinkedIn / iPhone Underline Tab Navigation */}
       <View style={styles.tabsBarWrapper}>

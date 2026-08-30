@@ -335,6 +335,9 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         subtitle="Manage & Evaluate Candidates"
         showBack={true}
         onBack={() => navigation.goBack()}
+        hideBell={true}
+        hideMenu={true}
+        hideRightActions={true}
       />
 
       {/* Metrics Summary Strip */}

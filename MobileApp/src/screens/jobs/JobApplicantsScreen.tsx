@@ -440,7 +440,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Applicants" showBack={false} />
 
       {/* Real-Time Search Bar */}
       <View style={styles.searchBarWrapper}>

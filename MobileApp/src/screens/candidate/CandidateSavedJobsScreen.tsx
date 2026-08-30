@@ -79,7 +79,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Industrial & Factory Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Saved Jobs" showBack={false} />
 
       {loading && !refreshing ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

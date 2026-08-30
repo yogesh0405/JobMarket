@@ -197,7 +197,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Applied Jobs" showBack={false} />
+      <Header title="JobMarket" subtitle="Applied Jobs" showBack={false} />
 
       {/* Standard Underline Tabular Menu Bar */}
       <View style={styles.tabBarContainer}>

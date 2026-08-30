@@ -248,7 +248,8 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   return (
     <View style={styles.container}>
       <Header
-        title="Top Companies"
+        title="JobMarket"
+        subtitle="Companies"
         showBack={false}
       />
 
