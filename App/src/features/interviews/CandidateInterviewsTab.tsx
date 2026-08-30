@@ -737,36 +737,6 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                       </div>
                     )}
 
-                    {/* Star Rating & Feedback (if completed) */}
-                    {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
-                      <div style={{
-                        backgroundColor: '#FFFBEB',
-                        border: '1px solid #FEF3C7',
-                        padding: '8px',
-                        borderRadius: '6px',
-                        marginTop: '6px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              size={13}
-                              color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
-                              fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
-                            />
-                          ))}
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#B45309', marginLeft: '4px' }}>
-                            Rating: {item.interview_rating}/5
-                          </span>
-                        </div>
-                        {item.interview_feedback && (
-                          <div style={{ fontSize: '11px', color: '#78350F', marginTop: '3px', fontStyle: 'italic' }}>
-                            "{item.interview_feedback}"
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Reschedule Note */}
                     {isPostponed && item.postponed_reason && (
                       <div style={{

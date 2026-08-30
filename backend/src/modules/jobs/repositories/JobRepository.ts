@@ -1113,8 +1113,6 @@ export class JobRepository {
         ja.interview_time,
         ja.venue_address,
         ja.maps_link,
-        ja.interview_rating,
-        ja.interview_feedback,
         ja.postponed_reason,
         ja.interview_status,
         j.title          AS job_title,
