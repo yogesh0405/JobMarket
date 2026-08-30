@@ -13,6 +13,7 @@ import {
   EyeOff,
   ArrowLeft
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SessionItem {
   id: string;
@@ -56,6 +57,7 @@ function getClientPlatformInfo() {
 export const SecuritySettings: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   
   // Direct Password Change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -132,10 +134,10 @@ export const SecuritySettings: React.FC = () => {
             return {
               id: s.id || `sess-${idx}`,
               device: dName,
-              browser: s.browser || (isMob ? 'Mobile App / Browser' : 'Web Browser'),
-              location: s.location || 'Maharashtra, India',
+              browser: s.browser || (isMob ? 'Mobile App' : 'Desktop Web'),
+              location: s.location || 'Active Session',
               ip: s.ipAddress || s.ip_address || '198.51.100.24',
-              lastActive: isCurrent ? 'Active Now' : (s.lastUsedAt ? `Last active ${new Date(s.lastUsedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}` : 'Last active recently'),
+              lastActive: isCurrent ? 'Active Now' : (s.lastUsedAt ? `Last active ${new Date(s.lastUsedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}` : 'Active Session'),
               isCurrent,
               type: isMob ? ('mobile' as const) : ('desktop' as const)
             };
@@ -336,58 +338,26 @@ export const SecuritySettings: React.FC = () => {
       <style>{`
         .security-page-container {
           width: 100%;
-          max-width: 480px;
-          margin: 0 auto;
+          max-width: 100%;
+          margin: 0;
           display: flex;
           flex-direction: column;
           gap: 14px;
-          padding: 12px 14px 40px;
+          padding: 0 0 40px;
           box-sizing: border-box;
-        }
-
-        .sec-header-bar {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid #F1F5F9;
-        }
-
-        .sec-circle-back {
-          width: 32px;
-          height: 32px;
-          border-radius: 16px;
-          border: 1px solid #E2E8F0;
-          background: #FFFFFF;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: #0F172A;
-          flex-shrink: 0;
-          transition: all 0.2s ease;
-        }
-
-        .sec-circle-back:hover {
-          background: #F8FAFC;
-          border-color: #CBD5E1;
-        }
-
-        .sec-header-title {
-          margin: 0;
-          font-size: 17px;
-          font-weight: 800;
-          color: #0F172A;
           font-family: inherit;
-          letter-spacing: -0.3px;
+        }
+
+        .sec-mobile-header {
+          display: none;
         }
 
         .sec-card-box {
           background: #FFFFFF;
-          border-radius: 20px;
+          border-radius: var(--radius-card, 8px);
           border: 1px solid #E2E8F0;
-          padding: 16px 18px;
-          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+          padding: 20px 24px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
           display: flex;
           flex-direction: column;
           gap: 12px;
@@ -395,34 +365,61 @@ export const SecuritySettings: React.FC = () => {
           width: 100%;
         }
 
+        .sec-card-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
         .sec-card-title {
           margin: 0;
-          font-size: 15px;
-          font-weight: 800;
+          font-size: 14px;
+          font-weight: 700;
           color: #0F172A;
-          font-family: inherit;
-          letter-spacing: -0.2px;
+          letter-spacing: -0.1px;
         }
 
         .sec-card-subtitle {
           margin: 2px 0 0;
-          font-size: 11.5px;
-          color: #64748B;
-          line-height: 15px;
+          font-size: 12px;
+          color: #475569;
+          line-height: 17px;
+          font-weight: 400;
+        }
+
+        .sec-card-icon-box {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background-color: #EFF6FF;
+          border: 1px solid #DBEAFE;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1B4FDF;
+          flex-shrink: 0;
         }
 
         .sec-input-label {
           display: block;
           font-size: 11.5px;
           font-weight: 600;
-          color: #334155;
-          margin-bottom: 5px;
+          color: #475569;
+          margin-bottom: 4px;
+        }
+
+        .sec-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
         }
 
         .sec-input-field {
           width: 100%;
-          height: 42px;
-          border-radius: 12px;
+          height: 40px;
+          border-radius: 8px;
           background-color: #FAF9F6;
           border: 1px solid #ECEAE4;
           padding: 0 38px 0 12px;
@@ -431,490 +428,503 @@ export const SecuritySettings: React.FC = () => {
           outline: none;
           box-sizing: border-box;
           font-family: inherit;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          transition: border-color 0.2s ease;
         }
 
         .sec-input-field:focus {
           border-color: #1B4FDF;
-          box-shadow: 0 0 0 3px rgba(27, 79, 223, 0.1);
+          background-color: #FFFFFF;
         }
 
-        .sec-primary-btn {
-          width: 100%;
-          height: 42px;
-          border-radius: 21px;
-          background-color: #1B4FDF;
-          color: #FFFFFF;
+        .sec-eye-btn {
+          position: absolute;
+          right: 10px;
+          background: transparent;
           border: none;
-          font-size: 13px;
-          font-weight: 700;
           cursor: pointer;
-          margin-top: 2px;
+          color: #64748B;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          box-shadow: 0 2px 6px rgba(27, 79, 223, 0.2);
-          transition: background-color 0.2s ease, transform 0.1s ease;
+          padding: 4px;
         }
 
-        .sec-primary-btn:hover {
-          background-color: #153BB0;
-        }
-
-        .sec-primary-btn:active {
-          transform: scale(0.99);
-        }
-
-        .sec-outline-btn {
+        .sec-primary-save-btn {
           width: 100%;
           height: 40px;
           border-radius: 20px;
-          border: 1px solid #CBD5E1;
-          background-color: #FFFFFF;
-          color: #0F172A;
+          background-color: #1B4FDF;
+          color: #FFFFFF;
+          border: none;
           font-size: 12.5px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          transition: background-color 0.2s ease, border-color 0.2s ease;
+          transition: opacity 0.2s ease;
+          margin-top: 4px;
         }
 
-        .sec-outline-btn:hover {
-          background-color: #F8FAFC;
+        .sec-primary-save-btn:hover {
+          opacity: 0.92;
+        }
+
+        .sec-card-divider {
+          height: 1px;
+          background-color: #E2E8F0;
+          margin: 6px 0;
+        }
+
+        .sec-outline-reset-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background-color: #FAF9F6;
+          border: 1px solid #CBD5E1;
+          border-radius: 8px;
+          padding: 8px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #0F172A;
+          cursor: pointer;
+          margin-top: 6px;
+          transition: all 0.2s ease;
+        }
+
+        .sec-outline-reset-btn:hover {
+          background-color: #F1F5F9;
           border-color: #94A3B8;
         }
 
-        .sec-session-item {
-          background-color: #FAF9F6;
-          border: 1px solid #ECEAE4;
-          border-radius: 14px;
-          padding: 10px 12px;
+        .sec-session-pill {
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          background-color: #FAF9F6;
+          border: 1px solid #ECEAE4;
+          border-radius: 8px;
+          padding: 10px 12px;
           gap: 10px;
-          box-sizing: border-box;
         }
 
-        .sec-device-badge {
-          background-color: #E8F5E9;
-          padding: 3px 8px;
-          border-radius: 10px;
+        .sec-this-device-badge {
+          background-color: #EFF6FF;
+          border: 1px solid #BFDBFE;
+          color: #1B4FDF;
           font-size: 10px;
           font-weight: 700;
-          color: #2E7D32;
+          padding: 2px 8px;
+          border-radius: 6px;
           flex-shrink: 0;
         }
 
-        @media (max-width: 640px) {
+        .sec-revoke-btn {
+          background-color: #FEF2F2;
+          border: 1px solid #FCA5A5;
+          color: #DC2626;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        /* Mobile View (max-width: 768px) */
+        @media (max-width: 768px) {
           .security-page-container {
-            padding: 8px 10px 32px;
-            gap: 12px;
+            max-width: 100%;
+            padding: 0 0 32px;
+            gap: 10px;
+            background-color: #F8FAFC;
           }
+
+          .sec-mobile-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+          }
+
           .sec-card-box {
-            padding: 14px 16px;
-            border-radius: 18px;
+            border-radius: var(--radius-card, 8px);
+            padding: 14px;
+            gap: 10px;
           }
         }
       `}</style>
-      
-      {/* Header with Circle Back and Serif Title */}
-      <div className="sec-header-bar">
+
+      {/* Mobile Top Header (Mobile View Only) */}
+      <div className="sec-mobile-header">
         <button
-          onClick={() => window.history.back()}
-          className="sec-circle-back"
-          aria-label="Go back"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <h1 className="sec-header-title">
-          Security & Sessions
-        </h1>
-      </div>
-
-      {/* CARD 1: RESET PASSWORD (EXACT MATCH REFERENCE) */}
-      <div className="sec-card-box">
-        {/* Header Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h2 className="sec-card-title">
-              Reset Password
-            </h2>
-            <p className="sec-card-subtitle">
-              Update your credentials for secure ledger access.
-            </p>
-          </div>
-          <KeyRound size={18} color="#64748B" style={{ flexShrink: 0, marginTop: '2px' }} />
-        </div>
-
-        {/* Inline Reset Password Form */}
-        <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div>
-            <label className="sec-input-label">
-              Current Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showCurrentPass ? 'text' : 'password'}
-                placeholder="Enter current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="sec-input-field"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPass(!showCurrentPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="sec-input-label">
-              New Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showNewPass ? 'text' : 'password'}
-                placeholder="Min 6 characters"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="sec-input-field"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPass(!showNewPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="sec-input-label">
-              Confirm New Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showConfirmPass ? 'text' : 'password'}
-                placeholder="Re-enter new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="sec-input-field"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPass(!showConfirmPass)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmittingChangePass}
-            className="sec-primary-btn"
-          >
-            {isSubmittingChangePass ? 'Saving...' : 'Save New Password'}
-          </button>
-        </form>
-
-        {/* Soft Divider */}
-        <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '4px 0' }} />
-
-        {/* Forgot Password Sub-section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0F172A' }}>
-            Forgot your password?
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748B', lineHeight: '15px', marginBottom: '6px' }}>
-            We'll email a secure one-time reset code to your registered email.
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSendResetOtp}
-            disabled={isSendingOtp}
-            className="sec-outline-btn"
-          >
-            <Send size={14} />
-            <span>{isSendingOtp ? 'Sending code...' : 'Forgot password'}</span>
-          </button>
-        </div>
-
-        {/* Inline OTP Reset Expandable Section */}
-        {isOtpOpen && (
-          <form onSubmit={handleResetPasswordWithOtp} style={{
-            marginTop: '6px',
-            padding: '12px 14px',
-            backgroundColor: '#F8FAFC',
-            borderRadius: '14px',
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E293B' }}>
-              Enter 6-Digit OTP & New Password
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                6-Digit Verification Code
-              </label>
-              <input
-                type="text"
-                placeholder="Enter 6-digit code"
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '38px',
-                  borderRadius: '10px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  padding: '0 10px',
-                  fontSize: '12.5px',
-                  color: '#0F172A',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                New Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showOtpNewPass ? 'text' : 'password'}
-                  placeholder="Min 6 characters"
-                  value={otpNewPass}
-                  onChange={(e) => setOtpNewPass(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #CBD5E1',
-                    padding: '0 36px 0 10px',
-                    fontSize: '12.5px',
-                    color: '#0F172A',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowOtpNewPass(!showOtpNewPass)}
-                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
-                >
-                  {showOtpNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#475569', marginBottom: '4px' }}>
-                Confirm New Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showOtpConfirmPass ? 'text' : 'password'}
-                  placeholder="Re-enter new password"
-                  value={otpConfirmPass}
-                  onChange={(e) => setOtpConfirmPass(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #CBD5E1',
-                    padding: '0 36px 0 10px',
-                    fontSize: '12.5px',
-                    color: '#0F172A',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowOtpConfirmPass(!showOtpConfirmPass)}
-                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
-                >
-                  {showOtpConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-              <button
-                type="submit"
-                disabled={isResettingPass}
-                style={{
-                  flex: 1,
-                  height: '38px',
-                  borderRadius: '19px',
-                  backgroundColor: '#1B4FDF',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  fontSize: '12.5px',
-                  fontWeight: '700',
-                  cursor: isResettingPass ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isResettingPass ? 'Resetting...' : 'Reset Password'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsOtpOpen(false)}
-                style={{
-                  padding: '0 14px',
-                  height: '38px',
-                  borderRadius: '19px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#475569',
-                  border: '1px solid #CBD5E1',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* CARD 2: ACTIVE SESSIONS (EXACT MATCH REFERENCE) */}
-      <div className="sec-card-box">
-        {/* Header Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h2 className="sec-card-title">
-              Active Sessions
-            </h2>
-            <p className="sec-card-subtitle">
-              Devices currently signed in to your account.
-            </p>
-          </div>
-          <Laptop size={18} color="#64748B" style={{ flexShrink: 0, marginTop: '2px' }} />
-        </div>
-
-        {/* Sessions List */}
-        {sessionsLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#64748B', fontSize: '11.5px' }}>
-            Checking active devices...
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {sessions.map((sess) => {
-              const DeviceIcon = sess.type === 'mobile' ? Smartphone : Laptop;
-              return (
-                <div key={sess.id} className="sec-session-item">
-                  <div style={{ width: '28px', height: '28px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', flexShrink: 0 }}>
-                    <DeviceIcon size={18} strokeWidth={1.8} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {sess.isCurrent ? `Current Device (${sess.device})` : sess.device}
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '1px' }}>
-                      {sess.isCurrent ? `Active Now · IP: ${sess.ip}` : `${sess.lastActive}`}
-                    </div>
-                  </div>
-
-                  {sess.isCurrent ? (
-                    <div className="sec-device-badge">
-                      This Device
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleRevokeSession(sess.id)}
-                      title="Revoke session"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#94A3B8',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <LogOut size={16} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Log Out Other Devices Action */}
-        <button
-          onClick={handleTerminateOtherSessions}
-          disabled={isTerminatingSessions}
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/dashboard');
+            }
+          }}
           style={{
-            background: 'none',
-            border: 'none',
-            color: '#EF4444',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: isTerminatingSessions ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '5px',
-            paddingTop: '4px',
-            paddingBottom: '2px'
+            width: '36px',
+            height: '36px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '8px',
+            color: '#0F172A'
           }}
         >
-          <LogOut size={14} strokeWidth={2} />
-          <span>{isTerminatingSessions ? 'Logging out other devices...' : 'Log out of all other devices'}</span>
+          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
         </button>
-      </div>
 
-      {/* CARD 3: TWO-FACTOR AUTHENTICATION */}
-      <div className="sec-card-box" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h2 className="sec-card-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={18} color="#1B4FDF" />
-            <span>Two-Factor Authentication</span>
-          </h2>
-          <p className="sec-card-subtitle" style={{ marginTop: '3px' }}>
-            {twoFactorEnabled
-              ? 'Active: Verification code sent to email on new device login.'
-              : 'Require an email verification code on new device login attempts.'}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ShieldCheck size={18} color="#1B4FDF" strokeWidth={2.2} />
+          <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
+            Security & Sessions
+          </span>
         </div>
 
-        <input
-          type="checkbox"
-          checked={twoFactorEnabled}
-          onChange={handleToggle2FA}
-          disabled={isToggling2FA}
-          style={{
-            width: '20px',
-            height: '20px',
-            accentColor: '#1B4FDF',
-            cursor: isToggling2FA ? 'not-allowed' : 'pointer',
-            flexShrink: 0
-          }}
-        />
+        <div style={{ width: '36px' }} />
       </div>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 14px' }}>
+
+        {/* CARD 1: RESET PASSWORD */}
+        <div className="sec-card-box">
+          <div className="sec-card-header-row">
+            <div>
+              <h2 className="sec-card-title">Reset Password</h2>
+              <p className="sec-card-subtitle">
+                Update your account password for secure access.
+              </p>
+            </div>
+            <div className="sec-card-icon-box">
+              <KeyRound size={18} />
+            </div>
+          </div>
+
+          <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+            {/* Current Password */}
+            <div>
+              <label className="sec-input-label">Current Password</label>
+              <div className="sec-input-wrapper">
+                <input
+                  type={showCurrentPass ? 'text' : 'password'}
+                  className="sec-input-field"
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="sec-eye-btn"
+                  onClick={() => setShowCurrentPass(!showCurrentPass)}
+                >
+                  {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className="sec-input-label">New Password</label>
+              <div className="sec-input-wrapper">
+                <input
+                  type={showNewPass ? 'text' : 'password'}
+                  className="sec-input-field"
+                  placeholder="Min 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="sec-eye-btn"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                >
+                  {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <div>
+              <label className="sec-input-label">Confirm New Password</label>
+              <div className="sec-input-wrapper">
+                <input
+                  type={showConfirmPass ? 'text' : 'password'}
+                  className="sec-input-field"
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="sec-eye-btn"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                >
+                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="sec-primary-save-btn"
+              disabled={isSubmittingChangePass}
+            >
+              {isSubmittingChangePass ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
+
+          <div className="sec-card-divider" />
+
+          {/* Trouble remembering current password? */}
+          <div>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+              Trouble remembering current password?
+            </div>
+            <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: '2px 0 6px', fontWeight: 400 }}>
+              Request a 6-digit OTP verification code sent directly to your email address.
+            </p>
+
+            <button
+              type="button"
+              className="sec-outline-reset-btn"
+              onClick={handleSendResetOtp}
+              disabled={isSendingOtp}
+            >
+              <Send size={14} color="#1B4FDF" />
+              <span>{isSendingOtp ? 'Sending Code...' : 'Reset via Email OTP'}</span>
+            </button>
+          </div>
+
+          {/* Inline OTP Input Section if open */}
+          {isOtpOpen && (
+            <form onSubmit={handleResetPasswordWithOtp} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '8px', padding: '12px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                Enter 6-Digit Email Code
+              </div>
+
+              <div>
+                <label className="sec-input-label">Verification OTP</label>
+                <input
+                  type="text"
+                  className="sec-input-field"
+                  placeholder="Enter 6-digit code"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+
+              <div>
+                <label className="sec-input-label">Set New Password</label>
+                <div className="sec-input-wrapper">
+                  <input
+                    type={showOtpNewPass ? 'text' : 'password'}
+                    className="sec-input-field"
+                    placeholder="Min 6 characters"
+                    value={otpNewPass}
+                    onChange={(e) => setOtpNewPass(e.target.value)}
+                  />
+                  <button type="button" className="sec-eye-btn" onClick={() => setShowOtpNewPass(!showOtpNewPass)}>
+                    {showOtpNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="sec-input-label">Confirm New Password</label>
+                <div className="sec-input-wrapper">
+                  <input
+                    type={showOtpConfirmPass ? 'text' : 'password'}
+                    className="sec-input-field"
+                    placeholder="Re-enter new password"
+                    value={otpConfirmPass}
+                    onChange={(e) => setOtpConfirmPass(e.target.value)}
+                  />
+                  <button type="button" className="sec-eye-btn" onClick={() => setShowOtpConfirmPass(!showOtpConfirmPass)}>
+                    {showOtpConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button type="submit" className="sec-primary-save-btn" style={{ flex: 1 }} disabled={isResettingPass}>
+                  {isResettingPass ? 'Verifying...' : 'Confirm New Password'}
+                </button>
+                <button type="button" onClick={() => setIsOtpOpen(false)} style={{ padding: '0 12px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '11.5px', fontWeight: 600, color: '#64748B', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* CARD 2: TWO-FACTOR AUTHENTICATION */}
+        <div className="sec-card-box">
+          <div className="sec-card-header-row">
+            <div>
+              <h2 className="sec-card-title">Two-Factor Authentication (2FA)</h2>
+              <p className="sec-card-subtitle">
+                Add an extra layer of security requiring an OTP verification code on sign in.
+              </p>
+            </div>
+            <div className="sec-card-icon-box">
+              <ShieldCheck size={18} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '8px', padding: '12px 14px', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                {twoFactorEnabled ? '2FA Protection Enabled' : '2FA Protection Disabled'}
+              </div>
+              <p style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '16px', margin: '2px 0 0', fontWeight: 400 }}>
+                {twoFactorEnabled
+                  ? 'Verification codes are sent to your registered email upon login.'
+                  : 'Enable this setting to secure your account against unauthorized access.'}
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <button
+              type="button"
+              onClick={handleToggle2FA}
+              disabled={isToggling2FA}
+              style={{
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                backgroundColor: twoFactorEnabled ? '#1B4FDF' : '#CBD5E1',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background-color 0.2s ease',
+                flexShrink: 0,
+                padding: '2px'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '10px',
+                backgroundColor: '#FFFFFF',
+                position: 'absolute',
+                top: '2px',
+                left: twoFactorEnabled ? '22px' : '2px',
+                transition: 'left 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
+              }} />
+            </button>
+          </div>
+        </div>
+
+        {/* CARD 3: ACTIVE DEVICE SESSIONS */}
+        <div className="sec-card-box">
+          <div className="sec-card-header-row">
+            <div>
+              <h2 className="sec-card-title">Active Device Sessions</h2>
+              <p className="sec-card-subtitle">
+                Review and manage devices logged into your account.
+              </p>
+            </div>
+            <div className="sec-card-icon-box">
+              <Smartphone size={18} />
+            </div>
+          </div>
+
+          {sessionsLoading ? (
+            <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: '#64748B' }}>
+              Checking live device connections...
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="sec-session-pill">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <Smartphone size={14} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>Current Device</div>
+                  <div style={{ fontSize: '10.5px', color: '#64748B' }}>Active Session • Verified</div>
+                </div>
+              </div>
+              <span className="sec-this-device-badge">Current</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {sessions.map((session, index) => {
+                const IconComp = session.type === 'desktop' ? Laptop : Smartphone;
+                return (
+                  <div key={session.id || index} className="sec-session-pill">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: session.isCurrent ? '#EFF6FF' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: session.isCurrent ? '#1B4FDF' : '#64748B', flexShrink: 0 }}>
+                        <IconComp size={14} />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {session.device}
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: '#64748B' }}>
+                          {session.location} • {session.lastActive}
+                        </div>
+                      </div>
+                    </div>
+
+                    {session.isCurrent ? (
+                      <span className="sec-this-device-badge">Current</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="sec-revoke-btn"
+                        onClick={() => handleRevokeSession(session.id)}
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {sessions.filter(s => !s.isCurrent).length > 0 && (
+            <button
+              type="button"
+              onClick={handleTerminateOtherSessions}
+              disabled={isTerminatingSessions}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#DC2626',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '8px 0 4px',
+                marginTop: '2px'
+              }}
+            >
+              <LogOut size={13} color="#DC2626" />
+              <span>{isTerminatingSessions ? 'Terminating...' : 'Log Out from All Other Devices'}</span>
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
