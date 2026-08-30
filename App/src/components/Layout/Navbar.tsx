@@ -369,7 +369,28 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* DESKTOP ONLY LINKS */}
-          {currentUser?.role !== 'employer' && (
+          {currentUser?.role === 'employer' ? (
+            <>
+              <Link
+                to="/dashboard?tab=candidates"
+                className={`nav-link ${(location.pathname === '/dashboard' && (new URLSearchParams(location.search).get('tab') === 'candidates' || !new URLSearchParams(location.search).get('tab'))) ? 'active' : ''}`}
+              >
+                Browse Candidates
+              </Link>
+              <Link
+                to="/post-job"
+                className={`nav-link ${location.pathname === '/post-job' || (location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'post-job') ? 'active' : ''}`}
+              >
+                Post Job
+              </Link>
+              <Link
+                to="/dashboard?tab=manage"
+                className={`nav-link ${location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'manage' ? 'active' : ''}`}
+              >
+                Manage Jobs
+              </Link>
+            </>
+          ) : (
             <>
               <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
               <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
