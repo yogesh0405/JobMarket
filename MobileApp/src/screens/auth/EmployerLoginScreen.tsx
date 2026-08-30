@@ -234,20 +234,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Back Navigation Button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                }
-              }}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={22} color="#0F172A" />
-            </TouchableOpacity>
-
             {/* Welcome Back Heading */}
             <Text style={styles.welcomeHeading}>Welcome Back</Text>
 

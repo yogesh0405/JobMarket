@@ -251,16 +251,6 @@ export const SignupPage: React.FC = () => {
 
         {/* RIGHT COLUMN: SIGNUP FORM */}
         <div className="auth-form-panel">
-          {/* Back Navigation Button */}
-          <button
-            type="button"
-            className="auth-back-btn"
-            onClick={() => navigate('/login')}
-            title="Go back"
-          >
-            <ArrowLeft size={22} />
-          </button>
-
           <h1 className="auth-heading">Create Account</h1>
           <div className="auth-subheading-row">
             <span>Already have an account?</span>

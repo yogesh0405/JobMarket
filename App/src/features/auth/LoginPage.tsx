@@ -186,16 +186,6 @@ export const LoginPage: React.FC = () => {
 
         {/* RIGHT COLUMN: LOGIN FORM */}
         <div className="auth-form-panel">
-          {/* Back Navigation Button */}
-          <button
-            type="button"
-            className="auth-back-btn"
-            onClick={() => navigate('/')}
-            title="Go back"
-          >
-            <ArrowLeft size={22} />
-          </button>
-
           {is2FAMode ? (
             /* 2FA VERIFICATION STATE */
             <div>

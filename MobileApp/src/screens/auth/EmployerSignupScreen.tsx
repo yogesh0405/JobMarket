@@ -180,22 +180,6 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
-            {/* Back Navigation Button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                } else {
-                  navigation.navigate('EmployerLogin');
-                }
-              }}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={22} color="#0F172A" />
-            </TouchableOpacity>
-
             {/* Heading */}
             <Text style={styles.welcomeHeading}>Create Account</Text>
 
