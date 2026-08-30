@@ -29,22 +29,30 @@ import { apiFetch } from '../../utils/api';
 
 interface MobileHeaderProps {
   title: string;
+  subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
   unreadCount?: number;
   onBellClick?: () => void;
   onMenuClick?: () => void;
+  hideRightActions?: boolean;
+  hideBell?: boolean;
+  hideMenu?: boolean;
   style?: React.CSSProperties;
   className?: string;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   title,
+  subtitle,
   showBack = false,
   onBack,
   unreadCount: propUnreadCount,
   onBellClick,
   onMenuClick,
+  hideRightActions = false,
+  hideBell = false,
+  hideMenu = false,
   style,
   className,
 }) => {
@@ -133,70 +141,76 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         </div>
 
         {/* Right: Bell Icon & Three Dot Menu Icon (100% Mobile App Match) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {onBellClick ? (
-            <div 
-              onClick={onBellClick}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '32px',
-                height: '32px',
-                cursor: 'pointer',
-                borderRadius: '50%',
-              }}
-              title="Notifications"
-            >
-              <Bell size={19} color="#334155" strokeWidth={2} />
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '0px',
-                  right: '0px',
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  fontSize: '8.5px',
-                  fontWeight: 800,
-                  minWidth: '15px',
-                  height: '15px',
-                  borderRadius: '999px',
+        {!hideRightActions && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {!hideBell && (
+              onBellClick ? (
+                <div 
+                  onClick={onBellClick}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    borderRadius: '50%',
+                  }}
+                  title="Notifications"
+                >
+                  <Bell size={19} color="#334155" strokeWidth={2} />
+                  {unreadCount > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '0px',
+                      right: '0px',
+                      backgroundColor: '#EF4444',
+                      color: '#FFFFFF',
+                      fontSize: '8.5px',
+                      fontWeight: 800,
+                      minWidth: '15px',
+                      height: '15px',
+                      borderRadius: '999px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 3px',
+                      boxSizing: 'border-box'
+                    }}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <NavbarNotificationBell />
+              )
+            )}
+
+            {/* Three-Dot Menu Button */}
+            {!hideMenu && (
+              <button
+                onClick={handleMenuTrigger}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '0 3px',
-                  boxSizing: 'border-box'
-                }}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </div>
-          ) : (
-            <NavbarNotificationBell />
-          )}
-
-          {/* Three-Dot Menu Button */}
-          <button
-            onClick={handleMenuTrigger}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              color: '#0F172A',
-              padding: 0
-            }}
-            title="Menu"
-          >
-            <MoreVertical size={22} color="#0F172A" strokeWidth={2.2} />
-          </button>
-        </div>
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  color: '#0F172A',
+                  padding: 0
+                }}
+                title="Menu"
+              >
+                <MoreVertical size={22} color="#0F172A" strokeWidth={2.2} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Built-in Platform Workspace Slide-Out Drawer Portal (Exact Mobile App UI) */}

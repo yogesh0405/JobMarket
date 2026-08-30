@@ -467,6 +467,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
         <MobileHeader
           title="Scheduled Interviews"
           showBack={true}
+          hideRightActions={true}
           onBack={() => {
             if (navigate) navigate('/dashboard');
             else window.history.back();
