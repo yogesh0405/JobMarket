@@ -342,8 +342,8 @@ export const SecuritySettings: React.FC = () => {
           margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 14px;
-          padding: 0 0 40px;
+          gap: 12px;
+          padding: 0 0 32px;
           box-sizing: border-box;
           font-family: inherit;
         }
@@ -356,11 +356,11 @@ export const SecuritySettings: React.FC = () => {
           background: #FFFFFF;
           border-radius: var(--radius-card, 8px);
           border: 1px solid #E2E8F0;
-          padding: 20px 24px;
+          padding: 16px 20px;
           box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
           box-sizing: border-box;
           width: 100%;
         }
@@ -369,12 +369,12 @@ export const SecuritySettings: React.FC = () => {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 10px;
+          gap: 8px;
         }
 
         .sec-card-title {
           margin: 0;
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
           color: #0F172A;
           letter-spacing: -0.1px;
@@ -382,16 +382,16 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-card-subtitle {
           margin: 2px 0 0;
-          font-size: 12px;
-          color: #475569;
-          line-height: 17px;
+          font-size: 11px;
+          color: #64748B;
+          line-height: 15px;
           font-weight: 400;
         }
 
         .sec-card-icon-box {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
           background-color: #EFF6FF;
           border: 1px solid #DBEAFE;
           display: flex;
@@ -403,10 +403,10 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-input-label {
           display: block;
-          font-size: 11.5px;
+          font-size: 10.5px;
           font-weight: 600;
           color: #475569;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
 
         .sec-input-wrapper {
@@ -418,12 +418,12 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-input-field {
           width: 100%;
-          height: 40px;
-          border-radius: 8px;
+          height: 36px;
+          border-radius: 6px;
           background-color: #FAF9F6;
           border: 1px solid #ECEAE4;
-          padding: 0 38px 0 12px;
-          font-size: 12.5px;
+          padding: 0 34px 0 10px;
+          font-size: 11.5px;
           color: #0F172A;
           outline: none;
           box-sizing: border-box;
@@ -438,7 +438,7 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-eye-btn {
           position: absolute;
-          right: 10px;
+          right: 8px;
           background: transparent;
           border: none;
           cursor: pointer;
@@ -451,19 +451,19 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-primary-save-btn {
           width: 100%;
-          height: 40px;
-          border-radius: 20px;
+          height: 36px;
+          border-radius: 6px;
           background-color: #1B4FDF;
           color: #FFFFFF;
           border: none;
-          font-size: 12.5px;
+          font-size: 11.5px;
           font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: opacity 0.2s ease;
-          margin-top: 4px;
+          margin-top: 2px;
         }
 
         .sec-primary-save-btn:hover {
@@ -473,23 +473,23 @@ export const SecuritySettings: React.FC = () => {
         .sec-card-divider {
           height: 1px;
           background-color: #E2E8F0;
-          margin: 6px 0;
+          margin: 4px 0;
         }
 
         .sec-outline-reset-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
+          gap: 5px;
           background-color: #FAF9F6;
           border: 1px solid #CBD5E1;
-          border-radius: 8px;
-          padding: 8px 14px;
-          font-size: 12px;
+          border-radius: 6px;
+          padding: 6px 12px;
+          font-size: 11px;
           font-weight: 700;
           color: #0F172A;
           cursor: pointer;
-          margin-top: 6px;
+          margin-top: 4px;
           transition: all 0.2s ease;
         }
 
@@ -504,19 +504,19 @@ export const SecuritySettings: React.FC = () => {
           justify-content: space-between;
           background-color: #FAF9F6;
           border: 1px solid #ECEAE4;
-          border-radius: 8px;
-          padding: 10px 12px;
-          gap: 10px;
+          border-radius: 6px;
+          padding: 8px 10px;
+          gap: 8px;
         }
 
         .sec-this-device-badge {
           background-color: #EFF6FF;
           border: 1px solid #BFDBFE;
           color: #1B4FDF;
-          font-size: 10px;
+          font-size: 9.5px;
           font-weight: 700;
-          padding: 2px 8px;
-          border-radius: 6px;
+          padding: 2px 6px;
+          border-radius: 4px;
           flex-shrink: 0;
         }
 
@@ -524,10 +524,10 @@ export const SecuritySettings: React.FC = () => {
           background-color: #FEF2F2;
           border: 1px solid #FCA5A5;
           color: #DC2626;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 700;
-          padding: 3px 10px;
-          border-radius: 6px;
+          padding: 2px 8px;
+          border-radius: 4px;
           cursor: pointer;
           flex-shrink: 0;
         }
@@ -536,8 +536,8 @@ export const SecuritySettings: React.FC = () => {
         @media (max-width: 768px) {
           .security-page-container {
             max-width: 100%;
-            padding: 0 0 32px;
-            gap: 10px;
+            padding: 0 0 28px;
+            gap: 8px;
             background-color: #F8FAFC;
           }
 
@@ -547,17 +547,17 @@ export const SecuritySettings: React.FC = () => {
             z-index: 50;
             background-color: #FFFFFF;
             border-bottom: 1px solid #E2E8F0;
-            padding: 12px 16px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
           }
 
           .sec-card-box {
             border-radius: var(--radius-card, 8px);
-            padding: 14px;
-            gap: 10px;
+            padding: 12px 14px;
+            gap: 8px;
           }
         }
       `}</style>
@@ -576,29 +576,29 @@ export const SecuritySettings: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '36px',
-            height: '36px',
+            width: '32px',
+            height: '32px',
             backgroundColor: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#0F172A'
           }}
         >
-          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
+          <ArrowLeft size={18} color="#0F172A" strokeWidth={2.4} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ShieldCheck size={18} color="#1B4FDF" strokeWidth={2.2} />
-          <span style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ShieldCheck size={16} color="#1B4FDF" strokeWidth={2.2} />
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
             Security & Sessions
           </span>
         </div>
 
-        <div style={{ width: '36px' }} />
+        <div style={{ width: '32px' }} />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 14px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 12px' }}>
 
         {/* CARD 1: RESET PASSWORD */}
         <div className="sec-card-box">
@@ -610,11 +610,11 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <KeyRound size={18} />
+              <KeyRound size={15} />
             </div>
           </div>
 
-          <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+          <form onSubmit={handleDirectPasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
             {/* Current Password */}
             <div>
               <label className="sec-input-label">Current Password</label>
@@ -631,7 +631,7 @@ export const SecuritySettings: React.FC = () => {
                   className="sec-eye-btn"
                   onClick={() => setShowCurrentPass(!showCurrentPass)}
                 >
-                  {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
@@ -652,7 +652,7 @@ export const SecuritySettings: React.FC = () => {
                   className="sec-eye-btn"
                   onClick={() => setShowNewPass(!showNewPass)}
                 >
-                  {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
@@ -673,7 +673,7 @@ export const SecuritySettings: React.FC = () => {
                   className="sec-eye-btn"
                   onClick={() => setShowConfirmPass(!showConfirmPass)}
                 >
-                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
@@ -691,10 +691,10 @@ export const SecuritySettings: React.FC = () => {
 
           {/* Trouble remembering current password? */}
           <div>
-            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+            <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
               Trouble remembering current password?
             </div>
-            <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: '2px 0 6px', fontWeight: 400 }}>
+            <p style={{ fontSize: '10.5px', color: '#64748B', lineHeight: '15px', margin: '2px 0 4px', fontWeight: 400 }}>
               Request a 6-digit OTP verification code sent directly to your email address.
             </p>
 
@@ -704,15 +704,15 @@ export const SecuritySettings: React.FC = () => {
               onClick={handleSendResetOtp}
               disabled={isSendingOtp}
             >
-              <Send size={14} color="#1B4FDF" />
+              <Send size={12} color="#1B4FDF" />
               <span>{isSendingOtp ? 'Sending Code...' : 'Reset via Email OTP'}</span>
             </button>
           </div>
 
           {/* Inline OTP Input Section if open */}
           {isOtpOpen && (
-            <form onSubmit={handleResetPasswordWithOtp} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '8px', padding: '12px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+            <form onSubmit={handleResetPasswordWithOtp} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '6px', padding: '10px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
                 Enter 6-Digit Email Code
               </div>
 
@@ -739,7 +739,7 @@ export const SecuritySettings: React.FC = () => {
                     onChange={(e) => setOtpNewPass(e.target.value)}
                   />
                   <button type="button" className="sec-eye-btn" onClick={() => setShowOtpNewPass(!showOtpNewPass)}>
-                    {showOtpNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showOtpNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
@@ -755,16 +755,16 @@ export const SecuritySettings: React.FC = () => {
                     onChange={(e) => setOtpConfirmPass(e.target.value)}
                   />
                   <button type="button" className="sec-eye-btn" onClick={() => setShowOtpConfirmPass(!showOtpConfirmPass)}>
-                    {showOtpConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showOtpConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
                 <button type="submit" className="sec-primary-save-btn" style={{ flex: 1 }} disabled={isResettingPass}>
                   {isResettingPass ? 'Verifying...' : 'Confirm New Password'}
                 </button>
-                <button type="button" onClick={() => setIsOtpOpen(false)} style={{ padding: '0 12px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '11.5px', fontWeight: 600, color: '#64748B', cursor: 'pointer' }}>
+                <button type="button" onClick={() => setIsOtpOpen(false)} style={{ padding: '0 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '11px', fontWeight: 600, color: '#64748B', cursor: 'pointer' }}>
                   Cancel
                 </button>
               </div>
@@ -782,16 +782,16 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <ShieldCheck size={18} />
+              <ShieldCheck size={15} />
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '8px', padding: '12px 14px', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '6px', padding: '10px 12px', gap: '10px' }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
                 {twoFactorEnabled ? '2FA Protection Enabled' : '2FA Protection Disabled'}
               </div>
-              <p style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '16px', margin: '2px 0 0', fontWeight: 400 }}>
+              <p style={{ fontSize: '10.5px', color: '#64748B', lineHeight: '15px', margin: '2px 0 0', fontWeight: 400 }}>
                 {twoFactorEnabled
                   ? 'Verification codes are sent to your registered email upon login.'
                   : 'Enable this setting to secure your account against unauthorized access.'}
@@ -804,9 +804,9 @@ export const SecuritySettings: React.FC = () => {
               onClick={handleToggle2FA}
               disabled={isToggling2FA}
               style={{
-                width: '44px',
-                height: '24px',
-                borderRadius: '12px',
+                width: '40px',
+                height: '22px',
+                borderRadius: '11px',
                 backgroundColor: twoFactorEnabled ? '#1B4FDF' : '#CBD5E1',
                 border: 'none',
                 cursor: 'pointer',
@@ -817,13 +817,13 @@ export const SecuritySettings: React.FC = () => {
               }}
             >
               <div style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '10px',
+                width: '18px',
+                height: '18px',
+                borderRadius: '9px',
                 backgroundColor: '#FFFFFF',
                 position: 'absolute',
                 top: '2px',
-                left: twoFactorEnabled ? '22px' : '2px',
+                left: twoFactorEnabled ? '20px' : '2px',
                 transition: 'left 0.2s ease',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
               }} />
@@ -841,42 +841,42 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <Smartphone size={18} />
+              <Smartphone size={15} />
             </div>
           </div>
 
           {sessionsLoading ? (
-            <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: '#64748B' }}>
+            <div style={{ textAlign: 'center', padding: '12px', fontSize: '11px', color: '#64748B' }}>
               Checking live device connections...
             </div>
           ) : sessions.length === 0 ? (
             <div className="sec-session-pill">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
-                  <Smartphone size={14} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '4px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
+                  <Smartphone size={13} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>Current Device</div>
-                  <div style={{ fontSize: '10.5px', color: '#64748B' }}>Active Session • Verified</div>
+                  <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>Current Device</div>
+                  <div style={{ fontSize: '10px', color: '#64748B' }}>Active Session • Verified</div>
                 </div>
               </div>
               <span className="sec-this-device-badge">Current</span>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {sessions.map((session, index) => {
                 const IconComp = session.type === 'desktop' ? Laptop : Smartphone;
                 return (
                   <div key={session.id || index} className="sec-session-pill">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: session.isCurrent ? '#EFF6FF' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: session.isCurrent ? '#1B4FDF' : '#64748B', flexShrink: 0 }}>
-                        <IconComp size={14} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '4px', backgroundColor: session.isCurrent ? '#EFF6FF' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: session.isCurrent ? '#1B4FDF' : '#64748B', flexShrink: 0 }}>
+                        <IconComp size={13} />
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {session.device}
                         </div>
-                        <div style={{ fontSize: '10.5px', color: '#64748B' }}>
+                        <div style={{ fontSize: '10px', color: '#64748B' }}>
                           {session.location} • {session.lastActive}
                         </div>
                       </div>
@@ -908,18 +908,18 @@ export const SecuritySettings: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '5px',
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#DC2626',
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                padding: '8px 0 4px',
+                padding: '6px 0 2px',
                 marginTop: '2px'
               }}
             >
-              <LogOut size={13} color="#DC2626" />
+              <LogOut size={12} color="#DC2626" />
               <span>{isTerminatingSessions ? 'Terminating...' : 'Log Out from All Other Devices'}</span>
             </button>
           )}
