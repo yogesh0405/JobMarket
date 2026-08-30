@@ -377,7 +377,10 @@ export const ContactPage: React.FC = () => {
   };
 
   const filteredFAQs = FAQ_DATA.filter((item) => {
-    const matchesCategory = item.category === activeFAQCategory;
+    const matchesCategory =
+      activeFAQCategory === 'General'
+        ? true
+        : item.category.toLowerCase() === activeFAQCategory.toLowerCase();
     const matchesSearch =
       !searchQuery.trim() ||
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
