@@ -378,7 +378,7 @@ export const SecuritySettings: React.FC = () => {
           font-size: 17px;
           font-weight: 800;
           color: #0F172A;
-          font-family: 'Georgia', serif;
+          font-family: inherit;
           letter-spacing: -0.3px;
         }
 
@@ -400,7 +400,7 @@ export const SecuritySettings: React.FC = () => {
           font-size: 15px;
           font-weight: 800;
           color: #0F172A;
-          font-family: 'Georgia', serif;
+          font-family: inherit;
           letter-spacing: -0.2px;
         }
 

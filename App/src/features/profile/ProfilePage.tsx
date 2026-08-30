@@ -1447,7 +1447,7 @@ export const ProfilePage: React.FC = () => {
                 fontSize: '16px',
                 fontWeight: '800',
                 color: '#0F172A',
-                fontFamily: 'Georgia, serif',
+                fontFamily: 'inherit',
                 letterSpacing: '-0.2px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -1527,7 +1527,7 @@ export const ProfilePage: React.FC = () => {
           flexDirection: 'column',
           gap: '9px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', marginBottom: '2px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', marginBottom: '2px' }}>
             Personal Details
           </h2>
 
@@ -1591,7 +1591,7 @@ export const ProfilePage: React.FC = () => {
           flexDirection: 'column',
           gap: '10px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
             Skills & Expertise
           </h2>
 
@@ -1621,7 +1621,7 @@ export const ProfilePage: React.FC = () => {
           flexDirection: 'column',
           gap: '8px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
             Work Experience
           </h2>
 
@@ -1717,7 +1717,7 @@ export const ProfilePage: React.FC = () => {
           flexDirection: 'column',
           gap: '8px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
             Education & Qualifications
           </h2>
 
@@ -1767,7 +1767,7 @@ export const ProfilePage: React.FC = () => {
           gap: '8px',
           marginBottom: '16px'
         }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
             Resume
           </h2>
 

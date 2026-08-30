@@ -109,7 +109,7 @@ export const AboutPage: React.FC = () => {
             fontSize: '16px',
             fontWeight: 800,
             color: '#0F172A',
-            fontFamily: 'Georgia, serif',
+            fontFamily: 'inherit',
             letterSpacing: '-0.2px'
           }}>
             About JobMarket
@@ -154,7 +154,7 @@ export const AboutPage: React.FC = () => {
             fontSize: '16px',
             fontWeight: 800,
             color: '#0F172A',
-            fontFamily: 'Georgia, serif',
+            fontFamily: 'inherit',
             lineHeight: '22px',
             letterSpacing: '-0.3px',
             margin: 0
@@ -312,7 +312,7 @@ export const AboutPage: React.FC = () => {
             <span>Platform Architecture</span>
           </div>
 
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: '0 0 2px' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: '0 0 2px' }}>
             Empower Your Journey with Cutting-Edge Features
           </h2>
           <p style={{ fontSize: '12px', color: '#475569', lineHeight: '17px', margin: '0 0 4px', fontWeight: 400 }}>
@@ -414,7 +414,7 @@ export const AboutPage: React.FC = () => {
             <span>Social Impact & Stories</span>
           </div>
 
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: 0 }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: 0 }}>
             Real Candidates. Real Recruiters. Real Results.
           </h2>
 
@@ -483,7 +483,7 @@ export const AboutPage: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Award size={18} color="#1B4FDF" />
-            <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px', margin: 0 }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: 0 }}>
               Awards & Recognition
             </h2>
           </div>

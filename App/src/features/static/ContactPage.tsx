@@ -567,7 +567,7 @@ export const ContactPage: React.FC = () => {
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
                 Ticket #{selectedTicket.ticketNumber}
               </span>
               <span style={{
@@ -896,7 +896,7 @@ export const ContactPage: React.FC = () => {
               >
                 <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
               </button>
-              <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
                 New ticket
               </span>
             </div>
@@ -1122,7 +1122,7 @@ export const ContactPage: React.FC = () => {
               >
                 <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
               </button>
-              <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
                 Support Tickets Desk
               </span>
             </div>
@@ -1448,7 +1448,7 @@ export const ContactPage: React.FC = () => {
           >
             <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
           </button>
-          <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'Georgia, serif', letterSpacing: '-0.2px' }}>
+          <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
             Help Center
           </span>
           <div style={{ width: '28px' }} />
