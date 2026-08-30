@@ -177,13 +177,16 @@ export const App: React.FC = () => {
 
           {/* Shared Workspaces */}
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/profile" element={<Navigate to={isEmployer ? "/dashboard?tab=profile" : "/dashboard?tab=profile"} replace />} />
+          <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
           <Route path="/profile/:id" element={<PublicProfilePage />} />
           <Route path="/p/:id" element={<PublicProfilePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/help" element={<ContactPage />} />
-          <Route path="/support" element={<ContactPage />} />
+          <Route path="/interviews" element={<Navigate to="/dashboard?tab=interviews" replace />} />
+          <Route path="/scheduled-interviews" element={<Navigate to="/dashboard?tab=interviews" replace />} />
+          <Route path="/security" element={<Navigate to="/dashboard?tab=security" replace />} />
+          <Route path="/about" element={currentUser ? <Navigate to="/dashboard?tab=about" replace /> : <AboutPage />} />
+          <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
+          <Route path="/help" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
+          <Route path="/support" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/about/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
