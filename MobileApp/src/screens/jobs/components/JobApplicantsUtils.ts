@@ -83,4 +83,12 @@ export const EMAIL_TEMPLATES = [
     message: (name: string, title: string) =>
       `Dear ${name},\n\nYou have been scheduled for a practical trade skill test for ${title}. Please arrive at our workshop facility with proper safety gear.\n\nBest regards,\nRecruitment Team`,
   },
+  {
+    key: 'INTERVIEW_EVALUATION',
+    label: 'Interview Evaluation Update',
+    desc: 'Inform candidate that interview is done & under evaluation',
+    subject: (title: string) => `Interview Process Update: ${title}`,
+    message: (name: string, title: string) =>
+      `Dear ${name},\n\nThank you for attending the interview for the ${title} position. Your interview session has now been conducted.\n\nYour profile and interview assessment are currently under evaluation by our technical and recruitment panel. Once the review is finalized, you will receive further updates regarding the next steps and selection outcome.\n\nBest regards,\nRecruitment Team`,
+  },
 ];

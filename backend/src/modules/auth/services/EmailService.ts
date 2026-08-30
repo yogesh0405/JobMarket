@@ -807,7 +807,7 @@ export class EmailService {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Interview Completed - CSN-JobMarket</title>
+  <title>Interview Process Update - CSN-JobMarket</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
@@ -830,23 +830,55 @@ export class EmailService {
           <!-- Card -->
           <tr>
             <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
-              <!-- Emerald top bar -->
+              <!-- Blue top bar -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);height:6px;"></td>
+                  <td style="background:linear-gradient(135deg,#1764e8 0%,#0f4cc0 100%);height:6px;"></td>
                 </tr>
               </table>
 
               <!-- Body -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding:40px 48px 32px;">
-                    <p style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Interview Completed</p>
-                    <p style="margin:0 0 20px;font-size:15px;color:#64748b;line-height:1.6;">
-                      Hi <strong style="color:#0f172a;">${workerName}</strong>, your interview for the <strong style="color:#1e3a8a;">${jobTitle}</strong> position with <strong style="color:#0f172a;">${companyName}</strong> has been marked as completed.
+                  <td style="padding:40px 48px 36px;">
+                    <table cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+                      <tr>
+                        <td style="background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:4px 10px;">
+                          <span style="color:#1d4ed8;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Interview Concluded</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0 0 16px;font-size:22px;font-weight:700;color:#0f172a;">Interview Process Update</p>
+                    
+                    <p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.6;">
+                      Dear <strong style="color:#0f172a;">${workerName}</strong>,
                     </p>
-                    <p style="margin:0;font-size:15px;color:#64748b;line-height:1.6;">
-                      The recruiter is reviewing their candidate evaluations. You will be notified regarding the next steps or final selection decisions soon.
+
+                    <p style="margin:0 0 18px;font-size:15px;color:#334155;line-height:1.6;">
+                      Thank you for attending the interview for the <strong style="color:#1e3a8a;">${jobTitle}</strong> position with <strong style="color:#0f172a;">${companyName}</strong>. Your interview session has now been conducted.
+                    </p>
+
+                    <!-- Evaluation Notice Box -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #1764e8;border-radius:8px;margin-bottom:20px;">
+                      <tr>
+                        <td style="padding:16px 20px;">
+                          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.4px;">
+                            Current Stage: Technical & HR Evaluation
+                          </p>
+                          <p style="margin:0;font-size:14px;color:#475569;line-height:1.5;">
+                            The recruitment and technical evaluation team is currently reviewing the interview feedback and candidate assessments for this position.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0 0 16px;font-size:15px;color:#334155;line-height:1.6;">
+                      Once the evaluation phase is finalized, you will receive further updates regarding the next steps and selection outcome.
+                    </p>
+
+                    <p style="margin:0;font-size:14px;color:#64748b;line-height:1.5;">
+                      You can also track your real-time application and interview status anytime on your JobMarket dashboard.
                     </p>
                   </td>
                 </tr>
@@ -870,7 +902,7 @@ export class EmailService {
 </html>
     `;
 
-    return EmailService.dispatchEmail(workerEmail, workerName, `Interview Completed: ${jobTitle} at ${companyName}`, htmlContent);
+    return EmailService.dispatchEmail(workerEmail, workerName, `Interview Process Update: ${jobTitle} at ${companyName}`, htmlContent);
   }
 
   /**

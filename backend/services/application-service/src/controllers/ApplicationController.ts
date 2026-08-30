@@ -80,8 +80,8 @@ export class ApplicationController {
           if (status === 'interviewed') {
             await NotificationService.sendNotification(
               meta.candidate_id,
-              `Interview Completed: ${meta.job_title}`,
-              `Your interview for "${meta.job_title}" with ${meta.company_name} has been marked as completed.`,
+              `Interview Update: ${meta.job_title}`,
+              `Your interview for "${meta.job_title}" with ${meta.company_name} has been conducted and is currently under evaluation. You will receive further updates soon.`,
               'JOB_INTERVIEW',
               `/jobs/${meta.job_id}`,
               'INTERVIEW',
