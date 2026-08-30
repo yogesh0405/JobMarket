@@ -306,11 +306,19 @@ export const DashboardPage: React.FC = () => {
 
   const isEmployer = currentUser.role === 'employer';
 
+  if (['interviews', 'scheduled-interviews'].includes(tab)) {
+    return isEmployer ? (
+      <EmployerInterviewsTab currentUser={currentUser} showToast={showToast} navigate={navigate} />
+    ) : (
+      <CandidateInterviewsTab currentUser={currentUser} showToast={showToast} navigate={navigate} />
+    );
+  }
+
   return (
     <>
       <div className={`dashboard-page ${['applied', 'resume'].includes(tab) ? 'bg-white-page' : ''}`} style={['applied', 'resume'].includes(tab) ? { background: '#FFFFFF' } : undefined}>
       <div className="container">
-        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
+        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume', 'interviews', 'scheduled-interviews'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
           {/* Sidebar */}
           <aside className="dashboard-sidebar">
             <div className="dashboard-profile">
