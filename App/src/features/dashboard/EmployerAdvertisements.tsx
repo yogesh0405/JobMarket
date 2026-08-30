@@ -392,6 +392,351 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
     );
   };
 
+  // FULL PAGE VIEW FOR CREATING / EDITING PROMOTIONAL BANNER
+  if (formModalOpen) {
+    return (
+      <div className="create-banner-page-container" style={{ position: 'relative', width: '100%', minHeight: '100%', background: '#F8FAFC', padding: '0.5rem 0 2rem 0' }}>
+        <style>{`
+          .create-banner-page-container {
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+            box-sizing: border-box;
+          }
+          .create-banner-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            background: #FFFFFF;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+          }
+          .create-banner-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+            box-sizing: border-box;
+          }
+          .form-grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+          }
+          @media (max-width: 768px) {
+            .create-banner-page-container {
+              padding: 0 0 32px 0 !important;
+              max-width: 100% !important;
+            }
+            .create-banner-header {
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 50 !important;
+              border-radius: 0 !important;
+              border-left: none !important;
+              border-right: none !important;
+              border-top: none !important;
+              margin-bottom: 12px !important;
+              padding: 12px 16px !important;
+            }
+            .create-banner-card {
+              margin: 0 12px !important;
+              padding: 16px 14px !important;
+              border-radius: 8px !important;
+            }
+            .form-grid-2col {
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+            }
+          }
+        `}</style>
+
+        {/* Top Sticky Header */}
+        <div className="create-banner-header">
+          <button
+            type="button"
+            onClick={() => {
+              setFormModalOpen(false);
+              setEditingAd(null);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              background: 'transparent',
+              color: '#0F172A',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              flexShrink: 0
+            }}
+            title="Back to Promotional Banners"
+          >
+            <ArrowLeft size={22} strokeWidth={2.4} />
+          </button>
+
+          <div>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.2px', lineHeight: 1.2 }}>
+              {editingAd ? (isAdRejected(editingAd) || isAdUnpublished(editingAd) ? 'Edit & Resubmit Advertisement' : 'Edit Promotional Banner') : 'Create Promotional Banner'}
+            </h2>
+            <p style={{ margin: '1px 0 0 0', color: '#64748B', fontSize: '11.5px', fontWeight: '500' }}>
+              {editingAd ? 'Update banner details and resubmit for admin approval' : 'Urgent hiring ads on homepage slider'}
+            </p>
+          </div>
+        </div>
+
+        <div className="create-banner-card">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* ADMIN MODERATION FEEDBACK NOTICE WHEN EDITING REJECTED OR UNPUBLISHED */}
+            {editingAd && (isAdRejected(editingAd) || isAdUnpublished(editingAd)) && (
+              <div style={{ background: isAdRejected(editingAd) ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${isAdRejected(editingAd) ? '#FECACA' : '#FDE68A'}`, borderLeft: `4px solid ${isAdRejected(editingAd) ? '#DC2626' : '#D97706'}`, borderRadius: '8px', padding: '14px 16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isAdRejected(editingAd) ? <AlertCircle size={14} /> : <EyeOff size={14} />}
+                  <span>Admin Moderation Feedback</span>
+                </div>
+                <div style={{ fontSize: '13px', color: isAdRejected(editingAd) ? '#7F1D1D' : '#78350F', fontWeight: '700', lineHeight: '1.4' }}>
+                  {editingAd.rejection_reason || (editingAd as any).rejectionReason || (editingAd as any).unpublish_reason || (editingAd as any).unpublishReason || (editingAd as any).reason || 'Please review banner image clarity, headline, and details before resubmitting.'}
+                </div>
+                <div style={{ fontSize: '11.5px', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', marginTop: '6px', lineHeight: '1.4' }}>
+                  Update your banner details below and click <strong>"Update & Resubmit for Approval"</strong> to send it to the admin team for priority review.
+                </div>
+              </div>
+            )}
+
+            {/* Image Upload */}
+            <div>
+              <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Banner Image (PNG, JPG, WEBP - Max 5MB)</label>
+              {bannerImage ? (
+                <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '8px', overflow: 'hidden', background: '#0F172A', marginBottom: '8px' }}>
+                  <img src={bannerImage} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button
+                    type="button"
+                    onClick={() => setBannerImage('')}
+                    style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ border: '2px dashed #2563EB', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', background: '#EFF6FF', cursor: 'pointer' }}
+                >
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" style={{ marginBottom: '6px' }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <div style={{ fontWeight: '700', color: '#2563EB', fontSize: '13px' }}>Click to upload custom banner image (Optional)</div>
+                  <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px' }}>If skipped, a sleek theme gradient banner will be generated automatically.</div>
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} style={{ display: 'none' }} />
+            </div>
+
+            {/* Title & Type */}
+            <div className="form-grid-2col">
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Banner Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Mega Walk-In Drive for CNC Operators"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Advertisement Type *</label>
+                <select
+                  value={advertisementType}
+                  onChange={(e) => setAdvertisementType(e.target.value as AdvertisementType)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="FEATURED_JOB">Featured Job</option>
+                  <option value="URGENT_HIRING">Urgent Hiring</option>
+                  <option value="WALK_IN_DRIVE">Walk-In Drive</option>
+                  <option value="COMPANY_PROMOTION">Company Promotion</option>
+                  <option value="APPRENTICESHIP">Apprenticeship Drive</option>
+                  <option value="INTERNSHIP">Internship Campaign</option>
+                  <option value="HIRING_EVENT">Mega Recruitment Event</option>
+                  <option value="GOVERNMENT_JOB">Government Job Alert</option>
+                  <option value="PROMOTIONAL_BANNER">General Promotional Banner</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Short Description</label>
+              <textarea
+                rows={2}
+                placeholder="e.g. Spot offer for 50+ openings in Chakan MIDC with bus & canteen facility."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Linked Job Selection */}
+            <div className="form-grid-2col">
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Link to Posted Job (Optional)</label>
+                <select
+                  value={linkedJobId}
+                  onChange={(e) => setLinkedJobId(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="">-- None (Custom Redirect) --</option>
+                  {employerJobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title} ({j.location})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Custom Redirect URL (If no job linked)</label>
+                <input
+                  type="text"
+                  placeholder="https://company.com/careers"
+                  value={redirectUrl}
+                  onChange={(e) => setRedirectUrl(e.target.value)}
+                  disabled={!!linkedJobId}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', opacity: linkedJobId ? 0.6 : 1, boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Button Text & Priority */}
+            <div className="form-grid-2col">
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Button CTA Text</label>
+                <input
+                  type="text"
+                  placeholder="Apply Now / Register Today"
+                  value={buttonText}
+                  onChange={(e) => setButtonText(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Priority Level</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as AdvertisementPriority)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium (Standard)</option>
+                  <option value="HIGH">High (Top Slider)</option>
+                  <option value="CRITICAL">Critical (Urgent Alert)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Start & End Dates */}
+            <div className="form-grid-2col">
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Publish Start Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Expiry End Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* REAL-TIME INTERACTIVE LIVE PREVIEW BOX */}
+            <div style={{ marginTop: '4px', padding: '14px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  👁️ Real-Time Banner Preview
+                </span>
+                <span style={{ fontSize: '10.5px', color: '#2563EB', fontWeight: '700', background: '#EFF6FF', padding: '2px 8px', borderRadius: '999px' }}>
+                  Live Homepage View
+                </span>
+              </div>
+
+              <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)' }}>
+                {bannerImage ? (
+                  <img src={bannerImage} alt="Banner Live Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%)' }} />
+                )}
+
+                {/* Dark gradient overlay */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.5) 65%, transparent 100%)' }} />
+
+                {/* Content overlay */}
+                <div style={{ position: 'absolute', inset: 0, padding: '14px 18px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, color: '#FFFFFF' }}>
+                  <span style={{ fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', background: 'rgba(255, 255, 255, 0.2)', color: '#FFFFFF', padding: '2px 8px', borderRadius: '999px', width: 'fit-content', marginBottom: '4px' }}>
+                    {advertisementType.replace(/_/g, ' ')}
+                  </span>
+                  <h4 style={{ margin: '0 0 3px 0', fontSize: '14px', fontWeight: '800', textShadow: '0 2px 4px rgba(0,0,0,0.5)', color: '#FFFFFF' }}>
+                    {title || 'Your Banner Title Here'}
+                  </h4>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '11.5px', color: 'rgba(255,255,255,0.85)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', maxWidth: '420px' }}>
+                    {description || 'Your promotional banner description will appear here on the homepage.'}
+                  </p>
+                  <button type="button" style={{ background: '#FFFFFF', color: '#1E3A8A', border: 'none', padding: '5px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '11.5px', width: 'fit-content', cursor: 'default' }}>
+                    {buttonText || 'Apply Now'} →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormModalOpen(false);
+                  setEditingAd(null);
+                }}
+                style={{ padding: '9px 18px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#FFFFFF', color: '#334155', fontWeight: '700', fontSize: '12.5px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{ padding: '9px 22px', borderRadius: '6px', background: '#2563EB', color: '#FFFFFF', border: 'none', fontWeight: '700', fontSize: '12.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                {isSubmitting && renderSpinner('white')}
+                {isSubmitting
+                  ? 'Submitting...'
+                  : editingAd
+                  ? isAdRejected(editingAd) || isAdUnpublished(editingAd)
+                    ? 'Update & Resubmit for Approval'
+                    : 'Update Banner'
+                  : 'Submit for Admin Approval'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="employer-ads-container" style={{ minHeight: '100%', background: 'var(--bg-page, #F8FAFC)', padding: '0.5rem 0 2rem 0' }}>
       <style>{`
@@ -919,259 +1264,6 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       >
         <Plus size={20} strokeWidth={2.6} />
       </button>
-
-      {/* CREATE / EDIT MODAL */}
-      {formModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: 'var(--card-bg, #ffffff)', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800' }}>
-                {editingAd ? (isAdRejected(editingAd) || isAdUnpublished(editingAd) ? 'Edit & Resubmit Advertisement' : 'Edit Promotional Banner') : 'Create Promotional Banner'}
-              </h3>
-              <button onClick={() => setFormModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* ADMIN MODERATION FEEDBACK NOTICE WHEN EDITING REJECTED OR UNPUBLISHED */}
-              {editingAd && (isAdRejected(editingAd) || isAdUnpublished(editingAd)) && (
-                <div style={{ background: isAdRejected(editingAd) ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${isAdRejected(editingAd) ? '#FECACA' : '#FDE68A'}`, borderLeft: `4px solid ${isAdRejected(editingAd) ? '#DC2626' : '#D97706'}`, borderRadius: '10px', padding: '14px 18px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {isAdRejected(editingAd) ? <AlertCircle size={14} /> : <EyeOff size={14} />}
-                    <span>Admin Moderation Feedback</span>
-                  </div>
-                  <div style={{ fontSize: '13.5px', color: isAdRejected(editingAd) ? '#7F1D1D' : '#78350F', fontWeight: '700', lineHeight: '1.4' }}>
-                    {editingAd.rejection_reason || (editingAd as any).rejectionReason || (editingAd as any).unpublish_reason || (editingAd as any).unpublishReason || (editingAd as any).reason || 'Please review banner image clarity, headline, and details before resubmitting.'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: isAdRejected(editingAd) ? '#991B1B' : '#92400E', marginTop: '6px', lineHeight: '1.4' }}>
-                    Update your banner details below and click <strong>"Update & Resubmit for Approval"</strong> to send it to the admin team for priority review.
-                  </div>
-                </div>
-              )}
-
-              {/* Image Upload */}
-              <div>
-                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Banner Image (PNG, JPG, WEBP - Max 5MB)</label>
-                {bannerImage ? (
-                  <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#0f172a', marginBottom: '8px' }}>
-                    <img src={bannerImage} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button
-                      type="button"
-                      onClick={() => setBannerImage('')}
-                      style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{ border: '2px dashed #2563EB', borderRadius: '10px', padding: '1.5rem', textAlign: 'center', background: '#EFF6FF', cursor: 'pointer' }}
-                  >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" style={{ marginBottom: '6px' }}>
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                    <div style={{ fontWeight: '700', color: '#2563EB' }}>Click to upload custom banner image (Optional)</div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>If skipped, a sleek theme gradient banner will be generated automatically.</div>
-                  </div>
-                )}
-                <input ref={fileInputRef} type="file" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} style={{ display: 'none' }} />
-              </div>
-
-              {/* Title & Type */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Banner Title *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Mega Walk-In Drive for CNC Operators"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Advertisement Type *</label>
-                  <select
-                    value={advertisementType}
-                    onChange={(e) => setAdvertisementType(e.target.value as AdvertisementType)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  >
-                    <option value="FEATURED_JOB">Featured Job</option>
-                    <option value="URGENT_HIRING">Urgent Hiring</option>
-                    <option value="WALK_IN_DRIVE">Walk-In Drive</option>
-                    <option value="COMPANY_PROMOTION">Company Promotion</option>
-                    <option value="APPRENTICESHIP">Apprenticeship Drive</option>
-                    <option value="INTERNSHIP">Internship Campaign</option>
-                    <option value="HIRING_EVENT">Mega Recruitment Event</option>
-                    <option value="GOVERNMENT_JOB">Government Job Alert</option>
-                    <option value="PROMOTIONAL_BANNER">General Promotional Banner</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Short Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Spot offer for 50+ openings in Chakan MIDC with bus & canteen facility."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              {/* Linked Job Selection */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Link to Posted Job (Optional)</label>
-                  <select
-                    value={linkedJobId}
-                    onChange={(e) => setLinkedJobId(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  >
-                    <option value="">-- None (Custom Redirect) --</option>
-                    {employerJobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        {j.title} ({j.location})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Custom Redirect URL (If no job linked)</label>
-                  <input
-                    type="text"
-                    placeholder="https://company.com/careers"
-                    value={redirectUrl}
-                    onChange={(e) => setRedirectUrl(e.target.value)}
-                    disabled={!!linkedJobId}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', opacity: linkedJobId ? 0.6 : 1 }}
-                  />
-                </div>
-              </div>
-
-              {/* Button Text & Priority */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Button CTA Text</label>
-                  <input
-                    type="text"
-                    placeholder="Apply Now / Register Today"
-                    value={buttonText}
-                    onChange={(e) => setButtonText(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Priority Level</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as AdvertisementPriority)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium (Standard)</option>
-                    <option value="HIGH">High (Top Slider)</option>
-                    <option value="CRITICAL">Critical (Urgent Alert)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Start & End Dates */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Publish Start Date & Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Expiry End Date & Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-              </div>
-
-              {/* REAL-TIME INTERACTIVE LIVE PREVIEW BOX */}
-              <div style={{ marginTop: '6px', padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    👁️ Real-Time Banner Preview
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: '700', background: '#eff6ff', padding: '2px 8px', borderRadius: '999px' }}>
-                    Live Homepage View
-                  </span>
-                </div>
-
-                <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)' }}>
-                  {bannerImage ? (
-                    <img src={bannerImage} alt="Banner Live Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)' }} />
-                  )}
-
-                  {/* Dark gradient overlay */}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.5) 65%, transparent 100%)' }} />
-
-                  {/* Content overlay */}
-                  <div style={{ position: 'absolute', inset: 0, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', zIndex: 10, color: '#ffffff' }}>
-                    <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', background: 'rgba(255, 255, 255, 0.2)', color: '#ffffff', padding: '2px 8px', borderRadius: '999px', width: 'fit-content', marginBottom: '6px' }}>
-                      {advertisementType.replace(/_/g, ' ')}
-                    </span>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', textShadow: '0 2px 4px rgba(0,0,0,0.5)', color: '#ffffff' }}>
-                      {title || 'Your Banner Title Here'}
-                    </h4>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: 'rgba(255,255,255,0.85)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', maxWidth: '420px' }}>
-                      {description || 'Your promotional banner description will appear here on the homepage.'}
-                    </p>
-                    <button type="button" style={{ background: '#ffffff', color: '#1e3a8a', border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '12px', width: 'fit-content', cursor: 'default' }}>
-                      {buttonText || 'Apply Now'} →
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.75rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setFormModalOpen(false)}
-                  style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={{ padding: '10px 24px', borderRadius: '8px', background: '#2563EB', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
-                >
-                  {isSubmitting && renderSpinner('white')}
-                  {isSubmitting
-                    ? 'Submitting...'
-                    : editingAd
-                    ? isAdRejected(editingAd) || isAdUnpublished(editingAd)
-                      ? 'Update & Resubmit for Approval'
-                      : 'Update Banner'
-                    : 'Submit for Admin Approval'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* REAL-TIME BANNER ANALYTICS MODAL (100% Match to Mobile App BannerAnalyticsModal) */}
       {selectedAdForAnalytics && (() => {
