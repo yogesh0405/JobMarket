@@ -306,14 +306,6 @@ export const DashboardPage: React.FC = () => {
 
   const isEmployer = currentUser.role === 'employer';
 
-  if (['interviews', 'scheduled-interviews'].includes(tab)) {
-    return isEmployer ? (
-      <EmployerInterviewsTab currentUser={currentUser} showToast={showToast} navigate={navigate} />
-    ) : (
-      <CandidateInterviewsTab currentUser={currentUser} showToast={showToast} navigate={navigate} />
-    );
-  }
-
   return (
     <>
       <div className={`dashboard-page ${['applied', 'resume'].includes(tab) ? 'bg-white-page' : ''}`} style={['applied', 'resume'].includes(tab) ? { background: '#FFFFFF' } : undefined}>

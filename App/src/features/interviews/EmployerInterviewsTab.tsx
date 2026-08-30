@@ -410,37 +410,66 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
           margin: 8px 0;
         }
 
-        /* Responsive Breakpoints */
+        /* ── DESKTOP VIEW STYLES ── */
         @media (min-width: 768px) {
           .interviews-page-root {
-            background-color: #F8FAFC !important;
+            background-color: transparent !important;
+            min-height: auto;
           }
           .interviews-inner-content {
-            background-color: #F8FAFC !important;
-            padding: 16px 20px 40px 20px;
+            background-color: transparent !important;
+            padding: 0 0 40px 0;
           }
           .interviews-metrics-bar {
+            background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+            padding: 16px 24px;
+          }
+          .interviews-metric-num {
+            font-size: 20px;
+          }
+          .interviews-metric-tag {
+            font-size: 12px;
           }
           .interviews-toolbar-row {
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 16px;
           }
           .interviews-tab-strip {
+            background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 8px;
             padding: 6px;
+            width: auto;
+          }
+          .interviews-tab-btn {
+            font-size: 13px;
+            padding: 8px 16px;
           }
           .interviews-search-input-wrap {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
             margin: 0;
             min-width: 320px;
+            padding: 8px 14px;
           }
           .interview-list-wrap {
             padding: 0;
-            background-color: #F8FAFC !important;
+            background-color: transparent !important;
+          }
+          .interview-standard-card {
+            padding: 18px 20px !important;
+            margin-bottom: 14px !important;
+            border-radius: 8px !important;
+          }
+          .interview-cand-title {
+            font-size: 15px !important;
           }
         }
 
