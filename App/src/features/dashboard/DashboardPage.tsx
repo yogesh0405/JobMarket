@@ -2747,7 +2747,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                 alignItems: 'center',
                 backgroundColor: '#F8FAFC',
                 borderRadius: '8px',
-                border: appSearchQuery ? '1px solid #1764E8' : '1px solid #CBD5E1',
+                border: appSearchQuery ? '1px solid #1764E8' : '1px solid #94A3B8',
                 padding: '0 12px',
                 height: '38px',
                 boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',

@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#94A3B8',
     paddingHorizontal: 12,
     height: 38,
   },
