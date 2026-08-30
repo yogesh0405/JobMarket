@@ -530,12 +530,12 @@ export const SecuritySettings: React.FC = () => {
           flex-shrink: 0;
         }
 
-        /* Mobile View (max-width: 768px) */
+        /* Mobile View (max-width: 768px) - 100% exact match with MobileApp */
         @media (max-width: 768px) {
           .security-page-container {
             max-width: 100%;
-            padding: 0 0 28px;
-            gap: 8px;
+            padding: 0 0 32px;
+            gap: 12px;
             background-color: #F8FAFC;
           }
 
@@ -545,17 +545,78 @@ export const SecuritySettings: React.FC = () => {
             z-index: 50;
             background-color: #FFFFFF;
             border-bottom: 1px solid #E2E8F0;
-            padding: 10px 14px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 2px;
+            margin-bottom: 8px;
           }
 
           .sec-card-box {
-            border-radius: var(--radius-card, 8px);
-            padding: 12px 14px;
-            gap: 8px;
+            border-radius: 14px;
+            padding: 16px 18px;
+            gap: 12px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+          }
+
+          .sec-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0F172A;
+          }
+
+          .sec-card-subtitle {
+            font-size: 11.5px;
+            color: #64748B;
+            line-height: 16px;
+          }
+
+          .sec-input-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+          }
+
+          .sec-input-field {
+            height: 42px;
+            border-radius: 12px;
+            padding: 0 38px 0 12px;
+            font-size: 12.5px;
+          }
+
+          .sec-primary-save-btn {
+            height: 42px;
+            border-radius: 21px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 4px;
+          }
+
+          .sec-outline-reset-btn {
+            height: 38px;
+            padding: 8px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+          }
+
+          .sec-session-pill {
+            padding: 10px 12px;
+            border-radius: 10px;
+          }
+
+          .sec-this-device-badge {
+            font-size: 10px;
+            padding: 2.5px 8px;
+            border-radius: 6px;
+          }
+
+          .sec-revoke-btn {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 6px;
           }
         }
       `}</style>

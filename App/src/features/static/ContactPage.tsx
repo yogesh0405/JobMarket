@@ -17,9 +17,6 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  PlusCircle,
-  ArrowUpCircle,
-  Info,
   Paperclip
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -506,7 +503,8 @@ export const ContactPage: React.FC = () => {
           box-shadow: 0 4px 12px rgba(27, 79, 223, 0.08);
         }
 
-        /* Mobile View (max-width: 768px) */
+        /* ─── MOBILE VIEW (MAX-WIDTH: 768PX) ─── */
+        /* Exact 100% Mobile Metrics Matched to MobileApp */
         @media (max-width: 768px) {
           .help-center-wrapper {
             background-color: #F8FAFC;
@@ -520,9 +518,28 @@ export const ContactPage: React.FC = () => {
             z-index: 50;
             background-color: #FFFFFF;
             border-bottom: 1px solid #E2E8F0;
-            padding: 10px 14px 0;
-            margin-bottom: 10px;
+            padding: 12px 16px 0;
+            margin-bottom: 14px;
             display: block;
+          }
+
+          .help-mobile-top-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0F172A;
+            letter-spacing: -0.2px;
+          }
+
+          .help-mobile-tab-btn {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748B;
+            padding: 12px 0;
+          }
+
+          .help-mobile-tab-btn.active {
+            font-weight: 800;
+            color: #1B4FDF;
           }
 
           .help-desktop-tab-row {
@@ -531,20 +548,117 @@ export const ContactPage: React.FC = () => {
 
           .help-center-container {
             max-width: 100%;
-            padding: 0 12px;
-            gap: 10px;
+            padding: 0 14px;
+            gap: 12px;
           }
 
           .help-card {
-            border-radius: var(--radius-card, 8px);
+            background-color: #FFFFFF;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
             padding: 14px;
-            gap: 10px;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
           }
 
+          /* Mobile Category Pill (11.5px, radius 16px, 12x6 padding) */
+          .help-category-pill {
+            padding: 6px 12px !important;
+            border-radius: 16px !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+          }
+
+          .help-category-pill.active {
+            font-weight: 700 !important;
+            background-color: #1B4FDF !important;
+            border-color: #1B4FDF !important;
+            color: #FFFFFF !important;
+          }
+
+          /* Mobile Search Bar (40px, radius 12px, 12.5px font) */
+          .help-search-box {
+            height: 40px !important;
+            border-radius: 12px !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            padding: 0 12px !important;
+            margin-bottom: 14px !important;
+          }
+
+          .help-search-input {
+            font-size: 12.5px !important;
+            color: #0F172A !important;
+            font-weight: 500 !important;
+          }
+
+          /* Mobile FAQ Accordion (radius 14px, 14px padding, 13px question, 11.5px answer) */
+          .help-faq-item {
+            background-color: #FFFFFF !important;
+            border-radius: 14px !important;
+            border: 1px solid #E2E8F0 !important;
+            padding: 14px !important;
+          }
+
+          .help-faq-item.expanded {
+            background-color: #FAF9F6 !important;
+            border-color: #BFDBFE !important;
+          }
+
+          .help-faq-question {
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
+            line-height: 18px !important;
+            letter-spacing: -0.2px !important;
+          }
+
+          .help-faq-question.active {
+            font-weight: 800 !important;
+          }
+
+          .help-faq-answer {
+            font-size: 11.5px !important;
+            color: #475569 !important;
+            line-height: 16.5px !important;
+            margin-top: 8px !important;
+            padding-top: 8px !important;
+          }
+
+          /* Mobile Help & Contact 4 Option Cards (radius 14px, 12x14 padding, 13px title, 19px icon) */
           .help-contact-grid {
             display: flex;
             flex-direction: column;
             gap: 8px;
+          }
+
+          .help-contact-card {
+            background-color: #FFFFFF !important;
+            border-radius: 14px !important;
+            border: 1px solid #E2E8F0 !important;
+            padding: 12px 14px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+          }
+
+          .help-contact-title {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #0F172A !important;
+            letter-spacing: -0.1px !important;
+          }
+
+          .help-contact-badge {
+            background-color: #EFF6FF !important;
+            border: 1px solid #BFDBFE !important;
+            padding: 3px 8px !important;
+            border-radius: 10px !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            color: #1B4FDF !important;
           }
         }
       `}</style>
@@ -567,11 +681,11 @@ export const ContactPage: React.FC = () => {
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               aria-label="Back"
             >
-              <ArrowLeft size={18} color="#0F172A" strokeWidth={2.4} />
+              <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
                   Ticket #{selectedTicket.ticketNumber}
                 </span>
                 <span style={{
@@ -587,7 +701,7 @@ export const ContactPage: React.FC = () => {
                   {selectedTicket.status}
                 </span>
               </div>
-              <div style={{ fontSize: '11px', color: '#475569', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {selectedTicket.subject}
               </div>
             </div>
@@ -613,7 +727,7 @@ export const ContactPage: React.FC = () => {
                       {shouldShowDateHeader && (
                         <div style={{ textAlign: 'center', margin: '8px 0' }}>
                           <span style={{
-                            fontSize: '10px',
+                            fontSize: '10.5px',
                             color: '#94A3B8',
                             fontWeight: 600,
                             backgroundColor: '#FAF9F6',
@@ -627,37 +741,37 @@ export const ContactPage: React.FC = () => {
                       )}
 
                       {isUser ? (
-                        <div style={{ alignSelf: 'flex-end', maxWidth: '80%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <div style={{ alignSelf: 'flex-end', maxWidth: '82%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                           {msg.attachment && (
                             <img
                               src={msg.attachment}
                               alt="Attachment"
                               onClick={() => setPreviewImageModal(msg.attachment!)}
-                              style={{ width: '220px', height: '130px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '1px solid #E2E8F0' }}
+                              style={{ width: '220px', height: '130px', objectFit: 'cover', borderRadius: '14px', cursor: 'pointer', border: '1px solid #E2E8F0' }}
                             />
                           )}
                           {msg.text && (
                             <div style={{
                               backgroundColor: '#1B4FDF',
-                              borderRadius: '10px',
-                              padding: '8px 12px',
+                              borderRadius: '16px',
+                              padding: '9px 13px',
                               color: '#FFFFFF',
-                              fontSize: '12px',
-                              lineHeight: '17px',
+                              fontSize: '12.5px',
+                              lineHeight: '18px',
                               wordBreak: 'break-word',
                               boxShadow: '0 1px 3px rgba(27, 79, 223, 0.15)'
                             }}>
                               {msg.text}
-                              <div style={{ fontSize: '9px', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'right', marginTop: '3px' }}>
+                              <div style={{ fontSize: '9.5px', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'right', marginTop: '3px' }}>
                                 {formatMessageTime(msgDate)}
                               </div>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div style={{ alignSelf: 'flex-start', maxWidth: '80%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: '#64748B', marginLeft: '4px' }}>
-                            <Headphones size={11} color="#1B4FDF" />
+                        <div style={{ alignSelf: 'flex-start', maxWidth: '82%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px', fontWeight: 700, color: '#64748B', marginLeft: '4px' }}>
+                            <Headphones size={12} color="#1B4FDF" />
                             <span>{msg.senderName || 'JobMarket Support'}</span>
                           </div>
                           {msg.attachment && (
@@ -665,23 +779,23 @@ export const ContactPage: React.FC = () => {
                               src={msg.attachment}
                               alt="Attachment"
                               onClick={() => setPreviewImageModal(msg.attachment!)}
-                              style={{ width: '220px', height: '130px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '1px solid #E2E8F0' }}
+                              style={{ width: '220px', height: '130px', objectFit: 'cover', borderRadius: '14px', cursor: 'pointer', border: '1px solid #E2E8F0' }}
                             />
                           )}
                           {msg.text && (
                             <div style={{
                               backgroundColor: '#FFFFFF',
                               border: '1px solid #E2E8F0',
-                              borderRadius: '10px',
-                              padding: '8px 12px',
+                              borderRadius: '16px',
+                              padding: '9px 13px',
                               color: '#0F172A',
-                              fontSize: '12px',
-                              lineHeight: '17px',
+                              fontSize: '12.5px',
+                              lineHeight: '18px',
                               wordBreak: 'break-word',
                               boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
                             }}>
                               {msg.text}
-                              <div style={{ fontSize: '9px', color: '#94A3B8', textAlign: 'right', marginTop: '3px' }}>
+                              <div style={{ fontSize: '9.5px', color: '#94A3B8', textAlign: 'right', marginTop: '3px' }}>
                                 {formatMessageTime(msgDate)}
                               </div>
                             </div>
@@ -727,7 +841,7 @@ export const ContactPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => chatFileInputRef.current?.click()}
-                style={{ width: '34px', height: '34px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}
+                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}
                 title="Attach image or file"
               >
                 <Paperclip size={16} />
@@ -747,11 +861,11 @@ export const ContactPage: React.FC = () => {
                 }}
                 style={{
                   flex: 1,
-                  height: '36px',
-                  borderRadius: '6px',
+                  height: '38px',
+                  borderRadius: '8px',
                   border: '1px solid #E2E8F0',
                   padding: '0 12px',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   color: '#0F172A',
                   outline: 'none',
                   backgroundColor: '#F8FAFC'
@@ -763,9 +877,9 @@ export const ContactPage: React.FC = () => {
                 onClick={handleSendChatMessage}
                 disabled={sendingReply || (!replyMessage.trim() && !selectedAttachment)}
                 style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '6px',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
                   backgroundColor: '#1B4FDF',
                   border: 'none',
                   color: '#FFFFFF',
@@ -776,7 +890,7 @@ export const ContactPage: React.FC = () => {
                   opacity: sendingReply || (!replyMessage.trim() && !selectedAttachment) ? 0.5 : 1
                 }}
               >
-                <Send size={15} />
+                <Send size={16} />
               </button>
             </div>
           </div>
@@ -786,94 +900,92 @@ export const ContactPage: React.FC = () => {
         <div className="help-center-container">
           {ticketSubTab === 'CREATE' ? (
             <div className="help-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #E2E8F0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
                     onClick={() => setTicketSubTab('MY_TICKETS')}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
                   >
-                    <ArrowLeft size={18} color="#0F172A" />
+                    <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
                   </button>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                    Create Support Ticket
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
+                    New ticket
                   </span>
                 </div>
                 <button
                   onClick={() => setShowTicketManager(false)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
                 >
-                  Close
+                  <Headphones size={18} color="#0F172A" strokeWidth={2.2} />
                 </button>
               </div>
 
               {formError && (
-                <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', padding: '8px 12px', borderRadius: '6px', color: '#DC2626', fontSize: '11.5px', fontWeight: 600 }}>
+                <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', padding: '10px 12px', borderRadius: '10px', color: '#DC2626', fontSize: '12px', fontWeight: 600 }}>
                   {formError}
                 </div>
               )}
 
-              <form onSubmit={handleCreateTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#475569', marginBottom: '3px' }}>Category</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '0 10px', fontSize: '11.5px', color: '#0F172A', outline: 'none' }}
-                    >
-                      {CATEGORY_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
+              <form onSubmit={handleCreateTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    style={{ width: '100%', height: '44px', borderRadius: '12px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '0 12px', fontSize: '12.5px', color: '#0F172A', outline: 'none' }}
+                  >
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#475569', marginBottom: '3px' }}>Priority Level</label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {(['low', 'medium', 'high'] as const).map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setPriority(p)}
-                          style={{
-                            flex: 1,
-                            height: '36px',
-                            borderRadius: '6px',
-                            border: `1px solid ${priority === p ? '#1B4FDF' : '#E2E8F0'}`,
-                            backgroundColor: priority === p ? '#EFF6FF' : '#FAF9F6',
-                            color: priority === p ? '#1B4FDF' : '#475569',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            textTransform: 'capitalize',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Priority</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {(['low', 'medium', 'high'] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPriority(p)}
+                        style={{
+                          flex: 1,
+                          height: '38px',
+                          borderRadius: '10px',
+                          border: `1px solid ${priority === p ? '#1B4FDF' : '#E2E8F0'}`,
+                          backgroundColor: priority === p ? '#EFF6FF' : '#FAF9F6',
+                          color: priority === p ? '#1B4FDF' : '#475569',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          textTransform: 'capitalize',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#475569', marginBottom: '3px' }}>Subject Summary</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Subject</label>
                   <input
                     type="text"
                     placeholder="E.g., Problem submitting job application"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '0 10px', fontSize: '11.5px', color: '#0F172A', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '44px', borderRadius: '12px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '0 12px', fontSize: '12.5px', color: '#0F172A', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#475569', marginBottom: '3px' }}>Detailed Explanation</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Description</label>
                   <textarea
                     rows={4}
-                    placeholder="Describe your question or issue in detail..."
+                    placeholder="Provide full details of your issue..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    style={{ width: '100%', borderRadius: '6px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '8px 10px', fontSize: '11.5px', color: '#0F172A', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                    style={{ width: '100%', borderRadius: '12px', border: '1px solid #ECEAE4', backgroundColor: '#FAF9F6', padding: '10px 12px', fontSize: '12.5px', color: '#0F172A', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -888,9 +1000,9 @@ export const ContactPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FAF9F6', fontSize: '11px', fontWeight: 600, color: '#0F172A', cursor: 'pointer' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FAF9F6', fontSize: '11.5px', fontWeight: 600, color: '#0F172A', cursor: 'pointer' }}
                   >
-                    <Paperclip size={13} color="#1B4FDF" />
+                    <Paperclip size={14} color="#1B4FDF" />
                     <span>{createTicketAttachment ? createTicketAttachment.name : 'Attach Screenshot or Document'}</span>
                   </button>
                 </div>
@@ -900,12 +1012,12 @@ export const ContactPage: React.FC = () => {
                   disabled={isSubmitting}
                   style={{
                     width: '100%',
-                    height: '38px',
-                    borderRadius: '6px',
+                    height: '44px',
+                    borderRadius: '10px',
                     backgroundColor: '#1B4FDF',
                     border: 'none',
                     color: '#FFFFFF',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     marginTop: '4px',
@@ -919,40 +1031,37 @@ export const ContactPage: React.FC = () => {
           ) : (
             /* Support Tickets List */
             <div className="help-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Ticket size={16} color="#1B4FDF" />
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                  <button
+                    onClick={() => setShowTicketManager(false)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                  >
+                    <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
+                  </button>
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
                     Support Tickets Desk
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => setTicketSubTab('CREATE')}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      backgroundColor: '#1B4FDF',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>New Ticket</span>
-                  </button>
-                  <button
-                    onClick={() => setShowTicketManager(false)}
-                    style={{ background: 'transparent', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '6px 10px', fontSize: '11.5px', color: '#64748B', fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Back
-                  </button>
-                </div>
+                <button
+                  onClick={() => setTicketSubTab('CREATE')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1B4FDF',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Plus size={14} />
+                  <span>New Ticket</span>
+                </button>
               </div>
 
               {/* Search Conversation Bar */}
@@ -960,16 +1069,16 @@ export const ContactPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 backgroundColor: '#FAF9F6',
-                borderRadius: '6px',
+                borderRadius: '12px',
                 border: '1px solid #ECEAE4',
-                padding: '0 10px',
-                height: '36px',
+                padding: '0 12px',
+                height: '40px',
                 gap: '8px'
               }}>
-                <Search size={14} color="#94A3B8" />
+                <Search size={15} color="#94A3B8" />
                 <input
                   type="text"
-                  placeholder="Search tickets by ID, category, or title..."
+                  placeholder="Search conversation"
                   value={ticketSearchQuery}
                   onChange={(e) => setTicketSearchQuery(e.target.value)}
                   style={{
@@ -977,7 +1086,7 @@ export const ContactPage: React.FC = () => {
                     border: 'none',
                     outline: 'none',
                     background: 'transparent',
-                    fontSize: '11.5px',
+                    fontSize: '12.5px',
                     color: '#0F172A'
                   }}
                 />
@@ -986,18 +1095,25 @@ export const ContactPage: React.FC = () => {
                     onClick={() => setTicketSearchQuery('')}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, color: '#94A3B8' }}
                   >
-                    <X size={13} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
 
               {filteredTickets.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B', fontSize: '12px' }}>
-                  <Ticket size={28} color="#94A3B8" style={{ margin: '0 auto 6px', display: 'block' }} />
-                  {ticketSearchQuery.trim() ? 'No Matching Tickets Found' : 'No Support Tickets Found'}
+                <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748B', fontSize: '12.5px' }}>
+                  <Ticket size={32} color="#94A3B8" style={{ margin: '0 auto 8px', display: 'block' }} />
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>
+                    {ticketSearchQuery.trim() ? 'No Matching Tickets Found' : 'No Support Tickets Found'}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#475569', maxWidth: '280px', margin: '0 auto' }}>
+                    {ticketSearchQuery.trim()
+                      ? 'Try adjusting your search keywords.'
+                      : "You haven't submitted any technical tickets yet. Tap 'New Ticket' above to log an inquiry."}
+                  </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {filteredTickets.map((t) => {
                     const isResolved = t.status === 'RESOLVED' || t.status === 'CLOSED';
                     return (
@@ -1005,41 +1121,51 @@ export const ContactPage: React.FC = () => {
                         key={t.id}
                         onClick={() => handleOpenTicketChat(t)}
                         style={{
-                          backgroundColor: '#FAF9F6',
-                          borderRadius: '6px',
-                          border: '1px solid #ECEAE4',
-                          padding: '10px 12px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '14px',
+                          border: '1px solid #E2E8F0',
+                          padding: '12px',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '4px',
+                          gap: '5px',
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease'
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02)'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#1B4FDF' }}>{t.ticketNumber}</span>
-                            <span style={{ fontSize: '10.5px', color: '#64748B' }}>• {t.category}</span>
+                            <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#1B4FDF', backgroundColor: '#EFF6FF', padding: '2.5px 7px', borderRadius: '5px' }}>
+                              {t.ticketNumber}
+                            </span>
                           </div>
                           <span style={{
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '9.5px',
-                            fontWeight: 700,
+                            padding: '2.5px 7px',
+                            borderRadius: '5px',
+                            fontSize: '10px',
+                            fontWeight: 800,
                             textTransform: 'uppercase',
                             backgroundColor: isResolved ? '#DCFCE7' : '#FEF3C7',
-                            color: isResolved ? '#15803D' : '#B45309',
-                            border: `1px solid ${isResolved ? '#BBF7D0' : '#FDE68A'}`
+                            color: isResolved ? '#15803D' : '#B45309'
                           }}>
                             {t.status}
                           </span>
                         </div>
 
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
                           {t.subject}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {t.description}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px', paddingTop: '6px', borderTop: '1px solid #E2E8F0' }}>
+                          <span style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', padding: '2.5px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, color: '#475569' }}>
+                            {t.category}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px', color: '#94A3B8' }}>
+                            <Clock size={11} color="#94A3B8" />
+                            <span>{t.createdAt}</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1052,9 +1178,9 @@ export const ContactPage: React.FC = () => {
       ) : (
         /* 3. MAIN HELP CENTER (FAQ VS HELP & CONTACT) */
         <div>
-          {/* Mobile Sticky Header Bar */}
+          {/* Mobile Sticky Header Bar (16px title, 13px tabs with blue active indicator) */}
           <div className="help-mobile-top-bar">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px' }}>
               <button
                 onClick={() => {
                   if (window.history.length > 1) {
@@ -1063,60 +1189,54 @@ export const ContactPage: React.FC = () => {
                     navigate('/dashboard');
                   }
                 }}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
                 aria-label="Back"
               >
-                <ArrowLeft size={18} color="#0F172A" strokeWidth={2.4} />
+                <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
               </button>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
+              <span className="help-mobile-top-title">
                 Help Center
               </span>
-              <div style={{ width: '24px' }} />
+              <div style={{ width: '28px' }} />
             </div>
 
             {/* Mobile Tab Switcher */}
             <div style={{ display: 'flex', borderTop: '1px solid #E2E8F0' }}>
               <button
                 type="button"
+                className={`help-mobile-tab-btn ${mainTab === 'FAQ' ? 'active' : ''}`}
                 onClick={() => setMainTab('FAQ')}
                 style={{
                   flex: 1,
-                  padding: '10px 0',
                   textAlign: 'center',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  position: 'relative',
-                  fontSize: '12px',
-                  fontWeight: mainTab === 'FAQ' ? 800 : 600,
-                  color: mainTab === 'FAQ' ? '#1B4FDF' : '#64748B'
+                  position: 'relative'
                 }}
               >
                 FAQ
                 {mainTab === 'FAQ' && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', backgroundColor: '#1B4FDF' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderRadius: '2px' }} />
                 )}
               </button>
 
               <button
                 type="button"
+                className={`help-mobile-tab-btn ${mainTab === 'CONTACT' ? 'active' : ''}`}
                 onClick={() => setMainTab('CONTACT')}
                 style={{
                   flex: 1,
-                  padding: '10px 0',
                   textAlign: 'center',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  position: 'relative',
-                  fontSize: '12px',
-                  fontWeight: mainTab === 'CONTACT' ? 800 : 600,
-                  color: mainTab === 'CONTACT' ? '#1B4FDF' : '#64748B'
+                  position: 'relative'
                 }}
               >
                 Help & Contact
                 {mainTab === 'CONTACT' && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', backgroundColor: '#1B4FDF' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderRadius: '2px' }} />
                 )}
               </button>
             </div>
@@ -1172,63 +1292,26 @@ export const ContactPage: React.FC = () => {
             {mainTab === 'FAQ' ? (
               /* TAB 1: FAQ ACCORDION */
               <div className="help-card">
-                {/* Search Bar */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: '#FAF9F6',
-                  border: '1px solid #ECEAE4',
-                  borderRadius: '6px',
-                  padding: '0 10px',
-                  height: '36px',
-                  gap: '8px'
-                }}>
-                  <Search size={14} color="#94A3B8" />
-                  <input
-                    type="text"
-                    placeholder="Search help topics, questions, keywords..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      flex: 1,
-                      border: 'none',
-                      outline: 'none',
-                      background: 'transparent',
-                      fontSize: '11.5px',
-                      color: '#0F172A'
-                    }}
-                  />
-                  {searchQuery ? (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
-                    >
-                      <X size={13} color="#64748B" />
-                    </button>
-                  ) : (
-                    <SlidersHorizontal size={13} color="#94A3B8" />
-                  )}
-                </div>
-
-                {/* Category Pills */}
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+                {/* Category Pills (11.5px font, radius 16px, padding 6x12) */}
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px', scrollbarWidth: 'none' }}>
                   {categories.map((cat) => {
                     const isSelected = activeFAQCategory === cat;
                     return (
                       <button
                         key={cat}
                         type="button"
+                        className={`help-category-pill ${isSelected ? 'active' : ''}`}
                         onClick={() => {
                           setActiveFAQCategory(cat);
                           setExpandedFAQIndex(0);
                         }}
                         style={{
-                          padding: '5px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: isSelected ? '#1B4FDF' : '#FAF9F6',
-                          border: `1px solid ${isSelected ? '#1B4FDF' : '#CBD5E1'}`,
+                          padding: '6px 12px',
+                          borderRadius: '16px',
+                          backgroundColor: isSelected ? '#1B4FDF' : '#FFFFFF',
+                          border: `1px solid ${isSelected ? '#1B4FDF' : '#E2E8F0'}`,
                           color: isSelected ? '#FFFFFF' : '#475569',
-                          fontSize: '11px',
+                          fontSize: '11.5px',
                           fontWeight: isSelected ? 700 : 600,
                           cursor: 'pointer',
                           whiteSpace: 'nowrap'
@@ -1240,12 +1323,69 @@ export const ContactPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* FAQ List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                {/* Search Bar (height 40px, radius 12px, font 12.5px) */}
+                <div className="help-search-box" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '12px',
+                  padding: '0 12px',
+                  height: '40px',
+                  gap: '8px',
+                  marginBottom: '14px',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.02)'
+                }}>
+                  <Search size={18} color="#94A3B8" />
+                  <input
+                    type="text"
+                    className="help-search-input"
+                    placeholder="Search for help..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '12.5px',
+                      color: '#0F172A',
+                      fontWeight: 500
+                    }}
+                  />
+                  {searchQuery ? (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
+                    >
+                      <X size={16} color="#64748B" />
+                    </button>
+                  ) : (
+                    <SlidersHorizontal size={16} color="#94A3B8" />
+                  )}
+                </div>
+
+                {/* FAQ List (radius 14px, 14px padding, 13px question, 11.5px answer) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {filteredFAQs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B', fontSize: '11.5px' }}>
-                      <HelpCircle size={24} color="#CBD5E1" style={{ margin: '0 auto 6px', display: 'block' }} />
-                      No matching questions found. Try a different keyword or category.
+                    <div style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '32px 16px',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '14px',
+                      border: '1px solid #E2E8F0',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}>
+                      <HelpCircle size={32} color="#CBD5E1" />
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', marginTop: '8px' }}>
+                        No results found
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#475569' }}>
+                        Try searching with different keywords or switch categories.
+                      </div>
                     </div>
                   ) : (
                     filteredFAQs.map((faq, idx) => {
@@ -1253,32 +1393,35 @@ export const ContactPage: React.FC = () => {
                       return (
                         <div
                           key={idx}
+                          className={`help-faq-item ${isExpanded ? 'expanded' : ''}`}
                           onClick={() => setExpandedFAQIndex(isExpanded ? null : idx)}
                           style={{
                             backgroundColor: isExpanded ? '#FAF9F6' : '#FFFFFF',
-                            borderRadius: '6px',
+                            borderRadius: '14px',
                             border: `1px solid ${isExpanded ? '#BFDBFE' : '#E2E8F0'}`,
-                            padding: '12px 14px',
-                            cursor: 'pointer'
+                            padding: '14px',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02)'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                            <div style={{ fontSize: '12.5px', fontWeight: isExpanded ? 700 : 600, color: '#0F172A' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                            <div className={`help-faq-question ${isExpanded ? 'active' : ''}`} style={{ fontSize: '13px', fontWeight: isExpanded ? 800 : 700, color: '#0F172A', lineHeight: '18px', letterSpacing: '-0.2px' }}>
                               {faq.question}
                             </div>
-                            <ChevronDown
-                              size={14}
-                              color="#94A3B8"
-                              style={{
-                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s ease',
-                                flexShrink: 0
-                              }}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <ChevronDown
+                                size={18}
+                                color={isExpanded ? '#1B4FDF' : '#64748B'}
+                                style={{
+                                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                  transition: 'transform 0.2s ease'
+                                }}
+                              />
+                            </div>
                           </div>
 
                           {isExpanded && (
-                            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #E2E8F0', fontSize: '11px', color: '#475569', lineHeight: '16px' }}>
+                            <div className="help-faq-answer" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #E2E8F0', fontSize: '11.5px', color: '#475569', lineHeight: '16.5px' }}>
                               {faq.answer}
                             </div>
                           )}
@@ -1289,7 +1432,7 @@ export const ContactPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* TAB 2: HELP & CONTACT CHANNELS */
+              /* TAB 2: HELP & CONTACT 4 OPTIONS VIEW */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div className="help-contact-grid">
                   {/* Option 1: Support Ticket */}
@@ -1300,87 +1443,67 @@ export const ContactPage: React.FC = () => {
                       setShowTicketManager(true);
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
-                        <Ticket size={16} />
-                      </div>
-                      {myTickets.length > 0 ? (
-                        <span style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', padding: '2px 6px', borderRadius: '4px', fontSize: '9.5px', fontWeight: 800, color: '#1B4FDF' }}>
-                          {myTickets.length} Active
-                        </span>
-                      ) : null}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Headphones size={19} color="#0F172A" strokeWidth={2.2} />
+                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px' }}>
+                        Support Ticket
+                      </span>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Support Tickets</div>
-                      <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>Track & log inquiries</div>
-                    </div>
+                    {myTickets.length > 0 ? (
+                      <span className="help-contact-badge" style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', padding: '3px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, color: '#1B4FDF' }}>
+                        {myTickets.length}
+                      </span>
+                    ) : (
+                      <ChevronRight size={16} color="#94A3B8" />
+                    )}
                   </div>
 
                   {/* Option 2: Contact */}
-                  <a href="tel:18002098800" className="help-contact-card">
-                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
-                      <Phone size={16} />
+                  <a
+                    href="tel:18002098800"
+                    className="help-contact-card"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Phone size={19} color="#0F172A" strokeWidth={2.2} />
+                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px' }}>
+                        Contact
+                      </span>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Toll-Free Helpline</div>
-                      <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>1800-209-8800</div>
-                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
                   </a>
 
                   {/* Option 3: Email */}
-                  <a href="mailto:support@jobmarket.com" className="help-contact-card">
-                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
-                      <Mail size={16} />
+                  <a
+                    href="mailto:support@jobmarket.com"
+                    className="help-contact-card"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Mail size={19} color="#0F172A" strokeWidth={2.2} />
+                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px' }}>
+                        Email
+                      </span>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Email Support</div>
-                      <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>support@jobmarket.com</div>
-                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
                   </a>
 
                   {/* Option 4: Website */}
-                  <a href="https://jobmarket-ongn.onrender.com" target="_blank" rel="noreferrer" className="help-contact-card">
-                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF' }}>
-                      <Globe size={16} />
+                  <a
+                    href="https://jobmarket-ongn.onrender.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="help-contact-card"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Globe size={19} color="#0F172A" strokeWidth={2.2} />
+                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px' }}>
+                        Website
+                      </span>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Official Portal</div>
-                      <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>Knowledge base & FAQ</div>
-                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
                   </a>
-                </div>
-
-                {/* Operations Info Banner */}
-                <div className="help-card" style={{ padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Clock size={16} color="#1B4FDF" />
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>Operating Support Hours</div>
-                        <div style={{ fontSize: '10.5px', color: '#64748B' }}>Monday to Saturday: 9:00 AM – 7:00 PM IST • Average SLA &lt; 2 hours</div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTicketSubTab('CREATE');
-                        setShowTicketManager(true);
-                      }}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        backgroundColor: '#1B4FDF',
-                        border: 'none',
-                        color: '#FFFFFF',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Log a New Inquiry
-                    </button>
-                  </div>
                 </div>
               </div>
             )}
