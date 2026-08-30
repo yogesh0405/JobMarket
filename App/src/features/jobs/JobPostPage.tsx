@@ -320,7 +320,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     if (isEmbedded && onComplete) {
       onComplete();
     } else {
-      navigate('/dashboard');
+      navigate('/dashboard?tab=manage');
     }
   };
 

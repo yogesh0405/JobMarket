@@ -322,7 +322,18 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Fixed Sticky Action Bar at Bottom (with Safe Area & System Navigation Menu Clearance) */}
       <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
         {form.currentStep === 1 ? (
-          <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.85} onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (form.isSubmittedRef) form.isSubmittedRef.current = true;
+              if (navigation && typeof navigation.navigate === 'function') {
+                navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+              } else if (navigation?.canGoBack && navigation.canGoBack()) {
+                navigation.goBack();
+              }
+            }}
+          >
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         ) : (
@@ -362,9 +373,10 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
         }}
         onConfirm={() => {
           setShowDiscardModal(false);
-          if (pendingActionRef.current) {
-            navigation.dispatch(pendingActionRef.current);
-          } else {
+          if (form.isSubmittedRef) form.isSubmittedRef.current = true;
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+          } else if (navigation?.canGoBack && navigation.canGoBack()) {
             navigation.goBack();
           }
         }}

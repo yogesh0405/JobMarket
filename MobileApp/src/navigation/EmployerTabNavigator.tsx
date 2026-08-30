@@ -32,12 +32,13 @@ const DefaultApplicantsScreen: React.FC<{ navigation: any; route?: any }> = ({ n
   return <JobApplicantsScreen route={{ params: { jobId, jobTitle } }} navigation={navigation} />;
 };
 
-// Redirect component to ensure JobPost opens in full screen
+// Redirect component to ensure JobPost opens in full screen and ManageJobs is active underneath
 const PostTabRedirectScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   React.useEffect(() => {
+    navigation.navigate('ManageJobsTab');
     navigation.navigate('JobPost', route?.params);
   }, [navigation, route?.params]);
-  return <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />;
+  return <EmployerJobsListScreen navigation={navigation} />;
 };
 
 // Custom Notched Full-Width Bottom Dock Navigation Bar with 3D Active Buttons & Labels
@@ -112,6 +113,7 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => {
+                      navigation.navigate('ManageJobsTab');
                       navigation.navigate('JobPost');
                     }}
                     style={styles.fabTouchable}
