@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 38,
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   inlineFilterDivider: {
     width: 1,
     height: 18,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#CBD5E1',
     marginHorizontal: 6,
   },
   inlineFilterBtnIconOnly: {
