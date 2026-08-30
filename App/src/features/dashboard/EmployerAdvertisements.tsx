@@ -394,8 +394,36 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
 
   return (
     <div className="employer-ads-container" style={{ minHeight: '100%', background: 'var(--bg-page, #F8FAFC)', padding: '0.5rem 0 2rem 0' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .employer-ads-container {
+            background: #F8FAFC !important;
+            padding: 0 0 40px 0 !important;
+          }
+          .mobile-header-bar {
+            background: #FFFFFF !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            padding: 12px 16px !important;
+            margin: 0 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 40 !important;
+          }
+          .mobile-tabs-container {
+            background: #FFFFFF !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            padding: 10px 16px !important;
+            margin: 0 0 14px 0 !important;
+          }
+          .mobile-banners-list {
+            padding: 0 16px 100px 16px !important;
+            gap: 14px !important;
+          }
+        }
+      `}</style>
+
       {/* Clean Mobile App Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '10px' }}>
+      <div className="mobile-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Back Navigation */}
           <Link
@@ -422,10 +450,10 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
           </Link>
 
           <div>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.2px', lineHeight: 1.2 }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.2px', lineHeight: 1.2 }}>
               Promotional Banners
             </h2>
-            <p style={{ margin: '2px 0 0 0', color: '#64748B', fontSize: '11.5px', fontWeight: '500' }}>
+            <p style={{ margin: '1px 0 0 0', color: '#64748B', fontSize: '11.5px', fontWeight: '500' }}>
               Urgent hiring ads on homepage slider
             </p>
           </div>
@@ -487,7 +515,7 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
       )}
 
       {/* Filter Tabs Row */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '14px', scrollbarWidth: 'none' }}>
+      <div className="mobile-tabs-container" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '14px', scrollbarWidth: 'none' }}>
         {[
           { key: 'ALL', label: 'All', count: statusCounts.all },
           { key: 'LIVE', label: 'Live', count: statusCounts.live },
@@ -501,11 +529,11 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
             onClick={() => setFilterStatus(tab.key as FilterStatus)}
             style={{
               padding: '6px 14px',
-              borderRadius: '6px',
-              border: filterStatus === tab.key ? '1px solid #2563EB' : '1px solid #E2E8F0',
+              borderRadius: '8px',
+              border: filterStatus === tab.key ? '1px solid #2563EB' : '1px solid #CBD5E1',
               background: filterStatus === tab.key ? '#2563EB' : '#FFFFFF',
-              color: filterStatus === tab.key ? '#FFFFFF' : '#475569',
-              fontSize: '12px',
+              color: filterStatus === tab.key ? '#FFFFFF' : '#334155',
+              fontSize: '13px',
               fontWeight: '700',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
@@ -520,9 +548,9 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
               background: filterStatus === tab.key ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
               color: filterStatus === tab.key ? '#FFFFFF' : '#64748B',
               padding: '1px 6px',
-              borderRadius: '999px',
+              borderRadius: '10px',
               fontSize: '11px',
-              fontWeight: '700'
+              fontWeight: '800'
             }}>
               {tab.count}
             </span>
