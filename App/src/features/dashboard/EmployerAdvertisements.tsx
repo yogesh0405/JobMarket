@@ -401,10 +401,15 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
         @media (max-width: 768px) {
           .mobile-fab-btn {
             display: flex !important;
+            width: 42px !important;
+            height: 42px !important;
+            bottom: 20px !important;
+            right: 16px !important;
           }
           .employer-ads-container {
             background: #F8FAFC !important;
-            padding: 0 0 40px 0 !important;
+            padding: 0 0 16px 0 !important;
+            min-height: auto !important;
           }
           .mobile-header-bar {
             background: #FFFFFF !important;
@@ -419,11 +424,11 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
             background: #FFFFFF !important;
             border-bottom: 1px solid #E2E8F0 !important;
             padding: 10px 16px !important;
-            margin: 0 0 14px 0 !important;
+            margin: 0 0 12px 0 !important;
           }
           .mobile-banners-list {
-            padding: 0 16px 100px 16px !important;
-            gap: 14px !important;
+            padding: 0 16px 20px 16px !important;
+            gap: 10px !important;
           }
         }
       `}</style>
@@ -896,23 +901,23 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
         onClick={openCreateModal}
         style={{
           position: 'fixed',
-          right: '20px',
-          bottom: '28px',
-          width: '54px',
-          height: '54px',
+          right: '16px',
+          bottom: '20px',
+          width: '42px',
+          height: '42px',
           borderRadius: '50%',
           background: '#2563EB',
           color: '#FFFFFF',
           border: 'none',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.45)',
+          boxShadow: '0 3px 10px rgba(37, 99, 235, 0.4)',
           cursor: 'pointer',
           zIndex: 999,
         }}
         title="Create Promotional Banner"
       >
-        <Plus size={24} strokeWidth={2.6} />
+        <Plus size={20} strokeWidth={2.6} />
       </button>
 
       {/* CREATE / EDIT MODAL */}
