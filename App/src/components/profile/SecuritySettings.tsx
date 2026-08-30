@@ -389,16 +389,14 @@ export const SecuritySettings: React.FC = () => {
         }
 
         .sec-card-icon-box {
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
-          background-color: #EFF6FF;
-          border: 1px solid #DBEAFE;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #1B4FDF;
           flex-shrink: 0;
+          background: transparent;
+          border: none;
+          padding: 2px 0 0;
         }
 
         .sec-input-label {
@@ -610,7 +608,7 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <KeyRound size={15} />
+              <KeyRound size={17} />
             </div>
           </div>
 
@@ -782,7 +780,7 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <ShieldCheck size={15} />
+              <ShieldCheck size={17} />
             </div>
           </div>
 
@@ -841,7 +839,7 @@ export const SecuritySettings: React.FC = () => {
               </p>
             </div>
             <div className="sec-card-icon-box">
-              <Smartphone size={15} />
+              <Smartphone size={17} />
             </div>
           </div>
 
