@@ -94,7 +94,9 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Border Radius */
+  /* Border Radius (Single Source of Truth matching MobileApp theme.ts) */
+  --radius-card: 8px;
+  --radius-card-mobile: 6px;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;

@@ -22,14 +22,23 @@
   --weight-medium: 500;
   --weight-regular: 400;
 
+  /* Radius System (Single Source of Truth matching MobileApp theme.ts) */
+  --radius-card: 8px;
+  --radius-card-mobile: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
   /* Color System */
-  --color-primary-blue: #2563EB;
-  --color-primary-hover: #1D4ED8;
+  --color-primary-blue: #1B4FDF;
+  --color-primary-hover: #153BB0;
   --color-text-dark: #0F172A;
   --color-text-body: #334155;
   --color-text-muted: #64748B;
   --color-text-blue-sub: #DBEAFE;
-  --color-border-slate: #CBD5E1;
+  --color-border-slate: #E2E8F0;
   --color-border-light: #F1F5F9;
   --color-bg-surface: #FFFFFF;
   --color-bg-subtle: #F8FAFC;
@@ -91,11 +100,18 @@
 .ui-card-surface {
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border-slate);
-  border-radius: 8px;
+  border-radius: var(--radius-card, 8px);
   padding: 14px 16px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .ui-card-surface {
+    border-radius: var(--radius-card-mobile, 6px);
+    padding: 12px 14px;
+  }
 }
 
 /* Section Separator Standard */
