@@ -85,14 +85,14 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
 
 const styles = StyleSheet.create({
   candidateGridCard: {
-    width: '48.5%',
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 10,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 0,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,

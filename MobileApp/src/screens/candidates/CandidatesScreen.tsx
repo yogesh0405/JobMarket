@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     color: '#1764E8',
   },
   gridColumnWrapper: {
-    justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 10,
   },
   gridListContentContainer: {
