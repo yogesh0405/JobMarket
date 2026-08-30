@@ -64,20 +64,74 @@ export const AboutPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', paddingBottom: '40px', boxSizing: 'border-box' }}>
+    <div className="about-page-wrapper">
+      <style>{`
+        .about-page-wrapper {
+          background-color: #F8FAFC;
+          min-height: 100vh;
+          padding-bottom: 40px;
+          box-sizing: border-box;
+          font-family: inherit;
+        }
+
+        .about-header-nav {
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          background-color: #FFFFFF;
+          border-bottom: 1px solid #E2E8F0;
+          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+        }
+
+        .about-container {
+          max-width: 560px;
+          margin: 0 auto;
+          padding: 0 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          box-sizing: border-box;
+        }
+
+        .about-card {
+          background-color: #FFFFFF;
+          border-radius: 8px;
+          border: 1px solid #E2E8F0;
+          padding: 14px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          box-sizing: border-box;
+        }
+
+        /* Desktop View Adjustments */
+        @media (min-width: 768px) {
+          .about-header-nav {
+            display: none;
+          }
+          .about-page-wrapper {
+            background-color: transparent;
+            padding: 0;
+          }
+          .about-container {
+            max-width: 800px;
+            padding: 0;
+            gap: 14px;
+          }
+          .about-card {
+            padding: 20px;
+            border-radius: 8px;
+          }
+        }
+      `}</style>
+
       {/* Top Fixed Header Nav (Matching Mobile App) */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
-        padding: '12px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '12px'
-      }}>
+      <div className="about-header-nav">
         <button
           onClick={() => {
             if (window.history.length > 1) {
@@ -98,18 +152,16 @@ export const AboutPage: React.FC = () => {
             borderRadius: '8px',
             color: '#0F172A'
           }}
-          aria-label="Go Back"
         >
-          <ArrowLeft size={20} strokeWidth={2.4} />
+          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Building2 size={17} color="#1B4FDF" strokeWidth={2.2} />
           <span style={{
             fontSize: '16px',
-            fontWeight: 800,
+            fontWeight: 700,
             color: '#0F172A',
-            fontFamily: 'inherit',
             letterSpacing: '-0.2px'
           }}>
             About JobMarket
@@ -119,19 +171,10 @@ export const AboutPage: React.FC = () => {
         <div style={{ width: '36px' }} />
       </div>
 
-      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="about-container">
 
         {/* 1. HERO SPOTLIGHT CARD */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
+        <div className="about-card">
           {/* Badge */}
           <div style={{
             alignSelf: 'flex-start',
@@ -140,7 +183,7 @@ export const AboutPage: React.FC = () => {
             gap: '5px',
             backgroundColor: '#EFF6FF',
             padding: '3px 8px',
-            borderRadius: '10px',
+            borderRadius: '6px',
             border: '1px solid #DBEAFE',
             fontSize: '10.5px',
             fontWeight: 700,
@@ -151,12 +194,11 @@ export const AboutPage: React.FC = () => {
 
           {/* Title */}
           <h1 style={{
-            fontSize: '16px',
-            fontWeight: 800,
+            fontSize: '15px',
+            fontWeight: 700,
             color: '#0F172A',
-            fontFamily: 'inherit',
-            lineHeight: '22px',
-            letterSpacing: '-0.3px',
+            lineHeight: '21px',
+            letterSpacing: '-0.2px',
             margin: 0
           }}>
             Unlock Your Full Career & Hiring Potential
@@ -181,10 +223,11 @@ export const AboutPage: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               backgroundColor: '#1B4FDF',
+              border: 'none',
               borderRadius: '20px',
               height: '40px',
-              padding: '0 6px 0 16px',
-              border: 'none',
+              paddingLeft: '16px',
+              paddingRight: '6px',
               cursor: 'pointer',
               marginTop: '2px',
               marginBottom: '2px',
@@ -199,40 +242,33 @@ export const AboutPage: React.FC = () => {
               backgroundColor: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: '#1B4FDF'
+              justifyContent: 'center'
             }}>
-              <ArrowRight size={13} strokeWidth={2.6} />
+              <ArrowRight size={13} color="#1B4FDF" strokeWidth={2.6} />
             </div>
           </button>
 
-          {/* Bullets List */}
+          {/* Bullet Highlights */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '2px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
-                <Check size={11} strokeWidth={3} />
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={11} color="#1B4FDF" strokeWidth={3} />
               </div>
-              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
-                Direct HR calling & instant interview scheduling
-              </span>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500, flex: 1 }}>Direct HR calling & instant interview scheduling</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
-                <Check size={11} strokeWidth={3} />
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={11} color="#1B4FDF" strokeWidth={3} />
               </div>
-              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
-                100% verified companies & zero placement fees
-              </span>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500, flex: 1 }}>100% verified companies & zero placement fees</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
-                <Check size={11} strokeWidth={3} />
+              <div style={{ width: '16px', height: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={11} color="#1B4FDF" strokeWidth={3} />
               </div>
-              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500 }}>
-                Competitive salaries with transparent company profiles
-              </span>
+              <span style={{ fontSize: '11.5px', color: '#475569', fontWeight: 500, flex: 1 }}>Competitive salaries with transparent company profiles</span>
             </div>
           </div>
 
@@ -251,7 +287,7 @@ export const AboutPage: React.FC = () => {
               <img src={INDUSTRIAL_WELDER_IMG} alt="User" style={{ width: '26px', height: '26px', borderRadius: '13px', border: '1.5px solid #FFFFFF', objectFit: 'cover', marginLeft: '-8px', zIndex: 2 }} />
               <img src={SOFTWARE_ENGINEER_IMG} alt="User" style={{ width: '26px', height: '26px', borderRadius: '13px', border: '1.5px solid #FFFFFF', objectFit: 'cover', marginLeft: '-8px', zIndex: 1 }} />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>1.2M+ Active Job Seekers</div>
               <div style={{ fontSize: '10.5px', color: '#1B4FDF', fontWeight: 600, marginTop: '1px' }}>& 50,000+ Verified Hiring Partners</div>
             </div>
@@ -271,12 +307,12 @@ export const AboutPage: React.FC = () => {
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>10M+</div>
               <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Applications</div>
             </div>
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#CBD5E1' }} />
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
             <div style={{ flex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>500K+</div>
               <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Live Vacancies</div>
             </div>
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#CBD5E1' }} />
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
             <div style={{ flex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#1B4FDF' }}>98%</div>
               <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>Satisfaction</div>
@@ -285,16 +321,7 @@ export const AboutPage: React.FC = () => {
         </div>
 
         {/* 2. PLATFORM ARCHITECTURE & CUTTING-EDGE FEATURES */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
+        <div className="about-card">
           <div style={{
             alignSelf: 'flex-start',
             display: 'inline-flex',
@@ -302,7 +329,7 @@ export const AboutPage: React.FC = () => {
             gap: '5px',
             backgroundColor: '#EFF6FF',
             padding: '3px 8px',
-            borderRadius: '10px',
+            borderRadius: '6px',
             border: '1px solid #DBEAFE',
             fontSize: '10.5px',
             fontWeight: 700,
@@ -312,7 +339,7 @@ export const AboutPage: React.FC = () => {
             <span>Platform Architecture</span>
           </div>
 
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: '0 0 2px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px', margin: '0 0 2px' }}>
             Empower Your Journey with Cutting-Edge Features
           </h2>
           <p style={{ fontSize: '12px', color: '#475569', lineHeight: '17px', margin: '0 0 4px', fontWeight: 400 }}>
@@ -387,16 +414,7 @@ export const AboutPage: React.FC = () => {
         </div>
 
         {/* 3. SOCIAL IMPACT & TESTIMONIALS */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
+        <div className="about-card">
           <div style={{
             alignSelf: 'flex-start',
             display: 'inline-flex',
@@ -404,7 +422,7 @@ export const AboutPage: React.FC = () => {
             gap: '5px',
             backgroundColor: '#EFF6FF',
             padding: '3px 8px',
-            borderRadius: '10px',
+            borderRadius: '6px',
             border: '1px solid #DBEAFE',
             fontSize: '10.5px',
             fontWeight: 700,
@@ -414,7 +432,7 @@ export const AboutPage: React.FC = () => {
             <span>Social Impact & Stories</span>
           </div>
 
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: 0 }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px', margin: 0 }}>
             Real Candidates. Real Recruiters. Real Results.
           </h2>
 
@@ -434,7 +452,7 @@ export const AboutPage: React.FC = () => {
               ))}
             </div>
             <span style={{ fontSize: '11px', color: '#475569' }}>
-              <strong style={{ color: '#0F172A' }}>4.9/5 Rating</strong> based on 50,000+ reviews
+              <strong style={{ color: '#0F172A', fontWeight: 800 }}>4.9/5 Rating</strong> based on 50,000+ reviews
             </span>
           </div>
 
@@ -471,19 +489,10 @@ export const AboutPage: React.FC = () => {
         </div>
 
         {/* 4. AWARDS & INDUSTRY RECOGNITION */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
+        <div className="about-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Award size={18} color="#1B4FDF" />
-            <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', margin: 0 }}>
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px', margin: 0 }}>
               Awards & Recognition
             </h2>
           </div>
@@ -510,27 +519,26 @@ export const AboutPage: React.FC = () => {
                 <Award size={18} />
               </div>
               <div style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A' }}>Top Platform</div>
-              <div style={{ fontSize: '9px', fontWeight: 600, color: '#1B4FDF' }}>Hiring Excellence 2026</div>
+              <div style={{ fontSize: '9px', fontWeight: 600, color: '#1B4FDF' }}>Hiring Excellence</div>
             </div>
           </div>
         </div>
 
         {/* 5. CALL TO ACTION BANNER */}
         <div style={{
-          backgroundColor: '#1B4FDF',
-          borderRadius: '20px',
-          padding: '16px',
+          backgroundColor: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderRadius: '8px',
+          padding: '14px',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: '6px',
-          boxShadow: '0 4px 12px rgba(27, 79, 223, 0.25)'
+          gap: '8px',
+          boxSizing: 'border-box'
         }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#1B4FDF', margin: 0 }}>
             Ready to Accelerate Your Career?
           </h2>
-          <p style={{ fontSize: '11.5px', color: '#DBEAFE', lineHeight: '16px', margin: '0 0 4px', maxWidth: '380px' }}>
+          <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: '16px', margin: 0, fontWeight: 400 }}>
             Join over 1.2 million professionals and 50,000 verified employers discovering the future of direct hiring today.
           </p>
 
@@ -539,66 +547,66 @@ export const AboutPage: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px',
-              backgroundColor: '#FFFFFF',
-              padding: '8px 16px',
-              borderRadius: '18px',
+              backgroundColor: '#1B4FDF',
               border: 'none',
+              borderRadius: '6px',
+              padding: '9px 14px',
+              color: '#FFFFFF',
+              fontSize: '12px',
+              fontWeight: 700,
               cursor: 'pointer',
-              color: '#1B4FDF',
-              fontSize: '12.5px',
-              fontWeight: 700
+              alignSelf: 'flex-start'
             }}
           >
             <span>Browse All Open Jobs</span>
-            <ArrowRight size={14} color="#1B4FDF" strokeWidth={2.4} />
+            <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.4} />
           </button>
         </div>
 
         {/* 6. APP INFO & FOOTER */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 3px 8px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+        <div className="about-card" style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Info size={16} color="#1B4FDF" />
-            <h3 style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+            <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px', margin: 0 }}>
               Application Information
-            </h3>
+            </h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}>
-            <span style={{ fontSize: '11.5px', color: '#475569' }}>Platform Version</span>
-            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>v2.4.0 (Build 112)</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Platform Version</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>v2.4.0 (Build 112)</span>
           </div>
 
-          <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
+          <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '2px 0' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}>
-            <span style={{ fontSize: '11.5px', color: '#475569' }}>Platform Status</span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#EFF6FF', padding: '2px 6px', borderRadius: '6px' }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '2.5px', backgroundColor: '#1B4FDF' }} />
-              <span style={{ fontSize: '10px', fontWeight: 700, color: '#1B4FDF' }}>Operational 99.99%</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Platform Status</span>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              backgroundColor: '#DCFCE7',
+              border: '1px solid #BBF7D0',
+              padding: '2px 6px',
+              borderRadius: '4px'
+            }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#16A34A' }} />
+              <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#16A34A' }}>Operational 99.99%</span>
             </div>
           </div>
         </div>
 
         {/* Footer Note */}
-        <div style={{ textAlign: 'center', padding: '10px 0', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+        <div style={{ textAlign: 'center', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: '#64748B' }}>
             © 2026 JobMarket Technologies Inc. All rights reserved.
           </div>
-          <div style={{ fontSize: '10px', color: '#94A3B8', lineHeight: '14px' }}>
+          <div style={{ fontSize: '9.5px', color: '#94A3B8', lineHeight: '14px' }}>
             Empowering job seekers & enterprises with seamless, direct, and zero-fee hiring across India.
           </div>
         </div>
-
       </div>
     </div>
   );
