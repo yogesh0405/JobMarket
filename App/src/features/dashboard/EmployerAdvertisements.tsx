@@ -395,7 +395,13 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
   return (
     <div className="employer-ads-container" style={{ minHeight: '100%', background: 'var(--bg-page, #F8FAFC)', padding: '0.5rem 0 2rem 0' }}>
       <style>{`
+        .mobile-fab-btn {
+          display: none !important;
+        }
         @media (max-width: 768px) {
+          .mobile-fab-btn {
+            display: flex !important;
+          }
           .employer-ads-container {
             background: #F8FAFC !important;
             padding: 0 0 40px 0 !important;
