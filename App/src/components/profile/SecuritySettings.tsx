@@ -890,7 +890,7 @@ export const SecuritySettings: React.FC = () => {
                         className="sec-revoke-btn"
                         onClick={() => handleRevokeSession(session.id)}
                       >
-                        Revoke
+                        Logout
                       </button>
                     )}
                   </div>

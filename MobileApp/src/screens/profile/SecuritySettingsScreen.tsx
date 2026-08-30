@@ -582,7 +582,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                         activeOpacity={0.7}
                         onPress={() => handleRevokeSession(session.id, deviceLabel)}
                       >
-                        <Text style={styles.revokeSessionBtnText}>Revoke</Text>
+                        <Text style={styles.revokeSessionBtnText}>Logout</Text>
                       </TouchableOpacity>
                     )}
                   </View>
