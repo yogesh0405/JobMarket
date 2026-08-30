@@ -262,14 +262,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
-        {pending ? (
-          <View style={styles.pendingNoticeBanner}>
-            <Clock size={12} color="#D97706" />
-            <Text style={styles.pendingNoticeBannerText}>
-              Pending Admin Approval — Under review. Will go live once verified.
-            </Text>
-          </View>
-        ) : isRejectedStatus(item.status) ? (
+        {isRejectedStatus(item.status) ? (
           <View style={styles.rejectedNoticeBanner}>
             <XCircle size={12} color="#DC2626" />
             <Text style={styles.rejectedNoticeBannerText}>

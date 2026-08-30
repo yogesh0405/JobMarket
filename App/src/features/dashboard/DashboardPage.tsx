@@ -2490,25 +2490,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                       )}
                     </div>
 
-                    {/* Pending Notice Banner */}
-                    {pending && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#FFFBEB',
-                        border: '1px solid #FDE68A',
-                        padding: '5px 8px',
-                        borderRadius: '6px',
-                        marginTop: '8px',
-                        fontSize: '10.5px',
-                        fontWeight: 600,
-                        color: '#B45309'
-                      }}>
-                        <Clock size={12} color="#D97706" style={{ flexShrink: 0 }} />
-                        <span>Pending Admin Approval — Under review. Will go live once verified.</span>
-                      </div>
-                    )}
+
 
                     {/* Rejected Notice Banner */}
                     {isRejected && (
