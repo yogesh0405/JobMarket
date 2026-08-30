@@ -64,8 +64,8 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
       <View style={styles.metaChipsRow}>
         {candidateExp ? (
           <View style={styles.metaChip}>
-            <Briefcase size={11} color="#657796" />
-            <Text style={styles.metaChipText} numberOfLines={1}>
+            <Briefcase size={11} color="#657796" style={{ flexShrink: 0 }} />
+            <Text style={styles.metaChipText} numberOfLines={1} ellipsizeMode="tail">
               {candidateExp}
             </Text>
           </View>
@@ -73,8 +73,8 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
 
         {candidateLocation ? (
           <View style={styles.metaChip}>
-            <MapPin size={11} color="#657796" />
-            <Text style={styles.metaChipText} numberOfLines={1}>
+            <MapPin size={11} color="#657796" style={{ flexShrink: 0 }} />
+            <Text style={styles.metaChipText} numberOfLines={1} ellipsizeMode="tail">
               {candidateLocation}
             </Text>
           </View>
@@ -82,7 +82,7 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
 
         {(item.user as any)?.preferred_shift || (item.user as any)?.preferredShift ? (
           <View style={styles.metaChip}>
-            <Text style={styles.metaChipText}>
+            <Text style={styles.metaChipText} numberOfLines={1} ellipsizeMode="tail">
               {(item.user as any)?.preferred_shift || (item.user as any)?.preferredShift}
             </Text>
           </View>
@@ -105,11 +105,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
+    overflow: 'hidden',
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    width: '100%',
   },
   avatarBox: {
     width: 36,
@@ -121,6 +123,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    flexShrink: 0,
   },
   avatarImg: {
     width: '100%',
@@ -130,12 +133,14 @@ const styles = StyleSheet.create({
   headerTextCol: {
     flex: 1,
     justifyContent: 'center',
+    minWidth: 0,
   },
   titleBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 6,
+    width: '100%',
   },
   candidateName: {
     fontSize: 13.5,
@@ -143,12 +148,14 @@ const styles = StyleSheet.create({
     color: '#102A5C',
     letterSpacing: -0.2,
     flex: 1,
+    flexShrink: 1,
   },
   candidateTrade: {
     fontSize: 11,
     fontWeight: '500',
     color: '#657796',
     marginTop: 1.5,
+    width: '100%',
   },
   metaChipsRow: {
     flexDirection: 'row',
@@ -156,6 +163,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 8,
+    width: '100%',
   },
   metaChip: {
     flexDirection: 'row',
@@ -167,10 +175,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2.5,
     borderRadius: 6,
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   metaChipText: {
     fontSize: 10.5,
     fontWeight: '500',
     color: '#657796',
+    flexShrink: 1,
   },
 });
