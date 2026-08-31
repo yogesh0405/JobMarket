@@ -279,7 +279,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.applicantPillBtn}
               activeOpacity={0.7}
               onPress={() => {
-                navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
+                navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title });
               }}
             >
               <Users size={13} color="#475569" strokeWidth={2} />

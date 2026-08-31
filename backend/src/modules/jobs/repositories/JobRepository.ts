@@ -254,7 +254,15 @@ export class JobRepository {
       FROM jobs j
       LEFT JOIN job_applications ja ON j.id = ja.job_id
       LEFT JOIN users u ON ja.user_id = u.id
-      WHERE j.employer_id = $1
+      WHERE (
+        j.employer_id = $1 
+        OR j.employer_id::text = $1::text 
+        OR (SELECT role FROM users WHERE id = $1) IN ('admin', 'superadmin', 'super_admin')
+        OR (
+          (SELECT company_name FROM users WHERE id = $1) IS NOT NULL 
+          AND LOWER(j.company) = (SELECT LOWER(company_name) FROM users WHERE id = $1)
+        )
+      )
       GROUP BY j.id
       ORDER BY j.posted_at DESC
     `;
@@ -895,7 +903,19 @@ export class JobRepository {
   }
 
   static async getApplicantsForJob(jobId: string, employerId: string): Promise<any[]> {
-    const checkQuery = 'SELECT id, accept_resume FROM jobs WHERE id = $1 AND employer_id = $2';
+    const checkQuery = `
+      SELECT id, accept_resume FROM jobs 
+      WHERE id = $1 
+        AND (
+          employer_id = $2 
+          OR employer_id::text = $2::text 
+          OR (SELECT role FROM users WHERE id = $2) IN ('admin', 'superadmin', 'super_admin')
+          OR (
+            (SELECT company_name FROM users WHERE id = $2) IS NOT NULL 
+            AND LOWER(company) = (SELECT LOWER(company_name) FROM users WHERE id = $2)
+          )
+        )
+    `;
     const checkResult = await pool.query(checkQuery, [jobId, employerId]);
     if (checkResult.rows.length === 0) {
       throw new Error('Unauthorized or job not found');
@@ -966,7 +986,19 @@ export class JobRepository {
   }
 
   static async updateApplicantStatus(jobId: string, userId: string, employerId: string, status: string): Promise<any> {
-    const checkQuery = 'SELECT id FROM jobs WHERE id = $1 AND (employer_id = $2 OR employer_id::text = $2::text)';
+    const checkQuery = `
+      SELECT id FROM jobs 
+      WHERE id = $1 
+        AND (
+          employer_id = $2 
+          OR employer_id::text = $2::text 
+          OR (SELECT role FROM users WHERE id = $2) IN ('admin', 'superadmin', 'super_admin')
+          OR (
+            (SELECT company_name FROM users WHERE id = $2) IS NOT NULL 
+            AND LOWER(company) = (SELECT LOWER(company_name) FROM users WHERE id = $2)
+          )
+        )
+    `;
     const checkResult = await pool.query(checkQuery, [jobId, employerId]);
     if (checkResult.rows.length === 0) {
       throw new Error('Unauthorized or job not found');
