@@ -216,10 +216,23 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
 
-      // If 'ALL' is selected, aggregate all applicants across all employer's jobs
+      // If 'ALL' is selected, fetch all applicants via dedicated endpoint with embedded fallback
+      try {
+        const allAppsRes = await applicantsApi.getAllApplicants();
+        if (allAppsRes.success && Array.isArray(allAppsRes.data) && allAppsRes.data.length > 0) {
+          const mapped = allAppsRes.data.map((item: any) => {
+            const matchedJob = jobsList.find((j) => j.id === item.jobId || j.id === item.job_id);
+            return mapApplicantItem(item, item.jobId || item.job_id, matchedJob);
+          });
+          setApplicants(mapped);
+          return;
+        }
+      } catch (_) {}
+
+      // Fallback: aggregate all applicants across all employer's jobs
       const allApps: JobApplication[] = [];
       jobsList.forEach((j: any) => {
-        const rawApps = Array.isArray(j.applicants) ? j.applicants : [];
+        const rawApps = Array.isArray((j as any).applicants) ? (j as any).applicants : [];
         rawApps.forEach((item: any) => {
           if (item && typeof item === 'object') {
             allApps.push(mapApplicantItem(item, j.id, j));

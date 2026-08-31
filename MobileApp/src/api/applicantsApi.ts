@@ -2,9 +2,13 @@ import { apiFetch, isValidId } from './client';
 import { JobApplication, ApiResponse } from '../types';
 
 export const applicantsApi = {
-  getApplicantsForJob: async (jobId: string): Promise<ApiResponse<JobApplication[]>> => {
-    if (!isValidId(jobId)) {
-      return { success: true, data: [] } as any;
+  getAllApplicants: async (): Promise<ApiResponse<JobApplication[]>> => {
+    return apiFetch('/api/v1/jobs/applicants/all');
+  },
+
+  getApplicantsForJob: async (jobId?: string): Promise<ApiResponse<JobApplication[]>> => {
+    if (!jobId || jobId === 'ALL' || jobId === 'all' || !isValidId(jobId)) {
+      return apiFetch('/api/v1/jobs/applicants/all');
     }
     return apiFetch(`/api/v1/jobs/${jobId}/applicants`);
   },

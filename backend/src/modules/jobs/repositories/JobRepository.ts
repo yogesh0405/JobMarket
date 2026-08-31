@@ -985,6 +985,83 @@ export class JobRepository {
     });
   }
 
+  static async getAllApplicantsForEmployer(employerId: string): Promise<any[]> {
+    const query = `
+      SELECT 
+        ja.id as "id",
+        ja.job_id as "jobId",
+        j.title as "jobTitle",
+        j.company as "company",
+        ja.user_id as "userId",
+        u.name,
+        u.email,
+        u.phone,
+        ja.applied_at as "appliedAt",
+        ja.status,
+        u.resume,
+        u.trade_specialization as "tradeSpecialization",
+        u.location,
+        u.headline,
+        u.skills,
+        u.preferred_shift as "preferredShift",
+        u.requires_bus as "requiresBus",
+        u.requires_accommodation as "requiresAccommodation",
+        u.experience,
+        u.education,
+        u.profile_picture_url as "profilePictureUrl",
+        u.aadhaar_verified as "aadhaarVerified",
+        u.created_at as "createdAt",
+        ja.interview_date as "interviewDate",
+        ja.interview_time as "interviewTime",
+        ja.venue_address as "venueAddress",
+        ja.maps_link as "mapsLink",
+        ja.interview_status as "interviewStatus",
+        ja.interview_rating as "interviewRating",
+        ja.interview_feedback as "interviewFeedback",
+        ja.postponed_reason as "postponedReason"
+      FROM job_applications ja
+      JOIN jobs j ON ja.job_id = j.id
+      JOIN users u ON ja.user_id = u.id
+      WHERE (
+        j.employer_id = $1 
+        OR j.employer_id::text = $1::text 
+        OR (SELECT role FROM users WHERE id = $1) IN ('admin', 'superadmin', 'super_admin')
+        OR (
+          (SELECT company_name FROM users WHERE id = $1) IS NOT NULL 
+          AND LOWER(j.company) = (SELECT LOWER(company_name) FROM users WHERE id = $1)
+        )
+      )
+      ORDER BY ja.applied_at DESC
+    `;
+    const result = await pool.query(query, [employerId]);
+    return result.rows.map(row => {
+      let parsedResume: any = null;
+      if (row.resume) {
+        if (typeof row.resume === 'object' && row.resume !== null) {
+          parsedResume = row.resume;
+        } else if (typeof row.resume === 'string' && row.resume.trim()) {
+          try {
+            parsedResume = JSON.parse(row.resume);
+          } catch (_) {
+            parsedResume = { url: row.resume, name: 'Candidate_Resume.pdf' };
+          }
+        }
+      }
+      const resumeUrl = parsedResume?.url || (typeof row.resume === 'string' ? row.resume : null);
+
+      return {
+        ...row,
+        resume: parsedResume,
+        resume_url: resumeUrl,
+        resumeUrl,
+        skills: safeJsonParse(row.skills, []),
+        experience: safeJsonParse(row.experience, []),
+        education: safeJsonParse(row.education, []),
+        aadhaarVerified: !!row.aadhaarVerified,
+      };
+    });
+  }
+
   static async updateApplicantStatus(jobId: string, userId: string, employerId: string, status: string): Promise<any> {
     const checkQuery = `
       SELECT id FROM jobs 

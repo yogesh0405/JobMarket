@@ -735,7 +735,30 @@ export class JobController {
         return;
       }
 
+      if (!id || id.toLowerCase() === 'all' || id.toLowerCase() === 'applicants') {
+        const data = await JobRepository.getAllApplicantsForEmployer(employerId);
+        res.status(200).json({ success: true, data });
+        return;
+      }
+
       const data = await JobRepository.getApplicantsForJob(id, employerId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllApplicantsForEmployer(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.user!.userId;
+      const role = req.user!.role;
+
+      if (!isEmployerRole(role)) {
+        res.status(403).json({ success: false, message: 'Access denied: Employers only' });
+        return;
+      }
+
+      const data = await JobRepository.getAllApplicantsForEmployer(employerId);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

@@ -28,7 +28,8 @@ router.get('/interviews/my-interviews', requireAuth, JobController.getMyIntervie
 router.get('/employer/analytics', requireAuth, JobController.getEmployerAnalytics);
 router.get('/employer/interviews', requireAuth, JobController.getEmployerInterviews);
 router.patch('/employer/interviews/:applicationId/status', requireAuth, actionLimiter, JobController.updateEmployerInterviewStatus);
-router.get('/my-jobs/all', requireAuth, JobController.getMyJobs);
+router.get(['/my-jobs/all', '/my-jobs', '/employer/my-jobs'], requireAuth, JobController.getMyJobs);
+router.get(['/applicants/all', '/applicants', '/employer/applicants'], requireAuth, JobController.getAllApplicantsForEmployer);
 
 // Candidate Directory Queries
 router.get('/workers/all', requireAuth, JobController.getAllCandidates);
