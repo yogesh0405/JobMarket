@@ -188,44 +188,58 @@ export const Header: React.FC<HeaderProps> = ({
 
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
 
+  const isSearchMode = !hideSearch && (!title || (!!searchPlaceholder && !title) || (!!onSearchChange && !title));
+
   return (
     <>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.content}>
-          {/* Left: Profile Avatar (Opens Side Menu Drawer) OR Back Button */}
-          {isBackAvailable ? (
+          {/* Left Slot */}
+          {isSearchMode ? (
+            isBackAvailable ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleBack}
+                style={styles.backButton}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <ArrowLeft size={19} color={COLORS.slate900} strokeWidth={2.2} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={openDrawer}
+                style={styles.avatarButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <View style={[styles.headerAvatarCircle, { overflow: 'hidden' }]}>
+                  {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
+                    <Image
+                      source={{ uri: userPhotoUri.trim() }}
+                      style={styles.headerAvatarImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.headerAvatarLetter}>{initialLetter}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )
+          ) : (
+            // Standard Page Header: Back Button
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleBack}
               style={styles.backButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <ArrowLeft size={19} color={COLORS.slate900} strokeWidth={2.2} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={openDrawer}
-              style={styles.avatarButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <View style={[styles.headerAvatarCircle, { overflow: 'hidden' }]}>
-                {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
-                  <Image
-                    source={{ uri: userPhotoUri.trim() }}
-                    style={styles.headerAvatarImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Text style={styles.headerAvatarLetter}>{initialLetter}</Text>
-                )}
-              </View>
+              <ArrowLeft size={20} color="#0F172A" strokeWidth={2.2} />
             </TouchableOpacity>
           )}
 
-          {/* Center: Search Pill Bar OR Title/Subtitle */}
-          {!hideSearch ? (
+          {/* Center Slot: Search Pill Bar OR Standard Section Title */}
+          {isSearchMode ? (
             onSearchChange ? (
               <View style={styles.searchBarPill}>
                 <Search size={18} color="#64748B" strokeWidth={2.2} style={{ marginRight: 8 }} />
@@ -322,36 +336,39 @@ export const Header: React.FC<HeaderProps> = ({
               </TouchableOpacity>
             )
           ) : (
+            // Standard Page Header: Clean Title
             <View style={styles.titleContainer}>
               <Text style={styles.title} numberOfLines={1}>{headerDisplayTitle}</Text>
               {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
             </View>
           )}
 
-          {/* Right: Schedule Interview Icon (or custom action) */}
-          {!hideRightActions ? (
+          {/* Right Slot */}
+          {rightAction ? (
+            <View style={styles.rightSlot}>{rightAction}</View>
+          ) : isSearchMode && !hideRightActions ? (
             <View style={styles.rightSlot}>
-              {rightAction ? rightAction : (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={styles.chatIconButton}
-                  onPress={() => {
-                    const isEmployer = (user?.role || '').toLowerCase() === 'employer';
-                    if (navigation && typeof navigation.navigate === 'function') {
-                      if (isEmployer) {
-                        navigation.navigate('EmployerInterviews');
-                      } else {
-                        navigation.navigate('MyInterviews');
-                      }
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.chatIconButton}
+                onPress={() => {
+                  const isEmployer = (user?.role || '').toLowerCase() === 'employer';
+                  if (navigation && typeof navigation.navigate === 'function') {
+                    if (isEmployer) {
+                      navigation.navigate('EmployerInterviews');
+                    } else {
+                      navigation.navigate('MyInterviews');
                     }
-                  }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Calendar size={20} color="#475569" strokeWidth={2.2} />
-                </TouchableOpacity>
-              )}
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Calendar size={20} color="#475569" strokeWidth={2.2} />
+              </TouchableOpacity>
             </View>
-          ) : null}
+          ) : (
+            <View style={{ width: 12 }} />
+          )}
         </View>
       </View>
 
