@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 6,
-    paddingBottom: 56,
+    paddingBottom: 120,
     gap: 10,
   },
   notificationCard: {

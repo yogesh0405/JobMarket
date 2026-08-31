@@ -146,7 +146,7 @@ export class SearchService {
   }
 
   /**
-   * Typesense Search Engine Query Runner
+   * Typesense Search Engine Query Runner (Zero-dependency HTTP REST API)
    */
   private static async queryTypesense(
     params: SearchJobsParams,
@@ -154,44 +154,45 @@ export class SearchService {
     limit: number,
     offset: number
   ): Promise<SearchJobsResult | null> {
-    // Dynamic import to prevent crashes if typesense package is optional
     try {
-      const Typesense = await import('typesense');
-      const client = new (Typesense.default || Typesense).Client({
-        nodes: [{
-          host: process.env.TYPESENSE_HOST || 'localhost',
-          port: parseInt(process.env.TYPESENSE_PORT || '8108', 10),
-          protocol: process.env.TYPESENSE_PROTOCOL || 'http',
-        }],
-        apiKey: process.env.TYPESENSE_API_KEY || '',
-        connectionTimeoutSeconds: 2,
-      });
+      const host = process.env.TYPESENSE_HOST || 'localhost';
+      const port = process.env.TYPESENSE_PORT || '8108';
+      const protocol = process.env.TYPESENSE_PROTOCOL || 'http';
+      const apiKey = process.env.TYPESENSE_API_KEY || '';
 
-      const searchParameters: any = {
+      if (!apiKey) return null;
+
+      const queryParams = new URLSearchParams({
         q: params.q || '*',
         query_by: 'title,company,location,industry,trade,skills',
-        page,
-        per_page: limit,
-        filter_by: [],
-      };
+        page: String(page),
+        per_page: String(limit),
+      });
 
+      const filters: string[] = [];
       if (params.industry && params.industry !== 'All Industries') {
-        searchParameters.filter_by.push(`industry:=[\`${params.industry}\`]`);
+        filters.push(`industry:=[${params.industry}]`);
       }
       if (params.jobType && params.jobType !== 'All Types') {
-        searchParameters.filter_by.push(`job_type:=[\`${params.jobType}\`]`);
+        filters.push(`job_type:=[${params.jobType}]`);
       }
       if (params.workMode && params.workMode !== 'All Modes') {
-        searchParameters.filter_by.push(`work_mode:=[\`${params.workMode}\`]`);
+        filters.push(`work_mode:=[${params.workMode}]`);
+      }
+      if (filters.length > 0) {
+        queryParams.set('filter_by', filters.join(' && '));
       }
 
-      if (searchParameters.filter_by.length > 0) {
-        searchParameters.filter_by = searchParameters.filter_by.join(' && ');
-      } else {
-        delete searchParameters.filter_by;
-      }
+      const url = `${protocol}://${host}:${port}/collections/jobs/documents/search?${queryParams.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'X-TYPESENSE-API-KEY': apiKey,
+        },
+        signal: AbortSignal.timeout(2000),
+      });
 
-      const results: any = await client.collections('jobs').documents().search(searchParameters);
+      if (!response.ok) return null;
+      const results: any = await response.json();
       const jobs = (results.hits || []).map((hit: any) => hit.document);
       const total = results.found || 0;
 
