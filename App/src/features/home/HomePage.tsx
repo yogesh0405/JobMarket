@@ -28,10 +28,14 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
-import { MobileHeader } from '../../components/common/MobileHeader';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { BannerSlider } from '../../components/home/BannerSlider';
 import { Job } from '../../types';
+import {
+  JobFilterModal,
+  JobFilterValues,
+  DEFAULT_JOB_FILTERS,
+} from '../../components/job/JobFilterModal';
 
 // Constants matching Mobile App
 export const INDUSTRIES = [
@@ -92,6 +96,9 @@ const ITI_TRADES_GRID = [
   { name: 'Turner / Machinist', icon: Wrench, keyword: 'machinist' },
   { name: 'Tool & Die Maker', icon: Cog, keyword: 'tool' },
   { name: 'Store & Inventory', icon: Package, keyword: 'store' },
+  { name: 'Helper & Loader', icon: Package, keyword: 'helper' },
+  { name: 'Forklift Operator / Driver', icon: Briefcase, keyword: 'driver' },
+  { name: 'Maintenance Technician', icon: Wrench, keyword: 'maintenance' },
 ];
 
 const EDUCATION_GRID = [
@@ -159,6 +166,37 @@ export const HomePage: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [homeFilterDrawerOpen, setHomeFilterDrawerOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut listener (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setShowSuggestions(true);
+        setIsInputFocused(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+        setIsInputFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Hero Card State
   const [selectedIndustry, setSelectedIndustry] = useState('Select Industry');
@@ -222,6 +260,7 @@ export const HomePage: React.FC = () => {
     [allJobs]
   );
 
+
   const matchedSuggestions = useMemo(() => {
     const trimmed = topSearch.trim().toLowerCase();
     if (!trimmed) {
@@ -233,7 +272,8 @@ export const HomePage: React.FC = () => {
         const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
         const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
         const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
-        return titleMatch || companyMatch || tradeMatch;
+        const indMatch = (j.industry || '').toLowerCase().includes(trimmed);
+        return titleMatch || companyMatch || tradeMatch || indMatch;
       })
       .slice(0, 4);
 
@@ -246,6 +286,9 @@ export const HomePage: React.FC = () => {
       'Quality Inspector',
       'Assembly Operator',
       'Turner',
+      'Tool & Die Maker',
+      'Store Keeper',
+      'Helper',
       'Maintenance Technician',
     ];
     const matchedTrades = popularTrades.filter((t) => t.toLowerCase().includes(trimmed)).slice(0, 3);
@@ -258,6 +301,78 @@ export const HomePage: React.FC = () => {
       locations: matchedLocations,
     };
   }, [topSearch, allJobs]);
+
+  // Flattened items array for smooth arrow key navigation
+  const flatSearchItems = useMemo(() => {
+    if (!topSearch.trim()) return [];
+    const items: Array<{ type: 'search_all' | 'job' | 'trade' | 'location'; label: string; sub?: string; id?: string }> = [
+      { type: 'search_all', label: topSearch.trim() },
+    ];
+    matchedSuggestions.jobs.forEach((j) => {
+      items.push({ type: 'job', label: j.title, sub: `${j.company} • ${j.location}`, id: j.id });
+    });
+    matchedSuggestions.trades.forEach((t) => {
+      items.push({ type: 'trade', label: t, sub: 'ITI Trade' });
+    });
+    matchedSuggestions.locations.forEach((l) => {
+      items.push({ type: 'location', label: l, sub: 'Industrial Zone' });
+    });
+    return items;
+  }, [topSearch, matchedSuggestions]);
+
+  // Reset keyboard selection index when query changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [topSearch]);
+
+  const handleSelectItem = (item: { type: string; label: string; id?: string }) => {
+    setShowSuggestions(false);
+    setIsInputFocused(false);
+    if (item.type === 'job' && item.id) {
+      navigate(`/job/${item.id}`);
+    } else if (item.type === 'trade') {
+      setTopSearch(item.label);
+      handleQuickTradeSearch(item.label);
+    } else if (item.type === 'location') {
+      setLocationQuery(item.label);
+      navigate(`/jobs?location=${encodeURIComponent(item.label)}`);
+    } else {
+      handleSearchSubmit();
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions) {
+      if (e.key === 'ArrowDown') {
+        setShowSuggestions(true);
+      } else if (e.key === 'Enter') {
+        handleSearchSubmit();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (flatSearchItems.length > 0) {
+        setSelectedIndex((prev) => (prev < flatSearchItems.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (flatSearchItems.length > 0) {
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flatSearchItems.length - 1));
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < flatSearchItems.length) {
+        handleSelectItem(flatSearchItems[selectedIndex]);
+      } else {
+        setShowSuggestions(false);
+        handleSearchSubmit();
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
 
   const roleFilteredJobs = useMemo(() => {
     if (activeRoleTab === 'All Opportunities') {
@@ -288,16 +403,41 @@ export const HomePage: React.FC = () => {
   };
 
   // Home Filters state for side drawer
-  const [homeFilters, setHomeFilters] = useState({
-    industry: 'All Industries',
-    jobType: 'All Types',
-    workMode: 'All Modes',
-    midcZone: 'All MIDC Zones',
-    busFacility: false,
-    canteen: false,
-    accommodation: false,
-    overtime: false,
-  });
+  const [homeFilters, setHomeFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
+
+  const activeHomeFilterCount = useMemo(() => {
+    let count = 0;
+    if (homeFilters.midcZone !== 'All Locations') count++;
+    if (homeFilters.industry !== 'All Industries') count++;
+    if (homeFilters.trade !== 'All Trades') count++;
+    if (homeFilters.education !== 'All Education Levels') count++;
+    if (homeFilters.jobType !== 'All Types') count++;
+    if (homeFilters.workMode !== 'All Modes') count++;
+    if (homeFilters.minExperience !== 'All Experience') count++;
+    if (homeFilters.busFacility) count++;
+    if (homeFilters.canteen) count++;
+    if (homeFilters.accommodation) count++;
+    if (homeFilters.overtime) count++;
+    return count;
+  }, [homeFilters]);
+
+  const handleApplyHomeFilters = (applied: JobFilterValues) => {
+    setHomeFilters(applied);
+    setHomeFilterDrawerOpen(false);
+    const params = new URLSearchParams();
+    if (applied.midcZone !== 'All Locations') params.set('location', applied.midcZone);
+    if (applied.industry !== 'All Industries') params.set('industry', applied.industry);
+    if (applied.trade !== 'All Trades') params.set('trade', applied.trade);
+    if (applied.education !== 'All Education Levels') params.set('education', applied.education);
+    if (applied.jobType !== 'All Types') params.set('jobType', applied.jobType);
+    if (applied.workMode !== 'All Modes') params.set('workMode', applied.workMode);
+    if (applied.minExperience !== 'All Experience') params.set('exp', applied.minExperience);
+    if (applied.busFacility) params.set('bus', 'true');
+    if (applied.canteen) params.set('canteen', 'true');
+    if (applied.accommodation) params.set('hostel', 'true');
+    if (applied.overtime) params.set('ot', 'true');
+    navigate(`/jobs?${params.toString()}`);
+  };
 
   const matchingMidcZones = useMemo(() => {
     const query = locationQuery.trim().toLowerCase();
@@ -307,32 +447,329 @@ export const HomePage: React.FC = () => {
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
-      {/* Mobile Top Header (100% matching MobileApp & other tabs, hidden on desktop) */}
-      <MobileHeader title="JobMarket" />
+      <style>{`
+        .home-main-container {
+          width: 100%;
+          max-width: 960px;
+          margin: 0 auto;
+          padding: 20px 16px 80px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          box-sizing: border-box;
+        }
+
+        .home-main-container .banner-slider-container {
+          padding: 0 !important;
+          margin: 0 !important;
+          max-width: 100% !important;
+        }
+
+        .home-search-fields-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1.25fr auto;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .home-search-submit-btn {
+          height: 42px;
+          padding: 0 18px;
+          white-space: nowrap;
+          margin-top: 0 !important;
+        }
+
+        .home-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+        }
+
+        .home-jobs-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+
+        .home-trades-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 8px;
+        }
+
+        .home-education-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 8px;
+        }
+
+        .home-healthcare-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 8px;
+        }
+
+        .home-hospitality-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 8px;
+        }
+
+        .home-advantage-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+
+        @media (max-width: 991px) {
+          .home-search-fields-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+          .home-search-submit-btn {
+            grid-column: span 2;
+            height: 44px;
+          }
+          .home-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .home-jobs-grid {
+            grid-template-columns: 1fr;
+          }
+          .home-advantage-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .home-main-container {
+            max-width: 580px;
+            padding: 10px 12px 100px 12px !important;
+            gap: 12px !important;
+          }          /* Top Search Bar Mobile */
+          .home-top-search-bar {
+            height: 42px !important;
+            padding: 0 10px !important;
+            gap: 8px !important;
+          }
+          .home-top-search-input {
+            font-size: 12.5px !important;
+          }
+          .home-top-search-input::placeholder {
+            font-size: 12px !important;
+          }
+          .home-trending-title {
+            font-size: 9.5px !important;
+          }
+          .home-trending-btn {
+            font-size: 11px !important;
+            padding: 3.5px 8px !important;
+          }
+
+          /* Discover Section Mobile */
+          .home-discover-section {
+            margin-top: 2px !important;
+          }
+          .home-discover-badge {
+            font-size: 10.5px !important;
+            padding: 3px 10px !important;
+            margin-bottom: 6px !important;
+          }
+          .home-discover-title {
+            font-size: 16px !important;
+            margin-bottom: 4px !important;
+            line-height: 20px !important;
+          }
+          .home-discover-sub {
+            font-size: 11px !important;
+            line-height: 15px !important;
+            margin-bottom: 10px !important;
+          }
+          .home-discover-form-card {
+            padding: 12px 10px !important;
+            gap: 8px !important;
+            border-radius: 8px !important;
+          }
+          .home-discover-select,
+          .home-discover-input-row {
+            height: 40px !important;
+            font-size: 12.5px !important;
+          }
+          .home-discover-submit-btn {
+            height: 40px !important;
+            font-size: 13px !important;
+            border-radius: 6px !important;
+          }
+
+          /* Popular Roles Section Mobile */
+          .home-popular-roles-section {
+            margin: 20px 0 16px 0 !important;
+            gap: 8px !important;
+          }
+          .home-popular-roles-title {
+            font-size: 15px !important;
+          }
+          .home-popular-roles-sub {
+            font-size: 11px !important;
+          }
+          .home-popular-job-card {
+            width: 240px !important;
+            min-width: 240px !important;
+            padding: 10px !important;
+            border-radius: 6px !important;
+          }
+          .home-popular-job-card h4 {
+            font-size: 13px !important;
+          }
+          .home-popular-job-title {
+            font-size: 13px !important;
+          }
+          .home-popular-job-company {
+            font-size: 11px !important;
+          }
+          .home-popular-job-badge {
+            font-size: 9.5px !important;
+            padding: 1.5px 5px !important;
+          }
+          .home-popular-job-salary {
+            font-size: 11px !important;
+          }
+          .home-popular-job-btn {
+            font-size: 11px !important;
+            padding: 5px 10px !important;
+            height: 28px !important;
+          }
+
+          /* MIDC Zone Section Mobile */
+          .home-midc-section {
+            margin: 20px 0 16px 0 !important;
+            gap: 8px !important;
+          }
+          .home-midc-title {
+            font-size: 15px !important;
+          }
+          .home-midc-sub {
+            font-size: 11px !important;
+          }
+          .home-midc-card {
+            padding: 10px !important;
+          }
+          .home-midc-zone-name {
+            font-size: 12.5px !important;
+          }
+          .home-midc-city {
+            font-size: 10.5px !important;
+          }
+          .home-midc-tag {
+            font-size: 9.5px !important;
+            padding: 1.5px 5px !important;
+          }
+
+          /* Stats Grid Mobile */
+          .home-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+          .home-stat-card {
+            padding: 8px 6px !important;
+            border-radius: 6px !important;
+          }
+          .home-stat-card .stat-number {
+            font-size: 16px !important;
+          }
+          .home-stat-card .stat-label {
+            font-size: 10px !important;
+          }
+
+          /* Categories Grids & Chips Mobile */
+          .home-category-section {
+            margin-top: 20px !important;
+          }
+          .home-category-badge {
+            font-size: 9px !important;
+            padding: 2px 7px !important;
+            margin-bottom: 4px !important;
+          }
+          .home-category-title {
+            font-size: 15px !important;
+            margin-bottom: 2px !important;
+          }
+          .home-category-sub {
+            font-size: 11px !important;
+            margin-bottom: 8px !important;
+            line-height: 14px !important;
+          }
+
+          .home-trades-grid,
+          .home-education-grid,
+          .home-healthcare-grid,
+          .home-hospitality-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 6px !important;
+          }
+          .home-chip-card {
+            padding: 7px 4px !important;
+            border-radius: 6px !important;
+          }
+          .home-chip-icon-box {
+            width: 24px !important;
+            height: 24px !important;
+            margin-bottom: 3px !important;
+            border-radius: 4px !important;
+          }
+          .home-chip-icon-box svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .home-chip-title {
+            font-size: 10px !important;
+            line-height: 12px !important;
+            min-height: 24px !important;
+          }
+          .home-chip-count {
+            font-size: 8.5px !important;
+            margin-top: 1px !important;
+          }
+
+          /* Advantage Section Mobile */
+          .home-advantage-section {
+            margin: 16px 0 20px 0 !important;
+            gap: 8px !important;
+          }
+          .home-advantage-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+          .home-advantage-card {
+            padding: 10px 12px !important;
+            border-radius: 6px !important;
+            gap: 8px !important;
+          }
+          .home-advantage-title {
+            font-size: 12.5px !important;
+          }
+          .home-advantage-desc {
+            font-size: 11px !important;
+            line-height: 14px !important;
+          }
+        }
+      `}</style>
 
       {/* Main Content Area */}
-      <div style={{
-        maxWidth: '580px',
-        margin: '0 auto',
-        padding: '14px 16px 120px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px',
-        boxSizing: 'border-box',
-      }}>
+      <div className="home-main-container">
         {/* Top Search Bar & Live Autocomplete */}
-        <div style={{ position: 'relative', width: '100%', zIndex: 100 }}>
-          <div style={{
+        <div style={{ position: 'relative', width: '100%', zIndex: 100 }} ref={searchContainerRef}>
+          <div className="home-top-search-bar" style={{
             display: 'flex',
             alignItems: 'center',
             backgroundColor: '#FFFFFF',
-            border: isInputFocused ? '1px solid #1B4FDF' : '1px solid #CBD5E1',
-            borderRadius: '6px',
-            padding: '0 12px',
+            border: isInputFocused ? '1.5px solid #1B4FDF' : '1px solid #CBD5E1',
+            borderRadius: '8px',
+            padding: '0 14px',
             height: '48px',
             gap: '10px',
             boxSizing: 'border-box',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+            boxShadow: isInputFocused ? '0 0 0 3px rgba(27, 79, 223, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06)' : '0 1px 3px rgba(15, 23, 42, 0.05)',
             transition: 'all 0.15s ease',
           }}>
             <Search
@@ -343,26 +780,20 @@ export const HomePage: React.FC = () => {
             />
 
             <input
+              ref={searchInputRef}
+              className="home-top-search-input"
               type="text"
-              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+              placeholder={isInputFocused ? 'Search by role, trade, company or MIDC zone...' : SEARCH_PLACEHOLDERS[placeholderIndex]}
               value={topSearch}
               onChange={(e) => {
                 setTopSearch(e.target.value);
-                setShowSuggestions(e.target.value.trim().length > 0);
+                setShowSuggestions(true);
               }}
               onFocus={() => {
                 setIsInputFocused(true);
-                setShowSuggestions(topSearch.trim().length > 0);
+                setShowSuggestions(true);
               }}
-              onBlur={() => {
-                setTimeout(() => setIsInputFocused(false), 200);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setShowSuggestions(false);
-                  handleSearchSubmit();
-                }
-              }}
+              onKeyDown={handleInputKeyDown}
               style={{
                 flex: 1,
                 border: 'none',
@@ -377,11 +808,12 @@ export const HomePage: React.FC = () => {
               }}
             />
 
-            {topSearch.length > 0 && (
+            {topSearch.length > 0 ? (
               <button
+                type="button"
                 onClick={() => {
                   setTopSearch('');
-                  setShowSuggestions(false);
+                  searchInputRef.current?.focus();
                 }}
                 style={{
                   background: '#F1F5F9',
@@ -396,14 +828,34 @@ export const HomePage: React.FC = () => {
                   padding: 0,
                   flexShrink: 0,
                 }}
+                title="Clear search"
               >
                 <X size={14} color="#64748B" />
               </button>
+            ) : (
+              <kbd style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#F1F5F9',
+                color: '#64748B',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                border: '1px solid #E2E8F0',
+                userSelect: 'none',
+                pointerEvents: 'none',
+                flexShrink: 0,
+              }}>
+                ⌘K
+              </kbd>
             )}
 
             <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0', flexShrink: 0 }} />
 
             <button
+              type="button"
               onClick={() => setHomeFilterDrawerOpen(true)}
               style={{
                 background: 'transparent',
@@ -415,120 +867,278 @@ export const HomePage: React.FC = () => {
                 cursor: 'pointer',
                 color: '#1B4FDF',
                 flexShrink: 0,
+                position: 'relative',
               }}
               title="Filter Options"
             >
               <SlidersHorizontal size={18} color="#1B4FDF" />
+              {activeHomeFilterCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    backgroundColor: '#1764E8',
+                    color: '#FFFFFF',
+                    borderRadius: '50%',
+                    width: '15px',
+                    height: '15px',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1.5px solid #FFFFFF',
+                  }}
+                >
+                  {activeHomeFilterCount}
+                </span>
+              )}
             </button>
           </div>
 
           {/* Autocomplete Dropdown Overlay */}
-          {showSuggestions && topSearch.trim().length > 0 && (
+          {showSuggestions && (
             <div style={{
               position: 'absolute',
-              top: '52px',
+              top: '54px',
               left: 0,
               right: 0,
               backgroundColor: '#FFFFFF',
-              borderRadius: '6px',
+              borderRadius: '8px',
               border: '1px solid #CBD5E1',
-              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
-              maxHeight: '300px',
+              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.15)',
+              maxHeight: '380px',
               overflowY: 'auto',
               zIndex: 999,
-              padding: '8px 0',
+              padding: '6px 0',
             }}>
-              <div
-                onClick={() => {
-                  setShowSuggestions(false);
-                  handleSearchSubmit();
-                }}
-                style={{
-                  padding: '10px 14px',
-                  borderBottom: '1px solid #F1F5F9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  backgroundColor: '#F8FAFC',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1B4FDF' }}>
-                  <Search size={15} />
-                  <span>Search all jobs matching "<strong>{topSearch.trim()}</strong>"</span>
-                </div>
-                <ArrowRight size={14} color="#1B4FDF" />
-              </div>
-
-              {matchedSuggestions.jobs.length > 0 && (
-                <div style={{ padding: '8px 0' }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
-                    MATCHING LIVE JOBS
+              {topSearch.trim() === '' ? (
+                // Empty state: show popular searches & quick filter tags
+                <div style={{ padding: '8px 12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.4px', marginBottom: '8px' }}>
+                    TRENDING TRADES & ROLES
                   </div>
-                  {matchedSuggestions.jobs.map((j) => (
-                    <div
-                      key={j.id}
-                      onClick={() => {
-                        setShowSuggestions(false);
-                        navigate(`/job/${j.id}`);
-                      }}
-                      style={{
-                        padding: '8px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        transition: 'background 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <Briefcase size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {j.title}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {j.company} • {j.location}
-                        </div>
-                      </div>
-                      <ChevronRight size={14} color="#94A3B8" />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {matchedSuggestions.trades.length > 0 && (
-                <div style={{ padding: '8px 0', borderTop: '1px solid #F1F5F9' }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
-                    POPULAR TRADES & SKILLS
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {['CNC Operator', 'Welder', 'Fitter', 'Electrician', 'Quality Inspector', 'Turner', 'Helper'].map((trade) => (
+                      <button
+                        key={trade}
+                        type="button"
+                        onClick={() => {
+                          setTopSearch(trade);
+                          handleSelectItem({ type: 'trade', label: trade });
+                        }}
+                        style={{
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '6px',
+                          padding: '5px 10px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#334155',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#EFF6FF';
+                          e.currentTarget.style.borderColor = '#1B4FDF';
+                          e.currentTarget.style.color = '#1B4FDF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F8FAFC';
+                          e.currentTarget.style.borderColor = '#E2E8F0';
+                          e.currentTarget.style.color = '#334155';
+                        }}
+                      >
+                        <Award size={13} color="#1B4FDF" />
+                        <span>{trade}</span>
+                      </button>
+                    ))}
                   </div>
-                  {matchedSuggestions.trades.map((trade) => (
-                    <div
-                      key={trade}
-                      onClick={() => {
-                        setTopSearch(trade);
-                        setShowSuggestions(false);
-                        handleQuickTradeSearch(trade);
-                      }}
-                      style={{
-                        padding: '8px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <Award size={16} color="#059669" style={{ flexShrink: 0 }} />
-                      <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
-                        {trade}
-                      </div>
-                      <ChevronRight size={14} color="#94A3B8" />
-                    </div>
-                  ))}
+
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.4px', marginBottom: '8px' }}>
+                    POPULAR INDUSTRIAL ZONES
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {['Chakan MIDC', 'Waluj MIDC', 'Bhosari MIDC', 'Taloja MIDC', 'Ranjangaon MIDC'].map((loc) => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => {
+                          handleSelectItem({ type: 'location', label: loc });
+                        }}
+                        style={{
+                          backgroundColor: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '6px',
+                          padding: '5px 10px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#334155',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#EFF6FF';
+                          e.currentTarget.style.borderColor = '#1B4FDF';
+                          e.currentTarget.style.color = '#1B4FDF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F8FAFC';
+                          e.currentTarget.style.borderColor = '#E2E8F0';
+                          e.currentTarget.style.color = '#334155';
+                        }}
+                      >
+                        <MapPin size={13} color="#D97706" />
+                        <span>{loc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              ) : (
+                // Filtered search results
+                <>
+                  <div
+                    onClick={() => handleSelectItem({ type: 'search_all', label: topSearch.trim() })}
+                    style={{
+                      padding: '10px 14px',
+                      borderBottom: '1px solid #F1F5F9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      backgroundColor: selectedIndex === 0 ? '#EFF6FF' : '#F8FAFC',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = selectedIndex === 0 ? '#EFF6FF' : '#F8FAFC')}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1B4FDF' }}>
+                      <Search size={15} />
+                      <span>Search all jobs matching "<strong>{topSearch.trim()}</strong>"</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: '#94A3B8' }}>Press ↵</span>
+                      <ArrowRight size={14} color="#1B4FDF" />
+                    </div>
+                  </div>
+
+                  {matchedSuggestions.jobs.length > 0 && (
+                    <div style={{ padding: '6px 0' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
+                        MATCHING LIVE JOBS
+                      </div>
+                      {matchedSuggestions.jobs.map((j) => {
+                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'job' && it.id === j.id);
+                        const isSelected = selectedIndex === itemIdx;
+                        return (
+                          <div
+                            key={j.id}
+                            onClick={() => handleSelectItem({ type: 'job', label: j.title, id: j.id })}
+                            style={{
+                              padding: '8px 14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              cursor: 'pointer',
+                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                              transition: 'background 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
+                          >
+                            <Briefcase size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {j.title}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {j.company} • {j.location}
+                              </div>
+                            </div>
+                            <ChevronRight size={14} color="#94A3B8" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {matchedSuggestions.trades.length > 0 && (
+                    <div style={{ padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
+                        POPULAR TRADES & SKILLS
+                      </div>
+                      {matchedSuggestions.trades.map((trade) => {
+                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'trade' && it.label === trade);
+                        const isSelected = selectedIndex === itemIdx;
+                        return (
+                          <div
+                            key={trade}
+                            onClick={() => handleSelectItem({ type: 'trade', label: trade })}
+                            style={{
+                              padding: '8px 14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              cursor: 'pointer',
+                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                              transition: 'background 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
+                          >
+                            <Award size={16} color="#059669" style={{ flexShrink: 0 }} />
+                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                              {trade}
+                            </div>
+                            <ChevronRight size={14} color="#94A3B8" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {matchedSuggestions.locations.length > 0 && (
+                    <div style={{ padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
+                        INDUSTRIAL ZONES & LOCATIONS
+                      </div>
+                      {matchedSuggestions.locations.map((loc) => {
+                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'location' && it.label === loc);
+                        const isSelected = selectedIndex === itemIdx;
+                        return (
+                          <div
+                            key={loc}
+                            onClick={() => handleSelectItem({ type: 'location', label: loc })}
+                            style={{
+                              padding: '8px 14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              cursor: 'pointer',
+                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                              transition: 'background 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
+                          >
+                            <MapPin size={16} color="#D97706" style={{ flexShrink: 0 }} />
+                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                              {loc}
+                            </div>
+                            <ChevronRight size={14} color="#94A3B8" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -539,55 +1149,73 @@ export const HomePage: React.FC = () => {
           <BannerSlider />
         </div>
 
-        {/* Hero Search Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          {/* Badge & Title */}
-          <div>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              backgroundColor: '#EFF6FF',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              border: '1px solid #DBEAFE',
-              marginBottom: '6px',
-            }}>
-              <Star size={12} color="#1B4FDF" />
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#1B4FDF' }}>
-                Industrial & Factory Jobs
-              </span>
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.2px' }}>
-              Discover Factory & Technical Jobs near you
-            </h2>
-            <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: '17px' }}>
-              Direct hiring for ITI, CNC operators, Welders, Fitters & Helpers in MIDC industrial clusters.
-            </p>
+        {/* Discover Factory & Technical Jobs Section */}
+        <div className="home-discover-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginTop: '4px' }}>
+          {/* Centered Pill Badge */}
+          <div className="home-discover-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#EFF6FF',
+            padding: '4px 14px',
+            borderRadius: '999px',
+            border: '1px solid #DBEAFE',
+            marginBottom: '10px',
+          }}>
+            <Star size={13} color="#1B4FDF" />
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1B4FDF' }}>
+              Industrial & Factory Jobs
+            </span>
           </div>
 
-          {/* Form Fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Centered Main Title */}
+          <h2 className="home-discover-title" style={{
+            fontSize: '20px',
+            fontWeight: 800,
+            color: '#0F172A',
+            margin: '0 0 6px 0',
+            textAlign: 'center',
+            letterSpacing: '-0.2px',
+          }}>
+            Discover Factory & Technical Jobs near you
+          </h2>
+
+          {/* Centered Subtitle */}
+          <p className="home-discover-sub" style={{
+            fontSize: '12.5px',
+            color: '#64748B',
+            textAlign: 'center',
+            margin: '0 0 14px 0',
+            lineHeight: '18px',
+            maxWidth: '520px',
+          }}>
+            Direct hiring for ITI, CNC operators, Welders, Fitters & Helpers in MIDC industrial clusters.
+          </p>
+
+          {/* White Form Card */}
+          <div className="home-discover-form-card" style={{
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            border: '1px solid #CBD5E1',
+            padding: '16px',
+            boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            boxSizing: 'border-box',
+          }}>
             {/* Industry Selector */}
             <div style={{ position: 'relative' }}>
               <select
+                className="home-discover-select"
                 value={selectedIndustry}
                 onChange={(e) => setSelectedIndustry(e.target.value)}
                 style={{
                   width: '100%',
-                  height: '42px',
-                  padding: '0 12px 0 36px',
-                  borderRadius: '6px',
+                  height: '44px',
+                  padding: '0 36px 0 38px',
+                  borderRadius: '8px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#F8FAFC',
                   fontSize: '13px',
@@ -605,20 +1233,21 @@ export const HomePage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <Briefcase size={15} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '13px', pointerEvents: 'none' }} />
-              <ChevronDown size={15} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '13px', pointerEvents: 'none' }} />
+              <Briefcase size={16} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '14px', pointerEvents: 'none' }} />
+              <ChevronDown size={16} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '14px', pointerEvents: 'none' }} />
             </div>
 
             {/* Education Selector */}
             <div style={{ position: 'relative' }}>
               <select
+                className="home-discover-select"
                 value={selectedEducation}
                 onChange={(e) => setSelectedEducation(e.target.value)}
                 style={{
                   width: '100%',
-                  height: '42px',
-                  padding: '0 12px 0 36px',
-                  borderRadius: '6px',
+                  height: '44px',
+                  padding: '0 36px 0 38px',
+                  borderRadius: '8px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#F8FAFC',
                   fontSize: '13px',
@@ -636,26 +1265,26 @@ export const HomePage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <GraduationCap size={15} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '13px', pointerEvents: 'none' }} />
-              <ChevronDown size={15} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '13px', pointerEvents: 'none' }} />
+              <GraduationCap size={16} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '14px', pointerEvents: 'none' }} />
+              <ChevronDown size={16} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '14px', pointerEvents: 'none' }} />
             </div>
 
             {/* Location Query Input with Auto MIDC Suggestions */}
             <div style={{ position: 'relative' }}>
-              <div style={{
+              <div className="home-discover-input-row" style={{
                 display: 'flex',
                 alignItems: 'center',
-                height: '42px',
+                height: '44px',
                 padding: '0 12px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
                 backgroundColor: '#F8FAFC',
                 gap: '8px',
               }}>
-                <MapPin size={15} color="#1B4FDF" style={{ flexShrink: 0 }} />
+                <MapPin size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
                 <input
                   type="text"
-                  placeholder="Enter location / MIDC area (e.g. Waluj, Chakan)"
+                  placeholder="Search MIDC Zone or City (e.g. Chakan, Waluj)"
                   value={locationQuery}
                   onChange={(e) => {
                     setLocationQuery(e.target.value);
@@ -689,11 +1318,11 @@ export const HomePage: React.FC = () => {
               {showLocationSuggestions && (
                 <div style={{
                   position: 'absolute',
-                  top: '46px',
+                  top: '48px',
                   left: 0,
                   right: 0,
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   border: '1px solid #CBD5E1',
                   boxShadow: '0 4px 14px rgba(15, 23, 42, 0.1)',
                   zIndex: 200,
@@ -729,74 +1358,69 @@ export const HomePage: React.FC = () => {
 
             {/* Search Submit Button */}
             <button
+              className="home-discover-submit-btn"
               onClick={() => handleSearchSubmit()}
               style={{
                 backgroundColor: '#1B4FDF',
                 color: '#FFFFFF',
-                height: '44px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 border: 'none',
+                height: '44px',
                 fontSize: '14px',
-                fontWeight: 800,
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 cursor: 'pointer',
-                marginTop: '4px',
                 boxShadow: '0 2px 6px rgba(27, 79, 223, 0.25)',
+                width: '100%',
+                marginTop: '2px',
               }}
             >
               <Search size={16} color="#FFFFFF" />
-              Find Matching Jobs
+              <span>Search Jobs</span>
             </button>
           </div>
         </div>
 
-        {/* Popular Role Picks Section */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '6px',
-                backgroundColor: '#EFF6FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Briefcase size={17} color="#1B4FDF" />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+        {/* Popular Role Picks Section (Horizontal Carousel matching MobileApp) */}
+        <div className="home-popular-roles-section" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', margin: '48px 0 44px 0' }}>
+          {/* Section Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '8px',
+              backgroundColor: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Briefcase size={20} color="#1B4FDF" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h3 className="home-popular-roles-title" style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                   Popular Role Picks
                 </h3>
-                <span style={{ fontSize: '11px', color: '#64748B' }}>
-                  Explore top verified industrial openings
+                <span style={{
+                  fontSize: '9.5px',
+                  fontWeight: 800,
+                  backgroundColor: '#DCFCE7',
+                  color: '#15803D',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  letterSpacing: '0.4px',
+                }}>
+                  VERIFIED JOBS
                 </span>
               </div>
+              <p className="home-popular-roles-sub" style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+                Explore top verified job opportunities categorized by available roles in the database
+              </p>
             </div>
-            <span style={{
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#DCFCE7',
-              color: '#15803D',
-              padding: '2px 6px',
-              borderRadius: '4px',
-            }}>
-              VERIFIED JOBS
-            </span>
           </div>
 
           {/* Role Filter Tabs Horizontal Scroll */}
@@ -805,12 +1429,12 @@ export const HomePage: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
               overflowX: 'auto',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch',
-              paddingBottom: '2px',
+              padding: '4px 0',
             }}
           >
             {DEFAULT_ROLE_TABS.map((tab) => {
@@ -821,15 +1445,15 @@ export const HomePage: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveRoleTab(tab.id)}
                   style={{
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    fontSize: '11.5px',
+                    padding: '7px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     border: isActive ? '1px solid #1B4FDF' : '1px solid #E2E8F0',
-                    backgroundColor: isActive ? '#1B4FDF' : '#F8FAFC',
-                    color: isActive ? '#FFFFFF' : '#475569',
+                    backgroundColor: isActive ? '#1B4FDF' : '#FFFFFF',
+                    color: isActive ? '#FFFFFF' : '#334155',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -837,12 +1461,13 @@ export const HomePage: React.FC = () => {
                     transition: 'all 0.15s ease',
                   }}
                 >
+                  <span style={{ color: isActive ? '#FFFFFF' : '#94A3B8', fontSize: '14px', lineHeight: 1 }}>•</span>
                   <span>{tab.label}</span>
                   <span style={{
                     fontSize: '10px',
-                    padding: '1px 5px',
-                    borderRadius: '3px',
-                    backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#E2E8F0',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
                     color: isActive ? '#FFFFFF' : '#64748B',
                     fontWeight: 800,
                   }}>
@@ -853,229 +1478,216 @@ export const HomePage: React.FC = () => {
             })}
           </div>
 
-          {/* Active Role Jobs List (CandidateJobCardItem design) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {roleFilteredJobs.slice(0, 4).map((job) => {
-              const isSaved = savedJobIds.includes(job.id);
-              const expText =
-                job.minExperience !== undefined
-                  ? `${job.minExperience}-${job.maxExperience ?? job.minExperience + 2} Yrs Exp`
-                  : '0-2 Yrs Exp';
-              const salaryText =
-                job.salaryMin && job.salaryMax
-                  ? `${(job.salaryMin / 100000).toFixed(1)}-${(job.salaryMax / 100000).toFixed(1)} Lacs PA`
-                  : '3.5-5.5 Lacs PA';
-              const locationText = job.midcZone || job.location || 'Chhatrapati Sambhajinagar';
-              const openings = job.openings || 4;
+          {/* Horizontal Scrolling Job Cards Carousel */}
+          <div
+            className="no-scrollbar"
+            style={{
+              display: 'flex',
+              gap: '12px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              padding: '4px 0 8px 0',
+            }}
+          >
+            {roleFilteredJobs.length === 0 ? (
+              <div style={{
+                width: '100%',
+                padding: '24px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '8px',
+                border: '1px solid #CBD5E1',
+                textAlign: 'center',
+                color: '#64748B',
+                fontSize: '13px',
+              }}>
+                No vacancies under "{activeRoleTab}" currently.
+              </div>
+            ) : (
+              <>
+                {roleFilteredJobs.slice(0, 8).map((job) => {
+                  const isSaved = savedJobIds.includes(job.id);
+                  const minExp = job.minExperience ?? (job as any).min_experience ?? 0;
+                  const maxExp = job.maxExperience ?? (job as any).max_experience ?? (minExp + 2);
+                  const expStr = minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`;
 
-              return (
-                <Link
-                  key={job.id}
-                  to={`/job/${job.id}`}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    overflow: 'hidden',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  {/* Top Section */}
-                  <div style={{ padding: '12px 14px', borderBottom: '1px solid #F1F5F9' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                      <h4 style={{
-                        margin: 0,
-                        fontSize: '13.5px',
-                        fontWeight: 800,
-                        color: '#0F172A',
-                        letterSpacing: '-0.15px',
-                        flex: 1,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}>
-                        {job.title}
-                      </h4>
-                      <button
-                        onClick={(e) => toggleSaveJob(job.id, e)}
-                        style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer' }}
-                      >
-                        <Bookmark
-                          size={16}
-                          color={isSaved ? '#1B4FDF' : '#94A3B8'}
-                          fill={isSaved ? '#1B4FDF' : 'transparent'}
-                        />
-                      </button>
-                    </div>
+                  let salaryStr = '3-5 Lacs';
+                  const sMin = job.salaryMin ?? (job as any).salary_min;
+                  const sMax = job.salaryMax ?? (job as any).salary_max;
+                  if (sMin && sMax) {
+                    if (sMin >= 100000) {
+                      salaryStr = `${(sMin / 100000).toFixed(0)}-${(sMax / 100000).toFixed(0)} Lacs`;
+                    } else {
+                      salaryStr = `${Math.round(sMin / 1000)}k-${Math.round(sMax / 1000)}k`;
+                    }
+                  }
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-                        <Briefcase size={12} color="#64748B" />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{expText}</span>
+                  const locationText = job.midcZone || job.location || 'Chhatrapati Sambhajinagar';
+                  const shiftText = (job as any).shiftDetails || (job as any).shift_details || 'Day Shift (8:00 AM - 5:00 PM (9 hrs))';
+
+                  return (
+                    <Link
+                      key={job.id}
+                      to={`/job/${job.id}`}
+                      className="home-popular-job-card"
+                      style={{
+                        width: '270px',
+                        minWidth: '270px',
+                        flexShrink: 0,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E1',
+                        padding: '14px',
+                        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#1B4FDF')}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#CBD5E1')}
+                    >
+                      {/* Top Row: Title & Bookmark */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <h4 style={{
+                          margin: 0,
+                          fontSize: '14.5px',
+                          fontWeight: 800,
+                          color: '#0F172A',
+                          letterSpacing: '-0.15px',
+                          flex: 1,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {job.title}
+                        </h4>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleSaveJob(job.id, e);
+                          }}
+                          style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <Bookmark
+                            size={17}
+                            color={isSaved ? '#1B4FDF' : '#94A3B8'}
+                            fill={isSaved ? '#1B4FDF' : 'transparent'}
+                          />
+                        </button>
                       </div>
-                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '11px' }}>₹</span>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{salaryText}</span>
-                      </div>
-                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                        <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+
+                      {/* Location Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                        <MapPin size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {locationText}
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Middle Specs Band */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '8px 14px',
-                    backgroundColor: '#F8FAFC',
-                    borderBottom: '1px solid #F1F5F9',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
-                      <Clock size={12} color="#64748B" />
-                      <span>{job.jobType || 'Full-time'}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
-                      <Building2 size={12} color="#64748B" />
-                      <span>{job.workMode || 'On-site'}</span>
-                    </div>
-                    {openings && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#475569' }}>
-                        <Users size={12} color="#64748B" />
-                        <span>{openings} Vacancies</span>
+                      {/* Specs Row (Exp & Salary) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                        <Briefcase size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                          {expStr}   |   ₹ {salaryStr}
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Bottom Employer Row */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 14px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                      <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={32} borderRadius="6px" />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {job.company}
+                      {/* Badges Row (On-site / Full-Time) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                        <span style={{
+                          backgroundColor: '#F1F5F9',
+                          color: '#475569',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                        }}>
+                          {job.workMode || (job as any).work_mode || 'On-site'}
+                        </span>
+                        <span style={{
+                          backgroundColor: '#F1F5F9',
+                          color: '#475569',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                        }}>
+                          {job.jobType || (job as any).job_type || 'Full-time'}
+                        </span>
+                      </div>
+
+                      {/* Shift Details Pill */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        backgroundColor: '#F3E8FF',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        marginTop: '8px',
+                      }}>
+                        <Clock size={11} color="#7C3AED" style={{ flexShrink: 0 }} />
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#6B21A8',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {shiftText}
+                        </span>
+                      </div>
+
+                      {/* Divider */}
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '10px 0' }} />
+
+                      {/* Company Footer */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                          <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={34} borderRadius="6px" />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {job.company}
+                            </div>
+                            <div style={{ fontSize: '9.5px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              Posted by {job.company || 'Recruiter'}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '9.5px', color: '#64748B' }}>Posted by Recruiter</div>
+                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#94A3B8', flexShrink: 0 }}>
+                          {formatTimeAgo(job.postedAt || (job as any).created_at)}
+                        </span>
                       </div>
-                    </div>
-                    <div style={{ fontSize: '10px', fontWeight: 600, color: '#94A3B8' }}>
-                      {formatTimeAgo(job.postedAt || (job as any).created_at)}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                    </Link>
+                  );
+                })}
 
-          <Link
-            to={`/jobs?keyword=${encodeURIComponent(DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab)?.keyword || '')}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '10px',
-              backgroundColor: '#EFF6FF',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontSize: '12.5px',
-              fontWeight: 800,
-              color: '#1B4FDF',
-              marginTop: '4px',
-            }}
-          >
-            <span>View All {activeRoleTab} Jobs</span>
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-
-        {/* Live Stats 2x2 Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Active Listings</div>
-          </div>
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#059669' }}>120+</div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Factories Hiring</div>
-          </div>
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#7C3AED' }}>10,000+</div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Verified Workers</div>
-          </div>
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#EA580C' }}>4,500+</div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Monthly Placements</div>
-          </div>
-        </div>
-
-        {/* Browse by ITI Trade / Specialty */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#EFF6FF',
-              color: '#1B4FDF',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginBottom: '4px',
-            }}>
-              POPULAR TRADES
-            </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              Browse by ITI Trade / Specialty
-            </h3>
-            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
-              Direct vacancies in production, quality, maintenance & logistics
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            {ITI_TRADES_GRID.map((trade, idx) => {
-              const IconComp = trade.icon;
-              const count = getRealJobCount(trade.keyword);
-              return (
-                <div
-                  key={idx}
-                  onClick={() => handleQuickTradeSearch(trade.keyword)}
+                {/* Explore All Roles End Card */}
+                <Link
+                  to={`/jobs?keyword=${encodeURIComponent(DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab)?.keyword || '')}`}
                   style={{
+                    width: '200px',
+                    minWidth: '200px',
+                    flexShrink: 0,
                     backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '6px',
-                    padding: '10px 8px',
+                    borderRadius: '8px',
+                    border: '1px dashed #CBD5E1',
+                    padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     textAlign: 'center',
-                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    boxSizing: 'border-box',
+                    gap: '8px',
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
@@ -1083,38 +1695,134 @@ export const HomePage: React.FC = () => {
                     e.currentTarget.style.backgroundColor = '#EFF6FF';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.borderColor = '#CBD5E1';
                     e.currentTarget.style.backgroundColor = '#F8FAFC';
                   }}
                 >
                   <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '6px',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
                     backgroundColor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
+                    border: '1px solid #DBEAFE',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <ArrowRight size={20} color="#1B4FDF" />
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                    Explore All Roles
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    View full catalog of live vacancies
+                  </div>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Live Stats 2x2 Grid */}
+        <div className="home-stats-grid">
+          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
+            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Active Listings</div>
+          </div>
+          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#059669' }}>120+</div>
+            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Factories Hiring</div>
+          </div>
+          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#7C3AED' }}>10,000+</div>
+            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Verified Workers</div>
+          </div>
+          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#EA580C' }}>4,500+</div>
+            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Monthly Placements</div>
+          </div>
+        </div>
+
+        {/* Browse by ITI Trade / Specialty */}
+        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '28px 0 0 0' }}>
+          <div className="home-category-badge" style={{
+            display: 'inline-block',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            backgroundColor: '#EFF6FF',
+            color: '#1B4FDF',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            marginBottom: '6px',
+          }}>
+            POPULAR TRADES
+          </div>
+          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+            Browse by ITI Trade / Specialty
+          </h3>
+          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+            Direct vacancies in production, quality, maintenance & logistics
+          </p>
+
+          <div className="home-trades-grid" style={{ width: '100%' }}>
+            {ITI_TRADES_GRID.map((trade, idx) => {
+              const IconComp = trade.icon;
+              const count = getRealJobCount(trade.keyword);
+              return (
+                <div
+                  key={idx}
+                  className="home-chip-card"
+                  onClick={() => handleQuickTradeSearch(trade.keyword)}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    padding: '10px 6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#1B4FDF';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(27, 79, 223, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#CBD5E1';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
+                  }}
+                >
+                  <div className="home-chip-icon-box" style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '5px',
+                    backgroundColor: '#EFF6FF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: '6px',
                   }}>
-                    <IconComp size={16} color="#1B4FDF" />
+                    <IconComp size={15} color="#1B4FDF" />
                   </div>
-                  <div style={{
+                  <div className="home-chip-title" style={{
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: '#0F172A',
                     lineHeight: '14px',
-                    height: '28px',
-                    overflow: 'hidden',
+                    minHeight: '28px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
                     {trade.name}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
-                    {count} Openings
+                  <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                    {count} {count === 1 ? 'Open position' : 'Open positions'}
                   </div>
                 </div>
               );
@@ -1123,95 +1831,85 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Browse Jobs by Qualification */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#F0FDF4',
-              color: '#16A34A',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginBottom: '4px',
-            }}>
-              EDUCATION
-            </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              Browse Jobs by Qualification
-            </h3>
-            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
-              Find jobs matching your school education or college degree
-            </p>
+        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
+          <div className="home-category-badge" style={{
+            display: 'inline-block',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            backgroundColor: '#F0FDF4',
+            color: '#16A34A',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            marginBottom: '6px',
+          }}>
+            EDUCATION
           </div>
+          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+            Browse Jobs by Qualification
+          </h3>
+          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+            Find jobs matching your school education or college degree
+          </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="home-education-grid" style={{ width: '100%' }}>
             {EDUCATION_GRID.map((qual, idx) => {
               const IconComp = qual.icon;
               const count = getRealJobCount(qual.keyword);
               return (
                 <div
                   key={idx}
+                  className="home-chip-card"
                   onClick={() => handleQuickTradeSearch(qual.keyword)}
                   style={{
-                    backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #CBD5E1',
                     borderRadius: '6px',
-                    padding: '10px 8px',
+                    padding: '10px 6px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
                     cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#16A34A';
-                    e.currentTarget.style.backgroundColor = '#F0FDF4';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(22, 163, 74, 0.08)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.backgroundColor = '#F8FAFC';
+                    e.currentTarget.style.borderColor = '#CBD5E1';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                   }}
                 >
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '6px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
+                  <div className="home-chip-icon-box" style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '5px',
+                    backgroundColor: '#F0FDF4',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: '6px',
                   }}>
-                    <IconComp size={16} color="#16A34A" />
+                    <IconComp size={15} color="#16A34A" />
                   </div>
-                  <div style={{
+                  <div className="home-chip-title" style={{
                     fontSize: '11.5px',
                     fontWeight: 700,
                     color: '#0F172A',
                     lineHeight: '14px',
-                    height: '28px',
-                    overflow: 'hidden',
+                    minHeight: '28px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
                     {qual.name}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
-                    {count} Openings
+                  <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                    {count} {count === 1 ? 'Job Opening' : 'Job Openings'}
                   </div>
                 </div>
               );
@@ -1220,70 +1918,73 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Hospital & Healthcare Jobs */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#FEF2F2',
-              color: '#DC2626',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginBottom: '4px',
-            }}>
-              HEALTHCARE
-            </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              Hospital & Healthcare Jobs
-            </h3>
-            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
-              Browse medical, nursing, administration and support staff jobs
-            </p>
+        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
+          <div className="home-category-badge" style={{
+            display: 'inline-block',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            backgroundColor: '#FEF2F2',
+            color: '#DC2626',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            marginBottom: '6px',
+          }}>
+            HEALTHCARE
           </div>
+          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+            Hospital & Healthcare Jobs
+          </h3>
+          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+            Browse medical, nursing, administration and support staff jobs
+          </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="home-healthcare-grid" style={{ width: '100%' }}>
             {HOSPITAL_GRID.map((h, idx) => (
               <div
                 key={idx}
+                className="home-chip-card"
                 onClick={() => handleQuickTradeSearch(h.keyword)}
                 style={{
-                  backgroundColor: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
                   borderRadius: '6px',
-                  padding: '10px 8px',
+                  padding: '10px 6px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   textAlign: 'center',
                   cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#DC2626';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(220, 38, 38, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                 }}
               >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '6px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
+                <div className="home-chip-icon-box" style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '5px',
+                  backgroundColor: '#FEF2F2',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: '6px',
                 }}>
-                  <HeartPulse size={16} color="#DC2626" />
+                  <HeartPulse size={15} color="#DC2626" />
                 </div>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                <div className="home-chip-title" style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
                   {h.name}
+                </div>
+                <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                  {getRealJobCount(h.keyword)} Openings
                 </div>
               </div>
             ))}
@@ -1291,70 +1992,73 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Hotel & Hospitality Jobs */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#FFFBEB',
-              color: '#D97706',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginBottom: '4px',
-            }}>
-              HOSPITALITY
-            </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              Hotel & Hospitality Jobs
-            </h3>
-            <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
-              Opportunities in kitchen, housekeeping, food service & front desk
-            </p>
+        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
+          <div className="home-category-badge" style={{
+            display: 'inline-block',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            backgroundColor: '#FFFBEB',
+            color: '#D97706',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            marginBottom: '6px',
+          }}>
+            HOSPITALITY
           </div>
+          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+            Hotel & Hospitality Jobs
+          </h3>
+          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+            Opportunities in kitchen, housekeeping, food service & front desk
+          </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="home-hospitality-grid" style={{ width: '100%' }}>
             {HOTEL_GRID.map((h, idx) => (
               <div
                 key={idx}
+                className="home-chip-card"
                 onClick={() => handleQuickTradeSearch(h.keyword)}
                 style={{
-                  backgroundColor: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
                   borderRadius: '6px',
-                  padding: '10px 8px',
+                  padding: '10px 6px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   textAlign: 'center',
                   cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#D97706';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 119, 6, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                 }}
               >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '6px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
+                <div className="home-chip-icon-box" style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '5px',
+                  backgroundColor: '#FFFBEB',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: '6px',
                 }}>
-                  <Utensils size={16} color="#D97706" />
+                  <Utensils size={15} color="#D97706" />
                 </div>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                <div className="home-chip-title" style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
                   {h.name}
+                </div>
+                <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                  {getRealJobCount(h.keyword)} Openings
                 </div>
               </div>
             ))}
@@ -1362,67 +2066,82 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Applicant Advantage Section */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '6px',
-          border: '1px solid #CBD5E1',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          boxSizing: 'border-box',
-        }}>
-          <div>
-            <div style={{
-              display: 'inline-block',
-              fontSize: '10px',
-              fontWeight: 800,
-              backgroundColor: '#EFF6FF',
-              color: '#1B4FDF',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginBottom: '4px',
-            }}>
-              JOBMARKET ADVANTAGE
-            </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              Why Industrial Workers Choose JobMarket
-            </h3>
+        <div className="home-advantage-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '38px 0 0 0' }}>
+          <div className="home-category-badge" style={{
+            display: 'inline-block',
+            fontSize: '10.5px',
+            fontWeight: 800,
+            backgroundColor: '#EFF6FF',
+            color: '#1B4FDF',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            marginBottom: '6px',
+          }}>
+            JOBMARKET ADVANTAGE
           </div>
+          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 14px 0', textAlign: 'center' }}>
+            Why Industrial Workers Choose JobMarket
+          </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="home-advantage-grid" style={{ width: '100%' }}>
+            <div className="home-advantage-card" style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+            }}>
+              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
                   Direct MIDC Plant Hiring
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
                   Connect straight with plant HR without middle consultants or commission cuts.
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div className="home-advantage-card" style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+            }}>
+              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
                   100% Free Job Applications
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
                   No registration charges or hidden fees for workers and job seekers.
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div className="home-advantage-card" style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+            }}>
+              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
                   Bus & Canteen Verified Facilities
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
                   All job openings specify company bus routes, subsidized canteen, and OT perks.
                 </div>
               </div>
@@ -1431,161 +2150,16 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Side Drawer Modal */}
-      {homeFilterDrawerOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.5)',
-          zIndex: 9999,
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '380px',
-            backgroundColor: '#FFFFFF',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
-          }}>
-            <div style={{
-              padding: '16px',
-              borderBottom: '1px solid #E2E8F0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                Filter Home Vacancies
-              </h3>
-              <button
-                onClick={() => setHomeFilterDrawerOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
-              >
-                <X size={20} color="#64748B" />
-              </button>
-            </div>
-
-            <div style={{ padding: '16px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  MIDC Zone / Industrial Area
-                </label>
-                <select
-                  value={homeFilters.midcZone}
-                  onChange={(e) => setHomeFilters((prev) => ({ ...prev, midcZone: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px', backgroundColor: '#F8FAFC' }}
-                >
-                  <option value="All MIDC Zones">All MIDC Zones</option>
-                  {MIDC_ZONES.map((z) => (
-                    <option key={z} value={z}>
-                      {z}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Job Type
-                </label>
-                <select
-                  value={homeFilters.jobType}
-                  onChange={(e) => setHomeFilters((prev) => ({ ...prev, jobType: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12.5px', backgroundColor: '#F8FAFC' }}
-                >
-                  <option value="All Types">All Types</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Apprenticeship">Apprenticeship</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-                  Plant Facilities & Perks
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={homeFilters.busFacility}
-                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, busFacility: e.target.checked }))}
-                    />
-                    Bus Transport Facility
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={homeFilters.canteen}
-                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, canteen: e.target.checked }))}
-                    />
-                    Canteen / Subsidized Food
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={homeFilters.accommodation}
-                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, accommodation: e.target.checked }))}
-                    />
-                    Hostel / Accommodation
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={homeFilters.overtime}
-                      onChange={(e) => setHomeFilters((prev) => ({ ...prev, overtime: e.target.checked }))}
-                    />
-                    Overtime Pay Available
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ padding: '16px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => {
-                  setHomeFilters({
-                    industry: 'All Industries',
-                    jobType: 'All Types',
-                    workMode: 'All Modes',
-                    midcZone: 'All MIDC Zones',
-                    busFacility: false,
-                    canteen: false,
-                    accommodation: false,
-                    overtime: false,
-                  });
-                }}
-                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => {
-                  setHomeFilterDrawerOpen(false);
-                  const params = new URLSearchParams();
-                  if (homeFilters.midcZone !== 'All MIDC Zones') params.set('location', homeFilters.midcZone);
-                  if (homeFilters.jobType !== 'All Types') params.set('jobType', homeFilters.jobType);
-                  if (homeFilters.busFacility) params.set('bus', 'true');
-                  if (homeFilters.canteen) params.set('canteen', 'true');
-                  if (homeFilters.accommodation) params.set('hostel', 'true');
-                  if (homeFilters.overtime) params.set('ot', 'true');
-                  navigate(`/jobs?${params.toString()}`);
-                }}
-                style={{ flex: 2, padding: '10px', borderRadius: '6px', border: 'none', backgroundColor: '#1B4FDF', color: '#FFFFFF', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Apply & Search
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Shared Reusable Job Filter Modal */}
+      <JobFilterModal
+        isOpen={homeFilterDrawerOpen}
+        onClose={() => setHomeFilterDrawerOpen(false)}
+        currentFilters={homeFilters}
+        onApplyFilters={handleApplyHomeFilters}
+        onResetFilters={() => setHomeFilters(DEFAULT_JOB_FILTERS)}
+        allJobs={allJobs}
+        totalJobsCount={allJobs.length}
+      />
     </div>
   );
 };

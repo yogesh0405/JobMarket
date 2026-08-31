@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import {
   Calendar,
@@ -310,6 +311,36 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleOpenCandidateProfile = (item: EmployerInterviewItem) => {
+    if (!item.candidate_id) return;
+    const photo = item.candidate_avatar || (item as any).avatar_url || (item as any).profile_picture_url || (item as any).avatar;
+    navigation.navigate('EmployerCandidateDetail', {
+      candidateId: item.candidate_id,
+      applicantId: item.application_id,
+      candidate: {
+        id: item.candidate_id,
+        name: item.candidate_name,
+        email: item.candidate_email,
+        phone: item.candidate_phone,
+        avatar: photo,
+        avatarUrl: photo,
+        avatar_url: photo,
+        profile_picture_url: photo,
+        profilePictureUrl: photo,
+        candidate_avatar: photo,
+        trade: item.trade_specialization,
+        trade_specialization: item.trade_specialization,
+        location: item.candidate_location,
+        skills: item.candidate_skills,
+        experience: item.candidate_experience,
+        resume: item.candidate_resume,
+        headline: item.candidate_headline,
+        jobTitle: item.job_title,
+        status: item.application_status,
+      },
+    });
+  };
+
   // Filtered lists
   const currentList = activeTab === 'upcoming' ? upcomingList : pastList;
   const filteredList = useMemo(() => {
@@ -491,18 +522,31 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.cardBody}>
                   {/* Candidate Info Block */}
                   <View style={styles.candidateRow}>
-                    <View style={styles.avatarCircle}>
-                      <Text style={styles.avatarInitials}>
-                        {(item.candidate_name || 'C').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.75}
+                      onPress={() => handleOpenCandidateProfile(item)}
+                      style={[styles.avatarCircle, { overflow: 'hidden' }]}
+                    >
+                      {item.candidate_avatar && (item.candidate_avatar.startsWith('http') || item.candidate_avatar.startsWith('data:') || item.candidate_avatar.startsWith('/')) ? (
+                        <Image source={{ uri: item.candidate_avatar }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Text style={styles.avatarInitials}>
+                          {(item.candidate_name || 'C').charAt(0).toUpperCase()}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
 
                     <View style={styles.candidateDetails}>
-                      <View style={styles.candidateNameRow}>
-                        <Text style={styles.candidateName} numberOfLines={1}>
+                      <TouchableOpacity
+                        activeOpacity={0.75}
+                        onPress={() => handleOpenCandidateProfile(item)}
+                        style={styles.candidateNameRow}
+                      >
+                        <Text style={[styles.candidateName, { color: COLORS.primary }]} numberOfLines={1}>
                           {item.candidate_name}
                         </Text>
-                      </View>
+                        <ExternalLink size={11} color={COLORS.primary} style={{ marginLeft: 3 }} />
+                      </TouchableOpacity>
 
                       <TouchableOpacity
                         activeOpacity={0.75}
@@ -686,10 +730,14 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Candidate Bio & Details */}
               <View style={styles.modalCandidateBlock}>
-                <View style={styles.avatarLargeCircle}>
-                  <Text style={styles.avatarLargeInitials}>
-                    {(selectedInterview?.candidate_name || 'C').charAt(0).toUpperCase()}
-                  </Text>
+                <View style={[styles.avatarLargeCircle, { overflow: 'hidden' }]}>
+                  {selectedInterview?.candidate_avatar && (selectedInterview.candidate_avatar.startsWith('http') || selectedInterview.candidate_avatar.startsWith('data:') || selectedInterview.candidate_avatar.startsWith('/')) ? (
+                    <Image source={{ uri: selectedInterview.candidate_avatar }} style={{ width: '100%', height: '100%' }} />
+                  ) : (
+                    <Text style={styles.avatarLargeInitials}>
+                      {(selectedInterview?.candidate_name || 'C').charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.modalCandidateName} numberOfLines={1}>

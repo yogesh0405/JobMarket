@@ -40,9 +40,12 @@ import {
   Loader2,
   CheckCircle2,
   Headphones,
-  Trash2
+  Trash2,
+  User,
+  Award,
 } from 'lucide-react';
 import companyHeaderBg from '../../assets/company_header_bg.jpg';
+import employeeHeaderBg from '../../assets/employee_header_bg.jpg';
 import { Resume } from '../../types';
 
 const TRADES_LIST = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
@@ -54,6 +57,8 @@ export const ProfilePage: React.FC = () => {
   const { state } = useStore();
   const { getJobsByEmployer } = useJobs();
   const t = useTranslation(state.language);
+
+  const [activeCandidateTab, setActiveCandidateTab] = useState<'PERSONAL' | 'PROFESSIONAL'>('PERSONAL');
 
   const handleShare = () => {
     if (!currentUser) return;
@@ -707,23 +712,14 @@ export const ProfilePage: React.FC = () => {
         backgroundColor: '#F7F9FC',
         boxSizing: 'border-box'
       }}>
-        <div style={{
-          maxWidth: '720px',
-          margin: '0 auto',
-          paddingBottom: '60px',
-          boxSizing: 'border-box'
-        }}>
+        <div className="employer-profile-container">
           {/* 1. Primary Blue Hero Header Banner with Exact Mobile App Background Image */}
-          <div style={{
-            backgroundColor: '#0A58E2',
-            backgroundImage: `url(${companyHeaderBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            padding: '16px 16px 48px 16px',
-            color: '#FFFFFF',
-            position: 'relative',
-            boxSizing: 'border-box'
-          }}>
+          <div
+            className="employer-profile-banner"
+            style={{
+              backgroundImage: `url(${companyHeaderBg})`,
+            }}
+          >
             {/* Top Controls Row */}
             <div style={{
               display: 'flex',
@@ -770,20 +766,20 @@ export const ProfilePage: React.FC = () => {
 
             {/* Company Identity Hero Row */}
             <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px' }}>
-              {/* Large Circular White Logo Container (72px Exact Mobile Match) */}
+              {/* Circular White Logo Container */}
               <div 
                 onClick={openEditModal}
                 style={{
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '36px',
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '26px',
                   backgroundColor: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginRight: '14px',
+                  marginRight: '12px',
                   flexShrink: 0,
-                  boxShadow: '0 3px 8px rgba(16, 42, 92, 0.2)',
+                  boxShadow: '0 2px 6px rgba(16, 42, 92, 0.2)',
                   overflow: 'hidden',
                   cursor: 'pointer'
                 }}
@@ -800,15 +796,15 @@ export const ProfilePage: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <CompanyDefaultLogo logoUrl={null} companyName={companyName} size={68} borderRadius="34px" />
+                  <CompanyDefaultLogo logoUrl={null} companyName={companyName} size={48} borderRadius="24px" />
                 )}
               </div>
 
               {/* Company Info Column */}
               <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                   <h1 style={{
-                    fontSize: '22px',
+                    fontSize: '17px',
                     fontWeight: 700,
                     color: '#FFFFFF',
                     margin: 0,
@@ -820,9 +816,9 @@ export const ProfilePage: React.FC = () => {
                     {companyName}
                   </h1>
                   <div style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '9px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '8px',
                     backgroundColor: '#1764E8',
                     color: '#FFFFFF',
                     display: 'flex',
@@ -830,7 +826,7 @@ export const ProfilePage: React.FC = () => {
                     justifyContent: 'center',
                     flexShrink: 0
                   }} title="Verified Employer">
-                    <Check size={11} strokeWidth={3} />
+                    <Check size={10} strokeWidth={3} />
                   </div>
                 </div>
 
@@ -841,9 +837,9 @@ export const ProfilePage: React.FC = () => {
                     alignItems: 'center',
                     gap: '4px',
                     backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                    padding: '3.5px 8px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
+                    padding: '2.5px 7px',
+                    borderRadius: '5px',
+                    fontSize: '10px',
                     fontWeight: 500,
                     color: '#FFFFFF',
                     flexShrink: 1,
@@ -851,7 +847,7 @@ export const ProfilePage: React.FC = () => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <Building2 size={11} color="#FFFFFF" strokeWidth={2.2} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {currentUser.industry || 'Industrial Manufacturing'}
                     </span>
@@ -862,9 +858,9 @@ export const ProfilePage: React.FC = () => {
                     alignItems: 'center',
                     gap: '4px',
                     backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                    padding: '3.5px 8px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
+                    padding: '2.5px 7px',
+                    borderRadius: '5px',
+                    fontSize: '10px',
                     fontWeight: 500,
                     color: '#FFFFFF',
                     flexShrink: 1,
@@ -872,7 +868,7 @@ export const ProfilePage: React.FC = () => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    <Lock size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <Lock size={11} color="#FFFFFF" strokeWidth={2.2} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {(currentUser as any).companyType || 'Private Limited'}
                     </span>
@@ -887,8 +883,8 @@ export const ProfilePage: React.FC = () => {
             backgroundColor: '#FFFFFF',
             border: '1px solid #E7EBF2',
             borderRadius: '8px',
-            padding: '10px 12px',
-            margin: '-32px 16px 16px 16px',
+            padding: '8px 10px',
+            margin: '-28px 16px 14px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -899,46 +895,46 @@ export const ProfilePage: React.FC = () => {
             {/* Stat 1: Jobs Posted */}
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '6px',
                 backgroundColor: '#EFF5FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Briefcase size={15} color="#1764E8" strokeWidth={2} />
+                <Briefcase size={14} color="#1764E8" strokeWidth={2} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{myJobs.length || 0}</div>
-                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Jobs Posted</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{myJobs.length || 0}</div>
+                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Jobs Posted</div>
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+            <div style={{ width: '1px', height: '20px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
 
             {/* Stat 2: Profile Score */}
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '6px',
                 backgroundColor: '#ECF9F6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Star size={15} color="#21A99B" strokeWidth={2} />
+                <Star size={14} color="#21A99B" strokeWidth={2} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{completionPct}%</div>
-                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Profile Score</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{completionPct}%</div>
+                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Profile Score</div>
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '24px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+            <div style={{ width: '1px', height: '20px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
 
             {/* Stat 3: Post Job CTA */}
             <div
@@ -953,20 +949,20 @@ export const ProfilePage: React.FC = () => {
               }}
             >
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '6px',
                 backgroundColor: '#EEF4FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Plus size={16} color="#1764E8" strokeWidth={2.4} />
+                <Plus size={15} color="#1764E8" strokeWidth={2.4} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>Post Job</div>
-                <div style={{ fontSize: '9.5px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>New Vacancy</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>Post Job</div>
+                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>New Vacancy</div>
               </div>
             </div>
           </div>
@@ -976,31 +972,31 @@ export const ProfilePage: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: '8px',
             border: '1px solid #E7EBF2',
-            padding: '16px',
+            padding: '14px',
             margin: '0 16px 12px 16px',
             boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
+                width: '28px',
+                height: '28px',
+                borderRadius: '6px',
                 backgroundColor: '#EEF4FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Building2 size={16} color="#1764E8" strokeWidth={2.2} />
+                <Building2 size={15} color="#1764E8" strokeWidth={2.2} />
               </div>
-              <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                 About {companyName}
               </h3>
             </div>
 
             <p style={{
-              fontSize: '13px',
+              fontSize: '11.5px',
               color: '#66789B',
-              lineHeight: '20px',
+              lineHeight: '18px',
               margin: 0,
               whiteSpace: 'pre-line'
             }}>
@@ -1013,12 +1009,12 @@ export const ProfilePage: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: '8px',
             border: '1px solid #E7EBF2',
-            padding: '16px',
+            padding: '14px',
             margin: '0 16px 12px 16px',
             boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                 Company Details & Verification
               </h3>
               <div style={{
@@ -1026,97 +1022,97 @@ export const ProfilePage: React.FC = () => {
                 alignItems: 'center',
                 gap: '4px',
                 backgroundColor: '#EAF8F5',
-                padding: '3px 8px',
-                borderRadius: '6px'
+                padding: '2.5px 7px',
+                borderRadius: '5px'
               }}>
-                <ShieldCheck size={13} color="#19A98F" strokeWidth={2.4} />
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
+                <ShieldCheck size={12} color="#19A98F" strokeWidth={2.4} />
+                <span style={{ fontSize: '10px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
               </div>
             </div>
 
-            <div style={{ height: '1px', backgroundColor: '#E2E7EF', margin: '12px 0' }} />
+            <div style={{ height: '1px', backgroundColor: '#E2E7EF', margin: '10px 0' }} />
 
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {/* Row 1: Location & Legal Type */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <MapPin size={14} color="#1764E8" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <MapPin size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {formattedLocation}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Building2 size={14} color="#625CEB" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Building2 size={13} color="#625CEB" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).companyType || 'Private Limited'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
 
               {/* Row 2: Company Size & Founded Year */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Users size={14} color="#21A99B" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Users size={13} color="#21A99B" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).companySize || '200–500 employees'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Calendar size={14} color="#D97706" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Calendar size={13} color="#D97706" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).foundedYear || '2005'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
 
               {/* Row 3: GST Number & Email */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <FileText size={14} color="#1764E8" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <FileText size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                     {currentUser.gstNumber || '27AABCU9603R1ZN'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Mail size={14} color="#1764E8" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Mail size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Official Contact Email</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Official Contact Email</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', minWidth: 0, overflow: 'hidden' }}>
                     <a
                       href={`mailto:${currentUser.email}`}
                       style={{
@@ -1136,30 +1132,30 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '10px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
 
               {/* Row 4: Phone & Website */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Phone size={14} color="#21A99B" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Phone size={13} color="#21A99B" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C', lineHeight: '16px', paddingLeft: '30px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Globe size={14} color="#1764E8" strokeWidth={2} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Globe size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '10.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#1764E8', lineHeight: '16px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#1764E8', lineHeight: '15px', paddingLeft: '28px', minWidth: 0, overflow: 'hidden' }}>
                     {currentUser.website ? (
                       <a
                         href={currentUser.website.startsWith('http') ? currentUser.website : `https://${currentUser.website}`}
@@ -1192,22 +1188,22 @@ export const ProfilePage: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: '8px',
             border: '1px solid #E7EBF2',
-            padding: '16px',
+            padding: '14px',
             margin: '0 16px 12px 16px',
             boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                   Active Job Openings
                 </h3>
                 <div style={{
                   backgroundColor: '#EFF6FF',
                   color: '#1764E8',
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: 700,
-                  padding: '1px 6px',
-                  borderRadius: '8px'
+                  padding: '1px 5px',
+                  borderRadius: '6px'
                 }}>
                   {activeJobs.length}
                 </div>
@@ -1219,7 +1215,7 @@ export const ProfilePage: React.FC = () => {
                   background: 'none',
                   border: 'none',
                   color: '#1764E8',
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
@@ -1229,7 +1225,7 @@ export const ProfilePage: React.FC = () => {
                 }}
               >
                 <span>View all</span>
-                <ChevronRight size={14} strokeWidth={2.4} />
+                <ChevronRight size={13} strokeWidth={2.4} />
               </button>
             </div>
 
@@ -1243,28 +1239,28 @@ export const ProfilePage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '10px 0',
+                      padding: '8px 0',
                       borderTop: idx > 0 ? '1px solid #DFE5EE' : 'none',
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                       <div style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
                         backgroundColor: idx % 2 === 0 ? '#F2F1FF' : '#ECFAF7',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0
                       }}>
-                        <Building2 size={16} color={idx % 2 === 0 ? '#625CEB' : '#21A99B'} strokeWidth={2} />
+                        <Building2 size={15} color={idx % 2 === 0 ? '#625CEB' : '#21A99B'} strokeWidth={2} />
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                         <h4 style={{
-                          fontSize: '13px',
+                          fontSize: '12px',
                           fontWeight: 700,
                           color: '#102A5C',
                           margin: '0 0 1px 0',
@@ -1275,8 +1271,8 @@ export const ProfilePage: React.FC = () => {
                           {jobItem.title}
                         </h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <MapPin size={10} color="#66789B" />
-                          <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                          <MapPin size={9} color="#66789B" />
+                          <span style={{ fontSize: '9.5px', color: '#66789B', fontWeight: 500 }}>
                             {jobItem.location || 'Waluj MIDC, Maharashtra'} • {jobItem.jobType || jobItem.job_type || 'Full Time'}
                           </span>
                         </div>
@@ -1284,16 +1280,16 @@ export const ProfilePage: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, paddingLeft: '8px' }}>
-                      <span style={{ fontSize: '10.5px', color: '#66789B', fontWeight: 500 }}>
+                      <span style={{ fontSize: '9.5px', color: '#66789B', fontWeight: 500 }}>
                         {idx === 0 ? '2d ago' : '5d ago'}
                       </span>
-                      <ChevronRight size={14} color="#94A3B8" />
+                      <ChevronRight size={13} color="#94A3B8" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '20px', textAlign: 'center', color: '#657796', fontSize: '12px' }}>
+              <div style={{ padding: '16px', textAlign: 'center', color: '#657796', fontSize: '11px' }}>
                 No active job postings right now. Click "Post Job" to add vacancies.
               </div>
             )}
@@ -1315,114 +1311,156 @@ export const ProfilePage: React.FC = () => {
   const tradeDisplay = currentUser.tradeSpecialization || currentUser.headline || 'Industrial Workforce';
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
-      {/* Reusable Mobile-Identical Top Header Bar */}
-      <MobileHeader title="My Profile" />
+    <div style={{ width: '100%', minHeight: '100vh', background: '#F7F9FC', boxSizing: 'border-box' }}>
+      <style>{`
+        .profile-main-container {
+          width: 100%;
+          max-width: 780px;
+          margin: 0 auto;
+          padding-bottom: 80px;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 767px) {
+          .profile-main-container {
+            max-width: 580px;
+            padding-bottom: 100px !important;
+          }
+        }
+      `}</style>
 
       {/* Main Content Area */}
-      <div style={{
-        maxWidth: '580px',
-        margin: '0 auto',
-        padding: '16px',
-        paddingBottom: '40px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        boxSizing: 'border-box',
-      }}>
-        
-        {/* 1. HEADER PROFILE CARD (MATCHING USER REFERENCE) */}
+      <div className="profile-main-container">
+        {/* 1. ROYAL BLUE HERO HEADER BANNER (EMPLOYEE CAREER THEME) */}
         <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '28px',
-          border: '1px solid #E2E8F0',
-          padding: '16px',
+          backgroundColor: '#174CB6',
+          backgroundImage: `url(${employeeHeaderBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          padding: '12px 14px 38px 14px',
+          boxSizing: 'border-box',
           position: 'relative',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)'
         }}>
-          {/* Top Right Edit Button */}
-          <button
-            onClick={openEditModal}
-            style={{
-              position: 'absolute',
-              top: '14px',
-              right: '14px',
-              width: '30px',
-              height: '30px',
-              borderRadius: '15px',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              color: '#475569',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-            title="Edit Profile"
-          >
-            <Edit3 size={14} strokeWidth={2} />
-          </button>
+          {/* Top Navigation / Edit Control Row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '2px',
+          }}>
+            <div />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={openEditModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
+                title="Edit Profile"
+              >
+                <Edit3 size={15} color="#FFFFFF" strokeWidth={2.2} />
+              </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            {/* Avatar with Camera Badge */}
+              <button
+                onClick={handleShare}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  padding: '4px',
+                }}
+                title="Share Profile"
+              >
+                <Share2 size={15} color="#FFFFFF" strokeWidth={2.2} />
+              </button>
+            </div>
+          </div>
+
+          {/* Candidate Identity Hero Row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginTop: '2px',
+          }}>
+            {/* Circular Avatar Container with Camera Badge */}
             <div
               onClick={triggerFileInput}
               style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '30px',
-                position: 'relative',
-                cursor: 'pointer',
-                flexShrink: 0
-              }}
-              title="Click to update photo"
-            >
-              <div style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '30px',
-                backgroundColor: '#3D4A3E',
+                width: '56px',
+                height: '56px',
+                borderRadius: '28px',
+                backgroundColor: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#FFFFFF',
-                fontSize: '18px',
-                fontWeight: '800',
-                letterSpacing: '0.5px',
-                overflow: 'hidden'
-              }}>
-                {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-                  <img
-                    src={currentUser.profilePictureUrl}
-                    alt={displayName}
-                    referrerPolicy="no-referrer"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  getInitials(displayName)
-                )}
-              </div>
+                marginRight: '12px',
+                position: 'relative',
+                boxShadow: '0 3px 10px rgba(16, 42, 92, 0.25)',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+              title="Click to update photo"
+            >
+              {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                <img
+                  src={currentUser.profilePictureUrl}
+                  alt={displayName}
+                  referrerPolicy="no-referrer"
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '26px',
+                    objectFit: 'cover',
+                  }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '26px',
+                  backgroundColor: '#1E293B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  fontSize: '18px',
+                  fontWeight: 800,
+                }}>
+                  {getInitials(displayName)}
+                </div>
+              )}
 
               {/* Camera Badge Icon */}
               <div style={{
                 position: 'absolute',
-                bottom: '-2px',
-                right: '-2px',
-                width: '22px',
-                height: '22px',
-                borderRadius: '11px',
-                backgroundColor: '#EFF6FF',
-                border: '1.5px solid #FFFFFF',
+                bottom: '-1px',
+                right: '-1px',
+                width: '18px',
+                height: '18px',
+                borderRadius: '9px',
+                backgroundColor: '#FFFFFF',
+                border: '1.5px solid #EFF6FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#1B4FDF',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
               }}>
-                <Camera size={11} strokeWidth={2.5} />
+                <Camera size={9.5} color="#1B4FDF" strokeWidth={2.5} />
               </div>
 
               {/* Loading overlay */}
@@ -1430,41 +1468,98 @@ export const ProfilePage: React.FC = () => {
                 <div style={{
                   position: 'absolute',
                   inset: 0,
-                  borderRadius: '30px',
+                  borderRadius: '28px',
                   backgroundColor: 'rgba(0,0,0,0.6)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
                 }}>
-                  <Loader2 size={16} color="#FFFFFF" className="animate-spin" />
+                  <Loader2 size={14} color="#FFFFFF" className="animate-spin" />
                 </div>
               )}
             </div>
 
-            {/* Info Col */}
-            <div style={{ flex: 1, minWidth: 0, paddingRight: '28px' }}>
+            {/* Candidate Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Candidate Name + Verified Badge */}
               <div style={{
-                fontSize: '16px',
-                fontWeight: '800',
-                color: '#0F172A',
-                fontFamily: 'inherit',
-                letterSpacing: '-0.2px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                marginBottom: '3px',
               }}>
-                {displayName}
+                <h1 style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  margin: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '-0.2px',
+                }}>
+                  {displayName}
+                </h1>
+                <div style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '7px',
+                  backgroundColor: '#1764E8',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }} title="Verified Profile">
+                  <Check size={9} strokeWidth={3} />
+                </div>
               </div>
-              <div style={{
-                fontSize: '12px',
-                fontWeight: '500',
-                color: '#64748B',
-                marginTop: '2px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                {currentUser.email || '—'}
+
+              {/* Subtitle Category Chips on Blue Banner */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '9.5px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  <Award size={10} color="#FFFFFF" strokeWidth={2.2} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {tradeDisplay}
+                  </span>
+                </div>
+
+                {currentUser.location && (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '9.5px',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    flexShrink: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    <MapPin size={10} color="#FFFFFF" strokeWidth={2.2} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {currentUser.location}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1478,342 +1573,657 @@ export const ProfilePage: React.FC = () => {
           />
         </div>
 
-        {/* 2. QUICK STATS ROW */}
-        <div style={{
-          backgroundColor: '#F8FAFC',
-          borderRadius: '16px',
-          border: '1px solid #E2E8F0',
-          padding: '10px 0',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          alignItems: 'center'
-        }}>
-          <div style={{ textAlign: 'center', borderRight: '1px solid #CBD5E1' }}>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
-              {experienceList.length}
-            </div>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
-              Work Exp
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', borderRight: '1px solid #CBD5E1' }}>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
-              {completionPercentage}%
-            </div>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
-              Completeness
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1B4FDF' }}>
-              {skillsList.length}
-            </div>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748B', marginTop: '1px' }}>
-              Key Skills
-            </div>
-          </div>
-        </div>
-
-        {/* 3. PERSONAL DETAILS CARD (EXACT MATCH REFERENCE UI) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '9px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px', marginBottom: '2px' }}>
-            Personal Details
-          </h2>
-
-          {/* Full Name */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Full Name</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
-              {displayName}
-            </div>
-          </div>
-
-          {/* Role / Specialization */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Role / Trade Specialization</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
-              {tradeDisplay}
-            </div>
-          </div>
-
-          {/* Registered Email */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Registered Email</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
-              {currentUser.email || '—'}
-            </div>
-          </div>
-
-          {/* Phone / WhatsApp */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Phone / WhatsApp</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
-              {currentUser.phone ? `+91 ${currentUser.phone}` : '—'}
-            </div>
-          </div>
-
-          {/* Home City / Location Base */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Home City / Location Base</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', height: '40px', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: '500', color: '#0F172A' }}>
-              {currentUser.location || '—'}
-            </div>
-          </div>
-
-          {/* Bio & Notes */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#475569' }}>Professional Bio & Notes</label>
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', minHeight: '52px', padding: '9px 12px', fontSize: '11.5px', fontWeight: '400', color: '#0F172A', lineHeight: '16px' }}>
-              {currentUser.headline || 'No professional bio summary added yet. Tap Edit Profile to add a summary.'}
-            </div>
-          </div>
-        </div>
-
-        {/* 4. SKILLS & EXPERTISE CARD */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
-            Skills & Expertise
-          </h2>
-
-          {skillsList.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {skillsList.map((s, idx) => (
-                <div key={idx} style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '10px', padding: '5px 10px', fontSize: '11px', fontWeight: '600', color: '#0F172A' }}>
-                  {s}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
-              No key skills added yet.
-            </div>
-          )}
-        </div>
-
-        {/* 5. WORK EXPERIENCE CARD (VERTICAL TIMELINE) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
-            Work Experience
-          </h2>
-
-          {experienceList.length === 0 ? (
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
-              No work experience entries added yet.
-            </div>
-          ) : (
-            <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '4px' }}>
-              {/* Continuous vertical line */}
-              <div style={{ position: 'absolute', left: '8px', top: '12px', bottom: '12px', width: '1.5px', backgroundColor: '#CBD5E1' }} />
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {experienceList.map((item: any, idx: number) => {
-                  const isCurrent = idx === 0;
-                  const itemSkills = Array.isArray(item.skills) ? item.skills : [];
-                  const achievementsList = Array.isArray(item.achievements) ? item.achievements : [];
-                  const durationText = item.duration || '2020 - Present';
-                  const roleCompanyTitle = item.company ? `${item.title || 'Role'} at ${item.company}` : (item.title || 'Role Position');
-
-                  return (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                      {/* Node Indicator Dot */}
-                      <div style={{ width: '10px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#0F172A' }} />
-                      </div>
-
-                      {/* Timeline Experience Card */}
-                      <div style={{ flex: 1, backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '800', color: '#0F172A' }}>{durationText}</span>
-                          {isCurrent && (
-                            <span style={{ backgroundColor: '#E8F5E9', color: '#2E7D32', padding: '1.5px 6px', borderRadius: '5px', fontSize: '9px', fontWeight: '700' }}>
-                              Current Role
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', marginTop: '1px' }}>
-                          {roleCompanyTitle}
-                        </div>
-
-                        {item.location && (
-                          <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>
-                            {item.location}
-                          </div>
-                        )}
-
-                        {item.description && (
-                          <div style={{ fontSize: '10.5px', color: '#334155', lineHeight: '15px', marginTop: '2px' }}>
-                            {item.description}
-                          </div>
-                        )}
-
-                        {achievementsList.length > 0 && (
-                          <div style={{ marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#0F172A' }}>Key Achievements</span>
-                            {achievementsList.map((ach: string, achIdx: number) => (
-                              <div key={achIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', paddingLeft: '2px' }}>
-                                <span style={{ fontSize: '10px', color: '#1B4FDF', fontWeight: '700' }}>•</span>
-                                <span style={{ fontSize: '10px', color: '#475569', lineHeight: '14px' }}>{ach}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {itemSkills.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '3px' }}>
-                            {itemSkills.map((sk: string, skIdx: number) => (
-                              <span key={skIdx} style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', padding: '2px 6px', borderRadius: '6px', fontSize: '9.5px', fontWeight: '600', color: '#475569' }}>
-                                {sk}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+        {/* 2. BODY CONTENT (STATS BAR, TAB MENU, PERSONAL / PROFESSIONAL SECTIONS) */}
+        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+          {/* Quick Stats Floating Card (Overlapping Blue Banner) */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E7EBF2',
+            borderRadius: '7px',
+            padding: '8px 10px',
+            marginTop: '-24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            position: 'relative',
+            zIndex: 10,
+            boxShadow: '0 2px 6px rgba(20, 42, 80, 0.05)',
+          }}>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+                {experienceList.length}
+              </div>
+              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+                Work Exp
               </div>
             </div>
-          )}
-        </div>
 
-        {/* 6. EDUCATION & QUALIFICATIONS CARD (VERTICAL TIMELINE) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
-            Education & Qualifications
-          </h2>
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
 
-          {educationList.length === 0 ? (
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
-              No education or ITI certificate added yet.
-            </div>
-          ) : (
-            <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '4px' }}>
-              <div style={{ position: 'absolute', left: '8px', top: '12px', bottom: '12px', width: '1.5px', backgroundColor: '#CBD5E1' }} />
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {educationList.map((item: any, idx: number) => {
-                  const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
-                  return (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                      <div style={{ width: '10px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#0F172A' }} />
-                      </div>
-
-                      <div style={{ flex: 1, backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#0F172A' }}>{yearText}</span>
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A' }}>
-                          {item.degree || 'Degree / ITI Certification'}
-                        </div>
-                        <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '500' }}>
-                          {item.institution || 'Institution / Board'}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+                {completionPercentage}%
+              </div>
+              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+                Completeness
               </div>
             </div>
-          )}
-        </div>
 
-        {/* 7. RESUME & BIO-DATA */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '20px',
-          border: '1px solid #E2E8F0',
-          padding: '14px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          marginBottom: '16px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0F172A', fontFamily: 'inherit', letterSpacing: '-0.2px' }}>
-            Resume
-          </h2>
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
 
-          {currentUser.resume ? (
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                <div style={{ width: '30px', height: '30px', borderRadius: '8px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B4FDF', flexShrink: 0 }}>
-                  <FileText size={16} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {currentUser.resume.name || 'Candidate_Resume.pdf'}
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#059669', fontWeight: '600', marginTop: '1px' }}>
-                    ✓ Document Attached
-                  </div>
-                </div>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+                {skillsList.length}
               </div>
+              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+                Key Skills
+              </div>
+            </div>
+          </div>
 
-              <button
-                onClick={() => setPreviewResume(currentUser.resume)}
-                style={{
+          {/* 2-Option Tab Menu with Underline */}
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid #E2E8F0',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '5px',
+            overflow: 'hidden',
+          }}>
+            <button
+              onClick={() => setActiveCandidateTab('PERSONAL')}
+              style={{
+                flex: 1,
+                padding: '8px 0',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                fontWeight: activeCandidateTab === 'PERSONAL' ? 700 : 600,
+                color: activeCandidateTab === 'PERSONAL' ? '#1B4FDF' : '#64748B',
+              }}>
+                <User size={12} color={activeCandidateTab === 'PERSONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
+                <span>Personal Info</span>
+              </div>
+              {activeCandidateTab === 'PERSONAL' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  backgroundColor: '#1B4FDF',
+                  borderRadius: '2px 2px 0 0',
+                }} />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveCandidateTab('PROFESSIONAL')}
+              style={{
+                flex: 1,
+                padding: '8px 0',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                fontWeight: activeCandidateTab === 'PROFESSIONAL' ? 700 : 600,
+                color: activeCandidateTab === 'PROFESSIONAL' ? '#1B4FDF' : '#64748B',
+              }}>
+                <Briefcase size={12} color={activeCandidateTab === 'PROFESSIONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
+                <span>Professional Info</span>
+              </div>
+              {activeCandidateTab === 'PROFESSIONAL' && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  backgroundColor: '#1B4FDF',
+                  borderRadius: '2px 2px 0 0',
+                }} />
+              )}
+            </button>
+          </div>
+
+          {/* TAB 1: PERSONAL DETAILS SECTION */}
+          {activeCandidateTab === 'PERSONAL' && (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '7px',
+              border: '1px solid #CBD5E1',
+              padding: '11px 13px',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}>
+              <h2 style={{
+                margin: 0,
+                fontSize: '12.5px',
+                fontWeight: 800,
+                color: '#0F172A',
+                letterSpacing: '-0.1px',
+                marginBottom: '1px',
+              }}>
+                Personal Details
+              </h2>
+
+              {/* Full Name */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Full Name</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 10px',
-                  backgroundColor: '#1B4FDF',
-                  borderRadius: '14px',
-                  color: '#FFFFFF',
-                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#0F172A',
+                }}>
+                  {displayName}
+                </div>
+              </div>
+
+              {/* Role / Specialization */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Role / Trade Specialization</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#0F172A',
+                }}>
+                  {tradeDisplay}
+                </div>
+              </div>
+
+              {/* Registered Email */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Registered Email</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#0F172A',
+                }}>
+                  {currentUser.email || '—'}
+                </div>
+              </div>
+
+              {/* Phone / WhatsApp */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Phone / WhatsApp</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#0F172A',
+                }}>
+                  {currentUser.phone ? `+91 ${currentUser.phone}` : '—'}
+                </div>
+              </div>
+
+              {/* Home City / Location Base */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Home City / Location Base</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#0F172A',
+                }}>
+                  {currentUser.location || '—'}
+                </div>
+              </div>
+
+              {/* Bio & Notes */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Professional Bio & Notes</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  minHeight: '44px',
+                  padding: '7px 10px',
                   fontSize: '10.5px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                <span>View PDF</span>
-              </button>
-            </div>
-          ) : (
-            <div style={{ backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '12px', padding: '12px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>
-              No resume document attached yet.
+                  fontWeight: 400,
+                  color: '#0F172A',
+                  lineHeight: '14.5px',
+                }}>
+                  {currentUser.headline || currentUser.bio || 'No professional bio summary added yet. Tap Edit Profile to add a summary.'}
+                </div>
+              </div>
             </div>
           )}
-        </div>
 
+          {/* TAB 2: PROFESSIONAL DETAILS SECTIONS */}
+          {activeCandidateTab === 'PROFESSIONAL' && (
+            <>
+              {/* 1. SKILLS & EXPERTISE CARD */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '7px',
+                border: '1px solid #CBD5E1',
+                padding: '11px 13px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.1px',
+                }}>
+                  Skills & Expertise
+                </h2>
+
+                {skillsList.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {skillsList.map((s, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#EFF6FF',
+                          border: '1px solid #DBEAFE',
+                          borderRadius: '4px',
+                          padding: '3px 7px',
+                          fontSize: '9.5px',
+                          fontWeight: 600,
+                          color: '#1B4FDF',
+                        }}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '5px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    color: '#64748B',
+                  }}>
+                    No key skills added yet.
+                  </div>
+                )}
+              </div>
+
+              {/* 2. WORK EXPERIENCE TIMELINE CARD */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '7px',
+                border: '1px solid #CBD5E1',
+                padding: '11px 13px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '7px',
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.1px',
+                }}>
+                  Work Experience
+                </h2>
+
+                {experienceList.length === 0 ? (
+                  <div style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '5px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    color: '#64748B',
+                  }}>
+                    No work experience entries added yet.
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '3px' }}>
+                    <div style={{
+                      position: 'absolute',
+                      left: '7px',
+                      top: '10px',
+                      bottom: '10px',
+                      width: '1.5px',
+                      backgroundColor: '#CBD5E1',
+                    }} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {experienceList.map((item: any, idx: number) => {
+                        const isCurrent = idx === 0;
+                        const itemSkills = Array.isArray(item.skills) ? item.skills : [];
+                        const achievementsList = Array.isArray(item.achievements) ? item.achievements : [];
+                        const durationText = item.duration || '2020 - Present';
+                        const roleCompanyTitle = item.company ? `${item.title || 'Role'} at ${item.company}` : (item.title || 'Role Position');
+
+                        return (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <div style={{ width: '8px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#1B4FDF' }} />
+                            </div>
+
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: '5px',
+                              padding: '8px 10px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '5px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A' }}>{durationText}</span>
+                                {isCurrent && (
+                                  <span style={{
+                                    backgroundColor: '#DCFCE7',
+                                    color: '#16A34A',
+                                    padding: '1px 5px',
+                                    borderRadius: '3px',
+                                    fontSize: '8.5px',
+                                    fontWeight: 700,
+                                  }}>
+                                    Current Role
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A', marginTop: '1px' }}>
+                                {roleCompanyTitle}
+                              </div>
+
+                              {item.location && (
+                                <div style={{ fontSize: '9.5px', color: '#64748B', fontWeight: 500 }}>
+                                  {item.location}
+                                </div>
+                              )}
+
+                              {item.description && (
+                                <div style={{ fontSize: '9.5px', color: '#334155', lineHeight: '13.5px', marginTop: '2px' }}>
+                                  {item.description}
+                                </div>
+                              )}
+
+                              {achievementsList.length > 0 && (
+                                <div style={{ marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#0F172A' }}>Key Achievements</span>
+                                  {achievementsList.map((ach: string, achIdx: number) => (
+                                    <div key={achIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', paddingLeft: '2px' }}>
+                                      <span style={{ fontSize: '9px', color: '#1B4FDF', fontWeight: 700 }}>•</span>
+                                      <span style={{ fontSize: '9px', color: '#475569', lineHeight: '13px' }}>{ach}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {itemSkills.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '2px' }}>
+                                  {itemSkills.map((sk: string, skIdx: number) => (
+                                    <span
+                                      key={skIdx}
+                                      style={{
+                                        backgroundColor: '#FFFFFF',
+                                        border: '1px solid #E2E8F0',
+                                        padding: '1.5px 5px',
+                                        borderRadius: '3px',
+                                        fontSize: '8.5px',
+                                        fontWeight: 600,
+                                        color: '#475569',
+                                      }}
+                                    >
+                                      {sk}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. EDUCATION & QUALIFICATIONS TIMELINE CARD */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '7px',
+                border: '1px solid #CBD5E1',
+                padding: '11px 13px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '7px',
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.1px',
+                }}>
+                  Education & Qualifications
+                </h2>
+
+                {educationList.length === 0 ? (
+                  <div style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '5px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    color: '#64748B',
+                  }}>
+                    No education or ITI certificate added yet.
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '3px' }}>
+                    <div style={{
+                      position: 'absolute',
+                      left: '7px',
+                      top: '10px',
+                      bottom: '10px',
+                      width: '1.5px',
+                      backgroundColor: '#CBD5E1',
+                    }} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {educationList.map((item: any, idx: number) => {
+                        const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
+                        return (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <div style={{ width: '8px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#1B4FDF' }} />
+                            </div>
+
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: '5px',
+                              padding: '8px 10px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                            }}>
+                              <span style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A' }}>{yearText}</span>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A' }}>
+                                {item.degree || 'Degree / ITI Certification'}
+                              </div>
+                              <div style={{ fontSize: '9.5px', color: '#64748B', fontWeight: 500 }}>
+                                {item.institution || 'Institution / Board'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. RESUME & BIO-DATA DOCUMENT CARD */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '7px',
+                border: '1px solid #CBD5E1',
+                padding: '11px 13px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '7px',
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.1px',
+                }}>
+                  Resume
+                </h2>
+
+                {currentUser.resume ? (
+                  <div style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '5px',
+                    padding: '8px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '5px',
+                        backgroundColor: '#EFF6FF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#1B4FDF',
+                        flexShrink: 0,
+                      }}>
+                        <FileText size={13} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#0F172A',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {currentUser.resume.name || 'Candidate_Resume.pdf'}
+                        </div>
+                        <div style={{ fontSize: '9px', color: '#16A34A', fontWeight: 600, marginTop: '1px' }}>
+                          ✓ Document Attached
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setPreviewResume(currentUser.resume)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        padding: '4px 9px',
+                        backgroundColor: '#1B4FDF',
+                        borderRadius: '3px',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontSize: '9.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span>View PDF</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '5px',
+                    padding: '10px',
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    color: '#64748B',
+                  }}>
+                    No resume document attached yet.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Resume Preview Modal */}

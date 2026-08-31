@@ -66,78 +66,70 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
 
   return (
     <>
-      {/* Top Search Bar & View Mode Bar */}
-      <View style={{ zIndex: 999, position: 'relative', marginHorizontal: 16, marginTop: 10, marginBottom: 8 }}>
-        <View style={styles.topBarWrapperRow}>
-          <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
-            <TouchableOpacity onPress={() => setShowSuggestions(false)} style={styles.searchIconBadge3D} activeOpacity={0.8}>
-              <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} strokeWidth={2.2} />
-            </TouchableOpacity>
+      {/* Top Tabular View Mode Menu with Standard Underline */}
+      <View style={styles.viewModeTabsContainer}>
+        <View style={styles.viewModeTabsRow}>
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => setViewMode('grid')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.tabContentRow}>
+              <LayoutGrid
+                size={15}
+                color={viewMode === 'grid' ? COLORS.primary : '#64748B'}
+                strokeWidth={viewMode === 'grid' ? 2.4 : 1.8}
+              />
+              <Text style={[styles.tabText, viewMode === 'grid' && styles.tabTextActive]}>
+                Grid View
+              </Text>
+            </View>
+            {viewMode === 'grid' ? (
+              <View style={styles.activeUnderline} />
+            ) : (
+              <View style={styles.inactiveUnderline} />
+            )}
+          </TouchableOpacity>
 
-            <TextInput
-              ref={searchInputRef}
-              style={styles.topSearchInput}
-              placeholder={searchPlaceholders[placeholderIndex]}
-              placeholderTextColor="#94A3B8"
-              value={searchQuery}
-              onChangeText={(txt) => {
-                setSearchQuery(txt);
-                setShowSuggestions(txt.trim().length > 0);
-              }}
-              onPressIn={() => setIsInputFocused(true)}
-              onFocus={() => {
-                setIsInputFocused(true);
-                setShowSuggestions(searchQuery.trim().length > 0);
-              }}
-              onBlur={() => setIsInputFocused(false)}
-              returnKeyType="search"
-            />
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => setViewMode('list')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.tabContentRow}>
+              <List
+                size={16}
+                color={viewMode === 'list' ? COLORS.primary : '#64748B'}
+                strokeWidth={viewMode === 'list' ? 2.4 : 1.8}
+              />
+              <Text style={[styles.tabText, viewMode === 'list' && styles.tabTextActive]}>
+                List View
+              </Text>
+            </View>
+            {viewMode === 'list' ? (
+              <View style={styles.activeUnderline} />
+            ) : (
+              <View style={styles.inactiveUnderline} />
+            )}
+          </TouchableOpacity>
 
-            {searchQuery.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setShowSuggestions(false);
-                }}
-                style={styles.searchClearBtn}
-              >
-                <X size={14} color="#64748B" strokeWidth={2.2} />
-              </TouchableOpacity>
-            ) : null}
-
-            <View style={styles.inlineFilterDivider} />
-
-            <TouchableOpacity
-              style={styles.inlineFilterBtnIconOnly}
-              onPress={onOpenFilterDrawer}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <SlidersHorizontal size={18} color={COLORS.primary} strokeWidth={2.2} />
-            </TouchableOpacity>
-          </View>
-
-          {/* View Mode Toggle Buttons */}
-          <View style={styles.viewToggleGroup}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'grid' && styles.toggleBtnActive]}
-              onPress={() => setViewMode('grid')}
-            >
-              <LayoutGrid size={16} color={viewMode === 'grid' ? COLORS.primary : '#64748B'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
-              onPress={() => setViewMode('list')}
-            >
-              <List size={16} color={viewMode === 'list' ? COLORS.primary : '#64748B'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.toggleBtn}
-              onPress={() => navigation.navigate('CandidateJobMapView')}
-            >
-              <MapPin size={16} color="#059669" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => navigation.navigate('CandidateJobMapView')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.tabContentRow}>
+              <MapPin
+                size={15}
+                color="#64748B"
+                strokeWidth={1.8}
+              />
+              <Text style={styles.tabText}>
+                Map View
+              </Text>
+            </View>
+            <View style={styles.inactiveUnderline} />
+          </TouchableOpacity>
         </View>
 
         {/* Autocomplete Dropdown Overlay */}
@@ -260,6 +252,7 @@ const styles = StyleSheet.create({
   topBarWrapperRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
   },
   topSearchPillRow: {
@@ -271,22 +264,22 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     borderRadius: 6,
     paddingHorizontal: 10,
-    height: 40,
+    height: 38,
     gap: 8,
   },
-  topSearchPillRowActive: {
-    borderColor: COLORS.primary,
+  filterActionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    height: 38,
+    justifyContent: 'center',
   },
-  searchIconBadge3D: {
-    padding: 2,
-  },
-  topSearchInput: {
-    flex: 1,
-    height: '100%',
-    fontSize: 12.5,
-    color: '#0F172A',
-    fontWeight: '500',
-    paddingVertical: 0,
+  filterActionPillText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   searchClearBtn: {
     width: 22,
@@ -304,24 +297,56 @@ const styles = StyleSheet.create({
   inlineFilterBtnIconOnly: {
     padding: 4,
   },
-  viewToggleGroup: {
-    flexDirection: 'row',
+  viewModeTabsContainer: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 6,
-    padding: 2,
-    gap: 2,
-    height: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    marginBottom: 8,
+  },
+  viewModeTabsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  toggleBtn: {
-    paddingHorizontal: 7,
-    paddingVertical: 6,
-    borderRadius: 4,
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
+    position: 'relative',
   },
-  toggleBtnActive: {
-    backgroundColor: '#EFF6FF',
+  tabContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingBottom: 9,
+  },
+  tabText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabTextActive: {
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+  activeUnderline: {
+    position: 'absolute',
+    bottom: -1,
+    left: 8,
+    right: 8,
+    height: 2.5,
+    backgroundColor: COLORS.primary,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+  },
+  inactiveUnderline: {
+    position: 'absolute',
+    bottom: -1,
+    left: 8,
+    right: 8,
+    height: 2.5,
+    backgroundColor: 'transparent',
   },
   suggestionsContainer: {
     position: 'absolute',

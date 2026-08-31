@@ -35,6 +35,9 @@ router.get('/workers/all', requireAuth, JobController.getAllCandidates);
 router.get('/candidates/all', requireAuth, JobController.getAllCandidates);
 router.get('/candidates', requireAuth, JobController.getAllCandidates);
 
+// High-Scale Dedicated Search Endpoint
+router.get('/search', JobController.searchJobs);
+
 // General Jobs Collection
 router.get('/', JobController.getJobs);
 router.post('/', requireAuth, actionLimiter, JobController.createJob);

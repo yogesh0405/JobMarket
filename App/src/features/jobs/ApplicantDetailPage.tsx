@@ -220,8 +220,23 @@ export const ApplicantDetailPage: React.FC = () => {
         }
       }
 
-      // Fallback direct user fetch
+      // Fallback direct user fetch from DB
       if (effectiveApplicantId) {
+        try {
+          const profileRes = await apiFetch(`/api/v1/auth/public-profile/${effectiveApplicantId}`);
+          if (profileRes.ok) {
+            const userJson = await profileRes.json();
+            if (userJson.success && userJson.user) {
+              setApplicant({
+                ...userJson.user,
+                user: userJson.user,
+              });
+              initStatus(userJson.user);
+              return;
+            }
+          }
+        } catch (_) {}
+
         const userRes = await apiFetch(`/api/v1/users/${effectiveApplicantId}`);
         const userJson = await userRes.json();
         if (userRes.ok && userJson.success) {
@@ -544,7 +559,13 @@ export const ApplicantDetailPage: React.FC = () => {
           }}>
             <button
               type="button"
-              onClick={() => navigate(effectiveJobId ? `/job/${effectiveJobId}/applicants` : '/dashboard')}
+              onClick={() => {
+                if (effectiveJobId) {
+                  navigate(`/dashboard?tab=applicants&jobId=${effectiveJobId}`);
+                } else {
+                  navigate('/dashboard?tab=applicants');
+                }
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',

@@ -29,6 +29,9 @@ import { EmployerBannersScreen } from '../screens/advertisements/EmployerBanners
 import { CreateBannerScreen } from '../screens/advertisements/CreateBannerScreen';
 import { EmployerInterviewsScreen } from '../screens/jobs/EmployerInterviewsScreen';
 import { EmployerCandidateDetailScreen } from '../screens/candidates/EmployerCandidateDetailScreen';
+import { CandidateFilterScreen } from '../screens/candidates/CandidateFilterScreen';
+import { JobFilterScreen } from '../screens/jobs/JobFilterScreen';
+import { CompanyFilterScreen } from '../screens/company/CompanyFilterScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +49,8 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
           <Stack.Screen name="GoogleAuth" component={GoogleAuthScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+          <Stack.Screen name="JobFilter" component={JobFilterScreen} />
+          <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
         </>
       ) : isCandidate ? (
         // Candidate / Employee App Stack (RBAC)
@@ -70,6 +75,8 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateSaved" component={CandidateSavedJobsScreen} />
           <Stack.Screen name="MyInterviews" component={CandidateInterviewsScreen} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
+          <Stack.Screen name="JobFilter" component={JobFilterScreen} />
+          <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
         </>
       ) : (
         // Employer App Stack (RBAC)
@@ -93,6 +100,8 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Notifications" component={NotificationScreen} />
+          <Stack.Screen name="CandidateFilter" component={CandidateFilterScreen} />
+          <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
         </>
       )}
     </Stack.Navigator>

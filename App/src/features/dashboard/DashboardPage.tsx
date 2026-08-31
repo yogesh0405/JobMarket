@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { apiFetch } from '../../utils/api';
@@ -61,7 +61,16 @@ import {
   Trash2,
   Edit3,
   Share2,
-  XCircle
+  XCircle,
+  ArrowLeft,
+  Phone,
+  Mail,
+  Bus,
+  Home,
+  Wrench,
+  GraduationCap,
+  RotateCcw,
+  Check
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -156,6 +165,9 @@ export const DashboardPage: React.FC = () => {
       </div>
     );
   }
+
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   const setTab = (newTab: string) => {
     setSearchParams({ tab: newTab });
@@ -333,19 +345,22 @@ export const DashboardPage: React.FC = () => {
               <div className="dashboard-profile-body">
                 <div className="dashboard-profile-header">
                   <div className="dashboard-avatar" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-                      <img 
-                        src={currentUser.profilePictureUrl} 
-                        alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
-                        referrerPolicy="no-referrer"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      getInitials(currentUser.companyName || currentUser.name)
-                    )}
+                    {(() => {
+                      const userPhoto = currentUser.profilePictureUrl || (currentUser as any).profile_picture_url || (currentUser as any).avatar_url || (currentUser as any).avatar;
+                      return userPhoto && typeof userPhoto === 'string' ? (
+                        <img 
+                          src={userPhoto} 
+                          alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                          referrerPolicy="no-referrer"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        getInitials(currentUser.companyName || currentUser.name)
+                      );
+                    })()}
                   </div>
                   <div className="dashboard-profile-title">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -748,9 +763,6 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'applied':
       return (
         <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
-          {/* Reusable Mobile-Identical Top Header Bar */}
-          <MobileHeader title="Applied Jobs" />
-
           {/* Main Content Area */}
           <div style={{
             maxWidth: '580px',
@@ -1155,6 +1167,925 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
   }
 };
 
+const CandidateProfileDetailView: React.FC<{
+  candidate: any;
+  onBack: () => void;
+  showToast?: any;
+}> = ({ candidate, onBack, showToast }) => {
+  const [previewResume, setPreviewResume] = useState<any>(null);
+
+  const name = candidate.name || candidate.company_name || 'Candidate Profile';
+  const headline = candidate.headline || candidate.tradeSpecialization || candidate.trade_specialization || 'Industrial Technical Specialist';
+  const location = candidate.city
+    ? `${candidate.city}, ${candidate.state || 'Maharashtra'}`
+    : (candidate.location || candidate.address || 'Waluj MIDC');
+  const midcZone = candidate.midc_zone || candidate.midcZone || candidate.preferred_location || 'Waluj / Shendra MIDC';
+  const shift = candidate.preferred_shift || candidate.shift_preference || candidate.shift_timing || candidate.preferredShift || 'Day Shift';
+  const requiresBus = candidate.requires_bus ?? candidate.requiresBus;
+  const requiresAccommodation = candidate.requires_accommodation ?? candidate.requiresAccommodation;
+
+  const rawSkills = safeJsonParse(candidate.skills, candidate.skills);
+  const skillsList: string[] = Array.isArray(rawSkills)
+    ? rawSkills.map((s: any) => typeof s === 'string' ? s.trim() : (s?.name || '')).filter(Boolean)
+    : typeof rawSkills === 'string' && rawSkills.trim()
+    ? rawSkills.split(',').map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  const rawBio = candidate.bio || candidate.summary || candidate.about;
+  const bioText = (typeof rawBio === 'string' && rawBio.trim() && !rawBio.includes('[object Object]'))
+    ? rawBio.trim()
+    : '';
+
+  // Work Experience
+  let experienceList: any[] = [];
+  let rawExp = safeJsonParse(candidate.experience, candidate.experience);
+  if (Array.isArray(rawExp) && rawExp.length > 0) {
+    experienceList = rawExp;
+  } else if (typeof rawExp === 'object' && rawExp) {
+    experienceList = [rawExp];
+  } else if (candidate.experience || candidate.experience_years != null || candidate.current_company || candidate.tradeSpecialization || candidate.trade_specialization) {
+    experienceList = [
+      {
+        title: candidate.tradeSpecialization || candidate.trade_specialization || candidate.headline || 'Technical Specialist',
+        company: candidate.current_company || candidate.company_name || 'Industrial Engineering Works',
+        duration: candidate.experience_years != null ? `${candidate.experience_years} Years Experience` : (typeof candidate.experience === 'string' ? candidate.experience : '2022 - Present'),
+        description: candidate.bio || candidate.role_summary || '',
+        isCurrent: true,
+      },
+    ];
+  }
+
+  // Education
+  let educationList: any[] = [];
+  let rawEdu = safeJsonParse(candidate.education || candidate.qualification, candidate.education);
+  if (Array.isArray(rawEdu) && rawEdu.length > 0) {
+    educationList = rawEdu;
+  } else if (typeof rawEdu === 'object' && rawEdu) {
+    educationList = [rawEdu];
+  } else if (candidate.highest_qualification || candidate.education || candidate.degree) {
+    educationList = [
+      {
+        degree: candidate.highest_qualification || candidate.degree || (typeof candidate.education === 'string' ? candidate.education : 'ITI / Technical Diploma'),
+        institution: candidate.institute_name || candidate.college || 'Government Industrial Training Institute (ITI)',
+        year: candidate.passing_year || candidate.graduation_year || '2022',
+      },
+    ];
+  }
+
+  const rawResume = candidate.resume || candidate.resume_url || candidate.resumeUrl;
+  const resumeUrl = typeof rawResume === 'string' ? rawResume : rawResume?.url ? rawResume.url : '';
+  const resumeName = typeof rawResume === 'object' && rawResume?.name ? rawResume.name : `${name}_Resume.pdf`;
+
+  const phone = candidate.phone || '';
+  const email = candidate.email || '';
+  const photoUrl = candidate.profilePictureUrl || candidate.profile_picture_url || candidate.avatarUrl || candidate.avatar;
+
+  useEffect(() => {
+    document.body.classList.add('candidate-profile-open');
+    return () => {
+      document.body.classList.remove('candidate-profile-open');
+    };
+  }, []);
+
+  return (
+    <div className="candidate-profile-detail-root" style={{ width: '100%', paddingBottom: 'calc(40px + env(safe-area-inset-bottom, 0px))' }}>
+      {/* ── TOP ROYAL BLUE HERO HEADER ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1764E8 0%, #0F4BC2 100%)',
+        width: '100%',
+        padding: 'calc(16px + env(safe-area-inset-top, 0px)) 20px 20px 20px',
+        color: '#FFFFFF',
+        position: 'relative',
+        boxSizing: 'border-box',
+        borderRadius: '8px 8px 0 0'
+      }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+          {/* Top Header Row with Close / Back Button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <button
+              onClick={onBack}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px',
+                borderRadius: '6px'
+              }}
+              title="Back to Candidates"
+            >
+              <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  const candidateId = candidate.id || candidate.user_id || candidate.userId;
+                  const profileUrl = `${window.location.origin}/profile/${encodeURIComponent(candidateId || '')}`;
+                  shareContent(
+                    `${name} - Candidate Profile`,
+                    `View verified technical profile and trade skills for ${name} on JobMarket: ${profileUrl}`,
+                    profileUrl,
+                    () => {
+                      if (showToast) showToast('Candidate profile link copied to clipboard! 📋', 'success');
+                    }
+                  );
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  borderRadius: '6px'
+                }}
+                title="Share Candidate Profile"
+              >
+                <Share2 size={18} color="#FFFFFF" strokeWidth={2.2} />
+              </button>
+
+              <button
+                onClick={onBack}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  borderRadius: '6px'
+                }}
+                title="Close"
+              >
+                <XCircle size={20} color="#FFFFFF" strokeWidth={2.2} />
+              </button>
+            </div>
+          </div>
+
+          {/* Candidate Avatar & Info Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '2.5px solid #FFFFFF',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}>
+              {photoUrl && typeof photoUrl === 'string' ? (
+                <img 
+                  src={photoUrl} 
+                  alt={name} 
+                  referrerPolicy="no-referrer"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', backgroundColor: '#2563EB', color: '#FFFFFF', fontWeight: '800', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {getInitials(name)}
+                </div>
+              )}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h1 style={{ fontSize: '19px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {name}
+                </h1>
+                {(candidate.verified || candidate.aadhaarVerified || candidate.aadhaar_verified) && (
+                  <ShieldCheck size={17} color="#4ADE80" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                )}
+              </div>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: '#DBEAFE', margin: '2px 0 0 0', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {headline}
+              </p>
+              <p style={{ fontSize: '12px', fontWeight: '400', color: '#BFDBFE', margin: '2px 0 0 0', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {location}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MAIN CONTENT CONTAINER (SINGLE CARD MATCHING MOBILE APP) ── */}
+      <div style={{ maxWidth: '640px', margin: '14px auto 0 auto', padding: '0 4px', boxSizing: 'border-box' }}>
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E7EBF2',
+          padding: '16px',
+          boxShadow: '0 2px 8px rgba(20, 42, 80, 0.04)'
+        }}>
+
+          {/* 1. Quick Contact Action Bar (4 Pills) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '4px' }}>
+            <a
+              href={phone ? `tel:${phone}` : '#'}
+              onClick={(e) => { if (!phone) { e.preventDefault(); if (showToast) showToast('Phone number not provided', 'warning'); } }}
+              style={{
+                height: '36px',
+                backgroundColor: '#F8FAFC',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                color: '#1764E8',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                textDecoration: 'none'
+              }}
+            >
+              <Phone size={13} color="#1764E8" />
+              <span>Call</span>
+            </a>
+
+            <a
+              href={phone ? `https://wa.me/91${phone.replace(/\D/g, '')}` : '#'}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => { if (!phone) { e.preventDefault(); if (showToast) showToast('WhatsApp number not provided', 'warning'); } }}
+              style={{
+                height: '36px',
+                backgroundColor: '#F8FAFC',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                color: '#15803D',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                textDecoration: 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M12.004 2C6.48 2 2 6.48 2 12c0 2.17.693 4.18 1.871 5.823L2.5 21.5l3.8-1.33A9.957 9.957 0 0012.004 22c5.52 0 10-4.48 10-10s-4.48-10-10-10zm5.468 12.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"
+                  fill="#16A34A"
+                />
+              </svg>
+              <span>WhatsApp</span>
+            </a>
+
+            <a
+              href={email ? `mailto:${email}` : '#'}
+              onClick={(e) => { if (!email) { e.preventDefault(); if (showToast) showToast('Email address not provided', 'warning'); } }}
+              style={{
+                height: '36px',
+                backgroundColor: '#F8FAFC',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                color: '#DC2626',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                textDecoration: 'none'
+              }}
+            >
+              <Mail size={13} color="#DC2626" />
+              <span>Email</span>
+            </a>
+
+            <button
+              onClick={() => {
+                if (resumeUrl) {
+                  setPreviewResume({ url: resumeUrl, name: resumeName });
+                } else {
+                  if (showToast) showToast('Resume document not provided', 'info');
+                }
+              }}
+              style={{
+                height: '36px',
+                backgroundColor: '#EFF6FF',
+                borderRadius: '6px',
+                border: '1px solid #BFDBFE',
+                color: '#1764E8',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              <FileText size={13} color="#1764E8" />
+              <span>Resume</span>
+            </button>
+          </div>
+
+          {/* 2. Candidate Bio / About Candidate */}
+          {bioText && (
+            <>
+              <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                ABOUT CANDIDATE
+              </div>
+              <div style={{ fontSize: '12.5px', color: '#334155', lineHeight: '19px' }}>
+                {bioText}
+              </div>
+            </>
+          )}
+
+          {/* 3. WORK EXPERIENCE TIMELINE */}
+          <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            WORK EXPERIENCE
+          </div>
+
+          {experienceList.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {experienceList.map((item, idx) => {
+                const isCurrent = idx === 0 || item?.isCurrent;
+                const isLast = idx === experienceList.length - 1;
+                const durationText = item?.duration || (item?.years ? `${item.years} Yrs Experience` : '2021 - Present');
+                const roleTitle = item?.title || item?.role || 'Technical Specialist';
+                const companyName = item?.company || '';
+                const displayHeading = companyName ? `${roleTitle} at ${companyName}` : roleTitle;
+                const descText = item?.description || roleTitle;
+
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <div style={{ width: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '8px', position: 'relative', flexShrink: 0 }}>
+                      {!isLast && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '18px',
+                          bottom: '-8px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: '1.5px',
+                          backgroundColor: '#CBD5E1',
+                          zIndex: 1
+                        }} />
+                      )}
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#1E293B', marginTop: '14px', zIndex: 2, position: 'relative' }} />
+                    </div>
+
+                    <div style={{ flex: 1, backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#102A5C' }}>{durationText}</span>
+                        {isCurrent && (
+                          <span style={{ backgroundColor: '#ECFDF5', color: '#059669', fontSize: '9.5px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px' }}>
+                            Current Role
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#102A5C' }}>{displayHeading}</div>
+                      {descText && <div style={{ fontSize: '11px', color: '#657796', marginTop: '2px' }}>{descText}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px', textAlign: 'center', fontSize: '11px', color: '#657796' }}>
+              No work experience details provided.
+            </div>
+          )}
+
+          {/* 4. EDUCATION & QUALIFICATIONS TIMELINE */}
+          <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            EDUCATION & QUALIFICATIONS
+          </div>
+
+          {educationList.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {educationList.map((item, idx) => {
+                const isLast = idx === educationList.length - 1;
+                const yearText = item?.year ? `Class of ${item.year}` : (item?.duration || 'Class of 2022');
+                const degreeText = item?.degree || item?.qualification || 'ITI / Diploma Degree';
+                const instText = item?.institution || item?.college || item?.school || 'Government Technical Institute';
+
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <div style={{ width: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '8px', position: 'relative', flexShrink: 0 }}>
+                      {!isLast && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '18px',
+                          bottom: '-8px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: '1.5px',
+                          backgroundColor: '#CBD5E1',
+                          zIndex: 1
+                        }} />
+                      )}
+                      <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#1E293B', marginTop: '14px', zIndex: 2, position: 'relative' }} />
+                    </div>
+
+                    <div style={{ flex: 1, backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px' }}>
+                      <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#102A5C', marginBottom: '2px' }}>{yearText}</div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#102A5C' }}>{degreeText}</div>
+                      {instText && <div style={{ fontSize: '11px', color: '#657796', marginTop: '2px' }}>{instText}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px', textAlign: 'center', fontSize: '11px', color: '#657796' }}>
+              No education details provided.
+            </div>
+          )}
+
+          {/* 5. LOCATION & WORK PREFERENCES */}
+          <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            LOCATION & WORK PREFERENCES
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Location */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MapPin size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Current Residence Location</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>{location}</div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* MIDC Zone */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Preferred MIDC Industrial Zone</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>{midcZone}</div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* Shift Mode */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Preferred Shift Mode</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>{shift}</div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* Bus Facility */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bus size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Company Bus Facility</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>
+                  {requiresBus ? 'Required / Depends on Company Bus Route' : 'Not Required (Own Transport)'}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* Accommodation */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Home size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Hostel / Accommodation</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>
+                  {requiresAccommodation ? 'Accommodation Assistance Required' : 'Self-Arranged Local Residence'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. TECHNICAL SKILLS & COMPETENCIES */}
+          {skillsList.length > 0 && (
+            <>
+              <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                TECHNICAL SKILLS & COMPETENCIES
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {skillsList.map((skill: string, idx: number) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #CBD5E1',
+                      padding: '5px 12px',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#1764E8' }} />
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#0F172A' }}>{skill}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* 7. ATTACHED RESUME & BIO-DATA */}
+          <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '14px 0' }} />
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#657796', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            ATTACHED RESUME & BIO-DATA
+          </div>
+
+          {resumeUrl ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              padding: '12px 14px',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '6px',
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#1764E8',
+                  flexShrink: 0
+                }}>
+                  <FileText size={18} color="#1764E8" strokeWidth={1.8} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {resumeName}
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#16A34A', marginTop: '1px' }}>
+                    ✓ Document Attached
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setPreviewResume({ url: resumeUrl, name: resumeName })}
+                style={{
+                  height: '34px',
+                  padding: '0 14px',
+                  backgroundColor: '#1764E8',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  flexShrink: 0,
+                  transition: 'opacity 0.15s ease'
+                }}
+              >
+                <span>View</span>
+                <ExternalLink size={11} color="#FFFFFF" />
+              </button>
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px', textAlign: 'center', fontSize: '11px', color: '#657796' }}>
+              No resume PDF attached by candidate yet.
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {previewResume && (
+        <ResumePreviewModal
+          resume={previewResume}
+          onClose={() => setPreviewResume(null)}
+          userId={candidate.id || candidate.userId}
+        />
+      )}
+    </div>
+  );
+};
+
+const CANDIDATE_SEARCH_SUGGESTIONS = [
+  'Search by Skills (e.g. CNC, Vernier, AutoCAD)...',
+  'Search by Role (e.g. Fitter, Welder, Electrician)...',
+  'Search by Industry (e.g. Automotive, Heavy Engineering)...',
+  'Search by Location (e.g. Waluj MIDC, Shendra MIDC)...',
+];
+
+const INDUSTRY_FILTER_OPTIONS = [
+  'All Industries',
+  'Automotive & Auto Components',
+  'Industrial & Heavy Manufacturing',
+  'Electronics & Electricals',
+  'Pharmaceuticals & Chemicals',
+  'Textiles & Garments',
+  'Construction & Infrastructure',
+  'Logistics, Supply Chain & Warehousing',
+  'Food Processing & FMCG',
+  'Plastics, Polymers & Rubber',
+  'Iron, Steel & Metallurgy',
+  'Services & General Engineering',
+  'IT & Software Engineering',
+];
+
+const EDUCATION_FILTER_OPTIONS = [
+  'All Education Levels',
+  'Fresher / Trainee',
+  '10th / Below 10th',
+  '12th Pass (HSC)',
+  'ITI / Trade Certified',
+  'Diploma / Polytechnic',
+  'Graduate / B.E. / B.Tech',
+  'Graduate (B.Sc / B.Com / BA)',
+  'Post Graduate / Master\'s',
+  'Doctorate / PhD',
+];
+
+const EXPERIENCE_FILTER_OPTIONS = [
+  'All Experience',
+  'Fresher (0 Yrs)',
+  '1+ Years',
+  '2+ Years',
+  '3+ Years',
+  '5+ Years',
+  '8+ Years',
+  '10+ Years',
+];
+
+const LOCATION_FILTER_OPTIONS = [
+  'All Locations',
+  'Waluj MIDC',
+  'Shendra MIDC',
+  'AURIC City (Shendra / Bidkin)',
+  'Chikalthana MIDC',
+  'Chitegaon MIDC',
+  'Paithan MIDC',
+  'Bidkin MIDC',
+  'Railway Station MIDC',
+  'CIDCO (N-1 to N-12)',
+  'Beed Bypass & Satara Parisar',
+  'Garkheda & Ulkanagari',
+  'Jalna Road & Seven Hills',
+  'Kranti Chowk & Station Road',
+  'Padegaon & Harsul',
+  'Chhatrapati Sambhajinagar (All Zones)',
+  'Pune (Bhosari / Chakan / Talegaon)',
+  'Nashik (Ambad / Satpur)',
+  'Ahmednagar (Nagapur / Supa)',
+];
+
+const TRADE_FILTER_OPTIONS = [
+  'All Trades',
+  'VMC Operator / Programmer',
+  'CNC Machinist / Turner',
+  'Industrial Fitter',
+  'MIG / TIG Welder',
+  'Industrial Electrician',
+  'Quality Inspector (QA/QC)',
+  'Tool & Die Maker',
+  'Plant Maintenance',
+  'Store Keeper / Supervisor',
+  'Assembly Operator',
+];
+
+const safeCandidateString = (val: any, fallback: string = ''): string => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) {
+    if (val.length === 0) return fallback;
+    const parts = val.map((item) => safeCandidateString(item)).filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : fallback;
+  }
+  if (typeof val === 'object') {
+    if (val.degree || val.institution || val.year) {
+      const eduParts = [val.degree, val.institution, val.year].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (eduParts.length > 0) return eduParts.join(' • ');
+    }
+    if (val.title || val.company || val.duration) {
+      const workParts = [val.title, val.company, val.duration].filter((x) => typeof x === 'string' || typeof x === 'number');
+      if (workParts.length > 0) return workParts.join(' - ');
+    }
+    if (val.city || val.state) {
+      const locParts = [val.city, val.state].filter((x) => typeof x === 'string');
+      if (locParts.length > 0) return locParts.join(', ');
+    }
+    const stringValues = Object.values(val)
+      .map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : ''))
+      .filter(Boolean);
+    return stringValues.length > 0 ? stringValues.join(' • ') : fallback;
+  }
+  return String(val);
+};
+
+const extractNumericExperience = (candidate: any): number => {
+  if (typeof candidate.experience_years === 'number') return candidate.experience_years;
+  if (typeof candidate.experience === 'number') return candidate.experience;
+  const expStr = safeCandidateString(candidate.experience).toLowerCase();
+  if (expStr.includes('fresher') || expStr.includes('0 yr') || expStr.includes('0 year')) return 0;
+  const match = expStr.match(/(\d+(\.\d+)?)/);
+  if (match) return parseFloat(match[1]);
+  return 0;
+};
+
+const matchesIndustry = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Industries') return true;
+  const candInd = (candidate.industry || '').toLowerCase();
+  const candTrade = (candidate.trade_specialization || candidate.tradeSpecialization || '').toLowerCase();
+  const candTitle = (candidate.title || '').toLowerCase();
+  const candHeadline = (candidate.headline || '').toLowerCase();
+  const candBio = (candidate.bio || '').toLowerCase();
+  const candSkills = Array.isArray(candidate.skills) ? candidate.skills.join(' ').toLowerCase() : (typeof candidate.skills === 'string' ? candidate.skills.toLowerCase() : '');
+  const combined = `${candInd} ${candTrade} ${candTitle} ${candHeadline} ${candBio} ${candSkills}`;
+
+  switch (filter) {
+    case 'Automotive & Auto Components':
+      return /automotive|auto|vmc|cnc|chassis|engine|machinist|turner|vehicle|stamping|press shop|iatf/i.test(combined);
+    case 'Industrial & Heavy Manufacturing':
+      return /manufacturing|machin|fitter|welder|hydraulics|pneumatics|fabrication|plant|lathe|heavy equipment|tool & die/i.test(combined);
+    case 'Electronics & Electricals':
+      return /electric|electronic|plc|pcb|wireman|wiring|panel|circuit|transformer|testing/i.test(combined);
+    case 'Pharmaceuticals & Chemicals':
+      return /pharma|chemical|cleanroom|reactor|distillation|formulation|qc lab|hvac|drug|biotech/i.test(combined);
+    case 'Textiles & Garments':
+      return /textile|garment|spinning|weaving|stitching|tailor|sewing|fabric|apparel|dyeing/i.test(combined);
+    case 'Construction & Infrastructure':
+      return /construction|infrastructure|structural|civil|crane|excavator|scaffolding|mason|mep/i.test(combined);
+    case 'Logistics, Supply Chain & Warehousing':
+      return /logistics|warehouse|forklift|inventory|store|sap mm|dispatch|packer|picker|supply chain/i.test(combined);
+    case 'Food Processing & FMCG':
+      return /food|fmcg|beverage|dairy|packaging|cold storage|bakery|processing/i.test(combined);
+    case 'Plastics, Polymers & Rubber':
+      return /plastic|polymer|rubber|injection|moulding|extrusion|blow mould/i.test(combined);
+    case 'Iron, Steel & Metallurgy':
+      return /steel|iron|foundry|casting|forging|metallurgy|rolling mill|blast furnace|heat treat/i.test(combined);
+    case 'Services & General Engineering':
+      return /service|general engineering|facility|utility|maintenance|helper|mechanic|ac /i.test(combined);
+    case 'IT & Software Engineering':
+      return /software|it |developer|programmer|cad|cam|autocad|iot|embedded|data/i.test(combined);
+    default:
+      return combined.includes(filter.toLowerCase());
+  }
+};
+
+const matchesEducation = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Education Levels') return true;
+  const eduStr = safeCandidateString(candidate.education || candidate.qualification).toLowerCase();
+  const headline = (candidate.headline || '').toLowerCase();
+  const bio = (candidate.bio || '').toLowerCase();
+  const combined = `${eduStr} ${headline} ${bio}`;
+
+  switch (filter) {
+    case 'Fresher / Trainee':
+      return combined.includes('fresher') || combined.includes('trainee') || extractNumericExperience(candidate) === 0;
+    case '10th / Below 10th':
+      return /10th|ssc|matric|secondary pass|below 10/i.test(combined);
+    case '12th Pass (HSC)':
+      return /12th|hsc|higher secondary|intermediate/i.test(combined);
+    case 'ITI / Trade Certified':
+      return /iti|nctvt|ncvt|scvt|trade certificate|craftsman|fitter|machinist|turner|welder/i.test(combined);
+    case 'Diploma / Polytechnic':
+      return /diploma|polytechnic|msbte|poly /i.test(combined);
+    case 'Graduate / B.E. / B.Tech':
+      return /b\.e|b\.tech|btech|bachelor of engineering|engineering graduate/i.test(combined);
+    case 'Graduate (B.Sc / B.Com / BA)':
+      return /graduate|b\.sc|bsc|b\.com|bcom|b\.a\.|ba |bca|bba/i.test(combined);
+    case 'Post Graduate / Master\'s':
+      return /m\.tech|mtech|mba|mca|m\.sc|m\.com|master|post graduate/i.test(combined);
+    case 'Doctorate / PhD':
+      return /phd|doctorate|research scholar/i.test(combined);
+    default:
+      return combined.includes(filter.toLowerCase());
+  }
+};
+
+const matchesExperience = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Experience') return true;
+  const numExp = extractNumericExperience(candidate);
+  switch (filter) {
+    case 'Fresher (0 Yrs)':
+      return numExp === 0;
+    case '1+ Years':
+      return numExp >= 1;
+    case '2+ Years':
+      return numExp >= 2;
+    case '3+ Years':
+      return numExp >= 3;
+    case '5+ Years':
+      return numExp >= 5;
+    case '8+ Years':
+      return numExp >= 8;
+    case '10+ Years':
+      return numExp >= 10;
+    default:
+      return true;
+  }
+};
+
+const matchesLocation = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Locations') return true;
+  const loc = (candidate.location || candidate.city || candidate.address || candidate.midc_zone || '').toLowerCase();
+  const midc = (candidate.midc_zone || candidate.preferred_location || '').toLowerCase();
+  const combined = `${loc} ${midc}`;
+
+  if (filter === 'Waluj MIDC') return /waluj/i.test(combined);
+  if (filter === 'Shendra MIDC') return /shendra/i.test(combined);
+  if (filter.includes('AURIC')) return /auric|shendra|bidkin/i.test(combined);
+  if (filter === 'Chikalthana MIDC') return /chikalthana/i.test(combined);
+  if (filter === 'Chitegaon MIDC') return /chitegaon/i.test(combined);
+  if (filter === 'Paithan MIDC') return /paithan/i.test(combined);
+  if (filter === 'Bidkin MIDC') return /bidkin/i.test(combined);
+  if (filter === 'Railway Station MIDC') return /railway station|station midc/i.test(combined);
+  if (filter.includes('CIDCO')) return /cidco|town center|cannaught/i.test(combined);
+  if (filter.includes('Beed Bypass')) return /beed bypass|satara|mit college/i.test(combined);
+  if (filter.includes('Garkheda')) return /garkheda|ulkanagari|sutgirni/i.test(combined);
+  if (filter.includes('Jalna Road')) return /jalna road|seven hills|dhoot hospital|cidco/i.test(combined);
+  if (filter.includes('Kranti Chowk')) return /kranti chowk|station road|osmanpura/i.test(combined);
+  if (filter.includes('Padegaon')) return /padegaon|harsul|daulatabad/i.test(combined);
+  if (filter.includes('Sambhajinagar')) return /sambhajinagar|aurangabad|waluj|shendra|chikalthana|chitegaon|paithan|bidkin/i.test(combined);
+  if (filter.includes('Pune')) return /pune|bhosari|chakan|talegaon|ranjangaon/i.test(combined);
+  if (filter.includes('Nashik')) return /nashik|ambad|satpur/i.test(combined);
+  if (filter.includes('Ahmednagar')) return /ahmednagar|nagapur|supa/i.test(combined);
+
+  const cleanFilter = filter.split('(')[0].trim().toLowerCase();
+  return combined.includes(cleanFilter);
+};
+
+const matchesTrade = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Trades') return true;
+  const trade = (candidate.trade_specialization || candidate.tradeSpecialization || '').toLowerCase();
+  const headline = (candidate.headline || '').toLowerCase();
+  const title = (candidate.title || '').toLowerCase();
+  const bio = (candidate.bio || '').toLowerCase();
+  const skills = Array.isArray(candidate.skills) ? candidate.skills.join(' ').toLowerCase() : (typeof candidate.skills === 'string' ? candidate.skills.toLowerCase() : '');
+  const combined = `${trade} ${headline} ${title} ${bio} ${skills}`;
+
+  switch (filter) {
+    case 'VMC Operator / Programmer':
+      return /vmc|vertical machining|fanuc|siemens|g code|m code/i.test(combined);
+    case 'CNC Machinist / Turner':
+      return /cnc|machinist|turner|lathe/i.test(combined);
+    case 'Industrial Fitter':
+      return /fitter|assembly|bench fitter|maintenance fitter/i.test(combined);
+    case 'MIG / TIG Welder':
+      return /welder|welding|mig|tig|arc welding|fabrication/i.test(combined);
+    case 'Industrial Electrician':
+      return /electrician|electrical|wireman|panel wiring/i.test(combined);
+    case 'Quality Inspector (QA/QC)':
+      return /quality|qa|qc|inspector|vernier|micrometer|cmm/i.test(combined);
+    case 'Tool & Die Maker':
+      return /tool & die|tool maker|die maker|press tool|mould/i.test(combined);
+    case 'Plant Maintenance':
+      return /maintenance|plant maintenance|breakdown|preventive/i.test(combined);
+    case 'Store Keeper / Supervisor':
+      return /store|store keeper|inventory|warehouse supervisor/i.test(combined);
+    case 'Assembly Operator':
+      return /assembly|line operator|operator|production operator/i.test(combined);
+    default:
+      return combined.includes(filter.toLowerCase());
+  }
+};
+
+type FilterCategoryKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE';
+
 const CandidatesTab: React.FC<{
   showToast: any;
   handleOpenDetails: (applicant: any, jobId: string, jobTitle: string) => void;
@@ -1164,11 +2095,61 @@ const CandidatesTab: React.FC<{
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedTrade, setSelectedTrade] = useState<string>('');
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
+  const [suggestionIndex, setSuggestionIndex] = useState<number>(0);
+  const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
 
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+
+  // Active Applied Filters
+  const [activeIndustryFilter, setActiveIndustryFilter] = useState<string | null>(null);
+  const [activeEducationFilter, setActiveEducationFilter] = useState<string | null>(null);
+  const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
+  const [activeLocationFilter, setActiveLocationFilter] = useState<string | null>(null);
+  const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
+
+  // Filter Modal / Drawer State
+  const [filterModalOpen, setFilterModalOpen] = useState<boolean>(false);
+  const [activeFilterTab, setActiveFilterTab] = useState<FilterCategoryKey>('INDUSTRY');
+  const [draftIndustry, setDraftIndustry] = useState<string | null>(null);
+  const [draftEducation, setDraftEducation] = useState<string | null>(null);
+  const [draftExp, setDraftExp] = useState<string | null>(null);
+  const [draftLocation, setDraftLocation] = useState<string | null>(null);
+  const [draftTrade, setDraftTrade] = useState<string | null>(null);
+
+  // Responsive detection: Mobile vs Desktop Drawer
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Suggestion rotation interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSuggestionIndex((prev) => (prev + 1) % CANDIDATE_SEARCH_SUGGESTIONS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Lock outer background page scroll when filter drawer is open
+  useEffect(() => {
+    if (filterModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [filterModalOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1193,39 +2174,146 @@ const CandidatesTab: React.FC<{
     };
   }, []);
 
+  const handleOpenFilterModal = (tabKey: FilterCategoryKey = 'INDUSTRY') => {
+    setDraftIndustry(activeIndustryFilter);
+    setDraftEducation(activeEducationFilter);
+    setDraftExp(activeExpFilter);
+    setDraftLocation(activeLocationFilter);
+    setDraftTrade(activeTradeFilter);
+    setActiveFilterTab(tabKey);
+    setFilterModalOpen(true);
+  };
+
+  const handleApplyFilters = () => {
+    setActiveIndustryFilter(draftIndustry);
+    setActiveEducationFilter(draftEducation);
+    setActiveExpFilter(draftExp);
+    setActiveLocationFilter(draftLocation);
+    setActiveTradeFilter(draftTrade);
+    setFilterModalOpen(false);
+  };
+
+  const handleResetAllFilters = () => {
+    setActiveIndustryFilter(null);
+    setActiveEducationFilter(null);
+    setActiveExpFilter(null);
+    setActiveLocationFilter(null);
+    setActiveTradeFilter(null);
+    setDraftIndustry(null);
+    setDraftEducation(null);
+    setDraftExp(null);
+    setDraftLocation(null);
+    setDraftTrade(null);
+    setSearchQuery('');
+  };
+
+  const activeFiltersCount =
+    (activeIndustryFilter ? 1 : 0) +
+    (activeEducationFilter ? 1 : 0) +
+    (activeExpFilter ? 1 : 0) +
+    (activeLocationFilter ? 1 : 0) +
+    (activeTradeFilter ? 1 : 0);
+
+  const hasActiveFilters = activeFiltersCount > 0 || searchQuery.trim() !== '';
+
+  const draftFiltersCount =
+    (draftIndustry && draftIndustry !== 'All Industries' ? 1 : 0) +
+    (draftEducation && draftEducation !== 'All Education Levels' ? 1 : 0) +
+    (draftExp && draftExp !== 'All Experience' ? 1 : 0) +
+    (draftLocation && draftLocation !== 'All Locations' ? 1 : 0) +
+    (draftTrade && draftTrade !== 'All Trades' ? 1 : 0);
+
   const filteredCandidates = (candidates || []).filter(c => {
     if (!c) return false;
     if (c.isResumePublic === false) return false;
 
-    const skillsList: string[] = Array.isArray(c.skills)
-      ? c.skills
-      : typeof c.skills === 'string'
-      ? c.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
-      : [];
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      const skillsList: string[] = Array.isArray(c.skills)
+        ? c.skills
+        : typeof c.skills === 'string'
+        ? c.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
 
-    const query = searchQuery.trim().toLowerCase();
+      const nameMatch = (c.name || '').toLowerCase().includes(query);
+      const headlineMatch = (c.headline || '').toLowerCase().includes(query);
+      const tradeMatch = (c.tradeSpecialization || c.trade_specialization || '').toLowerCase().includes(query);
+      const locMatch = (c.location || c.city || '').toLowerCase().includes(query);
+      const skillMatch = skillsList.some((s: string) => s.toLowerCase().includes(query));
 
-    const matchesSearch = query === '' || 
-      (c.name && String(c.name).toLowerCase().includes(query)) ||
-      (c.headline && String(c.headline).toLowerCase().includes(query)) ||
-      (c.tradeSpecialization && String(c.tradeSpecialization).toLowerCase().includes(query)) ||
-      (c.location && String(c.location).toLowerCase().includes(query)) ||
-      (c.city && String(c.city).toLowerCase().includes(query)) ||
-      (c.midc_zone && String(c.midc_zone).toLowerCase().includes(query)) ||
-      skillsList.some((s: string) => String(s).toLowerCase().includes(query));
+      if (!nameMatch && !headlineMatch && !tradeMatch && !locMatch && !skillMatch) {
+        return false;
+      }
+    }
 
-    const matchesTrade = selectedTrade === '' || c.tradeSpecialization === selectedTrade || c.headline === selectedTrade;
-    const matchesLocation = selectedLocation === '' || 
-      (c.location && String(c.location).toLowerCase().includes(selectedLocation.toLowerCase())) ||
-      (c.city && String(c.city).toLowerCase().includes(selectedLocation.toLowerCase()));
+    if (!matchesIndustry(c, activeIndustryFilter)) return false;
+    if (!matchesEducation(c, activeEducationFilter)) return false;
+    if (!matchesExperience(c, activeExpFilter)) return false;
+    if (!matchesLocation(c, activeLocationFilter)) return false;
+    if (!matchesTrade(c, activeTradeFilter)) return false;
 
-    return matchesSearch && matchesTrade && matchesLocation;
+    return true;
   });
 
-  const uniqueTrades = Array.from(new Set((candidates || []).map(c => c?.tradeSpecialization || c?.headline).filter(Boolean)));
-  const uniqueLocations = Array.from(new Set((candidates || []).map(c => c?.location || c?.city).filter(Boolean)));
+  // Quick preset bar options matching Mobile App
+  const quickPillOptions = [
+    { label: 'All Candidates', active: !activeFiltersCount && !searchQuery, onPress: handleResetAllFilters },
+    {
+      label: 'Freshers (0 Yrs)',
+      active: activeExpFilter === 'Fresher (0 Yrs)',
+      onPress: () => setActiveExpFilter(activeExpFilter === 'Fresher (0 Yrs)' ? null : 'Fresher (0 Yrs)'),
+    },
+    {
+      label: '1-3 Yrs Exp',
+      active: activeExpFilter === '1+ Years',
+      onPress: () => setActiveExpFilter(activeExpFilter === '1+ Years' ? null : '1+ Years'),
+    },
+    {
+      label: 'Automotive',
+      active: activeIndustryFilter === 'Automotive & Auto Components',
+      onPress: () => setActiveIndustryFilter(activeIndustryFilter === 'Automotive & Auto Components' ? null : 'Automotive & Auto Components'),
+    },
+    {
+      label: 'Manufacturing',
+      active: activeIndustryFilter === 'Industrial & Heavy Manufacturing',
+      onPress: () => setActiveIndustryFilter(activeIndustryFilter === 'Industrial & Heavy Manufacturing' ? null : 'Industrial & Heavy Manufacturing'),
+    },
+    {
+      label: 'Electronics',
+      active: activeIndustryFilter === 'Electronics & Electricals',
+      onPress: () => setActiveIndustryFilter(activeIndustryFilter === 'Electronics & Electricals' ? null : 'Electronics & Electricals'),
+    },
+    {
+      label: 'ITI Certified',
+      active: activeEducationFilter === 'ITI / Trade Certified',
+      onPress: () => setActiveEducationFilter(activeEducationFilter === 'ITI / Trade Certified' ? null : 'ITI / Trade Certified'),
+    },
+    {
+      label: 'Diploma',
+      active: activeEducationFilter === 'Diploma / Polytechnic',
+      onPress: () => setActiveEducationFilter(activeEducationFilter === 'Diploma / Polytechnic' ? null : 'Diploma / Polytechnic'),
+    },
+    {
+      label: 'Waluj MIDC',
+      active: activeLocationFilter === 'Waluj MIDC',
+      onPress: () => setActiveLocationFilter(activeLocationFilter === 'Waluj MIDC' ? null : 'Waluj MIDC'),
+    },
+    {
+      label: 'Shendra MIDC',
+      active: activeLocationFilter === 'Shendra MIDC',
+      onPress: () => setActiveLocationFilter(activeLocationFilter === 'Shendra MIDC' ? null : 'Shendra MIDC'),
+    },
+  ];
 
-  const hasActiveFilters = searchQuery !== '' || selectedTrade !== '' || selectedLocation !== '';
+  if (selectedCandidate) {
+    return (
+      <CandidateProfileDetailView
+        candidate={selectedCandidate}
+        onBack={() => setSelectedCandidate(null)}
+        showToast={showToast}
+      />
+    );
+  }
 
   return (
     <div style={{
@@ -1235,7 +2323,7 @@ const CandidatesTab: React.FC<{
       padding: '0px 16px 40px',
       boxSizing: 'border-box'
     }}>
-      {/* Sticky Top Search Bar (Exact Mobile App Behavior - 0px Gap) */}
+      {/* ── STICKY TOP SEARCH BAR + FILTER TRIGGER ── */}
       <div style={{
         position: 'sticky',
         top: 'var(--navbar-height)',
@@ -1246,11 +2334,12 @@ const CandidatesTab: React.FC<{
         borderBottom: '1px solid #E7EBF2',
         boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
       }}>
+        {/* Search Input Box */}
         <div style={{ 
           background: '#F8FAFC', 
           padding: '0 12px', 
           borderRadius: '8px', 
-          border: (isSearchFocused || searchQuery || showFilterPanel || hasActiveFilters) ? '1px solid #1764E8' : '1px solid #CBD5E1', 
+          border: (isSearchFocused || searchQuery || activeFiltersCount > 0) ? '1px solid #1764E8' : '1px solid #CBD5E1', 
           boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
           display: 'flex',
           alignItems: 'center',
@@ -1262,7 +2351,7 @@ const CandidatesTab: React.FC<{
           <Search size={14} color={isSearchFocused ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
           <input 
             type="text" 
-            placeholder="Search by Skills (e.g. CNC, Vernier, AutoCAD)..."
+            placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -1302,134 +2391,737 @@ const CandidatesTab: React.FC<{
 
           <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0', margin: '0 6px', flexShrink: 0 }} />
 
-          {/* Filter Sliders Action Icon Toggle */}
+          {/* Filter Sliders Action Button with Badge Count */}
           <button 
             type="button"
-            onClick={() => setShowFilterPanel(prev => !prev)}
+            onClick={() => handleOpenFilterModal('INDUSTRY')}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               cursor: 'pointer', 
-              padding: '4px',
+              padding: '4px 6px',
               background: 'none',
               border: 'none',
-              color: showFilterPanel || hasActiveFilters ? '#1764E8' : '#657796',
+              color: activeFiltersCount > 0 ? '#1764E8' : '#657796',
               position: 'relative'
             }} 
-            title="Toggle Filters"
+            title="Open Filters"
           >
-            <SlidersHorizontal size={14} />
-            {hasActiveFilters && (
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#1764E8', borderWidth: '1.5px', borderColor: '#FFFFFF', position: 'absolute', top: '0px', right: '0px' }} />
+            <SlidersHorizontal size={15} />
+            {activeFiltersCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                backgroundColor: '#1764E8',
+                color: '#FFFFFF',
+                fontSize: '9px',
+                fontWeight: '800',
+                borderRadius: '8px',
+                padding: '1px 4px',
+                lineHeight: 1
+              }}>
+                {activeFiltersCount}
+              </span>
             )}
           </button>
         </div>
 
-        {/* Results Info Row */}
-        {(searchQuery || hasActiveFilters) && (
+        {/* ── ACTIVE FILTER TAGS ROW ── */}
+        {activeFiltersCount > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            overflowX: 'auto',
+            paddingTop: '6px',
+            scrollbarWidth: 'none'
+          }}>
+            {activeIndustryFilter && activeIndustryFilter !== 'All Industries' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                fontWeight: '600',
+                color: '#1764E8',
+                whiteSpace: 'nowrap'
+              }}>
+                <Building2 size={11} color="#1764E8" />
+                <span>{activeIndustryFilter}</span>
+                <span onClick={() => setActiveIndustryFilter(null)} style={{ cursor: 'pointer', marginLeft: '2px', fontWeight: 'bold' }}>✕</span>
+              </div>
+            )}
+
+            {activeEducationFilter && activeEducationFilter !== 'All Education Levels' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                fontWeight: '600',
+                color: '#1764E8',
+                whiteSpace: 'nowrap'
+              }}>
+                <GraduationCap size={11} color="#1764E8" />
+                <span>{activeEducationFilter}</span>
+                <span onClick={() => setActiveEducationFilter(null)} style={{ cursor: 'pointer', marginLeft: '2px', fontWeight: 'bold' }}>✕</span>
+              </div>
+            )}
+
+            {activeExpFilter && activeExpFilter !== 'All Experience' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                fontWeight: '600',
+                color: '#1764E8',
+                whiteSpace: 'nowrap'
+              }}>
+                <Briefcase size={11} color="#1764E8" />
+                <span>{activeExpFilter}</span>
+                <span onClick={() => setActiveExpFilter(null)} style={{ cursor: 'pointer', marginLeft: '2px', fontWeight: 'bold' }}>✕</span>
+              </div>
+            )}
+
+            {activeLocationFilter && activeLocationFilter !== 'All Locations' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                fontWeight: '600',
+                color: '#1764E8',
+                whiteSpace: 'nowrap'
+              }}>
+                <MapPin size={11} color="#1764E8" />
+                <span>{activeLocationFilter}</span>
+                <span onClick={() => setActiveLocationFilter(null)} style={{ cursor: 'pointer', marginLeft: '2px', fontWeight: 'bold' }}>✕</span>
+              </div>
+            )}
+
+            {activeTradeFilter && activeTradeFilter !== 'All Trades' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '2px 8px',
+                fontSize: '10.5px',
+                fontWeight: '600',
+                color: '#1764E8',
+                whiteSpace: 'nowrap'
+              }}>
+                <Wrench size={11} color="#1764E8" />
+                <span>{activeTradeFilter}</span>
+                <span onClick={() => setActiveTradeFilter(null)} style={{ cursor: 'pointer', marginLeft: '2px', fontWeight: 'bold' }}>✕</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleResetAllFilters}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                background: 'none',
+                border: 'none',
+                color: '#DC2626',
+                fontSize: '10.5px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                padding: '2px 4px'
+              }}
+            >
+              <RotateCcw size={10} color="#DC2626" />
+              <span>Clear All</span>
+            </button>
+          </div>
+        )}
+
+        {/* Results Count Line */}
+        {(searchQuery || activeFiltersCount > 0) && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop: '8px',
-            marginBottom: '0px'
+            marginTop: '6px',
+            fontSize: '11px',
+            color: '#657796',
+            fontWeight: '500'
           }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, color: '#657796' }}>
-              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'}
-              {selectedTrade ? ` • ${selectedTrade}` : ''}
-              {selectedLocation ? ` • ${selectedLocation}` : ''}
+            <span>
+              Found {filteredCandidates.length} candidate{filteredCandidates.length === 1 ? '' : 's'} matching criteria
             </span>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedTrade('');
-                setSelectedLocation('');
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '11px',
-                fontWeight: 600,
-                color: '#1764E8',
-                cursor: 'pointer'
-              }}
-            >
-              Reset All
-            </button>
           </div>
         )}
       </div>
 
-      {/* Expandable Filter Drawer Panel */}
-      {showFilterPanel && (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '14px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)'
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '4px' }}>Trade Specialization</label>
-              <select 
-                className="form-select"
-                value={selectedTrade}
-                onChange={(e) => setSelectedTrade(e.target.value)}
-                style={{ width: '100%', fontSize: '12px', height: '34px', borderRadius: '6px', border: '1px solid #E2E8F0' }}
+      {/* ── FILTER MODAL / DRAWER (PORTAL TO BODY) ── */}
+      {filterModalOpen && typeof document !== 'undefined' && createPortal(
+        <>
+          {/* Desktop Backdrop Overlay */}
+          {!isMobile && (
+            <div
+              onClick={() => setFilterModalOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                backdropFilter: 'blur(2px)',
+                zIndex: 9999998,
+                touchAction: 'none',
+                transition: 'opacity 0.2s ease',
+              }}
+            />
+          )}
+
+          {/* Filter Container (Full-Page on Mobile, Right-Side Drawer on Desktop) */}
+          <div
+            style={{
+              position: 'fixed',
+              ...(isMobile
+                ? {
+                    inset: 0,
+                    width: '100vw',
+                    height: '100dvh',
+                    backgroundColor: '#F8FAFC',
+                    paddingTop: 'env(safe-area-inset-top, 0px)',
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                  }
+                : {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '420px',
+                    maxWidth: '90vw',
+                    height: '100dvh',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '-6px 0 28px rgba(15, 23, 42, 0.2)',
+                  }),
+              maxHeight: '100dvh',
+              zIndex: 9999999,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              overscrollBehavior: 'contain',
+              touchAction: 'none',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Header (Fixed at top) */}
+            <div
+              style={{
+                width: '100%',
+                backgroundColor: '#FFFFFF',
+                borderBottom: '1px solid #E2E8F0',
+                flexShrink: 0,
+                display: 'flex',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: isMobile ? '920px' : '100%',
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box',
+                }}
               >
-                <option value="">All Specializations</option>
-                {uniqueTrades.map(trade => (
-                  <option key={trade} value={trade}>{trade}</option>
-                ))}
-              </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      backgroundColor: '#EFF6FF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SlidersHorizontal size={14} color="#1764E8" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.1px' }}>
+                      Filter Candidates
+                    </h3>
+                    <p style={{ margin: '1px 0 0', fontSize: '11px', color: '#64748B' }}>
+                      {draftFiltersCount > 0 ? `${draftFiltersCount} filters active` : 'Select candidate requirements'}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraftIndustry(null);
+                      setDraftEducation(null);
+                      setDraftExp(null);
+                      setDraftLocation(null);
+                      setDraftTrade(null);
+                    }}
+                    style={{
+                      background: '#EFF6FF',
+                      border: 'none',
+                      color: '#1764E8',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                    }}
+                    title="Reset All"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Reset All</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFilterModalOpen(false)}
+                    style={{
+                      background: '#F1F5F9',
+                      border: 'none',
+                      color: '#475569',
+                      cursor: 'pointer',
+                      padding: '5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '4px',
+                    }}
+                    title="Close"
+                  >
+                    <XCircle size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '4px' }}>Location / MIDC Zone</label>
-              <select 
-                className="form-select"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                style={{ width: '100%', fontSize: '12px', height: '34px', borderRadius: '6px', border: '1px solid #E2E8F0' }}
+            {/* Category Navigation Bar (Horizontal Scrollable Tabs with Pill Badges) */}
+            <div
+              style={{
+                width: '100%',
+                backgroundColor: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                flexShrink: 0,
+                display: 'flex',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: isMobile ? '920px' : '100%',
+                  padding: '7px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  overflowX: 'auto',
+                  overscrollBehaviorX: 'contain',
+                  touchAction: 'pan-x',
+                  scrollbarWidth: 'none',
+                  boxSizing: 'border-box',
+                }}
               >
-                <option value="">All Locations</option>
-                {uniqueLocations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
+                {[
+                  { key: 'INDUSTRY', label: 'Industry', icon: Building2, activeVal: draftIndustry },
+                  { key: 'EDUCATION', label: 'Education', icon: GraduationCap, activeVal: draftEducation },
+                  { key: 'EXPERIENCE', label: 'Experience', icon: Briefcase, activeVal: draftExp },
+                  { key: 'LOCATION', label: 'Location', icon: MapPin, activeVal: draftLocation },
+                  { key: 'TRADE', label: 'Trade', icon: Wrench, activeVal: draftTrade },
+                ].map((cat) => {
+                  const isSelected = activeFilterTab === cat.key;
+                  const Icon = cat.icon;
+                  const hasSelection = cat.activeVal && !cat.activeVal.startsWith('All ');
+
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setActiveFilterTab(cat.key as FilterCategoryKey)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        height: '25px',
+                        padding: '0 9px',
+                        borderRadius: '12px',
+                        border: isSelected ? '1px solid #1764E8' : '1px solid #CBD5E1',
+                        backgroundColor: isSelected ? '#1764E8' : '#FFFFFF',
+                        color: isSelected ? '#FFFFFF' : '#334155',
+                        fontSize: '10.5px',
+                        fontWeight: isSelected ? 600 : 500,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Icon size={11} color={isSelected ? '#FFFFFF' : '#64748B'} />
+                      <span>{cat.label}</span>
+                      {hasSelection && (
+                        <span
+                          style={{
+                            width: '3.5px',
+                            height: '3.5px',
+                            borderRadius: '50%',
+                            backgroundColor: isSelected ? '#FFFFFF' : '#1764E8',
+                            display: 'inline-block',
+                            marginLeft: '1px',
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Options List Body (Full Page on Mobile, Side Drawer on Desktop) */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '14px',
+                backgroundColor: isMobile ? '#F8FAFC' : '#FFFFFF',
+                overscrollBehaviorY: 'contain',
+                touchAction: 'pan-y',
+                display: 'flex',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: isMobile ? '920px' : '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    color: '#64748B',
+                    letterSpacing: '0.4px',
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Select {activeFilterTab.toLowerCase()}
+                </div>
+
+                {activeFilterTab === 'INDUSTRY' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {INDUSTRY_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftIndustry === opt) || (!draftIndustry && opt === 'All Industries');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftIndustry(opt === 'All Industries' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeFilterTab === 'EDUCATION' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {EDUCATION_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftEducation === opt) || (!draftEducation && opt === 'All Education Levels');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftEducation(opt === 'All Education Levels' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeFilterTab === 'EXPERIENCE' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {EXPERIENCE_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftExp === opt) || (!draftExp && opt === 'All Experience');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftExp(opt === 'All Experience' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeFilterTab === 'LOCATION' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {LOCATION_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftLocation === opt) || (!draftLocation && opt === 'All Locations');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftLocation(opt === 'All Locations' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeFilterTab === 'TRADE' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {TRADE_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftTrade === opt) || (!draftTrade && opt === 'All Trades');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftTrade(opt === 'All Trades' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sticky Bottom Actions (Fixed at bottom) */}
+            <div
+              style={{
+                width: '100%',
+                backgroundColor: '#FFFFFF',
+                borderTop: '1px solid #E2E8F0',
+                flexShrink: 0,
+                boxShadow: '0 -2px 10px rgba(15, 23, 42, 0.04)',
+                display: 'flex',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: isMobile ? '920px' : '100%',
+                  padding: '10px 14px',
+                  paddingBottom: isMobile ? 'calc(12px + env(safe-area-inset-bottom, 0px))' : '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftIndustry(null);
+                    setDraftEducation(null);
+                    setDraftExp(null);
+                    setDraftLocation(null);
+                    setDraftTrade(null);
+                  }}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: '5px',
+                    border: '1px solid #CBD5E1',
+                    backgroundColor: '#FFFFFF',
+                    color: '#64748B',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <RotateCcw size={11} />
+                  <span>Reset All</span>
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFilterModalOpen(false)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '5px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      color: '#334155',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleApplyFilters}
+                    style={{
+                      padding: '7px 18px',
+                      borderRadius: '5px',
+                      border: 'none',
+                      backgroundColor: '#1764E8',
+                      color: '#FFFFFF',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 2px 6px rgba(23, 100, 232, 0.2)',
+                    }}
+                  >
+                    <Check size={13} strokeWidth={2.5} />
+                    <span>Apply Filters {draftFiltersCount > 0 ? `(${draftFiltersCount})` : ''}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-
-          {hasActiveFilters && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedTrade('');
-                  setSelectedLocation('');
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#1764E8',
-                  fontWeight: '700',
-                  fontSize: '11.5px',
-                  cursor: 'pointer',
-                  padding: '2px 6px'
-                }}
-              >
-                Reset Filters ✕
-              </button>
-            </div>
-          )}
-        </div>
+        </>,
+        document.body
       )}
 
       {loading ? (
@@ -1487,20 +3179,23 @@ const CandidatesTab: React.FC<{
                   margin: '2px auto 0 auto',
                   flexShrink: 0
                 }}>
-                  {c.profilePictureUrl && typeof c.profilePictureUrl === 'string' ? (
-                    <img 
-                      src={c.profilePictureUrl} 
-                      alt={c.name} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#1764E8' }}>
-                      {initials}
-                    </span>
-                  )}
+                  {(() => {
+                    const candPhoto = c.profilePictureUrl || (c as any).profile_picture_url || (c as any).avatar_url || (c as any).avatar || (c as any).photo;
+                    return candPhoto && typeof candPhoto === 'string' ? (
+                      <img 
+                        src={candPhoto} 
+                        alt={c.name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#1764E8' }}>
+                        {initials}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Candidate Name */}
@@ -1613,12 +3308,7 @@ const CandidatesTab: React.FC<{
                 {/* View Profile Action Button */}
                 <button
                   onClick={() => {
-                    const targetId = c.id || c.userId || c._id;
-                    if (targetId) {
-                      navigate(`/profile/${targetId}`);
-                    } else {
-                      handleOpenDetails({ ...c, userId: c.id }, '', '');
-                    }
+                    setSelectedCandidate(c);
                   }}
                   style={{
                     width: '100%',
@@ -1682,6 +3372,7 @@ interface EmployerProps {
 }
 
 const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsByEmployer, deleteJob, updateApplicantStatus, fetchEmployerJobs, showToast, navigate, setTab, t }) => {
+  const [searchParams] = useSearchParams();
   const [employerJobs, setEmployerJobs] = useState<Job[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
 
@@ -1929,6 +3620,16 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [appStatusFilter, setAppStatusFilter] = useState('all');
   const [appJobFilter, setAppJobFilter] = useState('all');
+
+  useEffect(() => {
+    const qJobId = searchParams.get('jobId');
+    if (qJobId) {
+      setAppJobFilter(qJobId);
+    } else {
+      setAppJobFilter('all');
+    }
+  }, [searchParams]);
+
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
@@ -2049,7 +3750,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               <button 
-                onClick={() => navigate('/post-job')}
+                onClick={() => setTab('post-job')}
                 style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#344BFD', color: '#ffffff', fontWeight: '700', fontSize: '12.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
                 <PlusCircle size={15} />
@@ -2371,6 +4072,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                 return (
                   <div
                     key={job.id}
+                    onClick={() => navigate(`/job/${job.id}`)}
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '8px',
@@ -2379,7 +4081,8 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                       boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)',
                       transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                       width: '100%',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
                   >
                     {/* Header Row with Logo, Title & Status */}
@@ -2408,7 +4111,10 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
                           <h4
-                            onClick={() => navigate(`/job/${job.id}/applicants`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/job/${job.id}`);
+                            }}
                             style={{
                               fontSize: '13.5px',
                               fontWeight: 700,
@@ -2490,8 +4196,6 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                       )}
                     </div>
 
-
-
                     {/* Rejected Notice Banner */}
                     {isRejected && (
                       <div style={{
@@ -2521,7 +4225,10 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                         <button
                           type="button"
-                          onClick={() => navigate(`/job/${job.id}/applicants`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/dashboard?tab=applicants&jobId=${job.id}`);
+                          }}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -2542,7 +4249,10 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
 
                         <button
                           type="button"
-                          onClick={() => setManageVacanciesJob(job)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setManageVacanciesJob(job);
+                          }}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -2562,80 +4272,115 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                         </button>
                       </div>
 
-                      {/* Right: Actions Group (Share, Edit, Delete) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-
-                        {/* Share Button */}
+                      {/* Right: Actions Group (Edit & Resubmit for Rejected/Unpublished vs Share/Edit/Delete for Approved/Active) */}
+                      {isRejected || ((job.dbStatus || job.status || '') as string).toLowerCase() === 'unpublished' || ((job.dbStatus || job.status || '') as string).toLowerCase() === 'draft' ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            const jobUrl = `${window.location.origin}/job/${job.id}`;
-                            shareContent(
-                              job.title,
-                              `Check out this job: ${job.title} at ${job.company || 'JobMarket'}`,
-                              jobUrl,
-                              () => showToast('Job link copied to clipboard! 📋', 'success')
-                            );
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/edit-job/${job.id}`);
                           }}
                           style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '6px',
-                            backgroundColor: '#F8FAFC',
-                            border: '1px solid #E2E8F0',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#475569',
-                            cursor: 'pointer'
+                            gap: '5px',
+                            backgroundColor: '#1B4FDF',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 14px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 4px rgba(27, 79, 223, 0.25)',
+                            transition: 'all 0.15s ease',
+                            whiteSpace: 'nowrap'
                           }}
-                          title="Share Job Link"
                         >
-                          <Share2 size={13} color="#475569" strokeWidth={2} />
+                          <Edit3 size={12} color="#FFFFFF" strokeWidth={2.4} />
+                          <span>Edit & Resubmit</span>
                         </button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {/* Share Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const jobUrl = `${window.location.origin}/job/${job.id}`;
+                              shareContent(
+                                job.title,
+                                `Check out this job: ${job.title} at ${job.company || 'JobMarket'}`,
+                                jobUrl,
+                                () => showToast('Job link copied to clipboard! 📋', 'success')
+                              );
+                            }}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '6px',
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#475569',
+                              cursor: 'pointer'
+                            }}
+                            title="Share Job Link"
+                          >
+                            <Share2 size={13} color="#475569" strokeWidth={2} />
+                          </button>
 
-                        {/* Edit Button */}
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/edit-job/${job.id}`)}
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '6px',
-                            backgroundColor: '#F8FAFC',
-                            border: '1px solid #E2E8F0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#475569',
-                            cursor: 'pointer'
-                          }}
-                          title="Edit Job"
-                        >
-                          <Edit3 size={13} color="#475569" strokeWidth={2} />
-                        </button>
+                          {/* Edit Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/edit-job/${job.id}`);
+                            }}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '6px',
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#475569',
+                              cursor: 'pointer'
+                            }}
+                            title="Edit Job"
+                          >
+                            <Edit3 size={13} color="#475569" strokeWidth={2} />
+                          </button>
 
-                        {/* Delete Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(job.id)}
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '6px',
-                            backgroundColor: '#FEF2F2',
-                            border: '1px solid #FECACA',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#EF4444',
-                            cursor: 'pointer'
-                          }}
-                          title="Delete Job"
-                        >
-                          <Trash2 size={13} color="#EF4444" strokeWidth={2} />
-                        </button>
-                      </div>
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(job.id);
+                            }}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '6px',
+                              backgroundColor: '#FEF2F2',
+                              border: '1px solid #FECACA',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#EF4444',
+                              cursor: 'pointer'
+                            }}
+                            title="Delete Job"
+                          >
+                            <Trash2 size={13} color="#EF4444" strokeWidth={2} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -2722,24 +4467,9 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
       const acceptedCount = allApplicants.filter(a => a.status === 'accepted' || a.status === 'hired').length;
 
       return (
-        <div style={{
-          width: '100%',
-          maxWidth: '680px',
-          margin: '0 auto',
-          padding: '0px 16px 40px',
-          boxSizing: 'border-box'
-        }}>
-          {/* Sticky Top Search & Filter Bar Section (0px Gap) */}
-          <div style={{
-            position: 'sticky',
-            top: 'var(--navbar-height)',
-            zIndex: 40,
-            backgroundColor: '#FFFFFF',
-            margin: '0px -16px 12px -16px',
-            padding: '10px 16px 8px 16px',
-            borderBottom: '1px solid #E7EBF2',
-            boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
-          }}>
+        <div className="applicants-section-container">
+          {/* Sticky Top Search & Filter Bar Section */}
+          <div className="applicants-sticky-header">
             {/* ── 1. SEARCH BAR ── */}
             <div style={{ position: 'relative', marginBottom: '8px' }}>
               <div style={{
@@ -2883,7 +4613,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                 const candidateTrade = safeValue(a.headline || a.tradeSpecialization || a.trade_specialization || a.jobTitle) || 'Candidate';
                 const candidateExp = safeValue(a.experience || a.user?.experience);
                 const candidateLocation = safeValue(a.location || a.user?.location || (a as any).midc_zone);
-                const avatarUri = a.profilePictureUrl || a.user?.profilePictureUrl;
+                const avatarUri = a.profilePictureUrl || (a as any).profile_picture_url || (a as any).avatar_url || (a as any).avatar || (a as any).photo || a.user?.profilePictureUrl || a.user?.profile_picture_url || (a.user as any)?.avatar_url || (a.user as any)?.avatar;
                 const shiftVal = a.preferredShift || a.preferred_shift || a.user?.preferredShift ? safeValue(a.preferredShift || a.preferred_shift || a.user?.preferredShift) : '';
                 const s = (a.status || 'applied').toLowerCase();
 
@@ -3154,9 +4884,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
     }
 
       case 'post-job':
-        return (
-          <JobPostPage isEmbedded={true} onComplete={() => setTab('manage')} />
-        );
+        return <Navigate to="/post-job" replace />;
 
       case 'profile':
         return <ProfilePage />;

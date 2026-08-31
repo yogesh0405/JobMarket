@@ -450,26 +450,12 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <Header title="JobMarket" subtitle="Applicants" showBack={false} />
-
-      {/* Real-Time Search Bar */}
-      <View style={styles.searchBarWrapper}>
-        <View style={styles.searchBarContainer}>
-          <Search size={14} color="#91A0BA" style={{ marginRight: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={APPLICANT_SEARCH_SUGGESTIONS[suggestionIndex]}
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={{ padding: 4 }}>
-              <X size={14} color="#91A0BA" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
+      <Header
+        searchPlaceholder={APPLICANT_SEARCH_SUGGESTIONS[suggestionIndex] || 'Search applicants...'}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={false}
+      />
 
       {/* Filter Tabs Bar */}
       <View style={styles.tabsBarWrapper}>

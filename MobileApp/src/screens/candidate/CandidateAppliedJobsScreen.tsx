@@ -39,23 +39,29 @@ interface Props {
 export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const { showToast } = useToast();
   const [appliedList, setAppliedList] = useState<any[]>(appliedJobsStore.getAppliedJobs());
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(appliedJobsStore.getAppliedJobs().length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [filterTab, setFilterTab] = useState<'ALL' | 'INTERVIEW' | 'REVIEW' | 'DECISIONS'>('ALL');
 
-  // Filter application list based on active tab
+  // Filter application list based on active tab and search query
   const filteredApplications = appliedList.filter((item: any) => {
     const rawStatus = item.status || item.applicationStatus || item.job?.status;
     const s = normalizeApplicationStatus(rawStatus);
-    if (filterTab === 'INTERVIEW') {
-      return s === 'shortlisted';
+    if (filterTab === 'INTERVIEW' && s !== 'shortlisted') return false;
+    if (filterTab === 'REVIEW' && s !== 'applied' && s !== 'reviewed') return false;
+    if (filterTab === 'DECISIONS' && s !== 'hired' && s !== 'rejected') return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const job = item.job || item;
+      const title = (job.title || item.title || '').toLowerCase();
+      const comp = (job.company || job.company_name || item.companyName || '').toLowerCase();
+      const loc = (job.location || item.location || '').toLowerCase();
+      const trade = (job.trade || job.trade_specialization || '').toLowerCase();
+      return title.includes(q) || comp.includes(q) || loc.includes(q) || trade.includes(q);
     }
-    if (filterTab === 'REVIEW') {
-      return s === 'applied' || s === 'reviewed';
-    }
-    if (filterTab === 'DECISIONS') {
-      return s === 'hired' || s === 'rejected';
-    }
+
     return true;
   });
 
@@ -197,7 +203,12 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Applied Jobs" showBack={false} />
+      <Header
+        searchPlaceholder="Search Applications"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={false}
+      />
 
       {/* Standard Underline Tabular Menu Bar */}
       <View style={styles.tabBarContainer}>

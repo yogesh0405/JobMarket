@@ -114,6 +114,22 @@ function MainAppContent() {
 
   const isReady = (fontsLoaded || !!fontError) && !isLoadingAuth;
 
+  if (isMaintenanceActive) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        <StatusBar style="dark" />
+        <MaintenanceModal
+          visible={true}
+          platformName={platformName}
+          logoUrl={logoUrl}
+          supportEmail={supportEmail}
+          contactNumber={contactNumber}
+          onRefresh={refreshSettings}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <NavigationContainer
@@ -130,14 +146,6 @@ function MainAppContent() {
           isLoadingAuth={!isReady}
         />
       )}
-      <MaintenanceModal
-        visible={isMaintenanceActive}
-        platformName={platformName}
-        logoUrl={logoUrl}
-        supportEmail={supportEmail}
-        contactNumber={contactNumber}
-        onRefresh={refreshSettings}
-      />
     </View>
   );
 }

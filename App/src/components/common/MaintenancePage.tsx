@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Wrench, RefreshCw, Mail, Phone, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Wrench, RefreshCw, Mail, Phone } from 'lucide-react';
+import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 
 interface MaintenancePageProps {
   platformName?: string;
@@ -50,20 +50,7 @@ export const MaintenancePage: React.FC<MaintenancePageProps> = ({
             onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
           />
         ) : (
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            backgroundColor: '#344BFD',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: '800',
-            fontSize: '16px'
-          }}>
-            JM
-          </div>
+          <JobMarketLogoSvg size={36} />
         )}
         <span style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.5px' }}>
           {platformName}
@@ -157,23 +144,6 @@ export const MaintenancePage: React.FC<MaintenancePageProps> = ({
           <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
           {checking ? 'Checking Status...' : 'Check If System Is Back Online'}
         </button>
-      </div>
-
-      {/* Admin Bypass Link */}
-      <div style={{ marginTop: '24px', textAlign: 'center' }}>
-        <Link
-          to="/admin/login"
-          style={{
-            fontSize: '12.5px',
-            color: '#94a3b8',
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-        >
-          <Shield size={12} /> Administrator Portal Login
-        </Link>
       </div>
     </div>
   );

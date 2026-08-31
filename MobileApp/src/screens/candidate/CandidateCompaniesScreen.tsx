@@ -3,217 +3,114 @@ import {
   View,
   Text,
   FlatList,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import {
   Building2,
   Search,
   MapPin,
   Briefcase,
-  Check,
   ChevronRight,
-  Filter,
   Users,
   Calendar,
-  ShieldCheck,
+  SlidersHorizontal,
+  X,
+  RotateCcw,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { apiFetch } from '../../api/client';
 import { COLORS, RADIUS } from '../../constants/theme';
+import { CompanyFilterState } from '../company/CompanyFilterScreen';
 
 interface CandidateCompaniesScreenProps {
   navigation: any;
 }
 
-const FALLBACK_COMPANIES = [
-  {
-    id: 'Bajaj Auto Ltd',
-    name: 'Bajaj Auto Ltd',
-    logo: 'https://logo.clearbit.com/bajajauto.com',
-    industry: 'Automotive Manufacturing',
-    company_type: 'Public Limited',
-    description: 'Premier two-wheeler and three-wheeler manufacturing facility producing Pulsar, Chetak EV, and Commercial RE auto rickshaws at Waluj plant.',
-    website: 'https://www.bajajauto.com',
-    address: 'Plot No. A-1, Waluj Industrial Area, MIDC',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    email: 'careers.waluj@bajajauto.co.in',
-    phone: '+91 240 2554000',
-    company_size: '10,000+ employees',
-    founded_year: 1945,
-    jobs_count: 14,
-    verified: true,
-  },
-  {
-    id: 'Škoda Auto Volkswagen India',
-    name: 'Škoda Auto Volkswagen India',
-    logo: 'https://logo.clearbit.com/skoda-auto.com',
-    industry: 'Automotive Manufacturing',
-    company_type: 'Public Limited',
-    description: 'State-of-the-art passenger vehicle assembly manufacturing Kushaq, Slavia, Taigun, and Virtus models for domestic and global export markets.',
-    website: 'https://www.skoda-vw.co.in',
-    address: 'Plot A-1, Shendra Industrial Area, MIDC',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Shendra MIDC (Chhatrapati Sambhajinagar)',
-    email: 'hr.shendra@skoda-vw.co.in',
-    phone: '+91 240 6631000',
-    company_size: '5,000-10,000 employees',
-    founded_year: 2001,
-    jobs_count: 12,
-    verified: true,
-  },
-  {
-    id: 'Endurance Technologies Ltd',
-    name: 'Endurance Technologies Ltd',
-    logo: 'https://logo.clearbit.com/endurancegroup.com',
-    industry: 'Auto Components',
-    company_type: 'Public Limited',
-    description: 'Leading automotive component manufacturer producing aluminium die-castings, suspension systems, transmission components, and braking systems.',
-    website: 'https://www.endurancegroup.com',
-    address: 'Plot No. E-92, Waluj Industrial Area, MIDC',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    email: 'careers@endurancegroup.com',
-    phone: '+91 240 2552860',
-    company_size: '5,000-10,000 employees',
-    founded_year: 1985,
-    jobs_count: 9,
-    verified: true,
-  },
-  {
-    id: 'Varroc Engineering Ltd',
-    name: 'Varroc Engineering Ltd',
-    logo: 'https://logo.clearbit.com/varroc.com',
-    industry: 'Auto Components & Lighting',
-    company_type: 'Public Limited',
-    description: 'Global Tier-1 automotive component group manufacturing exterior lighting, polymer components, electrical systems, and precision forgings.',
-    website: 'https://www.varroc.com',
-    address: 'Plot No. L-4, MIDC Industrial Area, Waluj',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    email: 'careers@varroc.com',
-    phone: '+91 240 6652400',
-    company_size: '5,000-10,000 employees',
-    founded_year: 1990,
-    jobs_count: 11,
-    verified: true,
-  },
-  {
-    id: 'Siemens Limited',
-    name: 'Siemens Limited',
-    logo: 'https://logo.clearbit.com/siemens.com',
-    industry: 'Electrical & Industrial Automation',
-    company_type: 'MNC Branch',
-    description: 'Global engineering powerhouse manufacturing medium voltage switchgears, industrial circuit breakers, and power distribution systems.',
-    website: 'https://www.siemens.co.in',
-    address: 'Plot B-5, Waluj Industrial Area, MIDC',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    email: 'recruitment.aurangabad@siemens.com',
-    phone: '+91 240 6642000',
-    company_size: '5,000-10,000 employees',
-    founded_year: 1847,
-    jobs_count: 8,
-    verified: true,
-  },
-  {
-    id: 'Wockhardt Ltd',
-    name: 'Wockhardt Ltd',
-    logo: 'https://logo.clearbit.com/wockhardt.com',
-    industry: 'Pharmaceuticals',
-    company_type: 'Public Limited',
-    description: 'Global pharmaceutical and biotechnology major manufacturing active pharmaceutical ingredients (APIs), sterile injectables, and formulations.',
-    website: 'https://www.wockhardt.com',
-    address: 'L-1, Chikalthana MIDC Area, Jalna Road',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Chikalthana MIDC',
-    email: 'careers.aurangabad@wockhardt.com',
-    phone: '+91 240 6637444',
-    company_size: '5,000-10,000 employees',
-    founded_year: 1967,
-    jobs_count: 6,
-    verified: true,
-  },
-  {
-    id: 'CEAT Tyres Ltd',
-    name: 'CEAT Tyres Ltd',
-    logo: 'https://logo.clearbit.com/ceat.com',
-    industry: 'Tyre Manufacturing',
-    company_type: 'Public Limited',
-    description: 'RPG Group company manufacturing high-performance radial tyres for truck, bus, agricultural, and passenger cars in Waluj.',
-    website: 'https://www.ceat.com',
-    address: 'Plot No. H-3, Waluj MIDC Industrial Area',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    email: 'hr.waluj@ceat.com',
-    phone: '+91 240 2552400',
-    company_size: '1,000-5,000 employees',
-    founded_year: 1958,
-    jobs_count: 7,
-    verified: true,
-  },
-  {
-    id: 'Garware Technical Fibres Ltd',
-    name: 'Garware Technical Fibres Ltd',
-    logo: 'https://logo.clearbit.com/garwarefibres.com',
-    industry: 'Technical Textiles & Fibres',
-    company_type: 'Public Limited',
-    description: 'Leading technical textiles manufacturer producing synthetic cordage, aquaculture nets, coated fabrics, and geo-synthetics.',
-    website: 'https://www.garwarefibres.com',
-    address: 'Plot No. 3, Chikalthana Industrial Area, MIDC',
-    city: 'Chhatrapati Sambhajinagar',
-    midc_zone: 'Chikalthana MIDC',
-    email: 'hr.aurangabad@garwarefibres.com',
-    phone: '+91 240 2484311',
-    company_size: '1,000-5,000 employees',
-    founded_year: 1976,
-    jobs_count: 5,
-    verified: true,
-  },
-];
-
-const ZONE_FILTERS = [
-  'All Companies',
-  'Waluj MIDC',
-  'Chakan MIDC',
-  'Shendra MIDC',
-  'Chikalthana MIDC',
-];
+const COMPANIES_CACHE_KEY = 'jobmarket_cached_companies';
+let memoryCompaniesCache: any[] = [];
 
 export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> = ({
   navigation,
 }) => {
-  const [companies, setCompanies] = useState<any[]>(FALLBACK_COMPANIES);
-  const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState<any[]>(memoryCompaniesCache);
+  const [loading, setLoading] = useState(memoryCompaniesCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedZone, setSelectedZone] = useState('All Companies');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Applied Filters State
+  const [filters, setFilters] = useState<CompanyFilterState>({
+    midcZone: 'All Locations',
+    industry: 'All Industries',
+    companyType: 'All Types',
+    companySize: 'All Sizes',
+    onlyHiring: false,
+  });
+
+  const handleOpenFilterScreen = (tabKey: string = 'LOCATION') => {
+    navigation.navigate('CompanyFilter', {
+      defaultTab: tabKey,
+      currentFilters: filters,
+      companies: companies,
+      onApplyFilters: (newFilters: CompanyFilterState) => {
+        setFilters(newFilters);
+      },
+      onResetFilters: () => {
+        resetAllFilters();
+      },
+    });
+  };
 
   const fetchCompanies = async () => {
     try {
-      setLoading(true);
+      if (companies.length === 0 && memoryCompaniesCache.length === 0) {
+        setLoading(true);
+      }
       const json = await apiFetch('/api/v1/companies');
       const list = Array.isArray(json) ? json : (json?.data || json?.companies || []);
       if (Array.isArray(list) && list.length > 0) {
         setCompanies(list);
-      } else {
-        setCompanies(FALLBACK_COMPANIES);
+        memoryCompaniesCache = list;
+        AsyncStorage.setItem(COMPANIES_CACHE_KEY, JSON.stringify(list)).catch(() => {});
       }
     } catch (err) {
       console.warn('Live companies fetch notice:', err);
-      setCompanies(FALLBACK_COMPANIES);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. Check AsyncStorage cache
+    if (memoryCompaniesCache.length === 0) {
+      AsyncStorage.getItem(COMPANIES_CACHE_KEY)
+        .then((raw) => {
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              memoryCompaniesCache = parsed;
+              setCompanies(parsed);
+              setLoading(false);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    // 2. Fetch fresh records from database
     fetchCompanies();
   }, []);
 
@@ -223,35 +120,324 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
     setRefreshing(false);
   };
 
-  const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => {
-      if (selectedZone && selectedZone !== 'All Companies' && selectedZone !== 'All Zones') {
-        const zoneStr = (c.midc_zone || c.midcZone || c.address || c.city || c.location || '').toLowerCase();
-        const filterKeyword = selectedZone.toLowerCase().replace(' midc', '').trim();
-        if (!zoneStr.includes(filterKeyword)) {
-          return false;
-        }
-      }
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.midcZone !== 'All Locations') count++;
+    if (filters.industry !== 'All Industries') count++;
+    if (filters.companyType !== 'All Types') count++;
+    if (filters.companySize !== 'All Sizes') count++;
+    if (filters.onlyHiring) count++;
+    return count;
+  }, [filters]);
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchName = (c.name || c.companyName || '').toLowerCase().includes(q);
-        const matchIndustry = (c.industry || '').toLowerCase().includes(q);
-        const matchCity = (c.city || '').toLowerCase().includes(q);
-        const matchZone = (c.midc_zone || c.midcZone || c.location || '').toLowerCase();
-        return matchName || matchIndustry || matchCity || matchZone;
-      }
-      return true;
+  const resetAllFilters = () => {
+    setSearchQuery('');
+    setFilters({
+      midcZone: 'All Locations',
+      industry: 'All Industries',
+      companyType: 'All Types',
+      companySize: 'All Sizes',
+      onlyHiring: false,
     });
-  }, [companies, selectedZone, searchQuery]);
+  };
+
+  const isCompanyMatching = useCallback((c: any, targetFilters: CompanyFilterState, search: string) => {
+    // 1. Zone filter
+    if (targetFilters.midcZone && targetFilters.midcZone !== 'All Locations' && targetFilters.midcZone !== 'All MIDC Zones & Cities') {
+      const zoneStr = (c.midc_zone || c.midcZone || c.address || c.city || c.location || '').toLowerCase();
+      let keyword = targetFilters.midcZone.toLowerCase();
+      if (keyword.includes('waluj')) keyword = 'waluj';
+      else if (keyword.includes('shendra')) keyword = 'shendra';
+      else if (keyword.includes('chikalthana')) keyword = 'chikalthana';
+      else if (keyword.includes('chitegaon')) keyword = 'chitegaon';
+      else if (keyword.includes('paithan')) keyword = 'paithan';
+      else if (keyword.includes('bidkin')) keyword = 'bidkin';
+      else if (keyword.includes('railway station')) keyword = 'railway';
+      else if (keyword.includes('jalna road')) keyword = 'jalna';
+      else if (keyword.includes('chhatrapati sambhajinagar') || keyword.includes('aurangabad')) keyword = 'sambhajinagar';
+      else if (keyword.includes('chakan')) keyword = 'chakan';
+      else if (keyword.includes('bhosari')) keyword = 'bhosari';
+      else if (keyword.includes('talegaon')) keyword = 'talegaon';
+      else if (keyword.includes('ranjangaon')) keyword = 'ranjangaon';
+      else if (keyword.includes('taloja')) keyword = 'taloja';
+      else if (keyword.includes('thane')) keyword = 'thane';
+
+      const isMatch = zoneStr.includes(keyword) || 
+        (keyword === 'sambhajinagar' && (
+          zoneStr.includes('aurangabad') || 
+          zoneStr.includes('waluj') || 
+          zoneStr.includes('shendra') || 
+          zoneStr.includes('chikalthana') || 
+          zoneStr.includes('chitegaon') || 
+          zoneStr.includes('paithan') ||
+          zoneStr.includes('bidkin')
+        ));
+      if (!isMatch) {
+        return false;
+      }
+    }
+
+    // 2. Industry filter
+    if (targetFilters.industry && targetFilters.industry !== 'All Industries') {
+      const ind = (c.industry || '').toLowerCase();
+      const target = targetFilters.industry.toLowerCase();
+      if (!ind.includes(target) && !target.includes(ind)) {
+        return false;
+      }
+    }
+
+    // 3. Company Type filter
+    if (targetFilters.companyType && targetFilters.companyType !== 'All Types') {
+      const cType = (c.company_type || c.companyType || '').toLowerCase();
+      const target = targetFilters.companyType.toLowerCase();
+      if (!cType.includes(target) && !target.includes(cType)) {
+        return false;
+      }
+    }
+
+    // 4. Company Size filter
+    if (targetFilters.companySize && targetFilters.companySize !== 'All Sizes') {
+      const cSize = (c.company_size || c.companySize || '').toLowerCase();
+      const target = targetFilters.companySize.toLowerCase();
+      if (!cSize.includes(target) && !target.includes(cSize)) {
+        return false;
+      }
+    }
+
+    // 5. Only Hiring filter
+    if (targetFilters.onlyHiring) {
+      const jobsCount = c.open_jobs_count ?? c.jobs_count ?? c.openings_count ?? c.jobsCount ?? 0;
+      if (jobsCount <= 0) {
+        return false;
+      }
+    }
+
+    // 6. Search query
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      const matchName = (c.name || c.companyName || '').toLowerCase().includes(q);
+      const matchIndustry = (c.industry || '').toLowerCase().includes(q);
+      const matchCity = (c.city || '').toLowerCase().includes(q);
+      const matchZone = (c.midc_zone || c.midcZone || c.location || '').toLowerCase().includes(q);
+      const matchAbout = (c.about || c.description || '').toLowerCase().includes(q);
+      return matchName || matchIndustry || matchCity || matchZone || matchAbout;
+    }
+
+    return true;
+  }, []);
+
+  const filteredCompanies = useMemo(() => {
+    return companies.filter((c) => isCompanyMatching(c, filters, debouncedSearchQuery));
+  }, [companies, filters, debouncedSearchQuery, isCompanyMatching]);
+
+  // Quick preset bar data for companies (matching candidates section design)
+  const quickPillOptions = [
+    {
+      label: 'All Companies',
+      active: activeFilterCount === 0,
+      onPress: resetAllFilters,
+    },
+    {
+      label: 'Actively Hiring',
+      active: filters.onlyHiring,
+      onPress: () => setFilters((prev) => ({ ...prev, onlyHiring: !prev.onlyHiring })),
+    },
+    {
+      label: 'Waluj MIDC',
+      active: filters.midcZone === 'Waluj MIDC',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          midcZone: prev.midcZone === 'Waluj MIDC' ? 'All Locations' : 'Waluj MIDC',
+        })),
+    },
+    {
+      label: 'Shendra MIDC',
+      active: filters.midcZone === 'Shendra MIDC',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          midcZone: prev.midcZone === 'Shendra MIDC' ? 'All Locations' : 'Shendra MIDC',
+        })),
+    },
+    {
+      label: 'Chikalthana MIDC',
+      active: filters.midcZone === 'Chikalthana MIDC',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          midcZone: prev.midcZone === 'Chikalthana MIDC' ? 'All Locations' : 'Chikalthana MIDC',
+        })),
+    },
+    {
+      label: 'Automotive',
+      active: filters.industry === 'Automotive & Auto Components',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          industry:
+            prev.industry === 'Automotive & Auto Components'
+              ? 'All Industries'
+              : 'Automotive & Auto Components',
+        })),
+    },
+    {
+      label: 'Manufacturing',
+      active: filters.industry === 'Industrial & Heavy Manufacturing',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          industry:
+            prev.industry === 'Industrial & Heavy Manufacturing'
+              ? 'All Industries'
+              : 'Industrial & Heavy Manufacturing',
+        })),
+    },
+    {
+      label: 'Electronics',
+      active: filters.industry === 'Electronics & Electricals',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          industry:
+            prev.industry === 'Electronics & Electricals'
+              ? 'All Industries'
+              : 'Electronics & Electricals',
+        })),
+    },
+    {
+      label: 'Pharma & Biotech',
+      active: filters.industry === 'Pharmaceuticals & Chemicals',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          industry:
+            prev.industry === 'Pharmaceuticals & Chemicals'
+              ? 'All Industries'
+              : 'Pharmaceuticals & Chemicals',
+        })),
+    },
+    {
+      label: '500+ Employees',
+      active: filters.companySize === '500+ employees',
+      onPress: () =>
+        setFilters((prev) => ({
+          ...prev,
+          companySize: prev.companySize === '500+ employees' ? 'All Sizes' : '500+ employees',
+        })),
+    },
+  ];
 
   return (
     <View style={styles.container}>
       <Header
-        title="JobMarket"
-        subtitle="Companies"
+        searchPlaceholder="Search Companies"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
         showBack={false}
       />
+
+      {/* Filter Action Bar (Identical to Candidates section) */}
+      <View style={styles.filterSectionWrapper}>
+        <View style={styles.filterRowContainer}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handleOpenFilterScreen('LOCATION')}
+            style={[styles.filterActionButton, activeFilterCount > 0 && styles.filterActionButtonActive]}
+          >
+            <SlidersHorizontal size={14} color={activeFilterCount > 0 ? '#FFFFFF' : '#475569'} style={{ marginRight: 6 }} />
+            <Text style={[styles.filterActionButtonText, activeFilterCount > 0 && styles.filterActionButtonTextActive]}>
+              Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+            </Text>
+          </TouchableOpacity>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingLeft: 4 }}>
+            {quickPillOptions.map((chip, idx) => (
+              <TouchableOpacity
+                key={`chip-${idx}`}
+                onPress={chip.onPress}
+                activeOpacity={0.75}
+                style={[styles.quickChip, chip.active && styles.quickChipActive]}
+              >
+                <Text style={[styles.quickChipText, chip.active && styles.quickChipTextActive]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Active Applied Filters Summary & Individual Clear Tags */}
+        {activeFilterCount > 0 ? (
+          <View style={styles.activeTagsRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              {filters.midcZone !== 'All Locations' && filters.midcZone !== 'All MIDC Zones & Cities' ? (
+                <View style={styles.activeFilterTag}>
+                  <MapPin size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    {filters.midcZone}
+                  </Text>
+                  <TouchableOpacity onPress={() => setFilters((prev) => ({ ...prev, midcZone: 'All Locations' }))}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {filters.industry !== 'All Industries' ? (
+                <View style={styles.activeFilterTag}>
+                  <Building2 size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    {filters.industry}
+                  </Text>
+                  <TouchableOpacity onPress={() => setFilters((prev) => ({ ...prev, industry: 'All Industries' }))}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {filters.companyType !== 'All Types' ? (
+                <View style={styles.activeFilterTag}>
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    {filters.companyType}
+                  </Text>
+                  <TouchableOpacity onPress={() => setFilters((prev) => ({ ...prev, companyType: 'All Types' }))}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {filters.companySize !== 'All Sizes' ? (
+                <View style={styles.activeFilterTag}>
+                  <Users size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    {filters.companySize}
+                  </Text>
+                  <TouchableOpacity onPress={() => setFilters((prev) => ({ ...prev, companySize: 'All Sizes' }))}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {filters.onlyHiring ? (
+                <View style={styles.activeFilterTag}>
+                  <Briefcase size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    Actively Hiring
+                  </Text>
+                  <TouchableOpacity onPress={() => setFilters((prev) => ({ ...prev, onlyHiring: false }))}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <TouchableOpacity onPress={resetAllFilters} style={styles.resetAllPill}>
+                <RotateCcw size={10} color="#DC2626" />
+                <Text style={styles.resetAllPillText}>Reset All</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        ) : null}
+      </View>
 
       <FlatList
         data={loading ? [] : filteredCompanies}
@@ -297,33 +483,31 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
 
               {/* Card Body Area */}
               <View style={styles.cardBody}>
-                {/* Row 1: Address & Estd Year (Clean Plain Text with Icons) */}
-                <View style={styles.fixedMetaRow}>
-                  <View style={[styles.plainMetaItem, { flexShrink: 1 }]}>
-                    <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                {/* Row 1: Address & Estd strictly in one row (Address truncates with ellipsis) */}
+                <View style={styles.addressEstdRow}>
+                  <View style={styles.addressLeftItem}>
+                    <MapPin size={12} color={COLORS.primary} style={{ flexShrink: 0 }} />
                     <Text style={styles.plainMetaText} numberOfLines={1} ellipsizeMode="tail">
                       {locationText}
                     </Text>
                   </View>
 
                   {(comp.founded_year || comp.founded) ? (
-                    <View style={[styles.plainMetaItem, { flexShrink: 0 }]}>
-                      <Calendar size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                      <Text style={[styles.plainMetaText, { flexShrink: 0 }]} numberOfLines={1}>
+                    <View style={styles.estdRightItem}>
+                      <Calendar size={11} color="#64748B" style={{ flexShrink: 0 }} />
+                      <Text style={styles.plainMetaTextSec} numberOfLines={1}>
                         Estd. {comp.founded_year || comp.founded}
                       </Text>
                     </View>
                   ) : null}
                 </View>
 
-                {/* Row 2: Employee Count Pill */}
-                <View style={styles.fixedMetaRow}>
-                  <View style={[styles.metaTagPill, { flexShrink: 1 }]}>
-                    <Users size={11} color="#64748B" style={{ flexShrink: 0 }} />
-                    <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
-                      {companySize}
-                    </Text>
-                  </View>
+                {/* Row 2: Number of employees */}
+                <View style={styles.employeesRow}>
+                  <Users size={11} color="#64748B" style={{ flexShrink: 0 }} />
+                  <Text style={styles.plainMetaTextSec} numberOfLines={1} ellipsizeMode="tail">
+                    {companySize}
+                  </Text>
                 </View>
 
                 <View style={styles.cardFooterRow}>
@@ -349,46 +533,17 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         windowSize={11}
         removeClippedSubviews={true}
         ListHeaderComponent={
-          <View>
-            <View style={styles.searchBar}>
-              <Search size={16} color="#64748B" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search companies by name, MIDC zone..."
-                placeholderTextColor="#94A3B8"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
+          <View style={styles.countRow}>
+            <Text style={styles.countText}>
+              Showing <Text style={{ fontWeight: '800', color: '#0F172A' }}>{filteredCompanies.length}</Text> Verified Companies
+            </Text>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filterChipScroll}
-              contentContainerStyle={styles.filterChipContainer}
-            >
-              {ZONE_FILTERS.map((zone) => {
-                const isActive = selectedZone === zone;
-                return (
-                  <TouchableOpacity
-                    key={zone}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedZone(zone)}
-                    style={[styles.filterChip, isActive && styles.filterChipActive]}
-                  >
-                    <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                      {zone}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <View style={styles.countRow}>
-              <Text style={styles.countText}>
-                Showing {filteredCompanies.length} Verified Companies
-              </Text>
-            </View>
+            {(activeFilterCount > 0 || searchQuery.trim()) && (
+              <TouchableOpacity onPress={resetAllFilters} style={styles.resetQuickBtn}>
+                <RotateCcw size={11} color={COLORS.primary} />
+                <Text style={styles.resetQuickText}>Reset</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
         ListEmptyComponent={
@@ -406,6 +561,11 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
               <Text style={styles.emptySubtitle}>
                 No industrial companies match your current search query or zone filter.
               </Text>
+              {activeFilterCount > 0 && (
+                <TouchableOpacity style={styles.emptyResetBtn} onPress={resetAllFilters}>
+                  <Text style={styles.emptyResetBtnText}>Reset All Filters</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )
         }
@@ -424,58 +584,122 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 110,
   },
-  searchBar: {
+  filterSectionWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 6,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 2,
+  },
+  filterActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: RADIUS.card,
-    paddingHorizontal: 12,
-    height: 40,
-    marginBottom: 12,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 6,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 12.5,
-    color: '#0F172A',
-    paddingVertical: 0,
-    margin: 0,
-  },
-  filterChipScroll: {
-    marginBottom: 12,
-  },
-  filterChipContainer: {
-    gap: 6,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.xs,
-  },
-  filterChipActive: {
+  filterActionButtonActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  filterChipText: {
-    fontSize: 11.5,
+  filterActionButtonText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#334155',
   },
-  filterChipTextActive: {
+  filterActionButtonTextActive: {
     color: '#FFFFFF',
   },
+  quickChip: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  quickChipActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: COLORS.primary,
+  },
+  quickChipText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  quickChipTextActive: {
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+  activeTagsRow: {
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  activeFilterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    maxWidth: 200,
+  },
+  activeFilterTagText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: COLORS.primary,
+    flexShrink: 1,
+  },
+  resetAllPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+  },
+  resetAllPillText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
   countRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 14,
+    paddingHorizontal: 2,
   },
   countText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '500',
     color: '#64748B',
+  },
+  resetQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  resetQuickText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   loadingBox: {
     paddingVertical: 40,
@@ -514,10 +738,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   companyNameText: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14.5,
+    fontWeight: '600',
     color: '#0F172A',
-    letterSpacing: -0.2,
+    letterSpacing: -0.15,
   },
   industryText: {
     fontSize: 11.5,
@@ -531,59 +755,45 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
+  companyDescription: {
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 16.5,
   },
-  fixedMetaRow: {
+  addressEstdRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     width: '100%',
-    overflow: 'hidden',
   },
-  plainMetaItem: {
+  addressLeftItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
+    flexShrink: 1,
+    maxWidth: '72%',
+  },
+  estdRightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  employeesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: -2,
   },
   plainMetaText: {
     fontSize: 11.5,
     fontWeight: '500',
-    color: '#64748B',
-    flexShrink: 1,
+    color: '#334155',
   },
-  metaTagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3.5,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: RADIUS.xs,
-    flexShrink: 1,
-    maxWidth: '100%',
-  },
-  metaTagText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  verifiedTagPill: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
-  },
-  companyDescription: {
+  plainMetaTextSec: {
     fontSize: 11.5,
+    fontWeight: '500',
     color: '#64748B',
-    lineHeight: 16,
-    marginTop: 2,
   },
   cardFooterRow: {
     flexDirection: 'row',
@@ -592,7 +802,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    marginTop: 1,
+    marginTop: 2,
   },
   jobsNormalRow: {
     flexDirection: 'row',
@@ -646,5 +856,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     paddingHorizontal: 12,
+  },
+  emptyResetBtn: {
+    marginTop: 10,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: RADIUS.xs,
+  },
+  emptyResetBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

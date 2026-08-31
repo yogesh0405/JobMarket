@@ -40,6 +40,26 @@ export class JobController {
     }
   }
 
+  static async searchJobs(req: any, res: Response, next: NextFunction) {
+    try {
+      const { SearchService } = await import('../../../../src/modules/jobs/services/SearchService');
+      const results = await SearchService.searchJobs({
+        q: req.query.q as string,
+        industry: req.query.industry as string,
+        midcZone: (req.query.midcZone || req.query.location) as string,
+        jobType: req.query.jobType as string,
+        workMode: req.query.workMode as string,
+        trade: req.query.trade as string,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 20,
+      });
+
+      res.status(200).json({ success: true, ...results });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getJobById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;

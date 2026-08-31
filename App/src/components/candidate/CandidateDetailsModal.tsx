@@ -9,6 +9,7 @@ import {
 import { ResumePreviewModal } from '../profile/ResumePreviewModal';
 import { ClockTimePickerModal } from '../common/ClockTimePickerModal';
 import { CalendarDatePickerModal } from '../common/CalendarDatePickerModal';
+import { apiFetch } from '../../utils/api';
 
 export interface CandidateDetailsModalProps {
   viewWorker: any;
@@ -234,89 +235,144 @@ export const CandidateDetailsModal: React.FC<CandidateDetailsModalProps> = ({
     setCurrentStatus(curStatus);
   }, [viewWorker]);
 
-  // Candidate parsed values
-  const candidateName = toSafeString(user?.name, 'Candidate');
-  const candidateHeadline = toSafeString(user?.trade_specialization || user?.headline, 'Industrial Technical Specialist');
-  const candidatePhone = toSafeString(user?.phone, '');
-  const candidateEmail = toSafeString(user?.email, '');
-  const candidateLocation = user?.city
-    ? `${toSafeString(user.city)}, ${toSafeString(user.state, 'Maharashtra')}`
-    : toSafeString(user?.location || user?.address, 'Chhatrapati Sambhajinagar');
-  const candidateShift = toSafeString(user?.preferred_shift || user?.shift_preference || user?.shift_timing, 'Rotational / Day Shift');
-  const candidateMidc = toSafeString(user?.midc_zone || user?.midcZone || user?.preferred_location, 'Waluj / Shendra MIDC');
-  const requiresBus = Boolean(user?.requires_bus || user?.requiresBus);
-  const requiresAccommodation = Boolean(user?.requires_accommodation || user?.requiresAccommodation);
-  const bioText = toSafeString(user?.bio || user?.about, '');
+  // 1. Live Fetch Real Candidate Profile from DB
+  const [liveCandidate, setLiveCandidate] = useState<any>(null);
+  const [loadingLiveProfile, setLoadingLiveProfile] = useState<boolean>(false);
+  const [photoError, setPhotoError] = useState<boolean>(false);
+
+  const candidateId = toSafeString(
+    user?.id ||
+    user?.user_id ||
+    viewWorker?.candidate_id ||
+    viewWorker?.user_id ||
+    viewWorker?.id ||
+    viewWorker?.userId
+  );
+
+  useEffect(() => {
+    setPhotoError(false);
+    if (candidateId) {
+      setLoadingLiveProfile(true);
+      apiFetch(`/api/v1/auth/public-profile/${candidateId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.user) {
+            setLiveCandidate(d.user);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not fetch candidate profile from DB:', err);
+        })
+        .finally(() => {
+          setLoadingLiveProfile(false);
+        });
+    }
+  }, [candidateId]);
+
+  // Combined User: Live DB user takes highest precedence for freshness
+  const activeUser = {
+    ...user,
+    ...(liveCandidate || {}),
+  };
+
+  // Candidate parsed values directly from DB
+  const candidateName = toSafeString(activeUser?.name, 'Candidate');
+  const candidateHeadline = toSafeString(
+    activeUser?.trade_specialization ||
+    activeUser?.tradeSpecialization ||
+    activeUser?.headline ||
+    activeUser?.role_summary,
+    'Technical Specialist'
+  );
+  const candidatePhone = toSafeString(activeUser?.phone, '');
+  const candidateEmail = toSafeString(activeUser?.email, '');
+  const candidateLocation = activeUser?.city
+    ? `${toSafeString(activeUser.city)}${activeUser.state ? `, ${toSafeString(activeUser.state)}` : ''}`
+    : toSafeString(activeUser?.location || activeUser?.address, 'Not Specified');
+  const candidateShift = toSafeString(
+    activeUser?.preferred_shift ||
+    activeUser?.preferredShift ||
+    activeUser?.shift_preference ||
+    activeUser?.shift_timing,
+    'Flexible'
+  );
+  const candidateMidc = toSafeString(
+    activeUser?.midc_zone ||
+    activeUser?.midcZone ||
+    activeUser?.preferred_location,
+    'Industrial Zone'
+  );
+  const requiresBus = Boolean(activeUser?.requires_bus || activeUser?.requiresBus);
+  const requiresAccommodation = Boolean(activeUser?.requires_accommodation || activeUser?.requiresAccommodation);
+  const bioText = toSafeString(activeUser?.bio || activeUser?.about, '');
 
   const userPhotoUrl = toSafeString(
-    user?.profilePictureUrl ||
-    user?.profile_picture_url ||
-    user?.profilePicture ||
-    user?.profile_picture ||
-    user?.avatar_url ||
-    user?.avatarUrl ||
-    user?.avatar ||
-    user?.photo ||
-    user?.photo_url ||
-    user?.photoUrl ||
-    viewWorker?.user?.profilePictureUrl ||
-    viewWorker?.user?.profile_picture_url ||
-    viewWorker?.profilePictureUrl ||
-    viewWorker?.profile_picture_url ||
-    viewWorker?.profile_picture ||
-    viewWorker?.profilePicture ||
-    viewWorker?.avatar_url ||
-    viewWorker?.avatarUrl ||
+    activeUser?.profile_picture_url ||
+    activeUser?.profilePictureUrl ||
+    activeUser?.profile_picture ||
+    activeUser?.profilePicture ||
+    activeUser?.profile_photo_url ||
+    activeUser?.profilePhotoUrl ||
+    activeUser?.candidate_avatar ||
+    activeUser?.candidateAvatar ||
+    activeUser?.avatar_url ||
+    activeUser?.avatarUrl ||
+    activeUser?.avatar ||
+    activeUser?.photo ||
+    activeUser?.photo_url ||
+    viewWorker?.candidate_avatar ||
     viewWorker?.avatar ||
-    viewWorker?.photo ||
     ''
   );
 
-  const [photoError, setPhotoError] = useState(false);
-  const hasValidPhoto = Boolean(userPhotoUrl && !photoError && (userPhotoUrl.startsWith('http') || userPhotoUrl.startsWith('/') || userPhotoUrl.startsWith('data:')));
+  const hasValidPhoto = Boolean(
+    userPhotoUrl &&
+    !photoError &&
+    (userPhotoUrl.startsWith('http') || userPhotoUrl.startsWith('/') || userPhotoUrl.startsWith('data:'))
+  );
 
-  const rawSkills = tryParseJson(user?.skills);
+  const rawSkills = tryParseJson(activeUser?.skills);
   const skillsList: string[] = Array.isArray(rawSkills)
     ? rawSkills.map((s: any) => toSafeString(s, '')).filter(Boolean)
     : typeof rawSkills === 'string' && rawSkills.trim()
     ? rawSkills.split(',').map((s: string) => toSafeString(s, '')).filter(Boolean)
     : [];
 
-  const rawExperience = tryParseJson(user?.experience);
+  const rawExperience = tryParseJson(activeUser?.experience);
   let experienceList: any[] = [];
   if (Array.isArray(rawExperience) && rawExperience.length > 0) {
     experienceList = rawExperience;
   } else if (typeof rawExperience === 'object' && rawExperience !== null) {
     experienceList = [rawExperience];
-  } else if (user?.experience || user?.experience_years != null || user?.current_company || user?.trade_specialization) {
+  } else if (activeUser?.experience || activeUser?.experience_years != null || activeUser?.current_company) {
     experienceList = [
       {
-        title: toSafeString(user.trade_specialization || user.headline, 'Industrial Technical Specialist'),
-        company: toSafeString(user.current_company || user.company_name, 'Industrial Engineering Works'),
-        duration: user.experience_years != null ? `${user.experience_years} Years Experience` : toSafeString(user.experience, '2022 - Present'),
-        description: toSafeString(user.bio || user.role_summary, ''),
+        title: toSafeString(activeUser.trade_specialization || activeUser.headline, 'Technical Specialist'),
+        company: toSafeString(activeUser.current_company || activeUser.company_name, 'Previous Employer'),
+        duration: activeUser.experience_years != null ? `${activeUser.experience_years} Years Experience` : toSafeString(activeUser.experience, 'Verified Experience'),
+        description: toSafeString(activeUser.bio || activeUser.role_summary, ''),
         isCurrent: true,
       },
     ];
   }
 
-  const rawEducation = tryParseJson(user?.education || user?.qualification);
+  const rawEducation = tryParseJson(activeUser?.education || activeUser?.qualification);
   let educationList: any[] = [];
   if (Array.isArray(rawEducation) && rawEducation.length > 0) {
     educationList = rawEducation;
   } else if (typeof rawEducation === 'object' && rawEducation !== null) {
     educationList = [rawEducation];
-  } else if (user?.highest_qualification || user?.education || user?.degree) {
+  } else if (activeUser?.highest_qualification || activeUser?.education || activeUser?.degree || activeUser?.institute_name) {
     educationList = [
       {
-        degree: toSafeString(user.highest_qualification || user.degree || user.education, 'ITI / Technical Diploma'),
-        institution: toSafeString(user.institute_name || user.college, 'Government Industrial Training Institute (ITI)'),
-        year: toSafeString(user.passing_year || user.graduation_year, '2022'),
+        degree: toSafeString(activeUser.highest_qualification || activeUser.degree || activeUser.education, 'Technical Qualification'),
+        institution: toSafeString(activeUser.institute_name || activeUser.college, 'Technical Institute'),
+        year: toSafeString(activeUser.passing_year || activeUser.graduation_year, ''),
       },
     ];
   }
 
-  const rawResume = user?.resume || user?.resume_url || user?.resumeUrl || viewWorker?.resume;
+  const rawResume = activeUser?.resume || activeUser?.resume_url || activeUser?.resumeUrl || viewWorker?.resume;
   const resumeUrl = typeof rawResume === 'string' ? rawResume : rawResume?.url ? toSafeString(rawResume.url) : '';
   const resumeName = typeof rawResume === 'object' && rawResume?.name ? toSafeString(rawResume.name) : `${candidateName}_Resume.pdf`;
 

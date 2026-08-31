@@ -33,13 +33,10 @@ export const safeValue = (val?: any): string => {
 };
 
 export const APPLICANT_SEARCH_SUGGESTIONS = [
-  'Search by Trade Type (e.g. VMC Operator, Fitter)...',
-  'Search by Role (e.g. Quality Inspector, Turner)...',
-  'Search Locality (e.g. Waluj MIDC, Chitegaon)...',
-  'Search by Shift (e.g. Day Shift, Rotational)...',
-  'Search by Industry (e.g. Automotive, Electronics)...',
-  'Search by Skills (e.g. CNC, Vernier, AutoCAD)...',
-  'Search Candidates by Name or Phone...',
+  'Search Applicants',
+  'Search Trades',
+  'Search Skills',
+  'Search Locations',
 ];
 
 export const EMAIL_TEMPLATES = [

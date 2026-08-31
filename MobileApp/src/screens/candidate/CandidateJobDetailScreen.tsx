@@ -32,6 +32,7 @@ import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { CandidateJobDetailHeader } from './components/CandidateJobDetailHeader';
+import { shareJob } from '../../utils/shareUtils';
 
 interface Props {
   navigation: any;
@@ -85,6 +86,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   const [activeJobId, setActiveJobId] = useState<string | undefined>(initialJobId);
   const { user } = useAuth();
+  const isEmployer = (user?.role || '').toLowerCase() === 'employer';
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
@@ -287,35 +289,19 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const handleShareJob = async () => {
     const targetJob = job || passedJob;
     const jobIdStr = activeJobId || targetJob?.id || '';
-    const canonicalHttpsUrl = jobIdStr
-      ? `https://job-market-wine.vercel.app/job/${jobIdStr}`
-      : 'https://job-market-wine.vercel.app';
-    const titleStr = targetJob?.title
-      ? `${targetJob.title} - ${targetJob.company || 'Industrial Company'}`
-      : 'Industrial Job Vacancy';
-    const locationStr = targetJob?.location || 'MIDC Industrial Zone';
-
-    let salStr = 'Competitive Salary Package';
-    if (targetJob) {
-      const minSal = targetJob.salary_min || targetJob.salaryMin;
-      const maxSal = targetJob.salary_max || targetJob.salaryMax;
-      if (minSal && maxSal) {
-        salStr = `₹${Math.round(minSal / 1000)}k - ₹${Math.round(maxSal / 1000)}k / month`;
-      }
+    if (!jobIdStr) {
+      showToast('Job information is not available to share', 'info');
+      return;
     }
 
-    const shareMsg = `🔥 Industrial Job Opening!\n\n📋 Role: ${targetJob?.title || 'Technical Specialist'}\n🏢 Company: ${targetJob?.company || 'Industrial Company'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n👉 Apply / View Details:\n${canonicalHttpsUrl}`;
-
-    try {
-      if (Platform.OS === 'ios') {
-        await Share.share({ title: titleStr, message: shareMsg, url: canonicalHttpsUrl });
-      } else {
-        await Share.share({ title: titleStr, message: shareMsg }, { dialogTitle: titleStr });
-      }
-    } catch (error: any) {
-      logger.warn('Share error:', error);
-      showToast(error.message || 'Could not open share options', 'error');
-    }
+    await shareJob({
+      id: jobIdStr,
+      title: targetJob?.title,
+      company: targetJob?.company,
+      location: targetJob?.location,
+      salaryMin: targetJob?.salary_min || targetJob?.salaryMin,
+      salaryMax: targetJob?.salary_max || targetJob?.salaryMax,
+    });
   };
 
   const handleBackNavigation = () => {
@@ -569,24 +555,26 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       </ScrollView>
 
       {/* BOTTOM FIXED CTA ACTION BAR */}
-      <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom + 10, 20) }]}>
-        {hasApplied ? (
-          <View style={styles.appliedStatusCard}>
-            <CheckCircle2 size={18} color="#16A34A" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.appliedStatusTitle}>Application Submitted</Text>
-              <Text style={styles.appliedStatusSub}>
-                Status: {(appliedItem?.status || 'APPLIED').toUpperCase()}
-              </Text>
+      {!isEmployer && (
+        <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom + 10, 20) }]}>
+          {hasApplied ? (
+            <View style={styles.appliedStatusCard}>
+              <CheckCircle2 size={18} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.appliedStatusTitle}>Application Submitted</Text>
+                <Text style={styles.appliedStatusSub}>
+                  Status: {(appliedItem?.status || 'APPLIED').toUpperCase()}
+                </Text>
+              </View>
             </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.applyCtaBtn} activeOpacity={0.85} onPress={handleApply}>
-            <Send size={16} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.applyCtaBtnText}>Apply Now</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          ) : (
+            <TouchableOpacity style={styles.applyCtaBtn} activeOpacity={0.85} onPress={handleApply}>
+              <Send size={16} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.applyCtaBtnText}>Apply Now</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };

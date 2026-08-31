@@ -33,6 +33,7 @@ import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection'
 import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
 import { EditCompanyProfileModal } from './components/EditCompanyProfileModal';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
+import { shareCompany } from '../../utils/shareUtils';
 
 interface Props {
   navigation: any;
@@ -284,17 +285,14 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   const handleShare = async () => {
-    try {
-      const companyName = company?.name || targetCompanyId || 'Company Profile';
-      const companyTargetId = company?.id || company?.name || targetCompanyId;
-      const liveWebUrl = `https://job-market-wine.vercel.app/company/${encodeURIComponent(companyTargetId)}`;
-
-      await Share.share({
-        message: `View active job openings and plant profile for ${companyName} on JobMarket: ${liveWebUrl}`,
-        title: `${companyName} - JobMarket`,
-        url: liveWebUrl,
-      });
-    } catch (_) {}
+    const companyName = company?.name || targetCompanyId || 'Company Profile';
+    const companyTargetId = company?.id || company?.name || targetCompanyId;
+    await shareCompany({
+      id: companyTargetId,
+      name: companyName,
+      industry: company?.industry,
+      location: company?.city || company?.address || company?.midc_zone,
+    });
   };
 
   const handleSaveSuccess = (updatedCompany: any) => {

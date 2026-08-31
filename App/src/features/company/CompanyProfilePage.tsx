@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import companyHeaderBg from '../../assets/company_header_bg.jpg';
 import { apiFetch } from '../../utils/api';
+import { shareContent } from '../../utils/helpers';
 import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '../../store/useStore';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
@@ -160,38 +161,17 @@ export const CompanyProfilePage: React.FC = () => {
   }, [companyId]);
 
   const handleShare = async () => {
-    const currentUrl = window.location.href;
-    const shareData = {
-      title: `${company?.name || 'Company Profile'} - JobMarket`,
-      text: `View active jobs and company profile for ${company?.name || 'this company'} on JobMarket.`,
-      url: currentUrl,
-    };
-
-    if (typeof navigator !== 'undefined' && (navigator as any).share && (navigator as any).canShare && (navigator as any).canShare(shareData)) {
-      try {
-        await (navigator as any).share(shareData);
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
+    const currentUrl = `${window.location.origin}/company/${encodeURIComponent(companyId || '')}`;
+    const companyDisplayName = company?.name || company?.company_name || 'Company';
+    await shareContent(
+      `${companyDisplayName} - JobMarket Profile`,
+      `View active job vacancies and company details for ${companyDisplayName} on JobMarket: ${currentUrl}`,
+      currentUrl,
+      () => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2200);
       }
-    }
-
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(currentUrl);
-      } else {
-        const dummy = document.createElement('textarea');
-        dummy.value = currentUrl;
-        document.body.appendChild(dummy);
-        dummy.select();
-        document.execCommand('copy');
-        document.body.removeChild(dummy);
-      }
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2200);
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-    }
+    );
   };
 
   // Robust Company Name Resolution (Filters out raw UUIDs)
@@ -329,23 +309,14 @@ export const CompanyProfilePage: React.FC = () => {
       boxSizing: 'border-box'
     }}>
       {/* Container matching Mobile/Responsive Width */}
-      <div style={{
-        maxWidth: '720px',
-        margin: '0 auto',
-        paddingBottom: '60px',
-        boxSizing: 'border-box'
-      }}>
+      <div className="employer-profile-container">
         {/* 1. Primary Blue Hero Header Banner with Exact Mobile App Background Image */}
-        <div style={{
-          backgroundColor: '#0A58E2',
-          backgroundImage: `url(${companyHeaderBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          padding: '16px 16px 48px 16px',
-          color: '#FFFFFF',
-          position: 'relative',
-          boxSizing: 'border-box'
-        }}>
+        <div
+          className="employer-profile-banner"
+          style={{
+            backgroundImage: `url(${companyHeaderBg})`,
+          }}
+        >
           {/* Top Controls Row */}
           <div style={{
             display: 'flex',

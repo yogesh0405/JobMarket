@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {
   Briefcase,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -39,6 +40,14 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     setSavedJobIds(savedJobsStore.getSavedIds());
@@ -227,8 +236,8 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       // 1. Text Search Query Match (Intelligent domain matching)
-      if (searchQuery.trim()) {
-        const matchesQuery = matchJobAgainstKeyword(job, searchQuery);
+      if (debouncedSearchQuery.trim()) {
+        const matchesQuery = matchJobAgainstKeyword(job, debouncedSearchQuery);
         if (!matchesQuery) return false;
       }
 
@@ -368,9 +377,72 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     [jobs, searchQuery, selectedCategory]
   );
 
+  const activeFilterCount = useMemo(() => {
+    return [
+      activeFilters.industry !== 'All Industries',
+      activeFilters.education !== 'All Education Levels',
+      activeFilters.midcZone !== 'All MIDC Zones',
+      activeFilters.jobType !== 'All Types',
+      activeFilters.workMode !== 'All Modes',
+      activeFilters.minExperience !== 'All Experience',
+      activeFilters.busFacility,
+      activeFilters.canteen,
+      activeFilters.accommodation,
+      activeFilters.overtime,
+    ].filter(Boolean).length;
+  }, [activeFilters]);
+
+  const handleOpenFilterDrawer = useCallback(() => {
+    navigation.navigate('JobFilter', {
+      currentFilters: activeFilters,
+      totalMatchingJobsCount: filteredJobs.length,
+      onApplyFilters: (applied: any) => {
+        setActiveFilters(applied);
+      },
+      onResetFilters: () => {
+        setActiveFilters({
+          industry: 'All Industries',
+          jobType: 'All Types',
+          workMode: 'All Modes',
+          minExperience: 'All Experience',
+          salaryMin: 0,
+          midcZone: 'All MIDC Zones',
+          busFacility: false,
+          canteen: false,
+          accommodation: false,
+          overtime: false,
+        });
+      },
+    });
+  }, [navigation, activeFilters, filteredJobs.length]);
+
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Find Jobs" showBack={false} />
+      <Header
+        searchPlaceholder="Search Jobs"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={false}
+        rightAction={
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={handleOpenFilterDrawer}
+            style={styles.headerFilterBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <SlidersHorizontal
+              size={18}
+              color={activeFilterCount > 0 ? COLORS.primary : '#475569'}
+              strokeWidth={2.2}
+            />
+            {activeFilterCount > 0 && (
+              <View style={styles.headerFilterBadge}>
+                <Text style={styles.headerFilterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        }
+      />
 
       <CandidateJobSearchFilterHeader
         searchQuery={searchQuery}
@@ -382,7 +454,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         isInputFocused={isInputFocused}
         setIsInputFocused={setIsInputFocused}
         matchedSuggestions={matchedSuggestions}
-        onOpenFilterDrawer={() => setFilterDrawerOpen(true)}
+        onOpenFilterDrawer={handleOpenFilterDrawer}
         viewMode={viewMode}
         setViewMode={setViewMode}
         selectedCategory={selectedCategory}
@@ -459,31 +531,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         }
         ListFooterComponent={<View style={{ height: 32 }} />}
       />
-
-      <JobFilterSideDrawer
-        visible={filterDrawerOpen}
-        onClose={() => setFilterDrawerOpen(false)}
-        currentFilters={activeFilters}
-        onApplyFilters={(applied) => {
-          setActiveFilters(applied);
-          setFilterDrawerOpen(false);
-        }}
-        onResetFilters={() =>
-          setActiveFilters({
-            industry: 'All Industries',
-            jobType: 'All Types',
-            workMode: 'All Modes',
-            minExperience: 'All Experience',
-            salaryMin: 0,
-            midcZone: 'All MIDC Zones',
-            busFacility: false,
-            canteen: false,
-            accommodation: false,
-            overtime: false,
-          })
-        }
-        totalMatchingJobsCount={filteredJobs.length}
-      />
     </View>
   );
 };
@@ -544,5 +591,31 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     gap: 8,
+  },
+  headerFilterBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  headerFilterBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: COLORS.primary,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 7.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  headerFilterBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
+    fontWeight: '900',
   },
 });

@@ -202,7 +202,7 @@ export const UserManagementPage: React.FC = () => {
                     <td>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#344bfd', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', overflow: 'hidden' }}>
                         {u.profile_picture_url ? (
-                          <img src={u.profile_picture_url} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={u.profile_picture_url} alt={u.name} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           getInitials(u.name)
                         )}

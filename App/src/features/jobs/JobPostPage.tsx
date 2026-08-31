@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../utils/api';
 import { useJobs } from '../../hooks/useJobs';
@@ -11,6 +12,7 @@ import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo'
 import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../utils/mapUrlParser';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { 
+  ArrowLeft,
   Building2, 
   Briefcase, 
   MapPin, 
@@ -69,6 +71,19 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttonText: string;
+    onButtonPress: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    buttonText: 'Manage Jobs',
+    onButtonPress: () => {},
+  });
 
   const STEPS = [
     { id: 1, title: 'Basic Details' },
@@ -98,6 +113,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         return;
       }
       setCurrentStep(2);
+      const el = document.querySelector('.post-job-scroll-container');
+      if (el) el.scrollTop = 0;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (currentStep === 2) {
       if (!location.trim()) {
@@ -106,9 +123,13 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         return;
       }
       setCurrentStep(3);
+      const el = document.querySelector('.post-job-scroll-container');
+      if (el) el.scrollTop = 0;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (currentStep === 3) {
       setCurrentStep(4);
+      const el = document.querySelector('.post-job-scroll-container');
+      if (el) el.scrollTop = 0;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -117,6 +138,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     setErrorMsg(null);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      const el = document.querySelector('.post-job-scroll-container');
+      if (el) el.scrollTop = 0;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -292,16 +315,29 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
 
-  // Intercept Mobile/Laptop Browser Back Button & Unsaved Tab Close
+  const isDiscardingRef = React.useRef(false);
+  const currentStepRef = React.useRef(currentStep);
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
+
+  // Intercept Mobile/Laptop Browser Back Button & Step-Aware Navigation
   useEffect(() => {
     window.history.pushState({ postJobExitGuard: true }, '');
 
     const handlePopState = () => {
-      window.history.pushState({ postJobExitGuard: true }, '');
-      setShowExitConfirmModal(true);
+      if (isDiscardingRef.current) return;
+      if (currentStepRef.current > 1) {
+        setCurrentStep((prev) => Math.max(1, prev - 1));
+        window.history.pushState({ postJobExitGuard: true }, '');
+      } else {
+        window.history.pushState({ postJobExitGuard: true }, '');
+        setShowExitConfirmModal(true);
+      }
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDiscardingRef.current) return;
       e.preventDefault();
       e.returnValue = '';
     };
@@ -316,12 +352,20 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   }, []);
 
   const handleConfirmExit = () => {
+    isDiscardingRef.current = true;
     setShowExitConfirmModal(false);
     if (isEmbedded && onComplete) {
       onComplete();
-    } else {
-      navigate('/dashboard?tab=manage');
     }
+    navigate('/dashboard?tab=manage', { replace: true });
+
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('tab') === 'post-job') {
+        url.searchParams.set('tab', 'manage');
+        window.history.replaceState(null, '', url.pathname + '?tab=manage');
+      }
+    } catch (e) {}
   };
 
   // Load Categories on mount
@@ -872,33 +916,84 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
     try {
       setIsSubmitting(true);
+      const navigateToManageJobs = () => {
+        if (isEmbedded && onComplete) {
+          onComplete();
+        } else {
+          navigate('/dashboard?tab=manage');
+        }
+      };
+
       if (isEdit && id) {
         await updateJob(id, jobData);
-        showToast('Job updated successfully!', 'success');
+        setIsSubmitting(false);
+        setSuccessModalConfig({
+          visible: true,
+          title: 'Job Updated Successfully !',
+          message: `Your updated job post "${finalTitle}" has been submitted for admin review and approval. It will go live once approved by the JobMarket team.`,
+          buttonText: 'Manage Jobs',
+          onButtonPress: () => {
+            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+            navigateToManageJobs();
+          },
+        });
       } else {
         await createJob(jobData);
-        showToast('Job posted successfully! 🎉 Info sent on WhatsApp.', 'success');
-      }
-
-      if (isEmbedded && onComplete) {
-        onComplete();
-      } else {
-        navigate('/dashboard');
+        setIsSubmitting(false);
+        setSuccessModalConfig({
+          visible: true,
+          title: 'Job Submitted for Approval !',
+          message: `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
+          buttonText: 'Manage Jobs',
+          onButtonPress: () => {
+            setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
+            navigateToManageJobs();
+          },
+        });
       }
     } catch (err: any) {
-      showToast(err.message || 'Failed to save job', 'error');
-    } finally {
       setIsSubmitting(false);
+      showToast(err.message || 'Failed to save job', 'error');
     }
   };
 
   const content = (
     <>
       <div className="post-job-header" style={isEmbedded ? { padding: 0, marginBottom: 'var(--space-6)' } : undefined}>
-        <h2 style={{ fontSize: 'var(--fs-2xl)' }}>{isEdit ? 'Edit Job Posting' : 'Post a New Industrial & Enterprise Job'}</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginTop: '4px' }}>
-          Select Trade Type to populate relevant Job Roles and dynamic skill suggestions.
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (currentStep > 1) {
+                handlePrevStep();
+              } else {
+                setShowExitConfirmModal(true);
+              }
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#0F172A',
+              borderRadius: '6px',
+              flexShrink: 0
+            }}
+            title={currentStep > 1 ? 'Go to previous step' : 'Go back to Manage Jobs'}
+            aria-label={currentStep > 1 ? 'Go to previous step' : 'Go back to Manage Jobs'}
+          >
+            <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontSize: 'var(--fs-2xl)' }}>{isEdit ? 'Edit Job Posting' : 'Post a New Industrial & Enterprise Job'}</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginTop: '2px' }}>
+              Select Trade Type to populate relevant Job Roles and dynamic skill suggestions.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Admin Rejection / Correction Required Alert Banner */}
@@ -930,22 +1025,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       )}
 
       {/* 4-Step Stepper Header Bar (Exact Mobile App Flow Parity) */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #CBD5E1',
-        borderRadius: '8px',
-        padding: '14px 10px',
-        marginBottom: '20px',
-        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-        overflowX: 'auto'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'relative',
-          minWidth: '280px'
-        }}>
+      <div className="post-job-stepper-card">
+        <div className="post-job-stepper-track">
           {STEPS.map((step, idx) => {
             const stepNumber = idx + 1;
             const isCompleted = currentStep > stepNumber;
@@ -955,6 +1036,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
             return (
               <React.Fragment key={step.id}>
                 <div
+                  className="post-job-step-node"
                   onClick={() => {
                     if (stepNumber < currentStep) {
                       setErrorMsg(null);
@@ -963,56 +1045,21 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     }
                   }}
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
                     cursor: stepNumber < currentStep ? 'pointer' : 'default',
-                    zIndex: 2,
-                    flex: '1 1 0px',
-                    minWidth: 0
                   }}
                 >
-                  <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    border: isActive ? '2px solid #1B4FDF' : isCompleted ? '1.5px solid #1B4FDF' : '1.5px solid #CBD5E1',
-                    backgroundColor: isCompleted ? '#1B4FDF' : '#FFFFFF',
-                    color: isCompleted ? '#FFFFFF' : isActive ? '#1B4FDF' : '#64748B',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    transition: 'all 0.2s ease',
-                    flexShrink: 0
-                  }}>
-                    {isCompleted ? <CheckCircle2 size={15} color="#FFFFFF" /> : stepNumber}
+                  <div className={`post-job-step-circle ${isCompleted ? 'step-circle-completed' : isActive ? 'step-circle-active' : ''}`}>
+                    {isCompleted ? <CheckCircle2 size={13} color="#FFFFFF" strokeWidth={2.5} /> : stepNumber}
                   </div>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: isActive ? '700' : '600',
-                    color: isActive ? '#0F172A' : '#64748B',
-                    marginTop: '4px',
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '100%'
-                  }}>
+                  <span className={`post-job-step-title ${isActive ? 'step-title-active' : ''}`}>
                     {step.title}
                   </span>
                 </div>
 
                 {!isLast && (
-                  <div style={{
-                    flex: '0 0 10px',
-                    height: '2px',
-                    backgroundColor: currentStep > stepNumber ? '#1B4FDF' : '#E2E8F0',
-                    margin: '0 2px',
-                    marginTop: '-16px',
-                    transition: 'all 0.2s ease'
-                  }} />
+                  <div className="post-job-connector-track">
+                    <div className={`post-job-connector-line ${currentStep > stepNumber ? 'connector-line-active' : ''}`} />
+                  </div>
                 )}
               </React.Fragment>
             );
@@ -2592,21 +2639,9 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           </div>
         </div>
 
-        {/* AREA 2: Permanently Anchored Fixed Action Footer Bar */}
-        <div 
-          className="post-job-fixed-footer"
-          style={{
-            flexShrink: 0,
-            backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #CBD5E1',
-            padding: '12px 16px',
-            boxShadow: '0 -4px 16px rgba(15, 23, 42, 0.08)',
-            width: '100%',
-            boxSizing: 'border-box',
-            zIndex: 100
-          }}
-        >
-          <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        {/* AREA 2: Action Footer Bar */}
+        <div className="post-job-fixed-footer">
+          <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
             {currentStep === 1 ? (
               <button
                 type="button"
@@ -2723,32 +2758,43 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       </form>
 
       {/* Exit Confirmation Dialog Modal */}
-      {showExitConfirmModal && (
+      {showExitConfirmModal && createPortal(
         <div 
           style={{
             position: 'fixed',
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100dvh',
             backgroundColor: 'rgba(15, 23, 42, 0.65)',
             backdropFilter: 'blur(4px)',
-            zIndex: 999999,
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 9999999,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '16px',
             boxSizing: 'border-box'
           }}
+          onClick={() => setShowExitConfirmModal(false)}
         >
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '24px 20px',
-            maxWidth: '420px',
-            width: '100%',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            textAlign: 'center',
-            boxSizing: 'border-box',
-            animation: 'fadeInUp 200ms ease forwards'
-          }}>
+          <div 
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '24px 20px',
+              maxWidth: '380px',
+              width: '100%',
+              margin: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{
               width: '52px',
               height: '52px',
@@ -2763,11 +2809,11 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               <AlertTriangle size={26} />
             </div>
 
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '17px', fontWeight: '800', color: '#0F172A' }}>
               Discard Job Listing?
             </h3>
 
-            <p style={{ margin: '0 0 24px 0', fontSize: '13.5px', color: '#64748B', lineHeight: '1.5', fontWeight: '500' }}>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748B', lineHeight: '1.5', fontWeight: '500' }}>
               You have unsaved changes in this job post form. Are you sure you want to exit? All progress entered so far will be lost.
             </p>
 
@@ -2812,7 +2858,97 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Themed Success Confirmation Modal for Job Submission / Update */}
+      {successModalConfig.visible && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100dvh',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 9999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '28px 24px 24px',
+              maxWidth: '380px',
+              width: '100%',
+              margin: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+              position: 'relative'
+            }}
+          >
+            {/* Green Checkmark Circle */}
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#DCFCE7',
+                color: '#16A34A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+                border: '4px solid #F0FDF4'
+              }}
+            >
+              <CheckCircle2 size={30} strokeWidth={2.5} />
+            </div>
+
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.2px' }}>
+              {successModalConfig.title}
+            </h3>
+
+            <p style={{ margin: '0 0 24px 0', fontSize: '13px', color: '#64748B', lineHeight: '1.5', fontWeight: '500' }}>
+              {successModalConfig.message}
+            </p>
+
+            <button
+              type="button"
+              onClick={successModalConfig.onButtonPress}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: '#1B4FDF',
+                color: '#FFFFFF',
+                fontSize: '14px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {successModalConfig.buttonText}
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Material 3 Clock Time Picker Modal */}

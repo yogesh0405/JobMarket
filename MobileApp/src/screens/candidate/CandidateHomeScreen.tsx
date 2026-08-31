@@ -66,7 +66,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   // Top Search Bar & Live Autocomplete Suggestions State
-  const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
+  const SEARCH_PLACEHOLDERS = ['Search Jobs', 'Search Trades', 'Search Skills', 'Search Locations'];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   useEffect(() => {
@@ -292,15 +292,17 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleOpenFilter = () => {
-    setHomeFilterDrawerOpen(true);
-  };
-
-  const handleApplyHomeFilters = (applied: FilterOptions) => {
-    setHomeFilters(applied);
-    setHomeFilterDrawerOpen(false);
-    navigation.navigate('CandidateJobsTab', {
-      screen: 'CandidateJobSearch',
-      params: { homeFilters: applied },
+    navigation.navigate('JobFilter', {
+      currentFilters: homeFilters,
+      totalMatchingJobsCount: jobs?.length || 0,
+      onApplyFilters: (applied: FilterOptions) => {
+        setHomeFilters(applied);
+        navigation.navigate('CandidateJobsTab', {
+          screen: 'CandidateJobSearch',
+          params: { homeFilters: applied },
+        });
+      },
+      onResetFilters: () => setHomeFilters(DEFAULT_HOME_FILTERS),
     });
   };
 
@@ -339,185 +341,27 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="JobMarket" subtitle="Home" showBack={false} />
+      <Header
+        searchPlaceholder={SEARCH_PLACEHOLDERS[placeholderIndex] || 'Search Jobs'}
+        onSearchPress={() => {
+          navigation.navigate('CandidateJobsTab', {
+            screen: 'CandidateJobSearch',
+          });
+        }}
+        showBack={false}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
       >
-        {/* Top Search Bar */}
-        <View style={{ zIndex: 999, position: 'relative', marginTop: 2, marginBottom: 6 }}>
-          <View style={[styles.topSearchPillRow, isInputFocused && styles.topSearchPillRowActive]}>
-            <TouchableOpacity onPress={handleSearchSubmit} style={styles.searchIconBadge3D} activeOpacity={0.8}>
-              <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} strokeWidth={2.2} />
-            </TouchableOpacity>
-
-            <TextInput
-              ref={topSearchInputRef}
-              style={styles.topSearchInput}
-              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-              placeholderTextColor="#94A3B8"
-              value={topSearch}
-              onChangeText={(txt) => {
-                setTopSearch(txt);
-                setShowSuggestions(txt.trim().length > 0);
-              }}
-              onPressIn={() => setIsInputFocused(true)}
-              onFocus={() => {
-                setIsInputFocused(true);
-                setShowSuggestions(topSearch.trim().length > 0);
-              }}
-              onBlur={() => setIsInputFocused(false)}
-              onSubmitEditing={handleSearchSubmit}
-              returnKeyType="search"
-            />
-
-            {topSearch.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => {
-                  setTopSearch('');
-                  setShowSuggestions(false);
-                }}
-                style={styles.searchClearBtn}
-              >
-                <X size={14} color="#64748B" strokeWidth={2.2} />
-              </TouchableOpacity>
-            ) : null}
-
-            <View style={styles.inlineFilterDivider} />
-
-            <TouchableOpacity
-              style={styles.inlineFilterBtnIconOnly}
-              onPress={handleOpenFilter}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <SlidersHorizontal size={18} color={COLORS.primary} strokeWidth={2.2} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Autocomplete Dropdown Overlay */}
-          {showSuggestions && topSearch.trim().length > 0 ? (
-            <View style={styles.suggestionsContainer}>
-              <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled style={{ maxHeight: 270 }}>
-                {topSearch.trim().length > 0 ? (
-                  <TouchableOpacity
-                    style={styles.suggestionRowHeader}
-                    onPress={() => {
-                      setShowSuggestions(false);
-                      handleSearchSubmit();
-                    }}
-                  >
-                    <Search size={15} color={COLORS.primary} />
-                    <Text style={styles.suggestionHeaderText} numberOfLines={1}>
-                      Search all jobs matching "<Text style={{ fontWeight: '800', color: COLORS.primary }}>{topSearch.trim()}</Text>"
-                    </Text>
-                    <ArrowRight size={14} color={COLORS.primary} />
-                  </TouchableOpacity>
-                ) : null}
-
-                {matchedSuggestions.jobs.length > 0 ? (
-                  <View style={styles.suggestionGroup}>
-                    <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
-                    {matchedSuggestions.jobs.map((j) => (
-                      <TouchableOpacity
-                        key={j.id}
-                        style={styles.suggestionItemRow}
-                        onPress={() => {
-                          setShowSuggestions(false);
-                          navigation.navigate('CandidateJobsTab', {
-                            screen: 'CandidateJobDetail',
-                            params: { jobId: j.id, job: j },
-                          });
-                        }}
-                      >
-                        <Briefcase size={16} color={COLORS.primary} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
-                          <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
-                        </View>
-                        <ChevronRight size={14} color="#94A3B8" />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
-
-                {matchedSuggestions.trades.length > 0 ? (
-                  <View style={styles.suggestionGroup}>
-                    <Text style={styles.suggestionGroupLabel}>POPULAR TRADES & SKILLS</Text>
-                    {matchedSuggestions.trades.map((trade) => (
-                      <TouchableOpacity
-                        key={trade}
-                        style={styles.suggestionItemRow}
-                        onPress={() => {
-                          setTopSearch(trade);
-                          setShowSuggestions(false);
-                          handleQuickTradeSearch(trade);
-                        }}
-                      >
-                        <Award size={16} color="#059669" />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.suggestionItemTitle}>{trade}</Text>
-                          <Text style={styles.suggestionItemSub}>ITI / Industrial Trade</Text>
-                        </View>
-                        <ChevronRight size={14} color="#94A3B8" />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
-
-                {matchedSuggestions.locations.length > 0 ? (
-                  <View style={styles.suggestionGroup}>
-                    <Text style={styles.suggestionGroupLabel}>INDUSTRIAL ZONES & LOCATIONS</Text>
-                    {matchedSuggestions.locations.map((loc) => (
-                      <TouchableOpacity
-                        key={loc}
-                        style={styles.suggestionItemRow}
-                        onPress={() => {
-                          setShowSuggestions(false);
-                          navigation.navigate('CandidateJobsTab', {
-                            screen: 'CandidateJobSearch',
-                            params: { location: loc },
-                          });
-                        }}
-                      >
-                        <MapPin size={16} color="#D97706" />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.suggestionItemTitle}>{loc}</Text>
-                          <Text style={styles.suggestionItemSub}>Industrial Cluster</Text>
-                        </View>
-                        <ChevronRight size={14} color="#94A3B8" />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
-
-                <TouchableOpacity
-                  style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 }}
-                  onPress={() => setShowSuggestions(false)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>Close Suggestions ✕</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          ) : null}
-        </View>
-
         {/* Promotional Banner Slider */}
         <CandidateHomePromoSlider promoBanners={promoBanners} onBannerPress={handleBannerPress} />
 
-        {/* Hero Search Card */}
-        <View style={{ marginTop: 16, marginBottom: 12 }}>
-          <CandidateHomeSearchCard
-            selectedIndustry={selectedIndustry}
-            setSelectedIndustry={setSelectedIndustry}
-            selectedEducation={selectedEducation}
-            setSelectedEducation={setSelectedEducation}
-            locationQuery={locationQuery}
-            setLocationQuery={setLocationQuery}
-            onSearchSubmit={handleSearchSubmit}
-          />
+        {/* Discover Title Section */}
+        <View style={{ marginTop: 12, marginBottom: 8 }}>
+          <CandidateHomeSearchCard />
         </View>
 
         {/* Popular Role Picks Section */}
@@ -581,15 +425,6 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Applicant Advantage Section (Placed at End of Home Page) */}
         <ApplicantAdvantageSection />
       </ScrollView>
-
-      <JobFilterSideDrawer
-        visible={homeFilterDrawerOpen}
-        onClose={() => setHomeFilterDrawerOpen(false)}
-        currentFilters={homeFilters}
-        onApplyFilters={handleApplyHomeFilters}
-        onResetFilters={() => setHomeFilters(DEFAULT_HOME_FILTERS)}
-        totalMatchingJobsCount={jobs?.length || 0}
-      />
     </View>
   );
 };

@@ -393,15 +393,15 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   unreadBadgePill: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: '#FCA5A5',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
   },
   unreadBadgeText: {
-    color: COLORS.primary,
+    color: '#DC2626',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -440,13 +440,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   filterPillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '600',
     color: '#64748B',
   },
   filterPillTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   bulkActionsRow: {
     flexDirection: 'row',
@@ -459,8 +459,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: COLORS.primary,
   },
   loadingBox: {
@@ -470,9 +470,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: 13,
+    fontSize: 11.5,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   emptyBox: {
     paddingVertical: 50,
@@ -490,12 +490,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#0F172A',
   },
   emptyDesc: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#64748B',
     textAlign: 'center',
   },
@@ -536,25 +536,25 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   itemTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#334155',
     flex: 1,
     marginRight: 6,
   },
   itemTitleUnread: {
-    fontWeight: '900',
+    fontWeight: '700',
     color: '#0F172A',
   },
   itemTime: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: '#94A3B8',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   itemMessage: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#475569',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   itemDeleteBtn: {
     padding: 4,

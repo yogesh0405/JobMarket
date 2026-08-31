@@ -12,10 +12,12 @@ import {
   Image,
   Platform,
   StatusBar,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeft,
+  Search,
   Bell,
   MoreVertical,
   Menu,
@@ -36,6 +38,7 @@ import {
   Calendar,
   Bookmark,
   FileText,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -50,10 +53,17 @@ import { resolveMobileNotificationRoute } from '../../utils/notificationRouter';
 import { FocusAwareStatusBar } from './FocusAwareStatusBar';
 
 interface HeaderProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   onBack?: () => void;
   showBack?: boolean;
+  searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (val: string) => void;
+  onSearchPress?: () => void;
+  onFilterPress?: () => void;
+  activeFilterCount?: number;
+  hideSearch?: boolean;
   rightAction?: React.ReactNode;
   useThreeDots?: boolean;
   hideRightActions?: boolean;
@@ -65,7 +75,14 @@ export const Header: React.FC<HeaderProps> = ({
   title,
   subtitle,
   onBack,
-  showBack = true,
+  showBack = false,
+  searchPlaceholder,
+  searchValue,
+  onSearchChange,
+  onSearchPress,
+  onFilterPress,
+  activeFilterCount,
+  hideSearch = false,
   rightAction,
   useThreeDots = true,
   hideRightActions = false,
@@ -97,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
       StatusBar.setTranslucent(false);
     }
   }, []);
-  
+
   const openDrawer = () => {
     setModalMounted(true);
   };
@@ -176,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={[styles.container, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.content}>
-          {/* Back propagation arrow */}
+          {/* Left: Profile Avatar (Opens Side Menu Drawer) OR Back Button */}
           {isBackAvailable ? (
             <TouchableOpacity
               activeOpacity={0.7}
@@ -184,70 +201,155 @@ export const Header: React.FC<HeaderProps> = ({
               style={styles.backButton}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <ArrowLeft size={22} color={COLORS.slate900} strokeWidth={2} />
+              <ArrowLeft size={19} color={COLORS.slate900} strokeWidth={2.2} />
             </TouchableOpacity>
-          ) : null}
-
-          {/* Title & Subtitle with Brand Logo */}
-          <View style={styles.titleContainer}>
-            <View style={styles.brandHeaderLeft}>
-              {!isBackAvailable ? (
-                <View style={{ marginRight: 8 }}>
-                  {logoUrl && !logoLoadError ? (
-                    <Image
-                      source={{ uri: logoUrl }}
-                      style={{ width: 34, height: 34, borderRadius: 6, resizeMode: 'contain' }}
-                      onError={() => setLogoLoadError(true)}
-                    />
-                  ) : (
-                    <JobMarketLogoSvg size={34} />
-                  )}
-                </View>
-              ) : null}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title} numberOfLines={1}>{headerDisplayTitle}</Text>
-                {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={openDrawer}
+              style={styles.avatarButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <View style={[styles.headerAvatarCircle, { overflow: 'hidden' }]}>
+                {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
+                  <Image
+                    source={{ uri: userPhotoUri.trim() }}
+                    style={styles.headerAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.headerAvatarLetter}>{initialLetter}</Text>
+                )}
               </View>
-            </View>
-          </View>
+            </TouchableOpacity>
+          )}
 
-          {/* Right Header Actions */}
+          {/* Center: Search Pill Bar OR Title/Subtitle */}
+          {!hideSearch ? (
+            onSearchChange ? (
+              <View style={styles.searchBarPill}>
+                <Search size={18} color="#64748B" strokeWidth={2.2} style={{ marginRight: 8 }} />
+                <TextInput
+                  value={searchValue}
+                  onChangeText={onSearchChange}
+                  placeholder={searchPlaceholder || 'Search'}
+                  placeholderTextColor="#64748B"
+                  multiline={false}
+                  numberOfLines={1}
+                  style={styles.searchInputText}
+                  returnKeyType="search"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {searchValue && searchValue.length > 0 ? (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => onSearchChange('')}
+                    style={{ padding: 4, marginRight: onFilterPress ? 4 : 0 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <X size={14} color="#64748B" />
+                  </TouchableOpacity>
+                ) : null}
+                {onFilterPress && (
+                  <>
+                    <View style={styles.inlineSearchFilterDivider} />
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={onFilterPress}
+                      style={styles.inlineSearchFilterBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <SlidersHorizontal
+                        size={15}
+                        color={activeFilterCount && activeFilterCount > 0 ? COLORS.primary : '#64748B'}
+                        strokeWidth={2.2}
+                      />
+                      {activeFilterCount && activeFilterCount > 0 ? (
+                        <View style={styles.inlineSearchFilterBadge}>
+                          <Text style={styles.inlineSearchFilterBadgeText}>{activeFilterCount}</Text>
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (onSearchPress) {
+                    onSearchPress();
+                  } else {
+                    const isEmployer = (user?.role || '').toLowerCase() === 'employer';
+                    if (navigation && typeof navigation.navigate === 'function') {
+                      if (isEmployer) {
+                        navigation.navigate('EmployerMain', { screen: 'CandidatesTab' });
+                      } else {
+                        navigation.navigate('CandidateJobSearch');
+                      }
+                    }
+                  }
+                }}
+                style={styles.searchBarPill}
+              >
+                <Search size={18} color="#64748B" strokeWidth={2.2} style={{ marginRight: 8 }} />
+                <Text style={styles.searchPlaceholderText} numberOfLines={1} ellipsizeMode="tail">
+                  {searchPlaceholder || 'Search'}
+                </Text>
+                {onFilterPress && (
+                  <>
+                    <View style={styles.inlineSearchFilterDivider} />
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={onFilterPress}
+                      style={styles.inlineSearchFilterBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <SlidersHorizontal
+                        size={15}
+                        color={activeFilterCount && activeFilterCount > 0 ? COLORS.primary : '#64748B'}
+                        strokeWidth={2.2}
+                      />
+                      {activeFilterCount && activeFilterCount > 0 ? (
+                        <View style={styles.inlineSearchFilterBadge}>
+                          <Text style={styles.inlineSearchFilterBadgeText}>{activeFilterCount}</Text>
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </TouchableOpacity>
+            )
+          ) : (
+            <View style={styles.titleContainer}>
+              <Text style={styles.title} numberOfLines={1}>{headerDisplayTitle}</Text>
+              {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+            </View>
+          )}
+
+          {/* Right: Schedule Interview Icon (or custom action) */}
           {!hideRightActions ? (
             <View style={styles.rightSlot}>
-              {rightAction ? <View style={{ marginRight: SPACING.xs }}>{rightAction}</View> : null}
-
-              {!hideBell ? (
+              {rightAction ? rightAction : (
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  style={styles.bellButton}
+                  style={styles.chatIconButton}
                   onPress={() => {
+                    const isEmployer = (user?.role || '').toLowerCase() === 'employer';
                     if (navigation && typeof navigation.navigate === 'function') {
-                      navigation.navigate('Notification');
+                      if (isEmployer) {
+                        navigation.navigate('EmployerInterviews');
+                      } else {
+                        navigation.navigate('MyInterviews');
+                      }
                     }
                   }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Bell size={20} color={COLORS.slate700} />
-                  {unreadCount > 0 ? (
-                    <View style={styles.notifBadge}>
-                      <Text style={styles.notifText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                    </View>
-                  ) : null}
+                  <Calendar size={20} color="#475569" strokeWidth={2.2} />
                 </TouchableOpacity>
-              ) : null}
-
-              {!hideMenu ? (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={styles.menuButton}
-                  onPress={openDrawer}
-                >
-                  {useThreeDots ? (
-                    <MoreVertical size={24} color={COLORS.slate800} />
-                  ) : (
-                    <Menu size={24} color={COLORS.slate800} />
-                  )}
-                </TouchableOpacity>
-              ) : null}
+              )}
             </View>
           ) : null}
         </View>
@@ -563,14 +665,14 @@ export const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 2,
-    borderBottomColor: '#CBD5E1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
     paddingBottom: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
     elevation: 2,
     zIndex: 10,
   },
@@ -578,35 +680,74 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 38,
+    minHeight: 40,
+    gap: 6,
+  },
+  avatarButton: {
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAvatarCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#DBEAFE',
+  },
+  headerAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 17,
+  },
+  headerAvatarLetter: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  searchBarPill: {
+    flex: 1,
+    height: 38,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#CBD5E1',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  searchPlaceholderText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748B',
+    flex: 1,
+  },
+  searchInputText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0F172A',
+    flex: 1,
+    paddingVertical: 0,
+  },
+  chatIconButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   backButton: {
-    marginRight: SPACING.xs,
-    padding: 4,
+    marginRight: 0,
+    padding: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   titleContainer: {
     flex: 1,
     justifyContent: 'center',
-  },
-  brandHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerLogoBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   headerLogoText: {
     color: '#FFFFFF',
@@ -631,8 +772,6 @@ const styles = StyleSheet.create({
   rightSlot: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginLeft: 12,
   },
   headerCompletenessBadge: {
     flexDirection: 'row',
@@ -669,19 +808,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#1764E8',
-    minWidth: 20,
+    backgroundColor: '#EF4444',
+    minWidth: 18,
     height: 18,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
     borderWidth: 1.5,
-    borderColor: COLORS.surface,
+    borderColor: '#FFFFFF',
   },
   notifText: {
-    color: COLORS.textWhite,
-    fontSize: 9,
+    color: '#FFFFFF',
+    fontSize: 9.5,
     fontWeight: '900',
     textAlign: 'center',
     includeFontPadding: false,
@@ -813,5 +952,34 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
     marginVertical: SPACING.xs,
+  },
+  inlineSearchFilterDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 6,
+  },
+  inlineSearchFilterBtn: {
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  inlineSearchFilterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  inlineSearchFilterBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '800',
   },
 });

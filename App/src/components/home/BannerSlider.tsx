@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { Advertisement } from '../../types/advertisement';
 import { apiFetch } from '../../utils/api';
 import '../../styles/bannerSlider.css';
@@ -8,7 +9,6 @@ interface BannerSliderProps {
   autoPlayInterval?: number;
 }
 
-// Default active promotional banners ensuring 100% initial rendering
 const DEFAULT_PROMOTIONAL_BANNERS: Advertisement[] = [
   {
     id: 'db-default-1',
@@ -94,36 +94,29 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Touch Swipe & Interaction State
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const isTouchDevice = useRef(false);
   const trackedAdIds = useRef<Set<string>>(new Set());
 
-  // Helper to filter out inactive / expired / unapproved / future banners
   const filterValidNonExpiredBanners = useCallback((ads: Advertisement[]): Advertisement[] => {
     const now = Date.now();
     return ads.filter(ad => {
-      // 1. Is active check
       if (ad.is_active === false) return false;
-
-      // 2. Status / Approval status check
       const status = (ad.status || ad.approval_status || '').toUpperCase();
       if (status !== 'APPROVED' && status !== 'PUBLISHED') return false;
 
-      // 3. Expiration check: end_date (Remove immediately when time is over)
       if (ad.end_date) {
         const endTime = new Date(ad.end_date).getTime();
         if (!isNaN(endTime) && endTime <= now) {
-          return false; // EXPIRED! Automatically remove banner
+          return false;
         }
       }
 
-      // 4. Start date check (do not show banners before start_date)
       if (ad.start_date) {
         const startTime = new Date(ad.start_date).getTime();
         if (!isNaN(startTime) && startTime > now + 3600000) {
-          return false; // Future banner
+          return false;
         }
       }
 
@@ -131,7 +124,6 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
     });
   }, []);
 
-  // Fetch Published Active Advertisements strictly from Database API
   useEffect(() => {
     let isMounted = true;
     apiFetch('/api/v1/home/advertisements')
@@ -141,99 +133,63 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
           const json = await adRes.json();
           if (json.success && Array.isArray(json.data)) {
             const activeDbBanners = filterValidNonExpiredBanners(json.data);
-            setAdvertisements(activeDbBanners);
+            setAdvertisements(activeDbBanners.length > 0 ? activeDbBanners : DEFAULT_PROMOTIONAL_BANNERS);
           } else {
-            setAdvertisements([]);
+            setAdvertisements(DEFAULT_PROMOTIONAL_BANNERS);
           }
         } else {
-          setAdvertisements([]);
+          setAdvertisements(DEFAULT_PROMOTIONAL_BANNERS);
         }
       })
-      .catch((err) => {
-        console.error('Failed to load DB advertisements:', err);
-        if (isMounted) setAdvertisements([]);
+      .catch(() => {
+        if (isMounted) setAdvertisements(DEFAULT_PROMOTIONAL_BANNERS);
       });
 
     return () => { isMounted = false; };
   }, [filterValidNonExpiredBanners]);
 
-  // Periodic Live Expiration Sweep (Checks every 10 seconds and automatically removes expired banners)
-  useEffect(() => {
-    const sweepTimer = setInterval(() => {
-      setAdvertisements(prev => {
-        const valid = filterValidNonExpiredBanners(prev);
-        if (valid.length !== prev.length) {
-          return valid;
-        }
-        return prev;
-      });
-    }, 10000);
+  const activeCount = advertisements.length;
 
-    return () => clearInterval(sweepTimer);
-  }, [filterValidNonExpiredBanners]);
-
-  // Safety bound check for current index when banners expire/shrink
-  useEffect(() => {
-    if (currentIndex >= advertisements.length && advertisements.length > 0) {
-      setCurrentIndex(advertisements.length - 1);
-    }
-  }, [advertisements.length, currentIndex]);
-
-  // Record View / Impression for current slide (deduplicated per session)
-  useEffect(() => {
-    if (advertisements.length > 0 && advertisements[currentIndex] && advertisements[currentIndex].id && !advertisements[currentIndex].id.startsWith('db-default-')) {
-      const currentAd = advertisements[currentIndex];
-      if (!trackedAdIds.current.has(currentAd.id)) {
-        trackedAdIds.current.add(currentAd.id);
-        apiFetch(`/api/v1/home/advertisements/${currentAd.id}/view`, { method: 'POST' }).catch(() => {});
-      }
-    }
-  }, [currentIndex, advertisements]);
-
-  // Next & Prev Slide Callbacks
   const nextSlide = useCallback(() => {
-    if (advertisements.length <= 1) return;
-    setCurrentIndex((prev) => (prev + 1) % advertisements.length);
-  }, [advertisements.length]);
+    if (activeCount === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % activeCount);
+  }, [activeCount]);
 
   const prevSlide = useCallback(() => {
-    if (advertisements.length <= 1) return;
-    setCurrentIndex((prev) => (prev - 1 + advertisements.length) % advertisements.length);
-  }, [advertisements.length]);
+    if (activeCount === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + activeCount) % activeCount);
+  }, [activeCount]);
 
-  // Auto-play Timer (Works seamlessly on both Desktop & Mobile)
   useEffect(() => {
-    if (isHovered || advertisements.length <= 1) return;
+    if (isHovered || activeCount <= 1) return;
     const timer = setInterval(() => {
       nextSlide();
     }, autoPlayInterval);
 
     return () => clearInterval(timer);
-  }, [nextSlide, isHovered, advertisements.length, autoPlayInterval]);
+  }, [isHovered, activeCount, autoPlayInterval, nextSlide]);
 
-  // Keyboard Accessibility
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowRight') nextSlide();
-    if (e.key === 'ArrowLeft') prevSlide();
-  };
-
-  // Mouse Hover Handlers (Desktop)
-  const handleMouseEnter = () => {
-    if (!isTouchDevice.current) {
-      setIsHovered(true);
+    if (e.key === 'ArrowLeft') {
+      prevSlide();
+    } else if (e.key === 'ArrowRight') {
+      nextSlide();
     }
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    isTouchDevice.current = false;
+  const handleMouseEnter = () => {
+    if (!isTouchDevice.current) setIsHovered(true);
   };
 
-  // Touch Swipe Handlers (Mobile device auto-play continuity)
+  const handleMouseLeave = () => {
+    if (!isTouchDevice.current) setIsHovered(false);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     isTouchDevice.current = true;
+    setIsHovered(true);
     touchStartX.current = e.touches[0].clientX;
-    touchEndX.current = null;
+    touchEndX.current = e.touches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -242,25 +198,23 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
 
   const handleTouchEnd = () => {
     if (touchStartX.current !== null && touchEndX.current !== null) {
-      const distance = touchStartX.current - touchEndX.current;
-      const minSwipeDistance = 35;
-      if (distance > minSwipeDistance) {
-        nextSlide(); // Swiped left -> Next slide
-      } else if (distance < -minSwipeDistance) {
-        prevSlide(); // Swiped right -> Prev slide
+      const diffX = touchStartX.current - touchEndX.current;
+      const minSwipeDistance = 40;
+      if (diffX > minSwipeDistance) {
+        nextSlide();
+      } else if (diffX < -minSwipeDistance) {
+        prevSlide();
       }
     }
     touchStartX.current = null;
     touchEndX.current = null;
     
-    // Crucial: Resume auto-play timer on mobile devices after touch interaction finishes
     setTimeout(() => {
       setIsHovered(false);
       isTouchDevice.current = false;
     }, 400);
   };
 
-  // Handle Banner Click Action
   const handleBannerClick = (ad: Advertisement) => {
     if (ad.id && !ad.id.startsWith('db-default-')) {
       apiFetch(`/api/v1/home/advertisements/${ad.id}/click`, { method: 'POST' }).catch(() => {});
@@ -279,30 +233,6 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
     }
   };
 
-  // Helper Badge styling per ad type
-  const getBadgeDetails = (type: string) => {
-    switch (type) {
-      case 'URGENT_HIRING':
-        return { text: '🔥 Urgent Hiring', class: 'badge-urgent' };
-      case 'WALK_IN_DRIVE':
-        return { text: '🚶 Walk-In Drive', class: 'badge-walkin' };
-      case 'FEATURED_JOB':
-        return { text: '⭐ Featured Job', class: 'badge-featured' };
-      case 'GOVERNMENT_JOB':
-        return { text: '🏛️ Govt Job', class: 'badge-govt' };
-      case 'APPRENTICESHIP':
-        return { text: '🎓 Apprenticeship', class: 'badge-featured' };
-      case 'INTERNSHIP':
-        return { text: '💡 Internship', class: 'badge-default' };
-      case 'HIRING_EVENT':
-        return { text: '🎯 Mega Recruitment Event', class: 'badge-walkin' };
-      case 'COMPANY_PROMOTION':
-        return { text: '🏢 Featured Company', class: 'badge-default' };
-      default:
-        return { text: '📢 Special Announcement', class: 'badge-default' };
-    }
-  };
-
   if (advertisements.length === 0) return null;
 
   return (
@@ -317,109 +247,65 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({ autoPlayInterval = 4
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Track */}
         <div
           className="banner-slides-track"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
           {advertisements.map((ad, idx) => {
-            const badge = getBadgeDetails(ad.advertisement_type);
+            const rawUri = ad.banner_image?.trim();
+            const validUri = rawUri && rawUri.length > 5 ? rawUri : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
+            const badgeText = (ad.advertisement_type || 'PROMOTIONAL').replace(/_/g, ' ');
+
             return (
               <div
                 key={ad.id || idx}
                 className="banner-slide"
                 onClick={() => handleBannerClick(ad)}
               >
-                {/* Background Image or Theme Gradient Fallback */}
-                {ad.banner_image ? (
-                  <img
-                    src={ad.banner_image}
-                    alt={ad.title}
-                    className="banner-bg-image"
-                    loading={idx === 0 ? 'eager' : 'lazy'}
-                  />
-                ) : (
-                  <div
-                    className="banner-bg-gradient-fallback"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
-                      zIndex: 1
-                    }}
-                  />
-                )}
+                <img
+                  src={validUri}
+                  alt={ad.title}
+                  className="banner-bg-image"
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                />
 
-                {/* Dark Gradient Overlay for Readability */}
                 <div className="banner-gradient-overlay" />
 
-                {/* Slide Content */}
                 <div className="banner-content">
-                  <span className={`banner-badge ${badge.class}`}>
-                    {badge.text}
-                  </span>
+                  <div className="promo-badge-orange">
+                    {badgeText}
+                  </div>
 
                   <h2 className="banner-title">{ad.title}</h2>
 
                   {ad.description && <p className="banner-desc">{ad.description}</p>}
 
-                  <button className="banner-btn" onClick={(e) => { e.stopPropagation(); handleBannerClick(ad); }}>
-                    <span style={{ whiteSpace: 'nowrap' }}>{ad.button_text || 'Apply Now'}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
+                  <button className="promo-action-btn-blue" onClick={(e) => { e.stopPropagation(); handleBannerClick(ad); }}>
+                    <span>{ad.button_text || 'Apply Now'}</span>
+                    <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.2} />
                   </button>
                 </div>
               </div>
             );
           })}
         </div>
-
-        {/* Navigation Arrow Buttons (Always visible for all banners) */}
-        <button
-          className="banner-nav-btn banner-nav-prev"
-          onClick={(e) => {
-            e.stopPropagation();
-            prevSlide();
-          }}
-          aria-label="Previous slide"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
-        <button
-          className="banner-nav-btn banner-nav-next"
-          onClick={(e) => {
-            e.stopPropagation();
-            nextSlide();
-          }}
-          aria-label="Next slide"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-
-        {/* Pagination Dots */}
-        {advertisements.length > 1 && (
-          <div className="banner-dots">
-            {advertisements.map((_, idx) => (
-              <button
-                key={idx}
-                className={`banner-dot ${idx === currentIndex ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentIndex(idx);
-                }}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+
+      {advertisements.length > 1 && (
+        <div className="banner-dots-row">
+          {advertisements.map((_, idx) => (
+            <button
+              key={idx}
+              className={`banner-dot-item ${idx === currentIndex ? 'active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentIndex(idx);
+              }}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -3,24 +3,20 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  useWindowDimensions,
   Platform,
   StatusBar,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Users, ClipboardCheck, Plus, Briefcase, Building2, TrendingUp } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import { Users, ClipboardCheck, PlusCircle, LayoutList, BellRing } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CandidatesScreen } from '../screens/candidates/CandidatesScreen';
 import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerJobsListScreen } from '../screens/jobs/EmployerJobsListScreen';
-import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
-import { CompanyLogoAvatar } from '../components/common/CompanyLogoAvatar';
+import { NotificationScreen } from '../screens/notifications/NotificationScreen';
 import { useAuth } from '../hooks/useAuth';
+import { useNotifications } from '../hooks/useNotifications';
 import { COLORS, FONTS } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -41,60 +37,37 @@ const PostTabRedirectScreen: React.FC<{ navigation: any; route?: any }> = ({ nav
   return <EmployerJobsListScreen navigation={navigation} />;
 };
 
-// Custom Notched Full-Width Bottom Dock Navigation Bar with 3D Active Buttons & Labels
+// Custom Full-Width Bottom Dock Navigation Bar with 3D Active Buttons & Labels
 const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) => {
-  const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const userName = user?.name || user?.companyName || user?.company_name || 'Employer';
-  const firstInitial = userName.charAt(0).toUpperCase();
+  const { unreadCount } = useNotifications();
 
   // Enforce Status Bar styling strictly based on the active tab
   React.useEffect(() => {
-    const activeRouteName = state.routes[state.index]?.name;
     if (Platform.OS === 'android') {
-      if (activeRouteName === 'ProfileTab') {
-        StatusBar.setBackgroundColor('#0A58E2', true);
-        StatusBar.setBarStyle('light-content', true);
-        StatusBar.setTranslucent(true);
-      } else {
-        StatusBar.setBackgroundColor('#FFFFFF', true);
-        StatusBar.setBarStyle('dark-content', true);
-        StatusBar.setTranslucent(false);
-      }
+      StatusBar.setBackgroundColor('#FFFFFF', true);
+      StatusBar.setBarStyle('dark-content', true);
+      StatusBar.setTranslucent(false);
     }
   }, [state.index]);
 
-  const dockWidth = windowWidth;
   const dockHeight = 58 + Math.max(insets.bottom, 10);
-  const center = dockWidth / 2;
-
-  // Ultra-Smooth iOS-Style Concave Notch Curve
-  const pathD = `
-    M 0,0
-    H ${center - 42}
-    C ${center - 26},0 ${center - 22},24 ${center},24
-    C ${center + 22},24 ${center + 26},0 ${center + 42},0
-    H ${dockWidth}
-    V ${dockHeight}
-    H 0
-    Z
-  `;
 
   return (
     <View style={styles.floatingWrapper} pointerEvents="box-none">
-      <View style={[styles.dockContainer, { width: dockWidth, height: dockHeight }]}>
-        {/* SVG Background - Full Width White Notched Bar (Exact Candidate Theme) */}
-        <Svg width={dockWidth} height={dockHeight} style={StyleSheet.absoluteFill}>
-          <Path d={pathD} fill="#FFFFFF" stroke="#E2E8F0" strokeWidth={0.8} />
-        </Svg>
-
+      <View style={[styles.dockContainer, { height: dockHeight }]}>
         {/* Tab Items Row */}
         <View style={[styles.dockItemsRow, { paddingBottom: Math.max(insets.bottom, 6) }]}>
           {state.routes.map((route: any, index: number) => {
             const isFocused = state.index === index;
 
             const onPress = () => {
+              if (route.name === 'PostTab') {
+                navigation.navigate('ManageJobsTab');
+                navigation.navigate('JobPost');
+                return;
+              }
+
               const event = navigation.emit({
                 type: 'tabPress',
                 target: route.key,
@@ -106,32 +79,6 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
               }
             };
 
-            // Center Floating Action FAB (Post Tab)
-            if (route.name === 'PostTab') {
-              return (
-                <View key={route.key} style={styles.centerFabSlot}>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      navigation.navigate('ManageJobsTab');
-                      navigation.navigate('JobPost');
-                    }}
-                    style={styles.fabTouchable}
-                  >
-                    <LinearGradient
-                      colors={COLORS.employerGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.fabCircleGradient}
-                    >
-                      <Plus size={24} color="#FFFFFF" strokeWidth={2.6} />
-                    </LinearGradient>
-                    <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive, { marginTop: 4 }]}>Post</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            }
-
             // Side Tab Icons & Labels
             let IconComponent: any = Users;
             let labelText = 'Candidates';
@@ -142,25 +89,18 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
             } else if (route.name === 'ApplicantsTab') {
               IconComponent = ClipboardCheck;
               labelText = 'Applicants';
+            } else if (route.name === 'PostTab') {
+              IconComponent = PlusCircle;
+              labelText = 'Post';
+            } else if (route.name === 'NotificationsTab') {
+              IconComponent = BellRing;
+              labelText = 'Alerts';
             } else if (route.name === 'ManageJobsTab') {
-              IconComponent = Briefcase;
+              IconComponent = LayoutList;
               labelText = 'Manage Jobs';
-            } else if (route.name === 'ProfileTab') {
-              IconComponent = Building2;
-              labelText = 'Company';
             }
 
-            const isProfileTab = route.name === 'ProfileTab';
-            const companyLogo =
-              (user as any)?.companyLogo ||
-              (user as any)?.company_logo ||
-              (user as any)?.logoUrl ||
-              (user as any)?.logo_url ||
-              (user as any)?.profile_picture_url ||
-              (user as any)?.profilePictureUrl ||
-              (user as any)?.avatarUrl ||
-              (user as any)?.avatar;
-            const iconColor = isFocused ? COLORS.employerPrimary : '#1E293B';
+            const iconColor = isFocused ? COLORS.employerPrimary : '#64748B';
 
             return (
               <TouchableOpacity
@@ -169,34 +109,26 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                 onPress={onPress}
                 style={styles.tabItem}
               >
-                <View style={[styles.iconPillBox, isFocused && styles.iconPillBoxActive]}>
-                  {isProfileTab && companyLogo ? (
-                    <Image
-                      source={{ uri: companyLogo }}
-                      style={{
-                        width: isFocused ? 24 : 22,
-                        height: isFocused ? 24 : 22,
-                        borderRadius: isFocused ? 12 : 11,
-                        borderWidth: isFocused ? 2 : 1.5,
-                        borderColor: isFocused ? COLORS.employerPrimary : '#1E293B',
-                      }}
-                    />
-                  ) : isProfileTab ? (
-                    <Text style={[styles.avatarInitialText, isFocused && { color: COLORS.employerPrimary }]}>
-                      {firstInitial}
-                    </Text>
-                  ) : (
-                    <IconComponent
-                      size={22}
-                      color={iconColor}
-                      fill="none"
-                      strokeWidth={isFocused ? 2.5 : 2.2}
-                    />
-                  )}
-                </View>
+                {/* Top Active Indicator Line */}
+                {isFocused ? (
+                  <View style={styles.topActiveIndicator} />
+                ) : (
+                  <View style={styles.topInactiveIndicator} />
+                )}
 
-                {/* Sleek Active Indicator Capsule Underneath */}
-                {isFocused ? <View style={styles.activeCapsuleIndicator} /> : null}
+                <View style={styles.iconPillBox}>
+                  <IconComponent
+                    size={23}
+                    color={iconColor}
+                    fill="none"
+                    strokeWidth={isFocused ? 2.4 : 1.8}
+                  />
+                  {route.name === 'NotificationsTab' && unreadCount > 0 ? (
+                    <View style={styles.notifBadge}>
+                      <Text style={styles.notifText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
 
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
                   {labelText}
@@ -221,8 +153,8 @@ export const EmployerTabNavigator: React.FC = () => {
       <Tab.Screen name="CandidatesTab" component={CandidatesScreen} />
       <Tab.Screen name="ApplicantsTab" component={DefaultApplicantsScreen} />
       <Tab.Screen name="PostTab" component={PostTabRedirectScreen} />
+      <Tab.Screen name="NotificationsTab" component={NotificationScreen} />
       <Tab.Screen name="ManageJobsTab" component={EmployerJobsListScreen} />
-      <Tab.Screen name="ProfileTab" component={CompanyProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -238,21 +170,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dockContainer: {
+    width: '100%',
     backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -3 },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   dockItemsRow: {
     flexDirection: 'row',
     height: '100%',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    justifyContent: 'space-around',
+    paddingHorizontal: 6,
     zIndex: 10,
-    elevation: 2,
     position: 'relative',
   },
   tabItem: {
@@ -260,66 +194,66 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 6,
+    paddingTop: 4,
+    position: 'relative',
+  },
+  topActiveIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: '60%',
+    height: 3,
+    backgroundColor: COLORS.employerPrimary,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+  },
+  topInactiveIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: '60%',
+    height: 3,
+    backgroundColor: 'transparent',
   },
   iconPillBox: {
     width: 36,
-    height: 28,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    position: 'relative',
   },
-  iconPillBoxActive: {
-    backgroundColor: 'transparent',
+  notifBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -2,
+    backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
-  avatarInitialText: {
-    fontSize: 14,
-    fontFamily: FONTS.black,
+  notifText: {
+    color: '#FFFFFF',
+    fontSize: 9,
     fontWeight: '900',
-    color: '#1E293B',
-  },
-  activeCapsuleIndicator: {
-    width: 16,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: COLORS.employerPrimary,
-    marginTop: 2,
+    textAlign: 'center',
+    includeFontPadding: false,
+    lineHeight: 10,
   },
   tabLabelText: {
     fontSize: 11,
-    fontFamily: FONTS.bold,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginTop: 2,
+    fontFamily: FONTS.medium,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 3,
     textAlign: 'center',
   },
   tabLabelTextActive: {
     color: COLORS.employerPrimary,
     fontFamily: FONTS.bold,
     fontWeight: '800',
-  },
-  centerFabSlot: {
-    width: 68,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabTouchable: {
-    top: -18,
-    alignItems: 'center',
-  },
-  fabCircleGradient: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: COLORS.employerPrimary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
   },
 });

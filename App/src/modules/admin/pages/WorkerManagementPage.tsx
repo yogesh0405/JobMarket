@@ -122,7 +122,7 @@ export const WorkerManagementPage: React.FC = () => {
                     <td>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', overflow: 'hidden' }}>
                         {worker.profile_picture_url ? (
-                          <img src={worker.profile_picture_url} alt={worker.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={worker.profile_picture_url} alt={worker.name} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           getInitials(worker.name)
                         )}

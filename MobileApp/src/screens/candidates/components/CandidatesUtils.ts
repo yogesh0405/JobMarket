@@ -69,11 +69,19 @@ export const LOCATION_FILTER_OPTIONS = [
   'All Locations',
   'Waluj MIDC',
   'Shendra MIDC',
+  'AURIC City (Shendra / Bidkin)',
   'Chikalthana MIDC',
   'Chitegaon MIDC',
   'Paithan MIDC',
+  'Bidkin MIDC',
   'Railway Station MIDC',
-  'Chhatrapati Sambhajinagar',
+  'CIDCO (N-1 to N-12)',
+  'Beed Bypass & Satara Parisar',
+  'Garkheda & Ulkanagari',
+  'Jalna Road & Seven Hills',
+  'Kranti Chowk & Station Road',
+  'Padegaon & Harsul',
+  'Chhatrapati Sambhajinagar (All Zones)',
   'Pune (Bhosari / Chakan / Talegaon)',
   'Nashik (Ambad / Satpur)',
   'Ahmednagar (Nagapur / Supa)',
@@ -237,11 +245,19 @@ export const matchesLocation = (candidate: ExtendedCandidate, filter: string | n
 
   if (filter === 'Waluj MIDC') return /waluj/i.test(candLoc);
   if (filter === 'Shendra MIDC') return /shendra/i.test(candLoc);
+  if (filter.includes('AURIC')) return /auric|shendra|bidkin/i.test(candLoc);
   if (filter === 'Chikalthana MIDC') return /chikalthana/i.test(candLoc);
   if (filter === 'Chitegaon MIDC') return /chitegaon/i.test(candLoc);
   if (filter === 'Paithan MIDC') return /paithan/i.test(candLoc);
-  if (filter === 'Railway Station MIDC') return /railway station/i.test(candLoc);
-  if (filter === 'Chhatrapati Sambhajinagar') return /sambhajinagar|aurangabad/i.test(candLoc);
+  if (filter === 'Bidkin MIDC') return /bidkin/i.test(candLoc);
+  if (filter === 'Railway Station MIDC') return /railway station|station midc/i.test(candLoc);
+  if (filter.includes('CIDCO')) return /cidco|town center|cannaught/i.test(candLoc);
+  if (filter.includes('Beed Bypass')) return /beed bypass|satara|mit college/i.test(candLoc);
+  if (filter.includes('Garkheda')) return /garkheda|ulkanagari|sutgirni/i.test(candLoc);
+  if (filter.includes('Jalna Road')) return /jalna road|seven hills|dhoot hospital|cidco/i.test(candLoc);
+  if (filter.includes('Kranti Chowk')) return /kranti chowk|station road|osmanpura/i.test(candLoc);
+  if (filter.includes('Padegaon')) return /padegaon|harsul|daulatabad/i.test(candLoc);
+  if (filter.includes('Sambhajinagar')) return /sambhajinagar|aurangabad|waluj|shendra|chikalthana|chitegaon|paithan|bidkin/i.test(candLoc);
   if (filter.includes('Pune')) return /pune|bhosari|chakan|talegaon|ranjangaon/i.test(candLoc);
   if (filter.includes('Nashik')) return /nashik|ambad|satpur/i.test(candLoc);
   if (filter.includes('Ahmednagar')) return /ahmednagar|nagapur|supa/i.test(candLoc);
@@ -283,10 +299,10 @@ export const matchesTrade = (candidate: ExtendedCandidate, filter: string | null
 };
 
 export const CANDIDATE_SEARCH_SUGGESTIONS = [
-  'Search by name, skill, trade, location...',
-  'Search by education (e.g. ITI, Diploma, BE)...',
-  'Search by industry (e.g. Automotive, Pharma)...',
-  'Search by experience (e.g. Fresher, 5 Yrs)...',
+  'Search Candidates',
+  'Search Skills',
+  'Search Trades',
+  'Search Locations',
 ];
 
 export const SEED_CANDIDATES: ExtendedCandidate[] = [

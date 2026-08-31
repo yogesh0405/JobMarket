@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,11 +20,13 @@ import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar
 import { COLORS, RADIUS } from '../../constants/theme';
 import { extractCandidateResume } from '../../utils/fileUtils';
 import { ApplicantDetailCandidateTab } from '../jobs/components/ApplicantDetailCandidateTab';
+import { apiFetch } from '../../api/client';
 
 interface Props {
   navigation?: any;
   route?: {
     params?: {
+      candidateId?: string;
       candidate?: ExtendedCandidate;
     };
   };
@@ -31,8 +34,34 @@ interface Props {
 
 export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const candidate = route?.params?.candidate;
+  const initialCandidate = route?.params?.candidate;
+  const candidateId = route?.params?.candidateId || initialCandidate?.id || (initialCandidate as any)?.user_id || (initialCandidate as any)?.userId;
+  const [liveCandidate, setLiveCandidate] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (candidateId) {
+      setLoadingProfile(true);
+      apiFetch(`/api/v1/auth/public-profile/${candidateId}`)
+        .then((res: any) => {
+          if (res?.user) {
+            setLiveCandidate(res.user);
+          }
+        })
+        .catch((err) => {
+          console.warn('Failed to fetch live candidate in MobileApp:', err);
+        })
+        .finally(() => {
+          setLoadingProfile(false);
+        });
+    }
+  }, [candidateId]);
+
+  const candidate: any = {
+    ...(initialCandidate || {}),
+    ...(liveCandidate || {}),
+  };
 
   const topInset = Math.max(
     insets.top || 0,
@@ -40,7 +69,7 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
     Platform.OS === 'ios' ? 44 : 24
   );
 
-  if (!candidate) {
+  if (!candidate || (!candidate.name && !candidate.id)) {
     return (
       <View style={styles.emptyContainer}>
         <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
@@ -62,31 +91,37 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
 
   const resumeInfo = extractCandidateResume(candidate);
   const photoUrl =
-    candidate.avatarUrl ||
     candidate.profile_picture_url ||
-    (candidate as any).profilePictureUrl ||
-    (candidate as any).avatar_url;
+    candidate.profilePictureUrl ||
+    candidate.avatarUrl ||
+    candidate.avatar_url ||
+    candidate.candidate_avatar ||
+    candidate.avatar ||
+    candidate.photo ||
+    candidate.photo_url;
 
-  // Bridge candidate object to JobApplication structure for 100% exact parity with ApplicantDetailCandidateTab
+  // Bridge real candidate object to JobApplication structure for 100% exact parity with ApplicantDetailCandidateTab
   const applicantData = {
     ...candidate,
-    id: candidate.id,
+    id: candidate.id || candidateId,
     user: {
       ...candidate,
       ...(candidate as any)?.user,
-      id: candidate.id,
+      id: candidate.id || candidateId,
       name: candidate.name,
       email: candidate.email,
       phone: candidate.phone,
-      trade_specialization: candidate.trade_specialization || candidate.title,
-      location: candidate.location,
-      bio: candidate.bio,
+      trade_specialization: candidate.trade_specialization || candidate.tradeSpecialization || candidate.title,
+      location: candidate.city ? `${candidate.city}${candidate.state ? `, ${candidate.state}` : ''}` : candidate.location,
+      bio: candidate.bio || candidate.about,
       skills: candidate.skills,
       experience: candidate.experience,
-      education: candidate.education,
-      preferred_shift: candidate.preferred_shift,
+      education: candidate.education || candidate.qualification,
+      preferred_shift: candidate.preferred_shift || candidate.preferredShift,
+      requires_bus: candidate.requires_bus || candidate.requiresBus,
+      requires_accommodation: candidate.requires_accommodation || candidate.requiresAccommodation,
       notice_period: candidate.notice_period,
-      resume_url: candidate.resume_url || candidate.resumeUrl,
+      resume_url: resumeInfo.url || candidate.resume_url || candidate.resumeUrl || candidate.resume,
       profile_picture_url: photoUrl,
     },
   };

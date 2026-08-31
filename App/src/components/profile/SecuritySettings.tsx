@@ -11,7 +11,8 @@ import {
   Send, 
   Eye, 
   EyeOff,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -101,6 +102,8 @@ export const SecuritySettings: React.FC = () => {
     Boolean((currentUser as any)?.is_two_factor_enabled || (currentUser as any)?.isTwoFactorEnabled)
   );
   const [isToggling2FA, setIsToggling2FA] = useState(false);
+  const [show2FAConfirmModal, setShow2FAConfirmModal] = useState(false);
+  const [pending2FATarget, setPending2FATarget] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -325,9 +328,16 @@ export const SecuritySettings: React.FC = () => {
     }
   };
 
-  // 6. Toggle 2FA API Handler
-  const handleToggle2FA = async () => {
+  // 6. Toggle 2FA API Handlers with Confirmation
+  const handleOpen2FAConfirm = () => {
     const nextState = !twoFactorEnabled;
+    setPending2FATarget(nextState);
+    setShow2FAConfirmModal(true);
+  };
+
+  const handleConfirm2FAToggle = async () => {
+    if (pending2FATarget === null) return;
+    const nextState = pending2FATarget;
     setIsToggling2FA(true);
     try {
       const res = await apiFetch('/api/v1/auth/2fa/toggle', {
@@ -339,6 +349,7 @@ export const SecuritySettings: React.FC = () => {
 
       setTwoFactorEnabled(nextState);
       showToast(nextState ? '2FA protection enabled for your account!' : '2FA protection disabled.', nextState ? 'success' : 'info');
+      setShow2FAConfirmModal(false);
     } catch (err: any) {
       showToast(err.message || 'Failed to update 2FA setting', 'error');
     } finally {
@@ -351,12 +362,12 @@ export const SecuritySettings: React.FC = () => {
       <style>{`
         .security-page-container {
           width: 100%;
-          max-width: 100%;
-          margin: 0;
+          max-width: 680px;
+          margin: 0 auto;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          padding: 0 0 32px;
+          gap: 14px;
+          padding: 0 0 40px;
           box-sizing: border-box;
           font-family: inherit;
         }
@@ -365,15 +376,22 @@ export const SecuritySettings: React.FC = () => {
           display: none;
         }
 
+        .sec-content-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
+        }
+
         .sec-card-box {
           background: #FFFFFF;
           border-radius: var(--radius-card, 8px);
           border: 1px solid #E2E8F0;
-          padding: 16px 20px;
+          padding: 20px 24px;
           box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 14px;
           box-sizing: border-box;
           width: 100%;
         }
@@ -382,22 +400,22 @@ export const SecuritySettings: React.FC = () => {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 8px;
+          gap: 10px;
         }
 
         .sec-card-title {
           margin: 0;
-          font-size: 13.5px;
+          font-size: 15px;
           font-weight: 700;
           color: #0F172A;
-          letter-spacing: -0.1px;
+          letter-spacing: -0.2px;
         }
 
         .sec-card-subtitle {
-          margin: 2px 0 0;
-          font-size: 11px;
+          margin: 3px 0 0;
+          font-size: 12px;
           color: #64748B;
-          line-height: 15px;
+          line-height: 17px;
           font-weight: 400;
         }
 
@@ -405,7 +423,7 @@ export const SecuritySettings: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #1B4FDF;
+          color: #1764E8;
           flex-shrink: 0;
           background: transparent;
           border: none;
@@ -414,10 +432,10 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-input-label {
           display: block;
-          font-size: 10.5px;
+          font-size: 11.5px;
           font-weight: 600;
           color: #475569;
-          margin-bottom: 3px;
+          margin-bottom: 4px;
         }
 
         .sec-input-wrapper {
@@ -429,22 +447,22 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-input-field {
           width: 100%;
-          height: 36px;
+          height: 38px;
           border-radius: 6px;
-          background-color: #FAF9F6;
-          border: 1px solid #ECEAE4;
-          padding: 0 34px 0 10px;
-          font-size: 11.5px;
+          background-color: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          padding: 0 36px 0 12px;
+          font-size: 12.5px;
           color: #0F172A;
           outline: none;
           box-sizing: border-box;
           font-family: inherit;
-          transition: border-color 0.2s ease;
+          transition: all 0.2s ease;
         }
 
         .sec-input-field:focus {
-          border-color: #1B4FDF;
-          background-color: #FFFFFF;
+          border-color: #1764E8;
+          box-shadow: 0 0 0 3px rgba(23, 100, 232, 0.1);
         }
 
         .sec-eye-btn {
@@ -462,49 +480,50 @@ export const SecuritySettings: React.FC = () => {
 
         .sec-primary-save-btn {
           width: 100%;
-          height: 36px;
+          height: 38px;
           border-radius: 6px;
-          background-color: #1B4FDF;
+          background-color: #1764E8;
           color: #FFFFFF;
           border: none;
-          font-size: 11.5px;
+          font-size: 12.5px;
           font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: opacity 0.2s ease;
-          margin-top: 2px;
+          transition: all 0.2s ease;
+          margin-top: 4px;
         }
 
         .sec-primary-save-btn:hover {
-          opacity: 0.92;
+          background-color: #124ec4;
+          box-shadow: 0 2px 8px rgba(23, 100, 232, 0.25);
         }
 
         .sec-card-divider {
           height: 1px;
           background-color: #E2E8F0;
-          margin: 4px 0;
+          margin: 6px 0;
         }
 
-        .sec-outline-reset-btn {
+        .sec-secondary-action-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
-          background-color: #FAF9F6;
+          gap: 6px;
+          background-color: #F8FAFC;
           border: 1px solid #CBD5E1;
           border-radius: 6px;
-          padding: 6px 12px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #0F172A;
+          padding: 8px 14px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #1E293B;
           cursor: pointer;
-          margin-top: 4px;
+          margin-top: 6px;
           transition: all 0.2s ease;
         }
 
-        .sec-outline-reset-btn:hover {
+        .sec-secondary-action-btn:hover {
           background-color: #F1F5F9;
           border-color: #94A3B8;
         }
@@ -513,20 +532,20 @@ export const SecuritySettings: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background-color: #FAF9F6;
-          border: 1px solid #ECEAE4;
+          background-color: #F8FAFC;
+          border: 1px solid #E2E8F0;
           border-radius: 6px;
-          padding: 8px 10px;
+          padding: 10px 12px;
           gap: 8px;
         }
 
         .sec-this-device-badge {
           background-color: #EFF6FF;
           border: 1px solid #BFDBFE;
-          color: #1B4FDF;
-          font-size: 9.5px;
+          color: #1764E8;
+          font-size: 10px;
           font-weight: 700;
-          padding: 2px 6px;
+          padding: 2.5px 8px;
           border-radius: 4px;
           flex-shrink: 0;
         }
@@ -535,21 +554,28 @@ export const SecuritySettings: React.FC = () => {
           background-color: #FEF2F2;
           border: 1px solid #FCA5A5;
           color: #DC2626;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 700;
-          padding: 2px 8px;
+          padding: 3px 10px;
           border-radius: 4px;
           cursor: pointer;
           flex-shrink: 0;
+          transition: all 0.2s ease;
         }
 
-        /* Mobile View (max-width: 768px) - 100% exact match with MobileApp */
+        .sec-revoke-btn:hover {
+          background-color: #FEE2E2;
+        }
+
+        /* Mobile View (max-width: 768px) - Full-Screen Native Polish */
         @media (max-width: 768px) {
           .security-page-container {
-            max-width: 100%;
-            padding: 0 0 32px;
-            gap: 12px;
-            background-color: #F8FAFC;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 0 !important;
+            background-color: #FFFFFF !important;
+            min-height: 100vh !important;
           }
 
           .sec-mobile-header {
@@ -562,74 +588,82 @@ export const SecuritySettings: React.FC = () => {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 0px;
+          }
+
+          .sec-content-list {
+            padding: 0 !important;
+            gap: 0 !important;
           }
 
           .sec-card-box {
-            border-radius: 14px;
-            padding: 16px 18px;
-            gap: 12px;
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 18px 16px !important;
+            border-bottom: 8px solid #F8FAFC !important;
+            background: #FFFFFF !important;
+            gap: 12px !important;
           }
 
           .sec-card-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #0F172A;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
           }
 
           .sec-card-subtitle {
-            font-size: 11.5px;
-            color: #64748B;
-            line-height: 16px;
+            font-size: 12px !important;
+            color: #64748B !important;
+            line-height: 17px !important;
           }
 
           .sec-input-label {
-            font-size: 11.5px;
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 4px;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #334155 !important;
+            margin-bottom: 4px !important;
           }
 
           .sec-input-field {
-            height: 42px;
-            border-radius: 12px;
-            padding: 0 38px 0 12px;
-            font-size: 12.5px;
+            height: 42px !important;
+            border-radius: 8px !important;
+            padding: 0 38px 0 12px !important;
+            font-size: 13px !important;
+            border: 1px solid #CBD5E1 !important;
+            background: #FFFFFF !important;
           }
 
           .sec-primary-save-btn {
-            height: 42px;
-            border-radius: 21px;
-            font-size: 13px;
-            font-weight: 700;
-            margin-top: 4px;
+            height: 42px !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            margin-top: 6px !important;
           }
 
-          .sec-outline-reset-btn {
-            height: 38px;
-            padding: 8px 14px;
-            font-size: 12px;
-            border-radius: 8px;
+          .sec-secondary-action-btn {
+            height: 40px !important;
+            padding: 8px 14px !important;
+            font-size: 12.5px !important;
+            border-radius: 8px !important;
           }
 
           .sec-session-pill {
-            padding: 10px 12px;
-            border-radius: 10px;
+            padding: 12px !important;
+            border-radius: 8px !important;
           }
 
           .sec-this-device-badge {
-            font-size: 10px;
-            padding: 2.5px 8px;
-            border-radius: 6px;
+            font-size: 10.5px !important;
+            padding: 3px 8px !important;
+            border-radius: 6px !important;
           }
 
           .sec-revoke-btn {
-            font-size: 11px;
-            padding: 3px 10px;
-            border-radius: 6px;
+            font-size: 11.5px !important;
+            padding: 4px 10px !important;
+            border-radius: 6px !important;
           }
         }
       `}</style>
@@ -656,13 +690,14 @@ export const SecuritySettings: React.FC = () => {
             borderRadius: '6px',
             color: '#0F172A'
           }}
+          aria-label="Back"
         >
-          <ArrowLeft size={18} color="#0F172A" strokeWidth={2.4} />
+          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ShieldCheck size={16} color="#1B4FDF" strokeWidth={2.2} />
-          <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
+          <ShieldCheck size={17} color="#1764E8" strokeWidth={2.2} />
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.2px' }}>
             Security & Sessions
           </span>
         </div>
@@ -670,7 +705,7 @@ export const SecuritySettings: React.FC = () => {
         <div style={{ width: '32px' }} />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 12px' }}>
+      <div className="sec-content-list">
 
         {/* CARD 1: SET OR CHANGE PASSWORD */}
         <div className="sec-card-box">
@@ -883,7 +918,7 @@ export const SecuritySettings: React.FC = () => {
             {/* Toggle Switch */}
             <button
               type="button"
-              onClick={handleToggle2FA}
+              onClick={handleOpen2FAConfirm}
               disabled={isToggling2FA}
               style={{
                 width: '40px',
@@ -1002,11 +1037,151 @@ export const SecuritySettings: React.FC = () => {
               }}
             >
               <LogOut size={12} color="#DC2626" />
-              <span>{isTerminatingSessions ? 'Terminating...' : 'Log Out from All Other Devices'}</span>
+                <span>{isTerminatingSessions ? 'Terminating...' : 'Log Out from All Other Devices'}</span>
             </button>
           )}
         </div>
       </div>
+
+      {/* THEMED TWO-FACTOR (2FA) CONFIRMATION MODAL */}
+      {show2FAConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px',
+          backdropFilter: 'blur(2px)'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            animation: 'fadeIn 0.15s ease'
+          }}>
+            {/* Center Circular Icon Badge */}
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '28px',
+              backgroundColor: pending2FATarget ? '#EFF6FF' : '#FEF2F2',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              {pending2FATarget ? (
+                <ShieldCheck size={28} color="#1764E8" strokeWidth={2.4} />
+              ) : (
+                <AlertTriangle size={28} color="#DC2626" strokeWidth={2.4} />
+              )}
+            </div>
+
+            {/* Title */}
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 800,
+              color: '#0F172A',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.2px'
+            }}>
+              {pending2FATarget ? 'Enable Two-Factor (2FA)?' : 'Disable Two-Factor (2FA)?'}
+            </h3>
+
+            {/* Message */}
+            <p style={{
+              fontSize: '12px',
+              color: '#475569',
+              lineHeight: '18px',
+              margin: '0 0 14px 0',
+              fontWeight: 500
+            }}>
+              {pending2FATarget
+                ? 'Every time you log in, a 6-digit OTP verification code will be sent to your registered email address to secure your account.'
+                : 'Your account will no longer require an OTP code on sign-in. This reduces account security against unauthorized access.'}
+            </p>
+
+            {/* Highlight Box */}
+            <div style={{
+              backgroundColor: pending2FATarget ? '#F0FDF4' : '#FFFBEB',
+              border: pending2FATarget ? '1px solid #BBF7D0' : '1px solid #FCD34D',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: pending2FATarget ? '#15803D' : '#B45309',
+              marginBottom: '20px'
+            }}>
+              {pending2FATarget
+                ? '🛡️ Recommended for highest account security'
+                : '⚠️ Account will be protected by password only'}
+            </div>
+
+            {/* Action Buttons Row */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShow2FAConfirmModal(false)}
+                disabled={isToggling2FA}
+                style={{
+                  flex: 1,
+                  height: '38px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirm2FAToggle}
+                disabled={isToggling2FA}
+                style={{
+                  flex: 1,
+                  height: '38px',
+                  backgroundColor: pending2FATarget ? '#1764E8' : '#DC2626',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                {isToggling2FA ? (
+                  'Updating...'
+                ) : pending2FATarget ? (
+                  'Enable 2FA'
+                ) : (
+                  'Disable 2FA'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

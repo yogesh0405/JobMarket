@@ -100,8 +100,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   return (
     <>
       <div className={`applied-mobile-header ${className || ''}`} style={style}>
-        {/* Left: Brand Logo / Back Button + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '34px' }}>
+        {/* Left: Brand Logo / Back Button + JobMarket Title & Subtitle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minHeight: '36px' }}>
           {showBack ? (
             <button
               onClick={onBack || (() => navigate(-1))}
@@ -122,22 +122,73 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <JobMarketLogoSvg size={24} />
+              <JobMarketLogoSvg size={28} />
             </div>
           )}
-          <h1 style={{
-            margin: 0,
-            padding: 0,
-            fontSize: '14.5px',
-            fontWeight: 750,
-            color: '#0F172A',
-            letterSpacing: '-0.2px',
-            lineHeight: '1.2',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            {title}
-          </h1>
+
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+            {showBack ? (
+              <>
+                <h1 style={{
+                  margin: 0,
+                  padding: 0,
+                  fontSize: '15px',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  letterSpacing: '-0.2px',
+                  lineHeight: '1.2',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {title}
+                </h1>
+                {subtitle && (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#64748B',
+                    lineHeight: '1.2',
+                    marginTop: '1px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {subtitle}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <span style={{
+                  margin: 0,
+                  padding: 0,
+                  fontSize: '15px',
+                  fontWeight: 800,
+                  color: '#1B4FDF',
+                  letterSpacing: '-0.3px',
+                  lineHeight: '1.1',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  JobMarket
+                </span>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#475569',
+                  lineHeight: '1.2',
+                  marginTop: '1px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {title === 'JobMarket' ? (subtitle || 'Find Jobs & Careers') : title}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Right: Bell Icon & Three Dot Menu Icon (100% Mobile App Match) */}

@@ -62,6 +62,7 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
   } = useNotifications();
 
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -70,8 +71,15 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const displayedList = notifications.filter((n) => {
-    if (filter === 'UNREAD') {
-      return !isNotificationRead(n);
+    if (filter === 'UNREAD' && isNotificationRead(n)) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const title = (n.title || '').toLowerCase();
+      const msg = (n.message || '').toLowerCase();
+      const type = (n.type || '').toLowerCase();
+      return title.includes(q) || msg.includes(q) || type.includes(q);
     }
     return true;
   });
@@ -128,12 +136,12 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Standard Clean Professional Header */}
+      {/* Standard Clean Top Header with Profile Picture Drawer Opener */}
       <Header
-        title="Notifications"
-        subtitle="Job alerts & real-time updates"
-        onBack={() => navigation.goBack()}
-        hideRightActions={true}
+        searchPlaceholder="Search Notifications"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={false}
       />
 
       <View style={styles.pageContent}>
@@ -329,8 +337,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bulkActionBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: COLORS.primary,
   },
 
@@ -347,7 +355,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: '#64748B',
   },
   emptyCardContainer: {
@@ -367,15 +375,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   emptyTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#0F172A',
   },
   emptyDesc: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16.5,
   },
 
   scrollList: {
@@ -393,8 +401,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    padding: 14,
-    gap: 12,
+    padding: 12,
+    gap: 10,
     elevation: 1,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
@@ -413,7 +421,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   titleWrapRow: {
     flexDirection: 'row',
@@ -429,26 +437,26 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   itemTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#334155',
     flex: 1,
   },
   itemTitleUnread: {
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0F172A',
   },
   itemTime: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#94A3B8',
   },
   itemMessage: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: '#64748B',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   itemDeleteBtn: {
     padding: 4,
-    marginTop: 2,
+    marginTop: 1,
   },
 });

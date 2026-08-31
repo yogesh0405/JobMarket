@@ -192,7 +192,8 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
-  const isOwner = currentUser && (currentUser.id === job.employerId || currentUser.role === 'employer');
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  const isOwner = isEmployer && (currentUser?.id === job.employerId || currentUser?.id === job.employer_id);
   
   const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser?.id || a.id === currentUser?.id);
   const userAppWithStatus = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
@@ -276,7 +277,15 @@ export const JobDetailPage: React.FC = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button
-                  onClick={() => shareContent(job.title, `View job position for ${job.title} at ${job.company}`, window.location.href)}
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}/job/${encodeURIComponent(job.id)}`;
+                    shareContent(
+                      `${job.title} - ${job.company}`,
+                      `Check out this job opening for ${job.title} at ${job.company} on JobMarket: ${shareUrl}`,
+                      shareUrl,
+                      () => showToast('Job link copied to clipboard! 📋', 'success')
+                    );
+                  }}
                   title="Share Job Opening"
                   style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
                 >
@@ -689,13 +698,13 @@ export const JobDetailPage: React.FC = () => {
                   Track Status
                 </button>
               </div>
-            ) : isOwner ? (
+            ) : isEmployer ? (
               <button
-                onClick={() => navigate('/dashboard?tab=manage')}
+                onClick={() => navigate(isOwner ? '/dashboard?tab=manage' : '/dashboard')}
                 style={{
                   width: '100%',
                   height: '46px',
-                  backgroundColor: '#2563EB',
+                  backgroundColor: '#1764E8',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
@@ -708,7 +717,7 @@ export const JobDetailPage: React.FC = () => {
                   gap: '8px'
                 }}
               >
-                Manage Job
+                {isOwner ? 'Manage Job' : 'Back to Workspace'}
               </button>
             ) : (
               <button

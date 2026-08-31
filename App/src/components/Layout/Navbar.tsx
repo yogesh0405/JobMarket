@@ -1,21 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { MoreVertical } from 'lucide-react';
+import { 
+  MoreVertical, 
+  ChevronRight, 
+  X, 
+  PlusCircle, 
+  Calendar, 
+  Megaphone, 
+  ShieldCheck, 
+  HelpCircle, 
+  Info, 
+  LogOut, 
+  Briefcase, 
+  Bookmark, 
+  User, 
+  FileText, 
+  Building2, 
+  Home
+} from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
-import { useTranslation, Language } from '../../utils/translations';
+import { useTranslation } from '../../utils/translations';
 import { getInitials } from '../../utils/helpers';
 import { apiFetch } from '../../utils/api';
 import { HeaderSearchBar } from './HeaderSearchBar';
 import { NavbarNotificationBell } from './NavbarNotificationBell';
+import { JobMarketLogoSvg } from '../common/JobMarketLogoSvg';
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { state, dispatch } = useStore();
+  const { state } = useStore();
   const t = useTranslation(state.language);
 
   const [scrolled, setScrolled] = useState(false);
@@ -23,7 +41,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<{ logo_url?: string; platform_name?: string }>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const loadSettings = () => {
@@ -58,23 +76,10 @@ export const Navbar: React.FC = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        // If clicking the toggle button itself, let its own click handler handle it
-        const toggleBtn = document.querySelector('.navbar-toggle');
-        if (toggleBtn && toggleBtn.contains(event.target as Node)) {
-          return;
-        }
-        setMobileMenuOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    setDropdownOpen(false);
-    setMobileMenuOpen(false);
-  }, [location]);
 
   const handleLogout = () => {
     logout();
@@ -90,11 +95,6 @@ export const Navbar: React.FC = () => {
   const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
   const isSearchAllowed = location.pathname === '/' && !isEmployer;
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    dispatch({ type: 'SET_LANGUAGE', payload: e.target.value as Language });
-    showToast(e.target.value === 'mr' ? 'भाषा बदलली: मराठी' : e.target.value === 'hi' ? 'भाषा बदली: हिन्दी' : 'Language changed: English', 'info');
-  };
-
   const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
   const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
   const isBannersSection = location.pathname.startsWith('/dashboard') && (
@@ -107,54 +107,151 @@ export const Navbar: React.FC = () => {
   const isCompaniesRoute = location.pathname === '/companies' || location.pathname.startsWith('/companies');
   const isJobsRoute = location.pathname === '/jobs' || (location.pathname.startsWith('/jobs') && location.pathname !== '/jobs/map');
   const isHomeRoute = location.pathname === '/';
-  const isInterviewsSection = location.pathname.startsWith('/dashboard') && (
-    location.search.includes('tab=interviews') ||
-    location.search.includes('tab=scheduled-interviews')
+  const isInterviewsSection = (
+    location.pathname.startsWith('/interviews') ||
+    location.pathname.startsWith('/schedule') ||
+    (location.pathname.startsWith('/dashboard') && (
+      location.search.includes('tab=interviews') ||
+      location.search.includes('tab=scheduled-interviews') ||
+      location.search.includes('tab=schedule')
+    ))
   );
   const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
   const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
   const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isBannersSection || isAppliedSection || isProfileSection || isCompaniesRoute || isJobsRoute || isHomeRoute || isInterviewsSection || isAboutSection || isContactSection || isSecuritySection;
+  const isPostJobSection = location.pathname.startsWith('/post-job') || location.pathname.startsWith('/edit-job') || (location.pathname.startsWith('/dashboard') && (location.search.includes('tab=post-job') || location.search.includes('tab=post') || location.search.includes('tab=create-job')));
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection;
+
+  // Determine current active section title dynamically
+  const getCurrentSectionTitle = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+
+    // Post / Edit Job
+    if (location.pathname.startsWith('/post-job') || location.pathname.startsWith('/edit-job') || tab === 'post-job' || tab === 'create-job') {
+      return 'Post a Job';
+    }
+
+    // Dashboard routes & tabs
+    if (location.pathname.startsWith('/dashboard')) {
+      if (tab === 'candidates' || (!tab && isEmployer)) return 'Browse Candidates';
+      if (tab === 'manage') return 'Manage Jobs';
+      if (tab === 'applicants') return 'Applicants';
+      if (tab === 'interviews' || tab === 'scheduled-interviews') return 'Scheduled Interviews';
+      if (tab === 'advertisements' || tab === 'banners' || tab === 'promotions') return 'Promotional Banners';
+      if (tab === 'applied') return 'Applied Jobs';
+      if (tab === 'saved') return 'Saved Jobs';
+      if (tab === 'profile' || tab === 'my-profile') return isEmployer ? 'Company Profile' : 'My Profile';
+      if (tab === 'resume') return 'My Resume';
+      return isEmployer ? 'Browse Candidates' : 'Candidate Workspace';
+    }
+
+    // General pages
+    if (location.pathname.startsWith('/jobs') || location.pathname.startsWith('/job/')) {
+      return 'Find Jobs';
+    }
+    if (location.pathname.startsWith('/companies') || location.pathname.startsWith('/company/')) {
+      return 'Top Companies';
+    }
+    if (location.pathname.startsWith('/resume')) {
+      return 'Resume & CV';
+    }
+    if (location.pathname.startsWith('/profile') || location.pathname.startsWith('/my-profile')) {
+      return isEmployer ? 'Company Profile' : 'My Profile';
+    }
+    if (location.pathname.startsWith('/security')) {
+      return 'Security & Sessions';
+    }
+    if (location.pathname.startsWith('/about')) {
+      return 'About JobMarket';
+    }
+    if (location.pathname.startsWith('/contact') || location.pathname.startsWith('/support')) {
+      return 'Help & Support';
+    }
+    if (location.pathname.startsWith('/login')) {
+      return 'Sign In';
+    }
+    if (location.pathname.startsWith('/signup')) {
+      return 'Sign Up';
+    }
+    if (location.pathname === '/') {
+      return isEmployer ? 'Browse Candidates' : 'Find Jobs & Careers';
+    }
+
+    return isEmployer ? 'Employer Portal' : 'Find Jobs & Careers';
+  };
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''} ${hideNavbarMobile ? 'hide-navbar-mobile' : ''}`}>
-      <div className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
-      <div className="navbar-inner">
-        <div className="navbar-header-row">
-          <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: 0 }} title={isEmployer ? "Employer Workspace" : `${platformSettings.platform_name || 'JobMarket'} Home`}>
-            <img 
-              src={platformSettings.logo_url || "/logo.svg"} 
-              alt={`${platformSettings.platform_name || 'JobMarket'} Logo`} 
-              style={{ width: '28px', height: '28px', objectFit: 'contain', marginRight: '6px', flexShrink: 0, borderRadius: '4px' }} 
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (!target.src.endsWith('/logo.svg')) {
-                  target.src = '/logo.svg';
-                }
-              }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', margin: 0, padding: 0 }}>
-              <span className="navbar-brand-text" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: '17px', lineHeight: 1.15, margin: 0, padding: 0 }}>
-                {platformSettings.platform_name || t.brand}
-              </span>
-              <span style={{ fontSize: '9.5px', color: 'var(--text-secondary)', marginTop: '1px', fontWeight: 'bold', lineHeight: 1 }}>{isEmployer ? "Employer Portal" : t.tagline}</span>
-            </div>
-          </Link>
+    <>
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${isSearchAllowed ? 'has-search-strip' : ''} ${hideNavbarMobile ? 'hide-navbar-mobile' : ''}`}>
+        <div className="navbar-inner">
+          <div className="navbar-header-row">
+            <Link to={isEmployer ? "/dashboard" : "/"} className="navbar-brand" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: 0 }} title={isEmployer ? "Employer Workspace" : `${platformSettings.platform_name || 'JobMarket'} Home`}>
+              {platformSettings.logo_url ? (
+                <img 
+                  src={platformSettings.logo_url} 
+                  alt={`${platformSettings.platform_name || 'JobMarket'} Logo`} 
+                  style={{ width: '30px', height: '30px', objectFit: 'contain', marginRight: '8px', flexShrink: 0, borderRadius: '6px' }} 
+                />
+              ) : (
+                <div style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+                  <JobMarketLogoSvg size={28} />
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <span className="navbar-brand-text" style={{ fontSize: '15.5px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px', lineHeight: 1.1, margin: 0, padding: 0 }}>
+                  {platformSettings.platform_name || 'JobMarket'}
+                </span>
+                <span style={{ fontSize: '11px', color: '#475569', marginTop: '1.5px', fontWeight: 600, lineHeight: 1.2 }}>
+                  {getCurrentSectionTitle()}
+                </span>
+              </div>
+            </Link>
 
-          {/* DESKTOP SEARCH BAR (Candidates / Guests Only) */}
-          {isSearchAllowed && !isEmployer && (
-            <div className="desktop-search-container">
-              <HeaderSearchBar />
+            {/* DESKTOP ONLY NAVIGATION LINKS */}
+            <div className="navbar-nav desktop-only-nav">
+              {currentUser?.role === 'employer' ? (
+                <>
+                  <Link
+                    to="/dashboard?tab=candidates"
+                    className={`nav-link ${(location.pathname === '/dashboard' && (new URLSearchParams(location.search).get('tab') === 'candidates' || !new URLSearchParams(location.search).get('tab'))) ? 'active' : ''}`}
+                  >
+                    Browse Candidates
+                  </Link>
+                  <Link
+                    to="/post-job"
+                    className={`nav-link ${location.pathname === '/post-job' ? 'active' : ''}`}
+                  >
+                    Post Job
+                  </Link>
+                  <Link
+                    to="/dashboard?tab=manage"
+                    className={`nav-link ${location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'manage' ? 'active' : ''}`}
+                  >
+                    Manage Jobs
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
+                  <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
+                  <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
+                </>
+              )}
             </div>
-          )}
 
-        <div ref={mobileMenuRef} className={`navbar-nav ${mobileMenuOpen ? 'open' : ''}`}>
-          {/* MOBILE ONLY DRAWER SECTION */}
-          <div className="mobile-drawer-content" style={{ width: '100%' }}>
-            {currentUser ? (
-              <div className="mobile-sidebar-profile">
-                <div className="sidebar-profile-header">
-                  <div className="sidebar-profile-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', overflow: 'hidden' }}>
+            <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <NavbarNotificationBell />
+
+              {currentUser ? (
+                <div 
+                  className="navbar-user relative desktop-only-avatar" 
+                  onClick={() => setDropdownOpen(!dropdownOpen)} 
+                  ref={dropdownRef} 
+                  style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center', position: 'relative' }}
+                  title="Account Menu"
+                >
+                  <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
                     {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
                       <img 
                         src={currentUser.profilePictureUrl} 
@@ -169,370 +266,310 @@ export const Navbar: React.FC = () => {
                       getInitials(currentUser.name)
                     )}
                   </div>
-                  <div className="sidebar-profile-info">
-                    <span className="sidebar-profile-name">{currentUser.name}</span>
-                    <span className="sidebar-profile-email">{currentUser.email}</span>
-                  </div>
-                </div>
-                
-                <div className="sidebar-profile-menu" style={{ marginTop: 'var(--space-4)' }}>
-                  {/* Home (Candidates / Guests Only) */}
-                  {currentUser.role !== 'employer' && (
-                    <Link to="/" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                      </svg>
-                      {t.home}
-                    </Link>
-                  )}
 
-                  {/* Find Jobs (Candidates / Guests Only) */}
-                  {currentUser.role !== 'employer' && (
-                    <Link to="/jobs" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                      </svg>
-                      {t.findJobs}
-                    </Link>
-                  )}
-
-                  {/* Dashboard */}
-                  <Link to="/dashboard" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                    {t.dashboard}
-                  </Link>
-                  
-                  {currentUser.role === 'employer' && (
-                    <>
-                      <Link to="/dashboard?tab=manage" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        Manage Jobs
-                      </Link>
-                      <Link to="/dashboard?tab=applicants" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        Applicants
-                      </Link>
-                      <Link to="/dashboard?tab=interviews" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        Scheduled Interviews
-                      </Link>
-                      <Link to="/dashboard?tab=candidates" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <circle cx="12" cy="7" r="4"/><path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2"/>
-                        </svg>
-                        Browse Candidates
-                      </Link>
-                      <Link to="/dashboard?tab=advertisements" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                        </svg>
-                        Promotional Banners
-                      </Link>
-                      <Link to="/post-job" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        Post New Job
-                      </Link>
-                    </>
-                  )}
-
-                  {/* Saved Jobs & Interviews (Candidates / Guests Only) */}
-                  {currentUser.role !== 'employer' && (
-                    <>
-                      <Link to="/dashboard?tab=saved" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        {t.savedJobs}
-                      </Link>
-                      <Link to="/dashboard?tab=interviews" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        Scheduled Interviews
-                      </Link>
-                    </>
-                  )}
-
-                  {currentUser.role === 'candidate' && (
-                    <>
-                      {/* Profile */}
-                      <Link to="/dashboard?tab=profile" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        {t.profile}
-                      </Link>
-                      {/* Resume */}
-                      <Link to="/resume" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        {currentUser?.resume ? t.myResume : t.uploadResume}
-                      </Link>
-                    </>
-                  )}
-
-                  {/* Security & Sessions for ALL Logged In Users */}
-                  <Link to="/security" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    Security & Sessions
-                  </Link>
-
-                  <div className="sidebar-menu-divider"></div>
-                  
-                  {/* About Us */}
-                  <Link to="/about" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                    </svg>
-                    About Us
-                  </Link>
-
-                  {/* Help & Support */}
-                  <Link to="/contact" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    Help & Support
-                  </Link>
-
-                  <div className="sidebar-menu-divider"></div>
-
-                  {/* Logout */}
-                  <button className="sidebar-menu-item danger" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                    </svg>
-                    {t.logout}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mobile-sidebar-profile">
-                {/* Guest Header */}
-                <div className="sidebar-profile-header">
-                  <div className="navbar-logo" style={{ background: 'var(--gradient-accent)', width: '36px', height: '36px', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>JM</div>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span className="sidebar-profile-name" style={{ fontSize: '15px' }}>Welcome to JobMarket</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Find technical & factory jobs</span>
-                  </div>
-                </div>
-
-                <div className="sidebar-profile-menu" style={{ marginTop: 'var(--space-4)' }}>
-                  {/* Home */}
-                  <Link to="/" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    {t.home}
-                  </Link>
-
-                  {/* Find Jobs */}
-                  <Link to="/jobs" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    {t.findJobs}
-                  </Link>
-
-
-                  {/* Companies */}
-                  <Link to="/companies" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/><path d="M1 21h22"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M9 15h1"/><path d="M14 7h1"/><path d="M14 11h1"/><path d="M14 15h1"/>
-                    </svg>
-                    Companies
-                  </Link>
-
-                  {/* About Us */}
-                  <Link to="/about" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                    </svg>
-                    About Us
-                  </Link>
-
-                  {/* Help & Support */}
-                  <Link to="/contact" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    Help & Support
-                  </Link>
-
-                  <div className="sidebar-menu-divider"></div>
-
-                  {/* Log In */}
-                  <Link to="/login" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                    </svg>
-                    {t.login}
-                  </Link>
-
-                  {/* Sign Up */}
-                  <Link to="/signup" className="sidebar-menu-item" onClick={() => setMobileMenuOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
-                    </svg>
-                    {t.signup}
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* DESKTOP ONLY LINKS */}
-          {currentUser?.role === 'employer' ? (
-            <>
-              <Link
-                to="/dashboard?tab=candidates"
-                className={`nav-link ${(location.pathname === '/dashboard' && (new URLSearchParams(location.search).get('tab') === 'candidates' || !new URLSearchParams(location.search).get('tab'))) ? 'active' : ''}`}
-              >
-                Browse Candidates
-              </Link>
-              <Link
-                to="/post-job"
-                className={`nav-link ${location.pathname === '/post-job' || (location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'post-job') ? 'active' : ''}`}
-              >
-                Post Job
-              </Link>
-              <Link
-                to="/dashboard?tab=manage"
-                className={`nav-link ${location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'manage' ? 'active' : ''}`}
-              >
-                Manage Jobs
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
-              <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
-              <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
-            </>
-          )}
-        </div>
-
-        <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <NavbarNotificationBell />
-
-          {currentUser ? (
-            <div 
-              className="navbar-user relative desktop-only-avatar" 
-              onClick={() => navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard')} 
-              ref={dropdownRef} 
-              style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center' }}
-              title="Dashboard Overview"
-            >
-              <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
-                {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-                  <img 
-                    src={currentUser.profilePictureUrl} 
-                    alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
-                    referrerPolicy="no-referrer"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  getInitials(currentUser.name)
-                )}
-              </div>
-
-              {dropdownOpen && (
-                <div className="user-dropdown">
-                  <button className="dropdown-item" onClick={() => navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard')}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                    </svg>
-                    {t.dashboard}
-                  </button>
-                  {currentUser.role === 'admin' ? (
-                    <button className="dropdown-item" onClick={() => navigate('/admin/dashboard')}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                      </svg>
-                      Admin Dashboard
-                    </button>
-                  ) : currentUser.role === 'candidate' ? (
-                    <>
-                      <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=profile')}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        {t.profile}
+                  {dropdownOpen && (
+                    <div className="user-dropdown" style={{ position: 'absolute', right: 0, top: '100%', marginTop: '8px', zIndex: 1000 }}>
+                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard'); }}>
+                        <Briefcase size={16} style={{ marginRight: 8 }} />
+                        {t.dashboard}
                       </button>
-                      <button className="dropdown-item" onClick={() => navigate('/resume')}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        {currentUser.resume ? t.myResume : t.uploadResume}
+                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/security'); }}>
+                        <ShieldCheck size={16} style={{ marginRight: 8 }} />
+                        Security & Sessions
                       </button>
-                      <button className="dropdown-item" onClick={() => navigate('/dashboard?tab=saved')}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        {t.savedJobs}
+                      <div className="dropdown-divider"></div>
+                      <button className="dropdown-item danger" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
+                        <LogOut size={16} style={{ marginRight: 8 }} />
+                        {t.logout}
                       </button>
-                    </>
-                  ) : null}
-                  <button className="dropdown-item" onClick={() => navigate('/security')}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    Security & Sessions
-                  </button>
-                  <div className="dropdown-divider"></div>
-                  <button className="dropdown-item danger" onClick={handleLogout}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18, marginRight: 8 }}>
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                    </svg>
-                    {t.logout}
-                  </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="header-auth-buttons">
+                  <Link to="/login" className="btn btn-ghost btn-sm">{t.login}</Link>
+                  <Link to="/signup" className="btn btn-primary btn-sm btn-pill" style={{ background: 'var(--gradient-accent)' }}>{t.signup}</Link>
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="header-auth-buttons">
-              <Link to="/login" className="btn btn-ghost btn-sm">{t.login}</Link>
-              <Link to="/signup" className="btn btn-primary btn-sm btn-pill" style={{ background: 'var(--gradient-accent)' }}>{t.signup}</Link>
-            </div>
-          )}
 
-          <div 
-            className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            title="Menu"
-          >
-            <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
+              <button 
+                type="button"
+                className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                title="Menu"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* MOBILE SEARCH STRIP BELOW HEADER ROW (Candidates / Guests Only) */}
-      {isSearchAllowed && !isEmployer && (
-        <div className="mobile-search-strip">
-          <HeaderSearchBar />
-        </div>
-      )}
-    </div>
-  </nav>
+      {/* ── MOBILE SIDEBAR DRAWER & BACKDROP ── */}
+      <div 
+        className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`} 
+        onClick={() => setMobileMenuOpen(false)}
+      ></div>
+
+      <aside 
+        ref={mobileMenuRef} 
+        className={`mobile-sidebar-drawer ${mobileMenuOpen ? 'open' : ''}`}
+      >
+        {currentUser ? (
+          <div className="mobile-drawer-inner">
+            {/* Header Profile Info Card */}
+            <div className="mobile-drawer-header">
+              <Link 
+                to={currentUser.role === 'employer' ? "/dashboard?tab=profile" : "/dashboard?tab=profile"} 
+                className="mobile-drawer-user-info"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="mobile-drawer-avatar">
+                  {currentUser.companyLogo || currentUser.profilePictureUrl ? (
+                    <img 
+                      src={currentUser.companyLogo || currentUser.profilePictureUrl} 
+                      alt={currentUser.name} 
+                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span>{getInitials(currentUser.name)}</span>
+                  )}
+                </div>
+                <div className="mobile-drawer-user-text">
+                  <span className="mobile-drawer-user-name">{currentUser.name}</span>
+                  <span className="mobile-drawer-user-email">{currentUser.email}</span>
+                </div>
+                <ChevronRight size={18} color="#94A3B8" className="mobile-drawer-header-arrow" />
+              </Link>
+              <button 
+                type="button"
+                className="mobile-drawer-close-btn" 
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <X size={18} color="#475569" />
+              </button>
+            </div>
+
+            {/* Scrollable Navigation Sections */}
+            <div className="mobile-drawer-scroll-body">
+              {currentUser.role === 'employer' ? (
+                <>
+                  {/* PLATFORM WORKSPACE */}
+                  <div className="mobile-drawer-section-label">PLATFORM WORKSPACE</div>
+                  <Link to="/post-job" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <PlusCircle size={19} className="mobile-drawer-icon" />
+                      <span>Post a Job</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/dashboard?tab=interviews" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Calendar size={19} className="mobile-drawer-icon" />
+                      <span>Scheduled Interviews</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/dashboard?tab=advertisements" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Megaphone size={19} className="mobile-drawer-icon" />
+                      <span>Promote Banner / Ads</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+
+                  {/* SYSTEM & SECURITY */}
+                  <div className="mobile-drawer-section-label">SYSTEM & SECURITY</div>
+                  <Link to="/security" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <ShieldCheck size={19} className="mobile-drawer-icon" />
+                      <span>Security & Sessions</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/contact" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <HelpCircle size={19} className="mobile-drawer-icon" />
+                      <span>Help & Support Desk</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/about" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Info size={19} className="mobile-drawer-icon" />
+                      <span>About JobMarket</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+
+                  {/* ACCOUNT */}
+                  <div className="mobile-drawer-section-label">ACCOUNT</div>
+                  <button 
+                    type="button" 
+                    className="mobile-drawer-item danger" 
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                  >
+                    <div className="mobile-drawer-item-left">
+                      <div className="mobile-drawer-icon-box danger">
+                        <LogOut size={16} color="#DC2626" />
+                      </div>
+                      <span className="danger-text">Sign Out Account</span>
+                    </div>
+                    <ChevronRight size={16} color="#DC2626" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Candidate Items */}
+                  <div className="mobile-drawer-section-label">CAREER & APPLICATIONS</div>
+                  <Link to="/dashboard?tab=saved" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Bookmark size={19} className="mobile-drawer-icon" />
+                      <span>{t.savedJobs}</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/dashboard?tab=interviews" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Calendar size={19} className="mobile-drawer-icon" />
+                      <span>Scheduled Interviews</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+
+                  <div className="mobile-drawer-section-label">RESUME & DOCUMENTS</div>
+                  <Link to="/resume" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <FileText size={19} className="mobile-drawer-icon" />
+                      <span>{currentUser?.resume ? t.myResume : t.uploadResume}</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+
+                  <div className="mobile-drawer-section-label">SYSTEM & SECURITY</div>
+                  <Link to="/security" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <ShieldCheck size={19} className="mobile-drawer-icon" />
+                      <span>Security & Sessions</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/contact" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <HelpCircle size={19} className="mobile-drawer-icon" />
+                      <span>Help & Support Desk</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+                  <Link to="/about" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <Info size={19} className="mobile-drawer-icon" />
+                      <span>About JobMarket</span>
+                    </div>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
+
+                  <div className="mobile-drawer-section-label">ACCOUNT</div>
+                  <button 
+                    type="button" 
+                    className="mobile-drawer-item danger" 
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                  >
+                    <div className="mobile-drawer-item-left">
+                      <div className="mobile-drawer-icon-box danger">
+                        <LogOut size={16} color="#DC2626" />
+                      </div>
+                      <span className="danger-text">Sign Out Account</span>
+                    </div>
+                    <ChevronRight size={16} color="#DC2626" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mobile-drawer-inner">
+            {/* Guest Header */}
+            <div className="mobile-drawer-header">
+              <div className="mobile-drawer-user-info">
+                <div className="mobile-drawer-avatar" style={{ background: 'var(--gradient-accent)' }}>
+                  JM
+                </div>
+                <div className="mobile-drawer-user-text">
+                  <span className="mobile-drawer-user-name">Welcome to JobMarket</span>
+                  <span className="mobile-drawer-user-email">Technical & Factory Jobs</span>
+                </div>
+              </div>
+              <button 
+                type="button"
+                className="mobile-drawer-close-btn" 
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <X size={18} color="#475569" />
+              </button>
+            </div>
+
+            <div className="mobile-drawer-scroll-body">
+              <div className="mobile-drawer-section-label">EXPLORE</div>
+              <Link to="/" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <Home size={19} className="mobile-drawer-icon" />
+                  <span>{t.home}</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/jobs" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <Briefcase size={19} className="mobile-drawer-icon" />
+                  <span>{t.findJobs}</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/companies" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <Building2 size={19} className="mobile-drawer-icon" />
+                  <span>Companies</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/about" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <Info size={19} className="mobile-drawer-icon" />
+                  <span>About Us</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/contact" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <HelpCircle size={19} className="mobile-drawer-icon" />
+                  <span>Help & Support</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+
+              <div className="mobile-drawer-section-label">ACCOUNT</div>
+              <Link to="/login" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <User size={19} className="mobile-drawer-icon" />
+                  <span>{t.login}</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/signup" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <PlusCircle size={19} className="mobile-drawer-icon" />
+                  <span>{t.signup}</span>
+                </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+            </div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 };
+
 export default Navbar;

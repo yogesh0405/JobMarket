@@ -267,20 +267,11 @@ export const JobApplicantsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#F8FAFC', minHeight: 'calc(100vh - 64px)', padding: '0px 12px 60px' }}>
-      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+    <div style={{ backgroundColor: '#F8FAFC', minHeight: 'calc(100vh - 64px)' }}>
+      <div className="applicants-section-container">
 
-        {/* Sticky Top Search & Filter Bar Section (0px Gap) */}
-        <div style={{
-          position: 'sticky',
-          top: 'var(--navbar-height)',
-          zIndex: 40,
-          backgroundColor: '#FFFFFF',
-          margin: '0px -12px 12px -12px',
-          padding: '10px 12px 8px 12px',
-          borderBottom: '1px solid #E7EBF2',
-          boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
-        }}>
+        {/* Sticky Top Search & Filter Bar Section */}
+        <div className="applicants-sticky-header">
           {/* ── 1. SEARCH BAR ── */}
           <div style={{ position: 'relative', marginBottom: '8px' }}>
             <div style={{

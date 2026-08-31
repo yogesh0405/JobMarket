@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -93,6 +94,8 @@ interface Props {
 }
 
 export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast, navigate }) => {
+  const routerNavigate = useNavigate();
+  const handleNavigate = navigate || routerNavigate;
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -612,8 +615,34 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                         <div className="cand-card-company-name" style={{ fontSize: '13px', fontWeight: 800, color: isPast ? '#94A3B8' : '#0F172A' }}>
                           {item.company_name || item.company}
                         </div>
-                        <div className="cand-card-job-title" style={{ fontSize: '11px', fontWeight: 600, color: isPast ? '#CBD5E1' : '#475569', marginTop: '1px' }}>
-                          {item.job_title}
+                        <div
+                          className="cand-card-job-title"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (item.job_id) {
+                              handleNavigate(`/job/${item.job_id}`);
+                            }
+                          }}
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            color: item.job_id ? (isPast ? '#64748B' : '#1764E8') : (isPast ? '#CBD5E1' : '#475569'),
+                            marginTop: '1px',
+                            cursor: item.job_id ? 'pointer' : 'default',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (item.job_id) e.currentTarget.style.textDecoration = 'underline';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.textDecoration = 'none';
+                          }}
+                          title={item.job_id ? "View Job Posting" : undefined}
+                        >
+                          <span>{item.job_title}</span>
+                          {item.job_id && <ExternalLink size={10} style={{ flexShrink: 0, opacity: 0.85 }} />}
                         </div>
                       </div>
 

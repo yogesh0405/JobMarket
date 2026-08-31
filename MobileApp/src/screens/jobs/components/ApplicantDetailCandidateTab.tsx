@@ -19,11 +19,13 @@ import {
   Home,
   ExternalLink,
   GraduationCap,
+  Share2,
 } from 'lucide-react-native';
 import { JobApplication } from '../../../types';
 import { WhatsAppIcon } from '../../../components/common/WhatsAppIcon';
 import { RADIUS } from '../../../constants/theme';
 import { extractCandidateResume } from '../../../utils/fileUtils';
+import { shareCandidate } from '../../../utils/shareUtils';
 
 const parseStringOrObject = (val: any, fallback: string = 'Not Provided'): string => {
   if (val === null || val === undefined || val === '') return fallback;
@@ -175,7 +177,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.contactPillBtn, { flex: 1.25, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }]}
+            style={[styles.contactPillBtn, { flex: 1.2, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }]}
             activeOpacity={0.8}
             onPress={() => {
               if (resumeInfo.url) {
@@ -187,6 +189,24 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           >
             <FileText size={13} color="#1764E8" />
             <Text style={[styles.contactPillText, { color: '#1764E8' }]}>Resume</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.contactPillBtn, { flex: 1 }]}
+            activeOpacity={0.8}
+            onPress={() => {
+              const candidateId = user?.id || (selectedApplicant as any)?.user_id || (selectedApplicant as any)?.userId;
+              const candidateName = user?.name || 'Candidate';
+              shareCandidate({
+                id: candidateId || '',
+                name: candidateName,
+                trade: trade,
+                location: location,
+              });
+            }}
+          >
+            <Share2 size={13} color="#475569" />
+            <Text style={[styles.contactPillText, { color: '#475569' }]}>Share</Text>
           </TouchableOpacity>
         </View>
 

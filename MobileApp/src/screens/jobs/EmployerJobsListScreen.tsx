@@ -33,6 +33,7 @@ import { jobsApi } from '../../api/jobsApi';
 import { Job } from '../../types';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { shareJob } from '../../utils/shareUtils';
 import { Header } from '../../components/common/Header';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { JobCardSkeleton } from '../../components/common/SkeletonLoader';
@@ -52,6 +53,7 @@ type FilterTab = 'ALL' | 'APPROVED' | 'PENDING_REVIEW' | 'REJECTED';
 export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,30 +136,14 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleShareJob = async (job: Job) => {
-    const jobUrl = `https://jobmarket.in/job/${job.id}`;
-    const locationStr = job.location || (job as any).midcZone || 'MIDC Industrial Area';
-
-    const salMin = job.salary_min ?? job.salaryMin ?? (job as any).salary_min;
-    const salMax = job.salary_max ?? job.salaryMax ?? (job as any).salary_max;
-    let salStr = 'Salary Undisclosed';
-    if (salMin && salMax) {
-      salStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
-    } else if (salMin || salMax) {
-      salStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')}`;
-    }
-
-    const shareMsg = `🔥 Open Industrial Job Role!\n\n📋 Role: ${job.title}\n🏢 Company: ${job.company || 'JobMarket'}\n📍 Location: ${locationStr}\n💰 Salary: ${salStr}\n\n👉 Apply / View Details:\n${jobUrl}`;
-    const shareTitle = `Job Opportunity: ${job.title} at ${job.company || 'JobMarket'}`;
-
-    try {
-      if (Platform.OS === 'ios') {
-        await Share.share({ title: shareTitle, message: shareMsg, url: jobUrl });
-      } else {
-        await Share.share({ title: shareTitle, message: shareMsg }, { dialogTitle: shareTitle });
-      }
-    } catch (err: any) {
-      console.warn('Share error:', err);
-    }
+    await shareJob({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location || (job as any).midcZone,
+      salaryMin: job.salary_min ?? job.salaryMin,
+      salaryMax: job.salary_max ?? job.salaryMax,
+    });
   };
 
   const isPendingStatus = (status?: string) => {
@@ -176,10 +162,20 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const filteredJobs = jobs.filter((j) => {
-    if (activeTab === 'ALL') return true;
-    if (activeTab === 'APPROVED') return isApprovedStatus(j.status);
-    if (activeTab === 'PENDING_REVIEW') return isPendingStatus(j.status);
-    if (activeTab === 'REJECTED') return isRejectedStatus(j.status);
+    if (activeTab === 'APPROVED' && !isApprovedStatus(j.status)) return false;
+    if (activeTab === 'PENDING_REVIEW' && !isPendingStatus(j.status)) return false;
+    if (activeTab === 'REJECTED' && !isRejectedStatus(j.status)) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const title = (j.title || '').toLowerCase();
+      const trade = (j.trade || (j as any).trade_specialization || '').toLowerCase();
+      const location = (j.location || '').toLowerCase();
+      const category = ((j as any).category || (j as any).industry || '').toLowerCase();
+      const skills = Array.isArray(j.skills) ? j.skills.join(' ').toLowerCase() : ((j.skills as any) || '').toLowerCase();
+      return title.includes(q) || trade.includes(q) || location.includes(q) || category.includes(q) || skills.includes(q);
+    }
+
     return true;
   });
 
@@ -216,7 +212,10 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => {
-          navigation.navigate('ApplicantsTab', { jobId: item.id, jobTitle: item.title });
+          navigation.navigate('CandidateJobDetail', {
+            jobId: item.id,
+            job: item,
+          });
         }}
         style={styles.jobCard3D}
       >
@@ -301,33 +300,46 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.actionsGroupInline}>
+          {isRejectedStatus(item.status) || (item.status || '').toLowerCase() === 'unpublished' || (item.status || '').toLowerCase() === 'draft' ? (
             <TouchableOpacity
-              style={styles.actionBtnSmall}
-              activeOpacity={0.7}
-              onPress={() => handleShareJob(item)}
-            >
-              <Share2 size={13} color="#475569" strokeWidth={2} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionBtnSmall}
-              activeOpacity={0.7}
+              style={styles.resubmitBtn}
+              activeOpacity={0.8}
               onPress={() => {
                 navigation.navigate('PostTab', { jobId: item.id });
               }}
             >
-              <Edit3 size={13} color="#475569" strokeWidth={2} />
+              <Edit3 size={12} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.resubmitBtnText}>Edit & Resubmit</Text>
             </TouchableOpacity>
+          ) : (
+            <View style={styles.actionsGroupInline}>
+              <TouchableOpacity
+                style={styles.actionBtnSmall}
+                activeOpacity={0.7}
+                onPress={() => handleShareJob(item)}
+              >
+                <Share2 size={13} color="#475569" strokeWidth={2} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionBtnSmall, styles.deleteBtnSmall]}
-              activeOpacity={0.7}
-              onPress={() => handleDeleteJob(item.id, item.title)}
-            >
-              <Trash2 size={13} color="#EF4444" strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={styles.actionBtnSmall}
+                activeOpacity={0.7}
+                onPress={() => {
+                  navigation.navigate('PostTab', { jobId: item.id });
+                }}
+              >
+                <Edit3 size={13} color="#475569" strokeWidth={2} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionBtnSmall, styles.deleteBtnSmall]}
+                activeOpacity={0.7}
+                onPress={() => handleDeleteJob(item.id, item.title)}
+              >
+                <Trash2 size={13} color="#EF4444" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -335,8 +347,12 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <Header title="JobMarket" subtitle="Manage Jobs" showBack={false} />
+      <Header
+        searchPlaceholder="Search Jobs"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={false}
+      />
 
       {/* Filter Tabs Bar - Industry Grade LinkedIn / iPhone Underline Tab Navigation */}
       <View style={styles.tabsBarWrapper}>
@@ -686,5 +702,24 @@ const styles = StyleSheet.create({
   deleteBtnSmall: {
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
+  },
+  resubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    backgroundColor: '#1B4FDF',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    shadowColor: '#1B4FDF',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  resubmitBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

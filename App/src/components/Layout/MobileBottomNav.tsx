@@ -3,6 +3,17 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import {
+  Home,
+  Building2,
+  Search,
+  ClipboardCheck,
+  User,
+  Users,
+  Briefcase,
+  Plus,
+  Bell,
+} from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
   const { currentUser } = useAuth();
@@ -19,21 +30,24 @@ export const MobileBottomNav: React.FC = () => {
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
-  const isInterviewsSection = location.pathname.startsWith('/dashboard') && (
-    location.search.includes('tab=interviews') ||
-    location.search.includes('tab=scheduled-interviews')
+  const isInterviewsSection = (
+    location.pathname.startsWith('/interviews') ||
+    location.pathname.startsWith('/schedule') ||
+    (location.pathname.startsWith('/dashboard') && (
+      location.search.includes('tab=interviews') ||
+      location.search.includes('tab=scheduled-interviews') ||
+      location.search.includes('tab=schedule')
+    ))
   );
   const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
   const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
   const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
 
-  // Do not render bottom navigation bar on dedicated candidate profile, post-job, job detail, company profile, promotional banners, interviews, about, support, & security sections
+  // Do not render bottom navigation bar on dedicated candidate profile, job detail, company profile, promotional banners, interviews, about, support, & security sections
   if (
     location.pathname.startsWith('/profile/') ||
     location.pathname.startsWith('/candidate/') ||
     location.pathname.startsWith('/p/') ||
-    location.pathname.startsWith('/post-job') ||
-    location.pathname.startsWith('/edit-job') ||
     isJobDetailRoute ||
     isCompanyProfileRoute ||
     isBannersSection ||
@@ -63,149 +77,219 @@ export const MobileBottomNav: React.FC = () => {
     return location.pathname === targetPath && !location.search;
   };
 
+  const userName = currentUser?.name || (currentUser as any)?.companyName || (currentUser as any)?.company_name || 'Profile';
+  const firstInitial = (typeof userName === 'string' && userName.trim() ? userName.charAt(0).toUpperCase() : 'U');
+
   return (
-    <div className="mobile-bottom-nav">
-      {/* ── EMPLOYER ITEMS ── */}
-      {isEmployer ? (
-        <>
-          {/* 1. Candidates */}
-          <NavLink to="/dashboard?tab=candidates" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
-            <span>Candidates</span>
-          </NavLink>
-
-          {/* 2. Applicants */}
-          <NavLink to="/dashboard?tab=applicants" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=applicants') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                <path d="M9 14l2 2 4-4" />
-              </svg>
-            </div>
-            <span>Applicants</span>
-          </NavLink>
-
-          {/* 3. Post Job */}
-          <NavLink to="/post-job" className={() => `mobile-bottom-item ${isTabActive('/post-job') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
-            </div>
-            <span>Post Job</span>
-          </NavLink>
-
-          {/* 4. Manage Jobs */}
-          <NavLink to="/dashboard?tab=manage" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=manage') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              </svg>
-            </div>
-            <span>Manage Jobs</span>
-          </NavLink>
-        </>
-      ) : (
-        /* ── CANDIDATE / GUEST ITEMS ── */
-        <>
-          {/* 1. Home */}
-          <NavLink to="/" className={() => `mobile-bottom-item ${isTabActive('/') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            </div>
-            <span>{t.home}</span>
-          </NavLink>
-
-          {/* 2. Companies */}
-          <NavLink to="/companies" className={() => `mobile-bottom-item ${isTabActive('/companies') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
-                <path d="M9 22v-4h6v4"/>
-                <path d="M8 6h.01"/><path d="M16 6h.01"/>
-                <path d="M8 10h.01"/><path d="M16 10h.01"/>
-                <path d="M8 14h.01"/><path d="M16 14h.01"/>
-              </svg>
-            </div>
-            <span>Companies</span>
-          </NavLink>
-
-          {/* 3. Find Jobs */}
-          <NavLink to="/jobs" className={() => `mobile-bottom-item ${isTabActive('/jobs') ? 'active' : ''}`}>
-            <div className="mobile-bottom-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-              </svg>
-            </div>
-            <span>{t.findJobs}</span>
-          </NavLink>
-
-          {/* 4. Applied Jobs (if logged in) */}
-          {currentUser && (
-            <NavLink to="/dashboard?tab=applied" className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}>
-              <div className="mobile-bottom-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                  <path d="M9 14l2 2 4-4" />
-                </svg>
-              </div>
-              <span>Applied</span>
-            </NavLink>
-          )}
-        </>
-      )}
-
-      {/* ── PROFILE / SIGNUP ITEM ── */}
-      {currentUser ? (
-        <NavLink 
-          to={currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile'} 
-          className={() => `mobile-bottom-item ${isTabActive('/dashboard?tab=profile') ? 'active' : ''}`}
+    <div className="mobile-notched-dock-wrapper">
+      <div className="mobile-notched-dock-container">
+        {/* SVG Notched Background Dock */}
+        <svg
+          className="mobile-notched-dock-svg"
+          viewBox="0 0 400 64"
+          preserveAspectRatio="none"
         >
-          <div className="mobile-bottom-icon-wrap">
-            {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
-              <img 
-                src={currentUser.profilePictureUrl} 
-                alt={typeof currentUser.name === 'string' ? currentUser.name : 'Profile'} 
-                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-            )}
-          </div>
-          <span style={{ maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {(typeof currentUser.name === 'string' && currentUser.name.trim() ? currentUser.name : 'Profile').split(' ')[0]}
-          </span>
-        </NavLink>
-      ) : (
-        <NavLink to="/login" className={() => `mobile-bottom-item ${isTabActive('/login') ? 'active' : ''}`}>
-          <div className="mobile-bottom-icon-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-          </div>
-          <span>{t.login}</span>
-        </NavLink>
-      )}
+          <path
+            d="M 0,0 H 158 C 174,0 178,24 200,24 C 222,24 226,0 242,0 H 400 V 64 H 0 Z"
+            fill="#FFFFFF"
+            stroke="#E2E8F0"
+            strokeWidth="0.8"
+          />
+        </svg>
 
+        {/* Tab Items Row */}
+        <div className="mobile-notched-dock-row">
+          {isEmployer ? (
+            /* ══════════════════════════════════════════════════
+               EMPLOYER BOTTOM NAVIGATION TABS (100% MobileApp UI)
+               ══════════════════════════════════════════════════ */
+            <>
+              {/* 1. Candidates */}
+              <NavLink
+                to="/dashboard?tab=candidates"
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <Users
+                    size={21}
+                    color={isTabActive('/dashboard?tab=candidates') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/dashboard?tab=candidates') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/dashboard?tab=candidates') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Candidates</span>
+              </NavLink>
+
+              {/* 2. Applicants */}
+              <NavLink
+                to="/dashboard?tab=applicants"
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=applicants') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <ClipboardCheck
+                    size={21}
+                    color={isTabActive('/dashboard?tab=applicants') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/dashboard?tab=applicants') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/dashboard?tab=applicants') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Applicants</span>
+              </NavLink>
+
+              {/* 3. CENTER FLOATING POST JOB BUTTON */}
+              <div className="mobile-notched-center-slot">
+                <NavLink
+                  to="/post-job"
+                  className={`mobile-notched-fab-btn ${isTabActive('/post-job') ? 'active' : ''}`}
+                  title="Post Job"
+                >
+                  <div className="fab-circle-gradient">
+                    <Plus size={24} color="#FFFFFF" strokeWidth={2.8} />
+                  </div>
+                  <span className="fab-label">Post</span>
+                </NavLink>
+              </div>
+
+              {/* 4. Notifications / Alerts */}
+              <NavLink
+                to="/dashboard?tab=notifications"
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=notifications') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <Bell
+                    size={21}
+                    color={isTabActive('/dashboard?tab=notifications') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/dashboard?tab=notifications') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/dashboard?tab=notifications') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Alerts</span>
+              </NavLink>
+
+              {/* 5. Manage Jobs */}
+              <NavLink
+                to="/dashboard?tab=manage"
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=manage') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <Briefcase
+                    size={21}
+                    color={isTabActive('/dashboard?tab=manage') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/dashboard?tab=manage') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/dashboard?tab=manage') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Manage Jobs</span>
+              </NavLink>
+            </>
+          ) : (
+            /* ══════════════════════════════════════════════════
+               CANDIDATE / GUEST BOTTOM NAVIGATION TABS
+               ══════════════════════════════════════════════════ */
+            <>
+              {/* 1. Home */}
+              <NavLink
+                to="/"
+                className={`mobile-notched-tab-item ${isTabActive('/') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <Home
+                    size={21}
+                    color={isTabActive('/') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/') && <div className="tab-active-capsule" />}
+                <span className="tab-label">{t.home}</span>
+              </NavLink>
+
+              {/* 2. Companies */}
+              <NavLink
+                to="/companies"
+                className={`mobile-notched-tab-item ${isTabActive('/companies') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <Building2
+                    size={21}
+                    color={isTabActive('/companies') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/companies') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/companies') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Companies</span>
+              </NavLink>
+
+              {/* 3. CENTER FLOATING FIND JOBS BUTTON */}
+              <div className="mobile-notched-center-slot">
+                <NavLink
+                  to="/jobs"
+                  className={`mobile-notched-fab-btn ${isTabActive('/jobs') ? 'active' : ''}`}
+                  title="Find Jobs"
+                >
+                  <div className="fab-circle-gradient">
+                    <Search size={22} color="#FFFFFF" strokeWidth={2.8} />
+                  </div>
+                  <span className="fab-label">{t.findJobs}</span>
+                </NavLink>
+              </div>
+
+              {/* 4. Applied */}
+              <NavLink
+                to={currentUser ? '/dashboard?tab=applied' : '/login'}
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  <ClipboardCheck
+                    size={21}
+                    color={isTabActive('/dashboard?tab=applied') ? '#1B4FDF' : '#1E293B'}
+                    strokeWidth={isTabActive('/dashboard?tab=applied') ? 2.5 : 2.1}
+                  />
+                </div>
+                {isTabActive('/dashboard?tab=applied') && <div className="tab-active-capsule" />}
+                <span className="tab-label">Applied</span>
+              </NavLink>
+
+              {/* 5. Profile */}
+              <NavLink
+                to={currentUser ? (currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile') : '/login'}
+                className={`mobile-notched-tab-item ${isTabActive('/dashboard?tab=profile') || isTabActive('/login') ? 'active' : ''}`}
+              >
+                <div className="tab-icon-box">
+                  {currentUser?.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                    <img
+                      src={currentUser.profilePictureUrl}
+                      alt={userName}
+                      referrerPolicy="no-referrer"
+                      style={{
+                        width: isTabActive('/dashboard?tab=profile') ? '24px' : '22px',
+                        height: isTabActive('/dashboard?tab=profile') ? '24px' : '22px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: isTabActive('/dashboard?tab=profile') ? '2px solid #1B4FDF' : '1.5px solid #1E293B',
+                      }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <User
+                      size={21}
+                      color={isTabActive('/dashboard?tab=profile') || isTabActive('/login') ? '#1B4FDF' : '#1E293B'}
+                      strokeWidth={isTabActive('/dashboard?tab=profile') || isTabActive('/login') ? 2.5 : 2.1}
+                    />
+                  )}
+                </div>
+                {(isTabActive('/dashboard?tab=profile') || isTabActive('/login')) && <div className="tab-active-capsule" />}
+                <span className="tab-label">
+                  {currentUser ? (userName.split(' ')[0] || 'Profile') : t.login}
+                </span>
+              </NavLink>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
+
 export default MobileBottomNav;

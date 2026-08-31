@@ -9,7 +9,6 @@ import {
 import {
   Briefcase,
   MapPin,
-  Clock,
   Bookmark,
   ArrowRight,
 } from 'lucide-react-native';
@@ -44,23 +43,6 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
 }) => {
   return (
     <View style={styles.standaloneSection}>
-      <View style={styles.popularHeaderRow}>
-        <View style={styles.popularIconSquare}>
-          <Briefcase size={20} color={COLORS.primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Text style={styles.popularTitleText}>Popular Role Picks</Text>
-            <View style={styles.verifiedBadgePill}>
-              <Text style={styles.verifiedBadgeText}>VERIFIED JOBS</Text>
-            </View>
-          </View>
-          <Text style={styles.popularSubtext}>
-            Explore top verified job opportunities categorized by available roles in the database
-          </Text>
-        </View>
-      </View>
-
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.roleTabsRowContainer}>
         {roleTabsList.map((tab) => {
           const isActive = activeRoleTab === tab.id;
@@ -171,13 +153,6 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
                       {job.job_type || (job as any).jobType || 'Full-Time'}
                     </Text>
                   </View>
-                </View>
-
-                <View style={styles.webShiftPill}>
-                  <Clock size={12} color="#7C3AED" />
-                  <Text style={styles.webShiftText} numberOfLines={1}>
-                    {job.shift_details || (job as any).shiftDetails || 'Day Shift (8:00 AM - 5:00 PM (9 hrs))'}
-                  </Text>
                 </View>
 
                 <View style={styles.webCardDivider} />

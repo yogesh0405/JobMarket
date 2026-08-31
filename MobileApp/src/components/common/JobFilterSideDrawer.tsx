@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  SafeAreaView,
+  StatusBar,
   Platform,
 } from 'react-native';
 import {
@@ -30,7 +30,7 @@ import {
   Home,
   Zap,
 } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface FilterOptions {
   industry: string;
@@ -136,7 +136,8 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.fullScreenContainer, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 44 : 12) }]}>
+      <SafeAreaView style={styles.fullScreenContainer} edges={['top', 'bottom']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         {/* iOS Navigation Header Bar */}
         <View style={styles.headerBar}>
           <View style={styles.headerLeftGroup}>
@@ -363,7 +364,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
         </ScrollView>
 
         {/* Fixed Bottom Action Bar */}
-        <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom + 12, 24) }]}>
+        <View style={styles.fixedFooter}>
           <TouchableOpacity style={styles.resetFooterBtn} onPress={handleReset} activeOpacity={0.8}>
             <RotateCcw size={16} color="#475569" />
             <Text style={styles.resetFooterBtnText}>Clear All</Text>
@@ -375,7 +376,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -511,6 +512,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

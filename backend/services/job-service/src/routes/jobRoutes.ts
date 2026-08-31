@@ -15,8 +15,8 @@ router.get('/saved', JobController.getMySavedJobs);
 router.get('/saved/my-saved', JobController.getMySavedJobs);
 router.get('/saved/me', JobController.getMySavedJobs);
 router.get('/employer/analytics', JobController.getEmployerAnalytics);
-router.get('/my-jobs/all', JobController.getMyJobs);
 router.get('/workers/all', JobController.getAllCandidates);
+router.get('/search', JobController.searchJobs);
 router.get('/:id', JobController.getJobById);
 
 router.post('/', JobController.createJob);

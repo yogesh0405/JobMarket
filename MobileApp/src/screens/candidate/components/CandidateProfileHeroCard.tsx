@@ -23,6 +23,7 @@ import {
 import { COLORS, RADIUS } from '../../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { calculateCandidateProfileCompletion } from '../../../utils/profileCompleteness';
+import { shareCandidate } from '../../../utils/shareUtils';
 
 interface CandidateProfileHeroCardProps {
   user: any;
@@ -130,9 +131,12 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => {
-                    Share.share({
-                      message: `Check out ${displayName}'s professional profile on JobMarket!`,
-                    }).catch((err) => console.warn(err));
+                    shareCandidate({
+                      id: user?.id || '',
+                      name: displayName,
+                      trade: tradeDisplay,
+                      location: location || user?.location,
+                    });
                   }}
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

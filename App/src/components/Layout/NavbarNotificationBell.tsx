@@ -249,8 +249,8 @@ export const NavbarNotificationBell: React.FC = () => {
             {renderIcon(item.type)}
             <span
               style={{
-                fontSize: '13.5px',
-                fontWeight: isUnread ? '800' : '600',
+                fontSize: '12px',
+                fontWeight: isUnread ? '650' : '500',
                 color: isUnread ? '#1e3a8a' : '#334155',
                 lineHeight: '1.3'
               }}
@@ -263,8 +263,8 @@ export const NavbarNotificationBell: React.FC = () => {
             {isUnread && (
               <span
                 style={{
-                  width: '8px',
-                  height: '8px',
+                  width: '7px',
+                  height: '7px',
                   borderRadius: '50%',
                   background: '#2563eb'
                 }}
@@ -286,7 +286,7 @@ export const NavbarNotificationBell: React.FC = () => {
                 borderRadius: '4px'
               }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
@@ -296,17 +296,17 @@ export const NavbarNotificationBell: React.FC = () => {
 
         <div
           style={{
-            fontSize: '12px',
+            fontSize: '11px',
             color: isUnread ? '#1e40af' : '#64748b',
-            marginTop: '5px',
+            marginTop: '4px',
             lineHeight: '1.4',
-            fontWeight: isUnread ? '500' : '400'
+            fontWeight: '400'
           }}
         >
           {item.message}
         </div>
 
-        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', fontWeight: '500' }}>
+        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px', fontWeight: '500' }}>
           {item.time}
         </div>
       </div>
@@ -388,15 +388,15 @@ export const NavbarNotificationBell: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>Notifications</h2>
+                <h2 style={{ margin: 0, fontSize: '14.5px', fontWeight: '700', color: '#0f172a' }}>Notifications</h2>
                 {unreadCount > 0 && (
                   <span
                     style={{
                       background: '#eff6ff',
                       color: '#2563eb',
-                      fontSize: '11px',
+                      fontSize: '10px',
                       fontWeight: '700',
-                      padding: '2px 8px',
+                      padding: '1.5px 7px',
                       borderRadius: '999px'
                     }}
                   >

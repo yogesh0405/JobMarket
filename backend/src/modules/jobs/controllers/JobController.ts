@@ -46,6 +46,30 @@ export class JobController {
   }
 
   /**
+   * GET /api/v1/jobs/search
+   * High-scale search endpoint with Redis Caching, Typesense, and PostgreSQL Full-Text Fallback
+   */
+  static async searchJobs(req: any, res: Response, next: NextFunction) {
+    try {
+      const { SearchService } = await import('../services/SearchService');
+      const results = await SearchService.searchJobs({
+        q: req.query.q as string,
+        industry: req.query.industry as string,
+        midcZone: (req.query.midcZone || req.query.location) as string,
+        jobType: req.query.jobType as string,
+        workMode: req.query.workMode as string,
+        trade: req.query.trade as string,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 20,
+      });
+
+      res.status(200).json({ success: true, ...results });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/v1/jobs/resolve-map-url
    * Resolves Google Maps URLs (including shortened links like maps.app.goo.gl) and extracts latitude/longitude coordinates.
    */

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Search, X, SlidersHorizontal } from 'lucide-react-native';
+import { Header } from '../../components/common/Header';
 import { InteractiveJobMapView } from '../../components/map/InteractiveJobMapView';
 import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { candidateApi } from '../../api/candidateApi';
@@ -48,7 +49,7 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
   const [activeFilters, setActiveFilters] = useState<FilterOptions>(DEFAULT_MAP_FILTERS);
 
   // Animated Search Bar Placeholders (Exact match to CandidateJobSearchScreen)
-  const SEARCH_PLACEHOLDERS = ['Search jobs...', 'Search trades...', 'Search locations...'];
+  const SEARCH_PLACEHOLDERS = ['Search Jobs', 'Search Trades', 'Search Skills', 'Search Locations'];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   useEffect(() => {
@@ -202,62 +203,30 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
     [jobs, searchQuery]
   );
 
-  const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
-      {/* Top Search Bar Header (100% Exact Match to Grid & List View Search Bar) */}
-      <View style={[styles.searchHeaderBar, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 6) }]}>
-        <View style={[styles.inputSearchBox, isInputFocused && styles.inputSearchBoxActive]}>
-          <Search size={18} color={isInputFocused ? COLORS.primary : '#64748B'} />
-          <TextInput
-            style={styles.inputSearchText}
-            placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setIsInputFocused(false)}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 ? (
-            <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              style={styles.searchClearBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <X size={15} color="#64748B" />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.countTag}>
-              <Text style={styles.countTagText}>{filteredJobs.length} Jobs</Text>
-            </View>
-          )}
+      {/* Top Full-Width Capsule Search Bar Header with Embedded Filter Action */}
+      <Header
+        searchPlaceholder={SEARCH_PLACEHOLDERS[placeholderIndex] || 'Search Jobs'}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showBack={true}
+        onBack={() => navigation.goBack()}
+        hideRightActions={true}
+        onFilterPress={() => {
+          navigation.navigate('JobFilter', {
+            currentFilters: activeFilters,
+            totalMatchingJobsCount: filteredJobs.length,
+            onApplyFilters: (newFilters: FilterOptions) => setActiveFilters(newFilters),
+            onResetFilters: () => setActiveFilters(DEFAULT_MAP_FILTERS),
+          });
+        }}
+        activeFilterCount={activeFilterCount}
+      />
 
-          {/* Integrated Vertical Divider */}
-          <View style={styles.inlineFilterDivider} />
-
-          {/* Integrated Filter Action Button */}
-          <TouchableOpacity
-            style={[styles.inlineFilterBtn, activeFilterCount > 0 && styles.inlineFilterBtnActive]}
-            onPress={() => setFilterDrawerOpen(true)}
-            activeOpacity={0.8}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <SlidersHorizontal size={18} color={activeFilterCount > 0 ? COLORS.primary : '#475569'} />
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadgePillInline}>
-                <Text style={styles.filterBadgePillText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Main Map View Area (Starts Directly Below Search Header) */}
+      {/* Main Map View Area */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -268,20 +237,10 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
           <InteractiveJobMapView
             jobs={filteredJobs}
             navigation={navigation}
+            activeJobId={route.params?.activeJobId || null}
           />
         </View>
       )}
-
-      {/* Filter Side Drawer Modal */}
-      <JobFilterSideDrawer
-        visible={filterDrawerOpen}
-        onClose={() => setFilterDrawerOpen(false)}
-        currentFilters={activeFilters}
-        onApplyFilters={(newFilters: FilterOptions) => setActiveFilters(newFilters)}
-        onResetFilters={() => setActiveFilters(DEFAULT_MAP_FILTERS)}
-        totalMatchingJobsCount={filteredJobs.length}
-        onGetMatchingCount={getMatchingCountForDraft}
-      />
     </View>
   );
 };
@@ -290,86 +249,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F7F7',
-  },
-  searchHeaderBar: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    zIndex: 10,
-  },
-  inputSearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 48,
-    gap: 10,
-  },
-  inputSearchBoxActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#FFFFFF',
-  },
-  inputSearchText: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '600',
-    paddingVertical: 0,
-    margin: 0,
-  },
-  searchClearBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countTag: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  countTagText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  inlineFilterDivider: {
-    width: 1,
-    height: 22,
-    backgroundColor: '#E2E8F0',
-    marginHorizontal: 2,
-  },
-  inlineFilterBtn: {
-    padding: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  inlineFilterBtnActive: {},
-  filterBadgePillInline: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 9,
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBadgePillText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
   },
   mapWrapper: {
     flex: 1,

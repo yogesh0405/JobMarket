@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
 import { MaintenancePage } from './components/common/MaintenancePage';
 import { HomePage } from './features/home/HomePage';
@@ -67,6 +67,12 @@ const EmployerOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
+};
+
+// Redirect /job/:id/applicants to the unified real applicants workspace
+const JobApplicantsRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/dashboard?tab=applicants&jobId=${id}` : '/dashboard?tab=applicants'} replace />;
 };
 
 export const App: React.FC = () => {
@@ -199,8 +205,8 @@ export const App: React.FC = () => {
           <Route path="/" element={<CandidateOrGuestOnly><HomePage /></CandidateOrGuestOnly>} />
           <Route path="/jobs" element={<CandidateOrGuestOnly><JobSearchPage /></CandidateOrGuestOnly>} />
           <Route path="/jobs/map" element={<CandidateOrGuestOnly><JobMapPage /></CandidateOrGuestOnly>} />
-          <Route path="/job/:id" element={<CandidateOrGuestOnly><JobDetailPage /></CandidateOrGuestOnly>} />
-          <Route path="/jobs/:id" element={<CandidateOrGuestOnly><JobDetailPage /></CandidateOrGuestOnly>} />
+          <Route path="/job/:id" element={<JobDetailPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/job/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
           <Route path="/jobs/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
           <Route path="/companies" element={<CandidateOrGuestOnly><CompaniesDirectoryPage /></CandidateOrGuestOnly>} />
@@ -209,7 +215,8 @@ export const App: React.FC = () => {
           {/* Employer Only Routes */}
           <Route path="/post-job" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
           <Route path="/edit-job/:id" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
-          <Route path="/job/:id/applicants" element={<EmployerOnly><JobApplicantsPage /></EmployerOnly>} />
+          <Route path="/job/:id/applicants" element={<EmployerOnly><JobApplicantsRedirect /></EmployerOnly>} />
+          <Route path="/applicants" element={<Navigate to="/dashboard?tab=applicants" replace />} />
           <Route path="/job/:jobId/applicant/:applicantId" element={<EmployerOnly><ApplicantDetailPage /></EmployerOnly>} />
           <Route path="/applicant/:applicantId" element={<EmployerOnly><ApplicantDetailPage /></EmployerOnly>} />
 

@@ -18,6 +18,7 @@ import {
   EyeOff,
   ShieldCheck,
   LogOut,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
@@ -76,6 +77,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     type?: 'danger' | 'primary' | 'warning';
     icon?: React.ReactNode;
     iconBgColor?: string;
+    loading?: boolean;
     onConfirm: () => void;
   }>({
     visible: false,
@@ -84,6 +86,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     confirmText: 'Confirm',
     cancelText: 'Cancel',
     type: 'danger',
+    loading: false,
     onConfirm: () => {},
   });
 
@@ -214,25 +217,64 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     });
   };
 
-  const handleToggle2FA = async (nextVal: boolean) => {
-    const previousVal = twoFactorEnabled;
-    setTwoFactorEnabled(nextVal);
+  const executeToggle2FA = async (nextVal: boolean) => {
+    // 1. Set loading indicator on confirmation modal
+    setConfirmModalConfig((prev) => ({ ...prev, loading: true }));
 
     try {
       const res = await authApi.toggle2FA(nextVal);
       if (res && res.success) {
         const serverState = Boolean((res as any).isTwoFactorEnabled ?? (res as any).is_two_factor_enabled ?? nextVal);
+        // 2. Update local 2FA state immediately
         setTwoFactorEnabled(serverState);
-        await refreshUser();
-        Alert.alert('2FA Protection Updated', `Two-Factor Authentication is now ${serverState ? 'ENABLED' : 'DISABLED'}.`);
+        // 3. Close the confirmation modal
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false, loading: false }));
+        // 4. Instantly show success confirmation modal
+        setSuccessModalConfig({
+          visible: true,
+          title: serverState ? '2FA Protection Enabled' : '2FA Protection Disabled',
+          message: serverState
+            ? 'Two-Factor Authentication is now active. A 6-digit OTP security code will be sent to your email whenever you log in.'
+            : 'Two-Factor Authentication has been turned off. Your account will no longer require an OTP code on sign-in.',
+          buttonText: 'Got It',
+          onButtonPress: () => setSuccessModalConfig((prev) => ({ ...prev, visible: false })),
+        });
+        // 5. Refresh user session asynchronously in background
+        refreshUser().catch(() => {});
       } else {
-        setTwoFactorEnabled(previousVal);
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false, loading: false }));
         Alert.alert('Notice', res.message || 'Could not update 2FA setting on server.');
       }
     } catch (err: any) {
-      setTwoFactorEnabled(previousVal);
+      setConfirmModalConfig((prev) => ({ ...prev, visible: false, loading: false }));
       Alert.alert('Error', err.message || 'Failed to update 2FA setting.');
     }
+  };
+
+  const handleToggle2FA = (nextVal: boolean) => {
+    setConfirmModalConfig({
+      visible: true,
+      title: nextVal ? 'Enable Two-Factor (2FA)?' : 'Disable Two-Factor (2FA)?',
+      message: nextVal
+        ? 'Every time you log in, a 6-digit OTP verification code will be sent to your registered email address to secure your account.'
+        : 'Your account will no longer require an OTP code on login. This reduces account security against unauthorized access.',
+      highlightText: nextVal
+        ? '🛡️ Recommended for highest account security'
+        : '⚠️ Account will be protected by password only',
+      confirmText: nextVal ? 'Enable 2FA' : 'Disable 2FA',
+      cancelText: 'Cancel',
+      type: nextVal ? 'primary' : 'danger',
+      loading: false,
+      icon: nextVal ? (
+        <ShieldCheck size={28} color="#1764E8" strokeWidth={2.4} />
+      ) : (
+        <AlertTriangle size={28} color="#DC2626" strokeWidth={2.4} />
+      ),
+      iconBgColor: nextVal ? '#EFF6FF' : '#FEF2F2',
+      onConfirm: async () => {
+        await executeToggle2FA(nextVal);
+      },
+    });
   };
 
   const userHasPassword = Boolean(
@@ -521,24 +563,29 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.twoFactorRow}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handleToggle2FA(!twoFactorEnabled)}
+            style={styles.twoFactorRow}
+          >
             <View style={{ flex: 1 }}>
               <Text style={styles.twoFactorStatusText}>
                 {twoFactorEnabled ? '2FA Protection Enabled' : '2FA Protection Disabled'}
               </Text>
               <Text style={styles.twoFactorStatusSub}>
                 {twoFactorEnabled
-                  ? 'Verification codes are sent to your registered email or phone upon login.'
+                  ? 'Verification codes are sent to your registered email upon login.'
                   : 'Enable this setting to secure your account against unauthorized access.'}
               </Text>
             </View>
-            <Switch
-              value={twoFactorEnabled}
-              onValueChange={handleToggle2FA}
-              trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
-              thumbColor={twoFactorEnabled ? '#1764E8' : '#F8FAFC'}
-            />
-          </View>
+            <View pointerEvents="none">
+              <Switch
+                value={twoFactorEnabled}
+                trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                thumbColor={twoFactorEnabled ? '#1764E8' : '#F8FAFC'}
+              />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* CARD 3: ACTIVE DEVICE SESSIONS */}
@@ -678,8 +725,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         type={confirmModalConfig.type}
         icon={confirmModalConfig.icon}
         iconBgColor={confirmModalConfig.iconBgColor}
+        loading={confirmModalConfig.loading}
         onConfirm={confirmModalConfig.onConfirm}
-        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false }))}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, visible: false, loading: false }))}
       />
 
       {/* Reusable Success Modal */}

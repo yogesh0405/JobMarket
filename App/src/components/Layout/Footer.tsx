@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { JobMarketLogoSvg } from '../common/JobMarketLogoSvg';
 import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
@@ -13,7 +14,10 @@ export const Footer: React.FC = () => {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <span className="footer-brand-name">JobMarket</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <JobMarketLogoSvg size={30} />
+              <span className="footer-brand-name" style={{ margin: 0 }}>JobMarket</span>
+            </div>
             <p>India's leading job marketplace connecting talented professionals with top companies. Find your dream job or hire the best talent today.</p>
             <div className="footer-social">
               <a href="#" aria-label="Twitter">
@@ -77,7 +81,6 @@ export const Footer: React.FC = () => {
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
             <Link to="/terms">Cookie Policy</Link>
-            <Link to="/admin/login" style={{ opacity: 0.85, fontWeight: '600' }}>Admin Portal</Link>
           </div>
         </div>
       </div>

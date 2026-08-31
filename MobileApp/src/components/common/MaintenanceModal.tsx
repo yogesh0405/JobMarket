@@ -8,11 +8,11 @@ import {
   ActivityIndicator,
   Image,
   Modal,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Wrench, Mail, Phone, RefreshCw, ChevronRight, ShieldAlert } from 'lucide-react-native';
 import { COLORS, SPACING } from '../../constants/theme';
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
@@ -34,6 +34,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   contactNumber = '+91 240 2554000',
   onRefresh,
 }) => {
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
   if (!visible) return null;
@@ -60,171 +61,165 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent={false}
-      statusBarTranslucent
-      animationType="fade"
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          {/* Top Brand Header */}
-          <View style={styles.topHeader}>
-            <View style={styles.brandRow}>
-              {logoUrl ? (
-                <Image
-                  source={{ uri: logoUrl }}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              ) : (
-                <JobMarketLogoSvg size={36} />
-              )}
-              <Text style={styles.brandText}>{platformName}</Text>
-            </View>
-            <View style={styles.statusBadge}>
-              <ShieldAlert size={13} color="#DC2626" />
-              <Text style={styles.statusBadgeText}>Maintenance</Text>
-            </View>
-          </View>
-
-          {/* Section Separator */}
-          <View style={styles.sectionDivider} />
-
-          {/* Main Full-Screen Scrollable Content */}
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Center Hero Icon */}
-            <View style={styles.heroCircle}>
-              <Wrench size={42} color={COLORS.primary} strokeWidth={2.2} />
-            </View>
-
-            <Text style={styles.mainTitle}>Scheduled System Maintenance</Text>
-
-            <Text style={styles.mainDescription}>
-              We are currently performing critical infrastructure updates and database performance tuning to improve your experience.
-            </Text>
-
-            <Text style={styles.subDescription}>
-              All platform services are temporarily offline. Normal access will resume automatically as soon as maintenance is complete.
-            </Text>
-
-            {/* Assistance Information Card */}
-            <View style={styles.infoCard}>
-              <Text style={styles.infoCardHeader}>Need Urgent Help?</Text>
-              <Text style={styles.infoCardSub}>
-                Our administrative support team is available during this maintenance window:
-              </Text>
-
-              {supportEmail ? (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={styles.contactRow}
-                  onPress={handleEmail}
-                >
-                  <View style={styles.contactIconBox}>
-                    <Mail size={18} color={COLORS.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.contactLabel}>Email Support</Text>
-                    <Text style={styles.contactValue}>{supportEmail}</Text>
-                  </View>
-                  <ChevronRight size={18} color="#94A3B8" />
-                </TouchableOpacity>
-              ) : null}
-
-              {contactNumber ? (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={[styles.contactRow, { marginTop: 8 }]}
-                  onPress={handleCall}
-                >
-                  <View style={styles.contactIconBox}>
-                    <Phone size={18} color={COLORS.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.contactLabel}>Helpline Number</Text>
-                    <Text style={styles.contactValue}>{contactNumber}</Text>
-                  </View>
-                  <ChevronRight size={18} color="#94A3B8" />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </ScrollView>
-
-          {/* Bottom Action Footer */}
-          <View style={styles.bottomFooter}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.refreshButton}
-              onPress={handleRefresh}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <RefreshCw size={18} color="#FFFFFF" />
-                  <Text style={styles.refreshButtonText}>Check If System Is Back Online</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+      {/* Top Brand Header */}
+      <View style={[
+        styles.topHeader,
+        {
+          paddingTop: Platform.OS === 'android'
+            ? Math.max((StatusBar.currentHeight || 0) + 10, insets.top + 10, 24)
+            : Math.max(insets.top + 8, 16),
+        },
+      ]}>
+        <View style={styles.brandRow}>
+          {logoUrl ? (
+            <Image
+              source={{ uri: logoUrl }}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <JobMarketLogoSvg size={28} />
+          )}
+          <Text style={styles.brandText}>{platformName}</Text>
         </View>
-      </SafeAreaView>
-    </Modal>
+        <View style={styles.statusBadge}>
+          <ShieldAlert size={11} color="#DC2626" />
+          <Text style={styles.statusBadgeText}>Maintenance</Text>
+        </View>
+      </View>
+
+      {/* Section Separator */}
+      <View style={styles.sectionDivider} />
+
+      {/* Main Full-Screen Scrollable Content */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Center Hero Icon */}
+        <View style={styles.heroCircle}>
+          <Wrench size={26} color={COLORS.primary} strokeWidth={2.2} />
+        </View>
+
+        <Text style={styles.mainTitle}>Scheduled System Maintenance</Text>
+
+        <Text style={styles.mainDescription}>
+          We are currently performing critical infrastructure updates and database performance tuning to improve your experience.
+        </Text>
+
+        <Text style={styles.subDescription}>
+          All platform services are temporarily offline. Normal access will resume automatically as soon as maintenance is complete.
+        </Text>
+
+        {/* Assistance Information Card */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardHeader}>Need Urgent Help?</Text>
+          <Text style={styles.infoCardSub}>
+            Our administrative support team is available during this maintenance window:
+          </Text>
+
+          {supportEmail ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.contactRow}
+              onPress={handleEmail}
+            >
+              <View style={styles.contactIconBox}>
+                <Mail size={15} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.contactLabel}>Email Support</Text>
+                <Text style={styles.contactValue}>{supportEmail}</Text>
+              </View>
+              <ChevronRight size={15} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+
+          {contactNumber ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.contactRow, { marginTop: 6 }]}
+              onPress={handleCall}
+            >
+              <View style={styles.contactIconBox}>
+                <Phone size={15} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.contactLabel}>Helpline Number</Text>
+                <Text style={styles.contactValue}>{contactNumber}</Text>
+              </View>
+              <ChevronRight size={15} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Action Footer */}
+      <View style={[styles.bottomFooter, { paddingBottom: Math.max(insets.bottom + 14, 20) }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <RefreshCw size={15} color="#FFFFFF" />
+              <Text style={styles.refreshButtonText}>Check If System Is Back Online</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 20) : 0,
   },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   logoImage: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
     borderRadius: 6,
   },
   brandText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#FECACA',
   },
   statusBadgeText: {
-    fontSize: 11.5,
+    fontSize: 10,
     fontWeight: '700',
     color: '#DC2626',
     textTransform: 'uppercase',
@@ -232,69 +227,69 @@ const styles = StyleSheet.create({
   sectionDivider: {
     height: 1,
     backgroundColor: '#94A3B8',
-    marginVertical: 6,
+    marginVertical: 4,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 36,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   heroCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    borderWidth: 2,
+    marginBottom: 16,
+    borderWidth: 1.5,
     borderColor: '#DBEAFE',
   },
   mainTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
     textAlign: 'center',
-    letterSpacing: -0.3,
-    marginBottom: 12,
-  },
-  mainDescription: {
-    fontSize: 14.5,
-    color: '#475569',
-    textAlign: 'center',
-    lineHeight: 22,
+    letterSpacing: -0.2,
     marginBottom: 8,
   },
+  mainDescription: {
+    fontSize: 12,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
   subDescription: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 32,
+    lineHeight: 16,
+    marginBottom: 20,
   },
   infoCard: {
     width: '100%',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 12,
   },
   infoCardHeader: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    letterSpacing: 0.4,
+    marginBottom: 2,
   },
   infoCardSub: {
-    fontSize: 12.5,
+    fontSize: 11,
     color: '#64748B',
-    lineHeight: 18,
-    marginBottom: 14,
+    lineHeight: 15,
+    marginBottom: 10,
   },
   contactRow: {
     flexDirection: 'row',
@@ -302,33 +297,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 6,
-    padding: 12,
-    gap: 12,
+    borderRadius: 4,
+    padding: 9,
+    gap: 10,
   },
   contactIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 4,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   contactLabel: {
-    fontSize: 11,
+    fontSize: 9.5,
     color: '#64748B',
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
   },
   contactValue: {
-    fontSize: 13.5,
+    fontSize: 12,
     color: COLORS.primary,
     fontWeight: '700',
     marginTop: 1,
   },
   bottomFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingTop: 10,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
@@ -337,20 +332,20 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: COLORS.primary,
     borderRadius: 6,
-    paddingVertical: 14,
+    paddingVertical: 11,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   refreshButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

@@ -20,6 +20,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { Job } from '../../types';
+import {
+  JobFilterModal,
+  JobFilterValues,
+  DEFAULT_JOB_FILTERS,
+} from '../../components/job/JobFilterModal';
 
 const CATEGORIES = [
   'All Jobs',
@@ -100,22 +105,27 @@ export const JobSearchPage: React.FC = () => {
   }, []);
 
   // Filter drawer options state
-  const [activeFilters, setActiveFilters] = useState({
-    industry: 'All Industries',
-    jobType: 'All Types',
-    workMode: 'All Modes',
-    minExperience: 'All Experience',
-    salaryMin: 0,
-    midcZone: 'All MIDC Zones',
-    busFacility: false,
-    canteen: false,
-    accommodation: false,
-    overtime: false,
-  });
+  const [activeFilters, setActiveFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
 
   const allJobs = useMemo(() => {
     return getJobs({});
   }, [getJobs]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (activeFilters.midcZone !== 'All Locations') count++;
+    if (activeFilters.industry !== 'All Industries') count++;
+    if (activeFilters.trade !== 'All Trades') count++;
+    if (activeFilters.education !== 'All Education Levels') count++;
+    if (activeFilters.jobType !== 'All Types') count++;
+    if (activeFilters.workMode !== 'All Modes') count++;
+    if (activeFilters.minExperience !== 'All Experience') count++;
+    if (activeFilters.busFacility) count++;
+    if (activeFilters.canteen) count++;
+    if (activeFilters.accommodation) count++;
+    if (activeFilters.overtime) count++;
+    return count;
+  }, [activeFilters]);
 
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job) => {
@@ -136,30 +146,93 @@ export const JobSearchPage: React.FC = () => {
         const titleMatch = (job.title || '').toLowerCase().includes(q);
         const compMatch = (job.company || '').toLowerCase().includes(q);
         const locMatch = (job.location || '').toLowerCase().includes(q);
-        const zoneMatch = (job.midcZone || '').toLowerCase().includes(q);
+        const zoneMatch = (job.midcZone || job.midc_zone || '').toLowerCase();
         const tradeMatch = (job.trade || '').toLowerCase().includes(q);
         if (!titleMatch && !compMatch && !locMatch && !zoneMatch && !tradeMatch) {
           return false;
         }
       }
 
-      // Side drawer filters
-      if (activeFilters.industry !== 'All Industries' && job.industry !== activeFilters.industry) {
-        return false;
+      // 1. Zone
+      if (activeFilters.midcZone !== 'All Locations') {
+        const zoneStr = (job.midc_zone || job.midcZone || job.address || job.city || job.location || '').toLowerCase();
+        let keyword = activeFilters.midcZone.toLowerCase();
+        if (keyword.includes('waluj')) keyword = 'waluj';
+        else if (keyword.includes('shendra')) keyword = 'shendra';
+        else if (keyword.includes('chikalthana')) keyword = 'chikalthana';
+        else if (keyword.includes('chitegaon')) keyword = 'chitegaon';
+        else if (keyword.includes('paithan')) keyword = 'paithan';
+        else if (keyword.includes('bidkin')) keyword = 'bidkin';
+        else if (keyword.includes('railway station')) keyword = 'railway';
+        else if (keyword.includes('jalna road')) keyword = 'jalna';
+        else if (keyword.includes('chhatrapati sambhajinagar') || keyword.includes('aurangabad')) keyword = 'sambhajinagar';
+        else if (keyword.includes('chakan')) keyword = 'chakan';
+        else if (keyword.includes('bhosari')) keyword = 'bhosari';
+        else if (keyword.includes('talegaon')) keyword = 'talegaon';
+        else if (keyword.includes('ranjangaon')) keyword = 'ranjangaon';
+        else if (keyword.includes('taloja')) keyword = 'taloja';
+        else if (keyword.includes('thane')) keyword = 'thane';
+
+        const isMatch = zoneStr.includes(keyword) ||
+          (keyword === 'sambhajinagar' && (
+            zoneStr.includes('aurangabad') ||
+            zoneStr.includes('waluj') ||
+            zoneStr.includes('shendra') ||
+            zoneStr.includes('chikalthana') ||
+            zoneStr.includes('chitegaon') ||
+            zoneStr.includes('paithan') ||
+            zoneStr.includes('bidkin')
+          ));
+        if (!isMatch) return false;
       }
-      if (activeFilters.jobType !== 'All Types' && job.jobType !== activeFilters.jobType) {
-        return false;
+
+      // 2. Industry
+      if (activeFilters.industry !== 'All Industries') {
+        const ind = (job.industry || '').toLowerCase();
+        const target = activeFilters.industry.toLowerCase();
+        if (!ind.includes(target) && !target.includes(ind)) return false;
       }
-      if (activeFilters.workMode !== 'All Modes' && job.workMode !== activeFilters.workMode) {
-        return false;
+
+      // 3. Trade / Role
+      if (activeFilters.trade !== 'All Trades') {
+        const title = (job.title || job.role || job.job_title || '').toLowerCase();
+        const target = activeFilters.trade.toLowerCase();
+        if (!title.includes(target) && !target.includes(title)) return false;
       }
-      if (activeFilters.midcZone !== 'All MIDC Zones' && job.midcZone !== activeFilters.midcZone) {
-        return false;
+
+      // 4. Education
+      if (activeFilters.education !== 'All Education Levels') {
+        const edu = (job.education || job.qualification || '').toLowerCase();
+        const target = activeFilters.education.toLowerCase();
+        if (!edu.includes(target) && !target.includes(edu)) return false;
       }
-      if (activeFilters.busFacility && !job.busFacility) return false;
-      if (activeFilters.canteen && !job.canteen) return false;
-      if (activeFilters.accommodation && !job.accommodation) return false;
-      if (activeFilters.overtime && !job.overtime) return false;
+
+      // 5. Job Type
+      if (activeFilters.jobType !== 'All Types') {
+        const t = (job.job_type || job.jobType || job.type || '').toLowerCase();
+        const target = activeFilters.jobType.toLowerCase();
+        if (!t.includes(target) && !target.includes(t)) return false;
+      }
+
+      // 6. Work Mode
+      if (activeFilters.workMode !== 'All Modes') {
+        const m = (job.work_mode || job.workMode || '').toLowerCase();
+        const target = activeFilters.workMode.toLowerCase();
+        if (!m.includes(target) && !target.includes(m)) return false;
+      }
+
+      // 7. Experience
+      if (activeFilters.minExperience !== 'All Experience') {
+        const expStr = (job.experience || job.min_experience || job.minExperience || '').toLowerCase();
+        const target = activeFilters.minExperience.toLowerCase();
+        if (!expStr.includes(target) && !target.includes(expStr)) return false;
+      }
+
+      // 8. Perks & Facilities
+      if (activeFilters.busFacility && !(job.bus_facility ?? job.busFacility)) return false;
+      if (activeFilters.canteen && !(job.canteen ?? job.canteenFacility)) return false;
+      if (activeFilters.accommodation && !(job.accommodation ?? job.hostelFacility)) return false;
+      if (activeFilters.overtime && !(job.overtime ?? job.otFacility)) return false;
 
       return true;
     });
@@ -168,36 +241,34 @@ export const JobSearchPage: React.FC = () => {
   const resetAllFilters = () => {
     setSearchQuery('');
     setSelectedCategory('All Jobs');
-    setActiveFilters({
-      industry: 'All Industries',
-      jobType: 'All Types',
-      workMode: 'All Modes',
-      minExperience: 'All Experience',
-      salaryMin: 0,
-      midcZone: 'All MIDC Zones',
-      busFacility: false,
-      canteen: false,
-      accommodation: false,
-      overtime: false,
-    });
+    setActiveFilters(DEFAULT_JOB_FILTERS);
   };
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
-      {/* Reusable Mobile-Identical Top Header Bar */}
-      <MobileHeader title="Find Jobs" />
+    <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
+      <style>{`
+        .jobs-main-container {
+          width: 100%;
+          max-width: 780px;
+          margin: 0 auto;
+          padding: 20px 16px 80px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 767px) {
+          .jobs-main-container {
+            max-width: 580px;
+            padding: 10px 12px 100px 12px !important;
+            gap: 12px !important;
+          }
+        }
+      `}</style>
 
       {/* Main Content Area */}
-      <div style={{
-        maxWidth: '580px',
-        margin: '0 auto',
-        padding: '16px',
-        paddingBottom: '40px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        boxSizing: 'border-box',
-      }}>
+      <div className="jobs-main-container">
         {/* Top Search Bar & View Mode Bar */}
         <div style={{
           display: 'flex',
@@ -272,10 +343,33 @@ export const JobSearchPage: React.FC = () => {
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: '#1B4FDF',
+                position: 'relative',
               }}
               title="Filter Jobs"
             >
               <SlidersHorizontal size={17} color="#1B4FDF" />
+              {activeFilterCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    backgroundColor: '#1764E8',
+                    color: '#FFFFFF',
+                    borderRadius: '50%',
+                    width: '15px',
+                    height: '15px',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1.5px solid #FFFFFF',
+                  }}
+                >
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -719,208 +813,16 @@ export const JobSearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* Filter Side Drawer Modal */}
-      {filterDrawerOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.5)',
-          zIndex: 9999,
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '380px',
-            backgroundColor: '#FFFFFF',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
-          }}>
-            {/* Drawer Header */}
-            <div style={{
-              padding: '16px',
-              borderBottom: '1px solid #E2E8F0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                Filter Vacancies
-              </h3>
-              <button
-                onClick={() => setFilterDrawerOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
-              >
-                <X size={20} color="#64748B" />
-              </button>
-            </div>
-
-            {/* Drawer Body */}
-            <div style={{ padding: '16px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* MIDC Zone */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  MIDC Zone / Industrial Area
-                </label>
-                <select
-                  value={activeFilters.midcZone}
-                  onChange={(e) => setActiveFilters((prev) => ({ ...prev, midcZone: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '12.5px',
-                    backgroundColor: '#F8FAFC',
-                  }}
-                >
-                  <option value="All MIDC Zones">All MIDC Zones</option>
-                  <option value="Waluj MIDC">Waluj MIDC</option>
-                  <option value="Shendra MIDC">Shendra MIDC</option>
-                  <option value="Chakan MIDC">Chakan MIDC</option>
-                  <option value="Chikalthana MIDC">Chikalthana MIDC</option>
-                </select>
-              </div>
-
-              {/* Work Mode */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Work Mode
-                </label>
-                <select
-                  value={activeFilters.workMode}
-                  onChange={(e) => setActiveFilters((prev) => ({ ...prev, workMode: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '12.5px',
-                    backgroundColor: '#F8FAFC',
-                  }}
-                >
-                  <option value="All Modes">All Modes</option>
-                  <option value="On-site">On-site / Plant</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Remote">Remote</option>
-                </select>
-              </div>
-
-              {/* Job Type */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Job Type
-                </label>
-                <select
-                  value={activeFilters.jobType}
-                  onChange={(e) => setActiveFilters((prev) => ({ ...prev, jobType: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '12.5px',
-                    backgroundColor: '#F8FAFC',
-                  }}
-                >
-                  <option value="All Types">All Types</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contractual</option>
-                  <option value="Apprenticeship">Apprenticeship</option>
-                </select>
-              </div>
-
-              {/* Facility Checkboxes */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-                  Plant Facilities & Perks
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={activeFilters.busFacility}
-                      onChange={(e) => setActiveFilters((prev) => ({ ...prev, busFacility: e.target.checked }))}
-                    />
-                    Bus Transport Facility
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={activeFilters.canteen}
-                      onChange={(e) => setActiveFilters((prev) => ({ ...prev, canteen: e.target.checked }))}
-                    />
-                    Canteen / Subsidized Food
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={activeFilters.accommodation}
-                      onChange={(e) => setActiveFilters((prev) => ({ ...prev, accommodation: e.target.checked }))}
-                    />
-                    Hostel / Accommodation
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={activeFilters.overtime}
-                      onChange={(e) => setActiveFilters((prev) => ({ ...prev, overtime: e.target.checked }))}
-                    />
-                    Overtime Pay Available
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Drawer Footer */}
-            <div style={{
-              padding: '16px',
-              borderTop: '1px solid #E2E8F0',
-              display: 'flex',
-              gap: '10px',
-            }}>
-              <button
-                onClick={resetAllFilters}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #CBD5E1',
-                  backgroundColor: '#FFFFFF',
-                  color: '#475569',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => setFilterDrawerOpen(false)}
-                style={{
-                  flex: 2,
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#1B4FDF',
-                  color: '#FFFFFF',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Apply Filters ({filteredJobs.length})
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Industry-Standard Job Filter Modal */}
+      <JobFilterModal
+        isOpen={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        currentFilters={activeFilters}
+        onApplyFilters={(applied) => setActiveFilters(applied)}
+        onResetFilters={() => setActiveFilters(DEFAULT_JOB_FILTERS)}
+        allJobs={allJobs}
+        totalJobsCount={allJobs.length}
+      />
     </div>
   );
 };
