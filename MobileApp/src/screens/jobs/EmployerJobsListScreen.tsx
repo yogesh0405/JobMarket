@@ -261,15 +261,6 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
-        {isRejectedStatus(item.status) ? (
-          <View style={styles.rejectedNoticeBanner}>
-            <XCircle size={12} color="#DC2626" />
-            <Text style={styles.rejectedNoticeBannerText}>
-              Job Rejected — {(item as any).rejectReason || (item as any).reject_reason || 'Does not meet posting requirements.'}
-            </Text>
-          </View>
-        ) : null}
-
         <View style={styles.cardRowDivider} />
 
         {/* Action Footer Bar */}

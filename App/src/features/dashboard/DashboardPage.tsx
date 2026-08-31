@@ -4197,24 +4197,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                     </div>
 
                     {/* Rejected Notice Banner */}
-                    {isRejected && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#FEF2F2',
-                        border: '1px solid #FECACA',
-                        padding: '5px 8px',
-                        borderRadius: '6px',
-                        marginTop: '8px',
-                        fontSize: '10.5px',
-                        fontWeight: 600,
-                        color: '#B91C1C'
-                      }}>
-                        <XCircle size={12} color="#DC2626" style={{ flexShrink: 0 }} />
-                        <span>Job Rejected — {job.rejectReason || (job as any).reject_reason || 'Does not meet posting requirements.'}</span>
-                      </div>
-                    )}
+
 
                     {/* Card Row Divider */}
                     <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '9px 0' }} />
