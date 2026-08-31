@@ -32,6 +32,7 @@ import { EmployerCandidateDetailScreen } from '../screens/candidates/EmployerCan
 import { CandidateFilterScreen } from '../screens/candidates/CandidateFilterScreen';
 import { JobFilterScreen } from '../screens/jobs/JobFilterScreen';
 import { CompanyFilterScreen } from '../screens/company/CompanyFilterScreen';
+import { CandidateGlobalSearchScreen } from '../screens/candidate/CandidateGlobalSearchScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -75,6 +76,8 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateSaved" component={CandidateSavedJobsScreen} />
           <Stack.Screen name="MyInterviews" component={CandidateInterviewsScreen} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
+          <Stack.Screen name="CandidateGlobalSearch" component={CandidateGlobalSearchScreen} />
+          <Stack.Screen name="GlobalSearch" component={CandidateGlobalSearchScreen} />
           <Stack.Screen name="JobFilter" component={JobFilterScreen} />
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
         </>
