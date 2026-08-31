@@ -524,15 +524,15 @@ const styles = StyleSheet.create({
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
     backgroundColor: '#FFFFFF',
-    gap: 12,
+    gap: 6,
   },
   backButton: {
-    padding: 4,
+    padding: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
