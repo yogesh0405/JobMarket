@@ -331,9 +331,10 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   return (
     <View style={styles.container}>
       <Header
-        searchPlaceholder="Search Companies"
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        searchPlaceholder={searchQuery ? searchQuery : 'Search Companies, Industries, Locations...'}
+        onSearchPress={() => {
+          navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
+        }}
         showBack={false}
       />
 

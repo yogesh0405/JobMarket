@@ -419,9 +419,10 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   return (
     <View style={styles.container}>
       <Header
-        searchPlaceholder="Search Jobs"
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        searchPlaceholder={searchQuery ? searchQuery : 'Search Jobs, Skills, Companies...'}
+        onSearchPress={() => {
+          navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
+        }}
         showBack={false}
         rightAction={
           <TouchableOpacity

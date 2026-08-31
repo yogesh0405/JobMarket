@@ -209,9 +209,10 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
 
       {/* Top Full-Width Capsule Search Bar Header with Embedded Filter Action */}
       <Header
-        searchPlaceholder={SEARCH_PLACEHOLDERS[placeholderIndex] || 'Search Jobs'}
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        searchPlaceholder={searchQuery ? searchQuery : SEARCH_PLACEHOLDERS[placeholderIndex] || 'Search Jobs, Roles, MIDC Clusters...'}
+        onSearchPress={() => {
+          navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
+        }}
         showBack={true}
         onBack={() => navigation.goBack()}
         hideRightActions={true}
