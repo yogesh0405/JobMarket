@@ -14,8 +14,12 @@ router.get('/meta/skills', JobController.getSkills);
 router.get('/saved', JobController.getMySavedJobs);
 router.get('/saved/my-saved', JobController.getMySavedJobs);
 router.get('/saved/me', JobController.getMySavedJobs);
-router.get('/employer/analytics', JobController.getEmployerAnalytics);
+router.get('/my-jobs/all', JobController.getMyJobs);
+router.get('/my-jobs', JobController.getMyJobs);
+router.get('/employer/my-jobs', JobController.getMyJobs);
 router.get('/workers/all', JobController.getAllCandidates);
+router.get('/candidates/all', JobController.getAllCandidates);
+router.get('/candidates', JobController.getAllCandidates);
 router.get('/search', JobController.searchJobs);
 router.get('/:id', JobController.getJobById);
 

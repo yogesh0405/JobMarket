@@ -8,6 +8,9 @@ router.get('/applied/me', ApplicationController.getMyAppliedJobs);
 router.get('/interviews/my-interviews', ApplicationController.getMyInterviews);
 router.get('/employer/interviews', ApplicationController.getEmployerInterviews);
 router.patch('/employer/interviews/:applicationId/status', ApplicationController.updateEmployerInterviewStatus);
+router.get('/applicants/all', ApplicationController.getAllApplicantsForEmployer);
+router.get('/applicants', ApplicationController.getAllApplicantsForEmployer);
+router.get('/employer/applicants', ApplicationController.getAllApplicantsForEmployer);
 
 router.post('/:id/apply', ApplicationController.applyToJob);
 router.get('/:id/applicants', ApplicationController.getApplicantsForJob);

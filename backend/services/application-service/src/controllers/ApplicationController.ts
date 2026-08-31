@@ -212,7 +212,28 @@ export class ApplicationController {
         return res.status(403).json({ success: false, message: 'Access denied: Employers only' });
       }
 
+      if (!id || id.toLowerCase() === 'all' || id.toLowerCase() === 'applicants') {
+        const data = await JobRepository.getAllApplicantsForEmployer(employerId);
+        return res.status(200).json({ success: true, data });
+      }
+
       const data = await JobRepository.getApplicantsForJob(id, employerId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllApplicantsForEmployer(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const employerId = req.headers['x-user-id'] as string || req.user?.userId;
+      const role = req.headers['x-user-role'] as string || req.user?.role;
+
+      if (!employerId || !isEmployerRole(role)) {
+        return res.status(403).json({ success: false, message: 'Access denied: Employers only' });
+      }
+
+      const data = await JobRepository.getAllApplicantsForEmployer(employerId);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
