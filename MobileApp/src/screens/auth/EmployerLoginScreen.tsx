@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   StatusBar,
   ImageBackground,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -42,6 +43,7 @@ interface Props {
 
 export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { login, loginWithGoogle, verify2FALogin } = useAuth();
   const { showToast } = useToast();
 
@@ -68,19 +70,21 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
       setRole(route.params.initialRole);
     }
     if (route?.params?.signupSuccess) {
-      showToast('Registration verified! Please enter your password to sign in.', 'success');
+      showToast('Account created successfully! Please sign in.', 'success');
     }
   }, [route?.params]);
 
-  // 2FA Modal State
+  // 2FA Flow States
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [twoFactorOtp, setTwoFactorOtp] = useState('');
-  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
   const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
 
-  // Forgot Password & Confirmation Modal State
+  // Forgot Password Flow States
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+
+  // Custom Modal Alerts State
   const [confirmModalConfig, setConfirmModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -111,34 +115,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     title: '',
   });
 
-  const handleOpenForgotPassword = () => {
-    const cleanEmail = email.trim();
-    if (cleanEmail && cleanEmail.includes('@')) {
-      setConfirmModalConfig({
-        visible: true,
-        title: 'Reset Password',
-        message: 'A 6-digit verification code will be sent to your registered email address:',
-        highlightText: cleanEmail,
-        confirmText: 'Send Code',
-        cancelText: 'Cancel',
-        type: 'primary',
-        iconBgColor: '#EFF6FF',
-        icon: <KeyRound size={26} color={COLORS.primary} />,
-        onConfirm: async () => {
-          setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
-          setShowForgotPasswordModal(true);
-          try {
-            await authApi.forgotPassword(cleanEmail);
-          } catch (e: any) {
-            console.warn('Forgot password dispatch error:', e);
-          }
-        },
-      });
-    } else {
-      setShowForgotPasswordModal(true);
-    }
-  };
-
   const handleGoogleSignIn = () => {
     setError(null);
     navigation.navigate('GoogleAuth', { role });
@@ -146,37 +122,81 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleLogin = async () => {
     setError(null);
+    const cleanEmail = email.trim().toLowerCase();
 
-    if (!email.trim() || !password.trim()) {
-      const errMsg = 'Please enter email and password.';
-      setError(errMsg);
-      showToast(errMsg, 'error');
+    if (!cleanEmail || !password) {
+      setError('Please enter your email and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const loginRes = await login({ email: email.trim(), password, role });
-      if (loginRes && loginRes.require2FA) {
-        setMfaToken(loginRes.mfaToken);
+      const response = await login(cleanEmail, password, role);
+
+      if (response && (response.require2FA || response.requires2FA)) {
+        setMfaToken(response.tempToken || response.token || '');
+        setTwoFactorOtp('');
+        setTwoFactorError(null);
         setShow2FAModal(true);
-        showToast('🛡️ 2FA Required: Enter the 6-digit code sent to your email.', 'info');
+        return;
       }
+
+      showToast(`Welcome back to JobMarket!`, 'success');
     } catch (err: any) {
-      const errorMsg = err.message || 'Invalid credentials. Please try again.';
-      setError(errorMsg);
-      showToast(errorMsg, 'error');
+      const errMsg = err.message || 'Login failed. Please check your credentials.';
+
+      if (err.requiresVerification || errMsg.toLowerCase().includes('verify your email')) {
+        setConfirmModalConfig({
+          visible: true,
+          title: 'Account Verification Required',
+          message: 'Your email address has not been verified yet. Would you like us to send a 6-digit OTP code to',
+          highlightText: cleanEmail,
+          confirmText: 'Send Verification OTP',
+          cancelText: 'Cancel',
+          type: 'primary',
+          icon: <KeyRound size={24} color={COLORS.primary} />,
+          iconBgColor: '#EFF6FF',
+          onConfirm: async () => {
+            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+            try {
+              await authApi.sendOTP(cleanEmail, 'verification');
+              showToast('6-digit OTP code sent to your email.', 'info');
+              navigation.navigate('VerifyOTP', { email: cleanEmail, role });
+            } catch (otpErr: any) {
+              setError(otpErr.message || 'Failed to send OTP code.');
+            }
+          },
+        });
+        return;
+      }
+
+      if (err.status === 403 || errMsg.toLowerCase().includes('restricted') || errMsg.toLowerCase().includes('blocked')) {
+        setConfirmModalConfig({
+          visible: true,
+          title: 'Account Restricted',
+          message: errMsg,
+          confirmText: 'Contact Support',
+          cancelText: 'Close',
+          type: 'danger',
+          onConfirm: () => {
+            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+            navigation.navigate('HelpSupport');
+          },
+        });
+        return;
+      }
+
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerify2FACode = async () => {
-    if (!twoFactorOtp.trim() || twoFactorOtp.trim().length !== 6) {
+    if (!twoFactorOtp || twoFactorOtp.trim().length !== 6) {
       setTwoFactorError('Please enter the complete 6-digit OTP code.');
       return;
     }
-
     setTwoFactorError(null);
     setTwoFactorLoading(true);
     try {
@@ -194,6 +214,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
   ) + 8;
   const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
+  const targetCardHeight = Math.max(580, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 680));
 
   return (
     <KeyboardAvoidingView
@@ -202,20 +223,17 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     >
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[
+      <View
+        style={[
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
             paddingBottom: safeBottomPadding,
           },
         ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
       >
         {/* SINGLE UNIFIED OUTER CARD (CONTAINING IMAGE & FORM) */}
-        <View style={styles.unifiedCard}>
+        <View style={[styles.unifiedCard, { height: targetCardHeight }]}>
           {/* TOP HERO BANNER IMAGE (FIXED) */}
           <View style={styles.heroImageContainer}>
             <ImageBackground
@@ -237,8 +255,14 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             </ImageBackground>
           </View>
 
-          {/* INNER FORM SECTION */}
-          <View style={styles.cardBody}>
+          {/* INNER SCROLLABLE FORM SECTION */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollableFormArea}
+            contentContainerStyle={styles.cardBody}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {/* Welcome Back Heading */}
             <Text style={styles.welcomeHeading}>Welcome Back</Text>
 
@@ -288,7 +312,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
-                onFocus={() => handleInputFocus(50)}
+                onFocus={() => handleInputFocus(40)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -317,7 +341,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(120)}
+                  onFocus={() => handleInputFocus(100)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -379,9 +403,9 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
               <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
 
       {/* 2FA Verification Modal */}
       <EmployerTwoFactorModal
@@ -426,7 +450,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         onConfirm={confirmModalConfig.onConfirm}
       />
 
-
       {/* Success Modal */}
       <SuccessModal
         visible={successModalConfig.visible}
@@ -445,7 +468,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   mainWrapper: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -463,10 +486,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
-    marginVertical: 10,
   },
   heroImageContainer: {
-    height: 180,
+    height: 160,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
@@ -482,47 +504,41 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 18,
-    paddingBottom: 18,
+    paddingBottom: 16,
   },
   heroTextContainer: {
-    gap: 4,
+    gap: 3,
   },
   heroHeadline: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
-    lineHeight: 25,
+    lineHeight: 24,
   },
   heroSubheadline: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   cardBody: {
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 24,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 2,
-    paddingRight: 10,
-    marginBottom: 8,
+    paddingBottom: 32,
   },
   welcomeHeading: {
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -0.4,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   signupPromptRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   promptText: {
     fontSize: 12.5,
@@ -540,7 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 3,
-    marginBottom: 16,
+    marginBottom: 14,
     height: 44,
   },
   roleSegmentTab: {
@@ -570,19 +586,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 13,
+    marginBottom: 12,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   forgotPasswordLink: {
     fontSize: 11.5,
@@ -642,7 +658,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   checkboxBox: {
     width: 17,
@@ -667,7 +683,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   orDividerLine: {
     flex: 1,

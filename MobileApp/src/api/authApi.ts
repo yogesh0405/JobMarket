@@ -26,6 +26,13 @@ export const authApi = {
     });
   },
 
+  sendOTP: async (email: string, reason?: string): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, reason }),
+    });
+  },
+
   verifyOTP: async (email: string, otpCode: string): Promise<ApiResponse> => {
     return apiFetch('/api/v1/auth/verify-otp', {
       method: 'POST',

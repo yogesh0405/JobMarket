@@ -12,6 +12,7 @@ import {
   StatusBar,
   Keyboard,
   ImageBackground,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -37,6 +38,7 @@ interface Props {
 
 export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { signup, loginWithGoogle } = useAuth();
   const initialRole = route?.params?.initialRole || 'candidate';
 
@@ -99,14 +101,15 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
     setLoading(true);
     try {
-      const res = await signup(payload);
-      const targetEmail = res?.email || cleanEmail;
-      navigation.navigate('VerifyOTP', {
-        email: targetEmail,
-        signupPayload: payload,
+      await signup(payload);
+      navigation.navigate('EmployerLogin', {
+        registeredEmail: cleanEmail,
+        initialRole: role,
+        signupSuccess: true,
       });
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please check details and try again.');
+      const errMsg = err.message || 'Registration failed. Please try again.';
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -117,6 +120,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
   ) + 8;
   const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
+  const targetCardHeight = Math.max(580, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 680));
 
   return (
     <KeyboardAvoidingView
@@ -125,20 +129,17 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     >
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[
+      <View
+        style={[
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
             paddingBottom: safeBottomPadding,
           },
         ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
       >
-        {/* SINGLE UNIFIED OUTER CARD */}
-        <View style={styles.unifiedCard}>
+        {/* SINGLE UNIFIED OUTER CARD - IDENTICAL HEIGHT TO LOGIN */}
+        <View style={[styles.unifiedCard, { height: targetCardHeight }]}>
           {/* TOP HERO BANNER IMAGE (FIXED) */}
           <View style={styles.heroImageContainer}>
             <ImageBackground
@@ -160,8 +161,14 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             </ImageBackground>
           </View>
 
-          {/* INNER FORM SECTION */}
-          <View style={styles.cardBody}>
+          {/* INNER SCROLLABLE FORM SECTION */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollableFormArea}
+            contentContainerStyle={styles.cardBody}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {/* Heading */}
             <Text style={styles.welcomeHeading}>Create Account</Text>
 
@@ -404,9 +411,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
               </View>
               <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -417,7 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   mainWrapper: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -435,10 +442,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
-    marginVertical: 10,
   },
   heroImageContainer: {
-    height: 180,
+    height: 160,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
@@ -454,47 +460,41 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 18,
-    paddingBottom: 18,
+    paddingBottom: 16,
   },
   heroTextContainer: {
-    gap: 4,
+    gap: 3,
   },
   heroHeadline: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
-    lineHeight: 25,
+    lineHeight: 24,
   },
   heroSubheadline: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 16,
+    lineHeight: 15,
   },
   cardBody: {
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 24,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 2,
-    paddingRight: 10,
-    marginBottom: 8,
+    paddingBottom: 32,
   },
   welcomeHeading: {
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -0.4,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   signupPromptRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   promptText: {
     fontSize: 12.5,
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 3,
-    marginBottom: 16,
+    marginBottom: 14,
     height: 44,
   },
   roleSegmentTab: {
@@ -542,13 +542,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 13,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   textInput: {
     backgroundColor: '#F6F4EE',
