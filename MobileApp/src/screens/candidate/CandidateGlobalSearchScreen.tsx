@@ -49,6 +49,15 @@ const TRENDING_LOCATIONS = [
   'Ranjangaon MIDC',
 ];
 
+const POPULAR_EMPLOYERS = [
+  { name: 'Bajaj Auto Limited', industry: 'Automotive & 2-Wheeler', location: 'Waluj MIDC' },
+  { name: 'Tata Motors Manufacturing', industry: 'Automotive OEM', location: 'Pimpri-Chinchwad' },
+  { name: 'Endurance Technologies', industry: 'Auto Components & Die Casting', location: 'Waluj MIDC' },
+  { name: 'Varroc Engineering Ltd', industry: 'Polymer & Electricals', location: 'Chakan MIDC' },
+  { name: 'Siemens India Industrial', industry: 'Electrical & Automation', location: 'Kalwa MIDC' },
+  { name: 'Bharat Forge Limited', industry: 'Forging & Heavy Machinery', location: 'Mundhwa Pune' },
+];
+
 interface Props {
   navigation: any;
   route?: any;
@@ -59,11 +68,12 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
+  const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     loadRecentSearches();
-    fetchAllJobs();
+    fetchAllData();
     const timeout = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 150);
@@ -115,15 +125,18 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     }
   };
 
-  const fetchAllJobs = async () => {
+  const fetchAllData = async () => {
     try {
-      const res = await apiFetch('/api/v1/jobs');
-      const list = Array.isArray(res) ? res : res?.data || [];
-      if (Array.isArray(list)) {
-        setAllJobs(list);
-      }
+      const [jobsRes, compsRes] = await Promise.all([
+        apiFetch('/api/v1/jobs').catch(() => []),
+        apiFetch('/api/v1/companies').catch(() => []),
+      ]);
+      const jobList = Array.isArray(jobsRes) ? jobsRes : jobsRes?.data || [];
+      const compList = Array.isArray(compsRes) ? compsRes : compsRes?.data || compsRes?.companies || [];
+      if (Array.isArray(jobList)) setAllJobs(jobList);
+      if (Array.isArray(compList)) setAllCompanies(compList);
     } catch (e) {
-      console.warn('Failed to fetch jobs for autocomplete:', e);
+      console.warn('Failed to fetch data for search autocomplete:', e);
     }
   };
 
@@ -153,13 +166,24 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
   };
 
-  // Autocomplete matching live query
+  const handleCompanyClick = (company: any) => {
+    const compName = company.name || company.company_name || company.company || 'Company';
+    saveSearchToHistory(compName);
+    Keyboard.dismiss();
+    navigation.navigate('CompanyProfile', {
+      companyId: company.id || company.user_id,
+      company: company,
+    });
+  };
+
+  // Autocomplete matching live query across Jobs, Companies, Trades, Locations
   const autocompleteSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      return { jobs: [], trades: [], locations: [] };
+      return { jobs: [], companies: [], trades: [], locations: [] };
     }
 
+    // 1. Matching Live Jobs
     const matchedJobs = allJobs
       .filter((j) => {
         const titleMatch = (j.title || '').toLowerCase().includes(q);
@@ -169,17 +193,32 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
         const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
         return titleMatch || compMatch || indMatch || tradeMatch || skillsMatch;
       })
-      .slice(0, 6);
+      .slice(0, 4);
 
-    const matchedTrades = TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 4);
-    const matchedLocations = TRENDING_LOCATIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 4);
+    // 2. Standalone Matching Companies & Factories
+    const matchedCompanies = allCompanies
+      .filter((c) => {
+        const nameMatch = (c.name || c.company_name || c.company || '').toLowerCase().includes(q);
+        const indMatch = (c.industry || '').toLowerCase().includes(q);
+        const locMatch = (c.city || c.location || c.midc_zone || '').toLowerCase().includes(q);
+        const aboutMatch = (c.about || c.description || '').toLowerCase().includes(q);
+        return nameMatch || indMatch || locMatch || aboutMatch;
+      })
+      .slice(0, 4);
+
+    // 3. Matching Trades
+    const matchedTrades = TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 3);
+
+    // 4. Matching Locations
+    const matchedLocations = TRENDING_LOCATIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 3);
 
     return {
       jobs: matchedJobs,
+      companies: matchedCompanies,
       trades: matchedTrades,
       locations: matchedLocations,
     };
-  }, [searchQuery, allJobs]);
+  }, [searchQuery, allJobs, allCompanies]);
 
   const hasLiveQuery = searchQuery.trim().length > 0;
 
@@ -258,6 +297,39 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               <ArrowUpRight size={15} color="#94A3B8" />
             </TouchableOpacity>
 
+            {/* Standalone Matching Companies & Factories */}
+            {autocompleteSuggestions.companies.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>COMPANIES & FACTORIES</Text>
+                </View>
+                {autocompleteSuggestions.companies.map((comp) => {
+                  const compName = comp.name || comp.company_name || comp.company || 'Industrial Company';
+                  const compLoc = comp.midc_zone || comp.location || comp.city || 'Industrial MIDC';
+                  const compInd = comp.industry || 'Manufacturing';
+                  return (
+                    <TouchableOpacity
+                      key={comp.id || compName}
+                      style={styles.searchRow}
+                      onPress={() => handleCompanyClick(comp)}
+                      activeOpacity={0.65}
+                    >
+                      <Building2 size={17} color="#0F172A" style={styles.rowIcon} />
+                      <View style={styles.rowContent}>
+                        <Text style={styles.rowTitleText} numberOfLines={1}>
+                          {compName}
+                        </Text>
+                        <Text style={styles.rowSubText} numberOfLines={1}>
+                          {compInd} • {compLoc}
+                        </Text>
+                      </View>
+                      <ChevronRight size={15} color="#CBD5E1" />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : null}
+
             {/* Matching Live Jobs */}
             {autocompleteSuggestions.jobs.length > 0 ? (
               <View style={styles.sectionWrap}>
@@ -299,7 +371,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                     onPress={() => handleExecuteSearch(trade)}
                     activeOpacity={0.65}
                   >
-                    <Building2 size={17} color="#64748B" style={styles.rowIcon} />
+                    <TrendingUp size={16} color="#64748B" style={styles.rowIcon} />
                     <View style={styles.rowContent}>
                       <Text style={styles.rowTitleText}>{trade}</Text>
                       <Text style={styles.rowSubText}>Job Role / Trade</Text>
@@ -335,7 +407,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
             ) : null}
           </View>
         ) : (
-          /* VIEW B: RECENT SEARCHES & TRENDING SEARCHES (WHEN INPUT IS EMPTY) */
+          /* VIEW B: RECENT SEARCHES, TOP EMPLOYERS & TRENDING (WHEN INPUT IS EMPTY) */
           <View style={styles.listContainer}>
             {/* 1. RECENT SEARCHES */}
             {recentSearches.length > 0 ? (
@@ -371,7 +443,30 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               </View>
             ) : null}
 
-            {/* 2. TRENDING INDUSTRIAL ROLES (Row List - No Chips) */}
+            {/* 2. TOP INDUSTRIAL EMPLOYERS (Standalone Companies) */}
+            <View style={styles.sectionWrap}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderTitle}>TOP INDUSTRIAL EMPLOYERS</Text>
+              </View>
+
+              {POPULAR_EMPLOYERS.map((comp) => (
+                <TouchableOpacity
+                  key={comp.name}
+                  style={styles.searchRow}
+                  onPress={() => handleExecuteSearch(comp.name)}
+                  activeOpacity={0.65}
+                >
+                  <Building2 size={16} color="#64748B" style={styles.rowIcon} />
+                  <View style={styles.rowContent}>
+                    <Text style={styles.rowTitleText}>{comp.name}</Text>
+                    <Text style={styles.rowSubText}>{comp.industry} • {comp.location}</Text>
+                  </View>
+                  <ChevronRight size={15} color="#CBD5E1" />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* 3. TRENDING INDUSTRIAL ROLES */}
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderTitle}>TRY SEARCHING FOR</Text>
@@ -393,7 +488,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               ))}
             </View>
 
-            {/* 3. POPULAR INDUSTRIAL HUBS (Row List - No Chips) */}
+            {/* 4. POPULAR INDUSTRIAL HUBS */}
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderTitle}>POPULAR INDUSTRIAL HUBS</Text>
