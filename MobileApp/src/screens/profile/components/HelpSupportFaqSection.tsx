@@ -173,10 +173,10 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
     borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderRadius: 20,
     paddingHorizontal: 12,
     height: 38,
     gap: 8,

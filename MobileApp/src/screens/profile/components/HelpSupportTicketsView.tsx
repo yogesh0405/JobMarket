@@ -672,9 +672,9 @@ const styles = StyleSheet.create({
   searchConversationInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.2,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
     height: 38,
