@@ -125,14 +125,17 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     >
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <View
-        style={[
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
             paddingBottom: safeBottomPadding,
           },
         ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {/* SINGLE UNIFIED OUTER CARD */}
         <View style={styles.unifiedCard}>
@@ -157,15 +160,8 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             </ImageBackground>
           </View>
 
-          {/* SCROLLABLE FORM SECTION */}
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.scrollableFormArea}
-            contentContainerStyle={[styles.cardBody, { paddingBottom: 100 }]}
-            keyboardShouldPersistTaps="handled"
-            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-            showsVerticalScrollIndicator={false}
-          >
+          {/* INNER FORM SECTION */}
+          <View style={styles.cardBody}>
             {/* Heading */}
             <Text style={styles.welcomeHeading}>Create Account</Text>
 
@@ -187,7 +183,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 onPress={() => setRole('candidate')}
                 activeOpacity={0.8}
               >
-                <UserIcon size={14} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
+                <UserIcon size={15} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
                 <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
                   Candidate
                 </Text>
@@ -198,7 +194,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 onPress={() => setRole('employer')}
                 activeOpacity={0.8}
               >
-                <Briefcase size={14} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
+                <Briefcase size={15} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
                 <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
                   Employer
                 </Text>
@@ -254,15 +250,13 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 style={styles.textInput}
                 placeholder="9876543210"
                 placeholderTextColor="#94A3B8"
-                keyboardType="number-pad"
-                maxLength={10}
                 value={phone}
                 onFocus={() => handleInputFocus(160)}
                 onChangeText={(t) => {
-                  const sanitized = t.replace(/[^0-9]/g, '').slice(0, 10);
-                  setPhone(sanitized);
+                  setPhone(t);
                   if (error) setError(null);
                 }}
+                keyboardType="phone-pad"
               />
             </View>
 
@@ -275,11 +269,14 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   </Text>
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Tata Motors Ltd"
+                    placeholder="Tata Motors Ltd / Endurance"
                     placeholderTextColor="#94A3B8"
                     value={companyName}
                     onFocus={() => handleInputFocus(220)}
-                    onChangeText={setCompanyName}
+                    onChangeText={(t) => {
+                      setCompanyName(t);
+                      if (error) setError(null);
+                    }}
                   />
                 </View>
 
@@ -292,7 +289,10 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                     autoCapitalize="characters"
                     value={gstNumber}
                     onFocus={() => handleInputFocus(280)}
-                    onChangeText={setGstNumber}
+                    onChangeText={(t) => {
+                      setGstNumber(t);
+                      if (error) setError(null);
+                    }}
                   />
                 </View>
               </>
@@ -305,7 +305,10 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   value={tradeSpecialization}
                   onFocus={() => handleInputFocus(220)}
-                  onChangeText={setTradeSpecialization}
+                  onChangeText={(t) => {
+                    setTradeSpecialization(t);
+                    if (error) setError(null);
+                  }}
                 />
               </View>
             )}
@@ -313,16 +316,16 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             {/* Input: Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
-                Account Password<Text style={{ color: '#EF4444' }}>*</Text>
+                Create Password<Text style={{ color: '#EF4444' }}>*</Text>
               </Text>
               <View style={styles.passwordInputWrapper}>
                 <TextInput
                   style={styles.passwordTextInput}
-                  placeholder="••••••••"
+                  placeholder="Min 6 characters"
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(290)}
+                  onFocus={() => handleInputFocus(300)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -401,10 +404,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
               </View>
               <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
-      </View>
-
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -415,13 +417,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   mainWrapper: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   unifiedCard: {
-    flex: 1,
     width: '100%',
     maxWidth: 440,
     backgroundColor: '#FFFFFF',
@@ -434,6 +435,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
+    marginVertical: 10,
   },
   heroImageContainer: {
     height: 180,

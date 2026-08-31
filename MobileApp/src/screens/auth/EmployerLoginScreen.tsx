@@ -202,14 +202,17 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     >
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <View
-        style={[
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
             paddingBottom: safeBottomPadding,
           },
         ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {/* SINGLE UNIFIED OUTER CARD (CONTAINING IMAGE & FORM) */}
         <View style={styles.unifiedCard}>
@@ -234,15 +237,8 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             </ImageBackground>
           </View>
 
-          {/* INNER SCROLLABLE FORM SECTION */}
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.scrollableFormArea}
-            contentContainerStyle={[styles.cardBody, { paddingBottom: 60 }]}
-            keyboardShouldPersistTaps="handled"
-            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-            showsVerticalScrollIndicator={false}
-          >
+          {/* INNER FORM SECTION */}
+          <View style={styles.cardBody}>
             {/* Welcome Back Heading */}
             <Text style={styles.welcomeHeading}>Welcome Back</Text>
 
@@ -264,7 +260,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 onPress={() => setRole('candidate')}
                 activeOpacity={0.8}
               >
-                <UserIcon size={14} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
+                <UserIcon size={15} color={role === 'candidate' ? '#FFFFFF' : '#64748B'} />
                 <Text style={[styles.roleSegmentTabText, role === 'candidate' && styles.roleSegmentTabTextActive]}>
                   Candidate
                 </Text>
@@ -275,7 +271,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 onPress={() => setRole('employer')}
                 activeOpacity={0.8}
               >
-                <Briefcase size={14} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
+                <Briefcase size={15} color={role === 'employer' ? '#FFFFFF' : '#64748B'} />
                 <Text style={[styles.roleSegmentTabText, role === 'employer' && styles.roleSegmentTabTextActive]}>
                   Employer
                 </Text>
@@ -299,14 +295,18 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 }}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                returnKeyType="next"
               />
             </View>
 
-            {/* Password Input with Forgot Password? Link */}
+            {/* Password Input */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
                 <Text style={styles.inputLabel}>Password</Text>
-                <TouchableOpacity onPress={handleOpenForgotPassword} activeOpacity={0.7}>
+                <TouchableOpacity
+                  onPress={() => setShowForgotPasswordModal(true)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <Text style={styles.forgotPasswordLink}>Forgot Password?</Text>
                 </TouchableOpacity>
               </View>
@@ -379,9 +379,9 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
               <Text style={styles.googleSignInBtnText}>Continue with Google</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* 2FA Verification Modal */}
       <EmployerTwoFactorModal
@@ -445,13 +445,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   mainWrapper: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   unifiedCard: {
-    flex: 1,
     width: '100%',
     maxWidth: 440,
     backgroundColor: '#FFFFFF',
@@ -464,6 +463,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
+    marginVertical: 10,
   },
   heroImageContainer: {
     height: 180,
