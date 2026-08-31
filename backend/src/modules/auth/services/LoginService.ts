@@ -16,10 +16,11 @@ export function isRoleCompatible(userRole: string, requestedRole?: string): bool
   const uRole = (userRole || '').toLowerCase().trim();
   const rRole = (requestedRole || '').toLowerCase().trim();
 
+  if (!uRole || !rRole) return true;
   if (uRole === rRole) return true;
 
-  const candidateRoles = ['candidate', 'employee', 'worker', 'jobseeker'];
-  const employerRoles = ['employer', 'recruiter', 'company', 'admin', 'superadmin', 'super_admin'];
+  const candidateRoles = ['candidate', 'employee', 'worker', 'jobseeker', 'applicant', 'user'];
+  const employerRoles = ['employer', 'recruiter', 'company', 'admin', 'superadmin', 'super_admin', 'hiring_manager', 'hr'];
 
   if (candidateRoles.includes(uRole) && candidateRoles.includes(rRole)) {
     return true;

@@ -175,12 +175,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => {
+  const login = async (emailOrPayload: any, password?: string, roleOrAuthMethod?: string, payload?: any) => {
     setIsLoading(true);
     try {
+      const explicitRole = typeof emailOrPayload === 'object'
+        ? (emailOrPayload.role || emailOrPayload.authMethod)
+        : (roleOrAuthMethod || payload?.role);
+
       const loginData = typeof emailOrPayload === 'object'
-        ? emailOrPayload
-        : { email: emailOrPayload, password, authMethod, ...payload };
+        ? { role: explicitRole, ...emailOrPayload }
+        : { email: emailOrPayload, password, role: explicitRole, authMethod: explicitRole, ...payload };
 
       const res: any = await authApi.login(loginData);
       if (res && res.success) {

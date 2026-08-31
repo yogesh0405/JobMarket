@@ -4,10 +4,11 @@ import { getAccessToken } from '../utils/secureStorage';
 
 export const authApi = {
   login: async (credentials: any): Promise<ApiResponse> => {
-    const role = credentials?.role || 'candidate';
+    const role = credentials?.role || credentials?.authMethod;
+    const bodyPayload = role ? { ...credentials, role } : { ...credentials };
     return apiFetch('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ role, ...credentials }),
+      body: JSON.stringify(bodyPayload),
     });
   },
 
