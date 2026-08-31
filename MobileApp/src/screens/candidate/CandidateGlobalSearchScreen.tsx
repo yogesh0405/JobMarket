@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
-  Platform,
   Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,12 +19,11 @@ import {
   TrendingUp,
   Briefcase,
   MapPin,
-  Award,
+  Building2,
   ChevronRight,
   ArrowUpRight,
-  Flame,
 } from 'lucide-react-native';
-import { COLORS, RADIUS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
 import { apiFetch } from '../../api/client';
 import { Job } from '../../types';
 
@@ -46,16 +44,9 @@ const TRENDING_LOCATIONS = [
   'Waluj MIDC, Chhatrapati Sambhajinagar',
   'Chakan MIDC, Pune',
   'Bhosari MIDC, Pune',
-  'Shendra MIDC Industrial Park',
+  'Shendra MIDC Industrial Area',
   'Taloja MIDC, Navi Mumbai',
   'Ranjangaon MIDC',
-];
-
-const TRENDING_SECTORS = [
-  'Automotive & Heavy Engineering',
-  'Pharma & Chemical Plants',
-  'Electronics & PCB Assembly',
-  'Metals & Fabrication',
 ];
 
 interface Props {
@@ -132,7 +123,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
         setAllJobs(list);
       }
     } catch (e) {
-      console.warn('Failed to fetch jobs for search autocomplete:', e);
+      console.warn('Failed to fetch jobs for autocomplete:', e);
     }
   };
 
@@ -162,7 +153,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
   };
 
-  // Autocomplete suggestions matching live query
+  // Autocomplete matching live query
   const autocompleteSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
@@ -178,7 +169,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
         const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
         return titleMatch || compMatch || indMatch || tradeMatch || skillsMatch;
       })
-      .slice(0, 5);
+      .slice(0, 6);
 
     const matchedTrades = TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 4);
     const matchedLocations = TRENDING_LOCATIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 4);
@@ -196,22 +187,23 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
-      {/* Top Search Navigation Bar */}
+      {/* Clean LinkedIn Search Header */}
       <View style={styles.topHeader}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.7}
         >
-          <ArrowLeft size={22} color="#0F172A" />
+          <ArrowLeft size={20} color="#0F172A" />
         </TouchableOpacity>
 
         <View style={styles.searchInputWrapper}>
-          <Search size={18} color="#64748B" style={styles.searchIcon} />
+          <Search size={16} color="#64748B" style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
             style={styles.searchInput}
-            placeholder="Search jobs, skills, companies, MIDCs..."
+            placeholder="Search jobs, companies, skills, locations..."
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -235,6 +227,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
           <TouchableOpacity
             style={styles.searchActionBtn}
             onPress={() => handleExecuteSearch(searchQuery)}
+            activeOpacity={0.7}
           >
             <Text style={styles.searchActionBtnText}>Search</Text>
           </TouchableOpacity>
@@ -247,67 +240,69 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* VIEW A: LIVE AUTOCOMPLETE RESULTS WHEN TYPING */}
+        {/* VIEW A: LIVE AUTOCOMPLETE PREDICTIVE RESULTS (WHEN TYPING) */}
         {hasLiveQuery ? (
-          <View style={styles.liveResultsContainer}>
-            {/* Primary Query Action */}
+          <View style={styles.listContainer}>
+            {/* Primary Search Row */}
             <TouchableOpacity
-              style={styles.primaryQueryRow}
+              style={styles.searchRow}
               onPress={() => handleExecuteSearch(searchQuery)}
-              activeOpacity={0.7}
+              activeOpacity={0.65}
             >
-              <Search size={18} color={COLORS.primary} />
-              <Text style={styles.primaryQueryText} numberOfLines={1}>
-                Search for "<Text style={{ fontWeight: '800', color: COLORS.primary }}>{searchQuery.trim()}</Text>"
-              </Text>
-              <ArrowUpRight size={16} color={COLORS.primary} />
+              <Search size={17} color={COLORS.primary} style={styles.rowIcon} />
+              <View style={styles.rowContent}>
+                <Text style={styles.primaryQueryText} numberOfLines={1}>
+                  Search for "<Text style={{ fontWeight: '700', color: COLORS.primary }}>{searchQuery.trim()}</Text>"
+                </Text>
+              </View>
+              <ArrowUpRight size={15} color="#94A3B8" />
             </TouchableOpacity>
 
             {/* Matching Live Jobs */}
             {autocompleteSuggestions.jobs.length > 0 ? (
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionHeaderTitle}>MATCHING JOBS</Text>
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING JOBS</Text>
+                </View>
                 {autocompleteSuggestions.jobs.map((job) => (
                   <TouchableOpacity
                     key={job.id}
-                    style={styles.autocompleteItemRow}
+                    style={styles.searchRow}
                     onPress={() => handleJobClick(job)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.65}
                   >
-                    <View style={styles.iconCircleJob}>
-                      <Briefcase size={16} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                      <Text style={styles.jobTitleText} numberOfLines={1}>
+                    <Briefcase size={17} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText} numberOfLines={1}>
                         {job.title}
                       </Text>
-                      <Text style={styles.jobSubText} numberOfLines={1}>
+                      <Text style={styles.rowSubText} numberOfLines={1}>
                         {job.company} • {job.location}
                       </Text>
                     </View>
-                    <ChevronRight size={16} color="#94A3B8" />
+                    <ChevronRight size={15} color="#CBD5E1" />
                   </TouchableOpacity>
                 ))}
               </View>
             ) : null}
 
-            {/* Matching Trades / Roles */}
+            {/* Matching Trades */}
             {autocompleteSuggestions.trades.length > 0 ? (
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionHeaderTitle}>POPULAR TRADES & SKILLS</Text>
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>POPULAR ROLES & TRADES</Text>
+                </View>
                 {autocompleteSuggestions.trades.map((trade) => (
                   <TouchableOpacity
                     key={trade}
-                    style={styles.autocompleteItemRow}
+                    style={styles.searchRow}
                     onPress={() => handleExecuteSearch(trade)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.65}
                   >
-                    <View style={styles.iconCircleTrade}>
-                      <Award size={16} color="#059669" />
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                      <Text style={styles.genericTitleText}>{trade}</Text>
-                      <Text style={styles.genericSubText}>Industrial Trade</Text>
+                    <Building2 size={17} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{trade}</Text>
+                      <Text style={styles.rowSubText}>Job Role / Trade</Text>
                     </View>
                     <ArrowUpRight size={15} color="#94A3B8" />
                   </TouchableOpacity>
@@ -317,21 +312,21 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
 
             {/* Matching Locations */}
             {autocompleteSuggestions.locations.length > 0 ? (
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionHeaderTitle}>INDUSTRIAL HUBS & LOCATIONS</Text>
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>LOCATIONS & MIDC ZONES</Text>
+                </View>
                 {autocompleteSuggestions.locations.map((loc) => (
                   <TouchableOpacity
                     key={loc}
-                    style={styles.autocompleteItemRow}
+                    style={styles.searchRow}
                     onPress={() => handleLocationSearch(loc)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.65}
                   >
-                    <View style={styles.iconCircleLoc}>
-                      <MapPin size={16} color="#D97706" />
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                      <Text style={styles.genericTitleText}>{loc}</Text>
-                      <Text style={styles.genericSubText}>MIDC Industrial Zone</Text>
+                    <MapPin size={17} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{loc}</Text>
+                      <Text style={styles.rowSubText}>Industrial Location</Text>
                     </View>
                     <ArrowUpRight size={15} color="#94A3B8" />
                   </TouchableOpacity>
@@ -340,111 +335,84 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
             ) : null}
           </View>
         ) : (
-          /* VIEW B: RECENT SEARCHES & TRENDING HUBS (WHEN INPUT IS EMPTY) */
-          <View style={styles.defaultContentContainer}>
+          /* VIEW B: RECENT SEARCHES & TRENDING SEARCHES (WHEN INPUT IS EMPTY) */
+          <View style={styles.listContainer}>
             {/* 1. RECENT SEARCHES */}
             {recentSearches.length > 0 ? (
-              <View style={styles.sectionBlock}>
+              <View style={styles.sectionWrap}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>RECENT SEARCHES</Text>
                   <TouchableOpacity onPress={clearAllRecentSearches} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.clearAllText}>Clear all</Text>
+                    <Text style={styles.clearAllText}>Clear</Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.recentListContainer}>
-                  {recentSearches.map((term, index) => (
-                    <View key={`${term}-${index}`} style={styles.recentItemRow}>
-                      <TouchableOpacity
-                        style={styles.recentItemClickArea}
-                        onPress={() => handleExecuteSearch(term)}
-                        activeOpacity={0.7}
-                      >
-                        <Clock size={16} color="#64748B" />
-                        <Text style={styles.recentItemText} numberOfLines={1}>
-                          {term}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.recentItemDeleteBtn}
-                        onPress={() => removeSingleRecentSearch(term)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <X size={15} color="#94A3B8" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
+                {recentSearches.map((term, index) => (
+                  <View key={`${term}-${index}`} style={styles.searchRow}>
+                    <TouchableOpacity
+                      style={styles.recentClickArea}
+                      onPress={() => handleExecuteSearch(term)}
+                      activeOpacity={0.65}
+                    >
+                      <Clock size={16} color="#64748B" style={styles.rowIcon} />
+                      <Text style={styles.rowTitleText} numberOfLines={1}>
+                        {term}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => removeSingleRecentSearch(term)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <X size={15} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
             ) : null}
 
-            {/* 2. TRENDING INDUSTRIAL ROLES */}
-            <View style={styles.sectionBlock}>
+            {/* 2. TRENDING INDUSTRIAL ROLES (Row List - No Chips) */}
+            <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Flame size={16} color="#DC2626" />
-                  <Text style={styles.sectionHeaderTitle}>TRENDING SEARCHES</Text>
-                </View>
+                <Text style={styles.sectionHeaderTitle}>TRY SEARCHING FOR</Text>
               </View>
 
-              <View style={styles.chipsWrap}>
-                {TRENDING_ROLES.map((role) => (
-                  <TouchableOpacity
-                    key={role}
-                    style={styles.trendingChip}
-                    onPress={() => handleExecuteSearch(role)}
-                    activeOpacity={0.75}
-                  >
-                    <TrendingUp size={13} color={COLORS.primary} />
-                    <Text style={styles.trendingChipText}>{role}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {TRENDING_ROLES.map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={styles.searchRow}
+                  onPress={() => handleExecuteSearch(role)}
+                  activeOpacity={0.65}
+                >
+                  <TrendingUp size={16} color="#64748B" style={styles.rowIcon} />
+                  <View style={styles.rowContent}>
+                    <Text style={styles.rowTitleText}>{role}</Text>
+                  </View>
+                  <ArrowUpRight size={15} color="#94A3B8" />
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {/* 3. POPULAR INDUSTRIAL HUBS (MIDC) */}
-            <View style={styles.sectionBlock}>
+            {/* 3. POPULAR INDUSTRIAL HUBS (Row List - No Chips) */}
+            <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <MapPin size={16} color="#D97706" />
-                  <Text style={styles.sectionHeaderTitle}>EXPLORE BY INDUSTRIAL CLUSTER</Text>
-                </View>
+                <Text style={styles.sectionHeaderTitle}>POPULAR INDUSTRIAL HUBS</Text>
               </View>
 
-              <View style={styles.chipsWrap}>
-                {TRENDING_LOCATIONS.map((loc) => (
-                  <TouchableOpacity
-                    key={loc}
-                    style={styles.locationChip}
-                    onPress={() => handleLocationSearch(loc)}
-                    activeOpacity={0.75}
-                  >
-                    <MapPin size={13} color="#D97706" />
-                    <Text style={styles.locationChipText}>{loc}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* 4. KEY MANUFACTURING SECTORS */}
-            <View style={styles.sectionBlock}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderTitle}>BROWSE BY SECTOR</Text>
-              </View>
-
-              <View style={styles.chipsWrap}>
-                {TRENDING_SECTORS.map((sector) => (
-                  <TouchableOpacity
-                    key={sector}
-                    style={styles.sectorChip}
-                    onPress={() => handleExecuteSearch(sector)}
-                    activeOpacity={0.75}
-                  >
-                    <Briefcase size={13} color="#475569" />
-                    <Text style={styles.sectorChipText}>{sector}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {TRENDING_LOCATIONS.map((loc) => (
+                <TouchableOpacity
+                  key={loc}
+                  style={styles.searchRow}
+                  onPress={() => handleLocationSearch(loc)}
+                  activeOpacity={0.65}
+                >
+                  <MapPin size={16} color="#64748B" style={styles.rowIcon} />
+                  <View style={styles.rowContent}>
+                    <Text style={styles.rowTitleText}>{loc}</Text>
+                  </View>
+                  <ArrowUpRight size={15} color="#94A3B8" />
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         )}
@@ -462,32 +430,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
     backgroundColor: '#FFFFFF',
-    gap: 10,
+    gap: 12,
   },
   backButton: {
     padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchInputWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 42,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    height: 38,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 6,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#0F172A',
     fontWeight: '500',
     height: '100%',
@@ -497,14 +467,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   searchActionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
   searchActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    color: COLORS.primary,
+    fontSize: 13.5,
     fontWeight: '700',
   },
   scrollView: {
@@ -512,191 +480,69 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 40,
   },
-  liveResultsContainer: {
-    gap: 16,
+  listContainer: {
+    backgroundColor: '#FFFFFF',
   },
-  primaryQueryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  primaryQueryText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#1E293B',
-    fontWeight: '600',
-  },
-  sectionBlock: {
-    marginBottom: 20,
+  sectionWrap: {
+    marginTop: 12,
+    borderBottomWidth: 6,
+    borderBottomColor: '#F8FAFC',
+    paddingBottom: 4,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   sectionHeaderTitle: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
   },
   clearAllText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#DC2626',
+    fontWeight: '600',
+    color: '#64748B',
   },
-  recentListContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  recentItemRow: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    height: 46,
+    borderBottomColor: '#F8FAFC',
   },
-  recentItemClickArea: {
+  rowIcon: {
+    marginRight: 14,
+  },
+  rowContent: {
+    flex: 1,
+  },
+  recentClickArea: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    height: '100%',
   },
-  recentItemText: {
+  rowTitleText: {
     fontSize: 13.5,
-    fontWeight: '600',
-    color: '#1E293B',
-    flex: 1,
-  },
-  recentItemDeleteBtn: {
-    padding: 6,
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  trendingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    borderRadius: 6,
-  },
-  trendingChipText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#166534',
-  },
-  locationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 6,
-  },
-  locationChipText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#92400E',
-  },
-  sectorChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-  },
-  sectorChipText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  defaultContentContainer: {
-    gap: 4,
-  },
-  autocompleteItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 12,
-  },
-  iconCircleJob: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCircleTrade: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCircleLoc: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    backgroundColor: '#FFFBEB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemTextContainer: {
-    flex: 1,
-  },
-  jobTitleText: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#0F172A',
   },
-  jobSubText: {
+  rowSubText: {
     fontSize: 11.5,
     color: '#64748B',
     marginTop: 2,
   },
-  genericTitleText: {
+  primaryQueryText: {
     fontSize: 13.5,
-    fontWeight: '600',
     color: '#0F172A',
   },
-  genericSubText: {
-    fontSize: 11.5,
-    color: '#64748B',
-    marginTop: 2,
+  deleteBtn: {
+    padding: 4,
   },
 });
