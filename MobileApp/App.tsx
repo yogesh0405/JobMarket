@@ -19,6 +19,8 @@ import {
 } from '@expo-google-fonts/inter';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { BackendStatusProvider } from './src/context/BackendStatusContext';
+import { BackendStatusBanner } from './src/components/common/BackendStatusBanner';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
 import { MaintenanceModal } from './src/components/common/MaintenanceModal';
@@ -140,6 +142,7 @@ function MainAppContent() {
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>
+      <BackendStatusBanner />
       {showSplash && (
         <SplashScreen
           onFinish={() => setShowSplash(false)}
@@ -153,11 +156,13 @@ function MainAppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <MainAppContent />
-        </AuthProvider>
-      </ToastProvider>
+      <BackendStatusProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <MainAppContent />
+          </AuthProvider>
+        </ToastProvider>
+      </BackendStatusProvider>
     </SafeAreaProvider>
   );
 }

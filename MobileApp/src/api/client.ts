@@ -7,6 +7,11 @@ import {
   saveTokens,
   clearAuthSession,
 } from '../utils/secureStorage';
+import {
+  reportBackendWarmingUp,
+  reportBackendHealthy,
+  reportBackendError,
+} from '../context/BackendStatusContext';
 
 const getDevApiBaseUrl = (): string => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -72,14 +77,33 @@ async function fetchWithTimeout(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
+  const isColdStartPotential = url.includes('onrender.com') || url.includes('railway');
+  const warmUpTimer = setTimeout(() => {
+    reportBackendWarmingUp(true);
+  }, isColdStartPotential ? 2200 : 3500);
+
   try {
-    return await fetch(url, options);
+    const res = await fetch(url, options);
+    clearTimeout(warmUpTimer);
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      reportBackendWarmingUp(true);
+    } else if (res.ok) {
+      reportBackendHealthy();
+    }
+    return res;
   } catch (netErr: any) {
-    // Fast retry after 800ms for transient network restarts or Render wakeups
+    clearTimeout(warmUpTimer);
+    reportBackendWarmingUp(true);
+    // Fast retry after 1000ms for transient network restarts or Render wakeups
     try {
-      await new Promise((res) => setTimeout(res, 800));
-      return await fetch(url, options);
+      await new Promise((res) => setTimeout(res, 1000));
+      const retryRes = await fetch(url, options);
+      if (retryRes.ok) {
+        reportBackendHealthy();
+      }
+      return retryRes;
     } catch (retryErr: any) {
+      reportBackendError('Unable to connect to server. Render backend may be waking up.');
       throw new Error(retryErr?.message || 'Network error: Unable to connect to backend server.');
     }
   }
