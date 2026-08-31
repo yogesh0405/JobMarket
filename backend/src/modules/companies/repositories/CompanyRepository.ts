@@ -1,6 +1,7 @@
 import { pool } from '../../../config/database/pool';
 import { CSN_COMPANIES } from '../../../database/seeders/companiesData';
 import { CacheService } from '../../../utils/redisCache';
+import { S3Util } from '../../../utils/s3';
 
 export interface Company {
   id: string;
@@ -460,6 +461,17 @@ export class CompanyRepository {
     const company = await this.getCompanyById(identifier);
     if (!company) {
       throw new Error('Company profile not found.');
+    }
+
+    // If logo is a base64 string, upload to S3 first
+    if (updateData.logo && typeof updateData.logo === 'string' && updateData.logo.startsWith('data:image/')) {
+      try {
+        const customKey = `company_logo_${employerId}_${Date.now()}`;
+        const s3LogoUrl = await S3Util.uploadImage(updateData.logo, 'logos', customKey);
+        updateData.logo = s3LogoUrl;
+      } catch (s3Err) {
+        console.error('S3 Company logo upload error in CompanyRepository:', s3Err);
+      }
     }
 
     // Verify & update ownership

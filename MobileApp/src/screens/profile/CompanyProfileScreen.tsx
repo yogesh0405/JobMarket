@@ -42,7 +42,7 @@ interface Props {
 
 export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const { user, refreshUser } = useAuth();
+  const { user, updateUserProfile, refreshUser } = useAuth();
   const routeCompany = route?.params?.company;
   const routeCompanyId = route?.params?.companyId || route?.params?.id || routeCompany?.id;
 
@@ -295,11 +295,27 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     });
   };
 
-  const handleSaveSuccess = (updatedCompany: any) => {
+  const handleSaveSuccess = async (updatedCompany: any) => {
     if (updatedCompany) {
       setCompany((prev: any) => ({ ...prev, ...updatedCompany }));
     }
-    refreshUser();
+    const newLogo =
+      updatedCompany?.logo ||
+      updatedCompany?.logoUrl ||
+      updatedCompany?.profile_picture_url ||
+      updatedCompany?.profilePictureUrl;
+    if (newLogo) {
+      await updateUserProfile({
+        companyLogo: newLogo,
+        company_logo: newLogo,
+        profilePictureUrl: newLogo,
+        profile_picture_url: newLogo,
+        avatar_url: newLogo,
+        avatarUrl: newLogo,
+        avatar: newLogo,
+      } as any);
+    }
+    await refreshUser().catch(() => {});
     loadCompanyDetails();
     Alert.alert('Profile Saved', 'Company profile updated successfully!');
   };

@@ -30,7 +30,7 @@ import { CandidateEditModals } from './components/CandidateEditModals';
 
 export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, refreshUser } = useAuth();
   const { showToast } = useToast();
 
   const routeStep = route?.params?.step || route?.params?.initialStep;
@@ -53,7 +53,29 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [requiresBus, setRequiresBus] = useState(!!(user?.requiresBus || user?.requires_bus));
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
 
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState((user as any)?.avatar || (user as any)?.profilePhotoUrl || '');
+  const initialUserPhoto =
+    user?.profile_picture_url ||
+    user?.profilePictureUrl ||
+    (user as any)?.avatar_url ||
+    (user as any)?.avatarUrl ||
+    (user as any)?.avatar ||
+    (user as any)?.profilePhotoUrl ||
+    '';
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(initialUserPhoto);
+
+  useEffect(() => {
+    const currentPhoto =
+      user?.profile_picture_url ||
+      user?.profilePictureUrl ||
+      (user as any)?.avatar_url ||
+      (user as any)?.avatarUrl ||
+      (user as any)?.avatar ||
+      (user as any)?.profilePhotoUrl ||
+      '';
+    if (currentPhoto) {
+      setProfilePhotoUrl(currentPhoto);
+    }
+  }, [user?.profile_picture_url, user?.profilePictureUrl, (user as any)?.avatar_url]);
 
   const extractResumeInfo = (userData: any) => {
     if (!userData) return { url: '', name: 'Candidate_Resume.pdf' };
@@ -197,7 +219,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
 
         const base64Data = `data:image/webp;base64,${asset.base64}`;
         const uploadRes = await candidateApi.uploadProfilePicture(base64Data);
-        const finalUrl = uploadRes?.data?.url || base64Data;
+        const finalUrl = uploadRes?.data?.url || (uploadRes as any)?.url || base64Data;
 
         setProfilePhotoUrl(finalUrl);
         await updateUserProfile({
@@ -207,6 +229,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
           avatarUrl: finalUrl,
           avatar: finalUrl,
         } as any);
+        await refreshUser().catch(() => {});
         showToast('Profile photo updated successfully!', 'success');
       }
     } catch (err: any) {
