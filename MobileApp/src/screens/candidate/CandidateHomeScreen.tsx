@@ -68,6 +68,8 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   // Top Search Bar & Live Autocomplete Suggestions State
   const SEARCH_PLACEHOLDERS = ['Search Jobs', 'Search Trades', 'Search Skills', 'Search Locations'];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -75,6 +77,62 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const matchedSuggestions = useMemo(() => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    if (!trimmed) {
+      return { jobs: [], trades: [], locations: [] };
+    }
+
+    const matchedJobs = jobs
+      .filter((j) => {
+        const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
+        const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
+        const industryMatch = (j.industry || '').toLowerCase().includes(trimmed);
+        const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
+        const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(trimmed));
+        return titleMatch || companyMatch || industryMatch || tradeMatch || skillsMatch;
+      })
+      .slice(0, 4);
+
+    const popularTrades = [
+      'VMC Operator',
+      'CNC Machinist',
+      'Fitter',
+      'Electrician',
+      'Quality Inspector',
+      'Welder',
+      'Tool & Die Maker',
+      'Assembly Operator',
+      'Turner',
+      'Maintenance Technician',
+    ];
+    const matchedTrades = popularTrades
+      .filter((t) => t.toLowerCase().includes(trimmed))
+      .slice(0, 3);
+
+    const defaultMIDCs = [
+      'Waluj MIDC, Chhatrapati Sambhajinagar',
+      'Chakan MIDC, Pune',
+      'Bhosari MIDC, Pune',
+      'Shendra MIDC',
+      'Chikalthana MIDC',
+      'Taloja MIDC, Navi Mumbai',
+      'Thane Belapur MIDC',
+      'Ranjangaon MIDC',
+    ];
+    const jobLocations = jobs.map((j) => j.location).filter(Boolean);
+    const allLocations = Array.from(new Set([...defaultMIDCs, ...jobLocations]));
+    const matchedLocations = allLocations
+      .filter((l) => l.toLowerCase().includes(trimmed))
+      .slice(0, 3);
+
+    return {
+      jobs: matchedJobs,
+      trades: matchedTrades,
+      locations: matchedLocations,
+    };
+  }, [searchQuery, jobs]);
 
   const DEFAULT_HOME_FILTERS: FilterOptions = useMemo(
     () => ({
@@ -94,58 +152,6 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const [homeFilterDrawerOpen, setHomeFilterDrawerOpen] = useState(false);
   const [homeFilters, setHomeFilters] = useState<FilterOptions>(DEFAULT_HOME_FILTERS);
-
-  const [topSearch, setTopSearch] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const topSearchInputRef = useRef<TextInput>(null);
-
-  const matchedSuggestions = useMemo(() => {
-    const trimmed = topSearch.trim().toLowerCase();
-
-    const matchedJobs = jobs.filter((j) => {
-      if (!trimmed) return false;
-      const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
-      const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
-      const industryMatch = (j.industry || '').toLowerCase().includes(trimmed);
-      const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
-      const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(trimmed));
-      return titleMatch || companyMatch || industryMatch || tradeMatch || skillsMatch;
-    }).slice(0, 4);
-
-    const popularTrades = [
-      'VMC Operator',
-      'CNC Machinist',
-      'Fitter',
-      'Electrician',
-      'Quality Inspector',
-      'Welder',
-      'Tool & Die Maker',
-      'Assembly Operator',
-      'Turner',
-      'Maintenance Technician',
-    ];
-    const matchedTrades = popularTrades.filter((t) => !trimmed || t.toLowerCase().includes(trimmed)).slice(0, trimmed ? 3 : 5);
-
-    const defaultMIDCs = [
-      'Waluj MIDC, Chhatrapati Sambhajinagar',
-      'Chakan MIDC, Pune',
-      'Bhosari MIDC, Pune',
-      'Taloja MIDC, Navi Mumbai',
-      'Thane Belapur MIDC',
-      'Ranjangaon MIDC',
-      'Pimpri Industrial Zone',
-    ];
-    const jobLocations = jobs.map((j) => j.location).filter(Boolean);
-    const allLocations = Array.from(new Set([...defaultMIDCs, ...jobLocations]));
-    const matchedLocations = allLocations.filter((l) => trimmed && l.toLowerCase().includes(trimmed)).slice(0, 3);
-
-    return {
-      jobs: matchedJobs,
-      trades: matchedTrades,
-      locations: matchedLocations,
-    };
-  }, [topSearch, jobs]);
 
   // Hero Search Card State
   const [selectedIndustry, setSelectedIndustry] = useState('Select Industry');
@@ -270,7 +276,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('CandidateJobsTab', {
       screen: 'CandidateJobSearch',
       params: {
-        keyword: topSearch.trim() || undefined,
+        keyword: searchQuery.trim() || undefined,
         location: locationQuery.trim() || undefined,
         industry: selectedIndustry !== 'Select Industry' ? selectedIndustry : undefined,
         education: selectedEducation !== 'Select Education' ? selectedEducation : undefined,
@@ -343,13 +349,124 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <Header
         searchPlaceholder={SEARCH_PLACEHOLDERS[placeholderIndex] || 'Search Jobs'}
-        onSearchPress={() => {
-          navigation.navigate('CandidateJobsTab', {
-            screen: 'CandidateJobSearch',
-          });
+        searchValue={searchQuery}
+        onSearchChange={(txt) => {
+          setSearchQuery(txt);
+          setShowSuggestions(txt.trim().length > 0);
         }}
         showBack={false}
       />
+
+      {/* Search Autocomplete Suggestions Dropdown Overlay */}
+      {showSuggestions && searchQuery.trim().length > 0 ? (
+        <View style={styles.suggestionsContainer}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            style={{ maxHeight: 320 }}
+            contentContainerStyle={{ paddingBottom: 8 }}
+          >
+            <TouchableOpacity
+              style={styles.suggestionRowHeader}
+              onPress={() => {
+                setShowSuggestions(false);
+                navigation.navigate('CandidateJobsTab', {
+                  screen: 'CandidateJobSearch',
+                  params: { keyword: searchQuery.trim() },
+                });
+              }}
+            >
+              <Search size={15} color={COLORS.primary} />
+              <Text style={styles.suggestionHeaderText} numberOfLines={1}>
+                Search all jobs for "<Text style={{ fontWeight: '800', color: COLORS.primary }}>{searchQuery.trim()}</Text>"
+              </Text>
+              <ArrowRight size={14} color={COLORS.primary} />
+            </TouchableOpacity>
+
+            {matchedSuggestions.jobs.length > 0 ? (
+              <View style={styles.suggestionGroup}>
+                <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
+                {matchedSuggestions.jobs.map((j) => (
+                  <TouchableOpacity
+                    key={j.id}
+                    style={styles.suggestionItemRow}
+                    onPress={() => {
+                      setShowSuggestions(false);
+                      navigation.navigate('CandidateJobDetail', { jobId: j.id, job: j });
+                    }}
+                  >
+                    <Briefcase size={16} color={COLORS.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
+                      <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
+                    </View>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            {matchedSuggestions.trades.length > 0 ? (
+              <View style={styles.suggestionGroup}>
+                <Text style={styles.suggestionGroupLabel}>POPULAR TRADES & SKILLS</Text>
+                {matchedSuggestions.trades.map((trade) => (
+                  <TouchableOpacity
+                    key={trade}
+                    style={styles.suggestionItemRow}
+                    onPress={() => {
+                      setShowSuggestions(false);
+                      navigation.navigate('CandidateJobsTab', {
+                        screen: 'CandidateJobSearch',
+                        params: { keyword: trade },
+                      });
+                    }}
+                  >
+                    <Award size={16} color="#059669" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.suggestionItemTitle}>{trade}</Text>
+                      <Text style={styles.suggestionItemSub}>ITI / Industrial Trade</Text>
+                    </View>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            {matchedSuggestions.locations.length > 0 ? (
+              <View style={styles.suggestionGroup}>
+                <Text style={styles.suggestionGroupLabel}>INDUSTRIAL ZONES & LOCATIONS</Text>
+                {matchedSuggestions.locations.map((loc) => (
+                  <TouchableOpacity
+                    key={loc}
+                    style={styles.suggestionItemRow}
+                    onPress={() => {
+                      setShowSuggestions(false);
+                      navigation.navigate('CandidateJobsTab', {
+                        screen: 'CandidateJobSearch',
+                        params: { location: loc },
+                      });
+                    }}
+                  >
+                    <MapPin size={16} color="#D97706" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.suggestionItemTitle}>{loc}</Text>
+                      <Text style={styles.suggestionItemSub}>Industrial Cluster</Text>
+                    </View>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 12, marginTop: 4 }}
+              onPress={() => setShowSuggestions(false)}
+            >
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#64748B' }}>Close Suggestions</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -498,17 +615,21 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     position: 'absolute',
-    top: 48,
-    left: 0,
-    right: 0,
+    top: 56,
+    left: 16,
+    right: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingVertical: 8,
     paddingHorizontal: 10,
-    elevation: 4,
-    zIndex: 999,
+    elevation: 10,
+    zIndex: 99999,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
   },
   suggestionRowHeader: {
     flexDirection: 'row',
