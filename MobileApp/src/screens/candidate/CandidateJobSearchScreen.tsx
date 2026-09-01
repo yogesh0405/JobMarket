@@ -12,6 +12,9 @@ import {
 import {
   Briefcase,
   SlidersHorizontal,
+  SearchX,
+  TrendingUp,
+  RotateCcw,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -26,7 +29,164 @@ import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchF
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
 
-const FALLBACK_JOBS: Job[] = [];
+const FALLBACK_JOBS: Job[] = [
+  {
+    id: 'job-1',
+    employer_id: 'emp-1',
+    title: 'Senior CNC & VMC Machine Operator',
+    company: 'Varroc Engineering Ltd',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    industry: 'Automotive & Auto Components',
+    trade: 'CNC Operator',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 2,
+    max_experience: 5,
+    salary_min: 240000,
+    salary_max: 360000,
+    openings: 8,
+    description: 'Experienced CNC/VMC operator for precision automotive parts machining.',
+    responsibilities: ['Operate CNC machines', 'Quality inspection', 'Offset settings'],
+    requirements: ['2+ years experience', 'ITI / Diploma Mechanical'],
+    skills: ['CNC', 'VMC', 'Fanuc', 'Vernier Calliper'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: false,
+    overtime: true,
+  },
+  {
+    id: 'job-2',
+    employer_id: 'emp-2',
+    title: 'Quality Control Inspector (QC / QA)',
+    company: 'Bajaj Auto Limited',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    industry: 'Automotive & Auto Components',
+    trade: 'Quality Inspector',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 1,
+    max_experience: 4,
+    salary_min: 280000,
+    salary_max: 420000,
+    openings: 5,
+    description: 'Quality inspection on 2-wheeler production and assembly line.',
+    responsibilities: ['Line inspection', 'Sampling inspection', 'CMM checks'],
+    requirements: ['DME / ITI Quality', 'Knowledge of GD&T'],
+    skills: ['Quality Control', 'Micrometer', 'Height Gauge', 'CMM'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: true,
+    overtime: true,
+  },
+  {
+    id: 'job-3',
+    employer_id: 'emp-3',
+    title: 'ITI Fitter & Mechanical Assembly Technician',
+    company: 'Endurance Technologies',
+    location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
+    industry: 'Industrial Manufacturing & Assembly',
+    trade: 'Fitter',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 1,
+    max_experience: 3,
+    salary_min: 200000,
+    salary_max: 300000,
+    openings: 12,
+    description: 'Assembly and maintenance fitting of die casting components.',
+    responsibilities: ['Mechanical assembly', 'Pneumatics fitting', 'Tool maintenance'],
+    requirements: ['ITI Fitter', '1+ year experience'],
+    skills: ['Fitter', 'Bench Work', 'Assembly', 'Blueprint Reading'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: false,
+    overtime: true,
+  },
+  {
+    id: 'job-4',
+    employer_id: 'emp-4',
+    title: 'MIG / TIG Welder & Fabricator',
+    company: 'Tata Motors Manufacturing',
+    location: 'Pimpri-Chinchwad, Pune',
+    industry: 'Automotive OEM',
+    trade: 'Welder',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 1,
+    max_experience: 4,
+    salary_min: 220000,
+    salary_max: 340000,
+    openings: 15,
+    description: 'Chassis and structural welding for commercial vehicle assembly.',
+    responsibilities: ['MIG welding', 'Spot welding', 'Joint inspection'],
+    requirements: ['ITI Welder certificate', 'Spot / MIG experience'],
+    skills: ['MIG Welding', 'TIG Welding', 'Fabrication', 'Safety'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: true,
+    overtime: true,
+  },
+  {
+    id: 'job-5',
+    employer_id: 'emp-5',
+    title: 'Industrial Electrician & Maintenance Technician',
+    company: 'Siemens India Industrial',
+    location: 'Chakan MIDC, Pune',
+    industry: 'Electronics & Electricals',
+    trade: 'Electrician',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 2,
+    max_experience: 6,
+    salary_min: 300000,
+    salary_max: 480000,
+    openings: 6,
+    description: 'Panel wiring, PLC diagnostics, and electrical breakdown maintenance.',
+    responsibilities: ['HT/LT maintenance', 'Panel wiring', 'Motor testing'],
+    requirements: ['ITI Electrician / Wireman / Diploma EE', 'PWD Wireman licence'],
+    skills: ['Electrician', 'PLC', 'Panel Wiring', 'Switchgear'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: false,
+    overtime: true,
+  },
+  {
+    id: 'job-6',
+    employer_id: 'emp-6',
+    title: 'CNC Turner & Precision Machinist',
+    company: 'Bharat Forge Limited',
+    location: 'Mundhwa Pune',
+    industry: 'Industrial Manufacturing & Assembly',
+    trade: 'Machinist',
+    job_type: 'Full-time',
+    work_mode: 'On-site',
+    min_experience: 2,
+    max_experience: 5,
+    salary_min: 260000,
+    salary_max: 380000,
+    openings: 10,
+    description: 'Heavy forging and precision machining of crankshafts and axles.',
+    responsibilities: ['Turning operations', 'Tool setting', 'Surface finishing'],
+    requirements: ['ITI Turner / Machinist', '2+ years heavy engineering'],
+    skills: ['Machinist', 'Lathe', 'CNC Turning', 'Tooling'],
+    status: 'APPROVED',
+    posted_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+    bus_facility: true,
+    canteen: true,
+    accommodation: false,
+    overtime: true,
+  },
+];
 
 interface Props {
   navigation: any;
@@ -35,9 +195,9 @@ interface Props {
 
 export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showToast } = useToast();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(FALLBACK_JOBS);
   const [savedJobIds, setSavedJobIds] = useState<string[]>(savedJobsStore.getSavedIds());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -65,6 +225,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     industry: 'All Industries',
+    education: 'All Education Levels',
     jobType: 'All Types',
     workMode: 'All Modes',
     minExperience: 'All Experience',
@@ -91,41 +252,86 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   useEffect(() => {
     if (!route?.params) return;
-    const { keyword, location, industry, education, homeFilters, rawFilterTitle } = route.params;
+    const { keyword, location, industry, education, homeFilters, rawFilterTitle, category } = route.params;
+
+    if (route.params.appliedFilters) {
+      setActiveFilters(route.params.appliedFilters);
+      return;
+    }
 
     if (homeFilters) {
       setActiveFilters(homeFilters);
+    } else {
+      setActiveFilters({
+        industry: industry || 'All Industries',
+        jobType: 'All Types',
+        workMode: 'All Modes',
+        minExperience: 'All Experience',
+        salaryMin: 0,
+        midcZone: location || 'All MIDC Zones',
+        busFacility: false,
+        canteen: false,
+        accommodation: false,
+        overtime: false,
+        education: education || 'All Education Levels',
+      });
     }
+
+    setSelectedCategory(category || 'All Jobs');
+
     if (keyword) {
       setSearchQuery(getCleanSearchTerm(keyword));
     } else if (rawFilterTitle) {
       setSearchQuery(getCleanSearchTerm(rawFilterTitle));
-    }
-    if (location) {
-      setActiveFilters((prev) => ({ ...prev, midcZone: location }));
-    }
-    if (industry) {
-      setActiveFilters((prev) => ({ ...prev, industry }));
-    }
-    if (education && !keyword) {
-      const cleanEdu = getCleanSearchTerm(education);
-      setSearchQuery(cleanEdu);
+    } else if (education) {
+      setSearchQuery(getCleanSearchTerm(education));
     }
   }, [route?.params]);
 
   const matchedSuggestions = useMemo(() => {
     const trimmed = searchQuery.trim().toLowerCase();
 
+    // 1. Matching Live Jobs
     const matchedJobs = jobs.filter((j) => {
       if (!trimmed) return false;
       const titleMatch = (j.title || '').toLowerCase().includes(trimmed);
-      const companyMatch = (j.company || '').toLowerCase().includes(trimmed);
+      const companyMatch = (j.company || (j as any).company_name || '').toLowerCase().includes(trimmed);
       const industryMatch = (j.industry || '').toLowerCase().includes(trimmed);
       const tradeMatch = (j.trade || '').toLowerCase().includes(trimmed);
       const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(trimmed));
       return titleMatch || companyMatch || industryMatch || tradeMatch || skillsMatch;
     }).slice(0, 4);
 
+    // 2. Matching Companies with Logos
+    const companyMap = new Map<string, { name: string; logoUrl?: string; industry?: string; count: number }>();
+    jobs.forEach((j) => {
+      const cName = j.company || (j as any).company_name || (j as any).companyName;
+      if (cName && (!trimmed || cName.toLowerCase().includes(trimmed))) {
+        const logo =
+          j.companyLogo ||
+          (j as any).company_logo ||
+          (j as any).logoUrl ||
+          (j as any).logo_url ||
+          (j as any).logo ||
+          (j as any).employer_logo ||
+          (j as any).avatar_url ||
+          (j as any).avatar;
+        const key = cName.toLowerCase().trim();
+        if (!companyMap.has(key)) {
+          companyMap.set(key, {
+            name: cName,
+            logoUrl: logo,
+            industry: j.industry || 'Manufacturing',
+            count: 1,
+          });
+        } else {
+          companyMap.get(key)!.count += 1;
+        }
+      }
+    });
+    const matchedCompanies = Array.from(companyMap.values()).slice(0, 4);
+
+    // 3. Matching Trades
     const popularTrades = [
       'VMC Operator',
       'CNC Machinist',
@@ -140,6 +346,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     ];
     const matchedTrades = popularTrades.filter((t) => !trimmed || t.toLowerCase().includes(trimmed)).slice(0, trimmed ? 3 : 5);
 
+    // 4. Matching Locations
     const defaultMIDCs = [
       'Waluj MIDC, Chhatrapati Sambhajinagar',
       'Chakan MIDC, Pune',
@@ -155,6 +362,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
     return {
       jobs: matchedJobs,
+      companies: matchedCompanies,
       trades: matchedTrades,
       locations: matchedLocations,
     };
@@ -234,10 +442,11 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   }, [jobs, showToast]);
 
   const filteredJobs = useMemo(() => {
+    const cleanQ = searchQuery.toLowerCase().trim();
     return jobs.filter((job) => {
       // 1. Text Search Query Match (Intelligent domain matching)
-      if (debouncedSearchQuery.trim()) {
-        const matchesQuery = matchJobAgainstKeyword(job, debouncedSearchQuery);
+      if (cleanQ) {
+        const matchesQuery = matchJobAgainstKeyword(job, cleanQ);
         if (!matchesQuery) return false;
       }
 
@@ -379,16 +588,16 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const activeFilterCount = useMemo(() => {
     return [
-      activeFilters.industry !== 'All Industries',
-      activeFilters.education !== 'All Education Levels',
-      activeFilters.midcZone !== 'All MIDC Zones',
-      activeFilters.jobType !== 'All Types',
-      activeFilters.workMode !== 'All Modes',
-      activeFilters.minExperience !== 'All Experience',
-      activeFilters.busFacility,
-      activeFilters.canteen,
-      activeFilters.accommodation,
-      activeFilters.overtime,
+      Boolean(activeFilters.industry && activeFilters.industry !== 'All Industries'),
+      Boolean(activeFilters.education && activeFilters.education !== 'All Education Levels'),
+      Boolean(activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones'),
+      Boolean(activeFilters.jobType && activeFilters.jobType !== 'All Types'),
+      Boolean(activeFilters.workMode && activeFilters.workMode !== 'All Modes'),
+      Boolean(activeFilters.minExperience && activeFilters.minExperience !== 'All Experience'),
+      Boolean(activeFilters.busFacility),
+      Boolean(activeFilters.canteen),
+      Boolean(activeFilters.accommodation),
+      Boolean(activeFilters.overtime),
     ].filter(Boolean).length;
   }, [activeFilters]);
 
@@ -396,32 +605,34 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     navigation.navigate('JobFilter', {
       currentFilters: activeFilters,
       totalMatchingJobsCount: filteredJobs.length,
-      onApplyFilters: (applied: any) => {
-        setActiveFilters(applied);
-      },
-      onResetFilters: () => {
-        setActiveFilters({
-          industry: 'All Industries',
-          jobType: 'All Types',
-          workMode: 'All Modes',
-          minExperience: 'All Experience',
-          salaryMin: 0,
-          midcZone: 'All MIDC Zones',
-          busFacility: false,
-          canteen: false,
-          accommodation: false,
-          overtime: false,
-        });
-      },
+      returnScreen: 'CandidateJobSearch',
     });
   }, [navigation, activeFilters, filteredJobs.length]);
 
   return (
     <View style={styles.container}>
       <Header
-        searchPlaceholder={searchQuery ? searchQuery : 'Search Jobs, Skills, Companies...'}
+        searchValue={searchQuery}
+        searchPlaceholder="Search Jobs, Skills, Companies..."
         onSearchPress={() => {
           navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
+        }}
+        onClearSearch={() => {
+          setSearchQuery('');
+          setSelectedCategory('All Jobs');
+          setActiveFilters({
+            industry: 'All Industries',
+            jobType: 'All Types',
+            workMode: 'All Modes',
+            minExperience: 'All Experience',
+            salaryMin: 0,
+            midcZone: 'All MIDC Zones',
+            busFacility: false,
+            canteen: false,
+            accommodation: false,
+            overtime: false,
+            education: 'All Education Levels',
+          });
         }}
         showBack={false}
         rightAction={
@@ -464,13 +675,15 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       />
 
       <FlatList
-        data={loading ? [] : filteredJobs}
+        data={loading && jobs.length === 0 ? [] : filteredJobs}
         keyExtractor={(item) => item.id}
-        renderItem={({ item: job }) => (
+        renderItem={({ item: job, index }) => (
           <CandidateJobCardItem
             key={job.id}
             job={job}
             viewMode={viewMode}
+            isFirst={index === 0}
+            isLast={index === filteredJobs.length - 1}
             isSaved={savedJobIds.includes(job.id)}
             onToggleSave={() => handleToggleSave(job.id)}
             onPress={() =>
@@ -503,11 +716,26 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             </View>
           ) : (
             <View style={styles.emptyStateBox}>
-              <Briefcase size={32} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>No matching job vacancies</Text>
-              <Text style={styles.emptySub}>Try clearing filters or search term to see more listings.</Text>
+              <View style={styles.emptyIconCircle}>
+                <SearchX size={26} color="#64748B" strokeWidth={2} />
+              </View>
+              <Text style={styles.emptyTitle}>No Matching Job Vacancies Found</Text>
+              <Text style={styles.emptySub}>
+                {searchQuery.trim()
+                  ? `No active industrial vacancies matched "${searchQuery.trim()}".`
+                  : 'No vacancies match your currently selected industry or zone filters.'}
+              </Text>
+
+              <View style={styles.emptyTipsCard}>
+                <Text style={styles.emptyTipsTitle}>SUGGESTED ACTIONS</Text>
+                <Text style={styles.emptyTipRow}>• Broaden or clear specific filters like salary, experience, or shifts</Text>
+                <Text style={styles.emptyTipRow}>• Check for alternate keywords (e.g., "Operator", "Technician", "Machinist")</Text>
+                <Text style={styles.emptyTipRow}>• Explore nearby MIDC industrial areas</Text>
+              </View>
+
               <TouchableOpacity
                 style={styles.resetFilterBtn}
+                activeOpacity={0.85}
                 onPress={() => {
                   setSearchQuery('');
                   setSelectedCategory('All Jobs');
@@ -525,7 +753,8 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                   });
                 }}
               >
-                <Text style={styles.resetFilterBtnText}>Reset All Filters</Text>
+                <RotateCcw size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.resetFilterBtnText}>Reset Search & Filters</Text>
               </TouchableOpacity>
             </View>
           )
@@ -555,35 +784,68 @@ const styles = StyleSheet.create({
   },
   emptyStateBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 30,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 20,
+    paddingVertical: 28,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 12,
+  },
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 15.5,
+    fontWeight: '700',
     color: '#0F172A',
-    marginTop: 10,
+    textAlign: 'center',
   },
   emptySub: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     color: '#64748B',
     textAlign: 'center',
     marginTop: 4,
-    lineHeight: 16,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  emptyTipsCard: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    marginBottom: 18,
+  },
+  emptyTipsTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  emptyTipRow: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 4,
   },
   resetFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-    marginTop: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
   },
   resetFilterBtnText: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },

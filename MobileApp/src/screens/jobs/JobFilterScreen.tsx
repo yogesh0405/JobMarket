@@ -103,16 +103,19 @@ export const JobFilterScreen: React.FC = () => {
       overtime: false,
     };
     setFilters(defaultFilters);
-    if (route.params?.onResetFilters) {
+    if (typeof route.params?.onResetFilters === 'function') {
       route.params.onResetFilters();
     }
   };
 
   const handleApply = () => {
-    if (route.params?.onApplyFilters) {
+    if (typeof route.params?.onApplyFilters === 'function') {
       route.params.onApplyFilters(filters);
+      navigation.goBack();
+    } else {
+      const returnScreen = route.params?.returnScreen || 'CandidateJobSearch';
+      navigation.navigate(returnScreen, { appliedFilters: filters });
     }
-    navigation.goBack();
   };
 
   return (
@@ -317,6 +320,7 @@ export const JobFilterScreen: React.FC = () => {
               onValueChange={(val: boolean) => setFilters({ ...filters, busFacility: val })}
               trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
               thumbColor="#FFFFFF"
+              style={styles.compactSwitch}
             />
           </View>
 
@@ -327,6 +331,7 @@ export const JobFilterScreen: React.FC = () => {
               onValueChange={(val: boolean) => setFilters({ ...filters, canteen: val })}
               trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
               thumbColor="#FFFFFF"
+              style={styles.compactSwitch}
             />
           </View>
 
@@ -337,6 +342,7 @@ export const JobFilterScreen: React.FC = () => {
               onValueChange={(val: boolean) => setFilters({ ...filters, accommodation: val })}
               trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
               thumbColor="#FFFFFF"
+              style={styles.compactSwitch}
             />
           </View>
 
@@ -347,6 +353,7 @@ export const JobFilterScreen: React.FC = () => {
               onValueChange={(val: boolean) => setFilters({ ...filters, overtime: val })}
               trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
               thumbColor="#FFFFFF"
+              style={styles.compactSwitch}
             />
           </View>
         </View>
@@ -469,12 +476,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 2,
   },
   switchLabel: {
     fontSize: 11.5,
     fontWeight: '500',
     color: '#1E293B',
+  },
+  compactSwitch: {
+    transform: [{ scaleX: 0.84 }, { scaleY: 0.84 }],
   },
   bottomBar: {
     flexDirection: 'row',

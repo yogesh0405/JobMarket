@@ -128,10 +128,13 @@ export const CompanyFilterScreen: React.FC = () => {
       companySize: draftSize || 'All Sizes',
       onlyHiring: draftOnlyHiring,
     };
-    if (route.params?.onApplyFilters) {
+    if (typeof route.params?.onApplyFilters === 'function') {
       route.params.onApplyFilters(applied);
+      navigation.goBack();
+    } else {
+      const returnScreen = route.params?.returnScreen || 'CandidateCompanies';
+      navigation.navigate(returnScreen, { appliedCompanyFilters: applied });
     }
-    navigation.goBack();
   };
 
   // Real-time calculation of matching count

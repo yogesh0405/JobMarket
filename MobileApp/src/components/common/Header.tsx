@@ -61,6 +61,7 @@ interface HeaderProps {
   searchValue?: string;
   onSearchChange?: (val: string) => void;
   onSearchPress?: () => void;
+  onClearSearch?: () => void;
   onFilterPress?: () => void;
   activeFilterCount?: number;
   hideSearch?: boolean;
@@ -80,6 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchValue,
   onSearchChange,
   onSearchPress,
+  onClearSearch,
   onFilterPress,
   activeFilterCount,
   hideSearch = false,
@@ -308,9 +310,29 @@ export const Header: React.FC<HeaderProps> = ({
                 style={styles.searchBarPill}
               >
                 <Search size={18} color="#64748B" strokeWidth={2.2} style={{ marginRight: 8 }} />
-                <Text style={styles.searchPlaceholderText} numberOfLines={1} ellipsizeMode="tail">
-                  {searchPlaceholder || 'Search'}
+                <Text
+                  style={[
+                    styles.searchPlaceholderText,
+                    searchValue && searchValue.length > 0 ? { color: '#0F172A', fontWeight: '600' } : null,
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {searchValue || searchPlaceholder || 'Search'}
                 </Text>
+                {searchValue && searchValue.length > 0 && onClearSearch ? (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      onClearSearch();
+                    }}
+                    style={{ padding: 4, marginRight: onFilterPress ? 4 : 0 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <X size={14} color="#64748B" />
+                  </TouchableOpacity>
+                ) : null}
                 {onFilterPress && (
                   <>
                     <View style={styles.inlineSearchFilterDivider} />

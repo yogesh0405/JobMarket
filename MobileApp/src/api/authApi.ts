@@ -72,7 +72,7 @@ export const authApi = {
     });
   },
 
-  logout: async (sessionId: string): Promise<ApiResponse> => {
+  logout: async (sessionId?: string): Promise<ApiResponse> => {
     return apiFetch('/api/v1/auth/logout', {
       method: 'POST',
       body: JSON.stringify({ sessionId }),

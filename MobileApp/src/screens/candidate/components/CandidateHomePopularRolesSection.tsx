@@ -159,18 +159,27 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
 
                 <View style={styles.webCompanyFooter}>
                   <CompanyLogoAvatar
-                    logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
-                    companyName={job.company}
+                    logoUrl={
+                      job.companyLogo ||
+                      (job as any).company_logo ||
+                      (job as any).logoUrl ||
+                      (job as any).logo_url ||
+                      (job as any).logo ||
+                      (job as any).employer_logo ||
+                      (job as any).avatar_url ||
+                      (job as any).avatar
+                    }
+                    companyName={job.company || (job as any).company_name || (job as any).companyName || 'Industrial Company'}
                     size={38}
                     borderRadius={6}
                   />
 
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.webCompanyTitle} numberOfLines={1}>
-                      {job.company || 'Industrial Company'}
+                      {job.company || (job as any).company_name || (job as any).companyName || 'Industrial Company'}
                     </Text>
                     <Text style={styles.webPostedByText} numberOfLines={1}>
-                      Posted by {job.company || 'Recruiter'}
+                      Posted by {job.company || (job as any).company_name || 'Recruiter'}
                     </Text>
                   </View>
 
@@ -183,12 +192,16 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
           <TouchableOpacity
             activeOpacity={0.88}
             style={styles.exploreMoreEndCard}
-            onPress={() =>
+            onPress={() => {
+              const kw = activeRoleTab !== 'All Opportunities' ? activeRoleTab : undefined;
               navigation.navigate('CandidateJobsTab', {
                 screen: 'CandidateJobSearch',
-                params: { trade: activeRoleTab !== 'All Opportunities' ? activeRoleTab : undefined },
-              })
-            }
+                params: {
+                  keyword: kw,
+                  rawFilterTitle: kw,
+                },
+              });
+            }}
           >
             <View style={styles.exploreMoreCircleIcon}>
               <ArrowRight size={22} color={COLORS.primary} strokeWidth={2.5} />

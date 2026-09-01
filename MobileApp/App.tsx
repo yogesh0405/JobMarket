@@ -69,22 +69,13 @@ function MainAppContent() {
     Inter_900Black,
   });
 
-  // Strict Fail-safe: Never block UI on Splash Screen for more than 2 seconds
+  // Splash screen duration: exactly 2.0 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if ((fontsLoaded || fontError) && !isLoadingAuth) {
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [fontsLoaded, fontError, isLoadingAuth]);
 
   // Global Centralized Navigation Route Listener for Strict Status Bar Synchronization
   const handleStateChange = () => {

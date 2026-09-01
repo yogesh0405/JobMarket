@@ -218,7 +218,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   // Fetch 100% Real Live Recruitment Analytics Data from Backend
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
+    if (!isOwner) return;
     try {
       const json = await apiFetch('/api/v1/jobs/employer/analytics');
       const data = json?.data || json;
@@ -243,9 +244,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         });
         return;
       }
-    } catch (err) {
-      console.warn('Backend analytics fetch notice:', err);
-    }
+    } catch (_) {}
 
     // Fallback: derive 100% real live metrics directly from loaded jobs array
     const realTotalJobs = jobs.length;
@@ -258,7 +257,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       activeJobs: realActiveJobs,
       totalApplications: realAppsCount,
     }));
-  };
+  }, [isOwner, jobs]);
 
   useEffect(() => {
     loadCompanyDetails();
@@ -266,8 +265,10 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   }, [targetCompanyId]);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [jobs, targetCompanyId]);
+    if (isOwner) {
+      fetchAnalytics();
+    }
+  }, [isOwner, targetCompanyId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -357,7 +358,13 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             isOwner={isOwner}
             onEditPress={() => setIsEditModalOpen(true)}
             onSharePress={handleShare}
-            onBackPress={() => navigation.goBack()}
+            onBackPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('EmployerDashboard');
+              }
+            }}
             formattedLocation={formattedLocation}
             profileTab={profileTab}
             onTabChange={(tab) => setProfileTab(tab)}

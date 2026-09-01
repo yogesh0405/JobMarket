@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Zap, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react-native';
+import { Zap, AlertTriangle, RefreshCw } from 'lucide-react-native';
 import { useBackendStatus } from '../../context/BackendStatusContext';
 import { COLORS } from '../../constants/theme';
 
@@ -17,24 +17,11 @@ export const BackendStatusBanner: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { status, errorMessage, checkHealth } = useBackendStatus();
   const [retrying, setRetrying] = useState(false);
-  const [showRecovered, setShowRecovered] = useState(false);
-  const [prevStatus, setPrevStatus] = useState(status);
 
   // Transition animation
   const [slideAnim] = useState(new Animated.Value(0));
 
-  useEffect(() => {
-    if (prevStatus === 'warming_up' && status === 'healthy') {
-      setShowRecovered(true);
-      const t = setTimeout(() => {
-        setShowRecovered(false);
-      }, 2500);
-      return () => clearTimeout(t);
-    }
-    setPrevStatus(status);
-  }, [status, prevStatus]);
-
-  const isVisible = status === 'warming_up' || status === 'error' || showRecovered;
+  const isVisible = status === 'error';
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -75,58 +62,32 @@ export const BackendStatusBanner: React.FC = () => {
         },
       ]}
     >
-      {status === 'warming_up' && (
-        <View style={[styles.bannerCard, styles.warmingBanner]}>
-          <View style={styles.iconWrapper}>
-            <ActivityIndicator size="small" color="#D97706" />
-          </View>
-          <View style={styles.textWrapper}>
-            <View style={styles.titleRow}>
-              <Zap size={14} color="#D97706" fill="#F59E0B" />
-              <Text style={styles.warmingTitle}>Server is warming up...</Text>
+      <View style={[styles.bannerCard, styles.errorBanner]}>
+        <View style={styles.iconWrapper}>
+          <AlertTriangle size={18} color="#DC2626" />
+        </View>
+        <View style={styles.textWrapper}>
+          <Text style={styles.errorTitle}>Network Error</Text>
+          <Text style={styles.errorSub}>
+            Please check your internet connection.
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={handleRetry}
+          disabled={retrying}
+          activeOpacity={0.8}
+        >
+          {retrying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <View style={styles.retryBtnContent}>
+              <RefreshCw size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.retryBtnText}>Retry</Text>
             </View>
-            <Text style={styles.warmingSub}>
-              Instance is waking up from standby. Reconnecting automatically...
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {status === 'error' && (
-        <View style={[styles.bannerCard, styles.errorBanner]}>
-          <View style={styles.iconWrapper}>
-            <AlertTriangle size={18} color="#DC2626" />
-          </View>
-          <View style={styles.textWrapper}>
-            <Text style={styles.errorTitle}>Server Connection Issue</Text>
-            <Text style={styles.errorSub}>
-              {errorMessage || 'Unable to reach backend service. Check network & retry.'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={handleRetry}
-            disabled={retrying}
-            activeOpacity={0.8}
-          >
-            {retrying ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <View style={styles.retryBtnContent}>
-                <RefreshCw size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-                <Text style={styles.retryBtnText}>Retry</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {showRecovered && status === 'healthy' && (
-        <View style={[styles.bannerCard, styles.successBanner]}>
-          <CheckCircle size={18} color="#16A34A" />
-          <Text style={styles.successText}>Server connected & ready!</Text>
-        </View>
-      )}
+          )}
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 };
@@ -163,12 +124,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
   },
-  successBanner: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
-    justifyContent: 'center',
-    gap: 8,
-  },
   iconWrapper: {
     marginRight: 10,
     justifyContent: 'center',
@@ -201,11 +156,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#B91C1C',
     marginTop: 1,
-  },
-  successText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#15803D',
   },
   retryButton: {
     backgroundColor: '#DC2626',

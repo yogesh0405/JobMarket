@@ -89,7 +89,8 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

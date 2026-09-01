@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {
   Search,
+  SearchX,
   SlidersHorizontal,
   X,
   ArrowRight,
@@ -22,6 +23,7 @@ import {
 import { COLORS } from '../../../constants/theme';
 import { Job } from '../../../types';
 import { CATEGORIES } from './CandidateJobSearchUtils';
+import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 
 interface CandidateJobSearchFilterHeaderProps {
   searchQuery: string;
@@ -34,6 +36,7 @@ interface CandidateJobSearchFilterHeaderProps {
   setIsInputFocused: (val: boolean) => void;
   matchedSuggestions: {
     jobs: Job[];
+    companies?: { name: string; logoUrl?: string; industry?: string; count: number }[];
     trades: string[];
     locations: string[];
   };
@@ -147,26 +150,77 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
                 <ArrowRight size={14} color={COLORS.primary} />
               </TouchableOpacity>
 
-              {matchedSuggestions.jobs.length > 0 ? (
+              {/* Matching Companies Section */}
+              {matchedSuggestions.companies && matchedSuggestions.companies.length > 0 ? (
                 <View style={styles.suggestionGroup}>
-                  <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
-                  {matchedSuggestions.jobs.map((j) => (
+                  <Text style={styles.suggestionGroupLabel}>COMPANIES & FACTORIES</Text>
+                  {matchedSuggestions.companies.map((c) => (
                     <TouchableOpacity
-                      key={j.id}
+                      key={c.name}
                       style={styles.suggestionItemRow}
                       onPress={() => {
+                        setSearchQuery(c.name);
                         setShowSuggestions(false);
-                        navigation.navigate('CandidateJobDetail', { jobId: j.id, job: j });
                       }}
                     >
-                      <Briefcase size={16} color={COLORS.primary} />
+                      <CompanyLogoAvatar
+                        logoUrl={c.logoUrl}
+                        companyName={c.name}
+                        size={32}
+                        borderRadius={6}
+                        style={{ marginRight: 10 }}
+                      />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
-                        <Text style={styles.suggestionItemSub} numberOfLines={1}>{j.company} • {j.location}</Text>
+                        <Text style={styles.suggestionItemTitle} numberOfLines={1}>{c.name}</Text>
+                        <Text style={styles.suggestionItemSub} numberOfLines={1}>
+                          {c.industry || 'Industrial Partner'} • {c.count} open job{c.count !== 1 ? 's' : ''}
+                        </Text>
                       </View>
                       <ChevronRight size={14} color="#94A3B8" />
                     </TouchableOpacity>
                   ))}
+                </View>
+              ) : null}
+
+              {/* Matching Live Jobs Section */}
+              {matchedSuggestions.jobs.length > 0 ? (
+                <View style={styles.suggestionGroup}>
+                  <Text style={styles.suggestionGroupLabel}>MATCHING LIVE JOBS</Text>
+                  {matchedSuggestions.jobs.map((j) => {
+                    const jobLogo =
+                      j.companyLogo ||
+                      (j as any).company_logo ||
+                      (j as any).logoUrl ||
+                      (j as any).logo_url ||
+                      (j as any).logo ||
+                      (j as any).employer_logo ||
+                      (j as any).avatar_url ||
+                      (j as any).avatar;
+                    const compName = j.company || (j as any).company_name || (j as any).companyName || 'Industrial Company';
+                    return (
+                      <TouchableOpacity
+                        key={j.id}
+                        style={styles.suggestionItemRow}
+                        onPress={() => {
+                          setShowSuggestions(false);
+                          navigation.navigate('CandidateJobDetail', { jobId: j.id, job: j });
+                        }}
+                      >
+                        <CompanyLogoAvatar
+                          logoUrl={jobLogo}
+                          companyName={compName}
+                          size={32}
+                          borderRadius={6}
+                          style={{ marginRight: 10 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionItemTitle} numberOfLines={1}>{j.title}</Text>
+                          <Text style={styles.suggestionItemSub} numberOfLines={1}>{compName} • {j.location || 'Industrial Area'}</Text>
+                        </View>
+                        <ChevronRight size={14} color="#94A3B8" />
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ) : null}
 
@@ -213,6 +267,18 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
                       <ChevronRight size={14} color="#94A3B8" />
                     </TouchableOpacity>
                   ))}
+                </View>
+              ) : null}
+
+              {matchedSuggestions.jobs.length === 0 &&
+              matchedSuggestions.trades.length === 0 &&
+              matchedSuggestions.locations.length === 0 ? (
+                <View style={styles.noSuggestionsBox}>
+                  <SearchX size={18} color="#94A3B8" />
+                  <Text style={styles.noSuggestionsTitle}>No live suggestions</Text>
+                  <Text style={styles.noSuggestionsSub}>
+                    Tap top row to search all vacancies matching "{searchQuery.trim()}"
+                  </Text>
                 </View>
               ) : null}
 
@@ -431,5 +497,25 @@ const styles = StyleSheet.create({
   },
   categoryPillTextActive: {
     color: '#FFFFFF',
+  },
+  noSuggestionsBox: {
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 4,
+    marginVertical: 4,
+  },
+  noSuggestionsTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 4,
+  },
+  noSuggestionsSub: {
+    fontSize: 11,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

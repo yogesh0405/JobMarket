@@ -68,7 +68,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
                 style={styles.controlCircleBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.2} />
+                <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
               </TouchableOpacity>
             ) : (
               <View />
@@ -82,7 +82,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Edit3 size={14} color="#FFFFFF" strokeWidth={2} />
+                  <Edit3 size={17} color="#FFFFFF" strokeWidth={2.2} />
                 </TouchableOpacity>
               )}
 
@@ -92,7 +92,7 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
                 style={styles.controlCircleBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Share2 size={19} color="#FFFFFF" strokeWidth={2} />
+                <Share2 size={17} color="#FFFFFF" strokeWidth={2.2} />
               </TouchableOpacity>
             </View>
           </View>
@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   identityRow: {
     flexDirection: 'row',

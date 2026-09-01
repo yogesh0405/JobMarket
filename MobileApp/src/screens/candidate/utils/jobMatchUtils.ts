@@ -172,6 +172,14 @@ export function matchJobAgainstKeyword(
     return allText.includes('housekeeping') || allText.includes('cleaning') || allText.includes('facility') || allText.includes('sweeper');
   }
 
+  // 4. School & Education
+  if (clean.includes('teacher') || clean.includes('primary teacher') || clean.includes('high school teacher')) {
+    return allText.includes('teacher') || allText.includes('teaching') || allText.includes('faculty') || allText.includes('school') || allText.includes('tutor') || allText.includes('instructor');
+  }
+  if (clean.includes('librarian')) {
+    return allText.includes('librarian') || allText.includes('library') || allText.includes('books') || allText.includes('catalog');
+  }
+
   // 4. ITI Trades & Technical
   if (clean.includes('fitter')) {
     return trade.includes('fitter') || title.includes('fitter') || allText.includes('fitting') || allText.includes('fitter');

@@ -31,6 +31,7 @@ import { CompanyFilterState } from '../company/CompanyFilterScreen';
 
 interface CandidateCompaniesScreenProps {
   navigation: any;
+  route?: any;
 }
 
 const COMPANIES_CACHE_KEY = 'jobmarket_cached_companies';
@@ -38,6 +39,7 @@ let memoryCompaniesCache: any[] = [];
 
 export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> = ({
   navigation,
+  route,
 }) => {
   const [companies, setCompanies] = useState<any[]>(memoryCompaniesCache);
   const [loading, setLoading] = useState(memoryCompaniesCache.length === 0);
@@ -61,17 +63,17 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
     onlyHiring: false,
   });
 
+  useEffect(() => {
+    if (route?.params?.appliedCompanyFilters) {
+      setFilters(route.params.appliedCompanyFilters);
+    }
+  }, [route?.params?.appliedCompanyFilters]);
+
   const handleOpenFilterScreen = (tabKey: string = 'LOCATION') => {
     navigation.navigate('CompanyFilter', {
       defaultTab: tabKey,
       currentFilters: filters,
-      companies: companies,
-      onApplyFilters: (newFilters: CompanyFilterState) => {
-        setFilters(newFilters);
-      },
-      onResetFilters: () => {
-        resetAllFilters();
-      },
+      returnScreen: 'CandidateCompanies',
     });
   };
 
@@ -227,8 +229,8 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   }, []);
 
   const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => isCompanyMatching(c, filters, debouncedSearchQuery));
-  }, [companies, filters, debouncedSearchQuery, isCompanyMatching]);
+    return companies.filter((c) => isCompanyMatching(c, filters, searchQuery));
+  }, [companies, filters, searchQuery, isCompanyMatching]);
 
   // Quick preset bar data for companies (matching candidates section design)
   const quickPillOptions = [
@@ -333,7 +335,10 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
       <Header
         searchPlaceholder="Search companies by name, MIDC zone, sector..."
         searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchPress={() => {
+          navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
+        }}
+        onClearSearch={resetAllFilters}
         showBack={false}
       />
 

@@ -206,11 +206,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     );
     loadingLoop.start();
 
-    // 6. Snappy Dismiss Splash sequence (1.5s max, never blocks UI)
+    // 6. Snappy Dismiss Splash sequence (2.0s total, never blocks UI)
     const dismissSplash = () => {
       Animated.timing(rootOpacity, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
         easing: Easing.in(Easing.quad),
       }).start(() => {
@@ -220,7 +220,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
     const timer = setTimeout(() => {
       dismissSplash();
-    }, isLoadingAuth ? 2200 : 1400);
+    }, 1700);
 
     return () => {
       clearTimeout(timer);

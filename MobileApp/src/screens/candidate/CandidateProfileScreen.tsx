@@ -204,6 +204,13 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           profilePhotoUrl={profilePhotoUrl}
           onPickPhoto={handlePickPhoto}
           onEditPress={() => navigation.navigate('CandidateEditProfile')}
+          onBackPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('CandidateHome');
+            }
+          }}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />

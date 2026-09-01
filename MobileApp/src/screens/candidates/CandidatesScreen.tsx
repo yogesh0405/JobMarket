@@ -52,11 +52,12 @@ import { CandidateCardItem } from './components/CandidateCardItem';
 
 interface CandidatesScreenProps {
   navigation?: any;
+  route?: any;
 }
 
 type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE';
 
-export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation }) => {
+export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const [candidates, setCandidates] = useState<ExtendedCandidate[]>([]);
   const searchInputRef = React.useRef<any>(null);
@@ -64,6 +65,12 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation }
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+
+  useEffect(() => {
+    if (route?.params?.appliedSearchQuery !== undefined) {
+      setSearchQuery(route.params.appliedSearchQuery);
+    }
+  }, [route?.params?.appliedSearchQuery]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -353,9 +360,16 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation }
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <Header
-        searchPlaceholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex] || 'Search candidates...'}
+        searchPlaceholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex] || 'Search candidate name, skills, trade, zone...'}
         searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchPress={() => {
+          navigation.navigate('CandidateSearch', { initialQuery: searchQuery });
+        }}
+        onClearSearch={() => {
+          setSearchQuery('');
+          setDebouncedSearchQuery('');
+          handleResetAllFilters();
+        }}
         showBack={false}
       />
 

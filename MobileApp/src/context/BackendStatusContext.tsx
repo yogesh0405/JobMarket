@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { API_BASE_URL } from '../api/client';
+import { API_BASE_URL } from '../api/config';
 
 export type BackendStatus = 'healthy' | 'warming_up' | 'error';
 

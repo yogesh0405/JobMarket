@@ -12,7 +12,7 @@ interface ToastMessage {
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, durationMs?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType>({} as ToastContextType);
@@ -21,20 +21,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+  const showToast = useCallback((message: string, type: ToastType = 'success', durationMs?: number) => {
     const id = Date.now().toString();
     setToast({ id, message, type });
 
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
-      Animated.delay(3500),
+      Animated.delay(durationMs ?? 3000),
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {

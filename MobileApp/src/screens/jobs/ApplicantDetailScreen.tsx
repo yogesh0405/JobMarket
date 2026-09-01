@@ -358,16 +358,16 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
       );
 
       if (res && res.success) {
-        Alert.alert('Email Sent', `Official communication email dispatched to ${candidateEmail}.`, [
-          {
-            text: 'OK',
-            onPress: () => {
-              setEmailSubject('');
-              setEmailMessage('');
-              setSelectedTemplateLabel('');
-            },
-          },
-        ]);
+        setEmailSubject('');
+        setEmailMessage('');
+        setSelectedTemplateLabel('');
+        setSuccessModalData({
+          title: 'Email Sent Successfully',
+          message: `Official communication email has been dispatched to ${candidateEmail}.`,
+          buttonText: 'Done',
+          destinationTab: undefined,
+        });
+        setSuccessStatusModalVisible(true);
       } else {
         Alert.alert('Email Error', res?.message || 'Failed to send email.');
       }

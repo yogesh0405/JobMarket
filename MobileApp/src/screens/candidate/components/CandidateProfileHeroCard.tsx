@@ -19,6 +19,7 @@ import {
   Check,
   MapPin,
   Award,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { COLORS, RADIUS } from '../../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +43,7 @@ interface CandidateProfileHeroCardProps {
   profilePhotoUrl: string;
   onPickPhoto: () => void;
   onEditPress: () => void;
+  onBackPress?: () => void;
   activeTab?: 'PERSONAL' | 'PROFESSIONAL';
   onTabChange?: (tab: 'PERSONAL' | 'PROFESSIONAL') => void;
 }
@@ -63,6 +65,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
   profilePhotoUrl,
   onPickPhoto,
   onEditPress,
+  onBackPress,
   activeTab = 'PERSONAL',
   onTabChange,
 }) => {
@@ -117,7 +120,18 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
           <View style={styles.headerContentContainer}>
             {/* Top Navigation / Edit Control Row */}
             <View style={styles.topControlsRow}>
-              <View />
+              {onBackPress ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={onBackPress}
+                  style={styles.controlCircleBtn}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
+                </TouchableOpacity>
+              ) : (
+                <View />
+              )}
               <View style={styles.topRightControls}>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -125,7 +139,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Edit3 size={16} color="#FFFFFF" strokeWidth={2.2} />
+                  <Edit3 size={17} color="#FFFFFF" strokeWidth={2.2} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -141,7 +155,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Share2 size={16} color="#FFFFFF" strokeWidth={2.2} />
+                  <Share2 size={17} color="#FFFFFF" strokeWidth={2.2} />
                 </TouchableOpacity>
               </View>
             </View>

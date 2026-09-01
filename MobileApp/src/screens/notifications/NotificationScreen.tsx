@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -6,34 +6,59 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
+  Modal,
+  TouchableWithoutFeedback,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import {
-  Bell,
+  BellRing,
   CheckCheck,
+  CheckCircle2,
   Trash2,
   Briefcase,
-  CheckCircle2,
-  HelpCircle,
-  Calendar,
-  Send,
-  Sparkles,
+  UserCheck,
+  UserPlus,
+  CalendarClock,
+  Megaphone,
   ShieldCheck,
   FileText,
+  BadgeCheck,
   XCircle,
+  Headphones,
+  MoreVertical,
 } from 'lucide-react-native';
-import { Header } from '../../components/common/Header';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { useNotifications, isNotificationRead } from '../../hooks/useNotifications';
 import { AppNotification } from '../../api/notificationApi';
 import { resolveMobileNotificationRoute } from '../../utils/notificationRouter';
 import { useAuth } from '../../hooks/useAuth';
-import { FONTS, COLORS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
+
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 
 interface Props {
   navigation: any;
 }
+
+type NotificationCategory = 'JOB_POSTINGS' | 'APPLICATIONS' | 'INTERVIEWS' | 'BANNERS' | 'PLATFORM' | 'OTHER';
+
+const EMPLOYER_CATEGORY_FILTERS = [
+  { key: 'ALL', label: 'All' },
+  { key: 'JOB_POSTINGS', label: 'Job Postings' },
+  { key: 'APPLICATIONS', label: 'Applications' },
+  { key: 'BANNERS', label: 'Banners' },
+  { key: 'PLATFORM', label: 'Platform' },
+];
+
+const CANDIDATE_CATEGORY_FILTERS = [
+  { key: 'ALL', label: 'All' },
+  { key: 'APPLICATIONS', label: 'Applications' },
+  { key: 'INTERVIEWS', label: 'Interviews' },
+  { key: 'PLATFORM', label: 'Platform' },
+];
 
 const formatTimeAgo = (dateStr?: string): string => {
   if (!dateStr) return 'Just now';
@@ -47,8 +72,141 @@ const formatTimeAgo = (dateStr?: string): string => {
   return `${Math.floor(diffSec / 86400)}d ago`;
 };
 
+// 100% Mutually Exclusive, Domain-Accurate Notification Classifier
+const classifyNotification = (n: AppNotification): NotificationCategory => {
+  const type = (n.type || '').toUpperCase().trim();
+  const entityType = ((n as any).entity_type || (n as any).entityType || '').toUpperCase().trim();
+  const title = (n.title || '').toUpperCase().trim();
+  const msg = (n.message || '').toUpperCase().trim();
+  const link = ((n as any).link || '').toUpperCase().trim();
+
+  // 1. BANNER / ADVERTISEMENTS (Highest specificity)
+  if (
+    entityType === 'BANNER' ||
+    entityType === 'ADVERTISEMENT' ||
+    entityType === 'AD' ||
+    type.startsWith('BANNER') ||
+    type.startsWith('AD_') ||
+    link.includes('BANNERS') ||
+    title.includes('BANNER') ||
+    title.includes('ADVERTISEMENT') ||
+    title.includes('AD CAMPAIGN')
+  ) {
+    return 'BANNERS';
+  }
+
+  // 2. INTERVIEWS & SCHEDULED CALLS (Highest specificity)
+  if (
+    entityType === 'INTERVIEW' ||
+    type.includes('INTERVIEW') ||
+    link.includes('INTERVIEW') ||
+    title.includes('INTERVIEW') ||
+    title.includes('WALK-IN') ||
+    msg.includes('SCHEDULED AN INTERVIEW') ||
+    msg.includes('INTERVIEW FOR')
+  ) {
+    return 'INTERVIEWS';
+  }
+
+  // 3. CANDIDATE APPLICATIONS & STATUSES
+  // (New candidate applied to job, candidate confirmation, shortlist/hired/rejected candidate)
+  if (
+    entityType === 'APPLICATION' ||
+    type === 'JOB_APPLICATION' ||
+    type === 'APPLICATION_CONFIRMATION' ||
+    type === 'APPLICATION_STATUS' ||
+    type === 'APPLICATION_RECEIVED' ||
+    type.includes('APPLICANT') ||
+    type.includes('APPLICATION') ||
+    link.includes('TAB=APPLICANTS') ||
+    link.includes('/APPLICANTS') ||
+    link.includes('TAB=APPLIED') ||
+    link.includes('/APPLIED') ||
+    title.includes('APPLICATION') ||
+    title.includes('APPLICANT') ||
+    title.startsWith('APPLICATION STATUS') ||
+    msg.includes('APPLIED FOR') ||
+    msg.includes('YOUR APPLICATION FOR')
+  ) {
+    return 'APPLICATIONS';
+  }
+
+  // 4. JOB POSTINGS & VACANCY MANAGEMENT (Job approval, submission, live status, vacancy edit, expiry)
+  if (
+    entityType === 'JOB' ||
+    type === 'JOB_APPROVAL' ||
+    type === 'JOB_APPROVED' ||
+    type === 'JOB_REJECTED' ||
+    type === 'JOB_POSTED' ||
+    type === 'JOB_EXPIRED' ||
+    type === 'JOB_CREATED' ||
+    type === 'JOB_UPDATED' ||
+    type === 'JOB_EXPIRY' ||
+    type.startsWith('JOB_') ||
+    link.includes('TAB=MANAGE') ||
+    link.includes('/EMPLOYER/JOBS') ||
+    link.includes('/MANAGE-JOBS') ||
+    title.includes('JOB POST') ||
+    title.includes('JOB SUBMITTED') ||
+    title.includes('JOB APPROVED') ||
+    title.includes('JOB REJECTED') ||
+    title.includes('VACANCY') ||
+    msg.includes('YOUR JOB POST') ||
+    msg.includes('JOB HAS BEEN')
+  ) {
+    return 'JOB_POSTINGS';
+  }
+
+  // 5. PLATFORM & ADMIN NOTIFICATIONS (Support tickets, admin alerts, system announcements, KYC verification)
+  if (
+    entityType === 'SUPPORT' ||
+    entityType === 'TICKET' ||
+    entityType === 'ADMIN' ||
+    entityType === 'SYSTEM' ||
+    entityType === 'KYC' ||
+    entityType === 'VERIFICATION' ||
+    type.includes('SUPPORT') ||
+    type.includes('TICKET') ||
+    type.includes('ADMIN') ||
+    type.includes('SYSTEM') ||
+    type.includes('BROADCAST') ||
+    type.includes('KYC') ||
+    type.includes('VERIF') ||
+    type.includes('AADHAAR') ||
+    type.includes('ACCOUNT') ||
+    type.includes('SECURITY') ||
+    link.includes('SUPPORT') ||
+    link.includes('TICKETS') ||
+    link.includes('ADMIN') ||
+    link.includes('SECURITY') ||
+    title.includes('SUPPORT') ||
+    title.includes('TICKET') ||
+    title.includes('ADMIN') ||
+    title.includes('ANNOUNCEMENT') ||
+    title.includes('PLATFORM') ||
+    title.includes('VERIFICATION') ||
+    title.includes('KYC') ||
+    title.includes('AADHAAR') ||
+    title.includes('WELCOME') ||
+    msg.includes('SUPPORT') ||
+    msg.includes('TICKET') ||
+    msg.includes('ADMIN') ||
+    msg.includes('PLATFORM') ||
+    msg.includes('JOBMARKET TEAM') ||
+    msg.includes('JOBMARKET') ||
+    msg.includes('CSN-JOBMARKET')
+  ) {
+    return 'PLATFORM';
+  }
+
+  return 'OTHER';
+};
+
 export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const isEmployer = (user?.role || '').toLowerCase() === 'employer' || (user?.role || '').toLowerCase() === 'admin' || (user?.role || '').toLowerCase() === 'recruiter';
+
   const {
     notifications,
     unreadCount,
@@ -62,7 +220,8 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
   } = useNotifications();
 
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,19 +229,33 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
     }, [fetchNotifications])
   );
 
-  const displayedList = notifications.filter((n) => {
-    if (filter === 'UNREAD' && isNotificationRead(n)) {
-      return false;
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const title = (n.title || '').toLowerCase();
-      const msg = (n.message || '').toLowerCase();
-      const type = (n.type || '').toLowerCase();
-      return title.includes(q) || msg.includes(q) || type.includes(q);
-    }
-    return true;
-  });
+  // Category Filter Options
+  const categoryFilterOptions = useMemo(() => {
+    return isEmployer ? EMPLOYER_CATEGORY_FILTERS : CANDIDATE_CATEGORY_FILTERS;
+  }, [isEmployer]);
+
+  const displayedList = useMemo(() => {
+    return notifications.filter((n) => {
+      // 1. Read / Unread tab filter
+      if (filter === 'UNREAD' && isNotificationRead(n)) {
+        return false;
+      }
+
+      // 2. Category capsule filter
+      if (selectedCategory !== 'ALL') {
+        const category = classifyNotification(n);
+        if (selectedCategory === 'PLATFORM') {
+          if (category !== 'PLATFORM' && category !== 'OTHER') {
+            return false;
+          }
+        } else if (category !== selectedCategory) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [notifications, filter, selectedCategory]);
 
   const handleNotificationClick = (item: AppNotification) => {
     if (!isNotificationRead(item)) {
@@ -100,127 +273,338 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const renderNotifDirectIcon = (type?: string, title?: string, message?: string) => {
+  // Enterprise-Grade Industry Icons and Semantic Badge Styling
+  const renderNotifVisualMeta = (type?: string, title?: string, message?: string) => {
     const combined = `${type || ''} ${title || ''} ${message || ''}`.toUpperCase();
 
-    if (combined.includes('INTERVIEW') || combined.includes('SCHEDULED') || combined.includes('WALK-IN') || combined.includes('SHORTLIST')) {
-      return <Calendar size={18} color="#D97706" />;
-    }
-    if (combined.includes('HIRED') || combined.includes('ACCEPTED') || combined.includes('APPROV')) {
-      return <CheckCircle2 size={18} color="#16A34A" />;
-    }
-    if (combined.includes('APPLIED') || combined.includes('APPLICATION') || combined.includes('APPLY')) {
-      return <Send size={18} color={COLORS.primary} />;
-    }
-    if (combined.includes('JOB') || combined.includes('VACANCY') || combined.includes('POSTED')) {
-      return <Briefcase size={18} color={COLORS.primary} />;
-    }
-    if (combined.includes('BANNER') || combined.includes('PROMOT') || combined.includes('ADVERTI')) {
-      return <Sparkles size={18} color="#D97706" />;
-    }
-    if (combined.includes('VERIF') || combined.includes('SECURITY') || combined.includes('SHIELD')) {
-      return <ShieldCheck size={18} color={COLORS.primary} />;
-    }
-    if (combined.includes('RESUME') || combined.includes('DOC') || combined.includes('BIO-DATA')) {
-      return <FileText size={18} color="#7C3AED" />;
-    }
-    if (combined.includes('REJECT') || combined.includes('CANCEL') || combined.includes('DECLIN')) {
-      return <XCircle size={18} color="#DC2626" />;
-    }
-    if (combined.includes('SUPPORT') || combined.includes('TICKET') || combined.includes('HELP')) {
-      return <HelpCircle size={18} color="#7C3AED" />;
+    // 1. Interviews & Scheduled Walk-Ins
+    if (combined.includes('INTERVIEW') || combined.includes('SCHEDULED') || combined.includes('WALK-IN')) {
+      return {
+        icon: <CalendarClock size={19} color="#D97706" strokeWidth={2.0} />,
+        bgColor: '#FEF3C7',
+        borderColor: '#FDE68A',
+      };
     }
 
-    return <Bell size={18} color={COLORS.primary} />;
+    // 2. Selection, Shortlist, Hired, Offer
+    if (combined.includes('HIRED') || combined.includes('ACCEPTED') || combined.includes('SHORTLIST') || combined.includes('APPROVED')) {
+      return {
+        icon: <BadgeCheck size={19} color="#059669" strokeWidth={2.0} />,
+        bgColor: '#ECFDF5',
+        borderColor: '#A7F3D0',
+      };
+    }
+
+    // 3. New Candidate Application (Employer received applicant)
+    if (combined.includes('APPLICANT') || combined.includes('APPLIED') || combined.includes('JOB_APPLICATION')) {
+      return {
+        icon: <UserPlus size={19} color="#2563EB" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 4. Application Status Confirmation (Candidate sent application)
+    if (combined.includes('APPLICATION') || combined.includes('APPLY')) {
+      return {
+        icon: <UserCheck size={19} color="#2563EB" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 5. Job Posting, Vacancy, Role Management
+    if (combined.includes('JOB') || combined.includes('VACANCY') || combined.includes('POSTED')) {
+      return {
+        icon: <Briefcase size={19} color="#0A58E2" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 6. Promotional Banners & Ad Campaigns
+    if (combined.includes('BANNER') || combined.includes('PROMOT') || combined.includes('ADVERTI') || combined.includes('CAMPAIGN')) {
+      return {
+        icon: <Megaphone size={19} color="#7C3AED" strokeWidth={2.0} />,
+        bgColor: '#F5F3FF',
+        borderColor: '#DDD6FE',
+      };
+    }
+
+    // 7. Security, Identity, Aadhaar, KYC
+    if (combined.includes('VERIF') || combined.includes('SECURITY') || combined.includes('SHIELD') || combined.includes('AADHAAR')) {
+      return {
+        icon: <ShieldCheck size={19} color="#0284C7" strokeWidth={2.0} />,
+        bgColor: '#F0F9FF',
+        borderColor: '#BAE6FD',
+      };
+    }
+
+    // 8. Resume, Bio-Data, Documents
+    if (combined.includes('RESUME') || combined.includes('DOC') || combined.includes('BIO-DATA')) {
+      return {
+        icon: <FileText size={19} color="#6366F1" strokeWidth={2.0} />,
+        bgColor: '#EEF2FF',
+        borderColor: '#C7D2FE',
+      };
+    }
+
+    // 9. Rejections, Cancellations, Closed Vacancies
+    if (combined.includes('REJECT') || combined.includes('CANCEL') || combined.includes('DECLIN') || combined.includes('EXPIRE')) {
+      return {
+        icon: <XCircle size={19} color="#DC2626" strokeWidth={2.0} />,
+        bgColor: '#FEF2F2',
+        borderColor: '#FECACA',
+      };
+    }
+
+    // 10. Help, Support, Helpdesk
+    if (combined.includes('SUPPORT') || combined.includes('TICKET') || combined.includes('HELP')) {
+      return {
+        icon: <Headphones size={19} color="#475569" strokeWidth={2.0} />,
+        bgColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
+      };
+    }
+
+    // 11. Default System Alert
+    return {
+      icon: <BellRing size={19} color="#2563EB" strokeWidth={2.0} />,
+      bgColor: '#EFF6FF',
+      borderColor: '#BFDBFE',
+    };
   };
 
+  const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
+  const safeTopPadding = Math.max(insets.top, statusBarHeight);
+
   return (
-    <View style={styles.container}>
-      {/* Standard Clean Top Header with Profile Picture Drawer Opener */}
-      <Header
-        searchPlaceholder="Search Notifications"
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        showBack={false}
-      />
+    <View style={[styles.container, { paddingTop: safeTopPadding }]}>
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
+      {/* Three-Dot Dropdown Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+          <View style={styles.menuModalOverlay}>
+            <View style={[styles.dropdownMenuCard, { top: safeTopPadding + 44 }]}>
+              {/* Option 1: Mark all as read */}
+              <TouchableOpacity
+                style={styles.dropdownMenuItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setMenuVisible(false);
+                  onMarkAllNotifRead();
+                }}
+              >
+                <CheckCheck size={16} color={COLORS.primary} style={{ marginRight: 10 }} />
+                <Text style={styles.dropdownMenuItemText}>Mark all as read</Text>
+              </TouchableOpacity>
+
+              <View style={styles.dropdownDivider} />
+
+              {/* Option 2: Clear all */}
+              <TouchableOpacity
+                style={styles.dropdownMenuItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setMenuVisible(false);
+                  onClearAllNotif();
+                }}
+              >
+                <Trash2 size={16} color="#DC2626" style={{ marginRight: 10 }} />
+                <Text style={[styles.dropdownMenuItemText, { color: '#DC2626' }]}>Clear all</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       <View style={styles.pageContent}>
-        {/* Filter Pills & Bulk Actions Bar */}
-        <View style={styles.actionsBarRow}>
-          <View style={styles.filterPillsGroup}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterPill, filter === 'ALL' && styles.filterPillActive]}
-              onPress={() => setFilter('ALL')}
-            >
-              <Text style={[styles.filterPillText, filter === 'ALL' && styles.filterPillTextActive]}>
-                {loading && notifications.length === 0 ? 'All' : `All (${notifications.length})`}
-              </Text>
-            </TouchableOpacity>
+        {/* Top Sticky Controls Wrap: Tab Bar & Capsule Filters with Crisp White Elevation */}
+        <View style={styles.headerControlsWrap}>
+          {/* Standard Underline Tabular Menu (Full Width Equal Tabs with Three-Dot Icon) */}
+          <View style={styles.tabularMenuRow}>
+            <View style={styles.tabsContainer}>
+              {/* Tab: ALL */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.tabularTabItem, filter === 'ALL' && styles.tabularTabItemActive]}
+                onPress={() => setFilter('ALL')}
+              >
+                <View style={styles.tabTextWithBadge}>
+                  <Text style={[styles.tabularTabText, filter === 'ALL' && styles.tabularTabTextActive]}>
+                    All
+                  </Text>
+                  {notifications.length > 0 && (
+                    <View style={[styles.tabCountBadge, filter === 'ALL' && styles.tabCountBadgeActive]}>
+                      <Text style={[styles.tabCountBadgeText, filter === 'ALL' && styles.tabCountBadgeTextActive]}>
+                        {notifications.length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {filter === 'ALL' && <View style={styles.tabularActiveIndicator} />}
+              </TouchableOpacity>
 
+              {/* Tab: UNREAD */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.tabularTabItem, filter === 'UNREAD' && styles.tabularTabItemActive]}
+                onPress={() => setFilter('UNREAD')}
+              >
+                <View style={styles.tabTextWithBadge}>
+                  <Text style={[styles.tabularTabText, filter === 'UNREAD' && styles.tabularTabTextActive]}>
+                    Unread
+                  </Text>
+                  {unreadCount > 0 && (
+                    <View style={[styles.tabCountBadge, filter === 'UNREAD' && styles.tabCountBadgeUnreadActive]}>
+                      <Text style={[styles.tabCountBadgeText, filter === 'UNREAD' && styles.tabCountBadgeTextActive]}>
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {filter === 'UNREAD' && <View style={styles.tabularActiveIndicator} />}
+              </TouchableOpacity>
+            </View>
+
+            {/* Three-Dot Menu Action at End of Tab Menu */}
             <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.filterPill, filter === 'UNREAD' && styles.filterPillActive]}
-              onPress={() => setFilter('UNREAD')}
+              style={styles.tabMoreOptionsBtn}
+              onPress={() => setMenuVisible(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={[styles.filterPillText, filter === 'UNREAD' && styles.filterPillTextActive]}>
-                {loading && notifications.length === 0
-                  ? 'Unread'
-                  : `Unread (${unreadCount > 9 ? '9+' : unreadCount})`}
-              </Text>
+              <MoreVertical size={20} color="#64748B" strokeWidth={2.2} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.bulkActionsGroup}>
-            {!loading && unreadCount > 0 ? (
-              <TouchableOpacity activeOpacity={0.8} style={styles.bulkActionBtn} onPress={onMarkAllNotifRead}>
-                <CheckCheck size={14} color={COLORS.primary} />
-                <Text style={styles.bulkActionBtnText}>Read All</Text>
-              </TouchableOpacity>
-            ) : null}
-
-            {!loading && notifications.length > 0 ? (
-              <TouchableOpacity activeOpacity={0.8} style={styles.bulkActionBtn} onPress={onClearAllNotif}>
-                <Trash2 size={14} color="#DC2626" />
-                <Text style={[styles.bulkActionBtnText, { color: '#DC2626' }]}>Clear All</Text>
-              </TouchableOpacity>
-            ) : null}
+          {/* LinkedIn-Style Horizontal Capsule Filter Pills */}
+          <View style={styles.capsuleFiltersWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.capsuleScrollContent}
+            >
+              {categoryFilterOptions.map((cat) => {
+                const isActive = selectedCategory === cat.key;
+                return (
+                  <TouchableOpacity
+                    key={cat.key}
+                    style={[styles.capsulePill, isActive && styles.capsulePillActive]}
+                    onPress={() => setSelectedCategory(cat.key)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.capsuleText, isActive && styles.capsuleTextActive]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
 
-        {/* Section Divider Line */}
-        <View style={styles.slateSectionDivider} />
-
-        {/* Notification Cards List */}
+        {/* Notification LinkedIn-Style Flat List */}
         {loading ? (
-          <View style={{ gap: 10, paddingHorizontal: 16, marginTop: 8 }}>
-            {[1, 2, 3, 4, 5].map((key) => (
-              <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' }}>
-                <SkeletonLoader width={36} height={36} style={{ borderRadius: 18 }} />
+          <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+            {[1, 2, 3, 4, 5, 6].map((key) => (
+              <View key={key} style={styles.skeletonRow}>
+                <SkeletonLoader width={40} height={40} style={{ borderRadius: 20 }} />
                 <View style={{ flex: 1, gap: 6 }}>
-                  <SkeletonLoader width="65%" height={15} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width="85%" height={12} style={{ borderRadius: 4 }} />
-                  <SkeletonLoader width="35%" height={10} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="65%" height={14} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="90%" height={12} style={{ borderRadius: 4 }} />
+                  <SkeletonLoader width="30%" height={10} style={{ borderRadius: 4 }} />
                 </View>
               </View>
             ))}
           </View>
         ) : displayedList.length === 0 ? (
-          <View style={styles.emptyCardContainer}>
-            <View style={styles.emptyIconCircle}>
-              <CheckCircle2 size={32} color="#16A34A" />
+          filter === 'UNREAD' ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <CheckCircle2 size={32} color="#16A34A" />
+              </View>
+              <Text style={styles.emptyTitle}>You're All Caught Up!</Text>
+              <Text style={styles.emptyDesc}>
+                No unread notifications in this category.
+              </Text>
             </View>
-            <Text style={styles.emptyTitle}>You're All Caught Up!</Text>
-            <Text style={styles.emptyDesc}>
-              {filter === 'UNREAD'
-                ? 'No unread notifications at the moment.'
-                : 'No notifications found in your account.'}
-            </Text>
-          </View>
+          ) : selectedCategory === 'JOB_POSTINGS' ? (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <Briefcase size={26} color={COLORS.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>No Job Posting Notifications</Text>
+              <Text style={styles.emptyDesc}>
+                Updates regarding job post approvals, status changes, and vacancy expiries will appear here.
+              </Text>
+            </View>
+          ) : selectedCategory === 'APPLICATIONS' ? (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <UserPlus size={26} color={COLORS.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>No Application Notifications</Text>
+              <Text style={styles.emptyDesc}>
+                {isEmployer
+                  ? 'Candidate job applications and applicant profile alerts will be shown here.'
+                  : 'Updates on your job application statuses, shortlists, and hiring decisions will appear here.'}
+              </Text>
+            </View>
+          ) : selectedCategory === 'INTERVIEWS' ? (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                <CalendarClock size={26} color="#D97706" />
+              </View>
+              <Text style={styles.emptyTitle}>No Interview Notifications</Text>
+              <Text style={styles.emptyDesc}>
+                Scheduled interview invitations, timings, and walk-in venue updates will be listed here.
+              </Text>
+            </View>
+          ) : selectedCategory === 'BANNERS' ? (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: '#F5F3FF' }]}>
+                <Megaphone size={26} color="#7C3AED" />
+              </View>
+              <Text style={styles.emptyTitle}>No Banner Notifications</Text>
+              <Text style={styles.emptyDesc}>
+                Status updates on your advertisement campaigns and promotional banner approvals will be shown here.
+              </Text>
+            </View>
+          ) : selectedCategory === 'PLATFORM' ? (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: '#F1F5F9' }]}>
+                <Headphones size={26} color="#475569" />
+              </View>
+              <Text style={styles.emptyTitle}>No Platform Notifications</Text>
+              <Text style={styles.emptyDesc}>
+                Support ticket responses, team announcements, and account verification updates will appear here.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <CheckCircle2 size={32} color="#16A34A" />
+              </View>
+              <Text style={styles.emptyTitle}>You're All Caught Up!</Text>
+              <Text style={styles.emptyDesc}>
+                No notifications found for the selected filter.
+              </Text>
+            </View>
+          )
         ) : (
           <ScrollView
             style={styles.scrollList}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: Math.max(insets.bottom + 95, 115) },
+            ]}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -232,46 +616,50 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
           >
             {displayedList.map((item) => {
               const isRead = item.read || item.is_read;
+              const visual = renderNotifVisualMeta(item.type, item.title, item.message);
+
               return (
                 <TouchableOpacity
                   key={item.id}
-                  activeOpacity={0.88}
-                  style={[styles.notificationCard, !isRead && styles.notificationCardUnread]}
+                  activeOpacity={0.7}
+                  style={[styles.notifRowItem, !isRead && styles.notifRowItemUnread]}
                   onPress={() => handleNotificationClick(item)}
                 >
-                  {/* Direct Icon (No container shape) */}
-                  <View style={{ marginTop: 2 }}>
-                    {renderNotifDirectIcon(item.type, item.title, item.message)}
+                  {/* Left Circular Avatar with Semantic Theme */}
+                  <View
+                    style={[
+                      styles.avatarCircle,
+                      { backgroundColor: visual.bgColor, borderColor: visual.borderColor },
+                    ]}
+                  >
+                    {visual.icon}
                   </View>
 
-                  {/* Main Content Area */}
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemTitleRow}>
-                      <View style={styles.titleWrapRow}>
-                        {!isRead ? <View style={styles.unreadDot} /> : null}
-                        <Text style={[styles.itemTitle, !isRead && styles.itemTitleUnread]} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                      </View>
-                      <Text style={styles.itemTime}>{formatTimeAgo(item.created_at || item.createdAt)}</Text>
-                    </View>
-
-                    <Text style={styles.itemMessage} numberOfLines={2}>
+                  {/* Middle Content Area */}
+                  <View style={styles.rowContentWrap}>
+                    <Text style={[styles.rowTitleText, !isRead && styles.rowTitleTextUnread]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.rowMessageText} numberOfLines={2}>
                       {item.message}
                     </Text>
+                    <Text style={styles.rowTimeText}>{formatTimeAgo(item.created_at || item.createdAt)}</Text>
                   </View>
 
-                  {/* Delete Icon */}
-                  <TouchableOpacity
-                    style={styles.itemDeleteBtn}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      onDeleteNotif(item.id);
-                    }}
-                  >
-                    <Trash2 size={15} color="#94A3B8" />
-                  </TouchableOpacity>
+                  {/* Right Actions / Unread Dot */}
+                  <View style={styles.rightActionColumn}>
+                    {!isRead && <View style={styles.unreadIndicatorDot} />}
+                    <TouchableOpacity
+                      style={styles.deleteRowBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        onDeleteNotif(item.id);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={13} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -285,178 +673,270 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#FFFFFF',
+  },
+  menuModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.25)',
+  },
+  dropdownMenuCard: {
+    position: 'absolute',
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    minWidth: 175,
+    paddingVertical: 4,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  dropdownMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  dropdownMenuItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
   },
   pageContent: {
     flex: 1,
-    paddingHorizontal: 16,
-    backgroundColor: '#F7F7F7',
-  },
-  actionsBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  filterPillsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
   },
-  filterPillActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+
+  headerControlsWrap: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+    zIndex: 10,
   },
-  filterPillText: {
-    fontSize: 11.5,
+
+  /* Standard Underline Tabular Menu */
+  tabularMenuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingLeft: 4,
+    paddingRight: 8,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  tabularTabItem: {
+    flex: 1,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  tabularTabItemActive: {},
+  tabTextWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tabularTabText: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#64748B',
   },
-  filterPillTextActive: {
+  tabularTabTextActive: {
     color: COLORS.primary,
-    fontWeight: '800',
+    fontWeight: '700',
+  },
+  tabCountBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+  },
+  tabCountBadgeActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  tabCountBadgeUnreadActive: {
+    backgroundColor: '#FEF2F2',
+  },
+  tabCountBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  tabCountBadgeTextActive: {
+    color: COLORS.primary,
+  },
+  tabularActiveIndicator: {
+    position: 'absolute',
+    bottom: -1,
+    left: 8,
+    right: 8,
+    height: 2.5,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  tabMoreOptionsBtn: {
+    padding: 8,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
   },
 
-  bulkActionsGroup: {
+  /* LinkedIn-Style Horizontal Capsule Filter Pills */
+  capsuleFiltersWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+  },
+  capsuleScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  capsulePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5.5,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  capsulePillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  capsuleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  capsuleTextActive: {
+    color: '#FFFFFF',
+  },
+
+  /* Skeleton Loading Row */
+  skeletonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  bulkActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  bulkActionBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.primary,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
 
-  slateSectionDivider: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 6,
-  },
-
-  loadingBox: {
-    paddingVertical: 60,
+  /* Empty State */
+  emptyContainer: {
+    marginTop: 60,
+    paddingHorizontal: 32,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  loadingText: {
-    fontSize: 11.5,
-    color: '#64748B',
-  },
-  emptyCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 16,
   },
   emptyIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#0F172A',
+    marginBottom: 4,
   },
   emptyDesc: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 16.5,
+    lineHeight: 17,
   },
 
+  /* LinkedIn-Style Notification List */
   scrollList: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    paddingTop: 6,
-    paddingBottom: 120,
-    gap: 10,
+    paddingBottom: 40,
   },
-  notificationCard: {
+  notifRowItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 12,
+  },
+  notifRowItemUnread: {
+    backgroundColor: '#F0F7FF',
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    padding: 12,
-    gap: 10,
-    elevation: 1,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-  },
-  notificationCardUnread: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-    backgroundColor: '#FFFFFF',
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemTitleRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 3,
+    justifyContent: 'center',
+    marginTop: 1,
   },
-  titleWrapRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  rowContentWrap: {
     flex: 1,
-    marginRight: 6,
+    paddingRight: 4,
   },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
-    marginRight: 6,
-  },
-  itemTitle: {
-    fontSize: 12,
+  rowTitleText: {
+    fontSize: 12.5,
     fontWeight: '500',
     color: '#334155',
-    flex: 1,
+    marginBottom: 2,
   },
-  itemTitleUnread: {
+  rowTitleTextUnread: {
     fontWeight: '700',
     color: '#0F172A',
   },
-  itemTime: {
-    fontSize: 10,
+  rowMessageText: {
+    fontSize: 11.5,
+    color: '#475569',
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  rowTimeText: {
+    fontSize: 10.5,
     color: '#94A3B8',
+    fontWeight: '500',
   },
-  itemMessage: {
-    fontSize: 11,
-    color: '#64748B',
-    lineHeight: 15,
+  rightActionColumn: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 3,
+    gap: 12,
   },
-  itemDeleteBtn: {
-    padding: 4,
-    marginTop: 1,
+  unreadIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  deleteRowBtn: {
+    padding: 3,
   },
 });

@@ -11,10 +11,12 @@ import {
   clearAuthSession,
 } from '../utils/secureStorage';
 import { setGlobalCompanyLogo } from '../utils/companyLogos';
+import { LogoutProcessingModal } from '../components/common/LogoutProcessingModal';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isLoggingOut: boolean;
   isAuthenticated: boolean;
   login: (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => Promise<any>;
   loginWithGoogle: (payload: any) => Promise<void>;
@@ -31,6 +33,7 @@ export const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   // Automatically reset user to null ONLY when credentials are confirmed invalid
   useEffect(() => {
@@ -441,12 +444,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    setIsLoading(true);
+    setIsLoggingOut(true);
+    // Fire-and-forget server logout in background without blocking UI
+    authApi.logout().catch(() => {});
+
     try {
       await clearAuthSession();
+      await new Promise((resolve) => setTimeout(resolve, 200));
       setUser(null);
     } finally {
-      setIsLoading(false);
+      setIsLoggingOut(false);
     }
   };
 
@@ -455,6 +462,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isLoading,
+        isLoggingOut,
         isAuthenticated: !!user,
         login,
         loginWithGoogle,
@@ -467,6 +475,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+      <LogoutProcessingModal visible={isLoggingOut} />
     </AuthContext.Provider>
   );
 };

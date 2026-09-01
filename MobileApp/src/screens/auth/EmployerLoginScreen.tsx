@@ -141,7 +141,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      showToast(`Welcome back to JobMarket!`, 'success');
+      showToast('Welcome back to JobMarket!', 'success', 1000);
     } catch (err: any) {
       const errMsg = err.message || 'Login failed. Please check your credentials.';
 

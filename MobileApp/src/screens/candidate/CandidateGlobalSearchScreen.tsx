@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeft,
   Search,
+  SearchX,
   X,
   Clock,
   TrendingUp,
@@ -26,6 +27,7 @@ import {
 import { COLORS } from '../../constants/theme';
 import { apiFetch } from '../../api/client';
 import { Job } from '../../types';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 
 const RECENT_SEARCHES_STORAGE_KEY = '@jobmarket_recent_searches_v2';
 
@@ -221,6 +223,11 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
   }, [searchQuery, allJobs, allCompanies]);
 
   const hasLiveQuery = searchQuery.trim().length > 0;
+  const hasAnySuggestions =
+    autocompleteSuggestions.companies.length > 0 ||
+    autocompleteSuggestions.jobs.length > 0 ||
+    autocompleteSuggestions.trades.length > 0 ||
+    autocompleteSuggestions.locations.length > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -234,7 +241,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           activeOpacity={0.7}
         >
-          <ArrowLeft size={20} color="#0F172A" />
+          <ArrowLeft size={24} color="#0F172A" strokeWidth={1.85} />
         </TouchableOpacity>
 
         <View style={styles.searchInputWrapper}>
@@ -297,6 +304,43 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               <ArrowUpRight size={15} color="#94A3B8" />
             </TouchableOpacity>
 
+            {!hasAnySuggestions ? (
+              <View style={styles.noResultsContainer}>
+                <View style={styles.noResultsIconBox}>
+                  <SearchX size={26} color="#64748B" strokeWidth={2} />
+                </View>
+                <Text style={styles.noResultsTitle}>No Results Found</Text>
+                <Text style={styles.noResultsSub}>
+                  No direct matches found for "{searchQuery.trim()}".
+                </Text>
+
+                <View style={styles.searchTipsBox}>
+                  <Text style={styles.searchTipsHeader}>SUGGESTIONS & TIPS</Text>
+                  <Text style={styles.searchTipItem}>• Check for spelling errors or alternative abbreviations</Text>
+                  <Text style={styles.searchTipItem}>• Search by general trade (e.g., CNC, VMC, Fitter, Welder)</Text>
+                  <Text style={styles.searchTipItem}>• Search by MIDC industrial area (e.g., Waluj, Chakan, Bhosari)</Text>
+                </View>
+
+                {/* Popular Trades Quick Search */}
+                <View style={styles.popularFallbackSection}>
+                  <Text style={styles.popularFallbackTitle}>POPULAR INDUSTRIAL ROLES</Text>
+                  <View style={styles.popularChipsWrap}>
+                    {TRENDING_ROLES.slice(0, 5).map((role) => (
+                      <TouchableOpacity
+                        key={role}
+                        style={styles.popularChipBtn}
+                        onPress={() => handleExecuteSearch(role)}
+                        activeOpacity={0.7}
+                      >
+                        <TrendingUp size={12} color={COLORS.primary} style={{ marginRight: 5 }} />
+                        <Text style={styles.popularChipText}>{role}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
             {/* Standalone Matching Companies & Factories */}
             {autocompleteSuggestions.companies.length > 0 ? (
               <View style={styles.sectionWrap}>
@@ -307,6 +351,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                   const compName = comp.name || comp.company_name || comp.company || 'Industrial Company';
                   const compLoc = comp.midc_zone || comp.location || comp.city || 'Industrial MIDC';
                   const compInd = comp.industry || 'Manufacturing';
+                  const compLogo = comp.logo || comp.logo_url || comp.logoUrl || comp.profilePictureUrl || comp.profile_picture_url;
                   return (
                     <TouchableOpacity
                       key={comp.id || compName}
@@ -314,7 +359,13 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                       onPress={() => handleCompanyClick(comp)}
                       activeOpacity={0.65}
                     >
-                      <Building2 size={17} color="#0F172A" style={styles.rowIcon} />
+                      <CompanyLogoAvatar
+                        logoUrl={compLogo}
+                        companyName={compName}
+                        size={36}
+                        borderRadius={8}
+                        style={{ marginRight: 12 }}
+                      />
                       <View style={styles.rowContent}>
                         <Text style={styles.rowTitleText} numberOfLines={1}>
                           {compName}
@@ -336,25 +387,34 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING JOBS</Text>
                 </View>
-                {autocompleteSuggestions.jobs.map((job) => (
-                  <TouchableOpacity
-                    key={job.id}
-                    style={styles.searchRow}
-                    onPress={() => handleJobClick(job)}
-                    activeOpacity={0.65}
-                  >
-                    <Briefcase size={17} color="#64748B" style={styles.rowIcon} />
-                    <View style={styles.rowContent}>
-                      <Text style={styles.rowTitleText} numberOfLines={1}>
-                        {job.title}
-                      </Text>
-                      <Text style={styles.rowSubText} numberOfLines={1}>
-                        {job.company} • {job.location}
-                      </Text>
-                    </View>
-                    <ChevronRight size={15} color="#CBD5E1" />
-                  </TouchableOpacity>
-                ))}
+                {autocompleteSuggestions.jobs.map((job) => {
+                  const jobLogo = job.companyLogo || job.company_logo || (job as any)?.logo || (job as any)?.logoUrl || (job as any)?.profile_picture_url;
+                  return (
+                    <TouchableOpacity
+                      key={job.id}
+                      style={styles.searchRow}
+                      onPress={() => handleJobClick(job)}
+                      activeOpacity={0.65}
+                    >
+                      <CompanyLogoAvatar
+                        logoUrl={jobLogo}
+                        companyName={job.company}
+                        size={36}
+                        borderRadius={8}
+                        style={{ marginRight: 12 }}
+                      />
+                      <View style={styles.rowContent}>
+                        <Text style={styles.rowTitleText} numberOfLines={1}>
+                          {job.title}
+                        </Text>
+                        <Text style={styles.rowSubText} numberOfLines={1}>
+                          {job.company} • {job.location}
+                        </Text>
+                      </View>
+                      <ChevronRight size={15} color="#CBD5E1" />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ) : null}
 
@@ -456,7 +516,12 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                   onPress={() => handleExecuteSearch(comp.name)}
                   activeOpacity={0.65}
                 >
-                  <Building2 size={16} color="#64748B" style={styles.rowIcon} />
+                  <CompanyLogoAvatar
+                    companyName={comp.name}
+                    size={36}
+                    borderRadius={8}
+                    style={{ marginRight: 12 }}
+                  />
                   <View style={styles.rowContent}>
                     <Text style={styles.rowTitleText}>{comp.name}</Text>
                     <Text style={styles.rowSubText}>{comp.industry} • {comp.location}</Text>
@@ -532,7 +597,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   backButton: {
-    padding: 2,
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -639,5 +704,83 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: 4,
+  },
+  noResultsContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  noResultsIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  noResultsTitle: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  noResultsSub: {
+    fontSize: 12.5,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 18,
+    lineHeight: 18,
+  },
+  searchTipsBox: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    marginBottom: 20,
+  },
+  searchTipsHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  searchTipItem: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  popularFallbackSection: {
+    width: '100%',
+  },
+  popularFallbackTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.6,
+    marginBottom: 10,
+  },
+  popularChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  popularChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  popularChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1E40AF',
   },
 });

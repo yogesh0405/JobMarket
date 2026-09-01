@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { Job } from '../../types';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
+import { extractCoordinatesFromMapInput, isValidLatLong, KNOWN_LOCATIONS } from '../../utils/mapUrlParser';
 import { CompanyLogoAvatar } from '../common/CompanyLogoAvatar';
 
 interface InteractiveJobMapViewProps {
@@ -54,13 +55,62 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
   const [modeFilter, setModeFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
 
-  // Prepare map jobs with precise Sambhajinagar coordinates & corporate logos
+  // Prepare map jobs with precise Google Maps coordinates & corporate logos
   const mapJobs = jobs.map((job, idx) => {
-    // Generate deterministic coordinate offsets around Sambhajinagar industrial hubs if lat/lng are null
-    const baseLat = 19.8762 + ((((idx * 17) % 50) - 25) * 0.0035);
-    const baseLng = 75.3433 + ((((idx * 23) % 50) - 25) * 0.0042);
+    // 1. Check direct latitude and longitude
+    let lat = Number(job.latitude);
+    let lng = Number(job.longitude);
 
-    const rawLogo = job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo;
+    // 2. Parse from Google Maps URL if direct coordinates are missing/invalid
+    if (!isValidLatLong(lat, lng)) {
+      const mapUrl =
+        job.googleMapsUrl ||
+        (job as any).google_maps_url ||
+        (job as any).maps_url ||
+        (job as any).mapsUrl ||
+        (job as any).mapUrl;
+      if (mapUrl && typeof mapUrl === 'string') {
+        const parsed = extractCoordinatesFromMapInput(mapUrl);
+        if (parsed && isValidLatLong(parsed.latitude, parsed.longitude)) {
+          lat = parsed.latitude;
+          lng = parsed.longitude;
+        }
+      }
+    }
+
+    // 3. Match from Location / MIDC Zone name if still missing
+    if (!isValidLatLong(lat, lng)) {
+      const locText = (
+        (job.location || '') +
+        ' ' +
+        ((job as any).midc_zone || '') +
+        ' ' +
+        ((job as any).city || '')
+      ).toLowerCase();
+
+      for (const key of Object.keys(KNOWN_LOCATIONS)) {
+        if (locText.includes(key)) {
+          lat = KNOWN_LOCATIONS[key].lat + ((((idx * 13) % 20) - 10) * 0.0008);
+          lng = KNOWN_LOCATIONS[key].lng + ((((idx * 19) % 20) - 10) * 0.0008);
+          break;
+        }
+      }
+    }
+
+    // 4. Deterministic industrial hub fallback offset
+    if (!isValidLatLong(lat, lng)) {
+      lat = 19.8762 + ((((idx * 17) % 50) - 25) * 0.0035);
+      lng = 75.3433 + ((((idx * 23) % 50) - 25) * 0.0042);
+    }
+
+    const rawLogo =
+      job.companyLogo ||
+      (job as any).company_logo ||
+      (job as any).logoUrl ||
+      (job as any).logo_url ||
+      (job as any).logo ||
+      (job as any).employer_logo ||
+      (job as any).avatar_url;
     const resolvedLogo = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
     const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563EB'/%3E%3Cpath d='M30 75 V40 L50 25 L70 40 V75 Z' fill='none' stroke='%23FFFFFF' stroke-width='6'/%3E%3Crect x='42' y='55' width='16' height='20' fill='%23FFFFFF'/%3E%3C/svg%3E";
     const logoUrl = (resolvedLogo && typeof resolvedLogo === 'string' && resolvedLogo.trim().length > 5 && resolvedLogo !== 'null')
@@ -77,8 +127,8 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
       jobType: job.job_type || (job as any).jobType || 'Full-time',
       workMode: job.work_mode || (job as any).workMode || 'On-site',
       logoUrl: logoUrl,
-      latitude: Number(job.latitude) || baseLat,
-      longitude: Number(job.longitude) || baseLng,
+      latitude: lat,
+      longitude: lng,
     };
   });
 
