@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ScrollView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Building2,
   Search,
@@ -63,17 +64,23 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
     onlyHiring: false,
   });
 
-  useEffect(() => {
-    if (route?.params?.appliedCompanyFilters) {
-      setFilters(route.params.appliedCompanyFilters);
-    }
-  }, [route?.params?.appliedCompanyFilters]);
+  useFocusEffect(
+    useCallback(() => {
+      if (route?.params?.appliedCompanyFilters) {
+        setFilters(route.params.appliedCompanyFilters);
+      }
+    }, [route?.params?.appliedCompanyFilters])
+  );
 
   const handleOpenFilterScreen = (tabKey: string = 'LOCATION') => {
     navigation.navigate('CompanyFilter', {
       defaultTab: tabKey,
       currentFilters: filters,
-      returnScreen: 'CandidateCompanies',
+      companies: companies,
+      onApplyFilters: (newFilters: CompanyFilterState) => {
+        setFilters(newFilters);
+      },
+      returnScreen: 'CandidateSavedTab',
     });
   };
 
@@ -540,7 +547,7 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         ListHeaderComponent={
           <View style={styles.countRow}>
             <Text style={styles.countText}>
-              Showing <Text style={{ fontWeight: '800', color: '#0F172A' }}>{filteredCompanies.length}</Text> Verified Companies
+              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredCompanies.length})</Text> Verified Companies
             </Text>
 
             {(activeFilterCount > 0 || searchQuery.trim()) && (

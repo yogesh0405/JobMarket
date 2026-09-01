@@ -130,10 +130,14 @@ export const CompanyFilterScreen: React.FC = () => {
     };
     if (typeof route.params?.onApplyFilters === 'function') {
       route.params.onApplyFilters(applied);
+    }
+    if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      const returnScreen = route.params?.returnScreen || 'CandidateCompanies';
-      navigation.navigate(returnScreen, { appliedCompanyFilters: applied });
+      navigation.navigate('CandidateMain', {
+        screen: 'CandidateSavedTab',
+        params: { appliedCompanyFilters: applied },
+      });
     }
   };
 

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import {
   Briefcase,
@@ -15,6 +16,11 @@ import {
   SearchX,
   TrendingUp,
   RotateCcw,
+  Building2,
+  GraduationCap,
+  MapPin,
+  Clock,
+  X,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -422,7 +428,10 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   useFocusEffect(
     useCallback(() => {
       loadJobsData(false);
-    }, [loadJobsData])
+      if (route?.params?.appliedFilters) {
+        setActiveFilters(route.params.appliedFilters);
+      }
+    }, [loadJobsData, route?.params?.appliedFilters])
   );
 
   const onRefresh = useCallback(() => {
@@ -444,7 +453,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const filteredJobs = useMemo(() => {
     const cleanQ = searchQuery.toLowerCase().trim();
     return jobs.filter((job) => {
-      // 1. Text Search Query Match (Intelligent domain matching)
+      // 1. Text Search Query Match
       if (cleanQ) {
         const matchesQuery = matchJobAgainstKeyword(job, cleanQ);
         if (!matchesQuery) return false;
@@ -463,7 +472,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
       if (!catMatch) return false;
 
-      // 3. Industry Filter Match (Smart Token & Stemming Match)
+      // 3. Industry Filter Match
       if (activeFilters.industry && activeFilters.industry !== 'All Industries') {
         const rawInd = activeFilters.industry.toLowerCase().trim();
         const jobInd = (job.industry || '').toLowerCase();
@@ -493,7 +502,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         if (!matchesEdu) return false;
       }
 
-      // 5. MIDC Zone Filter Match (Token Matching)
+      // 5. MIDC Zone Filter Match
       if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
         const rawZone = activeFilters.midcZone.toLowerCase();
         const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
@@ -524,67 +533,12 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       // 8. Amenities Filters
       if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
       if (activeFilters.canteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
+      if (activeFilters.accommodation && !(job.accommodation || (job as any).accommodation || (job.perks || []).includes('Accommodation'))) return false;
+      if (activeFilters.overtime && !(job.overtime || (job as any).overtime || (job.perks || []).includes('Overtime Pay'))) return false;
 
       return true;
     });
   }, [jobs, searchQuery, selectedCategory, activeFilters]);
-
-  const getMatchingCountForDraft = useCallback(
-    (draftFilters: FilterOptions) => {
-      const q = searchQuery.toLowerCase().trim();
-      return jobs.filter((job) => {
-        if (q) {
-          const matchesQuery = matchJobAgainstKeyword(job, q);
-          if (!matchesQuery) return false;
-        }
-
-        const catMatch =
-          selectedCategory === 'All Jobs' ||
-          (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-          (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-          (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase()));
-
-        if (!catMatch) return false;
-
-        if (draftFilters.industry && draftFilters.industry !== 'All Industries') {
-          const rawInd = draftFilters.industry.toLowerCase().trim();
-          const jobInd = (job.industry || '').toLowerCase();
-          const jobTitle = (job.title || '').toLowerCase();
-          const jobTrade = (job.trade || '').toLowerCase();
-          const jobDesc = (job.description || '').toLowerCase();
-
-          const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-          const indTokens = rawInd
-            .split(/[\s&,/()]+/)
-            .map((t: string) => t.replace(/(s|ing|als|ics)$/, ''))
-            .filter((t: string) => t.length >= 2);
-
-          const matchesInd =
-            directMatch ||
-            indTokens.length === 0 ||
-            indTokens.some((t: string) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
-
-          if (!matchesInd) return false;
-        }
-
-        if (draftFilters.education && draftFilters.education !== 'All Education Levels') {
-          const matchesEdu = matchJobAgainstKeyword(job, draftFilters.education);
-          if (!matchesEdu) return false;
-        }
-
-        if (draftFilters.midcZone && draftFilters.midcZone !== 'All MIDC Zones') {
-          const rawZone = draftFilters.midcZone.toLowerCase();
-          const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t: string) => t.length > 2 && t !== 'midc' && t !== 'zone');
-          const jobLoc = (job.location || '').toLowerCase();
-          const matchesZone = zoneTokens.length === 0 || zoneTokens.some((t: string) => jobLoc.includes(t));
-          if (!matchesZone) return false;
-        }
-
-        return true;
-      }).length;
-    },
-    [jobs, searchQuery, selectedCategory]
-  );
 
   const activeFilterCount = useMemo(() => {
     return [
@@ -601,13 +555,35 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     ].filter(Boolean).length;
   }, [activeFilters]);
 
+  const resetAllFilters = useCallback(() => {
+    setActiveFilters({
+      industry: 'All Industries',
+      education: 'All Education Levels',
+      jobType: 'All Types',
+      workMode: 'All Modes',
+      minExperience: 'All Experience',
+      salaryMin: 0,
+      midcZone: 'All MIDC Zones',
+      busFacility: false,
+      canteen: false,
+      accommodation: false,
+      overtime: false,
+    });
+    setSelectedCategory('All Jobs');
+    setSearchQuery('');
+  }, []);
+
   const handleOpenFilterDrawer = useCallback(() => {
     navigation.navigate('JobFilter', {
       currentFilters: activeFilters,
+      jobs: jobs,
       totalMatchingJobsCount: filteredJobs.length,
+      onApplyFilters: (newFilters: FilterOptions) => {
+        setActiveFilters(newFilters);
+      },
       returnScreen: 'CandidateJobSearch',
     });
-  }, [navigation, activeFilters, filteredJobs.length]);
+  }, [navigation, activeFilters, jobs, filteredJobs.length]);
 
   return (
     <View style={styles.container}>
@@ -674,6 +650,126 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         navigation={navigation}
       />
 
+      {/* Active Applied Filters Scrollable Strip */}
+      {activeFilterCount > 0 ? (
+        <View style={styles.activeTagsRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}>
+            {activeFilters.industry && activeFilters.industry !== 'All Industries' && (
+              <View style={styles.activeFilterTag}>
+                <Building2 size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.industry}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, industry: 'All Industries' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.education && activeFilters.education !== 'All Education Levels' && (
+              <View style={styles.activeFilterTag}>
+                <GraduationCap size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.education}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, education: 'All Education Levels' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.minExperience && activeFilters.minExperience !== 'All Experience' && (
+              <View style={styles.activeFilterTag}>
+                <Briefcase size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.minExperience}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, minExperience: 'All Experience' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones' && (
+              <View style={styles.activeFilterTag}>
+                <MapPin size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.midcZone}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, midcZone: 'All MIDC Zones' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.jobType && activeFilters.jobType !== 'All Types' && (
+              <View style={styles.activeFilterTag}>
+                <Clock size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.jobType}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, jobType: 'All Types' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.workMode && activeFilters.workMode !== 'All Modes' && (
+              <View style={styles.activeFilterTag}>
+                <SlidersHorizontal size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.workMode}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, workMode: 'All Modes' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.busFacility && (
+              <View style={styles.activeFilterTag}>
+                <Text style={styles.activeFilterTagText}>Bus Transport</Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, busFacility: false }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.canteen && (
+              <View style={styles.activeFilterTag}>
+                <Text style={styles.activeFilterTagText}>Canteen</Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, canteen: false }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.accommodation && (
+              <View style={styles.activeFilterTag}>
+                <Text style={styles.activeFilterTagText}>Hostel</Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, accommodation: false }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {activeFilters.overtime && (
+              <View style={styles.activeFilterTag}>
+                <Text style={styles.activeFilterTagText}>Overtime (OT)</Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, overtime: false }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <TouchableOpacity onPress={resetAllFilters} style={styles.resetAllPill}>
+              <RotateCcw size={10} color="#DC2626" />
+              <Text style={styles.resetAllPillText}>Reset All</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      ) : null}
+
       <FlatList
         data={loading && jobs.length === 0 ? [] : filteredJobs}
         keyExtractor={(item) => item.id}
@@ -704,7 +800,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         ListHeaderComponent={
           <View style={styles.resultsInfoRow}>
             <Text style={styles.resultsCountText}>
-              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>{filteredJobs.length}</Text> active vacancies
+              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> active vacancies
             </Text>
           </View>
         }
@@ -880,5 +976,44 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 8.5,
     fontWeight: '900',
+  },
+  activeTagsRow: {
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  activeFilterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  activeFilterTagText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: COLORS.primary,
+    maxWidth: 160,
+  },
+  resetAllPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  resetAllPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DC2626',
   },
 });
