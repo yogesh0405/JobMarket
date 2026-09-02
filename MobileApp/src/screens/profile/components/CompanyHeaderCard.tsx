@@ -14,11 +14,12 @@ import {
   Share2,
   Building2,
   Lock,
-  Headphones,
   Edit3,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
+import { MetaVerifiedBadge } from '../../../components/common/MetaVerifiedBadge';
+import { COLORS } from '../../../constants/theme';
 
 interface CompanyHeaderCardProps {
   company: any;
@@ -41,14 +42,14 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
   const insets = useSafeAreaInsets();
   const topInset =
     (Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : (insets.top || 16)) + 4;
-  const companyName = company?.name || 'insightforge';
+  const companyName = company?.name || '';
   const logoUrl = company?.logo || company?.logoUrl || null;
   const industry =
     company?.industry ||
     company?.industry_type ||
     company?.trade_specialization ||
-    'Industrial Manufacturing';
-  const companyType = company?.company_type || company?.companyType || 'Private Limited';
+    '';
+  const companyType = company?.company_type || company?.companyType || '';
 
   return (
     <View style={[styles.bannerContainer, { paddingTop: topInset }]}>
@@ -99,40 +100,36 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
 
           {/* Company Identity Hero Row */}
           <View style={styles.identityRow}>
-            {/* Large Circular White Logo Container */}
-            <View style={styles.avatarCircle}>
-              {logoUrl ? (
-                <CompanyLogoAvatar
-                  logoUrl={logoUrl}
-                  companyName={companyName}
-                  size={68}
-                  borderRadius={34}
-                />
-              ) : (
-                <Headphones size={38} color="#1764E8" strokeWidth={2.3} />
-              )}
+            {/* Company Logo Avatar (Circular Shape, No outer white ring) */}
+            <View style={styles.avatarWrapper}>
+              <CompanyLogoAvatar
+                logoUrl={logoUrl}
+                companyName={companyName}
+                size={64}
+                borderRadius={32}
+              />
             </View>
 
             {/* Company Info */}
             <View style={styles.detailsCol}>
-              {/* Company Name + Verified Badge */}
+              {/* Company Name + Meta / Instagram Verified Badge */}
               <View style={styles.titleRow}>
                 <Text style={styles.companyTitle} numberOfLines={1}>
                   {companyName}
                 </Text>
-                <View style={styles.verifiedCircleBadge}>
-                  <Check size={11} color="#FFFFFF" strokeWidth={3} />
-                </View>
+                <MetaVerifiedBadge size={19} color="#0095F6" />
               </View>
 
               {/* Subtitle Category Chips (Single Row) */}
               <View style={styles.badgePillsRow}>
-                <View style={styles.translucentPill}>
-                  <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
-                  <Text style={styles.translucentPillText} numberOfLines={1}>
-                    {industry}
-                  </Text>
-                </View>
+                {industry ? (
+                  <View style={styles.translucentPill}>
+                    <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <Text style={styles.translucentPillText} numberOfLines={1}>
+                      {industry}
+                    </Text>
+                  </View>
+                ) : null}
 
                 {companyType ? (
                   <View style={styles.translucentPill}>
@@ -186,19 +183,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
   },
-  avatarCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarWrapper: {
     marginRight: 14,
-    shadowColor: '#102A5C',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
   },
   detailsCol: {
     flex: 1,

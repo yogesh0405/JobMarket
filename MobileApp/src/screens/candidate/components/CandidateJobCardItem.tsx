@@ -27,6 +27,16 @@ interface CandidateJobCardItemProps {
   onCompanyPress?: (companyName: string) => void;
 }
 
+const safeStr = (val: any, fallback: string = ''): string => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val.trim().length > 0 ? val.trim() : fallback;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (typeof val === 'object') {
+    return val.name || val.title || val.label || val.city || val.location || fallback;
+  }
+  return String(val);
+};
+
 export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
   job,
   viewMode,
@@ -40,12 +50,12 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
 }) => {
   if (!job) return null;
 
-  const jobTitle = job.title || (job as any).job_title || 'Industrial Position';
-  const companyName = job.company || (job as any).company_name || (job as any).companyName || 'Industrial Company';
-  const locationText = job.location || (job as any)?.city || (job as any)?.midc_zone || 'Chhatrapati Sambhajinagar';
-  const timeText = formatTimeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || (job as any).createdAt);
-  const jobType = job.job_type || (job as any).jobType || 'Full-time';
-  const workMode = job.work_mode || (job as any).workMode || 'On-site';
+  const jobTitle = safeStr(job.title || (job as any).job_title, 'Industrial Position');
+  const companyName = safeStr(job.company || (job as any).company_name || (job as any).companyName, 'Industrial Company');
+  const locationText = safeStr(job.location || (job as any)?.city || (job as any)?.midc_zone, 'Chhatrapati Sambhajinagar');
+  const timeText = safeStr(formatTimeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || (job as any).createdAt), 'Recently');
+  const jobType = safeStr(job.job_type || (job as any).jobType, 'Full-time');
+  const workMode = safeStr(job.work_mode || (job as any).workMode, 'On-site');
   const jobLogo =
     job.companyLogo ||
     (job as any).company_logo ||
@@ -350,15 +360,14 @@ const styles = StyleSheet.create({
   naukriJobCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
     marginBottom: 12,
-    overflow: 'hidden',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
     elevation: 1,
   },
   naukriCardTopSection: {

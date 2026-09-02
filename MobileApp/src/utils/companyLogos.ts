@@ -5,15 +5,34 @@ import { COLORS } from '../constants/theme';
  * Manages real-time logo caching and fallback resolution for companies
  */
 
-const CORPORATE_LOGO_PLACEHOLDERS: Record<string, string> = {
-  'tata motors': 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=250&q=80',
-  'bajaj auto': 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=250&q=80',
-  'endurance technologies': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=250&q=80',
-  'varroc engineering': 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=250&q=80',
-  'siemens': 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=250&q=80',
-  'l&t precision': 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=250&q=80',
-  'perkins engines': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=250&q=80',
-  'default': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=250&q=80',
+const KNOWN_CORPORATE_LOGOS: Record<string, string> = {
+  'tata motors': 'https://logo.clearbit.com/tatamotors.com',
+  'tata motors manufacturing': 'https://logo.clearbit.com/tatamotors.com',
+  'tata': 'https://logo.clearbit.com/tata.com',
+  'bajaj auto': 'https://logo.clearbit.com/bajajauto.com',
+  'bajaj auto limited': 'https://logo.clearbit.com/bajajauto.com',
+  'bajaj auto ltd': 'https://logo.clearbit.com/bajajauto.com',
+  'bajaj': 'https://logo.clearbit.com/bajajauto.com',
+  'endurance technologies': 'https://logo.clearbit.com/endurancegroup.com',
+  'endurance': 'https://logo.clearbit.com/endurancegroup.com',
+  'varroc engineering': 'https://logo.clearbit.com/varroc.com',
+  'varroc engineering ltd': 'https://logo.clearbit.com/varroc.com',
+  'varroc': 'https://logo.clearbit.com/varroc.com',
+  'siemens': 'https://logo.clearbit.com/siemens.com',
+  'siemens india': 'https://logo.clearbit.com/siemens.com',
+  'siemens india industrial': 'https://logo.clearbit.com/siemens.com',
+  'siemens limited': 'https://logo.clearbit.com/siemens.com',
+  'bharat forge': 'https://logo.clearbit.com/bharatforge.com',
+  'bharat forge limited': 'https://logo.clearbit.com/bharatforge.com',
+  'larsen & toubro': 'https://logo.clearbit.com/larsentoubro.com',
+  'l&t': 'https://logo.clearbit.com/larsentoubro.com',
+  'skoda': 'https://logo.clearbit.com/skoda-auto.com',
+  'volkswagen': 'https://logo.clearbit.com/volkswagen.com',
+  'mahindra': 'https://logo.clearbit.com/mahindra.com',
+  'bosch': 'https://logo.clearbit.com/bosch.in',
+  'wockhardt': 'https://logo.clearbit.com/wockhardt.com',
+  'ceat': 'https://logo.clearbit.com/ceat.com',
+  'ceat tyres': 'https://logo.clearbit.com/ceat.com',
 };
 
 // Global reactive logo cache for immediate reflection across all screens & job lists
@@ -103,12 +122,17 @@ export function getCompanyLogoUrl(companyName?: string, existingLogo?: string): 
     return trimmed;
   }
 
-  // 3. High quality corporate avatar fallback URL
+  // 3. Match against real corporate brand logos
   if (normName) {
-    const placeholder = `https://ui-avatars.com/api/?name=${encodeURIComponent(normName)}&background=1E3A8A&color=ffffff&size=256&bold=true`;
-    GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()] = placeholder;
-    return placeholder;
+    const lower = normName.toLowerCase();
+    for (const [key, logo] of Object.entries(KNOWN_CORPORATE_LOGOS)) {
+      if (lower === key || lower.includes(key) || key.includes(lower)) {
+        GLOBAL_COMPANY_LOGO_CACHE[lower] = logo;
+        return logo;
+      }
+    }
   }
 
+  // 4. Default high quality company image fallback
   return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=250&q=80';
 }

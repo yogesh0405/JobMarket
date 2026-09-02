@@ -25,6 +25,7 @@ import { COLORS, RADIUS } from '../../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { calculateCandidateProfileCompletion } from '../../../utils/profileCompleteness';
 import { shareCandidate } from '../../../utils/shareUtils';
+import { MetaVerifiedBadge } from '../../../components/common/MetaVerifiedBadge';
 
 interface CandidateProfileHeroCardProps {
   user: any;
@@ -139,7 +140,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Edit3 size={17} color="#FFFFFF" strokeWidth={2.2} />
+                  <Edit3 size={20} color="#FFFFFF" strokeWidth={2.2} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -155,7 +156,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   style={styles.controlCircleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Share2 size={17} color="#FFFFFF" strokeWidth={2.2} />
+                  <Share2 size={20} color="#FFFFFF" strokeWidth={2.2} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -180,26 +181,24 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   />
                 ) : null}
                 <View style={styles.heroCameraBadge}>
-                  <Camera size={11} color={COLORS.primary} strokeWidth={2.5} />
+                  <Camera size={14} color={COLORS.primary} strokeWidth={2.4} />
                 </View>
               </TouchableOpacity>
 
               {/* Candidate Info */}
               <View style={styles.detailsCol}>
-                {/* Candidate Name + Verified Badge */}
+                {/* Candidate Name + Meta / Instagram Verified Badge */}
                 <View style={styles.titleRow}>
                   <Text style={styles.candidateTitle} numberOfLines={1}>
                     {displayName}
                   </Text>
-                  <View style={styles.verifiedCircleBadge}>
-                    <Check size={10} color="#FFFFFF" strokeWidth={3} />
-                  </View>
+                  <MetaVerifiedBadge size={19} color="#0095F6" />
                 </View>
 
                 {/* Subtitle Category Chips on Blue Banner */}
                 <View style={styles.badgePillsRow}>
                   <View style={styles.translucentPill}>
-                    <Award size={12} color="#FFFFFF" strokeWidth={2.2} />
+                    <Award size={13} color="#FFFFFF" strokeWidth={2.2} />
                     <Text style={styles.translucentPillText} numberOfLines={1}>
                       {tradeDisplay}
                     </Text>
@@ -207,7 +206,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
 
                   {location ? (
                     <View style={styles.translucentPill}>
-                      <MapPin size={12} color="#FFFFFF" strokeWidth={2.2} />
+                      <MapPin size={13} color="#FFFFFF" strokeWidth={2.2} />
                       <Text style={styles.translucentPillText} numberOfLines={1}>
                         {location}
                       </Text>
@@ -250,7 +249,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
             >
               <View style={styles.tabItemInner}>
                 <User
-                  size={14}
+                  size={16}
                   color={activeTab === 'PERSONAL' ? COLORS.primary : COLORS.textSecondary}
                   strokeWidth={activeTab === 'PERSONAL' ? 2.3 : 1.8}
                 />
@@ -273,7 +272,7 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
             >
               <View style={styles.tabItemInner}>
                 <Briefcase
-                  size={14}
+                  size={16}
                   color={
                     activeTab === 'PROFESSIONAL' ? COLORS.primary : COLORS.textSecondary
                   }
@@ -443,13 +442,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   detailsCol: {
@@ -463,15 +462,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   candidateTitle: {
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   verifiedCircleBadge: {
-    width: 17,
-    height: 17,
-    borderRadius: 8.5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -485,16 +484,16 @@ const styles = StyleSheet.create({
   translucentPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
     borderRadius: 6,
     flexShrink: 1,
   },
   translucentPillText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   bodyWrapper: {
@@ -522,15 +521,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
     color: COLORS.primary,
   },
   statLabelText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '600',
-    color: COLORS.textMuted,
-    marginTop: 1,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   statDivider: {
     width: 1,
@@ -555,7 +554,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 11,
+    paddingVertical: 12,
     position: 'relative',
   },
   tabItemInner: {
@@ -564,13 +563,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabItemText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   tabItemTextActive: {
     color: COLORS.primary,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   tabActiveUnderline: {
     position: 'absolute',
@@ -595,11 +594,11 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   serifCardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   fieldsList: {
     gap: 8,
@@ -608,7 +607,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -617,24 +616,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: RADIUS.card,
-    height: 38,
+    height: 42,
     paddingHorizontal: 12,
     justifyContent: 'center',
   },
   fieldValueText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORS.textPrimary,
   },
   fieldValueBoxMultiline: {
     height: 'auto',
-    minHeight: 52,
-    paddingVertical: 8,
+    minHeight: 56,
+    paddingVertical: 10,
   },
   fieldValueTextMultiline: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '400',
     color: COLORS.textPrimary,
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });

@@ -31,7 +31,6 @@ import { CompanyOverviewSection } from './components/CompanyOverviewSection';
 import { CompanyDetailsCard } from './components/CompanyDetailsCard';
 import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection';
 import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
-import { EditCompanyProfileModal } from './components/EditCompanyProfileModal';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { shareCompany } from '../../utils/shareUtils';
 
@@ -46,8 +45,16 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const routeCompany = route?.params?.company;
   const routeCompanyId = route?.params?.companyId || route?.params?.id || routeCompany?.id;
 
-  // Determine Company ID or Name
-  const targetCompanyId = routeCompanyId || route?.params?.name || routeCompany?.name || user?.companyName || user?.company_name || 'Bajaj Auto Ltd';
+  const userCompanyName = (user?.company_name || user?.companyName || user?.name || '').trim();
+
+  // Determine Company ID or Name from route params or logged-in user
+  const targetCompanyId =
+    routeCompanyId ||
+    route?.params?.name ||
+    routeCompany?.name ||
+    userCompanyName ||
+    user?.id ||
+    '';
 
   // Tab State: PROFILE vs ANALYTICS
   const [profileTab, setProfileTab] = useState<'PROFILE' | 'ANALYTICS'>('PROFILE');
@@ -59,9 +66,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Edit Modal State
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Apply blue status bar ONLY while on Employer Company Profile, restore on exit
   useFocusEffect(
@@ -112,34 +116,35 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   // Load Live Company Details from Live Backend API
   const loadCompanyDetails = async () => {
-    setLoadingCompany(true);
+    if (!company) setLoadingCompany(true);
     setError(null);
 
-    try {
-      const companyQuery = encodeURIComponent(targetCompanyId);
-      const json = await apiFetch(`/api/v1/companies/${companyQuery}`);
-      const compData = json?.data || (json?.name ? json : null);
+    if (targetCompanyId) {
+      try {
+        const companyQuery = encodeURIComponent(targetCompanyId);
+        const json = await apiFetch(`/api/v1/companies/${companyQuery}`);
+        const compData = json?.data || (json?.name ? json : null);
 
-      if (compData && compData.name) {
-        setCompany(compData);
-        setLoadingCompany(false);
-        return;
+        if (compData && compData.name) {
+          setCompany(compData);
+          setLoadingCompany(false);
+          return;
+        }
+      } catch (err: any) {
+        console.warn('API fetch company details notice:', err);
       }
-    } catch (err: any) {
-      console.warn('API fetch company details notice:', err);
     }
 
     try {
       const json = await apiFetch('/api/v1/companies');
       const compList = Array.isArray(json) ? json : (json?.data || []);
       if (Array.isArray(compList) && compList.length > 0) {
-        const targetLower = targetCompanyId.toLowerCase().trim();
+        const targetLower = targetCompanyId ? targetCompanyId.toLowerCase().trim() : '';
         const matched = compList.find((c: any) =>
           c && (
-            c.id === targetCompanyId ||
-            (c.name || '').toLowerCase().trim() === targetLower ||
-            (c.name || '').toLowerCase().trim().includes(targetLower) ||
-            targetLower.includes((c.name || '').toLowerCase().trim())
+            (targetCompanyId && c.id === targetCompanyId) ||
+            (user?.id && c.employer_id === user.id) ||
+            (targetLower && (c.name || '').toLowerCase().trim() === targetLower)
           )
         );
         if (matched) {
@@ -150,23 +155,30 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       }
     } catch (_) {}
 
-    setCompany((prev: any) => prev || {
-      id: targetCompanyId,
-      name: user?.companyName || user?.company_name || targetCompanyId,
-      logo: user?.companyLogo || user?.company_logo || user?.profilePictureUrl || null,
-      industry: user?.tradeSpecialization || user?.trade_specialization || (user as any)?.industry || '',
-      company_type: (user as any)?.companyType || '',
-      description: user?.companyDescription || user?.company_description || '',
-      website: user?.website || '',
-      address: user?.address || '',
-      city: (user as any)?.city || '',
-      midc_zone: user?.midcZone || user?.midc_zone || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      company_size: (user as any)?.companySize || '',
-      founded_year: (user as any)?.foundedYear || undefined,
-      gst_number: (user?.gstNumber || user?.gst_number || '').includes('@') ? '' : (user?.gstNumber || user?.gst_number || ''),
-      verified: true,
+    // Fallback: Populate strictly from authentic user state or route parameters without mock values
+    setCompany((prev: any) => {
+      if (prev && prev.name) return prev;
+      if (routeCompany && routeCompany.name) return routeCompany;
+      const u = user as any;
+      const realName = userCompanyName || (targetCompanyId ? targetCompanyId : 'My Company');
+      return {
+        id: u?.id || targetCompanyId,
+        employer_id: u?.id,
+        name: realName,
+        logo: u?.profile_picture_url || u?.profilePictureUrl || u?.avatar_url || u?.company_logo || u?.companyLogo || null,
+        industry: routeCompany?.industry || u?.tradeSpecialization || u?.trade_specialization || '',
+        company_type: routeCompany?.company_type || routeCompany?.companyType || '',
+        description: routeCompany?.description || u?.bio || '',
+        website: routeCompany?.website || '',
+        address: routeCompany?.address || u?.location || '',
+        city: routeCompany?.city || routeCompany?.location || u?.location || '',
+        midc_zone: routeCompany?.midc_zone || routeCompany?.midcZone || '',
+        email: routeCompany?.email || u?.email || '',
+        phone: routeCompany?.phone || u?.phone || '',
+        company_size: routeCompany?.company_size || '',
+        gst_number: routeCompany?.gst_number || u?.gst_number || u?.gstNumber || '',
+        verified: Boolean(u?.is_verified || u?.aadhaar_verified),
+      };
     });
     setLoadingCompany(false);
   };
@@ -259,6 +271,16 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     }));
   }, [isOwner, jobs]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadCompanyDetails();
+      loadCompanyJobs();
+      if (isOwner) {
+        fetchAnalytics();
+      }
+    }, [targetCompanyId, isOwner])
+  );
+
   useEffect(() => {
     loadCompanyDetails();
     loadCompanyJobs();
@@ -334,7 +356,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         parts.push(midc);
       }
     }
-    return parts.join(', ') || company.city || company.address || 'Waluj MIDC, Chhatrapati Sambhajinagar';
+    return parts.join(', ') || company.city || company.address || company.midc_zone || company.midcZone || '';
   }, [company]);
 
   return (
@@ -352,24 +374,34 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Primary Blue Header Banner */}
-        {!loadingCompany && (
+        {company ? (
           <CompanyHeaderCard
             company={company}
             isOwner={isOwner}
-            onEditPress={() => setIsEditModalOpen(true)}
+            onEditPress={() => {
+              navigation.navigate('EditCompanyProfile', {
+                company,
+                onSaveSuccess: handleSaveSuccess,
+              });
+            }}
             onSharePress={handleShare}
             onBackPress={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
               } else {
-                navigation.navigate('EmployerDashboard');
+                const role = (user?.role || '').toLowerCase();
+                if (role === 'candidate') {
+                  navigation.navigate('CandidateMain');
+                } else {
+                  navigation.navigate('EmployerMain');
+                }
               }
             }}
             formattedLocation={formattedLocation}
             profileTab={profileTab}
             onTabChange={(tab) => setProfileTab(tab)}
           />
-        )}
+        ) : null}
 
         {error ? <ErrorBanner message={error} /> : null}
 
@@ -416,14 +448,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           </>
         )}
       </ScrollView>
-
-      {/* Full-Screen 4-Step Edit Profile Modal */}
-      <EditCompanyProfileModal
-        visible={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        company={company}
-        onSaveSuccess={handleSaveSuccess}
-      />
     </View>
   );
 };

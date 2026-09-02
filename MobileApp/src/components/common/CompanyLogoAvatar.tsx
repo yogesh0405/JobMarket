@@ -51,9 +51,12 @@ export function CompanyLogoAvatar({
         .slice(0, 2)
         .join('')
         .toUpperCase()
-    : 'JM';
+    : '';
 
-  const palette = BRAND_PALETTES[hashString(normName || 'default') % BRAND_PALETTES.length];
+  const palette = normName
+    ? BRAND_PALETTES[hashString(normName) % BRAND_PALETTES.length]
+    : { bg: '#EFF6FF', border: '#BFDBFE', text: COLORS.primary || '#1D4ED8' };
+
   const fontSize = Math.max(11, Math.floor(size * (initialLetters.length > 1 ? 0.36 : 0.44)));
 
   // If explicit logoUrl / avatarUrl is provided, use it directly!
@@ -66,7 +69,7 @@ export function CompanyLogoAvatar({
       ? logoUrl.trim()
       : null;
 
-  const rawUrl = directUrl || getCompanyLogoUrl(normName, undefined);
+  const rawUrl = directUrl || (normName ? getCompanyLogoUrl(normName, undefined) : null);
 
   const cleanUrl =
     !imageError &&
@@ -99,20 +102,27 @@ export function CompanyLogoAvatar({
         style,
       ]}
     >
-      <Text style={[styles.initialText, { fontSize, color: palette.text }]}>
-        {initialLetters}
-      </Text>
+      {initialLetters ? (
+        <Text style={[styles.initialText, { fontSize, color: palette.text }]}>
+          {initialLetters}
+        </Text>
+      ) : (
+        <Building2
+          size={Math.max(16, Math.round(size * 0.52))}
+          color={COLORS.primary || '#1D4ED8'}
+          strokeWidth={2.2}
+        />
+      )}
 
       {cleanUrl ? (
-        <Image
-          source={{ uri: cleanUrl }}
-          style={[
-            StyleSheet.absoluteFill,
-            { width: '100%', height: '100%', borderRadius },
-          ]}
-          resizeMode="cover"
-          onError={() => setImageError(true)}
-        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }]}>
+          <Image
+            source={{ uri: cleanUrl }}
+            style={{ width: '92%', height: '92%', borderRadius: Math.max(0, borderRadius - 2) }}
+            resizeMode="contain"
+            onError={() => setImageError(true)}
+          />
+        </View>
       ) : null}
     </View>
   );

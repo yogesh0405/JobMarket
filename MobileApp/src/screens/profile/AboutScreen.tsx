@@ -102,7 +102,10 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
 
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 60, 80) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* 1. HERO SPOTLIGHT CARD */}

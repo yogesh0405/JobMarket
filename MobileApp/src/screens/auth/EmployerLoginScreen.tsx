@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
+  Keyboard,
   ImageBackground,
   useWindowDimensions,
 } from 'react-native';
@@ -49,12 +50,28 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const [role, setRole] = useState<'employer' | 'candidate'>('candidate');
   const [email, setEmail] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e: any) => setKeyboardHeight(e.endCoordinates?.height || 0)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleInputFocus = (offset: number) => {
     setTimeout(() => {
       scrollViewRef.current?.scrollTo({ y: offset, animated: true });
-    }, 100);
+    }, 120);
   };
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +87,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
       setRole(route.params.initialRole);
     }
     if (route?.params?.signupSuccess) {
-      showToast('Account created successfully! Please sign in.', 'success');
+      showToast('Registered successfully! Please sign in.', 'success');
     }
   }, [route?.params]);
 
@@ -134,7 +151,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
       const response = await login(cleanEmail, password, role);
 
       if (response && (response.require2FA || response.requires2FA)) {
-        setMfaToken(response.tempToken || response.token || '');
+        setMfaToken(response.mfaToken || response.tempToken || response.token || '');
         setTwoFactorOtp('');
         setTwoFactorError(null);
         setShow2FAModal(true);
@@ -145,11 +162,17 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (err: any) {
       const errMsg = err.message || 'Login failed. Please check your credentials.';
 
-      if (err.requiresVerification || errMsg.toLowerCase().includes('verify your email')) {
+      // Case 1: Unverified Account -> Prompt to send verification OTP
+      if (
+        err.requiresVerification ||
+        errMsg.toLowerCase().includes('verify your otp') ||
+        errMsg.toLowerCase().includes('not verified') ||
+        errMsg.toLowerCase().includes('verify your email')
+      ) {
         setConfirmModalConfig({
           visible: true,
           title: 'Account Verification Required',
-          message: 'Your email address has not been verified yet. Would you like us to send a 6-digit OTP code to',
+          message: 'Your account has not been verified yet. Would you like us to send a 6-digit OTP code to',
           highlightText: cleanEmail,
           confirmText: 'Send Verification OTP',
           cancelText: 'Cancel',
@@ -170,6 +193,32 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
+      // Case 2: Role Mismatch -> Offer switching tab
+      if (
+        errMsg.toLowerCase().includes('does not belong to this role') ||
+        errMsg.toLowerCase().includes('change the role')
+      ) {
+        const oppositeRole = role === 'candidate' ? 'employer' : 'candidate';
+        const oppositeRoleLabel = role === 'candidate' ? 'Employer / Recruiter' : 'Job Seeker / Candidate';
+        setConfirmModalConfig({
+          visible: true,
+          title: 'Role Mismatch Detected',
+          message: `This account is registered under the ${oppositeRoleLabel} portal. Would you like to switch to the ${oppositeRoleLabel} login tab?`,
+          confirmText: `Switch to ${role === 'candidate' ? 'Employer' : 'Candidate'}`,
+          cancelText: 'Cancel',
+          type: 'primary',
+          icon: <Briefcase size={24} color={COLORS.primary} />,
+          iconBgColor: '#EFF6FF',
+          onConfirm: () => {
+            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+            setRole(oppositeRole);
+            setError(null);
+          },
+        });
+        return;
+      }
+
+      // Case 3: Account restricted / blocked
       if (err.status === 403 || errMsg.toLowerCase().includes('restricted') || errMsg.toLowerCase().includes('blocked')) {
         setConfirmModalConfig({
           visible: true,
@@ -192,6 +241,19 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const handleResend2FA = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      const response = await login(cleanEmail, password, role);
+      if (response && (response.mfaToken || response.tempToken || response.token)) {
+        setMfaToken(response.mfaToken || response.tempToken || response.token);
+      }
+      showToast('New 6-digit 2FA code has been sent to your email.', 'success');
+    } catch (err: any) {
+      setTwoFactorError(err.message || 'Failed to resend 2FA code.');
+    }
+  };
+
   const handleVerify2FACode = async () => {
     if (!twoFactorOtp || twoFactorOtp.trim().length !== 6) {
       setTwoFactorError('Please enter the complete 6-digit OTP code.');
@@ -211,10 +273,10 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const safeTopPadding = Math.max(
     insets.top,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
-  ) + 8;
-  const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
-  const targetCardHeight = Math.max(580, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 680));
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 16
+  ) + 2;
+  const safeBottomPadding = Math.max(insets.bottom, 10) + 4;
+  const targetCardHeight = Math.max(700, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 900));
 
   return (
     <KeyboardAvoidingView
@@ -248,7 +310,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 <View style={styles.heroTextContainer}>
                   <Text style={styles.heroHeadline}>Work together. Grow with ease.</Text>
                   <Text style={styles.heroSubheadline}>
-                    Connecting skilled talent with leading enterprises across India.
+                    Connecting skilled talent with leading enterprises.
                   </Text>
                 </View>
               </LinearGradient>
@@ -259,7 +321,10 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollableFormArea}
-            contentContainerStyle={styles.cardBody}
+            contentContainerStyle={[
+              styles.cardBody,
+              { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 36 },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -312,7 +377,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
-                onFocus={() => handleInputFocus(40)}
+                onFocus={() => handleInputFocus(60)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -324,7 +389,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
 
             {/* Password Input */}
-            <View style={styles.inputGroup}>
+            <View style={[styles.inputGroup, styles.passwordInputGroup]}>
               <View style={styles.labelRow}>
                 <Text style={styles.inputLabel}>Password</Text>
                 <TouchableOpacity
@@ -341,7 +406,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(100)}
+                  onFocus={() => handleInputFocus(160)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -411,12 +476,14 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
       <EmployerTwoFactorModal
         visible={show2FAModal}
         onClose={() => setShow2FAModal(false)}
+        email={email.trim().toLowerCase()}
         twoFactorOtp={twoFactorOtp}
         setTwoFactorOtp={setTwoFactorOtp}
         twoFactorError={twoFactorError}
         setTwoFactorError={setTwoFactorError}
         twoFactorLoading={twoFactorLoading}
         onVerify={handleVerify2FACode}
+        onResend={handleResend2FA}
       />
 
       {/* Forgot Password Modal */}
@@ -488,7 +555,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroImageContainer: {
-    height: 160,
+    height: 175,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
@@ -510,30 +577,30 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   heroHeadline: {
-    fontSize: 19,
+    fontSize: 16.5,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    lineHeight: 21,
   },
   heroSubheadline: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 15,
+    lineHeight: 14,
   },
   cardBody: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 32,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
   welcomeHeading: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 18.5,
+    fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   signupPromptRow: {
     flexDirection: 'row',
@@ -541,12 +608,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   promptText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '400',
   },
   signupLinkText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: COLORS.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
@@ -554,10 +621,11 @@ const styles = StyleSheet.create({
   roleSegmentContainer: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 3,
-    marginBottom: 14,
-    height: 44,
+    marginTop: 10,
+    marginBottom: 39,
+    height: 40,
   },
   roleSegmentTab: {
     flex: 1,
@@ -566,7 +634,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     height: '100%',
-    borderRadius: 10,
+    borderRadius: 8,
   },
   roleSegmentTabActive: {
     backgroundColor: COLORS.primary,
@@ -577,7 +645,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   roleSegmentTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -586,31 +654,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  passwordInputGroup: {
+    marginBottom: 35,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   forgotPasswordLink: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '600',
     color: '#1E293B',
   },
   textInput: {
     backgroundColor: '#F6F4EE',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 14,
-    fontSize: 13.5,
+    borderRadius: 9,
+    height: 40,
+    paddingHorizontal: 12,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -618,14 +689,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F6F4EE',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 14,
+    borderRadius: 9,
+    height: 40,
+    paddingHorizontal: 12,
   },
   passwordTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 13.5,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -636,12 +707,12 @@ const styles = StyleSheet.create({
   },
   primaryLoginBtn: {
     backgroundColor: COLORS.primary,
-    height: 46,
-    borderRadius: 12,
+    height: 40,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
-    marginBottom: 12,
+    marginBottom: 10,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -649,7 +720,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   primaryLoginBtnText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,
@@ -658,11 +729,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   checkboxBox: {
-    width: 17,
-    height: 17,
+    width: 16,
+    height: 16,
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: '#94A3B8',
@@ -675,7 +746,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   rememberSessionText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#475569',
     fontWeight: '500',
   },
@@ -683,7 +754,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   orDividerLine: {
     flex: 1,
@@ -691,7 +762,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   orDividerText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '600',
     color: '#94A3B8',
     letterSpacing: 0.8,
@@ -700,8 +771,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 46,
-    borderRadius: 12,
+    height: 40,
+    borderRadius: 9,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
@@ -715,7 +786,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   googleSignInBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1E293B',
   },

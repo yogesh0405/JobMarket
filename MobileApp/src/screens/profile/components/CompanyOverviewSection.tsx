@@ -14,7 +14,7 @@ export const CompanyOverviewSection: React.FC<CompanyOverviewSectionProps> = ({
   companyName,
   specializations,
 }) => {
-  const name = companyName || 'insightforge';
+  const name = companyName || 'Company';
   const hasDesc = description && description.trim().length > 0;
   const hasSpecs = Array.isArray(specializations) && specializations.length > 0;
 
@@ -30,7 +30,7 @@ export const CompanyOverviewSection: React.FC<CompanyOverviewSectionProps> = ({
       <Text style={styles.descriptionText}>
         {hasDesc
           ? description.trim()
-          : `${name} is a leading industrial organization operating in manufacturing and engineering operations.`}
+          : 'No overview description provided yet. Edit profile to add manufacturing operations, plant capacity, and career growth details.'}
       </Text>
 
       {hasSpecs ? (

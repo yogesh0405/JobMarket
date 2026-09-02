@@ -249,9 +249,9 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       const nextSavedState = await savedJobsStore.toggleSave(targetJob || { id: jobId } as Job);
       setIsSaved(nextSavedState);
       if (nextSavedState) {
-        showToast('Job saved to bookmarks!', 'success');
+        showToast('Job saved to bookmarks!', 'success', 1000);
       } else {
-        showToast('Job removed from bookmarks', 'info');
+        showToast('Job removed from bookmarks', 'info', 1000);
       }
     } catch (err: any) {
       setIsSaved(previousSaved);

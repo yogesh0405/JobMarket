@@ -604,10 +604,10 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           renderItem={({ item }) => <JobApplicantsCard item={item} onPress={openApplicantModal} />}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          initialNumToRender={8}
+          initialNumToRender={10}
           maxToRenderPerBatch={10}
-          windowSize={7}
-          removeClippedSubviews={true}
+          windowSize={15}
+          removeClippedSubviews={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         />
       )}

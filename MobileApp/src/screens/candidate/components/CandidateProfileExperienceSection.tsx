@@ -164,15 +164,15 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
         <View style={{ marginTop: 2 }}>
           {resumeUrl ? (
             <View style={[styles.resumeCardBox, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }]}>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={styles.docIconBox}>
-                  <FileText size={16} color={COLORS.primary} />
+                  <FileText size={18} color={COLORS.primary} strokeWidth={2.2} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.textPrimary }} numberOfLines={1}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.textPrimary }} numberOfLines={1}>
                     {resumeName}
                   </Text>
-                  <Text style={{ fontSize: 10, color: COLORS.success, fontWeight: '600', marginTop: 1 }}>
+                  <Text style={{ fontSize: 11, color: COLORS.success, fontWeight: '600', marginTop: 1 }}>
                     ✓ Document Attached
                   </Text>
                 </View>
@@ -184,7 +184,7 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
                 onPress={onOpenPdf}
               >
                 <Text style={styles.viewPdfBtnText}>View PDF</Text>
-                <ExternalLink size={11} color={COLORS.textWhite} />
+                <ExternalLink size={13} color={COLORS.textWhite} strokeWidth={2.2} />
               </TouchableOpacity>
             </View>
           ) : (
@@ -213,11 +213,11 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   serifCardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   timelineContainer: {
     position: 'relative',
@@ -266,27 +266,27 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   timelineYearText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   timelineTitleText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginTop: 1,
   },
   timelineSubText: {
-    fontSize: 10.5,
-    color: COLORS.textMuted,
+    fontSize: 11.5,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   timelineDescText: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '400',
     color: COLORS.textSecondary,
-    lineHeight: 15,
+    lineHeight: 17,
     marginTop: 2,
   },
   currentRolePill: {
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xs,
   },
   currentRolePillText: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#2E7D32',
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptySubText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '400',
     color: COLORS.textMuted,
     fontStyle: 'italic',
@@ -322,14 +322,14 @@ const styles = StyleSheet.create({
   },
   skillPill: {
     backgroundColor: COLORS.slate50,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: RADIUS.xs,
     borderWidth: 1,
     borderColor: '#CBD5E1',
   },
   skillPillText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   expSubHeaderText: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
@@ -355,10 +355,10 @@ const styles = StyleSheet.create({
   },
   bulletText: {
     flex: 1,
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontWeight: '400',
     color: COLORS.textSecondary,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   expTechChipRow: {
     flexDirection: 'row',
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xs,
   },
   expTechChipText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -387,8 +387,8 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   docIconBox: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: RADIUS.xs,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
@@ -397,14 +397,14 @@ const styles = StyleSheet.create({
   viewPdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: COLORS.primary,
     borderRadius: RADIUS.card,
   },
   viewPdfBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.textWhite,
   },

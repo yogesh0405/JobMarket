@@ -52,12 +52,42 @@ const TRENDING_LOCATIONS = [
 ];
 
 const POPULAR_EMPLOYERS = [
-  { name: 'Bajaj Auto Limited', industry: 'Automotive & 2-Wheeler', location: 'Waluj MIDC' },
-  { name: 'Tata Motors Manufacturing', industry: 'Automotive OEM', location: 'Pimpri-Chinchwad' },
-  { name: 'Endurance Technologies', industry: 'Auto Components & Die Casting', location: 'Waluj MIDC' },
-  { name: 'Varroc Engineering Ltd', industry: 'Polymer & Electricals', location: 'Chakan MIDC' },
-  { name: 'Siemens India Industrial', industry: 'Electrical & Automation', location: 'Kalwa MIDC' },
-  { name: 'Bharat Forge Limited', industry: 'Forging & Heavy Machinery', location: 'Mundhwa Pune' },
+  {
+    name: 'Bajaj Auto Limited',
+    industry: 'Automotive & 2-Wheeler',
+    location: 'Waluj MIDC',
+    logoUrl: 'https://logo.clearbit.com/bajajauto.com',
+  },
+  {
+    name: 'Tata Motors Manufacturing',
+    industry: 'Automotive OEM',
+    location: 'Pimpri-Chinchwad',
+    logoUrl: 'https://logo.clearbit.com/tatamotors.com',
+  },
+  {
+    name: 'Endurance Technologies',
+    industry: 'Auto Components & Die Casting',
+    location: 'Waluj MIDC',
+    logoUrl: 'https://logo.clearbit.com/endurancegroup.com',
+  },
+  {
+    name: 'Varroc Engineering Ltd',
+    industry: 'Polymer & Electricals',
+    location: 'Chakan MIDC',
+    logoUrl: 'https://logo.clearbit.com/varroc.com',
+  },
+  {
+    name: 'Siemens India Industrial',
+    industry: 'Electrical & Automation',
+    location: 'Kalwa MIDC',
+    logoUrl: 'https://logo.clearbit.com/siemens.com',
+  },
+  {
+    name: 'Bharat Forge Limited',
+    industry: 'Forging & Heavy Machinery',
+    location: 'Mundhwa Pune',
+    logoUrl: 'https://logo.clearbit.com/bharatforge.com',
+  },
 ];
 
 interface Props {
@@ -172,9 +202,16 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     const compName = company.name || company.company_name || company.company || 'Company';
     saveSearchToHistory(compName);
     Keyboard.dismiss();
+    const matched = allCompanies.find(
+      (c) =>
+        (c.id && c.id === company.id) ||
+        (c.name && c.name.toLowerCase().trim() === compName.toLowerCase().trim())
+    );
+    const fullCompanyObj = matched ? { ...matched, ...company } : company;
     navigation.navigate('CompanyProfile', {
-      companyId: company.id || company.user_id,
-      company: company,
+      companyId: fullCompanyObj.id || fullCompanyObj.user_id || compName,
+      name: compName,
+      company: fullCompanyObj,
     });
   };
 
@@ -479,27 +516,41 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                   </TouchableOpacity>
                 </View>
 
-                {recentSearches.map((term, index) => (
-                  <View key={`${term}-${index}`} style={styles.searchRow}>
-                    <TouchableOpacity
-                      style={styles.recentClickArea}
-                      onPress={() => handleExecuteSearch(term)}
-                      activeOpacity={0.65}
-                    >
-                      <Clock size={16} color="#64748B" style={styles.rowIcon} />
-                      <Text style={styles.rowTitleText} numberOfLines={1}>
-                        {term}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => removeSingleRecentSearch(term)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <X size={15} color="#94A3B8" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                {recentSearches.map((term, index) => {
+                  const matchedComp = allCompanies.find(
+                    (c) => (c.name || '').toLowerCase().trim() === term.toLowerCase().trim()
+                  ) || POPULAR_EMPLOYERS.find(
+                    (p) => p.name.toLowerCase().trim() === term.toLowerCase().trim()
+                  );
+
+                  return (
+                    <View key={`${term}-${index}`} style={styles.searchRow}>
+                      <TouchableOpacity
+                        style={styles.recentClickArea}
+                        onPress={() => {
+                          if (matchedComp) {
+                            handleCompanyClick(matchedComp);
+                          } else {
+                            handleExecuteSearch(term);
+                          }
+                        }}
+                        activeOpacity={0.65}
+                      >
+                        <Clock size={16} color="#64748B" style={styles.rowIcon} />
+                        <Text style={styles.rowTitleText} numberOfLines={1}>
+                          {term}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => removeSingleRecentSearch(term)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <X size={15} color="#94A3B8" />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
 
@@ -513,10 +564,11 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <TouchableOpacity
                   key={comp.name}
                   style={styles.searchRow}
-                  onPress={() => handleExecuteSearch(comp.name)}
+                  onPress={() => handleCompanyClick(comp)}
                   activeOpacity={0.65}
                 >
                   <CompanyLogoAvatar
+                    logoUrl={comp.logoUrl}
                     companyName={comp.name}
                     size={36}
                     borderRadius={8}

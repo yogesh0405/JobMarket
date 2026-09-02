@@ -46,14 +46,14 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
     type: 'address',
   });
 
-  const legalType = company?.company_type || company?.companyType || 'Private Limited';
-  const size = company?.company_size || company?.companySize || '200–500 employees';
-  const foundedYear = company?.founded_year || company?.foundedYear || '2005';
-  const gstNumber = company?.gstin || company?.gstNumber || company?.gst || '82hqejbcna';
-  const email = company?.email || company?.contact_email || 'noreply.insightforge19@gmail.com';
-  const phone = company?.phone || company?.contact_phone || '9162845245';
+  const legalType = company?.company_type || company?.companyType || 'Not specified';
+  const size = company?.company_size || company?.companySize || 'Not specified';
+  const foundedYear = (company?.founded_year || company?.foundedYear) ? String(company.founded_year || company.foundedYear) : 'Not specified';
+  const gstNumber = company?.gst_number || company?.gstNumber || company?.gstin || company?.gst || 'Not provided';
+  const email = company?.email || company?.contact_email || 'Not provided';
+  const phone = company?.phone || company?.contact_phone || 'Not provided';
   const fullAddress =
-    formattedLocation || 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra';
+    formattedLocation || company?.address || company?.city || (company?.midc_zone ? `${company.midc_zone}, Maharashtra` : 'Not specified');
 
   const handleOpenPopup = (type: 'address' | 'email') => {
     if (type === 'address') {

@@ -71,7 +71,7 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const handleToggleSave = useCallback(
     (jobId: string) => {
       savedJobsStore.toggleSave(jobId);
-      showToast('Removed from saved vacancies', 'info');
+      showToast('Removed from saved vacancies', 'info', 1000);
     },
     [showToast]
   );
@@ -194,7 +194,17 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                 isSaved={true}
                 onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
                 onToggleSave={handleToggleSave}
-                onCompanyPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
+                onCompanyPress={(compName) =>
+                  navigation.navigate('CompanyProfile', {
+                    companyId: (job as any).company_id || (job as any).companyId || compName || job.company,
+                    name: compName || job.company,
+                    company: {
+                      name: compName || job.company,
+                      logo: job.companyLogo || (job as any).company_logo,
+                      location: job.location,
+                    },
+                  })
+                }
               />
             ))
           )}

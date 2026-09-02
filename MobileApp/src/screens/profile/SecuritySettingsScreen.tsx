@@ -396,7 +396,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 28 },
+          { paddingBottom: Math.max(insets.bottom + 80, 110) },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

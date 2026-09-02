@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { COLORS } from '../../constants/theme';
 import { API_BASE_URL } from '../../api/client';
@@ -40,6 +41,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { signup, loginWithGoogle } = useAuth();
+  const { showToast } = useToast();
   const initialRole = route?.params?.initialRole || 'candidate';
 
   const [role, setRole] = useState<'employer' | 'candidate'>(initialRole);
@@ -51,17 +53,31 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
-  const [tradeSpecialization, setTradeSpecialization] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e: any) => setKeyboardHeight(e.endCoordinates?.height || 0)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleInputFocus = (offset: number) => {
     setTimeout(() => {
       scrollViewRef.current?.scrollTo({ y: offset, animated: true });
-    }, 100);
+    }, 120);
   };
 
   const handleGoogleSignUp = () => {
@@ -74,16 +90,24 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
+    const cleanName = name.trim();
+
+    if (role === 'candidate' && !cleanName) {
+      setError('Full name is required for Candidate registration.');
+      return;
+    }
+
+    const derivedName = role === 'candidate'
+      ? cleanName
+      : (companyName.trim() || cleanEmail.split('@')[0] || 'Employer');
 
     const payload = {
-      name: name.trim(),
+      name: derivedName,
       email: cleanEmail,
       password,
       confirmPassword,
       phone: cleanPhone,
-      companyName: role === 'employer' ? companyName.trim() : (companyName.trim() || `${name.trim()}'s Candidate Profile`),
-      gstNumber: gstNumber ? gstNumber.trim() : undefined,
-      tradeSpecialization: tradeSpecialization ? tradeSpecialization.trim() : undefined,
+      companyName: role === 'employer' ? companyName.trim() : `${derivedName}'s Candidate Profile`,
       role,
     };
 
@@ -102,10 +126,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     setLoading(true);
     try {
       await signup(payload);
-      navigation.navigate('EmployerLogin', {
-        registeredEmail: cleanEmail,
-        initialRole: role,
-        signupSuccess: true,
+      showToast('New OTP sent to your email. Please verify to complete registration.', 'info', 2000);
+      navigation.navigate('VerifyOTP', {
+        email: cleanEmail,
+        role,
+        signupPayload: payload,
       });
     } catch (err: any) {
       const errMsg = err.message || 'Registration failed. Please try again.';
@@ -117,10 +142,10 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const safeTopPadding = Math.max(
     insets.top,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 20
-  ) + 8;
-  const safeBottomPadding = Math.max(insets.bottom, 16) + 16;
-  const targetCardHeight = Math.max(580, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 680));
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 12
+  );
+  const safeBottomPadding = Math.max(insets.bottom, 6);
+  const targetCardHeight = Math.max(740, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 960));
 
   return (
     <KeyboardAvoidingView
@@ -145,7 +170,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             <ImageBackground
               source={require('../../../assets/auth_group_banner.jpg')}
               style={styles.heroImage}
-              resizeMode="cover"
+              imageStyle={styles.heroImageInner}
             >
               <LinearGradient
                 colors={['rgba(15, 23, 42, 0.05)', 'rgba(15, 23, 42, 0.6)', 'rgba(15, 23, 42, 0.92)']}
@@ -154,7 +179,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 <View style={styles.heroTextContainer}>
                   <Text style={styles.heroHeadline}>Work together. Grow with ease.</Text>
                   <Text style={styles.heroSubheadline}>
-                    Connecting skilled talent with leading enterprises across India.
+                    Connecting skilled talent with leading enterprises.
                   </Text>
                 </View>
               </LinearGradient>
@@ -165,7 +190,10 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollableFormArea}
-            contentContainerStyle={styles.cardBody}
+            contentContainerStyle={[
+              styles.cardBody,
+              { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 36 },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -210,23 +238,25 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
             {error ? <ErrorBanner message={error} style={{ marginBottom: 13 }} /> : null}
 
-            {/* Input: Full Name */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>
-                Full Name<Text style={{ color: '#EF4444' }}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Ramesh Sharma"
-                placeholderTextColor="#94A3B8"
-                value={name}
-                onFocus={() => handleInputFocus(40)}
-                onChangeText={(t) => {
-                  setName(t);
-                  if (error) setError(null);
-                }}
-              />
-            </View>
+            {/* Input: Full Name (Candidate only) */}
+            {role === 'candidate' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>
+                  Full Name<Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ramesh Sharma"
+                  placeholderTextColor="#94A3B8"
+                  value={name}
+                  onFocus={() => handleInputFocus(40)}
+                  onChangeText={(t) => {
+                    setName(t);
+                    if (error) setError(null);
+                  }}
+                />
+              </View>
+            )}
 
             {/* Input: Email Address */}
             <View style={styles.inputGroup}>
@@ -258,62 +288,31 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholder="9876543210"
                 placeholderTextColor="#94A3B8"
                 value={phone}
+                maxLength={10}
                 onFocus={() => handleInputFocus(160)}
                 onChangeText={(t) => {
-                  setPhone(t);
+                  const cleaned = t.replace(/[^0-9]/g, '').slice(0, 10);
+                  setPhone(cleaned);
                   if (error) setError(null);
                 }}
                 keyboardType="phone-pad"
               />
             </View>
 
-            {/* Role specific inputs */}
-            {role === 'employer' ? (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>
-                    Company / Factory Name<Text style={{ color: '#EF4444' }}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Tata Motors Ltd / Endurance"
-                    placeholderTextColor="#94A3B8"
-                    value={companyName}
-                    onFocus={() => handleInputFocus(220)}
-                    onChangeText={(t) => {
-                      setCompanyName(t);
-                      if (error) setError(null);
-                    }}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>GSTIN / Business Registration (Optional)</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="27AAAAA0000A1Z5"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="characters"
-                    value={gstNumber}
-                    onFocus={() => handleInputFocus(280)}
-                    onChangeText={(t) => {
-                      setGstNumber(t);
-                      if (error) setError(null);
-                    }}
-                  />
-                </View>
-              </>
-            ) : (
+            {/* Role specific inputs (Employer only) */}
+            {role === 'employer' && (
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Trade / Skill Specialization (Optional)</Text>
+                <Text style={styles.inputLabel}>
+                  Company / Factory Name<Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="CNC Operator / Turner / Welder"
+                  placeholder="Tata Motors Ltd / Endurance"
                   placeholderTextColor="#94A3B8"
-                  value={tradeSpecialization}
+                  value={companyName}
                   onFocus={() => handleInputFocus(220)}
                   onChangeText={(t) => {
-                    setTradeSpecialization(t);
+                    setCompanyName(t);
                     if (error) setError(null);
                   }}
                 />
@@ -332,7 +331,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(300)}
+                  onFocus={() => handleInputFocus(280)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -444,10 +443,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroImageContainer: {
-    height: 160,
+    height: 125,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
+    overflow: 'hidden',
   },
   scrollableFormArea: {
     flex: 1,
@@ -456,40 +456,48 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  heroImageInner: {
+    resizeMode: 'cover',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 175,
+  },
   heroGradient: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingHorizontal: 18,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   heroTextContainer: {
     gap: 3,
   },
   heroHeadline: {
-    fontSize: 19,
+    fontSize: 16.5,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    lineHeight: 21,
   },
   heroSubheadline: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 15,
+    lineHeight: 14,
   },
   cardBody: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 32,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
   welcomeHeading: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 18.5,
+    fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   signupPromptRow: {
     flexDirection: 'row',
@@ -497,12 +505,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   promptText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '400',
   },
   signupLinkText: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: COLORS.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
@@ -510,10 +518,11 @@ const styles = StyleSheet.create({
   roleSegmentContainer: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 3,
-    marginBottom: 14,
-    height: 44,
+    marginTop: 10,
+    marginBottom: 39,
+    height: 40,
   },
   roleSegmentTab: {
     flex: 1,
@@ -522,7 +531,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     height: '100%',
-    borderRadius: 10,
+    borderRadius: 8,
   },
   roleSegmentTabActive: {
     backgroundColor: COLORS.primary,
@@ -533,7 +542,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   roleSegmentTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -542,20 +551,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   textInput: {
     backgroundColor: '#F6F4EE',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 14,
-    fontSize: 13.5,
+    borderRadius: 9,
+    height: 40,
+    paddingHorizontal: 12,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -563,14 +572,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F6F4EE',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 14,
+    borderRadius: 9,
+    height: 40,
+    paddingHorizontal: 12,
   },
   passwordTextInput: {
     flex: 1,
     height: '100%',
-    fontSize: 13.5,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -581,12 +590,12 @@ const styles = StyleSheet.create({
   },
   primarySignUpBtn: {
     backgroundColor: COLORS.primary,
-    height: 46,
-    borderRadius: 12,
+    height: 40,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 2,
+    marginBottom: 10,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -594,7 +603,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   primarySignUpBtnText: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,
@@ -603,7 +612,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   orDividerLine: {
     flex: 1,
@@ -611,7 +620,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
   },
   orDividerText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '600',
     color: '#94A3B8',
     letterSpacing: 0.8,
@@ -620,8 +629,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 46,
-    borderRadius: 12,
+    height: 40,
+    borderRadius: 9,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
@@ -635,7 +644,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   googleSignInBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1E293B',
   },

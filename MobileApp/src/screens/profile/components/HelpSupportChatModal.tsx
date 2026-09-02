@@ -287,7 +287,16 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
             </Modal>
           )}
 
-          <View style={[styles.inputBarOuterContainer, { paddingBottom: isKeyboardVisible ? 0 : (Platform.OS === 'ios' ? insets.bottom : 6) }]}>
+          <View
+            style={[
+              styles.inputBarOuterContainer,
+              {
+                paddingBottom: isKeyboardVisible
+                  ? 8
+                  : Math.max(insets.bottom || 0, Platform.OS === 'android' ? 16 : 12),
+              },
+            ]}
+          >
             {selectedAttachment ? (
               <View style={styles.attachmentPreviewStrip}>
                 <Text style={styles.attachmentPreviewText} numberOfLines={1}>
@@ -531,11 +540,11 @@ const styles = StyleSheet.create({
 
   /* Bottom Input Bar */
   inputBarOuterContainer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: '#E2E8F0',
     paddingHorizontal: 12,
-    paddingTop: 6,
+    paddingTop: 8,
   },
   attachmentPreviewStrip: {
     flexDirection: 'row',
@@ -556,13 +565,13 @@ const styles = StyleSheet.create({
   capsuleInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 7 : 4,
-    minHeight: 42,
+    minHeight: 44,
     shadowColor: '#0F172A',
     shadowOpacity: 0.02,
     shadowOffset: { width: 0, height: 1 },
@@ -570,22 +579,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   clipButton: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 4,
   },
   textInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 13.5,
     color: COLORS.textPrimary,
     paddingVertical: 4,
     paddingHorizontal: 4,
-    minHeight: 32,
+    minHeight: 36,
   },
   sendIconButton: {
-    padding: 5,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,

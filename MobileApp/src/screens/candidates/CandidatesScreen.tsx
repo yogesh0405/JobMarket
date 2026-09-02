@@ -261,16 +261,19 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
     return candidates.filter((item) => {
       const query = debouncedSearchQuery.trim().toLowerCase();
       if (query) {
-        const nameMatch = (item.name || '').toLowerCase().includes(query);
-        const titleMatch = (item.title || '').toLowerCase().includes(query);
-        const tradeMatch = (item.trade_specialization || '').toLowerCase().includes(query);
-        const locationMatch = (item.location || '').toLowerCase().includes(query);
-        const indMatch = (item.industry || '').toLowerCase().includes(query);
-        const eduMatch = safeString(item.education).toLowerCase().includes(query);
-        const skillMatch = Array.isArray(item.skills) && item.skills.some((s) => s.toLowerCase().includes(query));
-        if (!nameMatch && !titleMatch && !tradeMatch && !locationMatch && !skillMatch && !indMatch && !eduMatch) {
-          return false;
-        }
+        const tokens = query.split(/[\s,+/&|]+/).filter((t) => t.length > 0);
+        const name = (item.name || '').toLowerCase();
+        const title = (item.title || item.headline || '').toLowerCase();
+        const trade = (item.trade_specialization || '').toLowerCase();
+        const location = (item.location || (item as any).city || (item as any).state || (item as any).midc_zone || '').toLowerCase();
+        const ind = (item.industry || '').toLowerCase();
+        const edu = safeString(item.education).toLowerCase();
+        const skills = Array.isArray(item.skills) ? item.skills.join(' ').toLowerCase() : '';
+        const bio = (item.bio || '').toLowerCase();
+        const combined = `${name} ${title} ${trade} ${location} ${ind} ${edu} ${skills} ${bio}`;
+
+        const matches = tokens.every((token) => combined.includes(token));
+        if (!matches) return false;
       }
 
       if (!matchesIndustry(item, activeIndustryFilter)) return false;
@@ -508,10 +511,10 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
           keyExtractor={(item) => item.id}
           columnWrapperStyle={styles.gridColumnWrapper}
           contentContainerStyle={styles.gridListContentContainer}
-          initialNumToRender={8}
+          initialNumToRender={10}
           maxToRenderPerBatch={10}
-          windowSize={7}
-          removeClippedSubviews={true}
+          windowSize={15}
+          removeClippedSubviews={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
           ListEmptyComponent={
             <View style={styles.emptyStateBox}>

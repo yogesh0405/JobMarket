@@ -540,10 +540,10 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-        initialNumToRender={8}
+        initialNumToRender={10}
         maxToRenderPerBatch={10}
-        windowSize={11}
-        removeClippedSubviews={true}
+        windowSize={15}
+        removeClippedSubviews={false}
         ListHeaderComponent={
           <View style={styles.countRow}>
             <Text style={styles.countText}>

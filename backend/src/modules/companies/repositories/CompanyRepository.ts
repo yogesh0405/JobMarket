@@ -65,25 +65,25 @@ export class CompanyRepository {
             id: row.id,
             employer_id: row.employer_id,
             name: compName,
-            logo: row.logo,
+            logo: row.logo || null,
             color: row.color || '#2563EB',
-            industry: row.industry || 'Industrial Manufacturing',
-            company_type: row.company_type || 'Private Limited',
-            description: row.description || 'Registered manufacturing and industrial employer.',
-            website: row.website,
-            address: row.address,
-            city: row.city || 'Chhatrapati Sambhajinagar',
+            industry: row.industry || '',
+            company_type: row.company_type || '',
+            description: row.description || '',
+            website: row.website || '',
+            address: row.address || '',
+            city: row.city || '',
             state: row.state || 'Maharashtra',
-            pincode: row.pincode,
+            pincode: row.pincode || '',
             latitude: row.latitude,
             longitude: row.longitude,
-            email: row.email,
-            phone: row.phone,
-            company_size: row.company_size || '500+ employees',
-            founded_year: row.founded_year || 2000,
-            midc_zone: row.midc_zone || 'Waluj MIDC',
+            email: row.email || '',
+            phone: row.phone || '',
+            company_size: row.company_size || '',
+            founded_year: row.founded_year ? Number(row.founded_year) : undefined,
+            midc_zone: row.midc_zone || '',
             specializations: Array.isArray(row.specializations) ? row.specializations : [],
-            gst_number: row.gst_number,
+            gst_number: row.gst_number || '',
             verified: row.verified !== false && row.aadhaar_verified !== false,
             open_jobs_count: parseInt(row.open_jobs_count || '0', 10),
             created_at: row.created_at
@@ -118,21 +118,20 @@ export class CompanyRepository {
             existing.open_jobs_count = Math.max(existing.open_jobs_count, count);
             if (!existing.logo && row.logo) existing.logo = row.logo;
             if (!existing.midc_zone && row.midc_zone) existing.midc_zone = row.midc_zone;
-          } else {
             companyMap.set(key, {
               id: row.employer_id || `job-comp-${idx + 1}`,
               employer_id: row.employer_id,
               name: compName,
               logo: row.logo,
               color: '#2563EB',
-              industry: row.industry || 'Industrial Manufacturing',
-              company_type: 'Private Limited',
-              description: 'Industrial plant and enterprise with live open job postings.',
-              city: row.city || 'Chhatrapati Sambhajinagar',
+              industry: row.industry || '',
+              company_type: '',
+              description: '',
+              city: row.city || '',
               state: 'Maharashtra',
-              midc_zone: row.midc_zone || 'Waluj MIDC',
-              company_size: '500+ employees',
-              founded_year: 1998,
+              midc_zone: row.midc_zone || '',
+              company_size: '',
+              founded_year: undefined,
               verified: true,
               open_jobs_count: count
             });
@@ -274,105 +273,29 @@ export class CompanyRepository {
           name: row.name,
           logo: row.logo,
           color: row.color || '#2563EB',
-          industry: row.industry || 'Industrial Manufacturing',
-          company_type: row.company_type || 'Private Limited',
-          description: row.description,
-          website: row.website,
-          address: row.address,
-          city: row.city || 'Chhatrapati Sambhajinagar',
+          industry: row.industry || '',
+          company_type: row.company_type || '',
+          description: row.description || '',
+          website: row.website || '',
+          address: row.address || '',
+          city: row.city || '',
           state: row.state || 'Maharashtra',
-          pincode: row.pincode,
+          pincode: row.pincode || '',
           latitude: row.latitude,
           longitude: row.longitude,
-          email: row.email,
-          phone: row.phone,
-          company_size: row.company_size || '100-500 employees',
-          founded_year: row.founded_year || 2000,
-          midc_zone: row.midc_zone,
+          email: row.email || '',
+          phone: row.phone || '',
+          company_size: row.company_size || '',
+          founded_year: row.founded_year ? Number(row.founded_year) : undefined,
+          midc_zone: row.midc_zone || '',
           specializations: Array.isArray(row.specializations) ? row.specializations : [],
-          gst_number: row.gst_number,
+          gst_number: row.gst_number || '',
           verified: row.verified !== false && row.aadhaar_verified !== false,
           created_at: row.created_at,
           updated_at: row.updated_at,
         };
         const companyJobs = await this.getCompanyJobs(row.name, row.employer_id);
         (company as any).open_jobs_count = companyJobs.length;
-        company.completion_percentage = this.calculateProfileCompletion(company);
-        return company;
-      }
-
-      // Check if matching company exists in CSN_COMPANIES seed data
-      const matchedSeed = CSN_COMPANIES.find((c, idx) => 
-        `csn-comp-${idx + 1}` === identifier ||
-        c.name.toLowerCase() === decodedName.toLowerCase() || 
-        c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === decodedName.toLowerCase().replace(/[^a-z0-9]/g, '')
-      );
-
-      if (matchedSeed) {
-        // Find employer user if exists
-        const empQuery = 'SELECT id, email, phone, gst_number, profile_picture_url FROM users WHERE role = $1 AND (company_name ILIKE $2 OR name ILIKE $2) LIMIT 1;';
-        const empRes = await pool.query(empQuery, ['employer', matchedSeed.name]);
-        const empUser = empRes.rows[0];
-
-        // Insert into companies table dynamically
-        const insertQuery = `
-          INSERT INTO companies (
-            employer_id, name, logo, color, industry, description, website, 
-            address, city, state, pincode, latitude, longitude, email, phone, company_size, founded_year, midc_zone, verified
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, TRUE)
-          ON CONFLICT (name) DO UPDATE SET logo = EXCLUDED.logo
-          RETURNING *;
-        `;
-        const insertParams = [
-          empUser?.id || null,
-          matchedSeed.name,
-          empUser?.profile_picture_url || matchedSeed.logo,
-          matchedSeed.color,
-          matchedSeed.industry,
-          matchedSeed.description,
-          matchedSeed.website,
-          matchedSeed.address,
-          matchedSeed.city,
-          matchedSeed.state,
-          matchedSeed.pincode,
-          matchedSeed.latitude,
-          matchedSeed.longitude,
-          matchedSeed.email,
-          matchedSeed.phone,
-          matchedSeed.companySize,
-          matchedSeed.foundedYear,
-          matchedSeed.midcZone
-        ];
-
-        const inserted = await pool.query(insertQuery, insertParams);
-        const row = inserted.rows[0];
-
-        const company: Company = {
-          id: row.id,
-          employer_id: row.employer_id,
-          name: row.name,
-          logo: row.logo,
-          color: row.color,
-          industry: row.industry,
-          company_type: row.company_type || 'Private Limited',
-          description: row.description,
-          website: row.website,
-          address: row.address,
-          city: row.city,
-          state: row.state,
-          pincode: row.pincode,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          email: row.email,
-          phone: row.phone,
-          company_size: row.company_size,
-          founded_year: row.founded_year,
-          midc_zone: row.midc_zone,
-          gst_number: empUser?.gst_number,
-          verified: true,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        };
         company.completion_percentage = this.calculateProfileCompletion(company);
         return company;
       }
@@ -387,18 +310,19 @@ export class CompanyRepository {
           id: u.id,
           employer_id: u.id,
           name: compName,
-          logo: u.profile_picture_url,
-          industry: u.trade_specialization || 'Industrial Manufacturing',
-          company_type: 'Private Limited',
-          description: `Official employer profile for ${compName}. verified supplier and manufacturer.`,
-          address: u.location || 'Chhatrapati Sambhajinagar, Maharashtra',
-          city: 'Chhatrapati Sambhajinagar',
+          logo: u.profile_picture_url || null,
+          industry: u.trade_specialization || '',
+          company_type: '',
+          description: u.bio || '',
+          address: u.location || '',
+          city: u.location || '',
           state: 'Maharashtra',
-          email: u.email,
-          phone: u.phone,
-          gst_number: u.gst_number,
-          company_size: '100-500 employees',
-          founded_year: 2010,
+          email: u.email || '',
+          phone: u.phone || '',
+          gst_number: u.gst_number || '',
+          company_size: '',
+          founded_year: undefined,
+          midc_zone: u.midc_zone || '',
           verified: u.aadhaar_verified !== false,
         };
         company.completion_percentage = this.calculateProfileCompletion(company);
@@ -458,9 +382,23 @@ export class CompanyRepository {
    * Update company profile (Employer action)
    */
   static async updateCompanyProfile(identifier: string, employerId: string, updateData: Partial<Company>): Promise<Company> {
-    const company = await this.getCompanyById(identifier);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    const isEmployerIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(employerId);
+    const safeEmployerId = isEmployerIdUuid ? employerId : null;
+
+    // 1. Fetch or identify company
+    let company = await this.getCompanyById(identifier);
     if (!company) {
-      throw new Error('Company profile not found.');
+      // If company row doesn't exist yet, query employer user directly
+      const empUserRes = await pool.query('SELECT * FROM users WHERE id = $1 LIMIT 1;', [safeEmployerId || '00000000-0000-0000-0000-000000000000']);
+      const empUser = empUserRes.rows[0];
+      company = {
+        id: employerId,
+        employer_id: employerId,
+        name: updateData.name || empUser?.company_name || empUser?.name || 'My Company',
+        email: empUser?.email || '',
+        phone: empUser?.phone || '',
+      };
     }
 
     // If logo is a base64 string, upload to S3 first
@@ -474,9 +412,64 @@ export class CompanyRepository {
       }
     }
 
-    // Verify & update ownership
-    if (!company.employer_id || company.employer_id !== employerId) {
-      await pool.query('UPDATE companies SET employer_id = $1 WHERE id = $2;', [employerId, company.id]);
+    // Check if actual row exists in companies table
+    const checkRes = await pool.query(
+      'SELECT id, employer_id, name FROM companies WHERE id = $1 OR employer_id = $2 OR name ILIKE $3 LIMIT 1;',
+      [isUuid ? company.id : '00000000-0000-0000-0000-000000000000', safeEmployerId || '00000000-0000-0000-0000-000000000000', updateData.name || company.name]
+    );
+
+    let companyDbId = '';
+    if (checkRes.rows.length === 0) {
+      const insertQuery = `
+        INSERT INTO companies (
+          employer_id, name, logo, color, industry, company_type, description, website,
+          address, city, state, pincode, email, phone, company_size, founded_year, midc_zone, verified
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, TRUE)
+        ON CONFLICT (name) DO UPDATE SET
+          employer_id = COALESCE(EXCLUDED.employer_id, companies.employer_id),
+          logo = COALESCE(EXCLUDED.logo, companies.logo),
+          industry = COALESCE(EXCLUDED.industry, companies.industry),
+          company_type = COALESCE(EXCLUDED.company_type, companies.company_type),
+          description = COALESCE(EXCLUDED.description, companies.description),
+          website = COALESCE(EXCLUDED.website, companies.website),
+          address = COALESCE(EXCLUDED.address, companies.address),
+          city = COALESCE(EXCLUDED.city, companies.city),
+          phone = COALESCE(EXCLUDED.phone, companies.phone),
+          email = COALESCE(EXCLUDED.email, companies.email),
+          company_size = COALESCE(EXCLUDED.company_size, companies.company_size),
+          founded_year = COALESCE(EXCLUDED.founded_year, companies.founded_year),
+          midc_zone = COALESCE(EXCLUDED.midc_zone, companies.midc_zone),
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *;
+      `;
+      const yrVal = Number(updateData.founded_year || (updateData as any).foundedYear || company.founded_year);
+      const safeYear = yrVal && yrVal > 1800 ? yrVal : 2005;
+      const insertParams = [
+        safeEmployerId,
+        (updateData.name || company.name || 'My Company').trim(),
+        updateData.logo || company.logo || null,
+        updateData.color || company.color || '#2563EB',
+        updateData.industry || company.industry || 'Automotive & Auto Components',
+        updateData.company_type || (updateData as any).companyType || company.company_type || 'Private Limited',
+        updateData.description || company.description || '',
+        updateData.website || company.website || '',
+        updateData.address || company.address || '',
+        updateData.city || company.city || '',
+        updateData.state || company.state || 'Maharashtra',
+        updateData.pincode || company.pincode || '',
+        updateData.email || company.email || '',
+        updateData.phone || company.phone || '',
+        updateData.company_size || (updateData as any).companySize || company.company_size || '200-500 employees',
+        safeYear,
+        updateData.midc_zone || (updateData as any).midcZone || company.midc_zone || ''
+      ];
+      const inserted = await pool.query(insertQuery, insertParams);
+      companyDbId = inserted.rows[0].id;
+    } else {
+      companyDbId = checkRes.rows[0].id;
+      if (safeEmployerId && (!checkRes.rows[0].employer_id || checkRes.rows[0].employer_id !== safeEmployerId)) {
+        await pool.query('UPDATE companies SET employer_id = $1 WHERE id = $2;', [safeEmployerId, companyDbId]);
+      }
     }
 
     const fieldsToUpdate: string[] = [];
@@ -506,17 +499,27 @@ export class CompanyRepository {
       midcZone: 'midc_zone',
     };
 
+    const addedColumns = new Set<string>();
     for (const [key, value] of Object.entries(updateData)) {
       const col = allowedColumns[key];
-      if (col && value !== undefined) {
-        fieldsToUpdate.push(`${col} = $${idx++}`);
-        values.push(value);
+      if (col && value !== undefined && value !== null && !addedColumns.has(col)) {
+        addedColumns.add(col);
+        if (col === 'founded_year') {
+          const yr = Number(value);
+          if (yr && yr > 1800) {
+            fieldsToUpdate.push(`${col} = $${idx++}`);
+            values.push(yr);
+          }
+        } else {
+          fieldsToUpdate.push(`${col} = $${idx++}`);
+          values.push(typeof value === 'string' ? value.trim() : value);
+        }
       }
     }
 
     if (fieldsToUpdate.length > 0) {
       fieldsToUpdate.push(`updated_at = CURRENT_TIMESTAMP`);
-      values.push(company.id);
+      values.push(companyDbId);
 
       const updateQuery = `
         UPDATE companies 
@@ -528,7 +531,7 @@ export class CompanyRepository {
     }
 
     // Sync changes to user profile if employer user exists
-    if (employerId) {
+    if (safeEmployerId) {
       const userUpdateFields: string[] = [];
       const userValues: any[] = [];
       let uIdx = 1;
@@ -550,10 +553,6 @@ export class CompanyRepository {
         userUpdateFields.push(`profile_picture_url = $${uIdx++}`);
         userValues.push(updateData.logo);
       }
-      if (updateData.midc_zone || (updateData as any).midcZone) {
-        userUpdateFields.push(`midc_zone = $${uIdx++}`);
-        userValues.push(updateData.midc_zone || (updateData as any).midcZone);
-      }
       if (updateData.phone) {
         userUpdateFields.push(`phone = $${uIdx++}`);
         userValues.push(updateData.phone);
@@ -565,7 +564,7 @@ export class CompanyRepository {
 
       if (userUpdateFields.length > 0) {
         userUpdateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-        userValues.push(employerId);
+        userValues.push(safeEmployerId);
 
         await pool.query(
           `UPDATE users SET ${userUpdateFields.join(', ')} WHERE id = $${uIdx};`,
@@ -575,11 +574,13 @@ export class CompanyRepository {
     }
 
     // Invalidate caches
-    await CacheService.invalidate(`company:profile:${identifier}`);
-    await CacheService.invalidate(`company:profile:${company.id}`);
-    await CacheService.invalidate(`user:profile:${employerId}`);
+    await CacheService.invalidatePattern('company:*');
+    await CacheService.invalidatePattern('cache:companies:*');
+    if (safeEmployerId) {
+      await CacheService.invalidate(`user:profile:${safeEmployerId}`);
+    }
 
-    const updatedCompany = await this.getCompanyById(company.id);
+    const updatedCompany = await this.getCompanyById(companyDbId);
     return updatedCompany!;
   }
 

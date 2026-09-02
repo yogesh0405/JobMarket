@@ -54,12 +54,28 @@ export const validatePassword = (pass: string): Issue[] => {
   return issues;
 };
 
+export const validateIndianPhone = (phone: string, required: boolean = true): { isValid: boolean; message?: string } => {
+  const clean = String(phone || '').replace(/[^0-9]/g, '');
+  if (!clean) {
+    if (!required) return { isValid: true };
+    return { isValid: false, message: 'Phone number is required.' };
+  }
+  if (clean.length !== 10) {
+    return { isValid: false, message: 'Phone number must be exactly 10 digits.' };
+  }
+  if (!/^[6-9]/.test(clean)) {
+    return { isValid: false, message: 'Phone number must be a valid Indian mobile number starting with 6, 7, 8, or 9.' };
+  }
+  return { isValid: true };
+};
+
 export const passwordSchema = createValidator<string>((val) => validatePassword(String(val || '')));
 
 export const phoneSchema = createValidator<string>((val) => {
   const issues: Issue[] = [];
-  if (!INDIAN_PHONE_REGEX.test(String(val || '').trim())) {
-    issues.push({ path: ['phone'], message: 'Phone number must be a valid 10-digit Indian mobile number' });
+  const res = validateIndianPhone(String(val || ''), true);
+  if (!res.isValid && res.message) {
+    issues.push({ path: ['phone'], message: res.message });
   }
   return issues;
 });
@@ -83,7 +99,7 @@ export const signupSchema = createValidator<any>((data) => {
   const email = String(data?.email || '').trim().toLowerCase();
   const password = String(data?.password || '');
   const confirmPassword = String(data?.confirmPassword || '');
-  const name = String(data?.name || '').trim();
+  const name = String(data?.name || data?.companyName || (email ? email.split('@')[0] : 'User')).trim();
   const phone = String(data?.phone || '').trim();
 
   if (!email || !EMAIL_REGEX.test(email)) {
@@ -98,11 +114,12 @@ export const signupSchema = createValidator<any>((data) => {
   }
 
   if (!name) {
-    issues.push({ path: ['name'], message: 'Full name is required' });
+    issues.push({ path: ['name'], message: 'Name is required' });
   }
 
-  if (!INDIAN_PHONE_REGEX.test(phone)) {
-    issues.push({ path: ['phone'], message: 'Phone number must be a valid 10-digit Indian mobile number' });
+  const phoneRes = validateIndianPhone(phone, true);
+  if (!phoneRes.isValid && phoneRes.message) {
+    issues.push({ path: ['phone'], message: phoneRes.message });
   }
 
   return issues;

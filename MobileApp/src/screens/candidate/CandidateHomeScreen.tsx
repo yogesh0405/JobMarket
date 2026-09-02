@@ -212,9 +212,9 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     const foundJob = jobs.find((j) => String(j.id) === String(jobId));
     savedJobsStore.toggleSave(foundJob || jobId).then((isSaved) => {
       if (isSaved) {
-        showToast('Job saved to bookmarks!', 'success');
+        showToast('Job saved to bookmarks!', 'success', 1000);
       } else {
-        showToast('Job removed from bookmarks', 'info');
+        showToast('Job removed from bookmarks', 'info', 1000);
       }
     });
   }, [jobs, showToast]);

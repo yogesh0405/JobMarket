@@ -10,6 +10,7 @@ import { ApplicantDetailScreen } from '../screens/jobs/ApplicantDetailScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerTabNavigator } from './EmployerTabNavigator';
 import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
+import { EditCompanyProfileScreen } from '../screens/profile/EditCompanyProfileScreen';
 import { SecuritySettingsScreen } from '../screens/profile/SecuritySettingsScreen';
 import { AboutScreen } from '../screens/profile/AboutScreen';
 import { HelpSupportScreen } from '../screens/profile/HelpSupportScreen';
@@ -91,6 +92,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="PostTab" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="EmployerPostJob" component={JobPostScreen} options={{ headerShown: false }} />
           <Stack.Screen name="CompanyProfile" component={CompanyProfileScreen} />
+          <Stack.Screen name="EditCompanyProfile" component={EditCompanyProfileScreen} />
+          <Stack.Screen name="EditCompany" component={EditCompanyProfileScreen} />
+          <Stack.Screen name="EmployerEditProfile" component={EditCompanyProfileScreen} />
           <Stack.Screen name="EmployerInterviews" component={EmployerInterviewsScreen} />
           <Stack.Screen name="ScheduledInterviews" component={EmployerInterviewsScreen} />
           <Stack.Screen name="EmployerBanners" component={EmployerBannersScreen} />

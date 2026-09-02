@@ -66,21 +66,25 @@ const SIZE_OPTIONS = [
 ];
 
 const MIDC_OPTIONS = [
+  'Not Applicable (Non-MIDC / Commercial)',
   'Waluj MIDC (Chhatrapati Sambhajinagar)',
   'Chikalthana MIDC (Chhatrapati Sambhajinagar)',
-  'Paithan MIDC (Chhatrapati Sambhajinagar)',
   'Shendra DMIC / MIDC (Chhatrapati Sambhajinagar)',
   'Bidkin DMIC / MIDC (Chhatrapati Sambhajinagar)',
+  'Paithan MIDC (Chhatrapati Sambhajinagar)',
   'Railway Station Industrial Area (Chhatrapati Sambhajinagar)',
   'Chakan MIDC (Pune)',
   'Bhosari MIDC (Pune)',
   'Ranjangaon MIDC (Pune)',
   'Hinjawadi MIDC (Pune)',
+  'Talegaon MIDC (Pune)',
   'Rabale MIDC (Navi Mumbai)',
   'Taloja MIDC (Navi Mumbai)',
   'Tarapur MIDC (Palghar)',
   'Butibori MIDC (Nagpur)',
-  'Non-MIDC Private Industrial Zone',
+  'Ambad MIDC (Nashik)',
+  'Satpur MIDC (Nashik)',
+  'Other MIDC / Industrial Zone...',
 ];
 
 const COMPANY_TYPES = [
@@ -107,16 +111,18 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
   // Form State
   const [name, setName] = useState(company?.name || '');
   const [logo, setLogo] = useState(company?.logo || company?.logoUrl || '');
-  const [industry, setIndustry] = useState(company?.industry || 'Industrial Manufacturing');
+  const [industry, setIndustry] = useState(company?.industry || 'Automotive & Auto Components');
+  const [otherIndustry, setOtherIndustry] = useState('');
   const [companyType, setCompanyType] = useState(company?.company_type || company?.companyType || 'Private Limited');
   const [companySize, setCompanySize] = useState(company?.company_size || company?.companySize || '200-500 employees');
-  const [foundedYear, setFoundedYear] = useState<string>(String(company?.founded_year || company?.foundedYear || '2005'));
+  const [foundedYear, setFoundedYear] = useState<string>(String(company?.founded_year || company?.foundedYear || ''));
   const [website, setWebsite] = useState(company?.website || '');
   const [phone, setPhone] = useState(company?.phone || '');
   const [email, setEmail] = useState(company?.email || '');
   const [address, setAddress] = useState(company?.address || '');
-  const [city, setCity] = useState(company?.city || 'Chhatrapati Sambhajinagar');
-  const [midcZone, setMidcZone] = useState(company?.midc_zone || company?.midcZone || 'Waluj MIDC (Chhatrapati Sambhajinagar)');
+  const [city, setCity] = useState(company?.city || '');
+  const [midcZone, setMidcZone] = useState(company?.midc_zone || company?.midcZone || 'Not Applicable (Non-MIDC / Commercial)');
+  const [otherMidcZone, setOtherMidcZone] = useState('');
   const [description, setDescription] = useState(company?.description || '');
   const rawGstInitial = company?.gst_number || company?.gstNumber || '';
   const cleanGstInitial = rawGstInitial.includes('@') || rawGstInitial.includes('.com') ? '' : rawGstInitial;
@@ -132,16 +138,32 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
     if (visible && company) {
       setName(company.name || '');
       setLogo(company.logo || company.logoUrl || '');
-      setIndustry(company.industry || 'Industrial Manufacturing');
+      const rawInd = company.industry || 'Automotive & Auto Components';
+      const isKnown = INDUSTRY_OPTIONS.includes(rawInd) && rawInd !== 'Other Industrial Trade...';
+      if (isKnown) {
+        setIndustry(rawInd);
+        setOtherIndustry('');
+      } else {
+        setIndustry('Other Industrial Trade...');
+        setOtherIndustry(rawInd === 'Other Industrial Trade...' ? '' : rawInd);
+      }
       setCompanyType(company.company_type || company.companyType || 'Private Limited');
       setCompanySize(company.company_size || company.companySize || '200-500 employees');
-      setFoundedYear(String(company.founded_year || company.foundedYear || '2005'));
+      setFoundedYear(String(company.founded_year || company.foundedYear || ''));
       setWebsite(company.website || '');
       setPhone(company.phone || '');
       setEmail(company.email || '');
       setAddress(company.address || '');
-      setCity(company.city || 'Chhatrapati Sambhajinagar');
-      setMidcZone(company.midc_zone || company.midcZone || 'Waluj MIDC (Chhatrapati Sambhajinagar)');
+      setCity(company.city || '');
+      const rawMidc = company.midc_zone || company.midcZone || 'Not Applicable (Non-MIDC / Commercial)';
+      const isKnownMidc = MIDC_OPTIONS.includes(rawMidc) && rawMidc !== 'Other MIDC / Industrial Zone...';
+      if (isKnownMidc) {
+        setMidcZone(rawMidc);
+        setOtherMidcZone('');
+      } else {
+        setMidcZone('Other MIDC / Industrial Zone...');
+        setOtherMidcZone(rawMidc === 'Other MIDC / Industrial Zone...' ? '' : rawMidc);
+      }
       setDescription(company.description || '');
       const rawGst = company.gst_number || company.gstNumber || '';
       setGstNumber(rawGst.includes('@') || rawGst.includes('.com') ? '' : rawGst);
@@ -183,6 +205,10 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
         setErrorMsg('Industry sector is required.');
         return;
       }
+      if (industry === 'Other Industrial Trade...' && !otherIndustry.trim()) {
+        setErrorMsg('Please specify your custom industry / trade sector.');
+        return;
+      }
       setCurrentStep(2);
     } else if (currentStep === 2) {
       if (gstNumber.trim() && gstNumber.trim().length !== 15) {
@@ -193,6 +219,10 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
     } else if (currentStep === 3) {
       if (!city.trim()) {
         setErrorMsg('City / Location is required.');
+        return;
+      }
+      if (midcZone === 'Other MIDC / Industrial Zone...' && !otherMidcZone.trim()) {
+        setErrorMsg('Please specify your custom MIDC / Industrial Zone name.');
         return;
       }
       setCurrentStep(4);
@@ -215,7 +245,36 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
       return;
     }
 
+    if (industry === 'Other Industrial Trade...' && !otherIndustry.trim()) {
+      setErrorMsg('Please specify your custom industry / trade sector.');
+      setCurrentStep(1);
+      return;
+    }
+
+    if (midcZone === 'Other MIDC / Industrial Zone...' && !otherMidcZone.trim()) {
+      setErrorMsg('Please specify your custom MIDC / Industrial Zone name.');
+      setCurrentStep(3);
+      return;
+    }
+
+    const cleanPhone = phone.replace(/[^0-9]/g, '').slice(0, 10);
+    if (cleanPhone && (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone))) {
+      setErrorMsg('Helpline phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.');
+      setCurrentStep(4);
+      return;
+    }
+
     setIsSubmitting(true);
+
+    const finalIndustry =
+      industry === 'Other Industrial Trade...'
+        ? (otherIndustry.trim() || 'General Engineering')
+        : industry.trim();
+
+    const finalMidcZone =
+      midcZone === 'Other MIDC / Industrial Zone...'
+        ? (otherMidcZone.trim() || 'Private Industrial Zone')
+        : midcZone.trim();
 
     try {
       const companyId = company?.id || encodeURIComponent(name.trim());
@@ -224,7 +283,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
         body: JSON.stringify({
           name: name.trim(),
           logo: logo.trim(),
-          industry,
+          industry: finalIndustry,
           company_type: companyType,
           company_size: companySize,
           founded_year: Number(foundedYear) || 2005,
@@ -233,7 +292,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
           email: email.trim(),
           address: address.trim(),
           city: city.trim(),
-          midc_zone: midcZone.trim(),
+          midc_zone: finalMidcZone,
           description: description.trim(),
           gst_number: gstNumber.trim().toUpperCase(),
         }),
@@ -243,8 +302,26 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
         throw new Error(res.error || res.message || 'Failed to update company profile.');
       }
 
-      const updatedData = res?.data || res?.company || res;
-      onSaveSuccess(updatedData);
+      const updatedCompanyData = res?.data || res?.company || {
+        ...company,
+        id: company?.id || companyId,
+        name: name.trim(),
+        logo: logo.trim(),
+        industry: finalIndustry,
+        company_type: companyType,
+        company_size: companySize,
+        founded_year: Number(foundedYear) || 2005,
+        website: website.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        midc_zone: finalMidcZone,
+        description: description.trim(),
+        gst_number: gstNumber.trim().toUpperCase(),
+      };
+
+      onSaveSuccess(updatedCompanyData);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred while saving.');
@@ -360,7 +437,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
               {/* Photo Upload Avatar Header */}
               <View style={styles.avatarHeaderWrap}>
                 <View style={styles.avatarOuterWrapper}>
-                  <View style={styles.avatarCircleInner}>
+                  <View style={styles.avatarInnerWrapper}>
                     <CompanyLogoAvatar logoUrl={logo} companyName={name || 'Company'} size={64} borderRadius={32} />
                   </View>
                   <TouchableOpacity activeOpacity={0.85} onPress={handleImageUpload} style={styles.cameraBadgeBtn}>
@@ -396,6 +473,25 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
                     <ChevronDown size={16} color="#64748B" />
                   </TouchableOpacity>
                 </View>
+
+                {/* Custom Industry / Trade Input Field when 'Other' is selected */}
+                {industry === 'Other Industrial Trade...' && (
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>
+                      Specify Custom Trade / Industry Sector <Text style={styles.reqStar}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={otherIndustry}
+                      onChangeText={(t) => {
+                        setOtherIndustry(t);
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      placeholder="e.g. Aerospace Machining / Robotics / Foundry"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+                )}
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>Company Legal Type</Text>
@@ -502,6 +598,25 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
                     <ChevronDown size={16} color="#64748B" />
                   </TouchableOpacity>
                 </View>
+
+                {/* Additional Manual Input for Custom MIDC / Industrial Zone */}
+                {midcZone === 'Other MIDC / Industrial Zone...' && (
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>
+                      Specify MIDC / Industrial Zone Name <Text style={styles.reqStar}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={otherMidcZone}
+                      onChangeText={(t) => {
+                        setOtherMidcZone(t);
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      placeholder="e.g. Supa MIDC (Ahmednagar) / Kagal MIDC (Kolhapur)"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+                )}
 
                 <View style={styles.fieldWrap}>
                   <Text style={styles.fieldLabel}>Factory / Plant Address</Text>
@@ -770,18 +885,11 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
   },
-  avatarCircleInner: {
+  avatarInnerWrapper: {
     width: '100%',
     height: '100%',
-    borderRadius: 34,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderRadius: 32,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
   },
   cameraBadgeBtn: {
     position: 'absolute',

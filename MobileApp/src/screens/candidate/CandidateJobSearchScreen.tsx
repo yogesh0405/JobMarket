@@ -443,9 +443,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     const foundJob = jobs.find((j) => String(j.id) === String(jobId));
     savedJobsStore.toggleSave(foundJob || jobId).then((isSaved) => {
       if (isSaved) {
-        showToast('Job saved to bookmarks!', 'success');
+        showToast('Job saved to bookmarks!', 'success', 1000);
       } else {
-        showToast('Job removed from bookmarks', 'info');
+        showToast('Job removed from bookmarks', 'info', 1000);
       }
     });
   }, [jobs, showToast]);
@@ -772,16 +772,27 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
       <FlatList
         data={loading && jobs.length === 0 ? [] : filteredJobs}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item?.id ? String(item.id) : `job-${index}`}
         renderItem={({ item: job, index }) => (
           <CandidateJobCardItem
-            key={job.id}
+            key={job?.id ? String(job.id) : `job-${index}`}
             job={job}
             viewMode={viewMode}
             isFirst={index === 0}
             isLast={index === filteredJobs.length - 1}
             isSaved={savedJobIds.includes(job.id)}
             onToggleSave={() => handleToggleSave(job.id)}
+            onCompanyPress={(compName) =>
+              navigation.navigate('CompanyProfile', {
+                companyId: (job as any).company_id || (job as any).companyId || compName,
+                name: compName,
+                company: {
+                  name: compName,
+                  logo: job.companyLogo || (job as any).company_logo,
+                  location: job.location,
+                },
+              })
+            }
             onPress={() =>
               navigation.navigate('CandidateJobsTab', {
                 screen: 'CandidateJobDetail',
@@ -793,10 +804,10 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-        initialNumToRender={8}
+        initialNumToRender={10}
         maxToRenderPerBatch={10}
-        windowSize={11}
-        removeClippedSubviews={true}
+        windowSize={15}
+        removeClippedSubviews={false}
         ListHeaderComponent={
           <View style={styles.resultsInfoRow}>
             <Text style={styles.resultsCountText}>

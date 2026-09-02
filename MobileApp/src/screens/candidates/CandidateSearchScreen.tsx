@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Building2,
   ArrowUpRight,
+  Wrench,
 } from 'lucide-react-native';
 import { COLORS } from '../../constants/theme';
 import { apiFetch } from '../../api/client';
@@ -35,38 +36,14 @@ import {
 
 const CANDIDATE_RECENT_SEARCHES_STORAGE_KEY = '@jobmarket_candidate_recent_searches_v2';
 
-const TRENDING_ROLES = [
-  'CNC Machine Operator',
-  'VMC 3-Axis Machinist',
-  'ITI Fitter',
-  'Industrial Electrician',
-  'Quality Inspector (QA/QC)',
-  'MIG / TIG Welder',
-  'Tool & Die Maker',
-  'Plastic Injection Moulding Setter',
-];
-
-const TRENDING_LOCATIONS = [
-  'Waluj MIDC, Chhatrapati Sambhajinagar',
-  'Shendra MIDC Industrial Area',
-  'Chitegaon MIDC',
-  'Chakan MIDC, Pune',
-  'Bhosari MIDC, Pune',
-  'Chikalthana Industrial Area',
-];
-
-const POPULAR_INDUSTRIES = [
-  'Automotive & Auto Components',
-  'Industrial & Heavy Manufacturing',
-  'Electronics & Electricals',
-  'Pharmaceuticals & Chemicals',
-  'Plastics, Polymers & Rubber',
-  'Textiles & Garments',
-];
-
 interface Props {
   navigation: any;
   route?: any;
+}
+
+interface SuggestionItem {
+  name: string;
+  count: number;
 }
 
 export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) => {
@@ -111,7 +88,10 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
     const trimmed = keyword.trim();
     if (!trimmed) return;
     try {
-      const updated = [trimmed, ...recentSearches.filter((item) => item.toLowerCase() !== trimmed.toLowerCase())].slice(0, 10);
+      const updated = [
+        trimmed,
+        ...recentSearches.filter((item) => item.toLowerCase() !== trimmed.toLowerCase()),
+      ].slice(0, 10);
       setRecentSearches(updated);
       await AsyncStorage.setItem(CANDIDATE_RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {
@@ -140,14 +120,58 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
 
   const fetchAllCandidates = async () => {
     try {
-      const res = await apiFetch('/api/v1/jobs/workers/all');
-      const list = Array.isArray(res) ? res : (res?.data || []);
-      if (Array.isArray(list) && list.length > 0) {
-        setAllCandidates(list);
+      let rawList: any[] = [];
+      const res1 = await apiFetch('/api/v1/jobs/workers/all').catch(() => null);
+      if (res1 && res1.success && Array.isArray(res1.data) && res1.data.length > 0) {
+        rawList = res1.data;
+      } else {
+        const res2 = await apiFetch('/api/candidates').catch(() => null);
+        if (res2 && res2.success && Array.isArray(res2.data) && res2.data.length > 0) {
+          rawList = res2.data;
+        }
       }
-    } catch (_) {
-      // Retain SEED_CANDIDATES
-    }
+
+      if (rawList.length > 0) {
+        const formatted: ExtendedCandidate[] = rawList.map((item: any, idx: number) => {
+          const rawExperience = item.experience_details || item.experience;
+          const rawEducation = item.education_details || item.education;
+          const expYears = typeof item.experience === 'number' ? `${item.experience} Years` : safeString(item.experience, '2 Years');
+          const fallbackPhoto = SEED_CANDIDATES[idx % SEED_CANDIDATES.length]?.avatarUrl;
+          const photo =
+            item.profilePictureUrl ||
+            item.profile_picture_url ||
+            item.avatarUrl ||
+            item.avatar_url ||
+            item.avatar ||
+            item.photo ||
+            item.image ||
+            fallbackPhoto;
+
+          return {
+            ...item,
+            id: item.id || `candidate-${idx}`,
+            name: safeString(item.name, 'Industrial Candidate'),
+            email: safeString(item.email, ''),
+            phone: safeString(item.phone, ''),
+            avatarUrl: photo,
+            profile_picture_url: photo,
+            headline: safeString(item.headline || item.title, 'Skilled Factory Technician'),
+            title: safeString(item.title || item.headline, 'Machine Operator'),
+            trade_specialization: safeString(item.tradeSpecialization || item.trade_specialization, 'CNC / VMC Machinist'),
+            industry: safeString(item.industry || item.sector, 'Industrial & Heavy Manufacturing'),
+            location: safeString(item.location, 'Waluj MIDC, Chhatrapati Sambhajinagar'),
+            skills: Array.isArray(item.skills) && item.skills.length > 0 ? item.skills : ['CNC Operating', 'Machine Maintenance', 'Shop Safety'],
+            experience: rawExperience ?? expYears,
+            experience_years: typeof item.experience === 'number' ? item.experience : (typeof item.experience_years === 'number' ? item.experience_years : undefined),
+            education: rawEducation ?? safeString(item.education, 'ITI Certified'),
+            aadhaar_verified: item.aadhaarVerified ?? item.aadhaar_verified ?? true,
+            verified: true,
+            user: item.user || item,
+          };
+        });
+        setAllCandidates(formatted);
+      }
+    } catch (_) {}
   };
 
   const handleExecuteSearch = (queryText: string) => {
@@ -165,11 +189,70 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
     navigation.navigate('EmployerCandidateDetail', { candidate });
   };
 
-  // Autocomplete Multi-Category Results Engine
+  // 1. Compute dynamic aggregated suggestions directly from live available candidates
+  const dynamicSuggestions = useMemo(() => {
+    const roleCounts: Record<string, number> = {};
+    const skillCounts: Record<string, number> = {};
+    const locationCounts: Record<string, number> = {};
+    const industryCounts: Record<string, number> = {};
+
+    allCandidates.forEach((cand) => {
+      // Role / Trade
+      const role = cand.trade_specialization || cand.title || cand.headline;
+      if (role && typeof role === 'string' && role.trim()) {
+        const cleanRole = role.trim();
+        roleCounts[cleanRole] = (roleCounts[cleanRole] || 0) + 1;
+      }
+
+      // Skills
+      if (Array.isArray(cand.skills)) {
+        cand.skills.forEach((s) => {
+          if (s && typeof s === 'string' && s.trim()) {
+            const cleanSkill = s.trim();
+            skillCounts[cleanSkill] = (skillCounts[cleanSkill] || 0) + 1;
+          }
+        });
+      }
+
+      // Location
+      const loc = cand.location || (cand as any).city || (cand as any).midc_zone;
+      if (loc && typeof loc === 'string' && loc.trim()) {
+        const cleanLoc = loc.trim();
+        locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + 1;
+      }
+
+      // Industry
+      const ind = cand.industry;
+      if (ind && typeof ind === 'string' && ind.trim()) {
+        const cleanInd = ind.trim();
+        industryCounts[cleanInd] = (industryCounts[cleanInd] || 0) + 1;
+      }
+    });
+
+    const topRoles: SuggestionItem[] = Object.entries(roleCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    const topSkills: SuggestionItem[] = Object.entries(skillCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    const topLocations: SuggestionItem[] = Object.entries(locationCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    const topIndustries: SuggestionItem[] = Object.entries(industryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    return { topRoles, topSkills, topLocations, topIndustries };
+  }, [allCandidates]);
+
+  // 2. Compute Autocomplete Suggestions for live active query
   const autocompleteSuggestions = useMemo(() => {
     const trimmed = debouncedQuery.trim().toLowerCase();
     if (!trimmed) {
-      return { candidates: [], trades: [], locations: [], industries: [] };
+      return { candidates: [], trades: [], skills: [], locations: [], industries: [] };
     }
 
     const tokens = trimmed.split(/[\s,+/&|]+/).filter((t: string) => t.length > 0);
@@ -177,60 +260,58 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
     // Matching live candidates
     const matchedCandidates = allCandidates.filter((cand) => {
       const name = (cand.name || '').toLowerCase();
-      const location = (cand.location || (cand as any).city || (cand as any).state || '').toLowerCase();
-      const midcZone = ((cand as any).midc_zone || (cand as any).midcZone || '').toLowerCase();
+      const location = (cand.location || (cand as any).city || (cand as any).state || (cand as any).midc_zone || '').toLowerCase();
       const headline = (cand.headline || '').toLowerCase();
       const title = (cand.title || '').toLowerCase();
-      const trade = (cand.trade_specialization || (cand as any).tradeSpecialization || '').toLowerCase();
+      const trade = (cand.trade_specialization || '').toLowerCase();
       const industry = (cand.industry || '').toLowerCase();
       const bio = (cand.bio || '').toLowerCase();
       const skillsStr = Array.isArray(cand.skills) ? cand.skills.join(' ').toLowerCase() : '';
       const eduStr = safeString(cand.education).toLowerCase();
       const expStr = safeString(cand.experience).toLowerCase();
-      const shiftStr = ((cand as any).preferred_shift || (cand as any).preferredShift || '').toLowerCase();
 
-      const combinedText = `${name} ${location} ${midcZone} ${headline} ${title} ${trade} ${industry} ${bio} ${skillsStr} ${eduStr} ${expStr} ${shiftStr}`;
+      const combinedText = `${name} ${location} ${headline} ${title} ${trade} ${industry} ${bio} ${skillsStr} ${eduStr} ${expStr}`;
 
-      return tokens.every((token: string) => {
-        if (token === 'fresher' || token === 'freshers') {
-          return expStr.includes('fresher') || expStr.includes('0 yr') || cand.experience_years === 0;
-        }
-        if (token === 'iti') {
-          return eduStr.includes('iti') || trade.includes('iti') || headline.includes('iti');
-        }
-        if (token === 'diploma') {
-          return eduStr.includes('diploma') || headline.includes('diploma');
-        }
-        return combinedText.includes(token);
-      });
+      return tokens.every((token: string) => combinedText.includes(token));
     });
 
-    // Matching Roles & Trades
-    const matchedTrades = TRENDING_ROLES.filter((role) =>
-      role.toLowerCase().includes(trimmed) || tokens.some((t: string) => role.toLowerCase().includes(t))
-    );
+    // Matching only Roles that exist in live candidates and match the query
+    const matchedTrades: SuggestionItem[] = dynamicSuggestions.topRoles.filter((item) => {
+      const lower = item.name.toLowerCase();
+      return lower.includes(trimmed) || tokens.some((t: string) => lower.includes(t));
+    });
 
-    // Matching Locations
-    const matchedLocations = TRENDING_LOCATIONS.filter((loc) =>
-      loc.toLowerCase().includes(trimmed) || tokens.some((t: string) => loc.toLowerCase().includes(t))
-    );
+    // Matching only Skills that exist in live candidates and match the query
+    const matchedSkills: SuggestionItem[] = dynamicSuggestions.topSkills.filter((item) => {
+      const lower = item.name.toLowerCase();
+      return lower.includes(trimmed) || tokens.some((t: string) => lower.includes(t));
+    });
 
-    // Matching Industries
-    const matchedIndustries = POPULAR_INDUSTRIES.filter((ind) =>
-      ind.toLowerCase().includes(trimmed) || tokens.some((t: string) => ind.toLowerCase().includes(t))
-    );
+    // Matching only Locations that exist in live candidates and match the query
+    const matchedLocations: SuggestionItem[] = dynamicSuggestions.topLocations.filter((item) => {
+      const lower = item.name.toLowerCase();
+      return lower.includes(trimmed) || tokens.some((t: string) => lower.includes(t));
+    });
+
+    // Matching only Industries that exist in live candidates and match the query
+    const matchedIndustries: SuggestionItem[] = dynamicSuggestions.topIndustries.filter((item) => {
+      const lower = item.name.toLowerCase();
+      return lower.includes(trimmed) || tokens.some((t: string) => lower.includes(t));
+    });
 
     return {
       candidates: matchedCandidates.slice(0, 15),
       trades: matchedTrades.slice(0, 5),
+      skills: matchedSkills.slice(0, 5),
       locations: matchedLocations.slice(0, 5),
       industries: matchedIndustries.slice(0, 5),
     };
-  }, [allCandidates, debouncedQuery]);
+  }, [allCandidates, debouncedQuery, dynamicSuggestions]);
 
   const hasAnySuggestions =
     autocompleteSuggestions.candidates.length > 0 ||
     autocompleteSuggestions.trades.length > 0 ||
+    autocompleteSuggestions.skills.length > 0 ||
     autocompleteSuggestions.locations.length > 0 ||
     autocompleteSuggestions.industries.length > 0;
 
@@ -319,35 +400,38 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.noResultsIconBox}>
                   <SearchX size={24} color="#64748B" />
                 </View>
-                <Text style={styles.noResultsTitle}>No candidates found</Text>
+                <Text style={styles.noResultsTitle}>No matching candidates found</Text>
                 <Text style={styles.noResultsSub}>
-                  No candidate profiles match "{searchQuery.trim()}". Try searching with broader terms.
+                  No candidate profiles match "{searchQuery.trim()}". Try searching with popular roles or skills below.
                 </Text>
 
-                {/* Popular Roles Vertical Rows */}
-                <View style={styles.searchTipsBox}>
-                  <Text style={styles.searchTipsHeader}>SUGGESTED ROLES</Text>
-                  {TRENDING_ROLES.slice(0, 4).map((role) => (
-                    <TouchableOpacity
-                      key={role}
-                      style={styles.innerTipRow}
-                      onPress={() => handleExecuteSearch(role)}
-                      activeOpacity={0.65}
-                    >
-                      <TrendingUp size={14} color="#64748B" style={styles.rowIcon} />
-                      <Text style={styles.innerTipText}>{role}</Text>
-                      <ArrowUpRight size={13} color="#94A3B8" />
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                {/* Popular Available Roles Vertical Rows */}
+                {dynamicSuggestions.topRoles.length > 0 ? (
+                  <View style={styles.searchTipsBox}>
+                    <Text style={styles.searchTipsHeader}>AVAILABLE CANDIDATE ROLES</Text>
+                    {dynamicSuggestions.topRoles.slice(0, 4).map((roleItem) => (
+                      <TouchableOpacity
+                        key={roleItem.name}
+                        style={styles.innerTipRow}
+                        onPress={() => handleExecuteSearch(roleItem.name)}
+                        activeOpacity={0.65}
+                      >
+                        <TrendingUp size={14} color={COLORS.primary} style={styles.rowIcon} />
+                        <Text style={styles.innerTipText}>{roleItem.name}</Text>
+                        <Text style={styles.innerTipCountText}>({roleItem.count} available)</Text>
+                        <ArrowUpRight size={13} color="#94A3B8" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             ) : null}
 
-            {/* Matching Candidate Profiles */}
+            {/* 1. Matching Candidate Profiles */}
             {autocompleteSuggestions.candidates.length > 0 ? (
               <View style={styles.sectionWrap}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionHeaderTitle}>MATCHING CANDIDATES</Text>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING CANDIDATES ({autocompleteSuggestions.candidates.length})</Text>
                 </View>
                 {autocompleteSuggestions.candidates.map((cand) => {
                   return (
@@ -387,23 +471,23 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
               </View>
             ) : null}
 
-            {/* Matching Trades & Roles (Separate Vertical Rows) */}
+            {/* 2. Matching Roles & Trades */}
             {autocompleteSuggestions.trades.length > 0 ? (
               <View style={styles.sectionWrap}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionHeaderTitle}>POPULAR ROLES & TRADES</Text>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING ROLES & TRADES</Text>
                 </View>
-                {autocompleteSuggestions.trades.map((trade) => (
+                {autocompleteSuggestions.trades.map((item) => (
                   <TouchableOpacity
-                    key={trade}
+                    key={item.name}
                     style={styles.searchRow}
-                    onPress={() => handleExecuteSearch(trade)}
+                    onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
                   >
                     <TrendingUp size={15} color="#64748B" style={styles.rowIcon} />
                     <View style={styles.rowContent}>
-                      <Text style={styles.rowTitleText}>{trade}</Text>
-                      <Text style={styles.rowSubText}>Candidate Trade / Role</Text>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} {item.count === 1 ? 'candidate' : 'candidates'} available</Text>
                     </View>
                     <ArrowUpRight size={14} color="#94A3B8" />
                   </TouchableOpacity>
@@ -411,23 +495,47 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
               </View>
             ) : null}
 
-            {/* Matching Locations (Separate Vertical Rows) */}
+            {/* 3. Matching In-Demand Skills */}
+            {autocompleteSuggestions.skills.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING SKILLS</Text>
+                </View>
+                {autocompleteSuggestions.skills.map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={styles.searchRow}
+                    onPress={() => handleExecuteSearch(item.name)}
+                    activeOpacity={0.65}
+                  >
+                    <Wrench size={15} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} candidates skilled in {item.name}</Text>
+                    </View>
+                    <ArrowUpRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            {/* 4. Matching Locations */}
             {autocompleteSuggestions.locations.length > 0 ? (
               <View style={styles.sectionWrap}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionHeaderTitle}>LOCATIONS & MIDC ZONES</Text>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING LOCATIONS & MIDC ZONES</Text>
                 </View>
-                {autocompleteSuggestions.locations.map((loc) => (
+                {autocompleteSuggestions.locations.map((item) => (
                   <TouchableOpacity
-                    key={loc}
+                    key={item.name}
                     style={styles.searchRow}
-                    onPress={() => handleExecuteSearch(loc.split(',')[0])}
+                    onPress={() => handleExecuteSearch(item.name.split(',')[0])}
                     activeOpacity={0.65}
                   >
                     <MapPin size={15} color="#64748B" style={styles.rowIcon} />
                     <View style={styles.rowContent}>
-                      <Text style={styles.rowTitleText}>{loc}</Text>
-                      <Text style={styles.rowSubText}>Industrial Location</Text>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} candidates located here</Text>
                     </View>
                     <ArrowUpRight size={14} color="#94A3B8" />
                   </TouchableOpacity>
@@ -435,23 +543,23 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
               </View>
             ) : null}
 
-            {/* Matching Industries (Separate Vertical Rows) */}
+            {/* 5. Matching Industries */}
             {autocompleteSuggestions.industries.length > 0 ? (
               <View style={styles.sectionWrap}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionHeaderTitle}>INDUSTRIES & SECTORS</Text>
+                  <Text style={styles.sectionHeaderTitle}>MATCHING INDUSTRIES & SECTORS</Text>
                 </View>
-                {autocompleteSuggestions.industries.map((ind) => (
+                {autocompleteSuggestions.industries.map((item) => (
                   <TouchableOpacity
-                    key={ind}
+                    key={item.name}
                     style={styles.searchRow}
-                    onPress={() => handleExecuteSearch(ind)}
+                    onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
                   >
                     <Building2 size={15} color="#64748B" style={styles.rowIcon} />
                     <View style={styles.rowContent}>
-                      <Text style={styles.rowTitleText}>{ind}</Text>
-                      <Text style={styles.rowSubText}>Industrial Sector</Text>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} candidates in this sector</Text>
                     </View>
                     <ArrowUpRight size={14} color="#94A3B8" />
                   </TouchableOpacity>
@@ -460,7 +568,7 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
             ) : null}
           </View>
         ) : (
-          /* VIEW B: RECENT SEARCHES & TRENDING (DEFAULT EMPTY STATE) */
+          /* VIEW B: RECENT SEARCHES & REAL DYNAMIC CANDIDATE DATA (DEFAULT STATE) */
           <View style={styles.listContainer}>
             {/* 1. RECENT CANDIDATE SEARCHES */}
             {recentSearches.length > 0 ? (
@@ -496,71 +604,101 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
               </View>
             ) : null}
 
-            {/* 2. TRENDING CANDIDATE ROLES (Separate Vertical Rows) */}
-            <View style={styles.sectionWrap}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderTitle}>TRENDING CANDIDATE ROLES</Text>
+            {/* 2. REAL CANDIDATE ROLES (Available in Database) */}
+            {dynamicSuggestions.topRoles.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>POPULAR CANDIDATE ROLES</Text>
+                </View>
+                {dynamicSuggestions.topRoles.slice(0, 6).map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={styles.searchRow}
+                    onPress={() => handleExecuteSearch(item.name)}
+                    activeOpacity={0.65}
+                  >
+                    <TrendingUp size={15} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} verified {item.count === 1 ? 'candidate' : 'candidates'} available</Text>
+                    </View>
+                    <ArrowUpRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
               </View>
-              {TRENDING_ROLES.map((role) => (
-                <TouchableOpacity
-                  key={role}
-                  style={styles.searchRow}
-                  onPress={() => handleExecuteSearch(role)}
-                  activeOpacity={0.65}
-                >
-                  <TrendingUp size={15} color="#64748B" style={styles.rowIcon} />
-                  <View style={styles.rowContent}>
-                    <Text style={styles.rowTitleText}>{role}</Text>
-                    <Text style={styles.rowSubText}>Verified Candidates Available</Text>
-                  </View>
-                  <ArrowUpRight size={14} color="#94A3B8" />
-                </TouchableOpacity>
-              ))}
-            </View>
+            ) : null}
 
-            {/* 3. POPULAR INDUSTRIAL ZONES (Separate Vertical Rows) */}
-            <View style={styles.sectionWrap}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderTitle}>POPULAR INDUSTRIAL ZONES</Text>
+            {/* 3. IN-DEMAND TECHNICAL SKILLS (Available in Database) */}
+            {dynamicSuggestions.topSkills.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>IN-DEMAND TECHNICAL SKILLS</Text>
+                </View>
+                {dynamicSuggestions.topSkills.slice(0, 6).map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={styles.searchRow}
+                    onPress={() => handleExecuteSearch(item.name)}
+                    activeOpacity={0.65}
+                  >
+                    <Wrench size={15} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} {item.count === 1 ? 'candidate' : 'candidates'} with this skill</Text>
+                    </View>
+                    <ArrowUpRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
               </View>
-              {TRENDING_LOCATIONS.map((loc) => (
-                <TouchableOpacity
-                  key={loc}
-                  style={styles.searchRow}
-                  onPress={() => handleExecuteSearch(loc.split(',')[0])}
-                  activeOpacity={0.65}
-                >
-                  <MapPin size={15} color="#64748B" style={styles.rowIcon} />
-                  <View style={styles.rowContent}>
-                    <Text style={styles.rowTitleText}>{loc}</Text>
-                    <Text style={styles.rowSubText}>Candidate Concentration</Text>
-                  </View>
-                  <ArrowUpRight size={14} color="#94A3B8" />
-                </TouchableOpacity>
-              ))}
-            </View>
+            ) : null}
 
-            {/* 4. POPULAR INDUSTRIAL SECTORS (Separate Vertical Rows) */}
-            <View style={styles.sectionWrap}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderTitle}>POPULAR INDUSTRIAL SECTORS</Text>
+            {/* 4. POPULAR INDUSTRIAL ZONES & LOCATIONS (Available in Database) */}
+            {dynamicSuggestions.topLocations.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>CANDIDATE LOCATIONS & MIDC ZONES</Text>
+                </View>
+                {dynamicSuggestions.topLocations.slice(0, 5).map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={styles.searchRow}
+                    onPress={() => handleExecuteSearch(item.name.split(',')[0])}
+                    activeOpacity={0.65}
+                  >
+                    <MapPin size={15} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} active {item.count === 1 ? 'candidate' : 'candidates'}</Text>
+                    </View>
+                    <ArrowUpRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
               </View>
-              {POPULAR_INDUSTRIES.map((ind) => (
-                <TouchableOpacity
-                  key={ind}
-                  style={styles.searchRow}
-                  onPress={() => handleExecuteSearch(ind)}
-                  activeOpacity={0.65}
-                >
-                  <Building2 size={15} color="#64748B" style={styles.rowIcon} />
-                  <View style={styles.rowContent}>
-                    <Text style={styles.rowTitleText}>{ind}</Text>
-                    <Text style={styles.rowSubText}>Manufacturing & Production</Text>
-                  </View>
-                  <ArrowUpRight size={14} color="#94A3B8" />
-                </TouchableOpacity>
-              ))}
-            </View>
+            ) : null}
+
+            {/* 5. POPULAR INDUSTRIAL SECTORS (Available in Database) */}
+            {dynamicSuggestions.topIndustries.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>INDUSTRIES & SECTORS</Text>
+                </View>
+                {dynamicSuggestions.topIndustries.slice(0, 5).map((item) => (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={styles.searchRow}
+                    onPress={() => handleExecuteSearch(item.name)}
+                    activeOpacity={0.65}
+                  >
+                    <Building2 size={15} color="#64748B" style={styles.rowIcon} />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{item.name}</Text>
+                      <Text style={styles.rowSubText}>{item.count} candidates in this industry</Text>
+                    </View>
+                    <ArrowUpRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
           </View>
         )}
       </ScrollView>
@@ -767,5 +905,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1E293B',
     flex: 1,
+  },
+  innerTipCountText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 6,
   },
 });
