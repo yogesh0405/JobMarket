@@ -251,6 +251,22 @@ export const useAuth = () => {
   }, [dispatch]);
 
   const updateUser = useCallback(async (updates: Partial<User>) => {
+    // 1. Optimistic UI update (LinkedIn standard)
+    if (state.currentUser) {
+      const optimisticUser: User = {
+        ...state.currentUser,
+        ...updates,
+        profilePictureUrl: updates.profilePictureUrl || (updates as any).logo || (updates as any).profile_picture_url || state.currentUser.profilePictureUrl,
+        companyName: updates.companyName || (updates as any).company_name || state.currentUser.companyName,
+        tradeSpecialization: updates.tradeSpecialization || (updates as any).trade_specialization || (updates as any).industry || state.currentUser.tradeSpecialization,
+      };
+      dispatch({ type: 'UPDATE_USER', payload: optimisticUser });
+      dispatch({ type: 'LOGIN', payload: optimisticUser });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:profile-updated', { detail: optimisticUser }));
+      }
+    }
+
     try {
       const response = await apiFetch('/api/v1/auth/profile', {
         method: 'PUT',
@@ -270,9 +286,9 @@ export const useAuth = () => {
         email: apiUser.email || '',
         role: apiUser.role as UserRole,
         phone: apiUser.phone || '',
-        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
+        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo),
         createdAt: apiUser.created_at || new Date().toISOString(),
-        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.company_name,
         resume: parseResumeField(apiUser.resume),
         experience: parseArrayField(apiUser.experience),
         education: parseArrayField(apiUser.education),
@@ -281,18 +297,32 @@ export const useAuth = () => {
         appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs),
         appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus),
         headline: apiUser.headline || '',
-        location: apiUser.location || '',
-        tradeSpecialization: apiUser.trade_specialization || '',
+        location: apiUser.location || apiUser.address || apiUser.city || '',
+        tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || '',
         preferredShift: apiUser.preferred_shift || '',
         requiresBus: !!apiUser.requires_bus,
         requiresAccommodation: !!apiUser.requires_accommodation,
         isResumePublic: apiUser.is_resume_public !== false,
-        companyName: apiUser.company_name || '',
-        gstNumber: apiUser.gst_number || '',
+        companyName: apiUser.company_name || apiUser.companyName || '',
+        companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || '',
+        bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || '',
+        gstNumber: apiUser.gst_number || apiUser.gstNumber || '',
+        companyType: apiUser.company_type || apiUser.companyType || '',
+        companySize: apiUser.company_size || apiUser.companySize || '',
+        foundedYear: apiUser.founded_year || apiUser.foundedYear || undefined,
+        midcZone: apiUser.midc_zone || apiUser.midcZone || '',
+        website: apiUser.website || '',
+        address: apiUser.address || '',
+        city: apiUser.city || '',
+        state: apiUser.state || '',
+        logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || '',
       };
 
       dispatch({ type: 'UPDATE_USER', payload: user });
       dispatch({ type: 'LOGIN', payload: user });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:profile-updated', { detail: user }));
+      }
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Network error. Please try again later.' };
@@ -341,9 +371,9 @@ export const useAuth = () => {
             email: apiUser.email || '',
             role: apiUser.role as UserRole,
             phone: apiUser.phone || '',
-            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar),
+            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo),
             createdAt: apiUser.created_at || new Date().toISOString(),
-            profileComplete: !!apiUser.headline || !!apiUser.trade_specialization,
+            profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.company_name,
             resume: parseResumeField(apiUser.resume),
             experience: parseArrayField(apiUser.experience),
             education: parseArrayField(apiUser.education),
@@ -352,14 +382,25 @@ export const useAuth = () => {
             appliedJobs: parseArrayField(apiUser.appliedJobs),
             appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus),
             headline: apiUser.headline || '',
-            location: apiUser.location || '',
-            tradeSpecialization: apiUser.trade_specialization || '',
+            location: apiUser.location || apiUser.address || apiUser.city || '',
+            tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || '',
             preferredShift: apiUser.preferred_shift || '',
             requiresBus: !!apiUser.requires_bus,
             requiresAccommodation: !!apiUser.requires_accommodation,
             isResumePublic: apiUser.is_resume_public !== false,
-            companyName: apiUser.company_name || '',
-            gstNumber: apiUser.gst_number || '',
+            companyName: apiUser.company_name || apiUser.companyName || '',
+            companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || '',
+            bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || '',
+            gstNumber: apiUser.gst_number || apiUser.gstNumber || '',
+            companyType: apiUser.company_type || apiUser.companyType || '',
+            companySize: apiUser.company_size || apiUser.companySize || '',
+            foundedYear: apiUser.founded_year || apiUser.foundedYear || undefined,
+            midcZone: apiUser.midc_zone || apiUser.midcZone || '',
+            website: apiUser.website || '',
+            address: apiUser.address || '',
+            city: apiUser.city || '',
+            state: apiUser.state || '',
+            logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || '',
           };
           dispatch({ type: 'UPDATE_USER', payload: user });
           dispatch({ type: 'LOGIN', payload: user });
@@ -368,7 +409,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Failed to sync user:', error);
     }
-  }, [dispatch]);
+  }, [dispatch, state.currentUser]);
 
   const loginWithGoogle = useCallback(async (tokenOrPayload: string | { idToken?: string; accessToken?: string; picture?: string; name?: string; email?: string }, role: UserRole) => {
     try {

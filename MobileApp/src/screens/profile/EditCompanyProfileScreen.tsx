@@ -8,10 +8,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   Platform,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Check,
@@ -109,17 +109,17 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
   // Form State
   const [name, setName] = useState(passedCompany?.name || (user as any)?.company_name || (user as any)?.companyName || user?.name || '');
   const [logo, setLogo] = useState(passedCompany?.logo || passedCompany?.logoUrl || (user as any)?.profile_picture_url || '');
-  const [industry, setIndustry] = useState(passedCompany?.industry || 'Automotive & Auto Components');
+  const [industry, setIndustry] = useState(passedCompany?.industry || (user as any)?.trade_specialization || '');
   const [otherIndustry, setOtherIndustry] = useState('');
-  const [companyType, setCompanyType] = useState(passedCompany?.company_type || passedCompany?.companyType || 'Private Limited');
-  const [companySize, setCompanySize] = useState(passedCompany?.company_size || passedCompany?.companySize || '200-500 employees');
+  const [companyType, setCompanyType] = useState(passedCompany?.company_type || passedCompany?.companyType || '');
+  const [companySize, setCompanySize] = useState(passedCompany?.company_size || passedCompany?.companySize || '');
   const [foundedYear, setFoundedYear] = useState<string>(String(passedCompany?.founded_year || passedCompany?.foundedYear || ''));
   const [website, setWebsite] = useState(passedCompany?.website || '');
   const [phone, setPhone] = useState(passedCompany?.phone || user?.phone || '');
   const [email, setEmail] = useState(passedCompany?.email || user?.email || '');
   const [address, setAddress] = useState(passedCompany?.address || (user as any)?.location || '');
-  const [city, setCity] = useState(passedCompany?.city || (user as any)?.location || '');
-  const [midcZone, setMidcZone] = useState(passedCompany?.midc_zone || passedCompany?.midcZone || 'Not Applicable (Non-MIDC / Commercial)');
+  const [city, setCity] = useState(passedCompany?.city || '');
+  const [midcZone, setMidcZone] = useState(passedCompany?.midc_zone || passedCompany?.midcZone || '');
   const [otherMidcZone, setOtherMidcZone] = useState('');
   const [description, setDescription] = useState(passedCompany?.description || (user as any)?.bio || '');
   const rawGstInitial = passedCompany?.gst_number || passedCompany?.gstNumber || (user as any)?.gst_number || (user as any)?.gstNumber || '';
@@ -136,26 +136,26 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
     if (passedCompany) {
       setName(passedCompany.name || '');
       setLogo(passedCompany.logo || passedCompany.logoUrl || '');
-      const rawInd = passedCompany.industry || 'Automotive & Auto Components';
+      const rawInd = passedCompany.industry || '';
       const isKnown = INDUSTRY_OPTIONS.includes(rawInd) && rawInd !== 'Other Industrial Trade...';
-      if (isKnown) {
+      if (isKnown || !rawInd) {
         setIndustry(rawInd);
         setOtherIndustry('');
       } else {
         setIndustry('Other Industrial Trade...');
         setOtherIndustry(rawInd === 'Other Industrial Trade...' ? '' : rawInd);
       }
-      setCompanyType(passedCompany.company_type || passedCompany.companyType || 'Private Limited');
-      setCompanySize(passedCompany.company_size || passedCompany.companySize || '200-500 employees');
+      setCompanyType(passedCompany.company_type || passedCompany.companyType || '');
+      setCompanySize(passedCompany.company_size || passedCompany.companySize || '');
       setFoundedYear(String(passedCompany.founded_year || passedCompany.foundedYear || ''));
       setWebsite(passedCompany.website || '');
       setPhone(passedCompany.phone || user?.phone || '');
       setEmail(passedCompany.email || user?.email || '');
       setAddress(passedCompany.address || '');
       setCity(passedCompany.city || '');
-      const rawMidc = passedCompany.midc_zone || passedCompany.midcZone || 'Not Applicable (Non-MIDC / Commercial)';
+      const rawMidc = passedCompany.midc_zone || passedCompany.midcZone || '';
       const isKnownMidc = MIDC_OPTIONS.includes(rawMidc) && rawMidc !== 'Other MIDC / Industrial Zone...';
-      if (isKnownMidc) {
+      if (isKnownMidc || !rawMidc) {
         setMidcZone(rawMidc);
         setOtherMidcZone('');
       } else {
@@ -331,9 +331,12 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
       await updateUserProfile({
         company_name: name.trim(),
         companyName: name.trim(),
+        trade_specialization: finalIndustry,
+        tradeSpecialization: finalIndustry,
+        industry: finalIndustry,
         gst_number: gstNumber.trim().toUpperCase(),
         gstNumber: gstNumber.trim().toUpperCase(),
-        ...(logo ? { profile_picture_url: logo, company_logo: logo } : {}),
+        ...(logo ? { profile_picture_url: logo, company_logo: logo, logo: logo } : {}),
       } as any).catch(() => {});
 
       await refreshUser().catch(() => {});

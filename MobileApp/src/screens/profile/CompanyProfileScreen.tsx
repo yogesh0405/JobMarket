@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
+import { jobsApi } from '../../api/jobsApi';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { CompanySkeleton } from '../../components/common/SkeletonLoader';
@@ -119,7 +120,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     if (!company) setLoadingCompany(true);
     setError(null);
 
-    if (targetCompanyId) {
+    if (targetCompanyId && targetCompanyId !== 'My Company') {
       try {
         const companyQuery = encodeURIComponent(targetCompanyId);
         const json = await apiFetch(`/api/v1/companies/${companyQuery}`);
@@ -130,8 +131,23 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           setLoadingCompany(false);
           return;
         }
-      } catch (err: any) {
-        console.warn('API fetch company details notice:', err);
+      } catch (_) {
+        // Continue to user id or companies directory lookup
+      }
+    }
+
+    if (user?.id && user.id !== targetCompanyId) {
+      try {
+        const json = await apiFetch(`/api/v1/companies/${encodeURIComponent(user.id)}`);
+        const compData = json?.data || (json?.name ? json : null);
+
+        if (compData && compData.name) {
+          setCompany(compData);
+          setLoadingCompany(false);
+          return;
+        }
+      } catch (_) {
+        // Continue to fallback lookup
       }
     }
 
@@ -187,46 +203,37 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const loadCompanyJobs = async () => {
     setLoadingJobs(true);
 
-    try {
-      const companyQuery = encodeURIComponent(targetCompanyId);
-      const json = await apiFetch(`/api/v1/companies/${companyQuery}/jobs`);
-      const list = Array.isArray(json) ? json : (json?.data || []);
-
-      if (Array.isArray(list) && list.length > 0) {
-        setJobs(list);
-        setLoadingJobs(false);
-        return;
+    if (isOwner) {
+      try {
+        const res = await jobsApi.getMyJobs();
+        if (res && res.success && Array.isArray(res.data)) {
+          setJobs(res.data);
+          setLoadingJobs(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend owner jobs fetch notice:', err);
       }
-    } catch (err) {
-      console.warn('Backend company jobs fetch notice:', err);
     }
 
-    try {
-      const json = await apiFetch('/api/v1/jobs');
-      const allJobs = Array.isArray(json) ? json : (json?.data || []);
-      if (Array.isArray(allJobs) && allJobs.length > 0) {
-        const targetLower = targetCompanyId.toLowerCase().trim();
-        const cleanTarget = targetLower.replace(/[^a-z0-9]/g, '');
-        const matching = allJobs.filter((j: any) => {
-          if (!j) return false;
-          const compName = (j.company || '').toLowerCase().trim();
-          const cleanComp = compName.replace(/[^a-z0-9]/g, '');
-          return (
-            compName === targetLower ||
-            (cleanTarget.length > 2 && cleanComp === cleanTarget) ||
-            compName.includes(targetLower) ||
-            targetLower.includes(compName)
-          );
-        });
-        setJobs(matching);
-      } else {
-        setJobs([]);
+    if (targetCompanyId) {
+      try {
+        const companyQuery = encodeURIComponent(targetCompanyId);
+        const json = await apiFetch(`/api/v1/companies/${companyQuery}/jobs`);
+        const list = Array.isArray(json) ? json : (json?.data || []);
+
+        if (Array.isArray(list)) {
+          setJobs(list);
+          setLoadingJobs(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend company jobs fetch notice:', err);
       }
-    } catch (_) {
-      setJobs([]);
-    } finally {
-      setLoadingJobs(false);
     }
+
+    setJobs([]);
+    setLoadingJobs(false);
   };
 
   // Fetch 100% Real Live Recruitment Analytics Data from Backend
@@ -345,18 +352,20 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const formattedLocation = useMemo(() => {
     if (!company) return '';
+    const rawAddr = (company.address || '').trim();
+    if (rawAddr) return rawAddr;
     const parts: string[] = [];
-    if (company.address?.trim()) parts.push(company.address.trim());
-    if (company.city?.trim() && !company.address?.toLowerCase().includes(company.city.toLowerCase())) {
-      parts.push(company.city.trim());
-    }
     if (company.midc_zone || company.midcZone) {
       const midc = (company.midc_zone || company.midcZone).split('(')[0].trim();
-      if (!parts.join(', ').includes(midc)) {
-        parts.push(midc);
+      if (midc) parts.push(midc);
+    }
+    if (company.city?.trim()) {
+      const city = company.city.trim();
+      if (!parts.some((p) => p.toLowerCase().includes(city.toLowerCase()))) {
+        parts.push(city);
       }
     }
-    return parts.join(', ') || company.city || company.address || company.midc_zone || company.midcZone || '';
+    return parts.join(', ');
   }, [company]);
 
   return (
@@ -381,7 +390,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             onEditPress={() => {
               navigation.navigate('EditCompanyProfile', {
                 company,
-                onSaveSuccess: handleSaveSuccess,
               });
             }}
             onSharePress={handleShare}

@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
+import { MetaVerifiedBadge } from '../common/MetaVerifiedBadge';
 
 interface JobCardProps {
   job: Job;
@@ -360,23 +361,26 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-            <Link
-              to={`/company/${encodeURIComponent((job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company)}`}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                fontSize: '12.5px',
-                fontWeight: '700',
-                color: '#1E293B',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                textDecoration: 'none'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#1E293B')}
-            >
-              {job.company}
-            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+              <Link
+                to={`/company/${encodeURIComponent((job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company)}`}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  color: '#1E293B',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  textDecoration: 'none'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#1E293B')}
+              >
+                {job.company}
+              </Link>
+              <MetaVerifiedBadge size={13} color="#0095F6" title="Verified Employer" />
+            </div>
             <div style={{ fontSize: '11px', color: '#0284C7', fontWeight: '600' }}>
               Posted by {job.company}
             </div>

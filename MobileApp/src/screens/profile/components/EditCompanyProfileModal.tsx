@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  SafeAreaView,
   StatusBar,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Check,
@@ -32,6 +32,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { apiFetch } from '../../../api/client';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 import { COLORS } from '../../../constants/theme';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface EditCompanyProfileModalProps {
   visible: boolean;
@@ -103,6 +104,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
   company,
   onSaveSuccess,
 }) => {
+  const { updateUserProfile, refreshUser } = useAuth();
   if (!visible) return null;
 
   // 4-Step Stepper State: 1, 2, 3, 4
@@ -321,7 +323,24 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
         gst_number: gstNumber.trim().toUpperCase(),
       };
 
-      onSaveSuccess(updatedCompanyData);
+      if (onSaveSuccess) {
+        onSaveSuccess(updatedCompanyData);
+      }
+
+      // Real-time auth session state sync
+      await updateUserProfile({
+        company_name: name.trim(),
+        companyName: name.trim(),
+        trade_specialization: finalIndustry,
+        tradeSpecialization: finalIndustry,
+        industry: finalIndustry,
+        gst_number: gstNumber.trim().toUpperCase(),
+        gstNumber: gstNumber.trim().toUpperCase(),
+        ...(logo ? { profile_picture_url: logo, company_logo: logo, logo: logo } : {}),
+      } as any).catch(() => {});
+
+      await refreshUser().catch(() => {});
+
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred while saving.');

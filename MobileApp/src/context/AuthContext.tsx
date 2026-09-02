@@ -107,6 +107,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
         const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
 
+        if (fetchedUser.company_name || fetchedUser.companyName) {
+          mergedUser.company_name = fetchedUser.company_name || fetchedUser.companyName;
+          mergedUser.companyName = fetchedUser.companyName || fetchedUser.company_name;
+        }
+        if (fetchedUser.trade_specialization || fetchedUser.tradeSpecialization || fetchedUser.industry) {
+          const spec = fetchedUser.trade_specialization || fetchedUser.tradeSpecialization || fetchedUser.industry;
+          (mergedUser as any).trade_specialization = spec;
+          (mergedUser as any).tradeSpecialization = spec;
+          (mergedUser as any).industry = spec;
+        }
         if (fetchedUser.headline !== undefined) {
           mergedUser.headline = fetchedUser.headline;
         }
@@ -119,10 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (fetchedUser.midc_zone || fetchedUser.midcZone) {
           (mergedUser as any).midc_zone = fetchedUser.midc_zone || fetchedUser.midcZone;
           (mergedUser as any).midcZone = fetchedUser.midcZone || fetchedUser.midc_zone;
-        }
-        if (fetchedUser.trade_specialization || fetchedUser.tradeSpecialization) {
-          (mergedUser as any).trade_specialization = fetchedUser.trade_specialization || fetchedUser.tradeSpecialization;
-          (mergedUser as any).tradeSpecialization = fetchedUser.tradeSpecialization || fetchedUser.trade_specialization;
         }
         if (fetchedUser.preferred_shift || fetchedUser.preferredShift) {
           (mergedUser as any).preferred_shift = fetchedUser.preferred_shift || fetchedUser.preferredShift;
@@ -365,9 +371,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       normalizedData.companyName = data.companyName || (data as any).company_name;
       normalizedData.company_name = (data as any).company_name || data.companyName;
     }
-    if (data.tradeSpecialization || (data as any).trade_specialization) {
-      normalizedData.tradeSpecialization = data.tradeSpecialization || (data as any).trade_specialization;
-      normalizedData.trade_specialization = (data as any).trade_specialization || data.tradeSpecialization;
+    if (data.tradeSpecialization || (data as any).trade_specialization || (data as any).industry) {
+      const spec = data.tradeSpecialization || (data as any).trade_specialization || (data as any).industry;
+      normalizedData.tradeSpecialization = spec;
+      normalizedData.trade_specialization = spec;
+      normalizedData.industry = spec;
     }
     if (data.gstNumber || (data as any).gst_number) {
       normalizedData.gstNumber = data.gstNumber || (data as any).gst_number;
@@ -408,7 +416,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setGlobalCompanyLogo(companyName, photoUri);
     }
 
-    // Call live backend API to update PostgreSQL database as single source of truth
+    // 1. Instant Optimistic UI Update (LinkedIn standard - zero latency for Header & Drawer)
+    setUser(updatedUser);
+    await saveStoredUser(updatedUser);
+
+    // 2. Call live backend API to update PostgreSQL database as single source of truth
     const res = await authApi.updateProfile(normalizedData);
     if (!res.success) {
       throw new Error(res.message || res.error || 'Failed to update profile in database');

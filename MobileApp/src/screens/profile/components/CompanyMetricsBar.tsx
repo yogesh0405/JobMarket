@@ -40,10 +40,10 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
 }) => {
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  const fullLocation = midcZone || 'Waluj MIDC, Chhatrapati Sambhajinagar, Maharashtra';
+  const fullLocation = midcZone || 'Not specified';
   const cleanLocation = midcZone
     ? midcZone.replace(/\(.*\)/, '').trim()
-    : 'Industrial Hub';
+    : 'Not specified';
 
   const handleShareOrCopy = async (text: string) => {
     try {

@@ -300,12 +300,12 @@ export class CompanyRepository {
         return company;
       }
 
-      // Check if user table has an employer matching this name or ID
-      const userCheckQuery = 'SELECT * FROM users WHERE id = $1 OR company_name ILIKE $2 LIMIT 1;';
+      // Check if user table has an employer matching this name, company name, or ID
+      const userCheckQuery = 'SELECT * FROM users WHERE id = $1 OR company_name ILIKE $2 OR name ILIKE $2 LIMIT 1;';
       const userCheckRes = await pool.query(userCheckQuery, [isUuid ? identifier : '00000000-0000-0000-0000-000000000000', decodedName]);
       if (userCheckRes.rows.length > 0) {
         const u = userCheckRes.rows[0];
-        const compName = u.company_name || u.name;
+        const compName = u.company_name || u.name || 'My Company';
         const company: Company = {
           id: u.id,
           employer_id: u.id,
@@ -544,10 +544,23 @@ export class CompanyRepository {
         userUpdateFields.push(`trade_specialization = $${uIdx++}`);
         userValues.push(updateData.industry);
       }
+      if (updateData.description || (updateData as any).bio) {
+        userUpdateFields.push(`bio = $${uIdx++}`);
+        userValues.push((updateData.description || (updateData as any).bio).trim());
+      }
+      if (updateData.midc_zone || (updateData as any).midcZone) {
+        userUpdateFields.push(`midc_zone = $${uIdx++}`);
+        userValues.push((updateData.midc_zone || (updateData as any).midcZone).trim());
+      }
       if (updateData.address || updateData.city) {
-        const loc = [updateData.address, updateData.city].filter(Boolean).join(', ');
+        const addr = (updateData.address || '').trim();
+        const cty = (updateData.city || '').trim();
+        let loc = addr;
+        if (cty && !addr.toLowerCase().includes(cty.toLowerCase())) {
+          loc = addr ? `${addr}, ${cty}` : cty;
+        }
         userUpdateFields.push(`location = $${uIdx++}`);
-        userValues.push(loc);
+        userValues.push(loc || cty);
       }
       if (updateData.logo) {
         userUpdateFields.push(`profile_picture_url = $${uIdx++}`);
@@ -571,13 +584,36 @@ export class CompanyRepository {
           userValues
         );
       }
+
+      // Sync changes to all active job listings posted by this employer
+      if (updateData.name || updateData.logo) {
+        const jobUpdateFields: string[] = [];
+        const jobValues: any[] = [];
+        let jIdx = 1;
+        if (updateData.name) {
+          jobUpdateFields.push(`company = $${jIdx++}`);
+          jobValues.push(updateData.name.trim());
+        }
+        if (updateData.logo) {
+          jobUpdateFields.push(`company_logo = $${jIdx++}`);
+          jobValues.push(updateData.logo.trim());
+        }
+        jobValues.push(safeEmployerId);
+        await pool.query(
+          `UPDATE jobs SET ${jobUpdateFields.join(', ')} WHERE employer_id = $${jIdx};`,
+          jobValues
+        );
+      }
     }
 
     // Invalidate caches
     await CacheService.invalidatePattern('company:*');
     await CacheService.invalidatePattern('cache:companies:*');
+    await CacheService.invalidatePattern('jobs:*');
+    await CacheService.invalidatePattern('cache:jobs:*');
     if (safeEmployerId) {
       await CacheService.invalidate(`user:profile:${safeEmployerId}`);
+      await CacheService.invalidate(`user:profile:${safeEmployerId.toLowerCase()}`);
     }
 
     const updatedCompany = await this.getCompanyById(companyDbId);

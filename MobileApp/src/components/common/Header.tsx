@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { logout, user } = useAuth();
+  const { logout, user, refreshUser } = useAuth();
   const {
     notifications,
     unreadCount,
@@ -119,6 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const openDrawer = () => {
     setModalMounted(true);
+    refreshUser().catch(() => {});
   };
 
   const closeDrawer = (action?: () => void) => {
@@ -155,8 +156,12 @@ export const Header: React.FC<HeaderProps> = ({
   const canGoBackInNav = navigation && typeof navigation.canGoBack === 'function' ? navigation.canGoBack() : false;
   const isBackAvailable = (showBack || !!onBack) && (onBack || canGoBackInNav);
 
-  const displayName = user?.companyName || user?.company_name || user?.name || 'User';
+  const isEmployer = (user?.role || '').toLowerCase() === 'employer';
+  const displayName = isEmployer
+    ? (user?.companyName || user?.company_name || user?.name || 'Company Profile')
+    : (user?.name || 'User');
   const displayEmail = user?.email || 'user@jobmarket.com';
+  const displayIndustry = user?.tradeSpecialization || (user as any)?.trade_specialization || (user as any)?.industry || (user as any)?.headline || '';
   const initialLetter = displayName.charAt(0).toUpperCase() || 'U';
 
   const headerDisplayTitle = (title === 'JobMarket' && platformName && platformName !== 'JobMarket') ? platformName : title;
@@ -166,6 +171,8 @@ export const Header: React.FC<HeaderProps> = ({
     (user as any)?.profile_picture_url ||
     (user as any)?.profilePhotoUrl ||
     (user as any)?.avatar ||
+    (user as any)?.avatar_url ||
+    (user as any)?.avatarUrl ||
     (user as any)?.companyLogo ||
     (user as any)?.company_logo ||
     (user as any)?.logoUrl ||
@@ -218,6 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <View style={[styles.headerAvatarCircle, { overflow: 'hidden' }]}>
                   {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
                     <Image
+                      key={userPhotoUri.trim()}
                       source={{ uri: userPhotoUri.trim() }}
                       style={styles.headerAvatarImage}
                       resizeMode="cover"
@@ -446,6 +454,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Text style={styles.avatarLetter}>{initialLetter}</Text>
                   {userPhotoUri && typeof userPhotoUri === 'string' && userPhotoUri.trim().length > 5 ? (
                     <Image
+                      key={userPhotoUri.trim()}
                       source={{ uri: userPhotoUri.trim() }}
                       style={[styles.avatarImage, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
                     />
@@ -453,7 +462,13 @@ export const Header: React.FC<HeaderProps> = ({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.profileNameText} numberOfLines={1}>{displayName}</Text>
-                  <Text style={styles.profileEmailText} numberOfLines={1}>{displayEmail}</Text>
+                  {displayIndustry ? (
+                    <Text style={[styles.profileEmailText, { color: COLORS.primary, fontWeight: '700' }]} numberOfLines={1}>
+                      {displayIndustry}
+                    </Text>
+                  ) : (
+                    <Text style={styles.profileEmailText} numberOfLines={1}>{displayEmail}</Text>
+                  )}
                 </View>
                 <ChevronRight size={16} color={COLORS.slate400} />
               </View>

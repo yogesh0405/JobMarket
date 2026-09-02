@@ -84,6 +84,18 @@ export interface User {
   requiresBus?: boolean;
   requiresAccommodation?: boolean;
   isResumePublic?: boolean;
+  // Employer / Company Fields
+  companyDescription?: string;
+  bio?: string;
+  companyType?: string;
+  companySize?: string;
+  foundedYear?: number;
+  midcZone?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  logo?: string;
 }
 
 export interface Job {

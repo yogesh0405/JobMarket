@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, safeParseJson } from '../../utils/api';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { MobileHeader } from '../../components/common/MobileHeader';
+import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import {
   Building2,
   Search,
@@ -608,19 +609,22 @@ export const CompaniesDirectoryPage: React.FC = () => {
                     />
 
                     <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                      <h3 style={{
-                        margin: 0,
-                        fontSize: '14.5px',
-                        fontWeight: 600,
-                        color: '#0F172A',
-                        letterSpacing: '-0.15px',
-                        lineHeight: 1.3,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}>
-                        {comp.name}
-                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '14.5px',
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          letterSpacing: '-0.15px',
+                          lineHeight: 1.3,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {comp.name}
+                        </h3>
+                        <MetaVerifiedBadge size={15} color="#0095F6" title="Verified Company" />
+                      </div>
                       <p style={{
                         margin: '2px 0 0 0',
                         fontSize: '11.5px',

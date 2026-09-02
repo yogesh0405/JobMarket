@@ -53,7 +53,10 @@ export const CompanyDetailsCard: React.FC<CompanyDetailsCardProps> = ({
   const email = company?.email || company?.contact_email || 'Not provided';
   const phone = company?.phone || company?.contact_phone || 'Not provided';
   const fullAddress =
-    formattedLocation || company?.address || company?.city || (company?.midc_zone ? `${company.midc_zone}, Maharashtra` : 'Not specified');
+    company?.address?.trim() ||
+    formattedLocation ||
+    company?.city?.trim() ||
+    (company?.midc_zone ? `${company.midc_zone}, Maharashtra` : 'Not specified');
 
   const handleOpenPopup = (type: 'address' | 'email') => {
     if (type === 'address') {

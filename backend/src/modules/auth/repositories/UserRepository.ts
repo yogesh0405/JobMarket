@@ -18,6 +18,8 @@ export interface User {
   updated_at: Date;
   headline?: string;
   location?: string;
+  bio?: string;
+  midc_zone?: string;
   skills?: string[];
   preferred_shift?: string;
   requires_bus?: boolean;
@@ -83,6 +85,48 @@ export class UserRepository {
       user.resume = safeJsonParse(user.resume, null);
       user.experience = safeJsonParse(user.experience, []);
       user.education = safeJsonParse(user.education, []);
+
+      // If user is employer, merge company details from companies table if available
+      if (user.role === 'employer') {
+        try {
+          const compRes = await pool.query(
+            'SELECT * FROM companies WHERE employer_id = $1 OR name ILIKE $2 LIMIT 1;',
+            [id, user.company_name || user.name]
+          );
+          if (compRes.rows.length > 0) {
+            const comp = compRes.rows[0];
+            (user as any).company_id = comp.id;
+            (user as any).companyId = comp.id;
+            (user as any).company_name = comp.name || user.company_name;
+            (user as any).companyName = comp.name || user.company_name;
+            (user as any).company_type = comp.company_type;
+            (user as any).companyType = comp.company_type;
+            (user as any).company_size = comp.company_size;
+            (user as any).companySize = comp.company_size;
+            (user as any).founded_year = comp.founded_year;
+            (user as any).foundedYear = comp.founded_year;
+            (user as any).website = comp.website;
+            (user as any).address = comp.address;
+            (user as any).city = comp.city;
+            (user as any).state = comp.state;
+            (user as any).midc_zone = comp.midc_zone || user.midc_zone;
+            (user as any).midcZone = comp.midc_zone || user.midc_zone;
+            (user as any).company_description = comp.description;
+            (user as any).companyDescription = comp.description;
+            (user as any).bio = comp.description || user.bio;
+            (user as any).logo = comp.logo || user.profile_picture_url;
+            (user as any).company_logo = comp.logo || user.profile_picture_url;
+            (user as any).companyLogo = comp.logo || user.profile_picture_url;
+            (user as any).profile_picture_url = comp.logo || user.profile_picture_url;
+            (user as any).profilePictureUrl = comp.logo || user.profile_picture_url;
+            (user as any).industry = comp.industry || user.trade_specialization;
+            (user as any).trade_specialization = comp.industry || user.trade_specialization;
+            (user as any).tradeSpecialization = comp.industry || user.trade_specialization;
+          }
+        } catch (cErr) {
+          console.error('Failed to attach company data in UserRepository.findById:', cErr);
+        }
+      }
 
       // Fetch applied job IDs and status
       try {
@@ -224,13 +268,42 @@ export class UserRepository {
       WHERE id = $${paramIndex}
       RETURNING *;
     `;
-    values.push(userId);
-
     const result = await client.query(query, values);
+    const updatedUser = result.rows[0];
+
+    // If user is employer, sync logo and company name to companies table and active jobs in real-time
+    if (updatedUser && (updatedUser.role === 'employer' || updatedUser.role === 'admin')) {
+      const newLogo = updatedUser.profile_picture_url;
+      const newCompName = updatedUser.company_name;
+      const newIndustry = updatedUser.trade_specialization;
+
+      if (newLogo) {
+        await pool.query(
+          'UPDATE companies SET logo = $1, updated_at = CURRENT_TIMESTAMP WHERE employer_id = $2 OR name ILIKE $3;',
+          [newLogo, userId, newCompName || '']
+        ).catch(() => {});
+        await pool.query(
+          'UPDATE jobs SET company_logo = $1 WHERE employer_id = $2;',
+          [newLogo, userId]
+        ).catch(() => {});
+      }
+
+      if (newIndustry) {
+        await pool.query(
+          'UPDATE companies SET industry = $1, updated_at = CURRENT_TIMESTAMP WHERE (employer_id = $2 OR name ILIKE $3) AND (industry IS NULL OR industry = \'\' OR industry = \'Industrial Manufacturing\');',
+          [newIndustry, userId, newCompName || '']
+        ).catch(() => {});
+      }
+
+      await CacheService.invalidate(`company:profile:${userId}`);
+      await CacheService.invalidate('cache:companies:all');
+      await CacheService.invalidate('companies:all');
+    }
+
     await CacheService.invalidate(`user:profile:${userId}`);
     await CacheService.invalidate(`user:profile:${userId.toLowerCase()}`);
     await CacheService.invalidate('cache:candidates:all');
-    return result.rows[0];
+    return updatedUser;
   }
 
   static async getAllCandidates(): Promise<any[]> {

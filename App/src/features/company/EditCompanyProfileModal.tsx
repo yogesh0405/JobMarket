@@ -107,27 +107,79 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
     onClose();
   };
 
+  const getInitialValues = (c: any) => {
+    const rawInd = (c?.industry || c?.tradeSpecialization || c?.trade_specialization || '').trim();
+    const isKnown = INDUSTRY_OPTIONS.includes(rawInd) && rawInd !== 'Other Industrial Trade...';
+    const initialIndustry = isKnown ? rawInd : rawInd ? 'Other Industrial Trade...' : 'Industrial Manufacturing';
+    const initialOtherIndustry = !isKnown && rawInd && rawInd !== 'Other Industrial Trade...' ? rawInd : '';
+
+    return {
+      name: c?.companyName || c?.company_name || c?.name || '',
+      logo: c?.logo || c?.profilePictureUrl || c?.profile_picture_url || c?.companyLogo || '',
+      industry: initialIndustry,
+      otherIndustry: initialOtherIndustry,
+      companyType: c?.company_type || c?.companyType || 'Private Limited',
+      companySize: c?.company_size || c?.companySize || '200-500 employees',
+      foundedYear: c?.founded_year || c?.foundedYear || 2005,
+      website: c?.website || '',
+      phone: c?.phone || '',
+      email: c?.email || '',
+      address: c?.address || (typeof c?.location === 'string' && !c?.location.includes('MIDC') ? c.location : '') || '',
+      city: c?.city || (typeof c?.location === 'string' ? c.location.split(',')[0].trim() : '') || 'Chhatrapati Sambhajinagar',
+      midcZone: c?.midc_zone || c?.midcZone || 'Waluj MIDC (Chhatrapati Sambhajinagar)',
+      description: c?.description || c?.companyDescription || c?.bio || '',
+      gstNumber: c?.gst_number || c?.gstNumber || '',
+    };
+  };
+
+  const initial = getInitialValues(company);
+
   // 4-Step Stepper State: 1, 2, 3, 4
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Form State
-  const [name, setName] = useState(company?.name || '');
-  const [logo, setLogo] = useState(company?.logo || '');
-  const [industry, setIndustry] = useState(company?.industry || 'Industrial Manufacturing');
-  const [companyType, setCompanyType] = useState(company?.company_type || 'Private Limited');
-  const [companySize, setCompanySize] = useState(company?.company_size || '200-500 employees');
-  const [foundedYear, setFoundedYear] = useState<number | string>(company?.founded_year || 2005);
-  const [website, setWebsite] = useState(company?.website || '');
-  const [phone, setPhone] = useState(company?.phone || '');
-  const [email, setEmail] = useState(company?.email || '');
-  const [address, setAddress] = useState(company?.address || '');
-  const [city, setCity] = useState(company?.city || 'Chhatrapati Sambhajinagar');
-  const [midcZone, setMidcZone] = useState(company?.midc_zone || 'Waluj MIDC (Chhatrapati Sambhajinagar)');
-  const [description, setDescription] = useState(company?.description || '');
-  const [gstNumber, setGstNumber] = useState(company?.gst_number || '');
+  const [name, setName] = useState(initial.name);
+  const [logo, setLogo] = useState(initial.logo);
+  const [industry, setIndustry] = useState(initial.industry);
+  const [otherIndustry, setOtherIndustry] = useState(initial.otherIndustry);
+  const [companyType, setCompanyType] = useState(initial.companyType);
+  const [companySize, setCompanySize] = useState(initial.companySize);
+  const [foundedYear, setFoundedYear] = useState<number | string>(initial.foundedYear);
+  const [website, setWebsite] = useState(initial.website);
+  const [phone, setPhone] = useState(initial.phone);
+  const [email, setEmail] = useState(initial.email);
+  const [address, setAddress] = useState(initial.address);
+  const [city, setCity] = useState(initial.city);
+  const [midcZone, setMidcZone] = useState(initial.midcZone);
+  const [description, setDescription] = useState(initial.description);
+  const [gstNumber, setGstNumber] = useState(initial.gstNumber);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Synchronize form fields whenever modal opens or company prop changes
+  useEffect(() => {
+    if (isOpen) {
+      const vals = getInitialValues(company);
+      setName(vals.name);
+      setLogo(vals.logo);
+      setIndustry(vals.industry);
+      setOtherIndustry(vals.otherIndustry);
+      setCompanyType(vals.companyType);
+      setCompanySize(vals.companySize);
+      setFoundedYear(vals.foundedYear);
+      setWebsite(vals.website);
+      setPhone(vals.phone);
+      setEmail(vals.email);
+      setAddress(vals.address);
+      setCity(vals.city);
+      setMidcZone(vals.midcZone);
+      setDescription(vals.description);
+      setGstNumber(vals.gstNumber);
+      setCurrentStep(1);
+      setErrorMsg(null);
+    }
+  }, [isOpen, company]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,6 +207,10 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
       }
       if (!industry.trim()) {
         setErrorMsg('Industry sector is required.');
+        return;
+      }
+      if (industry === 'Other Industrial Trade...' && !otherIndustry.trim()) {
+        setErrorMsg('Please specify your custom trade / industry sector.');
         return;
       }
       setCurrentStep(2);
@@ -187,19 +243,27 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
       return;
     }
 
+    if (industry === 'Other Industrial Trade...' && !otherIndustry.trim()) {
+      setErrorMsg('Please specify your custom trade / industry sector.');
+      setCurrentStep(1);
+      return;
+    }
+
+    const finalIndustry = industry === 'Other Industrial Trade...' ? otherIndustry.trim() : industry.trim();
+
     setIsSubmitting(true);
 
     try {
-      const companyId = company.id || encodeURIComponent(company.name);
-      const res = await apiFetch(`/api/v1/companies/${companyId}`, {
+      const targetCompanyId = company?.id || (company?.name ? encodeURIComponent(company.name) : encodeURIComponent(name.trim()));
+      const res = await apiFetch(`/api/v1/companies/${targetCompanyId}`, {
         method: 'PUT',
         body: JSON.stringify({
           name: name.trim(),
-          logo: logo.trim(),
-          industry,
+          logo: (logo || '').trim(),
+          industry: finalIndustry,
           company_type: companyType,
           company_size: companySize,
-          founded_year: Number(foundedYear) || 2000,
+          founded_year: Number(foundedYear) || 2005,
           website: website.trim(),
           phone: phone.trim(),
           email: email.trim(),
@@ -214,10 +278,10 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to update company profile.');
+        throw new Error(json.error || json.message || 'Failed to update company profile.');
       }
 
-      onSaveSuccess(json.data);
+      onSaveSuccess(json.data || json);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred.');
@@ -550,7 +614,13 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
                     </label>
                     <select
                       value={industry}
-                      onChange={(e) => setIndustry(e.target.value)}
+                      onChange={(e) => {
+                        setIndustry(e.target.value);
+                        if (e.target.value !== 'Other Industrial Trade...') {
+                          setOtherIndustry('');
+                        }
+                        if (errorMsg) setErrorMsg(null);
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -566,6 +636,34 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
+
+                    {industry === 'Other Industrial Trade...' && (
+                      <div style={{ marginTop: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#2563EB', marginBottom: '4px' }}>
+                          Specify Custom Trade / Industry Sector <span style={{ color: '#DC2626' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={otherIndustry}
+                          onChange={(e) => {
+                            setOtherIndustry(e.target.value);
+                            if (errorMsg) setErrorMsg(null);
+                          }}
+                          placeholder="e.g. Aerospace Engineering, Defense Components, Solar Equipment..."
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            border: '1.5px solid #2563EB',
+                            borderRadius: '0px',
+                            fontSize: '13px',
+                            outline: 'none',
+                            color: '#0F172A',
+                            backgroundColor: '#F8FAFC'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>

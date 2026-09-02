@@ -33,11 +33,12 @@ import { useStore } from '../../store/useStore';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobCard } from '../../components/job/JobCard';
 import { EditCompanyProfileModal } from './EditCompanyProfileModal';
+import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 
 export const CompanyProfilePage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, syncUser } = useAuth();
 
   const [company, setCompany] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -424,19 +425,7 @@ export const CompanyProfilePage: React.FC = () => {
                 }}>
                   {displayCompanyName}
                 </h1>
-                <div style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '9px',
-                  backgroundColor: '#1764E8',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }} title="Verified Employer">
-                  <Check size={11} strokeWidth={3} />
-                </div>
+                <MetaVerifiedBadge size={19} color="#0095F6" title="Verified Employer" />
               </div>
 
               {/* Subtitle Category Pills */}
@@ -978,7 +967,15 @@ export const CompanyProfilePage: React.FC = () => {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           company={company}
-          onSaveSuccess={(updated) => setCompany(updated)}
+          onSaveSuccess={(updated) => {
+            setCompany(updated);
+            if (currentUser) {
+              syncUser();
+            }
+            if (updated?.name && decodeURIComponent(companyId || '').trim().toLowerCase() !== (updated.name || '').trim().toLowerCase()) {
+              navigate(`/company/${encodeURIComponent(updated.name)}`, { replace: true });
+            }
+          }}
         />
       )}
     </div>

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { NavbarNotificationBell } from '../Layout/NavbarNotificationBell';
+import { MetaVerifiedBadge } from './MetaVerifiedBadge';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/helpers';
 import { apiFetch } from '../../utils/api';
@@ -85,6 +86,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       onMenuClick();
     } else {
       setDrawerOpen(true);
+      if (syncUser) syncUser();
     }
   };
 
@@ -93,8 +95,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
     if (cb) setTimeout(cb, 200);
   };
 
-  const displayName = currentUser?.name || currentUser?.companyName || 'Guest User';
+  const isEmployer = (currentUser?.role || '').toLowerCase() === 'employer';
+  const displayName = isEmployer
+    ? (currentUser?.companyName || (currentUser as any)?.company_name || currentUser?.name || 'Company Profile')
+    : (currentUser?.name || 'Guest User');
   const displayEmail = currentUser?.email || 'guest@jobmarket.in';
+  const displayIndustry = currentUser?.tradeSpecialization || (currentUser as any)?.trade_specialization || (currentUser as any)?.industry || (currentUser as any)?.headline || '';
+  const userPhoto = currentUser?.profilePictureUrl || (currentUser as any)?.logo || (currentUser as any)?.companyLogo || (currentUser as any)?.profile_picture_url || (currentUser as any)?.avatar_url;
   const userRole = (currentUser?.role || 'candidate').toLowerCase();
 
   return (
@@ -352,9 +359,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 flexShrink: 0,
                 boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)'
               }}>
-                {currentUser?.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                {userPhoto && typeof userPhoto === 'string' ? (
                   <img 
-                    src={currentUser.profilePictureUrl} 
+                    key={userPhoto}
+                    src={userPhoto} 
                     alt={displayName} 
                     referrerPolicy="no-referrer"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
@@ -368,12 +376,21 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {displayName}
+                  </span>
+                  {isEmployer && <MetaVerifiedBadge size={16} color="#0095F6" title="Verified Employer" />}
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayEmail}
-                </div>
+                {displayIndustry ? (
+                  <div style={{ fontSize: '11.5px', color: '#1764E8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>
+                    {displayIndustry}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '12px', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {displayEmail}
+                  </div>
+                )}
               </div>
 
               <ChevronRight size={16} color="#94A3B8" />

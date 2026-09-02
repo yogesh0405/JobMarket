@@ -27,6 +27,7 @@ import { apiFetch } from '../../utils/api';
 import { HeaderSearchBar } from './HeaderSearchBar';
 import { NavbarNotificationBell } from './NavbarNotificationBell';
 import { JobMarketLogoSvg } from '../common/JobMarketLogoSvg';
+import { MetaVerifiedBadge } from '../common/MetaVerifiedBadge';
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -92,7 +93,12 @@ export const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  const isEmployer = (currentUser?.role || '').toLowerCase() === 'employer';
+  const userDisplayName = isEmployer
+    ? (currentUser?.companyName || (currentUser as any)?.company_name || currentUser?.name || 'Company Profile')
+    : (currentUser?.name || 'User');
+  const userIndustry = currentUser?.tradeSpecialization || (currentUser as any)?.trade_specialization || (currentUser as any)?.industry || (currentUser as any)?.headline || '';
+  const userPhoto = currentUser?.profilePictureUrl || (currentUser as any)?.logo || (currentUser as any)?.companyLogo || (currentUser as any)?.profile_picture_url || (currentUser as any)?.avatar_url;
   const isSearchAllowed = location.pathname === '/' && !isEmployer;
 
   const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
@@ -245,17 +251,18 @@ export const Navbar: React.FC = () => {
 
               {currentUser ? (
                 <div 
-                  className="navbar-user relative desktop-only-avatar" 
+                  className="navbar-profile-trigger" 
                   onClick={() => setDropdownOpen(!dropdownOpen)} 
                   ref={dropdownRef} 
                   style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center', position: 'relative' }}
                   title="Account Menu"
                 >
                   <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
-                    {currentUser.profilePictureUrl && typeof currentUser.profilePictureUrl === 'string' ? (
+                    {userPhoto ? (
                       <img 
-                        src={currentUser.profilePictureUrl} 
-                        alt={typeof currentUser.name === 'string' ? currentUser.name : 'User'} 
+                        key={String(userPhoto)}
+                        src={userPhoto} 
+                        alt={userDisplayName} 
                         referrerPolicy="no-referrer"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                         onError={(e) => {
@@ -263,12 +270,29 @@ export const Navbar: React.FC = () => {
                         }}
                       />
                     ) : (
-                      getInitials(currentUser.name)
+                      getInitials(userDisplayName)
                     )}
                   </div>
 
                   {dropdownOpen && (
-                    <div className="user-dropdown" style={{ position: 'absolute', right: 0, top: '100%', marginTop: '8px', zIndex: 1000 }}>
+                    <div className="user-dropdown" style={{ position: 'absolute', right: 0, top: '100%', marginTop: '8px', zIndex: 1000, minWidth: '220px' }}>
+                      <div style={{ padding: '10px 14px', borderBottom: '1px solid #F1F5F9' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {userDisplayName}
+                          </span>
+                          {isEmployer && <MetaVerifiedBadge size={15} color="#0095F6" title="Verified Employer" />}
+                        </div>
+                        {userIndustry ? (
+                          <div style={{ fontSize: '11.5px', fontWeight: '600', color: '#1764E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                            {userIndustry}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '11.5px', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                            {currentUser.email}
+                          </div>
+                        )}
+                      </div>
                       <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard'); }}>
                         <Briefcase size={16} style={{ marginRight: 8 }} />
                         {t.dashboard}
@@ -295,7 +319,11 @@ export const Navbar: React.FC = () => {
               <button 
                 type="button"
                 className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => {
+                  const nextOpen = !mobileMenuOpen;
+                  setMobileMenuOpen(nextOpen);
+                  if (nextOpen && syncUser) syncUser();
+                }}
                 title="Menu"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
@@ -326,19 +354,29 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <div className="mobile-drawer-avatar">
-                  {currentUser.companyLogo || currentUser.profilePictureUrl ? (
+                  {userPhoto ? (
                     <img 
-                      src={currentUser.companyLogo || currentUser.profilePictureUrl} 
-                      alt={currentUser.name} 
+                      key={String(userPhoto)}
+                      src={userPhoto} 
+                      alt={userDisplayName} 
                       onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                     />
                   ) : (
-                    <span>{getInitials(currentUser.name)}</span>
+                    <span>{getInitials(userDisplayName)}</span>
                   )}
                 </div>
                 <div className="mobile-drawer-user-text">
-                  <span className="mobile-drawer-user-name">{currentUser.name}</span>
-                  <span className="mobile-drawer-user-email">{currentUser.email}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="mobile-drawer-user-name">{userDisplayName}</span>
+                    {isEmployer && <MetaVerifiedBadge size={15} color="#0095F6" title="Verified Employer" />}
+                  </div>
+                  {userIndustry ? (
+                    <span className="mobile-drawer-user-industry" style={{ fontSize: '11.5px', color: '#1764E8', fontWeight: 600 }}>
+                      {userIndustry}
+                    </span>
+                  ) : (
+                    <span className="mobile-drawer-user-email">{currentUser.email}</span>
+                  )}
                 </div>
                 <ChevronRight size={18} color="#94A3B8" className="mobile-drawer-header-arrow" />
               </Link>
