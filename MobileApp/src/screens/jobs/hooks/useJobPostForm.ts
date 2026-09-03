@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Alert } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Alert, DeviceEventEmitter } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../../api/jobsApi';
@@ -620,6 +620,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
         setLoading(false);
         if (res.success) {
           isSubmittedRef.current = true;
+          DeviceEventEmitter.emit('JOB_UPDATED');
           setSuccessModalConfig({
             visible: true,
             title: 'Job Updated Successfully !',
@@ -638,6 +639,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
         setLoading(false);
         if (res.success) {
           isSubmittedRef.current = true;
+          DeviceEventEmitter.emit('JOB_POSTED');
           resetForm();
           setSuccessModalConfig({
             visible: true,

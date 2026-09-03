@@ -128,11 +128,10 @@ export const CompanyFilterScreen: React.FC = () => {
       companySize: draftSize || 'All Sizes',
       onlyHiring: draftOnlyHiring,
     };
-    if (typeof route.params?.onApplyFilters === 'function') {
-      route.params.onApplyFilters(applied);
-    }
     if (navigation.canGoBack()) {
-      navigation.goBack();
+      navigation.navigate(route.params?.returnScreen || 'CandidateSavedTab', {
+        appliedCompanyFilters: applied,
+      });
     } else {
       navigation.navigate('CandidateMain', {
         screen: 'CandidateSavedTab',

@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
-import { getInitials, formatDate, capitalize, shareContent } from '../../utils/helpers';
+import { getInitials, formatDate, capitalize, shareContent, timeAgo } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
@@ -1281,7 +1281,7 @@ export const ProfilePage: React.FC = () => {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, paddingLeft: '8px' }}>
                       <span style={{ fontSize: '9.5px', color: '#66789B', fontWeight: 500 }}>
-                        {idx === 0 ? '2d ago' : '5d ago'}
+                        {timeAgo((jobItem as any).postedAt || (jobItem as any).posted_at || (jobItem as any).created_at || (jobItem as any).createdAt)}
                       </span>
                       <ChevronRight size={13} color="#94A3B8" />
                     </div>

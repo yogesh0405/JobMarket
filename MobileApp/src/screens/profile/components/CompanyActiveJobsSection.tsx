@@ -15,6 +15,7 @@ import {
   Settings,
 } from 'lucide-react-native';
 import { RADIUS } from '../../../constants/theme';
+import { formatTimeAgo } from '../../candidate/components/CandidateJobSearchUtils';
 
 interface JobItem {
   id?: string | number;
@@ -46,28 +47,7 @@ export const CompanyActiveJobsSection: React.FC<CompanyActiveJobsSectionProps> =
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fallback realistic jobs matching prompt
-  const displayJobs: JobItem[] =
-    jobs && jobs.length > 0
-      ? jobs
-      : [
-          {
-            id: 'job-1',
-            title: 'Production Engineer',
-            location: 'Waluj MIDC, Maharashtra',
-            job_type: 'Full Time',
-            work_mode: 'On-site',
-            created_at: '2d ago',
-          },
-          {
-            id: 'job-2',
-            title: 'Quality Control Inspector',
-            location: 'Waluj MIDC, Maharashtra',
-            job_type: 'Full Time',
-            work_mode: 'On-site',
-            created_at: '5d ago',
-          },
-        ];
+  const displayJobs: JobItem[] = jobs || [];
 
   const filteredJobs = displayJobs.filter((j) => {
     if (!searchQuery.trim()) return true;
@@ -119,68 +99,76 @@ export const CompanyActiveJobsSection: React.FC<CompanyActiveJobsSectionProps> =
 
       {/* Jobs List */}
       <View style={styles.jobsList}>
-        {filteredJobs.map((job, idx) => {
-          const isFirst = idx === 0;
-          const locationText = job.location || 'Waluj MIDC, Maharashtra';
-          const timeText = job.created_at || (idx === 0 ? '2d ago' : '5d ago');
-          const jobType = job.job_type || job.jobType || 'Full Time';
-          const workMode = job.work_mode || job.workMode || 'On-site';
-          const isSecond = idx === 1;
+        {filteredJobs.length > 0 ? (
+          filteredJobs.map((job, idx) => {
+            const isFirst = idx === 0;
+            const locationText = job.location || 'Waluj MIDC, Maharashtra';
+            const timeText = formatTimeAgo(job.created_at || (job as any).createdAt || (job as any).posted_at || (job as any).postedAt);
+            const jobType = job.job_type || job.jobType || 'Full Time';
+            const workMode = job.work_mode || job.workMode || 'On-site';
+            const isSecond = idx === 1;
 
-          return (
-            <TouchableOpacity
-              key={job.id ? `job-${job.id}` : `idx-${idx}`}
-              activeOpacity={0.75}
-              onPress={() => onJobPress && onJobPress(job)}
-              style={[styles.jobItemRow, !isFirst && styles.jobItemBorderTop]}
-            >
-              <View style={styles.jobItemContent}>
-                {/* Top Info Row */}
-                <View style={styles.jobTopRow}>
-                  <View
-                    style={[
-                      styles.jobIconBox,
-                      { backgroundColor: isSecond ? '#ECFAF7' : '#F2F1FF' },
-                    ]}
-                  >
-                    {isSecond ? (
-                      <Settings size={16} color="#21A99B" strokeWidth={2} />
-                    ) : (
-                      <Building2 size={16} color="#625CEB" strokeWidth={2} />
-                    )}
-                  </View>
+            return (
+              <TouchableOpacity
+                key={job.id ? `job-${job.id}` : `idx-${idx}`}
+                activeOpacity={0.75}
+                onPress={() => onJobPress && onJobPress(job)}
+                style={[styles.jobItemRow, !isFirst && styles.jobItemBorderTop]}
+              >
+                <View style={styles.jobItemContent}>
+                  {/* Top Info Row */}
+                  <View style={styles.jobTopRow}>
+                    <View
+                      style={[
+                        styles.jobIconBox,
+                        { backgroundColor: isSecond ? '#ECFAF7' : '#F2F1FF' },
+                      ]}
+                    >
+                      {isSecond ? (
+                        <Settings size={16} color="#21A99B" strokeWidth={2} />
+                      ) : (
+                        <Building2 size={16} color="#625CEB" strokeWidth={2} />
+                      )}
+                    </View>
 
-                  <View style={styles.jobTextCol}>
-                    <Text style={styles.jobTitle} numberOfLines={1}>
-                      {job.title}
-                    </Text>
-                    <View style={styles.jobLocationRow}>
-                      <MapPin size={11} color="#66789B" />
-                      <Text style={styles.jobLocationText} numberOfLines={1}>
-                        {locationText}
+                    <View style={styles.jobTextCol}>
+                      <Text style={styles.jobTitle} numberOfLines={1}>
+                        {job.title}
                       </Text>
+                      <View style={styles.jobLocationRow}>
+                        <MapPin size={11} color="#66789B" />
+                        <Text style={styles.jobLocationText} numberOfLines={1}>
+                          {locationText}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.jobRightCol}>
+                      <Text style={styles.jobTimeText}>{timeText}</Text>
+                      <ChevronRight size={14} color="#91A0BA" />
                     </View>
                   </View>
 
-                  <View style={styles.jobRightCol}>
-                    <Text style={styles.jobTimeText}>{timeText}</Text>
-                    <ChevronRight size={14} color="#91A0BA" />
+                  {/* Bottom Tags Row */}
+                  <View style={styles.tagsRow}>
+                    <View style={styles.blueTag}>
+                      <Text style={styles.blueTagText}>{jobType}</Text>
+                    </View>
+                    <View style={styles.blueTag}>
+                      <Text style={styles.blueTagText}>{workMode}</Text>
+                    </View>
                   </View>
                 </View>
-
-                {/* Bottom Tags Row */}
-                <View style={styles.tagsRow}>
-                  <View style={styles.blueTag}>
-                    <Text style={styles.blueTagText}>{jobType}</Text>
-                  </View>
-                  <View style={styles.blueTag}>
-                    <Text style={styles.blueTagText}>{workMode}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+              </TouchableOpacity>
+            );
+          })
+        ) : (
+          <View style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '500' }}>
+              No active job openings found
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );

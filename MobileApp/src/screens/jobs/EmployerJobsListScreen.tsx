@@ -12,6 +12,7 @@ import {
   Platform,
   StatusBar,
   Share,
+  DeviceEventEmitter,
 } from 'react-native';
 import {
   Plus,
@@ -126,6 +127,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
     setDeleting(true);
     try {
       await jobsApi.deleteJob(deleteConfirmConfig.jobId);
+      DeviceEventEmitter.emit('JOB_DELETED');
       setJobs((prev) => prev.filter((j) => j.id !== deleteConfirmConfig.jobId));
       setDeleteConfirmConfig({ visible: false, jobId: '', jobTitle: '' });
     } catch (err: any) {

@@ -77,9 +77,6 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
       defaultTab: tabKey,
       currentFilters: filters,
       companies: companies,
-      onApplyFilters: (newFilters: CompanyFilterState) => {
-        setFilters(newFilters);
-      },
       returnScreen: 'CandidateSavedTab',
     });
   };
@@ -455,7 +452,7 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         data={loading ? [] : filteredCompanies}
         keyExtractor={(item, index) => `company-${item.id || item.name}-${index}`}
         renderItem={({ item: comp }) => {
-          const jobsCount = comp.open_jobs_count ?? comp.jobs_count ?? comp.openings_count ?? comp.jobsCount ?? 4;
+          const jobsCount = comp.open_jobs_count ?? comp.jobs_count ?? comp.openings_count ?? comp.jobsCount ?? 0;
           const locationText = comp.midc_zone || comp.midcZone || comp.city || 'Waluj MIDC, Chhatrapati Sambhajinagar';
           const companyType = comp.company_type || comp.companyType || 'Private Limited';
           const companySize = comp.company_size || comp.companySize || '500+ employees';

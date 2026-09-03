@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -7,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  DeviceEventEmitter,
 } from 'react-native';
 import {
   Search,
@@ -84,6 +86,23 @@ export const CandidateJobMapScreen: React.FC<{ navigation: any; route: any }> = 
       fetchJobs();
     }
   }, [fetchJobs, route.params?.jobs]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route?.params?.appliedFilters) {
+        setActiveFilters(route.params.appliedFilters);
+      }
+    }, [route?.params?.appliedFilters])
+  );
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('APPLY_JOB_FILTERS', (filters: FilterOptions) => {
+      if (filters) {
+        setActiveFilters(filters);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Live Autocomplete Suggestions
   const matchedSuggestions = useMemo(() => {
@@ -224,8 +243,7 @@ export const CandidateJobMapScreen: React.FC<{ navigation: any; route: any }> = 
           navigation.navigate('JobFilter', {
             currentFilters: activeFilters,
             totalMatchingJobsCount: filteredJobs.length,
-            onApplyFilters: (newFilters: FilterOptions) => setActiveFilters(newFilters),
-            onResetFilters: () => setActiveFilters(DEFAULT_MAP_FILTERS),
+            returnScreen: 'CandidateJobMap',
           });
         }}
         activeFilterCount={activeFilterCount}

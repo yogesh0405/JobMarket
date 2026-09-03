@@ -268,6 +268,7 @@ export class UserRepository {
       WHERE id = $${paramIndex}
       RETURNING *;
     `;
+    values.push(userId);
     const result = await client.query(query, values);
     const updatedUser = result.rows[0];
 

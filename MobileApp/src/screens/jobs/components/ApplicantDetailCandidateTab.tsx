@@ -152,7 +152,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.contactPillBtn, { flex: 1.3 }]}
+            style={[styles.contactPillBtn, { flex: 1.2 }]}
             activeOpacity={0.8}
             onPress={() => {
               const cleanedPhone = phone?.replace(/[^0-9]/g, '');
@@ -177,7 +177,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.contactPillBtn, { flex: 1.2, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }]}
+            style={[styles.contactPillBtn, { flex: 1.1, borderColor: '#BFDBFE', backgroundColor: '#EFF6FF' }]}
             activeOpacity={0.8}
             onPress={() => {
               if (resumeInfo.url) {
@@ -189,24 +189,6 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           >
             <FileText size={13} color="#1764E8" />
             <Text style={[styles.contactPillText, { color: '#1764E8' }]}>Resume</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.contactPillBtn, { flex: 1 }]}
-            activeOpacity={0.8}
-            onPress={() => {
-              const candidateId = user?.id || (selectedApplicant as any)?.user_id || (selectedApplicant as any)?.userId;
-              const candidateName = user?.name || 'Candidate';
-              shareCandidate({
-                id: candidateId || '',
-                name: candidateName,
-                trade: trade,
-                location: location,
-              });
-            }}
-          >
-            <Share2 size={13} color="#475569" />
-            <Text style={[styles.contactPillText, { color: '#475569' }]}>Share</Text>
           </TouchableOpacity>
         </View>
 
@@ -399,7 +381,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
             </View>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.resumeFileNameText} numberOfLines={1}>
-                {resumeInfo.name || `${parseStringOrObject(user?.name, 'Candidate')}_Resume.pdf`}
+                Resume
               </Text>
               <Text style={styles.resumeFileStatusText}>✓ Document Attached</Text>
             </View>

@@ -8,6 +8,7 @@ import {
   StatusBar,
   Platform,
   Switch,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -22,6 +23,7 @@ import {
   Check,
   RotateCcw,
   SlidersHorizontal,
+  Wrench,
 } from 'lucide-react-native';
 import { COLORS, RADIUS } from '../../constants/theme';
 import { FilterOptions } from '../../components/common/JobFilterSideDrawer';
@@ -30,6 +32,7 @@ import { Job } from '../../types';
 export type JobFilterTabKey =
   | 'INDUSTRY'
   | 'EDUCATION'
+  | 'JOB_ROLE'
   | 'EXPERIENCE'
   | 'LOCATION'
   | 'JOB_TYPE'
@@ -103,6 +106,135 @@ export const JOB_WORK_MODES: string[] = [
   'Remote',
 ];
 
+// Education → Job Roles mapping
+const EDUCATION_JOB_ROLES: Record<string, string[]> = {
+  'All Education Levels': [
+    'All Roles',
+    'Machine Operator',
+    'Fitter',
+    'Welder',
+    'Electrician',
+    'Quality Inspector',
+    'Supervisor',
+    'CNC Operator',
+    'VMC Operator',
+    'Assembly Technician',
+    'Maintenance Technician',
+    'Store Keeper',
+    'Packing / Packaging Operator',
+    'Helper / General Worker',
+    'Driver / Forklift Operator',
+    'Security Guard',
+    'Housekeeping Staff',
+  ],
+  '10th / SSC Pass': [
+    'All Roles',
+    'Helper / General Worker',
+    'Packing / Packaging Operator',
+    'Machine Operator (Trainee)',
+    'Assembly Line Worker',
+    'Loading / Unloading Staff',
+    'Housekeeping Staff',
+    'Security Guard',
+    'Store Helper',
+    'Cleaning Staff',
+    'Driver / Forklift Operator',
+  ],
+  '12th / HSC Pass': [
+    'All Roles',
+    'Machine Operator',
+    'Packing / Packaging Operator',
+    'Assembly Line Worker',
+    'Data Entry Operator',
+    'Store Keeper',
+    'Office Assistant',
+    'Dispatch Coordinator',
+    'Quality Checker',
+    'Delivery Executive',
+    'Telecaller / BPO Executive',
+  ],
+  'ITI Certificate (Fitter / Welder / Electrician / CNC / Machinist)': [
+    'All Roles',
+    'Fitter',
+    'Welder (MIG / TIG / ARC)',
+    'Electrician',
+    'CNC Operator',
+    'VMC Operator',
+    'Machinist',
+    'Turner',
+    'Maintenance Technician',
+    'Tool Maker',
+    'Die Maker',
+    'Wireman',
+    'Sheet Metal Worker',
+    'Plumber (Industrial)',
+    'Instrument Technician',
+    'AC / Refrigeration Mechanic',
+  ],
+  'Diploma in Engineering (Mechanical / Electrical / Automobile / Civil)': [
+    'All Roles',
+    'Junior Engineer',
+    'Production Supervisor',
+    'Quality Inspector',
+    'Maintenance Engineer',
+    'Design Draughtsman (AutoCAD)',
+    'CNC Programmer',
+    'PLC / SCADA Technician',
+    'Process Engineer',
+    'Safety Officer',
+    'Store / Inventory Manager',
+    'Testing Technician',
+    'Site Supervisor (Civil)',
+    'Electrical Panel Technician',
+  ],
+  'B.E. / B.Tech (Engineering Graduate)': [
+    'All Roles',
+    'Production Engineer',
+    'Quality Engineer (QA / QC)',
+    'Design Engineer',
+    'Process Engineer',
+    'Maintenance Manager',
+    'Project Engineer',
+    'R&D Engineer',
+    'Automation Engineer (PLC / HMI)',
+    'Safety & EHS Engineer',
+    'Supply Chain Engineer',
+    'Plant Engineer',
+    'Software Engineer / Developer',
+    'IT Support Engineer',
+  ],
+  'Graduate (B.Sc / B.Com / BA / BCA / BBA)': [
+    'All Roles',
+    'HR Executive',
+    'Accounts Executive',
+    'Admin / Office Executive',
+    'Purchase / Procurement Executive',
+    'Sales Executive (B2B / Industrial)',
+    'Store / Inventory Executive',
+    'Data Entry / MIS Executive',
+    'Customer Support Executive',
+    'Marketing Executive',
+    'Lab Technician (B.Sc)',
+    'Quality Analyst',
+    'Logistics Coordinator',
+  ],
+  'Post Graduate (M.Tech / MBA / MCA)': [
+    'All Roles',
+    'Plant Manager',
+    'Production Manager',
+    'Quality Manager',
+    'HR Manager',
+    'Finance Manager',
+    'Operations Manager',
+    'Supply Chain Manager',
+    'Project Manager',
+    'Business Development Manager',
+    'ERP / SAP Consultant',
+    'Software Developer (Senior)',
+    'Data Analyst / Business Analyst',
+  ],
+};
+
 export const JobFilterScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -136,10 +268,28 @@ export const JobFilterScreen: React.FC = () => {
   const [draftCanteen, setDraftCanteen] = useState<boolean>(Boolean(currentFilters.canteen));
   const [draftAccommodation, setDraftAccommodation] = useState<boolean>(Boolean(currentFilters.accommodation));
   const [draftOvertime, setDraftOvertime] = useState<boolean>(Boolean(currentFilters.overtime));
+  const [draftJobRole, setDraftJobRole] = useState<string>(currentFilters.jobRole || 'All Roles');
+
+  // Dynamically compute available job roles based on selected education
+  const availableJobRoles = useMemo(() => {
+    return EDUCATION_JOB_ROLES[draftEducation] || EDUCATION_JOB_ROLES['All Education Levels'];
+  }, [draftEducation]);
+
+  // Auto-reset job role when education changes and current role is not in new list
+  const prevEducationRef = React.useRef(draftEducation);
+  React.useEffect(() => {
+    if (prevEducationRef.current !== draftEducation) {
+      prevEducationRef.current = draftEducation;
+      if (!availableJobRoles.includes(draftJobRole)) {
+        setDraftJobRole('All Roles');
+      }
+    }
+  }, [draftEducation, availableJobRoles, draftJobRole]);
 
   const handleResetFilters = () => {
     setDraftIndustry('All Industries');
     setDraftEducation('All Education Levels');
+    setDraftJobRole('All Roles');
     setDraftExp('All Experience');
     setDraftZone('All MIDC Zones');
     setDraftJobType('All Types');
@@ -154,6 +304,7 @@ export const JobFilterScreen: React.FC = () => {
     let count = 0;
     if (draftIndustry && draftIndustry !== 'All Industries') count++;
     if (draftEducation && draftEducation !== 'All Education Levels') count++;
+    if (draftJobRole && draftJobRole !== 'All Roles') count++;
     if (draftExp && draftExp !== 'All Experience') count++;
     if (draftZone && draftZone !== 'All MIDC Zones') count++;
     if (draftJobType && draftJobType !== 'All Types') count++;
@@ -166,6 +317,7 @@ export const JobFilterScreen: React.FC = () => {
   }, [
     draftIndustry,
     draftEducation,
+    draftJobRole,
     draftExp,
     draftZone,
     draftJobType,
@@ -218,7 +370,25 @@ export const JobFilterScreen: React.FC = () => {
         if (target.includes('b.e') && !edu.includes('b.e') && !edu.includes('b.tech') && !edu.includes('engineer')) return false;
       }
 
-      // 3. Location / MIDC
+      // 3. Job Role
+      if (draftJobRole && draftJobRole !== 'All Roles') {
+        const roleTarget = draftJobRole.toLowerCase();
+        const jobTitle = (job.title || '').toLowerCase();
+        const jobTrade = (job.trade || '').toLowerCase();
+        const jobDesc = (job.description || '').toLowerCase();
+        const roleTokens = roleTarget
+          .split(/[\s/()&,]+/)
+          .map((t) => t.replace(/(s|ing|er|or|ist)$/, ''))
+          .filter((t) => t.length >= 2);
+        const matchesRole =
+          jobTitle.includes(roleTarget) ||
+          jobTrade.includes(roleTarget) ||
+          roleTokens.length === 0 ||
+          roleTokens.some((t) => jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
+        if (!matchesRole) return false;
+      }
+
+      // 4. Location / MIDC
       if (draftZone && draftZone !== 'All MIDC Zones') {
         const rawZone = draftZone.toLowerCase();
         const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
@@ -227,19 +397,19 @@ export const JobFilterScreen: React.FC = () => {
         if (!matchesZone) return false;
       }
 
-      // 4. Job Type
+      // 5. Job Type
       if (draftJobType && draftJobType !== 'All Types') {
         const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
         if (!jType.includes(draftJobType.toLowerCase())) return false;
       }
 
-      // 5. Work Mode
+      // 6. Work Mode
       if (draftWorkMode && draftWorkMode !== 'All Modes') {
         const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
         if (!jMode.includes(draftWorkMode.toLowerCase())) return false;
       }
 
-      // 6. Amenities
+      // 7. Amenities
       if (draftBus && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
       if (draftCanteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
       if (draftAccommodation && !(job.accommodation || (job as any).accommodation || (job.perks || []).includes('Accommodation'))) return false;
@@ -251,6 +421,7 @@ export const JobFilterScreen: React.FC = () => {
     jobsList,
     draftIndustry,
     draftEducation,
+    draftJobRole,
     draftExp,
     draftZone,
     draftJobType,
@@ -266,6 +437,7 @@ export const JobFilterScreen: React.FC = () => {
     const applied: FilterOptions = {
       industry: draftIndustry,
       education: draftEducation,
+      jobRole: draftJobRole !== 'All Roles' ? draftJobRole : undefined,
       minExperience: draftExp,
       midcZone: draftZone,
       jobType: draftJobType,
@@ -277,20 +449,30 @@ export const JobFilterScreen: React.FC = () => {
       overtime: draftOvertime,
     };
 
-    if (typeof route.params?.onApplyFilters === 'function') {
-      route.params.onApplyFilters(applied);
-    }
+    // 1. Broadcast event so target screens update their filter state synchronously
+    DeviceEventEmitter.emit('APPLY_JOB_FILTERS', applied);
 
-    if (navigation.canGoBack()) {
+    // 2. Perform reliable navigation back
+    const returnScreen = route.params?.returnScreen;
+
+    if (returnScreen === 'CandidateHomeTab') {
+      navigation.navigate('CandidateMain' as never, {
+        screen: 'CandidateJobsTab',
+        params: {
+          screen: 'CandidateJobSearch',
+          params: { homeFilters: applied, appliedFilters: applied },
+        },
+      } as never);
+    } else if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate('CandidateMain', {
+      navigation.navigate('CandidateMain' as never, {
         screen: 'CandidateJobsTab',
         params: {
           screen: 'CandidateJobSearch',
           params: { appliedFilters: applied },
         },
-      });
+      } as never);
     }
   };
 
@@ -330,6 +512,38 @@ export const JobFilterScreen: React.FC = () => {
                   key={option}
                   style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                   onPress={() => setDraftEducation(option)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
+                    {option}
+                  </Text>
+                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        );
+
+      case 'JOB_ROLE':
+        return (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+            {draftEducation !== 'All Education Levels' && (
+              <View style={styles.roleHintRow}>
+                <GraduationCap size={13} color="#64748B" strokeWidth={1.8} />
+                <Text style={styles.roleHintText}>
+                  Roles for: {draftEducation.split('(')[0].trim()}
+                </Text>
+              </View>
+            )}
+            {availableJobRoles.map((option) => {
+              const isSelected = draftJobRole === option;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                  onPress={() => setDraftJobRole(option)}
                   activeOpacity={0.75}
                 >
                   <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
@@ -535,9 +749,15 @@ export const JobFilterScreen: React.FC = () => {
           <Text style={styles.headerTitle}>Filter Vacancies</Text>
         </View>
 
-        <View style={styles.headerCountPillRight}>
-          <Text style={styles.headerCountPillText}>({draftMatchingCount}) Jobs</Text>
-        </View>
+        {/* Header Reset Icon Button */}
+        <TouchableOpacity
+          style={styles.headerResetBtn}
+          onPress={handleResetFilters}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.7}
+        >
+          <RotateCcw size={17} color="#475569" strokeWidth={2.2} />
+        </TouchableOpacity>
       </View>
 
       {/* Two-Column Master-Detail Layout */}
@@ -587,7 +807,28 @@ export const JobFilterScreen: React.FC = () => {
               </View>
             </TouchableOpacity>
 
-            {/* 3. Experience */}
+            {/* 3. Job Roles */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'JOB_ROLE' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('JOB_ROLE')}
+              activeOpacity={0.8}
+            >
+              <Wrench
+                size={18}
+                color={activeFilterTab === 'JOB_ROLE' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'JOB_ROLE' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'JOB_ROLE' && styles.tabTitleActive]}>
+                  Job Roles
+                </Text>
+                {draftJobRole !== 'All Roles' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 4. Experience */}
             <TouchableOpacity
               style={[styles.tabItem, activeFilterTab === 'EXPERIENCE' && styles.tabItemActive]}
               onPress={() => setActiveFilterTab('EXPERIENCE')}
@@ -751,16 +992,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
-  headerCountPillRight: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  headerCountPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.primary,
+  headerResetBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   twoColumnContainer: {
     flex: 1,
@@ -816,6 +1054,21 @@ const styles = StyleSheet.create({
   optionsListContainer: {
     padding: 12,
     gap: 8,
+  },
+  roleHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  roleHintText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#475569',
   },
   optionRow: {
     flexDirection: 'row',

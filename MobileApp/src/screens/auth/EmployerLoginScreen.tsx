@@ -36,6 +36,7 @@ import { API_BASE_URL } from '../../api/client';
 import { GoogleGLogo } from './components/GoogleGLogo';
 import { EmployerTwoFactorModal } from './components/EmployerTwoFactorModal';
 import { ForgotPasswordModal } from './components/ForgotPasswordModal';
+import { handleFocusInput } from '../../components/common/KeyboardAwareScrollView';
 
 interface Props {
   navigation: any;
@@ -85,9 +86,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
     if (route?.params?.initialRole) {
       setRole(route.params.initialRole);
-    }
-    if (route?.params?.signupSuccess) {
-      showToast('Registered successfully! Please sign in.', 'success');
     }
   }, [route?.params]);
 
@@ -323,7 +321,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             style={styles.scrollableFormArea}
             contentContainerStyle={[
               styles.cardBody,
-              { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 36 },
+              { paddingBottom: keyboardHeight > 0 ? 36 : 28 },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -377,7 +375,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
-                onFocus={() => handleInputFocus(60)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -406,7 +403,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(160)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 15)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);

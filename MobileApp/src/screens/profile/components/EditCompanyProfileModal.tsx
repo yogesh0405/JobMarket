@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,10 @@ import {
   Image,
   StatusBar,
   Platform,
+  KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Check,
@@ -105,6 +107,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
   onSaveSuccess,
 }) => {
   const { updateUserProfile, refreshUser } = useAuth();
+  const insets = useSafeAreaInsets();
   if (!visible) return null;
 
   // 4-Step Stepper State: 1, 2, 3, 4
@@ -132,9 +135,44 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Picker Modal State
   const [pickerModalType, setPickerModalType] = useState<'INDUSTRY' | 'MIDC' | 'TYPE' | 'SIZE' | null>(null);
+
+  // Keyboard listeners for dynamic padding & smooth scroll
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e: any) => {
+        setKeyboardHeight(e.endCoordinates?.height || 280);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (fieldName: string, yOffset: number) => {
+    setFocusedField(fieldName);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, yOffset),
+        animated: true,
+      });
+    }, Platform.OS === 'ios' ? 80 : 120);
+  };
 
   useEffect(() => {
     if (visible && company) {
@@ -198,6 +236,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
   const handleNextStep = () => {
     setErrorMsg(null);
+    Keyboard.dismiss();
     if (currentStep === 1) {
       if (!name.trim()) {
         setErrorMsg('Company name is required.');
@@ -233,6 +272,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
   const handlePrevStep = () => {
     setErrorMsg(null);
+    Keyboard.dismiss();
     if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as any);
     }
@@ -240,6 +280,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
   const handleSubmit = async () => {
     setErrorMsg(null);
+    Keyboard.dismiss();
 
     if (!name.trim()) {
       setErrorMsg('Company name is required.');
@@ -351,11 +392,17 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
         {/* Modal Header */}
-        <View style={styles.modalHeader}>
+        <View style={[
+          styles.modalHeader,
+          {
+            paddingTop: Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 16) : 16) + 6,
+            paddingBottom: 14,
+          }
+        ]}>
           <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
           </TouchableOpacity>
@@ -365,371 +412,474 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
           </View>
         </View>
 
-        {/* 4-Step Stepper Indicator Bar */}
-        <View style={styles.stepperBar}>
-          <View style={styles.stepperRow}>
-            {/* Step 1 */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setCurrentStep(1)}
-              style={styles.stepItem}
-            >
-              <View style={[
-                styles.stepCircle,
-                currentStep === 1 && styles.stepCircleActive,
-                currentStep > 1 && styles.stepCircleCompleted
-              ]}>
-                {currentStep > 1 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 1 && styles.stepNumTextActive]}>1</Text>}
-              </View>
-              <Text style={[styles.stepLabelText, currentStep === 1 && styles.stepLabelTextActive]}>Basic</Text>
-            </TouchableOpacity>
+        {/* Keyboard Avoiding Wrapper */}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          {/* 4-Step Stepper Indicator Bar */}
+          <View style={styles.stepperBar}>
+            <View style={styles.stepperRow}>
+              {/* Step 1 */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setCurrentStep(1);
+                }}
+                style={styles.stepItem}
+              >
+                <View style={[
+                  styles.stepCircle,
+                  currentStep === 1 && styles.stepCircleActive,
+                  currentStep > 1 && styles.stepCircleCompleted
+                ]}>
+                  {currentStep > 1 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 1 && styles.stepNumTextActive]}>1</Text>}
+                </View>
+                <Text style={[styles.stepLabelText, currentStep === 1 && styles.stepLabelTextActive]}>Basic</Text>
+              </TouchableOpacity>
 
-            <View style={[styles.stepLine, currentStep > 1 && styles.stepLineActive]} />
+              <View style={[styles.stepLine, currentStep > 1 && styles.stepLineActive]} />
 
-            {/* Step 2 */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => currentStep > 1 && setCurrentStep(2)}
-              style={styles.stepItem}
-            >
-              <View style={[
-                styles.stepCircle,
-                currentStep === 2 && styles.stepCircleActive,
-                currentStep > 2 && styles.stepCircleCompleted
-              ]}>
-                {currentStep > 2 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 2 && styles.stepNumTextActive]}>2</Text>}
-              </View>
-              <Text style={[styles.stepLabelText, currentStep === 2 && styles.stepLabelTextActive]}>Overview</Text>
-            </TouchableOpacity>
+              {/* Step 2 */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  if (currentStep > 1) setCurrentStep(2);
+                }}
+                style={styles.stepItem}
+              >
+                <View style={[
+                  styles.stepCircle,
+                  currentStep === 2 && styles.stepCircleActive,
+                  currentStep > 2 && styles.stepCircleCompleted
+                ]}>
+                  {currentStep > 2 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 2 && styles.stepNumTextActive]}>2</Text>}
+                </View>
+                <Text style={[styles.stepLabelText, currentStep === 2 && styles.stepLabelTextActive]}>Overview</Text>
+              </TouchableOpacity>
 
-            <View style={[styles.stepLine, currentStep > 2 && styles.stepLineActive]} />
+              <View style={[styles.stepLine, currentStep > 2 && styles.stepLineActive]} />
 
-            {/* Step 3 */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => currentStep > 2 && setCurrentStep(3)}
-              style={styles.stepItem}
-            >
-              <View style={[
-                styles.stepCircle,
-                currentStep === 3 && styles.stepCircleActive,
-                currentStep > 3 && styles.stepCircleCompleted
-              ]}>
-                {currentStep > 3 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 3 && styles.stepNumTextActive]}>3</Text>}
-              </View>
-              <Text style={[styles.stepLabelText, currentStep === 3 && styles.stepLabelTextActive]}>Location</Text>
-            </TouchableOpacity>
+              {/* Step 3 */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  if (currentStep > 2) setCurrentStep(3);
+                }}
+                style={styles.stepItem}
+              >
+                <View style={[
+                  styles.stepCircle,
+                  currentStep === 3 && styles.stepCircleActive,
+                  currentStep > 3 && styles.stepCircleCompleted
+                ]}>
+                  {currentStep > 3 ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : <Text style={[styles.stepNumText, currentStep === 3 && styles.stepNumTextActive]}>3</Text>}
+                </View>
+                <Text style={[styles.stepLabelText, currentStep === 3 && styles.stepLabelTextActive]}>Location</Text>
+              </TouchableOpacity>
 
-            <View style={[styles.stepLine, currentStep > 3 && styles.stepLineActive]} />
+              <View style={[styles.stepLine, currentStep > 3 && styles.stepLineActive]} />
 
-            {/* Step 4 */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => currentStep > 3 && setCurrentStep(4)}
-              style={styles.stepItem}
-            >
-              <View style={[
-                styles.stepCircle,
-                currentStep === 4 && styles.stepCircleActive
-              ]}>
-                <Text style={[styles.stepNumText, currentStep === 4 && styles.stepNumTextActive]}>4</Text>
-              </View>
-              <Text style={[styles.stepLabelText, currentStep === 4 && styles.stepLabelTextActive]}>Contact</Text>
-            </TouchableOpacity>
+              {/* Step 4 */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  if (currentStep > 3) setCurrentStep(4);
+                }}
+                style={styles.stepItem}
+              >
+                <View style={[
+                  styles.stepCircle,
+                  currentStep === 4 && styles.stepCircleActive
+                ]}>
+                  <Text style={[styles.stepNumText, currentStep === 4 && styles.stepNumTextActive]}>4</Text>
+                </View>
+                <Text style={[styles.stepLabelText, currentStep === 4 && styles.stepLabelTextActive]}>Contact</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {/* Error Alert Box */}
-        {errorMsg ? (
-          <View style={styles.errorBox}>
-            <AlertCircle size={16} color="#DC2626" />
-            <Text style={styles.errorText}>{errorMsg}</Text>
-          </View>
-        ) : null}
+          {/* Error Alert Box */}
+          {errorMsg ? (
+            <View style={styles.errorBox}>
+              <AlertCircle size={16} color="#DC2626" />
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          ) : null}
 
-        {/* Form Body Scroll Area */}
-        <ScrollView style={styles.scrollBody} contentContainerStyle={styles.scrollBodyContent} showsVerticalScrollIndicator={false}>
-
-          {/* STEP 1: Basic Details & Logo */}
-          {currentStep === 1 && (
-            <View style={styles.stepContainer}>
-              {/* Photo Upload Avatar Header */}
-              <View style={styles.avatarHeaderWrap}>
-                <View style={styles.avatarOuterWrapper}>
-                  <View style={styles.avatarInnerWrapper}>
-                    <CompanyLogoAvatar logoUrl={logo} companyName={name || 'Company'} size={64} borderRadius={32} />
+          {/* Form Body Scroll Area with dynamic keyboard insets & touch response */}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollBody}
+            contentContainerStyle={[
+              styles.scrollBodyContent,
+              {
+                paddingBottom: keyboardHeight > 0
+                  ? keyboardHeight + (Platform.OS === 'ios' ? 70 : 90)
+                  : Math.max(insets.bottom + 20, 36),
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          >
+            {/* STEP 1: Basic Details & Logo */}
+            {currentStep === 1 && (
+              <View style={styles.stepContainer}>
+                {/* Photo Upload Avatar Header */}
+                <View style={styles.avatarHeaderWrap}>
+                  <View style={styles.avatarOuterWrapper}>
+                    <View style={styles.avatarInnerWrapper}>
+                      <CompanyLogoAvatar logoUrl={logo} companyName={name || 'Company'} size={64} borderRadius={32} />
+                    </View>
+                    <TouchableOpacity activeOpacity={0.85} onPress={handleImageUpload} style={styles.cameraBadgeBtn}>
+                      <Camera size={13} color="#2563EB" strokeWidth={2.5} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity activeOpacity={0.85} onPress={handleImageUpload} style={styles.cameraBadgeBtn}>
-                    <Camera size={13} color="#2563EB" strokeWidth={2.5} />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.avatarSubtitleText}>Tap camera to update logo</Text>
-              </View>
-
-              {/* Company Information Form Box */}
-              <View style={styles.cardBox}>
-                <Text style={styles.cardBoxTitle}>Company Information</Text>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Company Name <Text style={styles.reqStar}>*</Text></Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="e.g. Bajaj Auto Limited"
-                    placeholderTextColor="#94A3B8"
-                  />
+                  <Text style={styles.avatarSubtitleText}>Tap camera to update logo</Text>
                 </View>
 
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Industry Sector <Text style={styles.reqStar}>*</Text></Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.pickerSelectorBtn}
-                    onPress={() => setPickerModalType('INDUSTRY')}
-                  >
-                    <Text style={styles.pickerSelectorText}>{industry}</Text>
-                    <ChevronDown size={16} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
+                {/* Company Information Form Box */}
+                <View style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>Company Information</Text>
 
-                {/* Custom Industry / Trade Input Field when 'Other' is selected */}
-                {industry === 'Other Industrial Trade...' && (
                   <View style={styles.fieldWrap}>
-                    <Text style={styles.fieldLabel}>
-                      Specify Custom Trade / Industry Sector <Text style={styles.reqStar}>*</Text>
-                    </Text>
+                    <Text style={styles.fieldLabel}>Company Name <Text style={styles.reqStar}>*</Text></Text>
                     <TextInput
-                      style={styles.textInput}
-                      value={otherIndustry}
-                      onChangeText={(t) => {
-                        setOtherIndustry(t);
-                        if (errorMsg) setErrorMsg(null);
-                      }}
-                      placeholder="e.g. Aerospace Machining / Robotics / Foundry"
+                      style={[
+                        styles.textInput,
+                        focusedField === 'name' && styles.textInputFocused,
+                      ]}
+                      value={name}
+                      onChangeText={setName}
+                      onFocus={() => handleInputFocus('name', 40)}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. Bajaj Auto Limited"
                       placeholderTextColor="#94A3B8"
                     />
                   </View>
-                )}
 
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Company Legal Type</Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.pickerSelectorBtn}
-                    onPress={() => setPickerModalType('TYPE')}
-                  >
-                    <Text style={styles.pickerSelectorText}>{companyType}</Text>
-                    <ChevronDown size={16} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* STEP 2: Overview & Operations */}
-          {currentStep === 2 && (
-            <View style={styles.stepContainer}>
-              <View style={styles.cardBox}>
-                <Text style={styles.cardBoxTitle}>Business Overview & Operations</Text>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Company Bio / Description</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textArea]}
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
-                    numberOfLines={4}
-                    placeholder="Brief summary of your manufacturing operations, plant capacity, and career growth opportunities for technical candidates..."
-                    placeholderTextColor="#94A3B8"
-                    textAlignVertical="top"
-                  />
-                </View>
-
-                <View style={styles.rowGrid}>
-                  <View style={[styles.fieldWrap, { flex: 1 }]}>
-                    <Text style={styles.fieldLabel}>Company Size</Text>
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Industry Sector <Text style={styles.reqStar}>*</Text></Text>
                     <TouchableOpacity
                       activeOpacity={0.8}
                       style={styles.pickerSelectorBtn}
-                      onPress={() => setPickerModalType('SIZE')}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setPickerModalType('INDUSTRY');
+                      }}
                     >
-                      <Text style={[styles.pickerSelectorText, { fontSize: 12 }]} numberOfLines={1}>{companySize}</Text>
-                      <ChevronDown size={14} color="#64748B" />
+                      <Text style={styles.pickerSelectorText}>{industry}</Text>
+                      <ChevronDown size={16} color="#64748B" />
                     </TouchableOpacity>
                   </View>
 
-                  <View style={[styles.fieldWrap, { flex: 1 }]}>
-                    <Text style={styles.fieldLabel}>Founded Year</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      value={foundedYear}
-                      onChangeText={setFoundedYear}
-                      keyboardType="numeric"
-                      placeholder="e.g. 2005"
-                      placeholderTextColor="#94A3B8"
-                    />
-                  </View>
-                </View>
+                  {/* Custom Industry / Trade Input Field when 'Other' is selected */}
+                  {industry === 'Other Industrial Trade...' && (
+                    <View style={styles.fieldWrap}>
+                      <Text style={styles.fieldLabel}>
+                        Specify Custom Trade / Industry Sector <Text style={styles.reqStar}>*</Text>
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          focusedField === 'otherIndustry' && styles.textInputFocused,
+                        ]}
+                        value={otherIndustry}
+                        onChangeText={(t) => {
+                          setOtherIndustry(t);
+                          if (errorMsg) setErrorMsg(null);
+                        }}
+                        onFocus={() => handleInputFocus('otherIndustry', 130)}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="e.g. Aerospace Machining / Robotics / Foundry"
+                        placeholderTextColor="#94A3B8"
+                      />
+                    </View>
+                  )}
 
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>GST Registration Number (Optional)</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.monoInput]}
-                    value={gstNumber}
-                    onChangeText={(val) => setGstNumber(val.toUpperCase())}
-                    maxLength={15}
-                    placeholder="e.g. 27AAACB2211R1ZM"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="characters"
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* STEP 3: Location & MIDC Zone */}
-          {currentStep === 3 && (
-            <View style={styles.stepContainer}>
-              <View style={styles.cardBox}>
-                <Text style={styles.cardBoxTitle}>Location & MIDC Zone</Text>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>City / Location <Text style={styles.reqStar}>*</Text></Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={city}
-                    onChangeText={setCity}
-                    placeholder="e.g. Chhatrapati Sambhajinagar"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>MIDC Industrial Zone <Text style={styles.reqStar}>*</Text></Text>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={styles.pickerSelectorBtn}
-                    onPress={() => setPickerModalType('MIDC')}
-                  >
-                    <Text style={styles.pickerSelectorText} numberOfLines={1}>{midcZone}</Text>
-                    <ChevronDown size={16} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Additional Manual Input for Custom MIDC / Industrial Zone */}
-                {midcZone === 'Other MIDC / Industrial Zone...' && (
                   <View style={styles.fieldWrap}>
-                    <Text style={styles.fieldLabel}>
-                      Specify MIDC / Industrial Zone Name <Text style={styles.reqStar}>*</Text>
-                    </Text>
-                    <TextInput
-                      style={styles.textInput}
-                      value={otherMidcZone}
-                      onChangeText={(t) => {
-                        setOtherMidcZone(t);
-                        if (errorMsg) setErrorMsg(null);
+                    <Text style={styles.fieldLabel}>Company Legal Type</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.pickerSelectorBtn}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setPickerModalType('TYPE');
                       }}
-                      placeholder="e.g. Supa MIDC (Ahmednagar) / Kagal MIDC (Kolhapur)"
+                    >
+                      <Text style={styles.pickerSelectorText}>{companyType}</Text>
+                      <ChevronDown size={16} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* STEP 2: Overview & Operations */}
+            {currentStep === 2 && (
+              <View style={styles.stepContainer}>
+                <View style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>Business Overview & Operations</Text>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Company Bio / Description</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        styles.textArea,
+                        focusedField === 'description' && styles.textInputFocused,
+                      ]}
+                      value={description}
+                      onChangeText={setDescription}
+                      onFocus={() => handleInputFocus('description', 40)}
+                      onBlur={() => setFocusedField(null)}
+                      multiline
+                      numberOfLines={4}
+                      placeholder="Brief summary of your manufacturing operations, plant capacity, and career growth opportunities for technical candidates..."
+                      placeholderTextColor="#94A3B8"
+                      textAlignVertical="top"
+                    />
+                  </View>
+
+                  <View style={styles.rowGrid}>
+                    <View style={[styles.fieldWrap, { flex: 1 }]}>
+                      <Text style={styles.fieldLabel}>Company Size</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={styles.pickerSelectorBtn}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setPickerModalType('SIZE');
+                        }}
+                      >
+                        <Text style={[styles.pickerSelectorText, { fontSize: 12 }]} numberOfLines={1}>{companySize}</Text>
+                        <ChevronDown size={14} color="#64748B" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={[styles.fieldWrap, { flex: 1 }]}>
+                      <Text style={styles.fieldLabel}>Founded Year</Text>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          focusedField === 'foundedYear' && styles.textInputFocused,
+                        ]}
+                        value={foundedYear}
+                        onChangeText={setFoundedYear}
+                        onFocus={() => handleInputFocus('foundedYear', 160)}
+                        onBlur={() => setFocusedField(null)}
+                        keyboardType="numeric"
+                        placeholder="e.g. 2005"
+                        placeholderTextColor="#94A3B8"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>GST Registration Number (Optional)</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        styles.monoInput,
+                        focusedField === 'gstNumber' && styles.textInputFocused,
+                      ]}
+                      value={gstNumber}
+                      onChangeText={(val) => setGstNumber(val.toUpperCase())}
+                      onFocus={() => handleInputFocus('gstNumber', 220)}
+                      onBlur={() => setFocusedField(null)}
+                      maxLength={15}
+                      placeholder="e.g. 27AAACB2211R1ZM"
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="characters"
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* STEP 3: Location & MIDC Zone */}
+            {currentStep === 3 && (
+              <View style={styles.stepContainer}>
+                <View style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>Location & MIDC Zone</Text>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>City / Location <Text style={styles.reqStar}>*</Text></Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        focusedField === 'city' && styles.textInputFocused,
+                      ]}
+                      value={city}
+                      onChangeText={setCity}
+                      onFocus={() => handleInputFocus('city', 40)}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="e.g. Chhatrapati Sambhajinagar"
                       placeholderTextColor="#94A3B8"
                     />
                   </View>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>MIDC Industrial Zone <Text style={styles.reqStar}>*</Text></Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.pickerSelectorBtn}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setPickerModalType('MIDC');
+                      }}
+                    >
+                      <Text style={styles.pickerSelectorText} numberOfLines={1}>{midcZone}</Text>
+                      <ChevronDown size={16} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Additional Manual Input for Custom MIDC / Industrial Zone */}
+                  {midcZone === 'Other MIDC / Industrial Zone...' && (
+                    <View style={styles.fieldWrap}>
+                      <Text style={styles.fieldLabel}>
+                        Specify MIDC / Industrial Zone Name <Text style={styles.reqStar}>*</Text>
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          focusedField === 'otherMidcZone' && styles.textInputFocused,
+                        ]}
+                        value={otherMidcZone}
+                        onChangeText={(t) => {
+                          setOtherMidcZone(t);
+                          if (errorMsg) setErrorMsg(null);
+                        }}
+                        onFocus={() => handleInputFocus('otherMidcZone', 130)}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="e.g. Supa MIDC (Ahmednagar) / Kagal MIDC (Kolhapur)"
+                        placeholderTextColor="#94A3B8"
+                      />
+                    </View>
+                  )}
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Factory / Plant Address</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        styles.textArea,
+                        focusedField === 'address' && styles.textInputFocused,
+                      ]}
+                      value={address}
+                      onChangeText={setAddress}
+                      onFocus={() => handleInputFocus('address', 200)}
+                      onBlur={() => setFocusedField(null)}
+                      multiline
+                      numberOfLines={3}
+                      placeholder="e.g. Plot No. E-10, MIDC Waluj Industrial Area, Gate No. 4..."
+                      placeholderTextColor="#94A3B8"
+                      textAlignVertical="top"
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* STEP 4: Contact & Digital Presence */}
+            {currentStep === 4 && (
+              <View style={styles.stepContainer}>
+                <View style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>Contact Information & Digital Presence</Text>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Helpline Phone Number</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        focusedField === 'phone' && styles.textInputFocused,
+                      ]}
+                      value={phone}
+                      onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, '').slice(0, 10))}
+                      onFocus={() => handleInputFocus('phone', 40)}
+                      onBlur={() => setFocusedField(null)}
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      placeholder="10-digit mobile number"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Official HR Email</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        focusedField === 'email' && styles.textInputFocused,
+                      ]}
+                      value={email}
+                      onChangeText={setEmail}
+                      onFocus={() => handleInputFocus('email', 110)}
+                      onBlur={() => setFocusedField(null)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      placeholder="e.g. hr@company.com"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+
+                  <View style={styles.fieldWrap}>
+                    <Text style={styles.fieldLabel}>Official Website URL</Text>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        focusedField === 'website' && styles.textInputFocused,
+                      ]}
+                      value={website}
+                      onChangeText={setWebsite}
+                      onFocus={() => handleInputFocus('website', 180)}
+                      onBlur={() => setFocusedField(null)}
+                      keyboardType="url"
+                      autoCapitalize="none"
+                      placeholder="e.g. https://www.company.com"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Modal Bottom Action Footer Bar */}
+          <View style={[styles.modalFooterBar, { paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
+            {currentStep > 1 && (
+              <TouchableOpacity activeOpacity={0.8} onPress={handlePrevStep} style={styles.backStepBtn}>
+                <Text style={styles.backStepBtnText}>Back</Text>
+              </TouchableOpacity>
+            )}
+
+            {currentStep < 4 ? (
+              <TouchableOpacity activeOpacity={0.85} onPress={handleNextStep} style={styles.nextStepBtn}>
+                <Text style={styles.nextStepBtnText}>Continue to Step {currentStep + 1}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                style={[styles.nextStepBtn, isSubmitting && { opacity: 0.7 }]}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.nextStepBtnText}>Save Profile</Text>
                 )}
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Factory / Plant Address</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textArea]}
-                    value={address}
-                    onChangeText={setAddress}
-                    multiline
-                    numberOfLines={3}
-                    placeholder="e.g. Plot No. E-10, MIDC Waluj Industrial Area, Gate No. 4..."
-                    placeholderTextColor="#94A3B8"
-                    textAlignVertical="top"
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* STEP 4: Contact & Digital Presence */}
-          {currentStep === 4 && (
-            <View style={styles.stepContainer}>
-              <View style={styles.cardBox}>
-                <Text style={styles.cardBoxTitle}>Contact Information & Digital Presence</Text>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Helpline Phone Number</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={phone}
-                    onChangeText={(val) => setPhone(val.replace(/[^0-9]/g, '').slice(0, 10))}
-                    keyboardType="number-pad"
-                    maxLength={10}
-                    placeholder="10-digit mobile number"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Official HR Email</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholder="e.g. hr@company.com"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                <View style={styles.fieldWrap}>
-                  <Text style={styles.fieldLabel}>Official Website URL</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={website}
-                    onChangeText={setWebsite}
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    placeholder="e.g. https://www.company.com"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Modal Bottom Action Footer Bar */}
-        <View style={styles.modalFooterBar}>
-          {currentStep > 1 && (
-            <TouchableOpacity activeOpacity={0.8} onPress={handlePrevStep} style={styles.backStepBtn}>
-              <Text style={styles.backStepBtnText}>Back</Text>
-            </TouchableOpacity>
-          )}
-
-          {currentStep < 4 ? (
-            <TouchableOpacity activeOpacity={0.85} onPress={handleNextStep} style={styles.nextStepBtn}>
-              <Text style={styles.nextStepBtnText}>Continue to Step {currentStep + 1}</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-              style={[styles.nextStepBtn, isSubmitting && { opacity: 0.7 }]}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.nextStepBtnText}>Save Profile</Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        </KeyboardAvoidingView>
 
         {/* Option Picker Modal */}
         {pickerModalType ? (
@@ -769,7 +919,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
             </TouchableOpacity>
           </Modal>
         ) : null}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };
@@ -956,6 +1106,9 @@ const styles = StyleSheet.create({
   reqStar: {
     color: '#DC2626',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   textInput: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -965,6 +1118,11 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#0F172A',
     backgroundColor: '#FFFFFF',
+  },
+  textInputFocused: {
+    borderColor: '#2563EB',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
   },
   textArea: {
     height: 80,

@@ -8,6 +8,8 @@ import {
   StyleSheet,
   StatusBar,
   Keyboard,
+  ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -51,45 +53,6 @@ const TRENDING_LOCATIONS = [
   'Ranjangaon MIDC',
 ];
 
-const POPULAR_EMPLOYERS = [
-  {
-    name: 'Bajaj Auto Limited',
-    industry: 'Automotive & 2-Wheeler',
-    location: 'Waluj MIDC',
-    logoUrl: 'https://logo.clearbit.com/bajajauto.com',
-  },
-  {
-    name: 'Tata Motors Manufacturing',
-    industry: 'Automotive OEM',
-    location: 'Pimpri-Chinchwad',
-    logoUrl: 'https://logo.clearbit.com/tatamotors.com',
-  },
-  {
-    name: 'Endurance Technologies',
-    industry: 'Auto Components & Die Casting',
-    location: 'Waluj MIDC',
-    logoUrl: 'https://logo.clearbit.com/endurancegroup.com',
-  },
-  {
-    name: 'Varroc Engineering Ltd',
-    industry: 'Polymer & Electricals',
-    location: 'Chakan MIDC',
-    logoUrl: 'https://logo.clearbit.com/varroc.com',
-  },
-  {
-    name: 'Siemens India Industrial',
-    industry: 'Electrical & Automation',
-    location: 'Kalwa MIDC',
-    logoUrl: 'https://logo.clearbit.com/siemens.com',
-  },
-  {
-    name: 'Bharat Forge Limited',
-    industry: 'Forging & Heavy Machinery',
-    location: 'Mundhwa Pune',
-    logoUrl: 'https://logo.clearbit.com/bharatforge.com',
-  },
-];
-
 interface Props {
   navigation: any;
   route?: any;
@@ -101,6 +64,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -159,6 +123,18 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
 
   const fetchAllData = async () => {
     try {
+      setIsLoadingData(true);
+      // Load cached companies if available for instant display
+      try {
+        const cached = await AsyncStorage.getItem('@jobmarket_companies_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAllCompanies(parsed);
+          }
+        }
+      } catch (_) {}
+
       const [jobsRes, compsRes] = await Promise.all([
         apiFetch('/api/v1/jobs').catch(() => []),
         apiFetch('/api/v1/companies').catch(() => []),
@@ -166,9 +142,14 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
       const jobList = Array.isArray(jobsRes) ? jobsRes : jobsRes?.data || [];
       const compList = Array.isArray(compsRes) ? compsRes : compsRes?.data || compsRes?.companies || [];
       if (Array.isArray(jobList)) setAllJobs(jobList);
-      if (Array.isArray(compList)) setAllCompanies(compList);
+      if (Array.isArray(compList) && compList.length > 0) {
+        setAllCompanies(compList);
+        AsyncStorage.setItem('@jobmarket_companies_cache', JSON.stringify(compList)).catch(() => {});
+      }
     } catch (e) {
       console.warn('Failed to fetch data for search autocomplete:', e);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -177,19 +158,55 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     if (!trimmed) return;
     saveSearchToHistory(trimmed);
     Keyboard.dismiss();
-    navigation.navigate('CandidateJobsTab', {
-      screen: 'CandidateJobSearch',
-      params: { keyword: trimmed },
-    });
+    setSearchQuery(trimmed);
+
+    // Synchronously broadcast search query so target screen filters immediately
+    DeviceEventEmitter.emit('GLOBAL_SEARCH_EXECUTE', { keyword: trimmed });
+
+    try {
+      navigation.navigate('CandidateMain', {
+        screen: 'CandidateJobsTab',
+        params: {
+          screen: 'CandidateJobSearch',
+          params: { keyword: trimmed },
+        },
+      });
+    } catch (_) {
+      try {
+        navigation.navigate('CandidateJobsTab', {
+          screen: 'CandidateJobSearch',
+          params: { keyword: trimmed },
+        });
+      } catch (err) {
+        navigation.navigate('CandidateJobSearch', { keyword: trimmed });
+      }
+    }
   };
 
   const handleLocationSearch = (location: string) => {
     saveSearchToHistory(location);
     Keyboard.dismiss();
-    navigation.navigate('CandidateJobsTab', {
-      screen: 'CandidateJobSearch',
-      params: { location: location },
-    });
+
+    DeviceEventEmitter.emit('GLOBAL_SEARCH_EXECUTE', { location });
+
+    try {
+      navigation.navigate('CandidateMain', {
+        screen: 'CandidateJobsTab',
+        params: {
+          screen: 'CandidateJobSearch',
+          params: { location },
+        },
+      });
+    } catch (_) {
+      try {
+        navigation.navigate('CandidateJobsTab', {
+          screen: 'CandidateJobSearch',
+          params: { location },
+        });
+      } catch (err) {
+        navigation.navigate('CandidateJobSearch', { location });
+      }
+    }
   };
 
   const handleJobClick = (job: Job) => {
@@ -215,35 +232,95 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     });
   };
 
-  // Autocomplete matching live query across Jobs, Companies, Trades, Locations
+  // Top Industrial Employers: strictly from real companies registered on our platform (Deduplicated)
+  const platformCompanies = useMemo(() => {
+    const seen = new Set<string>();
+    const result: any[] = [];
+
+    const addCompany = (c: any) => {
+      if (!c) return;
+      const cId = (c.id || c.user_id || '').toString().trim();
+      const cName = (c.name || c.company_name || c.company || '').toString().trim();
+      if (!cName && !cId) return;
+      const idKey = cId ? cId.toLowerCase() : '';
+      const nameKey = cName ? cName.toLowerCase() : '';
+      if ((idKey && seen.has(idKey)) || (nameKey && seen.has(nameKey))) return;
+      if (idKey) seen.add(idKey);
+      if (nameKey) seen.add(nameKey);
+
+      result.push({
+        ...c,
+        id: cId || cName,
+        name: cName || 'Industrial Company',
+        industry: c.industry || 'Industrial Manufacturing',
+        location: c.midc_zone || c.location || c.city || 'Chhatrapati Sambhajinagar',
+        logo: c.logo || c.logo_url || c.logoUrl || c.profilePictureUrl || c.profile_picture_url || null,
+      });
+    };
+
+    if (Array.isArray(allCompanies) && allCompanies.length > 0) {
+      allCompanies.forEach(addCompany);
+    }
+
+    if (result.length < 8 && Array.isArray(allJobs)) {
+      allJobs.forEach((j) => {
+        const cName = (j.company || (j as any).company_name || '').toString().trim();
+        if (cName) {
+          addCompany({
+            id: j.employer_id || (j as any).company_id || cName,
+            name: cName,
+            industry: j.industry || 'Industrial Manufacturing',
+            location: j.location || 'Chhatrapati Sambhajinagar',
+            logo: (j as any).companyLogo || (j as any).company_logo || (j as any).logoUrl || null,
+          });
+        }
+      });
+    }
+
+    return result.slice(0, 8);
+  }, [allCompanies, allJobs]);
+
+  // Autocomplete matching live query across Jobs, Companies, Trades, Locations (Deduplicated)
   const autocompleteSuggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
       return { jobs: [], companies: [], trades: [], locations: [] };
     }
 
-    // 1. Matching Live Jobs
-    const matchedJobs = allJobs
-      .filter((j) => {
-        const titleMatch = (j.title || '').toLowerCase().includes(q);
-        const compMatch = (j.company || '').toLowerCase().includes(q);
-        const indMatch = (j.industry || '').toLowerCase().includes(q);
-        const tradeMatch = (j.trade || '').toLowerCase().includes(q);
-        const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
-        return titleMatch || compMatch || indMatch || tradeMatch || skillsMatch;
-      })
-      .slice(0, 4);
+    // 1. Matching Live Jobs (Deduplicated by ID)
+    const seenJobIds = new Set<string>();
+    const matchedJobs: Job[] = [];
+    for (const j of allJobs) {
+      if (!j || !j.id || seenJobIds.has(j.id)) continue;
+      const titleMatch = (j.title || '').toLowerCase().includes(q);
+      const compMatch = (j.company || '').toLowerCase().includes(q);
+      const indMatch = (j.industry || '').toLowerCase().includes(q);
+      const tradeMatch = (j.trade || '').toLowerCase().includes(q);
+      const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
+      if (titleMatch || compMatch || indMatch || tradeMatch || skillsMatch) {
+        seenJobIds.add(j.id);
+        matchedJobs.push(j);
+        if (matchedJobs.length >= 4) break;
+      }
+    }
 
-    // 2. Standalone Matching Companies & Factories
-    const matchedCompanies = allCompanies
-      .filter((c) => {
-        const nameMatch = (c.name || c.company_name || c.company || '').toLowerCase().includes(q);
-        const indMatch = (c.industry || '').toLowerCase().includes(q);
-        const locMatch = (c.city || c.location || c.midc_zone || '').toLowerCase().includes(q);
-        const aboutMatch = (c.about || c.description || '').toLowerCase().includes(q);
-        return nameMatch || indMatch || locMatch || aboutMatch;
-      })
-      .slice(0, 4);
+    // 2. Standalone Matching Companies & Factories (Deduplicated by ID/Name)
+    const seenCompKeys = new Set<string>();
+    const matchedCompanies: any[] = [];
+    for (const c of allCompanies) {
+      if (!c) continue;
+      const cKey = ((c.id || '') + (c.name || c.company_name || '')).toLowerCase().trim();
+      if (!cKey || seenCompKeys.has(cKey)) continue;
+      const nameMatch = (c.name || c.company_name || c.company || '').toLowerCase().includes(q);
+      const indMatch = (c.industry || '').toLowerCase().includes(q);
+      const locMatch = (c.city || c.location || c.midc_zone || '').toLowerCase().includes(q);
+      const aboutMatch = (c.about || c.description || '').toLowerCase().includes(q);
+      if (nameMatch || indMatch || locMatch || aboutMatch) {
+        seenCompKeys.add(cKey);
+        matchedCompanies.push(c);
+        if (matchedCompanies.length >= 4) break;
+      }
+    }
 
     // 3. Matching Trades
     const matchedTrades = TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 3);
@@ -341,7 +418,21 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               <ArrowUpRight size={15} color="#94A3B8" />
             </TouchableOpacity>
 
-            {!hasAnySuggestions ? (
+            {isLoadingData ? (
+              <View style={styles.searchingLoadingContainer}>
+                <View style={styles.searchingLoadingBadge}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.searchingLoadingText}>
+                    Searching matches{searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ''}...
+                  </Text>
+                </View>
+                <View style={{ gap: 10, marginTop: 12 }}>
+                  <View style={styles.skeletonItemBox} />
+                  <View style={styles.skeletonItemBox} />
+                  <View style={styles.skeletonItemBox} />
+                </View>
+              </View>
+            ) : !hasAnySuggestions ? (
               <View style={styles.noResultsContainer}>
                 <View style={styles.noResultsIconBox}>
                   <SearchX size={26} color="#64748B" strokeWidth={2} />
@@ -384,16 +475,16 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>COMPANIES & FACTORIES</Text>
                 </View>
-                {autocompleteSuggestions.companies.map((comp) => {
+                {autocompleteSuggestions.companies.map((comp, idx) => {
                   const compName = comp.name || comp.company_name || comp.company || 'Industrial Company';
                   const compLoc = comp.midc_zone || comp.location || comp.city || 'Industrial MIDC';
                   const compInd = comp.industry || 'Manufacturing';
                   const compLogo = comp.logo || comp.logo_url || comp.logoUrl || comp.profilePictureUrl || comp.profile_picture_url;
                   return (
                     <TouchableOpacity
-                      key={comp.id || compName}
+                      key={`match-comp-${comp.id || compName}-${idx}`}
                       style={styles.searchRow}
-                      onPress={() => handleCompanyClick(comp)}
+                      onPress={() => handleExecuteSearch(compName)}
                       activeOpacity={0.65}
                     >
                       <CompanyLogoAvatar
@@ -424,11 +515,11 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING JOBS</Text>
                 </View>
-                {autocompleteSuggestions.jobs.map((job) => {
+                {autocompleteSuggestions.jobs.map((job, idx) => {
                   const jobLogo = job.companyLogo || job.company_logo || (job as any)?.logo || (job as any)?.logoUrl || (job as any)?.profile_picture_url;
                   return (
                     <TouchableOpacity
-                      key={job.id}
+                      key={`match-job-${job.id}-${idx}`}
                       style={styles.searchRow}
                       onPress={() => handleJobClick(job)}
                       activeOpacity={0.65}
@@ -461,9 +552,9 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>POPULAR ROLES & TRADES</Text>
                 </View>
-                {autocompleteSuggestions.trades.map((trade) => (
+                {autocompleteSuggestions.trades.map((trade, idx) => (
                   <TouchableOpacity
-                    key={trade}
+                    key={`match-trade-${trade}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(trade)}
                     activeOpacity={0.65}
@@ -485,9 +576,9 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>LOCATIONS & MIDC ZONES</Text>
                 </View>
-                {autocompleteSuggestions.locations.map((loc) => (
+                {autocompleteSuggestions.locations.map((loc, idx) => (
                   <TouchableOpacity
-                    key={loc}
+                    key={`match-loc-${loc}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleLocationSearch(loc)}
                     activeOpacity={0.65}
@@ -516,72 +607,60 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                   </TouchableOpacity>
                 </View>
 
-                {recentSearches.map((term, index) => {
-                  const matchedComp = allCompanies.find(
-                    (c) => (c.name || '').toLowerCase().trim() === term.toLowerCase().trim()
-                  ) || POPULAR_EMPLOYERS.find(
-                    (p) => p.name.toLowerCase().trim() === term.toLowerCase().trim()
-                  );
-
-                  return (
-                    <View key={`${term}-${index}`} style={styles.searchRow}>
-                      <TouchableOpacity
-                        style={styles.recentClickArea}
-                        onPress={() => {
-                          if (matchedComp) {
-                            handleCompanyClick(matchedComp);
-                          } else {
-                            handleExecuteSearch(term);
-                          }
-                        }}
-                        activeOpacity={0.65}
-                      >
-                        <Clock size={16} color="#64748B" style={styles.rowIcon} />
-                        <Text style={styles.rowTitleText} numberOfLines={1}>
-                          {term}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => removeSingleRecentSearch(term)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <X size={15} color="#94A3B8" />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
+                {recentSearches.map((term, index) => (
+                  <View key={`recent-${term}-${index}`} style={styles.searchRow}>
+                    <TouchableOpacity
+                      style={styles.recentClickArea}
+                      onPress={() => handleExecuteSearch(term)}
+                      activeOpacity={0.65}
+                    >
+                      <Clock size={16} color="#64748B" style={styles.rowIcon} />
+                      <Text style={styles.rowTitleText} numberOfLines={1}>
+                        {term}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => removeSingleRecentSearch(term)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <X size={15} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
             ) : null}
 
-            {/* 2. TOP INDUSTRIAL EMPLOYERS (Standalone Companies) */}
-            <View style={styles.sectionWrap}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderTitle}>TOP INDUSTRIAL EMPLOYERS</Text>
-              </View>
+            {/* 2. TOP INDUSTRIAL EMPLOYERS (Real Platform Registered Companies) */}
+            {platformCompanies.length > 0 ? (
+              <View style={styles.sectionWrap}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeaderTitle}>TOP INDUSTRIAL EMPLOYERS</Text>
+                </View>
 
-              {POPULAR_EMPLOYERS.map((comp) => (
-                <TouchableOpacity
-                  key={comp.name}
-                  style={styles.searchRow}
-                  onPress={() => handleCompanyClick(comp)}
-                  activeOpacity={0.65}
-                >
-                  <CompanyLogoAvatar
-                    logoUrl={comp.logoUrl}
-                    companyName={comp.name}
-                    size={36}
-                    borderRadius={8}
-                    style={{ marginRight: 12 }}
-                  />
-                  <View style={styles.rowContent}>
-                    <Text style={styles.rowTitleText}>{comp.name}</Text>
-                    <Text style={styles.rowSubText}>{comp.industry} • {comp.location}</Text>
-                  </View>
-                  <ChevronRight size={15} color="#CBD5E1" />
-                </TouchableOpacity>
-              ))}
-            </View>
+                {platformCompanies.map((comp, idx) => (
+                  <TouchableOpacity
+                    key={`platform-comp-${comp.id || comp.name}-${idx}`}
+                    style={styles.searchRow}
+                    onPress={() => handleCompanyClick(comp)}
+                    activeOpacity={0.65}
+                  >
+                    <CompanyLogoAvatar
+                      logoUrl={comp.logo}
+                      companyName={comp.name}
+                      size={36}
+                      borderRadius={8}
+                      style={{ marginRight: 12 }}
+                    />
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowTitleText}>{comp.name}</Text>
+                      <Text style={styles.rowSubText}>{comp.industry} • {comp.location}</Text>
+                    </View>
+                    <ChevronRight size={15} color="#CBD5E1" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
 
             {/* 3. TRENDING INDUSTRIAL ROLES */}
             <View style={styles.sectionWrap}>
@@ -589,9 +668,9 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <Text style={styles.sectionHeaderTitle}>TRY SEARCHING FOR</Text>
               </View>
 
-              {TRENDING_ROLES.map((role) => (
+              {TRENDING_ROLES.map((role, idx) => (
                 <TouchableOpacity
-                  key={role}
+                  key={`trending-${role}-${idx}`}
                   style={styles.searchRow}
                   onPress={() => handleExecuteSearch(role)}
                   activeOpacity={0.65}
@@ -611,9 +690,9 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                 <Text style={styles.sectionHeaderTitle}>POPULAR INDUSTRIAL HUBS</Text>
               </View>
 
-              {TRENDING_LOCATIONS.map((loc) => (
+              {TRENDING_LOCATIONS.map((loc, idx) => (
                 <TouchableOpacity
-                  key={loc}
+                  key={`hub-${loc}-${idx}`}
                   style={styles.searchRow}
                   onPress={() => handleLocationSearch(loc)}
                   activeOpacity={0.65}
@@ -834,5 +913,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#1E40AF',
+  },
+  searchingLoadingContainer: {
+    paddingVertical: 12,
+  },
+  searchingLoadingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginBottom: 6,
+  },
+  searchingLoadingText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  skeletonItemBox: {
+    height: 68,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 });

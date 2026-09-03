@@ -17,6 +17,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { authApi } from '../../api/authApi';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
+import { SuccessModal } from '../../components/common/SuccessModal';
 import { COLORS } from '../../constants/theme';
 import { otpSchema } from '../../utils/validators';
 
@@ -38,6 +39,7 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const hiddenInputRef = useRef<TextInput>(null);
 
@@ -50,6 +52,14 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
       if (interval) clearInterval(interval);
     };
   }, [timer]);
+
+  const handleProceedToSignIn = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('EmployerLogin', {
+      registeredEmail: cleanEmail,
+      initialRole: signupPayload?.role || route?.params?.role || 'candidate',
+    });
+  };
 
   const handleVerify = async () => {
     setError(null);
@@ -69,13 +79,7 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
     setLoading(true);
     try {
       await verifyOTP(cleanEmail, cleanOtp, false);
-
-      showToast('Registered successfully! Please sign in.', 'success', 2000);
-      navigation.navigate('EmployerLogin', {
-        registeredEmail: cleanEmail,
-        initialRole: signupPayload?.role || route?.params?.role || 'candidate',
-        signupSuccess: true,
-      });
+      setShowSuccessModal(true);
     } catch (err: any) {
       const serverMsg = err.message || '';
       if (timer > 0) {
@@ -260,6 +264,17 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Registration Confirmation Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Account Verified Successfully!"
+        message="Your registration is complete. Please sign in to access your JobMarket account."
+        buttonText="Proceed to Sign In"
+        onButtonPress={handleProceedToSignIn}
+        onClose={handleProceedToSignIn}
+        showCloseIcon={false}
+      />
     </View>
   );
 };

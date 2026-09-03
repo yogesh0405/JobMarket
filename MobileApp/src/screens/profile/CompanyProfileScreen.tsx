@@ -10,6 +10,7 @@ import {
   Share,
   StatusBar,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import {
   Building2,
@@ -48,14 +49,14 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   const userCompanyName = (user?.company_name || user?.companyName || user?.name || '').trim();
 
+  const isViewingExternal = Boolean(routeCompanyId || routeCompany || route?.params?.name);
+
   // Determine Company ID or Name from route params or logged-in user
   const targetCompanyId =
     routeCompanyId ||
     route?.params?.name ||
     routeCompany?.name ||
-    userCompanyName ||
-    user?.id ||
-    '';
+    (!isViewingExternal ? (userCompanyName || user?.id || '') : '');
 
   // Tab State: PROFILE vs ANALYTICS
   const [profileTab, setProfileTab] = useState<'PROFILE' | 'ANALYTICS'>('PROFILE');
@@ -104,7 +105,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     const role = (user.role || '').toLowerCase();
     if (role !== 'employer' && role !== 'admin') return false;
 
-    if (routeCompanyId || route?.params?.company || route?.params?.name) {
+    if (isViewingExternal) {
       if (company && company.employer_id && user.id === company.employer_id) return true;
       if (company && company.email && user.email && user.email.toLowerCase() === company.email.toLowerCase()) return true;
       const userCompName = user.companyName || user.company_name || '';
@@ -113,7 +114,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     }
 
     return true;
-  }, [user, company, routeCompanyId, route?.params]);
+  }, [user, company, isViewingExternal]);
 
   // Load Live Company Details from Live Backend API
   const loadCompanyDetails = async () => {
@@ -136,7 +137,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       }
     }
 
-    if (user?.id && user.id !== targetCompanyId) {
+    // Only load logged-in user profile if NOT viewing an external company
+    if (!isViewingExternal && user?.id && user.id !== targetCompanyId) {
       try {
         const json = await apiFetch(`/api/v1/companies/${encodeURIComponent(user.id)}`);
         const compData = json?.data || (json?.name ? json : null);
@@ -159,7 +161,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         const matched = compList.find((c: any) =>
           c && (
             (targetCompanyId && c.id === targetCompanyId) ||
-            (user?.id && c.employer_id === user.id) ||
+            (!isViewingExternal && user?.id && c.employer_id === user.id) ||
             (targetLower && (c.name || '').toLowerCase().trim() === targetLower)
           )
         );
@@ -171,10 +173,29 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       }
     } catch (_) {}
 
-    // Fallback: Populate strictly from authentic user state or route parameters without mock values
+    // Fallback: Populate strictly from route parameters or user state without mixing external and user profiles
     setCompany((prev: any) => {
       if (prev && prev.name) return prev;
       if (routeCompany && routeCompany.name) return routeCompany;
+      if (isViewingExternal) {
+        const extName = route?.params?.name || targetCompanyId || 'Company';
+        return {
+          id: routeCompanyId || targetCompanyId,
+          name: extName,
+          logo: routeCompany?.logo || routeCompany?.logoUrl || null,
+          industry: routeCompany?.industry || 'Industrial Manufacturing',
+          company_type: routeCompany?.company_type || routeCompany?.companyType || 'Private Limited',
+          description: routeCompany?.description || routeCompany?.about || '',
+          website: routeCompany?.website || '',
+          address: routeCompany?.address || routeCompany?.location || '',
+          city: routeCompany?.city || routeCompany?.location || 'Chhatrapati Sambhajinagar',
+          midc_zone: routeCompany?.midc_zone || routeCompany?.midcZone || '',
+          email: routeCompany?.email || '',
+          phone: routeCompany?.phone || '',
+          company_size: routeCompany?.company_size || '50-200 Employees',
+          gst_number: routeCompany?.gst_number || '',
+        };
+      }
       const u = user as any;
       const realName = userCompanyName || (targetCompanyId ? targetCompanyId : 'My Company');
       return {
@@ -199,40 +220,100 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     setLoadingCompany(false);
   };
 
-  // Load Live Company Job Openings from Live Backend API
+  // Load Live Company Job Openings from Live Backend API (Strictly Scoped to Employer Account)
   const loadCompanyJobs = async () => {
     setLoadingJobs(true);
 
+    // 1. If viewing as Owner / Employer of this company:
     if (isOwner) {
       try {
         const res = await jobsApi.getMyJobs();
-        if (res && res.success && Array.isArray(res.data)) {
-          setJobs(res.data);
+        const myJobsList = Array.isArray(res) ? res : (res?.data || []);
+        if (Array.isArray(myJobsList)) {
+          // Strictly verify jobs belong to this employer's account
+          const ownedJobs = myJobsList.filter((j: any) => {
+            if (!j) return false;
+            const empId = (j.employer_id || j.employerId || '').toString().toLowerCase();
+            const currentUserId = (user?.id || '').toString().toLowerCase();
+            if (empId && currentUserId) {
+              return empId === currentUserId;
+            }
+            return true;
+          });
+          setJobs(ownedJobs);
           setLoadingJobs(false);
           return;
         }
       } catch (err) {
         console.warn('Backend owner jobs fetch notice:', err);
       }
+      // If isOwner and no jobs found or fetch failed, strictly set empty array!
+      // NEVER fall back to other companies' jobs!
+      setJobs([]);
+      setLoadingJobs(false);
+      return;
     }
 
-    if (targetCompanyId) {
+    // 2. If viewing an external company profile:
+    const targetCompId = (company?.id || routeCompanyId || targetCompanyId || '').toString();
+    const targetCompName = (company?.name || routeCompany?.name || route?.params?.name || '').trim();
+    const targetEmployerId = (company?.employer_id || company?.employerId || routeCompany?.employer_id || '').toString();
+
+    let resolvedJobs: any[] = [];
+
+    if (targetCompId && targetCompId !== 'My Company') {
       try {
-        const companyQuery = encodeURIComponent(targetCompanyId);
+        const companyQuery = encodeURIComponent(targetCompId);
         const json = await apiFetch(`/api/v1/companies/${companyQuery}/jobs`);
         const list = Array.isArray(json) ? json : (json?.data || []);
 
-        if (Array.isArray(list)) {
-          setJobs(list);
-          setLoadingJobs(false);
-          return;
+        if (Array.isArray(list) && list.length > 0) {
+          // Strictly verify returned jobs match this company's employer ID or company name
+          resolvedJobs = list.filter((j: any) => {
+            if (!j) return false;
+            const jEmpId = (j.employer_id || j.employerId || '').toString();
+            const jComp = (j.company || j.company_name || '').trim().toLowerCase();
+            const compLower = targetCompName.toLowerCase();
+
+            if (targetEmployerId && jEmpId) {
+              return jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+            }
+            if (compLower && jComp) {
+              return jComp === compLower;
+            }
+            return false;
+          });
         }
       } catch (err) {
         console.warn('Backend company jobs fetch notice:', err);
       }
     }
 
-    setJobs([]);
+    // Fallback: If company jobs endpoint returned nothing, check all jobs strictly matching employer_id or exact company name
+    if (resolvedJobs.length === 0 && (targetEmployerId || targetCompName)) {
+      try {
+        const allJobsRes = await apiFetch('/api/v1/jobs');
+        const allList = Array.isArray(allJobsRes) ? allJobsRes : (allJobsRes?.data || []);
+        if (Array.isArray(allList) && allList.length > 0) {
+          resolvedJobs = allList.filter((j: any) => {
+            if (!j) return false;
+            const jEmpId = (j.employer_id || j.employerId || '').toString();
+            const jComp = (j.company || j.company_name || '').trim().toLowerCase();
+            const compLower = targetCompName.toLowerCase();
+
+            if (targetEmployerId && jEmpId) {
+              return jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+            }
+            if (compLower && jComp) {
+              return jComp === compLower;
+            }
+            return false;
+          });
+        }
+      } catch (_) {}
+    }
+
+    setJobs(resolvedJobs);
     setLoadingJobs(false);
   };
 
@@ -298,6 +379,26 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       fetchAnalytics();
     }
   }, [isOwner, targetCompanyId]);
+
+  useEffect(() => {
+    const subPosted = DeviceEventEmitter.addListener('JOB_POSTED', () => {
+      loadCompanyJobs();
+      if (isOwner) fetchAnalytics();
+    });
+    const subUpdated = DeviceEventEmitter.addListener('JOB_UPDATED', () => {
+      loadCompanyJobs();
+      if (isOwner) fetchAnalytics();
+    });
+    const subDeleted = DeviceEventEmitter.addListener('JOB_DELETED', () => {
+      loadCompanyJobs();
+      if (isOwner) fetchAnalytics();
+    });
+    return () => {
+      subPosted.remove();
+      subUpdated.remove();
+      subDeleted.remove();
+    };
+  }, [isOwner]);
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -192,7 +192,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             style={styles.scrollableFormArea}
             contentContainerStyle={[
               styles.cardBody,
-              { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 36 },
+              { paddingBottom: keyboardHeight > 0 ? 36 : 28 },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -249,7 +249,6 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholder="Ramesh Sharma"
                   placeholderTextColor="#94A3B8"
                   value={name}
-                  onFocus={() => handleInputFocus(40)}
                   onChangeText={(t) => {
                     setName(t);
                     if (error) setError(null);
@@ -268,7 +267,6 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholder="candidate@email.com"
                 placeholderTextColor="#94A3B8"
                 value={email}
-                onFocus={() => handleInputFocus(100)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -289,7 +287,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholderTextColor="#94A3B8"
                 value={phone}
                 maxLength={10}
-                onFocus={() => handleInputFocus(160)}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef, 10)}
                 onChangeText={(t) => {
                   const cleaned = t.replace(/[^0-9]/g, '').slice(0, 10);
                   setPhone(cleaned);
@@ -310,7 +308,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholder="Tata Motors Ltd / Endurance"
                   placeholderTextColor="#94A3B8"
                   value={companyName}
-                  onFocus={() => handleInputFocus(220)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 10)}
                   onChangeText={(t) => {
                     setCompanyName(t);
                     if (error) setError(null);
@@ -331,7 +329,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={() => handleInputFocus(280)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 20)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -360,7 +358,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
-                  onFocus={() => handleInputFocus(360)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 20)}
                   onChangeText={(t) => {
                     setConfirmPassword(t);
                     if (error) setError(null);

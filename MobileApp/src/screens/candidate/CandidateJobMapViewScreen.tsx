@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Search, X, SlidersHorizontal } from 'lucide-react-native';
@@ -75,8 +76,20 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
   useFocusEffect(
     useCallback(() => {
       fetchJobs();
-    }, [fetchJobs])
+      if (route?.params?.appliedFilters) {
+        setActiveFilters(route.params.appliedFilters);
+      }
+    }, [fetchJobs, route?.params?.appliedFilters])
   );
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('APPLY_JOB_FILTERS', (filters: FilterOptions) => {
+      if (filters) {
+        setActiveFilters(filters);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const activeFilterCount = useMemo(() => {
     return [
@@ -220,8 +233,7 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
           navigation.navigate('JobFilter', {
             currentFilters: activeFilters,
             totalMatchingJobsCount: filteredJobs.length,
-            onApplyFilters: (newFilters: FilterOptions) => setActiveFilters(newFilters),
-            onResetFilters: () => setActiveFilters(DEFAULT_MAP_FILTERS),
+            returnScreen: 'CandidateJobMapView',
           });
         }}
         activeFilterCount={activeFilterCount}

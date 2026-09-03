@@ -35,6 +35,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 export interface FilterOptions {
   industry: string;
   education?: string;
+  jobRole?: string;
   jobType: string;
   workMode: string;
   minExperience: string;

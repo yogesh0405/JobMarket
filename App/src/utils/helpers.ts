@@ -15,9 +15,13 @@ export const formatSalary = (min?: number, max?: number): string => {
 };
 
 export const timeAgo = (dateStr?: string | null): string => {
-  if (!dateStr) return 'Recently';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'Recently';
+  if (!dateStr) return 'Just now';
+  const str = String(dateStr).trim();
+  if (/^\d+[mhdws]\s+ago$/i.test(str) || str.toLowerCase() === 'just now') {
+    return str;
+  }
+  const date = new Date(str);
+  if (isNaN(date.getTime())) return 'Just now';
   const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
   if (diff <= 0 || diff < 60) return 'Just now';

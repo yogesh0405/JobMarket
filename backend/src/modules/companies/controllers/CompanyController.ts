@@ -84,8 +84,9 @@ export class CompanyController {
       }
 
       const company = await CompanyRepository.getCompanyById(companyId);
-      const companyName = company?.name || companyId;
-      const employerId = company?.employer_id;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId);
+      const companyName = company?.name || (isUuid ? '' : companyId);
+      const employerId = company?.employer_id || (isUuid ? companyId : undefined);
 
       const jobs = await CompanyRepository.getCompanyJobs(companyName, employerId);
 

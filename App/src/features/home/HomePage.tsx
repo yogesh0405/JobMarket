@@ -144,12 +144,20 @@ const SEARCH_PLACEHOLDERS = [
 ];
 
 function formatTimeAgo(dateString?: string): string {
-  if (!dateString) return '1d ago';
+  if (!dateString) return 'Just now';
+  const str = String(dateString).trim();
+  if (/^\d+[mhdws]\s+ago$/i.test(str) || str.toLowerCase() === 'just now') {
+    return str;
+  }
+  const posted = new Date(str);
+  if (isNaN(posted.getTime())) return 'Just now';
   const now = new Date();
-  const posted = new Date(dateString);
   const diffMs = now.getTime() - posted.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  if (diffHours < 1) return 'Just now';
+  if (diffHours < 1) {
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    return diffMinutes <= 1 ? 'Just now' : `${diffMinutes}m ago`;
+  }
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;

@@ -247,14 +247,7 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('JobFilter', {
       currentFilters: homeFilters,
       totalMatchingJobsCount: jobs?.length || 0,
-      onApplyFilters: (applied: FilterOptions) => {
-        setHomeFilters(applied);
-        navigation.navigate('CandidateJobsTab', {
-          screen: 'CandidateJobSearch',
-          params: { homeFilters: applied },
-        });
-      },
-      onResetFilters: () => setHomeFilters(DEFAULT_HOME_FILTERS),
+      returnScreen: 'CandidateHomeTab',
     });
   };
 

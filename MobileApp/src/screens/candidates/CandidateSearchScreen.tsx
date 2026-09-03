@@ -8,6 +8,8 @@ import {
   StyleSheet,
   StatusBar,
   Image,
+  Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,6 +52,8 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
   const initialQuery = route?.params?.initialQuery || '';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(true);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [allCandidates, setAllCandidates] = useState<ExtendedCandidate[]>(SEED_CANDIDATES);
   const searchInputRef = useRef<TextInput>(null);
@@ -64,10 +68,17 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 150);
-    return () => clearTimeout(timer);
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        setDebouncedQuery(searchQuery);
+        setIsSearching(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    } else {
+      setDebouncedQuery('');
+      setIsSearching(false);
+    }
   }, [searchQuery]);
 
   const loadRecentSearches = async () => {
@@ -171,17 +182,23 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
         });
         setAllCandidates(formatted);
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      setIsLoadingCandidates(false);
+    }
   };
 
   const handleExecuteSearch = (queryText: string) => {
     const trimmed = queryText.trim();
     if (!trimmed) return;
     saveSearchToHistory(trimmed);
-    navigation.navigate('EmployerMain', {
-      screen: 'CandidatesTab',
-      params: { appliedSearchQuery: trimmed },
-    });
+    setIsSearching(true);
+    setSearchQuery(trimmed);
+    setDebouncedQuery(trimmed);
+    Keyboard.dismiss();
+    setTimeout(() => {
+      setIsSearching(false);
+    }, 150);
   };
 
   const handleCandidateClick = (candidate: ExtendedCandidate) => {
@@ -198,57 +215,46 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
 
     allCandidates.forEach((cand) => {
       // Role / Trade
-      const role = cand.trade_specialization || cand.title || cand.headline;
-      if (role && typeof role === 'string' && role.trim()) {
-        const cleanRole = role.trim();
-        roleCounts[cleanRole] = (roleCounts[cleanRole] || 0) + 1;
+      const role = cand.headline || cand.title || cand.trade_specialization;
+      if (role) {
+        roleCounts[role] = (roleCounts[role] || 0) + 1;
       }
 
       // Skills
       if (Array.isArray(cand.skills)) {
-        cand.skills.forEach((s) => {
-          if (s && typeof s === 'string' && s.trim()) {
-            const cleanSkill = s.trim();
-            skillCounts[cleanSkill] = (skillCounts[cleanSkill] || 0) + 1;
-          }
+        cand.skills.forEach((sk) => {
+          if (sk) skillCounts[sk] = (skillCounts[sk] || 0) + 1;
         });
       }
 
       // Location
-      const loc = cand.location || (cand as any).city || (cand as any).midc_zone;
-      if (loc && typeof loc === 'string' && loc.trim()) {
-        const cleanLoc = loc.trim();
-        locationCounts[cleanLoc] = (locationCounts[cleanLoc] || 0) + 1;
+      if (cand.location) {
+        locationCounts[cand.location] = (locationCounts[cand.location] || 0) + 1;
       }
 
       // Industry
-      const ind = cand.industry;
-      if (ind && typeof ind === 'string' && ind.trim()) {
-        const cleanInd = ind.trim();
-        industryCounts[cleanInd] = (industryCounts[cleanInd] || 0) + 1;
+      if (cand.industry) {
+        industryCounts[cand.industry] = (industryCounts[cand.industry] || 0) + 1;
       }
     });
 
-    const topRoles: SuggestionItem[] = Object.entries(roleCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, count }));
-
-    const topSkills: SuggestionItem[] = Object.entries(skillCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, count }));
-
-    const topLocations: SuggestionItem[] = Object.entries(locationCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, count }));
-
-    const topIndustries: SuggestionItem[] = Object.entries(industryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, count }));
-
-    return { topRoles, topSkills, topLocations, topIndustries };
+    return {
+      topRoles: Object.entries(roleCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+      topSkills: Object.entries(skillCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+      topLocations: Object.entries(locationCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+      topIndustries: Object.entries(industryCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+    };
   }, [allCandidates]);
 
-  // 2. Compute Autocomplete Suggestions for live active query
+  // 2. Computed live autocomplete filtered lists
   const autocompleteSuggestions = useMemo(() => {
     const trimmed = debouncedQuery.trim().toLowerCase();
     if (!trimmed) {
@@ -257,7 +263,6 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
 
     const tokens = trimmed.split(/[\s,+/&|]+/).filter((t: string) => t.length > 0);
 
-    // Matching live candidates
     const matchedCandidates = allCandidates.filter((cand) => {
       const name = (cand.name || '').toLowerCase();
       const location = (cand.location || (cand as any).city || (cand as any).state || (cand as any).midc_zone || '').toLowerCase();
@@ -321,39 +326,38 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
     <SafeAreaView style={styles.safeContainer} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* TOP HEADER: Clean Navigation Search Bar */}
+      {/* TOP SEARCH HEADER BAR */}
       <View style={styles.headerBar}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <ArrowLeft size={24} color="#0F172A" strokeWidth={1.85} />
+          <ArrowLeft size={22} color="#0F172A" />
         </TouchableOpacity>
 
         <View style={styles.searchInputWrapper}>
-          <Search size={15} color="#64748B" style={styles.searchIcon} />
+          <Search size={17} color="#94A3B8" style={styles.searchIcon} />
           <TextInput
             ref={searchInputRef}
             style={styles.searchInput}
+            placeholder="Search candidate name, role, trade..."
+            placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search candidate name, skills, trade, zone..."
-            placeholderTextColor="#94A3B8"
             returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
             onSubmitEditing={() => handleExecuteSearch(searchQuery)}
+            autoCapitalize="none"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              style={styles.clearButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              activeOpacity={0.7}
+              onPress={() => {
+                setSearchQuery('');
+                setDebouncedQuery('');
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <X size={14} color="#64748B" />
+              <X size={16} color="#94A3B8" />
             </TouchableOpacity>
           )}
         </View>
@@ -376,7 +380,23 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {isQueryActive ? (
+        {isSearching || (isQueryActive && isLoadingCandidates) ? (
+          <View style={styles.searchingLoadingContainer}>
+            <View style={styles.searchingLoadingBadge}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.searchingLoadingText}>
+                {searchQuery.trim()
+                  ? `Searching candidate profiles for "${searchQuery.trim()}"...`
+                  : 'Loading candidate profiles...'}
+              </Text>
+            </View>
+            <View style={{ gap: 10, paddingHorizontal: 16, marginTop: 12 }}>
+              <View style={styles.skeletonItemBox} />
+              <View style={styles.skeletonItemBox} />
+              <View style={styles.skeletonItemBox} />
+            </View>
+          </View>
+        ) : isQueryActive ? (
           /* VIEW A: AUTOCOMPLETE LIVE RESULTS */
           <View style={styles.listContainer}>
             {/* Direct Query Search Row */}
@@ -433,10 +453,10 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING CANDIDATES ({autocompleteSuggestions.candidates.length})</Text>
                 </View>
-                {autocompleteSuggestions.candidates.map((cand) => {
+                {autocompleteSuggestions.candidates.map((cand, idx) => {
                   return (
                     <TouchableOpacity
-                      key={cand.id || cand.name}
+                      key={`cand-${cand.id || cand.name}-${idx}`}
                       style={styles.searchRow}
                       onPress={() => handleCandidateClick(cand)}
                       activeOpacity={0.65}
@@ -477,9 +497,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING ROLES & TRADES</Text>
                 </View>
-                {autocompleteSuggestions.trades.map((item) => (
+                {autocompleteSuggestions.trades.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`cand-trade-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -501,9 +521,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING SKILLS</Text>
                 </View>
-                {autocompleteSuggestions.skills.map((item) => (
+                {autocompleteSuggestions.skills.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`cand-skill-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -525,9 +545,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING LOCATIONS & MIDC ZONES</Text>
                 </View>
-                {autocompleteSuggestions.locations.map((item) => (
+                {autocompleteSuggestions.locations.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`cand-loc-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name.split(',')[0])}
                     activeOpacity={0.65}
@@ -549,9 +569,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>MATCHING INDUSTRIES & SECTORS</Text>
                 </View>
-                {autocompleteSuggestions.industries.map((item) => (
+                {autocompleteSuggestions.industries.map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`cand-ind-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -610,9 +630,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>POPULAR CANDIDATE ROLES</Text>
                 </View>
-                {dynamicSuggestions.topRoles.slice(0, 6).map((item) => (
+                {dynamicSuggestions.topRoles.slice(0, 6).map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`top-role-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -634,9 +654,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>IN-DEMAND TECHNICAL SKILLS</Text>
                 </View>
-                {dynamicSuggestions.topSkills.slice(0, 6).map((item) => (
+                {dynamicSuggestions.topSkills.slice(0, 6).map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`top-skill-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -658,9 +678,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>CANDIDATE LOCATIONS & MIDC ZONES</Text>
                 </View>
-                {dynamicSuggestions.topLocations.slice(0, 5).map((item) => (
+                {dynamicSuggestions.topLocations.slice(0, 5).map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`top-loc-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name.split(',')[0])}
                     activeOpacity={0.65}
@@ -682,9 +702,9 @@ export const CandidateSearchScreen: React.FC<Props> = ({ navigation, route }) =>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderTitle}>INDUSTRIES & SECTORS</Text>
                 </View>
-                {dynamicSuggestions.topIndustries.slice(0, 5).map((item) => (
+                {dynamicSuggestions.topIndustries.slice(0, 5).map((item, idx) => (
                   <TouchableOpacity
-                    key={item.name}
+                    key={`top-ind-${item.name}-${idx}`}
                     style={styles.searchRow}
                     onPress={() => handleExecuteSearch(item.name)}
                     activeOpacity={0.65}
@@ -911,5 +931,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
     marginRight: 6,
+  },
+  searchingLoadingContainer: {
+    paddingVertical: 12,
+  },
+  searchingLoadingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginBottom: 6,
+  },
+  searchingLoadingText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  skeletonItemBox: {
+    height: 72,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 });

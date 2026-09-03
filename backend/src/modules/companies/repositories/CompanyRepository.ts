@@ -48,7 +48,10 @@ export class CompanyRepository {
             COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
           FROM companies c 
           LEFT JOIN users u ON c.employer_id = u.id 
-          LEFT JOIN jobs j ON (LOWER(j.company) = LOWER(c.name) OR (j.employer_id IS NOT NULL AND j.employer_id = c.employer_id))
+          LEFT JOIN jobs j ON (
+            (c.employer_id IS NOT NULL AND j.employer_id = c.employer_id)
+            OR (c.employer_id IS NULL AND LOWER(TRIM(j.company)) = LOWER(TRIM(c.name)))
+          )
           GROUP BY c.id, u.gst_number, u.aadhaar_verified
           ORDER BY open_jobs_count DESC, c.name ASC;
         `;
@@ -113,11 +116,7 @@ export class CompanyRepository {
 
           const count = parseInt(row.open_jobs_count || '0', 10);
 
-          if (companyMap.has(key)) {
-            const existing = companyMap.get(key);
-            existing.open_jobs_count = Math.max(existing.open_jobs_count, count);
-            if (!existing.logo && row.logo) existing.logo = row.logo;
-            if (!existing.midc_zone && row.midc_zone) existing.midc_zone = row.midc_zone;
+          if (!companyMap.has(key)) {
             companyMap.set(key, {
               id: row.employer_id || `job-comp-${idx + 1}`,
               employer_id: row.employer_id,
@@ -153,7 +152,7 @@ export class CompanyRepository {
               u.aadhaar_verified,
               COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
             FROM users u
-            LEFT JOIN jobs j ON (j.employer_id = u.id OR j.company ILIKE COALESCE(NULLIF(u.company_name, ''), u.name))
+            LEFT JOIN jobs j ON j.employer_id = u.id
             WHERE (u.role = 'employer' OR u.role = 'recruiter' OR u.email ILIKE 'noreply%')
               AND (
                 (u.company_name IS NOT NULL AND u.company_name != '') OR
@@ -325,6 +324,8 @@ export class CompanyRepository {
           midc_zone: u.midc_zone || '',
           verified: u.aadhaar_verified !== false,
         };
+        const companyJobs = await this.getCompanyJobs(compName, u.id);
+        (company as any).open_jobs_count = companyJobs.length;
         company.completion_percentage = this.calculateProfileCompletion(company);
         return company;
       }
@@ -334,48 +335,65 @@ export class CompanyRepository {
   }
 
   /**
-   * Fetch job postings belonging to a specific company
+   * Fetch job postings belonging to a specific company or employer account
    */
   static async getCompanyJobs(companyName: string, employerId?: string): Promise<any[]> {
-    const decodedName = decodeURIComponent(companyName).trim();
-    const cleanTarget = decodedName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const decodedName = decodeURIComponent(companyName || '').trim();
+    const isUuid = employerId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(employerId) && employerId !== '00000000-0000-0000-0000-000000000000';
 
-    const query = `
-      SELECT 
-        j.id, j.title, j.company, j.company_logo as "companyLogo", j.company_color as "companyColor",
-        j.industry, j.location, j.job_type as "jobType", j.work_mode as "workMode",
-        j.min_experience as "minExperience", j.max_experience as "maxExperience",
-        j.salary_min as "salaryMin", j.salary_max as "salaryMax", j.openings,
-        j.description, j.trade, j.midc_zone as "midcZone", j.shift_details as "shiftDetails",
-        j.posted_at as "postedAt", j.status, j.employer_id as "employerId",
-        COUNT(ja.id)::int as "applicantsCount"
-      FROM jobs j
-      LEFT JOIN job_applications ja ON j.id = ja.job_id
-      WHERE (
-        j.status IS NULL 
-        OR LOWER(j.status) = 'approved' 
-        OR LOWER(j.status) = 'active'
-      )
-      AND (
-        LOWER(j.company) = LOWER($1)
-        OR LOWER(REGEXP_REPLACE(j.company, '[^a-zA-Z0-9]', '', 'g')) = $3
-        OR $1 ILIKE '%' || j.company || '%'
-        OR j.company ILIKE '%' || $1 || '%'
-        OR (
-          j.employer_id IS NOT NULL 
-          AND j.employer_id = $2 
-          AND $2 != '00000000-0000-0000-0000-000000000000'
+    // 1. Strict primary check: If employer account ID is known, query ONLY jobs posted by this employer
+    if (isUuid) {
+      const query = `
+        SELECT 
+          j.id, j.title, j.company, j.company_logo as "companyLogo", j.company_color as "companyColor",
+          j.industry, j.location, j.job_type as "jobType", j.work_mode as "workMode",
+          j.min_experience as "minExperience", j.max_experience as "maxExperience",
+          j.salary_min as "salaryMin", j.salary_max as "salaryMax", j.openings,
+          j.description, j.trade, j.midc_zone as "midcZone", j.shift_details as "shiftDetails",
+          j.posted_at as "postedAt", j.status, j.employer_id as "employerId",
+          COUNT(ja.id)::int as "applicantsCount"
+        FROM jobs j
+        LEFT JOIN job_applications ja ON j.id = ja.job_id
+        WHERE (
+          j.status IS NULL 
+          OR LOWER(j.status) = 'approved' 
+          OR LOWER(j.status) = 'active'
         )
-      )
-      GROUP BY j.id
-      ORDER BY j.posted_at DESC;
-    `;
-    const res = await pool.query(query, [
-      decodedName,
-      employerId || '00000000-0000-0000-0000-000000000000',
-      cleanTarget
-    ]);
-    return res.rows;
+        AND j.employer_id = $1
+        GROUP BY j.id
+        ORDER BY j.posted_at DESC;
+      `;
+      const res = await pool.query(query, [employerId]);
+      return res.rows;
+    }
+
+    // 2. Secondary check: If no employer ID is available, match strictly by exact normalized company name
+    if (decodedName) {
+      const query = `
+        SELECT 
+          j.id, j.title, j.company, j.company_logo as "companyLogo", j.company_color as "companyColor",
+          j.industry, j.location, j.job_type as "jobType", j.work_mode as "workMode",
+          j.min_experience as "minExperience", j.max_experience as "maxExperience",
+          j.salary_min as "salaryMin", j.salary_max as "salaryMax", j.openings,
+          j.description, j.trade, j.midc_zone as "midcZone", j.shift_details as "shiftDetails",
+          j.posted_at as "postedAt", j.status, j.employer_id as "employerId",
+          COUNT(ja.id)::int as "applicantsCount"
+        FROM jobs j
+        LEFT JOIN job_applications ja ON j.id = ja.job_id
+        WHERE (
+          j.status IS NULL 
+          OR LOWER(j.status) = 'approved' 
+          OR LOWER(j.status) = 'active'
+        )
+        AND LOWER(TRIM(j.company)) = LOWER(TRIM($1))
+        GROUP BY j.id
+        ORDER BY j.posted_at DESC;
+      `;
+      const res = await pool.query(query, [decodedName]);
+      return res.rows;
+    }
+
+    return [];
   }
 
   /**

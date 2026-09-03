@@ -20,30 +20,35 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
 export const handleFocusInput = (
   event: NativeSyntheticEvent<TargetedEvent> | any,
   scrollRef: React.RefObject<ScrollView | null>,
-  extraScrollHeight = 140
+  extraScrollMargin = 20
 ) => {
   const node = event?.nativeEvent?.target || event?.target;
-  if (node && scrollRef?.current) {
-    setTimeout(() => {
-      try {
-        const reactTag = findNodeHandle(node as any);
-        const scrollTag = findNodeHandle(scrollRef.current);
-        if (reactTag && scrollTag) {
-          UIManager.measureLayout(
-            reactTag,
-            scrollTag,
-            () => {},
-            (x, y, width, height) => {
-              const targetY = Math.max(0, y - extraScrollHeight);
-              scrollRef.current?.scrollTo({ y: targetY, animated: true });
+  if (!node || !scrollRef?.current) return;
+
+  setTimeout(() => {
+    try {
+      const reactTag = findNodeHandle(node as any);
+      const scrollTag = findNodeHandle(scrollRef.current);
+      if (reactTag && scrollTag) {
+        UIManager.measureLayout(
+          reactTag,
+          scrollTag,
+          () => {},
+          (x, y, width, height) => {
+            // Upper inputs (y < 160) are already comfortably visible above keyboard, no jump needed
+            if (y < 160) {
+              return;
             }
-          );
-        }
-      } catch (e) {
-        // Fallback
+            // For lower inputs, gently scroll just enough so the field sits directly above keyboard
+            const targetY = Math.max(0, y - 100 + extraScrollMargin);
+            scrollRef.current?.scrollTo({ y: targetY, animated: true });
+          }
+        );
       }
-    }, Platform.OS === 'ios' ? 80 : 120);
-  }
+    } catch (e) {
+      // Fallback
+    }
+  }, Platform.OS === 'ios' ? 60 : 100);
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
@@ -73,7 +78,13 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
       };
     }, []);
 
-    const dynamicPaddingBottom = keyboardHeight > 0 ? keyboardHeight + extraScrollHeight : 30;
+    const flattenedStyle = StyleSheet.flatten(contentContainerStyle) || {};
+    const basePaddingBottom =
+      typeof (flattenedStyle as any)?.paddingBottom === 'number'
+        ? (flattenedStyle as any).paddingBottom
+        : 30;
+
+    const dynamicPaddingBottom = keyboardHeight > 0 ? keyboardHeight + extraScrollHeight : basePaddingBottom;
 
     return (
       <KeyboardAvoidingView

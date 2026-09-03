@@ -76,19 +76,36 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   borderRadius={24}
                   style={styles.detailAvatarBorder}
                 />
-                <View style={{ flex: 1, justifyContent: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.detailCandidateNameText} numberOfLines={1}>
-                      {candidate.name}
-                    </Text>
-                    {candidate.verified || candidate.aadhaar_verified ? (
-                      <ShieldCheck size={16} color="#4ADE80" />
-                    ) : null}
-                  </View>
-                  <Text style={styles.detailCandidateRoleText} numberOfLines={1}>
-                    {safeString(candidate.title, 'Technical Specialist')}
-                  </Text>
-                </View>
+                {(() => {
+                  const isVerified = Boolean(candidate.verified || candidate.aadhaar_verified);
+                  const rawName = (candidate.name || '').trim();
+                  const nameParts = rawName.split(/\s+/).filter(Boolean);
+                  const leadingName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : '';
+                  const lastWord = nameParts.length > 0 ? nameParts[nameParts.length - 1] : rawName;
+
+                  return (
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <View style={styles.modalNameRow}>
+                        {leadingName ? (
+                          <Text style={styles.detailCandidateNameText}>
+                            {leadingName}{' '}
+                          </Text>
+                        ) : null}
+                        <View style={styles.modalLastWordBadgeGroup}>
+                          <Text style={styles.detailCandidateNameText}>
+                            {lastWord}
+                          </Text>
+                          {isVerified && (
+                            <ShieldCheck size={16} color="#4ADE80" style={styles.modalVerifiedBadgeIcon} />
+                          )}
+                        </View>
+                      </View>
+                      <Text style={styles.detailCandidateRoleText} numberOfLines={2}>
+                        {safeString(candidate.title, 'Technical Specialist')}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               <View style={styles.quickContactToolbarRow}>
@@ -269,10 +286,24 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
+  modalNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 2,
+  },
+  modalLastWordBadgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalVerifiedBadgeIcon: {
+    marginLeft: 4,
+  },
   detailCandidateNameText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#FFFFFF',
+    lineHeight: 22,
   },
   detailCandidateRoleText: {
     fontSize: 13,

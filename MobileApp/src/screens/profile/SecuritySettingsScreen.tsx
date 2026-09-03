@@ -396,7 +396,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 80, 110) },
+          { paddingBottom: Math.max(insets.bottom + 120, 160) },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -679,6 +679,9 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {/* Bottom Navigation Clearance Spacer */}
+        <View style={{ height: Math.max(insets.bottom + 24, 48) }} />
       </KeyboardAwareScrollView>
 
       {/* Password Modals Component */}

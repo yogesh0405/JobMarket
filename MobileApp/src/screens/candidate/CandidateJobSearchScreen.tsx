@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  DeviceEventEmitter,
 } from 'react-native';
 import {
   Briefcase,
@@ -21,6 +22,7 @@ import {
   MapPin,
   Clock,
   X,
+  Wrench,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -203,16 +205,25 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const { showToast } = useToast();
   const [jobs, setJobs] = useState<Job[]>(FALLBACK_JOBS);
   const [savedJobIds, setSavedJobIds] = useState<string[]>(savedJobsStore.getSavedIds());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 200);
-    return () => clearTimeout(timer);
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery);
+        setIsSearching(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    } else {
+      setDebouncedSearchQuery('');
+      setIsSearching(false);
+    }
   }, [searchQuery]);
 
   useEffect(() => {
@@ -224,6 +235,33 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('APPLY_JOB_FILTERS', (filters: FilterOptions) => {
+      if (filters) {
+        setActiveFilters(filters);
+      }
+    });
+    return () => {
+      sub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('GLOBAL_SEARCH_EXECUTE', ({ keyword, location }: { keyword?: string; location?: string }) => {
+      if (keyword) {
+        setSearchQuery(keyword);
+        setDebouncedSearchQuery(keyword);
+        setSelectedCategory('All Jobs');
+      }
+      if (location) {
+        setActiveFilters((prev) => ({ ...prev, midcZone: location }));
+      }
+    });
+    return () => {
+      sub.remove();
+    };
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -232,6 +270,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     industry: 'All Industries',
     education: 'All Education Levels',
+    jobRole: 'All Roles',
     jobType: 'All Types',
     workMode: 'All Modes',
     minExperience: 'All Experience',
@@ -258,11 +297,13 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   useEffect(() => {
     if (!route?.params) return;
+    setIsSearching(true);
     const { keyword, location, industry, education, homeFilters, rawFilterTitle, category } = route.params;
 
     if (route.params.appliedFilters) {
       setActiveFilters(route.params.appliedFilters);
-      return;
+      const t = setTimeout(() => setIsSearching(false), 180);
+      return () => clearTimeout(t);
     }
 
     if (homeFilters) {
@@ -292,6 +333,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     } else if (education) {
       setSearchQuery(getCleanSearchTerm(education));
     }
+
+    const t = setTimeout(() => setIsSearching(false), 180);
+    return () => clearTimeout(t);
   }, [route?.params]);
 
   const matchedSuggestions = useMemo(() => {
@@ -502,6 +546,24 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         if (!matchesEdu) return false;
       }
 
+      // 4b. Dynamic Job Role Filter Match
+      if (activeFilters.jobRole && activeFilters.jobRole !== 'All Roles') {
+        const roleTarget = activeFilters.jobRole.toLowerCase();
+        const jobTitle = (job.title || '').toLowerCase();
+        const jobTrade = (job.trade || '').toLowerCase();
+        const jobDesc = (job.description || '').toLowerCase();
+        const roleTokens = roleTarget
+          .split(/[\s/()&,]+/)
+          .map((t) => t.replace(/(s|ing|er|or|ist)$/, ''))
+          .filter((t) => t.length >= 2);
+        const matchesRole =
+          jobTitle.includes(roleTarget) ||
+          jobTrade.includes(roleTarget) ||
+          roleTokens.length === 0 ||
+          roleTokens.some((t) => jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
+        if (!matchesRole) return false;
+      }
+
       // 5. MIDC Zone Filter Match
       if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
         const rawZone = activeFilters.midcZone.toLowerCase();
@@ -544,6 +606,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     return [
       Boolean(activeFilters.industry && activeFilters.industry !== 'All Industries'),
       Boolean(activeFilters.education && activeFilters.education !== 'All Education Levels'),
+      Boolean(activeFilters.jobRole && activeFilters.jobRole !== 'All Roles'),
       Boolean(activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones'),
       Boolean(activeFilters.jobType && activeFilters.jobType !== 'All Types'),
       Boolean(activeFilters.workMode && activeFilters.workMode !== 'All Modes'),
@@ -578,9 +641,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       currentFilters: activeFilters,
       jobs: jobs,
       totalMatchingJobsCount: filteredJobs.length,
-      onApplyFilters: (newFilters: FilterOptions) => {
-        setActiveFilters(newFilters);
-      },
       returnScreen: 'CandidateJobSearch',
     });
   }, [navigation, activeFilters, jobs, filteredJobs.length]);
@@ -678,6 +738,18 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
               </View>
             )}
 
+            {activeFilters.jobRole && activeFilters.jobRole !== 'All Roles' && (
+              <View style={styles.activeFilterTag}>
+                <Wrench size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                  {activeFilters.jobRole}
+                </Text>
+                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, jobRole: 'All Roles' }))}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {activeFilters.minExperience && activeFilters.minExperience !== 'All Experience' && (
               <View style={styles.activeFilterTag}>
                 <Briefcase size={11} color={COLORS.primary} />
@@ -770,104 +842,119 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         </View>
       ) : null}
 
-      <FlatList
-        data={loading && jobs.length === 0 ? [] : filteredJobs}
-        keyExtractor={(item, index) => item?.id ? String(item.id) : `job-${index}`}
-        renderItem={({ item: job, index }) => (
-          <CandidateJobCardItem
-            key={job?.id ? String(job.id) : `job-${index}`}
-            job={job}
-            viewMode={viewMode}
-            isFirst={index === 0}
-            isLast={index === filteredJobs.length - 1}
-            isSaved={savedJobIds.includes(job.id)}
-            onToggleSave={() => handleToggleSave(job.id)}
-            onCompanyPress={(compName) =>
-              navigation.navigate('CompanyProfile', {
-                companyId: (job as any).company_id || (job as any).companyId || compName,
-                name: compName,
-                company: {
-                  name: compName,
-                  logo: job.companyLogo || (job as any).company_logo,
-                  location: job.location,
-                },
-              })
-            }
-            onPress={() =>
-              navigation.navigate('CandidateJobsTab', {
-                screen: 'CandidateJobDetail',
-                params: { jobId: job.id, job },
-              })
-            }
-          />
-        )}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={15}
-        removeClippedSubviews={false}
-        ListHeaderComponent={
-          <View style={styles.resultsInfoRow}>
-            <Text style={styles.resultsCountText}>
-              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> active vacancies
+      {loading || isSearching ? (
+        <View style={styles.searchingLoadingContainer}>
+          <View style={styles.searchingLoadingBadge}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.searchingLoadingText}>
+              Searching vacancies{searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ''}...
             </Text>
           </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={{ gap: 12 }}>
-              <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
-              <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
-            </View>
-          ) : (
-            <View style={styles.emptyStateBox}>
-              <View style={styles.emptyIconCircle}>
-                <SearchX size={26} color="#64748B" strokeWidth={2} />
-              </View>
-              <Text style={styles.emptyTitle}>No Matching Job Vacancies Found</Text>
-              <Text style={styles.emptySub}>
-                {searchQuery.trim()
-                  ? `No active industrial vacancies matched "${searchQuery.trim()}".`
-                  : 'No vacancies match your currently selected industry or zone filters.'}
+          <View style={{ gap: 12, paddingHorizontal: 16, marginTop: 8 }}>
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
+          </View>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredJobs}
+          keyExtractor={(item, index) => item?.id ? String(item.id) : `job-${index}`}
+          renderItem={({ item: job, index }) => (
+            <CandidateJobCardItem
+              key={job?.id ? String(job.id) : `job-${index}`}
+              job={job}
+              viewMode={viewMode}
+              isFirst={index === 0}
+              isLast={index === filteredJobs.length - 1}
+              isSaved={savedJobIds.includes(job.id)}
+              onToggleSave={() => handleToggleSave(job.id)}
+              onCompanyPress={(compName) =>
+                navigation.navigate('CompanyProfile', {
+                  companyId: (job as any).company_id || (job as any).companyId || compName,
+                  name: compName,
+                  company: {
+                    name: compName,
+                    logo: job.companyLogo || (job as any).company_logo,
+                    location: job.location,
+                  },
+                })
+              }
+              onPress={() =>
+                navigation.navigate('CandidateJobsTab', {
+                  screen: 'CandidateJobDetail',
+                  params: { jobId: job.id, job },
+                })
+              }
+            />
+          )}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={15}
+          removeClippedSubviews={false}
+          ListHeaderComponent={
+            <View style={styles.resultsInfoRow}>
+              <Text style={styles.resultsCountText}>
+                Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> active vacancies
               </Text>
-
-              <View style={styles.emptyTipsCard}>
-                <Text style={styles.emptyTipsTitle}>SUGGESTED ACTIONS</Text>
-                <Text style={styles.emptyTipRow}>• Broaden or clear specific filters like salary, experience, or shifts</Text>
-                <Text style={styles.emptyTipRow}>• Check for alternate keywords (e.g., "Operator", "Technician", "Machinist")</Text>
-                <Text style={styles.emptyTipRow}>• Explore nearby MIDC industrial areas</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.resetFilterBtn}
-                activeOpacity={0.85}
-                onPress={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('All Jobs');
-                  setActiveFilters({
-                    industry: 'All Industries',
-                    jobType: 'All Types',
-                    workMode: 'All Modes',
-                    minExperience: 'All Experience',
-                    salaryMin: 0,
-                    midcZone: 'All MIDC Zones',
-                    busFacility: false,
-                    canteen: false,
-                    accommodation: false,
-                    overtime: false,
-                  });
-                }}
-              >
-                <RotateCcw size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.resetFilterBtnText}>Reset Search & Filters</Text>
-              </TouchableOpacity>
             </View>
-          )
-        }
-        ListFooterComponent={<View style={{ height: 32 }} />}
-      />
+          }
+          ListEmptyComponent={
+            loading ? (
+              <View style={{ gap: 12 }}>
+                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+              </View>
+            ) : (
+              <View style={styles.emptyStateBox}>
+                <View style={styles.emptyIconCircle}>
+                  <SearchX size={26} color="#64748B" strokeWidth={2} />
+                </View>
+                <Text style={styles.emptyTitle}>No Matching Job Vacancies Found</Text>
+                <Text style={styles.emptySub}>
+                  {searchQuery.trim()
+                    ? `No active industrial vacancies matched "${searchQuery.trim()}".`
+                    : 'No vacancies match your currently selected industry or zone filters.'}
+                </Text>
+
+                <View style={styles.emptyTipsCard}>
+                  <Text style={styles.emptyTipsTitle}>SUGGESTED ACTIONS</Text>
+                  <Text style={styles.emptyTipRow}>• Broaden or clear specific filters like salary, experience, or shifts</Text>
+                  <Text style={styles.emptyTipRow}>• Check for alternate keywords (e.g., "Operator", "Technician", "Machinist")</Text>
+                  <Text style={styles.emptyTipRow}>• Explore nearby MIDC industrial areas</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.resetFilterBtn}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('All Jobs');
+                    setActiveFilters({
+                      industry: 'All Industries',
+                      jobType: 'All Types',
+                      workMode: 'All Modes',
+                      minExperience: 'All Experience',
+                      salaryMin: 0,
+                      midcZone: 'All MIDC Zones',
+                      busFacility: false,
+                      canteen: false,
+                      accommodation: false,
+                      overtime: false,
+                    });
+                  }}
+                >
+                  <Text style={styles.resetFilterBtnText}>Reset All Filters</Text>
+                </TouchableOpacity>
+              </View>
+            )
+          }
+          ListFooterComponent={<View style={{ height: 32 }} />}
+        />
+      )}
     </View>
   );
 };
@@ -1026,5 +1113,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#DC2626',
+  },
+  searchingLoadingContainer: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  searchingLoadingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginBottom: 4,
+  },
+  searchingLoadingText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });

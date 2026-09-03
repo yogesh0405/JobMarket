@@ -12,13 +12,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, ShieldCheck, Share2 } from 'lucide-react-native';
 import { ExtendedCandidate, safeString } from './components/CandidatesUtils';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { COLORS, RADIUS } from '../../constants/theme';
 import { extractCandidateResume } from '../../utils/fileUtils';
+import { shareCandidate } from '../../utils/shareUtils';
 import { ApplicantDetailCandidateTab } from '../jobs/components/ApplicantDetailCandidateTab';
 import { apiFetch } from '../../api/client';
 
@@ -126,6 +127,12 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
     },
   };
 
+  const isVerified = Boolean(candidate.verified || candidate.aadhaar_verified);
+  const rawName = (candidate.name || '').trim();
+  const nameParts = rawName.split(/\s+/).filter(Boolean);
+  const leadingName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : '';
+  const lastWord = nameParts.length > 0 ? nameParts[nameParts.length - 1] : rawName;
+
   return (
     <View style={styles.mainContainer}>
       <FocusAwareStatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
@@ -145,7 +152,7 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
           end={{ x: 0.8, y: 1 }}
           style={[styles.detailHeaderBanner, { paddingTop: topInset + 10 }]}
         >
-          {/* Hero Candidate Info Block with Back Button at Left of Profile Picture */}
+          {/* Hero Candidate Info Block with Back Button at Left and Share Button at Top Right */}
           <View style={styles.heroInfoRow}>
             {/* Clean Back Button on the Left of Profile Pic with No Background */}
             <TouchableOpacity
@@ -166,20 +173,42 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
             />
             <View style={styles.heroTextCol}>
               <View style={styles.nameRow}>
-                <Text style={styles.candidateNameText} numberOfLines={1}>
-                  {candidate.name}
-                </Text>
-                {candidate.verified || candidate.aadhaar_verified ? (
-                  <ShieldCheck size={16} color="#4ADE80" strokeWidth={2.5} />
+                {leadingName ? (
+                  <Text style={styles.candidateNameText}>
+                    {leadingName}{' '}
+                  </Text>
                 ) : null}
+                <View style={styles.lastWordBadgeGroup}>
+                  <Text style={styles.candidateNameText}>
+                    {lastWord}
+                  </Text>
+                  {isVerified && (
+                    <ShieldCheck size={16} color="#4ADE80" strokeWidth={2.5} style={styles.verifiedBadgeIcon} />
+                  )}
+                </View>
               </View>
-              <Text style={styles.candidateRoleText} numberOfLines={1}>
+              <Text style={styles.candidateRoleText} numberOfLines={2}>
                 {safeString(candidate.trade_specialization || candidate.title, 'Industrial Technical Specialist')}
               </Text>
-              <Text style={styles.candidateLocText} numberOfLines={1}>
-                {safeString(candidate.location, 'Chhatrapati Sambhajinagar')}
-              </Text>
             </View>
+
+            {/* Share Button at Top Right Corner */}
+            <TouchableOpacity
+              onPress={() => {
+                const cid = candidate.id || candidateId || '';
+                shareCandidate({
+                  id: cid,
+                  name: candidate.name || 'Candidate',
+                  trade: candidate.trade_specialization || candidate.tradeSpecialization || candidate.title,
+                  location: candidate.location || candidate.city,
+                });
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.headerShareBtn}
+              activeOpacity={0.7}
+            >
+              <Share2 size={16} color="#FFFFFF" strokeWidth={2.2} />
+            </TouchableOpacity>
           </View>
         </LinearGradient>
 
@@ -231,6 +260,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 2,
   },
+  headerShareBtn: {
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
   heroInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -243,28 +278,33 @@ const styles = StyleSheet.create({
   heroTextCol: {
     flex: 1,
     justifyContent: 'center',
+    paddingRight: 4,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    flexWrap: 'wrap',
+    marginBottom: 3,
+  },
+  lastWordBadgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedBadgeIcon: {
+    marginLeft: 4,
   },
   candidateNameText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
+    lineHeight: 22,
   },
   candidateRoleText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '500',
     color: '#EFF6FF',
-    marginBottom: 2,
-  },
-  candidateLocText: {
-    fontSize: 11.5,
-    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 17,
   },
   emptyContainer: {
     flex: 1,
