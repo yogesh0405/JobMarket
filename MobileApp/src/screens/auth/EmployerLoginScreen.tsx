@@ -269,12 +269,11 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const safeTopPadding = Math.max(
-    insets.top,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 16
-  ) + 2;
-  const safeBottomPadding = Math.max(insets.bottom, 10) + 4;
-  const targetCardHeight = Math.max(700, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 900));
+  const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : insets.top;
+  const safeTopPadding = Math.max(insets.top, statusBarHeight) + 14;
+  const safeBottomPadding = Math.max(insets.bottom, 16) + 14;
+  const availableHeight = screenHeight - safeTopPadding - safeBottomPadding;
+  const targetCardHeight = Math.max(580, Math.min(availableHeight - 12, 730));
 
   return (
     <KeyboardAvoidingView
@@ -552,7 +551,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroImageContainer: {
-    height: 175,
+    height: 160,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
@@ -751,7 +750,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginTop: 20,
+    marginBottom: 28,
   },
   orDividerLine: {
     flex: 1,

@@ -140,12 +140,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
     }
   };
 
-  const safeTopPadding = Math.max(
-    insets.top,
-    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 12
-  );
-  const safeBottomPadding = Math.max(insets.bottom, 6);
-  const targetCardHeight = Math.max(740, Math.min(screenHeight - safeTopPadding - safeBottomPadding, 960));
+  const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : insets.top;
+  const safeTopPadding = Math.max(insets.top, statusBarHeight) + 8;
+  const safeBottomPadding = Math.max(insets.bottom, 12) + 8;
+  const availableHeight = screenHeight - safeTopPadding - safeBottomPadding;
+  const targetCardHeight = Math.max(680, Math.min(availableHeight - 4, 850));
 
   return (
     <KeyboardAvoidingView
@@ -347,7 +346,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             </View>
 
             {/* Input: Confirm Password */}
-            <View style={styles.inputGroup}>
+            <View style={[styles.inputGroup, styles.confirmPasswordGroup]}>
               <Text style={styles.inputLabel}>
                 Confirm Password<Text style={{ color: '#EF4444' }}>*</Text>
               </Text>
@@ -500,7 +499,7 @@ const styles = StyleSheet.create({
   signupPromptRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   promptText: {
     fontSize: 12,
@@ -518,8 +517,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderRadius: 10,
     padding: 3,
-    marginTop: 10,
-    marginBottom: 39,
+    marginTop: 6,
+    marginBottom: 14,
     height: 40,
   },
   roleSegmentTab: {
@@ -550,6 +549,9 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 10,
+  },
+  confirmPasswordGroup: {
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 11.5,
@@ -610,7 +612,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginTop: 2,
+    marginBottom: 6,
   },
   orDividerLine: {
     flex: 1,
