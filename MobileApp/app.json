@@ -70,6 +70,7 @@
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
+      "./plugins/withMavenMirror.js",
       [
         "expo-image-picker",
         {
