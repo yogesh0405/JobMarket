@@ -35,12 +35,11 @@ export const handleFocusInput = (
           scrollTag,
           () => {},
           (x, y, width, height) => {
-            // Upper inputs (y < 160) are already comfortably visible above keyboard, no jump needed
-            if (y < 160) {
-              return;
-            }
-            // For lower inputs, gently scroll just enough so the field sits directly above keyboard
-            const targetY = Math.max(0, y - 100 + extraScrollMargin);
+            // For screens with large fixed bottom actions, keep high clearance (extraScrollMargin > 50)
+            // For auth screens and standard forms, smoothly scroll focused field into upper viewport
+            const targetY = extraScrollMargin > 50
+              ? Math.max(0, y - 100 + extraScrollMargin)
+              : Math.max(0, y - 36);
             scrollRef.current?.scrollTo({ y: targetY, animated: true });
           }
         );
@@ -48,7 +47,7 @@ export const handleFocusInput = (
     } catch (e) {
       // Fallback
     }
-  }, Platform.OS === 'ios' ? 60 : 100);
+  }, Platform.OS === 'ios' ? 70 : 130);
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(

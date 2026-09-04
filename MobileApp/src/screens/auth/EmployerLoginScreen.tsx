@@ -274,12 +274,11 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const safeBottomPadding = Math.max(insets.bottom, 16) + 14;
   const availableHeight = screenHeight - safeTopPadding - safeBottomPadding;
   const targetCardHeight = Math.max(580, Math.min(availableHeight - 12, 730));
+  const spaceAboveKeyboard = screenHeight - safeTopPadding - keyboardHeight - 12;
+  const activeCardHeight = keyboardHeight > 0 ? Math.max(260, Math.min(spaceAboveKeyboard, targetCardHeight)) : targetCardHeight;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       <View
@@ -287,12 +286,13 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
-            paddingBottom: safeBottomPadding,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 12 : safeBottomPadding,
+            justifyContent: keyboardHeight > 0 ? 'flex-start' : 'center',
           },
         ]}
       >
         {/* SINGLE UNIFIED OUTER CARD (CONTAINING IMAGE & FORM) */}
-        <View style={[styles.unifiedCard, { height: targetCardHeight }]}>
+        <View style={[styles.unifiedCard, { height: activeCardHeight }]}>
           {/* TOP HERO BANNER IMAGE (FIXED) */}
           <View style={styles.heroImageContainer}>
             <ImageBackground
@@ -320,7 +320,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             style={styles.scrollableFormArea}
             contentContainerStyle={[
               styles.cardBody,
-              { paddingBottom: keyboardHeight > 0 ? 36 : 28 },
+              { paddingBottom: keyboardHeight > 0 ? 120 : 28 },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -374,6 +374,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                 placeholder="Email Address"
                 placeholderTextColor="#94A3B8"
                 value={email}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -402,7 +403,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 15)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -521,7 +522,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         buttonText="Sign in Now"
         onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroImageContainer: {
-    height: 160,
+    height: 150,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,

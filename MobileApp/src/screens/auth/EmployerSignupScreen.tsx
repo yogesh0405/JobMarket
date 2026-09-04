@@ -141,16 +141,15 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : insets.top;
-  const safeTopPadding = Math.max(insets.top, statusBarHeight) + 8;
-  const safeBottomPadding = Math.max(insets.bottom, 12) + 8;
+  const safeTopPadding = Math.max(insets.top, statusBarHeight) + 14;
+  const safeBottomPadding = Math.max(insets.bottom, 16) + 14;
   const availableHeight = screenHeight - safeTopPadding - safeBottomPadding;
-  const targetCardHeight = Math.max(680, Math.min(availableHeight - 4, 850));
+  const targetCardHeight = Math.max(580, Math.min(availableHeight - 12, 730));
+  const spaceAboveKeyboard = screenHeight - safeTopPadding - keyboardHeight - 12;
+  const activeCardHeight = keyboardHeight > 0 ? Math.max(260, Math.min(spaceAboveKeyboard, targetCardHeight)) : targetCardHeight;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       <View
@@ -158,18 +157,19 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           styles.mainWrapper,
           {
             paddingTop: safeTopPadding,
-            paddingBottom: safeBottomPadding,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 12 : safeBottomPadding,
+            justifyContent: keyboardHeight > 0 ? 'flex-start' : 'center',
           },
         ]}
       >
         {/* SINGLE UNIFIED OUTER CARD - IDENTICAL HEIGHT TO LOGIN */}
-        <View style={[styles.unifiedCard, { height: targetCardHeight }]}>
+        <View style={[styles.unifiedCard, { height: activeCardHeight }]}>
           {/* TOP HERO BANNER IMAGE (FIXED) */}
           <View style={styles.heroImageContainer}>
             <ImageBackground
               source={require('../../../assets/auth_group_banner.jpg')}
               style={styles.heroImage}
-              imageStyle={styles.heroImageInner}
+              resizeMode="cover"
             >
               <LinearGradient
                 colors={['rgba(15, 23, 42, 0.05)', 'rgba(15, 23, 42, 0.6)', 'rgba(15, 23, 42, 0.92)']}
@@ -191,7 +191,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             style={styles.scrollableFormArea}
             contentContainerStyle={[
               styles.cardBody,
-              { paddingBottom: keyboardHeight > 0 ? 36 : 28 },
+              { paddingBottom: keyboardHeight > 0 ? 120 : 28 },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -248,6 +248,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholder="Ramesh Sharma"
                   placeholderTextColor="#94A3B8"
                   value={name}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                   onChangeText={(t) => {
                     setName(t);
                     if (error) setError(null);
@@ -266,6 +267,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholder="candidate@email.com"
                 placeholderTextColor="#94A3B8"
                 value={email}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                 onChangeText={(t) => {
                   setEmail(t);
                   if (error) setError(null);
@@ -286,7 +288,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 placeholderTextColor="#94A3B8"
                 value={phone}
                 maxLength={10}
-                onFocus={(e) => handleFocusInput(e, scrollViewRef, 10)}
+                onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                 onChangeText={(t) => {
                   const cleaned = t.replace(/[^0-9]/g, '').slice(0, 10);
                   setPhone(cleaned);
@@ -307,7 +309,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholder="Tata Motors Ltd / Endurance"
                   placeholderTextColor="#94A3B8"
                   value={companyName}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 10)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                   onChangeText={(t) => {
                     setCompanyName(t);
                     if (error) setError(null);
@@ -328,7 +330,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showPassword}
                   value={password}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 20)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                   onChangeText={(t) => {
                     setPassword(t);
                     if (error) setError(null);
@@ -357,7 +359,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showConfirmPassword}
                   value={confirmPassword}
-                  onFocus={(e) => handleFocusInput(e, scrollViewRef, 20)}
+                  onFocus={(e) => handleFocusInput(e, scrollViewRef)}
                   onChangeText={(t) => {
                     setConfirmPassword(t);
                     if (error) setError(null);
@@ -410,7 +412,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           </ScrollView>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -440,11 +442,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   heroImageContainer: {
-    height: 125,
+    height: 150,
     width: '100%',
     backgroundColor: '#0F172A',
     flexShrink: 0,
-    overflow: 'hidden',
   },
   scrollableFormArea: {
     flex: 1,
@@ -453,19 +454,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  heroImageInner: {
-    resizeMode: 'cover',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 175,
-  },
   heroGradient: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
   },
   heroTextContainer: {
     gap: 3,
