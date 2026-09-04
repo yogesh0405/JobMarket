@@ -6,3 +6,6 @@ ios/
 web-build/
 dist/
 *.log
+.git/
+*_backup.*
+*.bak
