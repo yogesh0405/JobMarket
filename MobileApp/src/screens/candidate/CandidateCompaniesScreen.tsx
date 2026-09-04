@@ -69,7 +69,10 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
       if (route?.params?.appliedCompanyFilters) {
         setFilters(route.params.appliedCompanyFilters);
       }
-    }, [route?.params?.appliedCompanyFilters])
+      if (route?.params?.searchQuery !== undefined) {
+        setSearchQuery(route.params.searchQuery);
+      }
+    }, [route?.params?.appliedCompanyFilters, route?.params?.searchQuery])
   );
 
   const handleOpenFilterScreen = (tabKey: string = 'LOCATION') => {
@@ -339,10 +342,10 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
       <Header
         searchPlaceholder="Search companies by name, MIDC zone, sector..."
         searchValue={searchQuery}
-        onSearchPress={() => {
-          navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
-        }}
+        onSearchChange={setSearchQuery}
         onClearSearch={resetAllFilters}
+        onFilterPress={() => handleOpenFilterScreen('LOCATION')}
+        activeFilterCount={activeFilterCount}
         showBack={false}
       />
 

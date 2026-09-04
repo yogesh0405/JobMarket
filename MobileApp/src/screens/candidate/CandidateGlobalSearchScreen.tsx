@@ -60,7 +60,9 @@ interface Props {
 
 export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const initialQuery = route?.params?.initialQuery || '';
+  const initialCategory = route?.params?.initialCategory || 'all';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [activeCategory, setActiveCategory] = useState<'all' | 'jobs' | 'companies'>(initialCategory);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
@@ -160,7 +162,29 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     Keyboard.dismiss();
     setSearchQuery(trimmed);
 
-    // Synchronously broadcast search query so target screen filters immediately
+    // If searching specifically in companies or term matches a company name exactly
+    const exactCompany = allCompanies.find(
+      (c) => (c.name || c.company_name || c.company || '').toLowerCase().trim() === trimmed.toLowerCase()
+    );
+
+    if (activeCategory === 'companies' || exactCompany) {
+      if (exactCompany) {
+        handleCompanyClick(exactCompany);
+        return;
+      }
+      // Navigate to Companies section with search filter
+      try {
+        navigation.navigate('CandidateMain', {
+          screen: 'CandidateSavedTab',
+          params: { searchQuery: trimmed },
+        });
+      } catch (_) {
+        navigation.navigate('CandidateSavedTab', { searchQuery: trimmed });
+      }
+      return;
+    }
+
+    // Otherwise, for jobs, roles, trades, or general queries: navigate to Find Jobs section
     DeviceEventEmitter.emit('GLOBAL_SEARCH_EXECUTE', { keyword: trimmed });
 
     try {
@@ -290,43 +314,49 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
     // 1. Matching Live Jobs (Deduplicated by ID)
     const seenJobIds = new Set<string>();
     const matchedJobs: Job[] = [];
-    for (const j of allJobs) {
-      if (!j || !j.id || seenJobIds.has(j.id)) continue;
-      const titleMatch = (j.title || '').toLowerCase().includes(q);
-      const compMatch = (j.company || '').toLowerCase().includes(q);
-      const indMatch = (j.industry || '').toLowerCase().includes(q);
-      const tradeMatch = (j.trade || '').toLowerCase().includes(q);
-      const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
-      if (titleMatch || compMatch || indMatch || tradeMatch || skillsMatch) {
-        seenJobIds.add(j.id);
-        matchedJobs.push(j);
-        if (matchedJobs.length >= 4) break;
+    if (activeCategory !== 'companies') {
+      for (const j of allJobs) {
+        if (!j || !j.id || seenJobIds.has(j.id)) continue;
+        const titleMatch = (j.title || '').toLowerCase().includes(q);
+        const compMatch = (j.company || '').toLowerCase().includes(q);
+        const indMatch = (j.industry || '').toLowerCase().includes(q);
+        const tradeMatch = (j.trade || '').toLowerCase().includes(q);
+        const skillsMatch = Array.isArray(j.skills) && j.skills.some((s) => s.toLowerCase().includes(q));
+        if (titleMatch || compMatch || indMatch || tradeMatch || skillsMatch) {
+          seenJobIds.add(j.id);
+          matchedJobs.push(j);
+          if (matchedJobs.length >= 8) break;
+        }
       }
     }
 
     // 2. Standalone Matching Companies & Factories (Deduplicated by ID/Name)
     const seenCompKeys = new Set<string>();
     const matchedCompanies: any[] = [];
-    for (const c of allCompanies) {
-      if (!c) continue;
-      const cKey = ((c.id || '') + (c.name || c.company_name || '')).toLowerCase().trim();
-      if (!cKey || seenCompKeys.has(cKey)) continue;
-      const nameMatch = (c.name || c.company_name || c.company || '').toLowerCase().includes(q);
-      const indMatch = (c.industry || '').toLowerCase().includes(q);
-      const locMatch = (c.city || c.location || c.midc_zone || '').toLowerCase().includes(q);
-      const aboutMatch = (c.about || c.description || '').toLowerCase().includes(q);
-      if (nameMatch || indMatch || locMatch || aboutMatch) {
-        seenCompKeys.add(cKey);
-        matchedCompanies.push(c);
-        if (matchedCompanies.length >= 4) break;
+    if (activeCategory !== 'jobs') {
+      for (const c of allCompanies) {
+        if (!c) continue;
+        const cKey = ((c.id || '') + (c.name || c.company_name || '')).toLowerCase().trim();
+        if (!cKey || seenCompKeys.has(cKey)) continue;
+        const nameMatch = (c.name || c.company_name || c.company || '').toLowerCase().includes(q);
+        const indMatch = (c.industry || '').toLowerCase().includes(q);
+        const locMatch = (c.city || c.location || c.midc_zone || '').toLowerCase().includes(q);
+        const aboutMatch = (c.about || c.description || '').toLowerCase().includes(q);
+        if (nameMatch || indMatch || locMatch || aboutMatch) {
+          seenCompKeys.add(cKey);
+          matchedCompanies.push(c);
+          if (matchedCompanies.length >= 8) break;
+        }
       }
     }
 
     // 3. Matching Trades
-    const matchedTrades = TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 3);
+    const matchedTrades = activeCategory === 'companies'
+      ? []
+      : TRENDING_ROLES.filter((t) => t.toLowerCase().includes(q)).slice(0, 4);
 
     // 4. Matching Locations
-    const matchedLocations = TRENDING_LOCATIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 3);
+    const matchedLocations = TRENDING_LOCATIONS.filter((l) => l.toLowerCase().includes(q)).slice(0, 4);
 
     return {
       jobs: matchedJobs,
@@ -334,7 +364,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
       trades: matchedTrades,
       locations: matchedLocations,
     };
-  }, [searchQuery, allJobs, allCompanies]);
+  }, [searchQuery, allJobs, allCompanies, activeCategory]);
 
   const hasLiveQuery = searchQuery.trim().length > 0;
   const hasAnySuggestions =
@@ -363,7 +393,13 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
           <TextInput
             ref={searchInputRef}
             style={styles.searchInput}
-            placeholder="Search jobs, companies, skills, locations..."
+            placeholder={
+              activeCategory === 'companies'
+                ? 'Search companies, factories, MIDC zones...'
+                : activeCategory === 'jobs'
+                ? 'Search jobs, trades, roles, skills...'
+                : 'Search jobs, companies, skills, locations...'
+            }
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -392,6 +428,26 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
             <Text style={styles.searchActionBtnText}>Search</Text>
           </TouchableOpacity>
         ) : null}
+      </View>
+
+      {/* Scope Category Filter Tabs: All, Jobs, Companies */}
+      <View style={styles.categoryTabsRow}>
+        {(['all', 'jobs', 'companies'] as const).map((cat) => {
+          const isActive = activeCategory === cat;
+          const label = cat === 'all' ? 'All' : cat === 'jobs' ? 'Jobs' : 'Companies';
+          return (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.categoryTabPill, isActive && styles.categoryTabPillActive]}
+              onPress={() => setActiveCategory(cat)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.categoryTabLabel, isActive && styles.categoryTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -484,7 +540,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                     <TouchableOpacity
                       key={`match-comp-${comp.id || compName}-${idx}`}
                       style={styles.searchRow}
-                      onPress={() => handleExecuteSearch(compName)}
+                      onPress={() => handleCompanyClick(comp)}
                       activeOpacity={0.65}
                     >
                       <CompanyLogoAvatar
@@ -543,6 +599,18 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                     </TouchableOpacity>
                   );
                 })}
+
+                <TouchableOpacity
+                  style={styles.viewAllMatchingBtn}
+                  onPress={() => handleExecuteSearch(searchQuery)}
+                  activeOpacity={0.7}
+                >
+                  <Briefcase size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.viewAllMatchingText} numberOfLines={1}>
+                    Search all jobs matching "{searchQuery.trim()}" in Find Jobs
+                  </Text>
+                  <ArrowUpRight size={14} color={COLORS.primary} />
+                </TouchableOpacity>
               </View>
             ) : null}
 
@@ -940,5 +1008,51 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  categoryTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  categoryTabPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 0,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  categoryTabPillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryTabLabel: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  categoryTabLabelActive: {
+    color: '#FFFFFF',
+  },
+  viewAllMatchingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginTop: 8,
+  },
+  viewAllMatchingText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });
