@@ -926,13 +926,14 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
         </View>
       </KeyboardAvoidingView>
 
-      {/* Selection Bottom Sheet Modal */}
+      {/* Selection Center Dialog Modal */}
       {pickerInfo ? (
         <Modal
           visible={Boolean(pickerModalType)}
           transparent
           animationType="fade"
           onRequestClose={() => setPickerModalType(null)}
+          statusBarTranslucent={true}
         >
           <TouchableOpacity
             style={styles.pickerModalOverlay}
@@ -942,12 +943,23 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
             <View style={styles.pickerModalContent} onStartShouldSetResponder={() => true}>
               <View style={styles.pickerModalHeader}>
                 <Text style={styles.pickerModalTitle}>{pickerInfo.title}</Text>
-                <TouchableOpacity onPress={() => setPickerModalType(null)} style={styles.pickerModalCloseBtn}>
+                <TouchableOpacity
+                  onPress={() => setPickerModalType(null)}
+                  style={styles.pickerModalCloseBtn}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.7}
+                >
                   <X size={18} color="#64748B" />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={styles.pickerModalList} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                style={styles.pickerModalList}
+                contentContainerStyle={styles.pickerModalListContent}
+                showsVerticalScrollIndicator={true}
+                keyboardShouldPersistTaps="handled"
+                bounces={true}
+              >
                 {pickerInfo.options.map((opt, idx) => {
                   const isSelected = pickerInfo.selected === opt;
                   return (
@@ -963,7 +975,7 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
                       <Text style={[styles.pickerOptionText, isSelected && styles.pickerOptionTextSelected]}>
                         {opt}
                       </Text>
-                      {isSelected ? <Check size={16} color="#2563EB" strokeWidth={2.5} /> : null}
+                      {isSelected ? <Check size={18} color="#1764E8" strokeWidth={2.4} /> : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -1231,43 +1243,64 @@ const styles = StyleSheet.create({
   },
   pickerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 32,
   },
   pickerModalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    width: '100%',
+    maxWidth: 400,
     maxHeight: '75%',
-    paddingBottom: 24,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    overflow: 'hidden',
   },
   pickerModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
   pickerModalTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#0F172A',
+    letterSpacing: -0.2,
   },
   pickerModalCloseBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EDF2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pickerModalList: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    maxHeight: 360,
+  },
+  pickerModalListContent: {
+    paddingVertical: 4,
   },
   pickerOptionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    minHeight: 48,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -1281,7 +1314,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickerOptionTextSelected: {
-    color: '#2563EB',
+    color: '#1764E8',
     fontWeight: '700',
   },
 });

@@ -8,6 +8,7 @@ import {
   Switch,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {
   KeyRound,
@@ -396,7 +397,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom + 120, 160) },
+          { paddingBottom: Math.max(insets.bottom || 0, 24) + 40 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -679,9 +680,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           ) : null}
         </View>
-
-        {/* Bottom Navigation Clearance Spacer */}
-        <View style={{ height: Math.max(insets.bottom + 24, 48) }} />
       </KeyboardAwareScrollView>
 
       {/* Password Modals Component */}

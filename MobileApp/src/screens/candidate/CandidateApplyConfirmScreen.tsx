@@ -33,7 +33,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { candidateApi } from '../../api/candidateApi';
 import { COLORS, RADIUS } from '../../constants/theme';
-import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { SuccessModal } from '../../components/common/SuccessModal';
 import { isRemoteHttpUrl } from '../../utils/fileUploadHelper';
@@ -202,14 +201,14 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
   // Missing Info Items
   const missingItems: { label: string; detail: string; step: number }[] = [];
-  if (!phoneVal) missingItems.push({ label: 'Phone Contact', detail: 'Phone contact number missing', step: 1 });
-  if (!locationVal) missingItems.push({ label: 'Location / City', detail: 'Current location / city not specified', step: 1 });
-  if (!tradeVal) missingItems.push({ label: 'Primary Trade', detail: 'Primary trade specialization not configured', step: 1 });
+  if (!phoneVal) missingItems.push({ label: 'Phone Contact', detail: 'Phone contact number not provided', step: 1 });
+  if (!locationVal) missingItems.push({ label: 'Location / City', detail: 'Location not provided', step: 1 });
+  if (!tradeVal) missingItems.push({ label: 'Primary Trade', detail: 'Primary trade specialization not provided', step: 1 });
   if (!educationVal) missingItems.push({ label: 'Education', detail: 'Education qualification not provided', step: 2 });
-  if (!expVal && expList.length === 0) missingItems.push({ label: 'Work Experience', detail: 'Work experience history not added', step: 3 });
-  if (skillsList.length === 0) missingItems.push({ label: 'Technical Skills', detail: 'No technical skills added (minimum 5 recommended)', step: 4 });
+  if (!expVal && expList.length === 0) missingItems.push({ label: 'Work Experience', detail: 'Work experience not provided', step: 3 });
+  if (skillsList.length === 0) missingItems.push({ label: 'Technical Skills', detail: 'Technical skills not provided', step: 4 });
   else if (skillsList.length < 5) missingItems.push({ label: 'Technical Skills', detail: `Only ${skillsList.length}/5 recommended technical skills added`, step: 4 });
-  if (!hasResume) missingItems.push({ label: 'Resume Document', detail: 'Resume document not uploaded', step: 4 });
+  if (!hasResume) missingItems.push({ label: 'Resume Document', detail: 'Resume document not provided', step: 4 });
 
   const getTargetStepForMissingInfo = () => {
     if (missingItems.length > 0) {
@@ -280,17 +279,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     );
   }
 
-  // Format Salary Range
-  const salaryText = job.salaryMin && job.salaryMax
-    ? `₹${job.salaryMin} - ₹${job.salaryMax} / mo`
-    : job.salaryMin
-    ? `₹${job.salaryMin} / mo`
-    : 'Salary Negotiable';
-
-  // Format Experience Range
-  const expReqText = job.minExperience !== undefined && job.maxExperience !== undefined
-    ? `${job.minExperience} - ${job.maxExperience} Years Exp`
-    : '0 - 3 Years Exp';
+  const bottomSafePadding = Math.max(insets.bottom || 0, 16) + 24;
 
   return (
     <View style={styles.container}>
@@ -317,117 +306,81 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + bottomSafePadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* CANDIDATE PROFILE CARD (Comprehensive Profile Fields) */}
-        <View style={styles.profileCardContainer}>
-          {/* Card Header */}
-          <View style={styles.profileCardTitleRow}>
-            <User size={18} color={COLORS.primary} />
-            <Text style={styles.profileCardTitle}>Candidate Profile Details</Text>
-          </View>
-
-          <View style={styles.fieldBlocksList}>
+        {/* CANDIDATE PROFILE DETAILS (FULL PAGE CLEAN LIST) */}
+        <View style={styles.profileSection}>
+          {/* Fields List */}
+          <View style={styles.fieldsList}>
             {/* 1. Full Name */}
-            <View style={styles.fieldBlock}>
+            <View style={styles.fieldRow}>
               <Text style={styles.fieldBlockLabel}>FULL NAME</Text>
-              <Text style={styles.fieldBlockValue}>{nameVal}</Text>
+              <Text style={styles.fieldBlockValue}>{nameVal || 'Not provided'}</Text>
             </View>
 
             {/* 2. Email Address */}
-            <View style={styles.fieldBlock}>
+            <View style={styles.fieldRow}>
               <Text style={styles.fieldBlockLabel}>EMAIL ADDRESS</Text>
               <Text style={styles.fieldBlockValue}>{emailVal || 'Not provided'}</Text>
             </View>
 
             {/* 3. Phone Contact */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>PHONE CONTACT</Text>
-                {!phoneVal ? (
-                  <Text style={styles.missingInlineText}>• Not Provided</Text>
-                ) : null}
-              </View>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>PHONE CONTACT</Text>
               <Text style={[styles.fieldBlockValue, !phoneVal && styles.fieldBlockValueMissing]}>
                 {phoneVal || 'Not provided'}
               </Text>
             </View>
 
             {/* 4. Location / City & MIDC Zone */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>LOCATION / MIDC ZONE</Text>
-                {!locationVal && !midcZoneVal ? (
-                  <Text style={styles.missingInlineText}>• Not Specified</Text>
-                ) : null}
-              </View>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>LOCATION / MIDC ZONE</Text>
               <Text style={[styles.fieldBlockValue, !locationVal && !midcZoneVal && styles.fieldBlockValueMissing]}>
-                {[locationVal, midcZoneVal].filter(Boolean).join(', ') || 'Not specified'}
+                {[locationVal, midcZoneVal].filter(Boolean).join(', ') || 'Not provided'}
               </Text>
             </View>
 
             {/* 5. Primary Trade / Specialization */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>PRIMARY TRADE</Text>
-                {!tradeVal ? (
-                  <Text style={styles.missingInlineText}>• Not Configured</Text>
-                ) : null}
-              </View>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>PRIMARY TRADE</Text>
               <Text style={[styles.fieldBlockValue, !tradeVal && styles.fieldBlockValueMissing]}>
-                {tradeVal || 'Not configured'}
+                {tradeVal || 'Not provided'}
               </Text>
             </View>
 
             {/* 6. Work Experience */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>TOTAL WORK EXPERIENCE</Text>
-                {!expVal && expList.length === 0 ? (
-                  <Text style={styles.missingInlineText}>• Not Added</Text>
-                ) : null}
-              </View>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>TOTAL WORK EXPERIENCE</Text>
               <Text style={[styles.fieldBlockValue, !expVal && expList.length === 0 && styles.fieldBlockValueMissing]}>
-                {expVal || 'No work experience records added'}
+                {expVal || (expList.length > 0 ? `${expList.length} records` : 'Not provided')}
               </Text>
             </View>
 
             {/* 7. Highest Education */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>HIGHEST EDUCATION</Text>
-                {!educationVal ? (
-                  <Text style={styles.missingInlineText}>• Not Specified</Text>
-                ) : null}
-              </View>
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>HIGHEST EDUCATION</Text>
               <Text style={[styles.fieldBlockValue, !educationVal && styles.fieldBlockValueMissing]}>
-                {educationVal || 'Not specified'}
+                {educationVal || 'Not provided'}
               </Text>
             </View>
 
-            {/* 8. Technical Skills (Clean text list format) */}
-            <View style={styles.fieldBlock}>
-              <View style={styles.fieldBlockHeaderRow}>
-                <Text style={styles.fieldBlockLabel}>TECHNICAL SKILLS</Text>
-                {skillsList.length < 5 ? (
-                  <Text style={styles.missingInlineText}>
-                    {skillsList.length === 0 ? '• Not Added' : `• ${skillsList.length}/5 Recommended`}
-                  </Text>
-                ) : null}
-              </View>
+            {/* 8. Technical Skills */}
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldBlockLabel}>TECHNICAL SKILLS</Text>
               <Text style={[styles.fieldBlockValue, skillsList.length === 0 && styles.fieldBlockValueMissing]}>
-                {skillsList.length > 0 ? skillsList.join('  •  ') : 'No technical skills added'}
+                {skillsList.length > 0 ? skillsList.join('  •  ') : 'Not provided'}
               </Text>
             </View>
 
             {/* 9. Preferred Shift & Notice Period */}
             <View style={styles.fieldRow2Col}>
-              <View style={[styles.fieldBlock, { flex: 1 }]}>
+              <View style={styles.fieldCol}>
                 <Text style={styles.fieldBlockLabel}>PREFERRED SHIFT</Text>
                 <Text style={styles.fieldBlockValue}>{preferredShiftVal || 'Flexible / Any'}</Text>
               </View>
-              <View style={[styles.fieldBlock, { flex: 1 }]}>
+              <View style={styles.fieldColDivider} />
+              <View style={styles.fieldCol}>
                 <Text style={styles.fieldBlockLabel}>NOTICE PERIOD</Text>
                 <Text style={styles.fieldBlockValue}>{noticePeriodVal || 'Immediate'}</Text>
               </View>
@@ -435,22 +388,23 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
             {/* 10. Transport & Accommodation Facilities */}
             <View style={styles.fieldRow2Col}>
-              <View style={[styles.fieldBlock, { flex: 1 }]}>
+              <View style={styles.fieldCol}>
                 <Text style={styles.fieldBlockLabel}>BUS / TRANSPORT</Text>
                 <Text style={styles.fieldBlockValue}>
-                  {requiresBus !== undefined ? (requiresBus ? 'Required' : 'Self Transport') : 'Not specified'}
+                  {requiresBus !== undefined ? (requiresBus ? 'Required' : 'Self Transport') : 'Not provided'}
                 </Text>
               </View>
-              <View style={[styles.fieldBlock, { flex: 1 }]}>
+              <View style={styles.fieldColDivider} />
+              <View style={styles.fieldCol}>
                 <Text style={styles.fieldBlockLabel}>ACCOMMODATION</Text>
                 <Text style={styles.fieldBlockValue}>
-                  {requiresAccommodation !== undefined ? (requiresAccommodation ? 'Required' : 'Own Arrangement') : 'Not specified'}
+                  {requiresAccommodation !== undefined ? (requiresAccommodation ? 'Required' : 'Own Arrangement') : 'Not provided'}
                 </Text>
               </View>
             </View>
 
             {/* 11. Identity Verification */}
-            <View style={styles.fieldBlock}>
+            <View style={styles.fieldRow}>
               <Text style={styles.fieldBlockLabel}>IDENTITY VERIFICATION</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                 {aadhaarVerified ? (
@@ -467,12 +421,13 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
               </View>
             </View>
 
-            {/* 12. Attached Resume Document (Clean White Section) */}
-            <View style={styles.resumeWhiteBox}>
+            {/* 12. Attached Resume Document */}
+            <View style={styles.resumeRow}>
+              <Text style={styles.fieldBlockLabel}>ATTACHED RESUME</Text>
               {hasResume ? (
                 <>
-                  <View style={styles.resumeWhiteHeader}>
-                    <FileText size={18} color={COLORS.primary} />
+                  <View style={styles.resumeHeaderRow}>
+                    <FileText size={17} color={COLORS.primary} />
                     <Text style={styles.resumeFileNameText} numberOfLines={1}>
                       {resumeFileName}
                     </Text>
@@ -483,28 +438,20 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
                   </Text>
                 </>
               ) : (
-                <>
-                  <View style={styles.resumeWhiteHeader}>
-                    <AlertTriangle size={18} color="#D97706" />
-                    <Text style={styles.resumeMissingFileNameText}>
-                      No Resume Uploaded
-                    </Text>
-                  </View>
-                  <Text style={styles.resumeMissingSubtext}>
-                    Recruiters prefer applications with an attached resume document.
-                  </Text>
-                </>
+                <Text style={[styles.fieldBlockValue, styles.fieldBlockValueMissing]}>
+                  Not provided
+                </Text>
               )}
             </View>
           </View>
         </View>
 
-        {/* 3. MISSING INFORMATION CARD (Only shown if missing fields exist - Pure White Clean Section) */}
+        {/* 3. MISSING INFORMATION SECTION (Only shown if missing fields exist) */}
         {missingItems.length > 0 && (
           <>
             <View style={styles.sectionSeparator} />
 
-            <View style={styles.missingCardContainer}>
+            <View style={styles.missingSection}>
               {/* Missing Header Row */}
               <View style={styles.missingHeaderRow}>
                 <View style={styles.missingTitleLeft}>
@@ -516,9 +463,9 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
                 </Text>
               </View>
 
-              {/* Inner White Box */}
-              <View style={styles.whiteCalloutBox}>
-                <Text style={styles.whiteCalloutSubhead}>
+              {/* Inner Callout List */}
+              <View style={styles.missingCalloutBox}>
+                <Text style={styles.missingCalloutSubhead}>
                   The following candidate profile details are currently empty:
                 </Text>
                 <View style={styles.bulletsList}>
@@ -531,7 +478,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
               </View>
 
               <Text style={styles.missingFooterNote}>
-                You can still submit your application now or edit your candidate profile first.
+                You can still submit your application now or update your profile details first.
               </Text>
 
               {/* Update Profile Action CTA */}
@@ -548,8 +495,8 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
         )}
       </ScrollView>
 
-      {/* 4. FIXED BOTTOM SUBMIT FOOTER */}
-      <View style={[styles.bottomFooterBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      {/* FIXED BOTTOM SUBMIT FOOTER */}
+      <View style={[styles.bottomFooterBar, { paddingBottom: bottomSafePadding }]}>
         <TouchableOpacity
           activeOpacity={0.85}
           style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
@@ -589,13 +536,15 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   scrollContainer: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   errorBox: {
     padding: 24,
@@ -616,11 +565,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     gap: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
     zIndex: 10,
   },
   backIconButton: {
@@ -646,94 +590,68 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  /* 2. CANDIDATE PROFILE CARD */
-  profileCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+  /* SECTION SEPARATOR */
+  sectionSeparator: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 14,
   },
-  profileCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
+
+  /* CANDIDATE PROFILE DETAILS (FULL PAGE OPEN SECTION) */
+  profileSection: {
+    paddingVertical: 2,
   },
-  profileCardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  fieldBlocksList: {
-    gap: 10,
-  },
-  fieldBlock: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  fieldBlockHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
+  fieldsList: {},
+  fieldRow: {
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   fieldBlockLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#64748B',
     letterSpacing: 0.5,
   },
   fieldBlockValue: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#0F172A',
-    marginTop: 2,
+    marginTop: 3,
   },
   fieldBlockValueMissing: {
-    color: '#D97706',
-    fontStyle: 'italic',
-    fontWeight: '600',
-  },
-  missingInlineText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#D97706',
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   fieldRow2Col: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'flex-start',
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-
-  /* RESUME WHITE BOX */
-  resumeWhiteBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
-    padding: 12,
-    marginTop: 4,
-    gap: 4,
+  fieldCol: {
+    flex: 1,
   },
-  resumeWhiteHeader: {
+  fieldColDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#F1F5F9',
+    marginHorizontal: 12,
+  },
+  resumeRow: {
+    paddingTop: 11,
+  },
+  resumeHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 4,
   },
   resumeFileNameText: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0F172A',
   },
   resumeStatusText: {
@@ -745,42 +663,14 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#64748B',
     lineHeight: 16,
-    marginLeft: 26,
-  },
-  resumeMissingFileNameText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#D97706',
-  },
-  resumeMissingSubtext: {
-    fontSize: 11.5,
-    color: '#64748B',
-    lineHeight: 16,
-    marginLeft: 26,
+    marginLeft: 25,
+    marginTop: 2,
   },
 
-  /* SECTION SEPARATOR */
-  sectionSeparator: {
-    height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 12,
-  },
-
-  /* 3. MISSING INFORMATION CARD */
-  missingCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-    gap: 12,
+  /* 3. MISSING INFORMATION SECTION */
+  missingSection: {
+    paddingVertical: 4,
+    gap: 10,
   },
   missingHeaderRow: {
     flexDirection: 'row',
@@ -804,18 +694,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#D97706',
   },
-  whiteCalloutBox: {
-    backgroundColor: '#FFFFFF',
+  missingCalloutBox: {
+    backgroundColor: '#FFFBEB',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: RADIUS.card,
+    borderColor: '#FDE68A',
+    borderRadius: RADIUS.md,
     padding: 12,
     gap: 6,
   },
-  whiteCalloutSubhead: {
+  missingCalloutSubhead: {
     fontSize: 12.5,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#92400E',
     lineHeight: 18,
   },
   bulletsList: {
@@ -825,7 +715,7 @@ const styles = StyleSheet.create({
   bulletItem: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#D97706',
+    color: '#B45309',
     lineHeight: 16,
   },
   missingFooterNote: {
@@ -839,15 +729,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.2,
     borderColor: COLORS.primary,
-    borderRadius: RADIUS.card,
-    paddingVertical: 10,
+    borderRadius: RADIUS.md,
+    paddingVertical: 11,
     marginTop: 4,
   },
   updateProfileBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 13.5,
+    fontWeight: '700',
     color: COLORS.primary,
   },
 
@@ -864,7 +754,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 8,
   },
@@ -874,7 +764,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.card,
+    borderRadius: RADIUS.md,
     paddingVertical: 14,
   },
   submitButtonDisabled: {
@@ -882,7 +772,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

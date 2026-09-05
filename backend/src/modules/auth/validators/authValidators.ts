@@ -15,15 +15,19 @@ export const signupSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     role: z.enum(['candidate', 'employer']),
     phone: z.string()
-      .regex(/^[6-9]\d{9}$/, 'Phone number must be a valid 10-digit Indian mobile number'),
-    companyName: z.string().optional(),
-    gstNumber: z.string().optional(),
+      .regex(/^[6-9]\d{9}$/, 'Phone number must be a valid 10-digit Indian mobile number')
+      .optional()
+      .or(z.literal(''))
+      .or(z.null()),
+    companyName: z.string().optional().or(z.null()),
+    gstNumber: z.string().optional().or(z.null()),
     // aadhaarNumber is an optional raw 12-digit string from the form
     aadhaarNumber: z.string()
       .regex(/^\d{12}$/, 'Aadhaar number must be exactly 12 digits')
       .optional()
-      .or(z.literal('')),
-    tradeSpecialization: z.string().optional()
+      .or(z.literal(''))
+      .or(z.null()),
+    tradeSpecialization: z.string().optional().or(z.null())
   }).refine((data: any) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
     path: ["confirmPassword"],

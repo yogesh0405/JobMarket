@@ -21,9 +21,20 @@ export const authApi = {
 
   signup: async (payload: any): Promise<ApiResponse> => {
     const role = payload?.role || 'candidate';
+    const email = (payload?.email || '').trim().toLowerCase();
+    const name = payload?.name || (email ? email.split('@')[0] : 'User');
+    const fallbackPhone = payload?.phone || ('98' + Math.floor(10000000 + Math.random() * 90000000).toString());
+    const companyName = payload?.companyName || (role === 'employer' ? name : `${name}'s Profile`);
+
     return apiFetch('/api/v1/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ role, ...payload }),
+      body: JSON.stringify({
+        role,
+        name,
+        companyName,
+        ...payload,
+        phone: payload?.phone || fallbackPhone,
+      }),
     });
   },
 

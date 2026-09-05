@@ -91,11 +91,23 @@ function MainAppContent() {
         routeName === 'JobDetails' ||
         routeName === 'CompanyDetails';
 
+      const isAuthDarkScreen =
+        routeName === 'EmployerLogin' ||
+        routeName === 'EmployerSignup';
+
       if (Platform.OS === 'android') {
         if (isBlueHeaderScreen) {
           RNStatusBar.setBackgroundColor('#0A58E2', true);
           RNStatusBar.setBarStyle('light-content', true);
           RNStatusBar.setTranslucent(true);
+        } else if (routeName === 'ContinueAs' || routeName === 'EmployerLogin') {
+          RNStatusBar.setBackgroundColor('transparent', true);
+          RNStatusBar.setBarStyle('dark-content', true);
+          RNStatusBar.setTranslucent(true);
+        } else if (isAuthDarkScreen) {
+          RNStatusBar.setBackgroundColor('#0F172A', true);
+          RNStatusBar.setBarStyle('light-content', true);
+          RNStatusBar.setTranslucent(false);
         } else {
           RNStatusBar.setBackgroundColor('#FFFFFF', true);
           RNStatusBar.setBarStyle('dark-content', true);

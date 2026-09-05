@@ -51,7 +51,7 @@ export const handleFocusInput = (
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
-  ({ children, extraScrollHeight = 120, contentContainerStyle, ...props }, ref) => {
+  ({ children, extraScrollHeight = 120, contentContainerStyle, style, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
     const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
@@ -93,6 +93,7 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
       >
         <ScrollView
           ref={scrollRef}
+          style={[styles.scrollView, style]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
@@ -115,6 +116,9 @@ KeyboardAwareScrollView.displayName = 'KeyboardAwareScrollView';
 
 const styles = StyleSheet.create({
   keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   scrollContent: {

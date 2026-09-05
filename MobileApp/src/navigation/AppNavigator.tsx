@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
+import { ContinueAsScreen } from '../screens/auth/ContinueAsScreen';
 import { EmployerLoginScreen } from '../screens/auth/EmployerLoginScreen';
 import { EmployerSignupScreen } from '../screens/auth/EmployerSignupScreen';
 import { VerifyOTPScreen } from '../screens/auth/VerifyOTPScreen';
@@ -47,6 +48,7 @@ export const AppNavigator: React.FC = () => {
       {!isAuthenticated ? (
         // Auth Stack (Default for guest/login & public shared job link resolution)
         <>
+          <Stack.Screen name="ContinueAs" component={ContinueAsScreen} />
           <Stack.Screen name="EmployerLogin" component={EmployerLoginScreen} />
           <Stack.Screen name="EmployerSignup" component={EmployerSignupScreen} />
           <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />

@@ -117,9 +117,11 @@ export const signupSchema = createValidator<any>((data) => {
     issues.push({ path: ['name'], message: 'Name is required' });
   }
 
-  const phoneRes = validateIndianPhone(phone, true);
-  if (!phoneRes.isValid && phoneRes.message) {
-    issues.push({ path: ['phone'], message: phoneRes.message });
+  if (phone) {
+    const phoneRes = validateIndianPhone(phone, false);
+    if (!phoneRes.isValid && phoneRes.message) {
+      issues.push({ path: ['phone'], message: phoneRes.message });
+    }
   }
 
   return issues;
