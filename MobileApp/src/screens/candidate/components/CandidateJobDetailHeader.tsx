@@ -106,6 +106,10 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
           </TouchableOpacity>
 
           <View style={styles.bannerTitleTextStack}>
+            <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
+              {jobTitle}
+            </Text>
+
             <TouchableOpacity
               activeOpacity={onCompanyPress ? 0.8 : 1}
               onPress={onCompanyPress}
@@ -116,10 +120,6 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
               </Text>
               <ExternalLink size={12} color="#BFDBFE" strokeWidth={2.2} />
             </TouchableOpacity>
-
-            <Text style={styles.bannerJobRoleSubText} numberOfLines={2}>
-              {jobTitle}
-            </Text>
 
             {/* Clean Inline Industry & Job Type Metadata without Chips/Backgrounds */}
             {(job.industry || job.trade || job.job_type || (job as any).jobType) ? (

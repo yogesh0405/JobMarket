@@ -26,6 +26,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { signupSchema } from '../../utils/validators';
+import { COLORS } from '../../constants/theme';
 import { GoogleGLogo } from './components/GoogleGLogo';
 
 interface Props {
@@ -133,9 +134,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* TOP JOBMARKET HEADER BANNER (EXACT SAME LIGHT BLUE THEME) */}
+      {/* TOP JOBMARKET HEADER BANNER (PRIMARY BLUE THEME) */}
       <View style={[styles.headerBannerContainer, { height: headerHeight }]}>
         <ImageBackground
           source={require('../../../assets/login_header_jobmarket.jpg')}
@@ -143,7 +144,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
           resizeMode="cover"
         >
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.35)', 'transparent', 'rgba(255, 255, 255, 0.2)']}
+            colors={['rgba(15, 23, 42, 0.25)', 'transparent', 'rgba(0, 0, 0, 0.05)']}
             style={styles.headerGradient}
           >
             {/* UNIFIED TOP BAR GUARANTEED BELOW SYSTEM STATUS BAR */}
@@ -160,7 +161,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
                 activeOpacity={0.7}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <ArrowLeft size={24} color="#1E255E" strokeWidth={3.0} />
+                <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.5} />
               </TouchableOpacity>
 
               {/* ROLE CAPSULE IN HEADER */}
@@ -172,9 +173,9 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
               >
                 <View style={styles.roleCapsuleDot}>
                   {role === 'candidate' ? (
-                    <UserIcon size={12} color="#0A58E2" strokeWidth={2.5} />
+                    <UserIcon size={12} color={COLORS.primary} strokeWidth={2.5} />
                   ) : (
-                    <Briefcase size={12} color="#0A58E2" strokeWidth={2.5} />
+                    <Briefcase size={12} color={COLORS.primary} strokeWidth={2.5} />
                   )}
                 </View>
                 <Text style={styles.headerRoleCapsuleText}>
@@ -373,11 +374,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8F2FC',
+    backgroundColor: '#1861EC',
   },
   headerBannerContainer: {
     width: '100%',
-    backgroundColor: '#E8F2FC',
+    backgroundColor: '#1861EC',
   },
   headerImage: {
     width: '100%',
@@ -391,12 +392,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     zIndex: 20,
   },
   backButton: {
-    width: 20,
-    height: 50,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -420,15 +420,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.2,
     borderColor: '#BFDBFE',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    shadowColor: '#1E255E',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 3,
     marginRight: 4,
@@ -443,8 +443,8 @@ const styles = StyleSheet.create({
   },
   headerRoleCapsuleText: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#1E255E',
+    fontWeight: '700',
+    color: COLORS.primary,
     letterSpacing: 0.2,
   },
   sheetHeaderContainer: {
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 25,
     fontWeight: '800',
-    color: '#1E255E',
+    color: '#0F172A',
     letterSpacing: -0.5,
     marginBottom: 4,
   },
@@ -471,27 +471,31 @@ const styles = StyleSheet.create({
     marginBottom: 11,
   },
   pillInput: {
-    backgroundColor: '#EEF2F6',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: 23,
-    height: 46,
+    height: 48,
     paddingHorizontal: 18,
     fontSize: 14,
-    color: '#1E255E',
+    color: '#0F172A',
     fontWeight: '500',
   },
   pillPasswordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF2F6',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: 23,
-    height: 46,
+    height: 48,
     paddingHorizontal: 18,
   },
   pillPasswordInput: {
     flex: 1,
     height: '100%',
     fontSize: 14,
-    color: '#1E255E',
+    color: '#0F172A',
     fontWeight: '500',
   },
   eyeIconButton: {
@@ -500,16 +504,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signInPillBtn: {
-    backgroundColor: '#1E255E',
+    backgroundColor: COLORS.primary,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 14,
-    shadowColor: '#1E255E',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 3,
   },
@@ -585,7 +589,7 @@ const styles = StyleSheet.create({
   },
   signUpHighlightText: {
     fontSize: 13.5,
-    color: '#1E255E',
+    color: COLORS.primary,
     fontWeight: '800',
     textDecorationLine: 'underline',
   },

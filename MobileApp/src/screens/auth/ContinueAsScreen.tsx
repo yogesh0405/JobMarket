@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -88,7 +89,7 @@ export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8F2FC',
+    backgroundColor: '#CEE7FB',
   },
   backgroundImage: {
     flex: 1,
@@ -128,13 +129,13 @@ const styles = StyleSheet.create({
   primaryPillButton: {
     width: '100%',
     height: 48,
-    backgroundColor: '#1E255E',
+    backgroundColor: COLORS.primary,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#0F172A',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 3,
   },
@@ -148,20 +149,22 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 48,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     elevation: 2,
   },
   secondaryButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1E255E',
+    color: COLORS.primary,
     letterSpacing: 0.2,
   },
   signUpRow: {
@@ -172,11 +175,11 @@ const styles = StyleSheet.create({
   signUpPrompt: {
     fontSize: 13.5,
     fontWeight: '500',
-    color: '#1E255E',
+    color: '#334155',
   },
   signUpHighlight: {
     fontWeight: '800',
-    color: '#0A58E2',
+    color: COLORS.primary,
     textDecorationLine: 'underline',
   },
 });
