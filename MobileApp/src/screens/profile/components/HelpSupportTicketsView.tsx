@@ -12,6 +12,7 @@ import {
   Switch,
   Image,
   ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -42,7 +43,6 @@ import { Input } from '../../../components/common/Input';
 import { SelectDropdown } from '../../../components/common/SelectDropdown';
 import { Button } from '../../../components/common/Button';
 import { ErrorBanner } from '../../../components/common/ErrorBanner';
-import { KeyboardAwareScrollView, handleFocusInput } from '../../../components/common/KeyboardAwareScrollView';
 import { SupportTicket } from './HelpSupportConstants';
 
 interface HelpSupportTicketsViewProps {
@@ -110,7 +110,6 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
   onRefresh,
   onOpenTicketChat,
 }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,9 +157,9 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
     const isUrgent = priority === 'high';
 
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-        {/* Top Clean Header for Create Ticket Page (Matching Reference) */}
-        <View style={[styles.newTicketHeader, { paddingTop: topInset + (Platform.OS === 'android' ? 8 : 4) }]}>
+      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        {/* Top Clean Header for Create Ticket Page */}
+        <View style={styles.newTicketHeader}>
           <View style={styles.headerTitleLeftGroup}>
             <TouchableOpacity
               onPress={() => setTicketTab('MY_TICKETS')}
@@ -182,129 +181,126 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
           </TouchableOpacity>
         </View>
 
-        <KeyboardAwareScrollView
-          ref={scrollViewRef}
-          extraScrollHeight={180}
-          contentContainerStyle={styles.newTicketScrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          style={styles.fixedTicketContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {formError ? <ErrorBanner message={formError} style={{ marginBottom: 16 }} /> : null}
+          <View style={styles.fixedFormContent}>
+            {formError ? <ErrorBanner message={formError} style={{ marginBottom: 4 }} /> : null}
 
-          {/* 1. Category */}
-          <View style={styles.formItemBlock}>
-            <Text style={styles.formItemLabel}>Category</Text>
-            <SelectDropdown
-              value={category}
-              options={categoryOptions}
-              onSelect={setCategory}
-              placeholder="Select a category"
-              triggerStyle={styles.categoryDropdownTrigger}
-            />
-          </View>
-
-          {/* 2. Subject */}
-          <View style={styles.formItemBlock}>
-            <Text style={styles.formItemLabel}>Subject</Text>
-            <View style={styles.simpleTextInputWrapper}>
-              <TextInput
-                style={styles.simpleTextInput}
-                placeholder="E.g, Payment not going though"
-                placeholderTextColor="#94A3B8"
-                value={subject}
-                onChangeText={setSubject}
-                onFocus={(e) => handleFocusInput(e, scrollViewRef, 100)}
+            {/* 1. Category */}
+            <View style={styles.formItemBlock}>
+              <Text style={styles.formItemLabel}>Category</Text>
+              <SelectDropdown
+                value={category}
+                options={categoryOptions}
+                onSelect={setCategory}
+                placeholder="Select a category"
+                triggerStyle={styles.categoryDropdownTrigger}
               />
             </View>
-          </View>
 
-          {/* 3. Describe your issue */}
-          <View style={styles.formItemBlock}>
-            <Text style={styles.formItemLabel}>Describe your issue</Text>
-            <View style={styles.simpleTextAreaWrapper}>
-              <TextInput
-                style={styles.simpleTextAreaInput}
-                placeholder="Please provide as much details as possible"
-                placeholderTextColor="#94A3B8"
-                multiline
-                numberOfLines={4}
-                value={description}
-                onChangeText={setDescription}
-                onFocus={(e) => {
-                  handleFocusInput(e, scrollViewRef, 180);
-                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-                }}
-              />
-            </View>
-          </View>
-
-          {/* 4. Upload file */}
-          <View style={styles.formItemBlock}>
-            <Text style={styles.formItemLabel}>Upload file</Text>
-            {ticketAttachment ? (
-              <View style={styles.attachmentSelectedCard}>
-                {ticketAttachment.uri ? (
-                  <Image source={{ uri: ticketAttachment.uri }} style={styles.attachmentThumbnail} />
-                ) : null}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.attachmentFileName} numberOfLines={1}>
-                    {ticketAttachment.name}
-                  </Text>
-                  <Text style={styles.attachmentFileSize}>Ready to upload (Max 10 MB)</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setTicketAttachment(null)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={styles.attachmentRemoveBtn}
-                >
-                  <X size={16} color="#DC2626" />
-                </TouchableOpacity>
+            {/* 2. Subject */}
+            <View style={styles.formItemBlock}>
+              <Text style={styles.formItemLabel}>Subject</Text>
+              <View style={styles.simpleTextInputWrapper}>
+                <TextInput
+                  style={styles.simpleTextInput}
+                  placeholder="E.g, Payment not going through"
+                  placeholderTextColor="#94A3B8"
+                  value={subject}
+                  onChangeText={setSubject}
+                />
               </View>
-            ) : (
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={handlePickFile}
-                style={styles.uploadDashedCard}
-              >
-                <PlusCircle size={22} color="#0F172A" strokeWidth={2} />
-                <Text style={styles.uploadCardMainText}>Add screenshot / file</Text>
-                <View style={styles.uploadCardSubRow}>
-                  <Info size={12} color="#94A3B8" />
-                  <Text style={styles.uploadCardSubText}>Max 10 Mb</Text>
+            </View>
+
+            {/* 3. Describe your issue */}
+            <View style={styles.formItemBlock}>
+              <Text style={styles.formItemLabel}>Describe your issue</Text>
+              <View style={styles.simpleTextAreaWrapper}>
+                <TextInput
+                  style={styles.simpleTextAreaInput}
+                  placeholder="Please provide as much details as possible"
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={4}
+                  value={description}
+                  onChangeText={setDescription}
+                />
+              </View>
+            </View>
+
+            {/* 4. Upload file */}
+            <View style={styles.formItemBlock}>
+              <Text style={styles.formItemLabel}>Upload file</Text>
+              {ticketAttachment ? (
+                <View style={styles.attachmentSelectedCard}>
+                  {ticketAttachment.uri ? (
+                    <Image source={{ uri: ticketAttachment.uri }} style={styles.attachmentThumbnail} />
+                  ) : null}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachmentFileName} numberOfLines={1}>
+                      {ticketAttachment.name}
+                    </Text>
+                    <Text style={styles.attachmentFileSize}>Ready to upload (Max 10 MB)</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setTicketAttachment(null)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={styles.attachmentRemoveBtn}
+                  >
+                    <X size={16} color="#DC2626" />
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            )}
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={handlePickFile}
+                  style={styles.uploadDashedCard}
+                >
+                  <PlusCircle size={20} color="#0F172A" strokeWidth={2} />
+                  <Text style={styles.uploadCardMainText}>Add screenshot / file</Text>
+                  <View style={styles.uploadCardSubRow}>
+                    <Info size={12} color="#94A3B8" />
+                    <Text style={styles.uploadCardSubText}>Max 10 Mb</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
-          {/* 5. Mark as urgent Switch */}
-          <View style={styles.markUrgentRow}>
-            <Text style={styles.markUrgentLabel}>Mark as urgent</Text>
-            <Switch
-              value={isUrgent}
-              onValueChange={(val) => setPriority(val ? 'high' : 'medium')}
-              trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor="#E2E8F0"
-            />
-          </View>
+          {/* Bottom Fixed Action Section */}
+          <View style={styles.fixedBottomActionSection}>
+            {/* 5. Mark as urgent Switch */}
+            <View style={styles.markUrgentRow}>
+              <Text style={styles.markUrgentLabel}>Mark as urgent</Text>
+              <Switch
+                value={isUrgent}
+                onValueChange={(val) => setPriority(val ? 'high' : 'medium')}
+                trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#E2E8F0"
+              />
+            </View>
 
-          {/* 6. Submit Ticket Pill Button (Exact Reference Match) */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={onCreateTicket}
-            disabled={isSubmitting}
-            style={styles.submitTicketPillBtn}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.submitTicketPillText}>Submit Ticket</Text>
-                <ArrowUpCircle size={20} color="#FFFFFF" strokeWidth={2.2} />
-              </>
-            )}
-          </TouchableOpacity>
-        </KeyboardAwareScrollView>
+            {/* 6. Submit Ticket Pill Button */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onCreateTicket}
+              disabled={isSubmitting}
+              style={styles.submitTicketPillBtn}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Text style={styles.submitTicketPillText}>Submit Ticket</Text>
+                  <ArrowUpCircle size={20} color="#FFFFFF" strokeWidth={2.2} />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -478,14 +474,22 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     letterSpacing: -0.2,
   },
-  newTicketScrollContent: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 40,
-    gap: 12,
+  fixedTicketContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    justifyContent: 'space-between',
+  },
+  fixedFormContent: {
+    gap: 10,
+  },
+  fixedBottomActionSection: {
+    gap: 8,
+    paddingTop: 4,
   },
   formItemBlock: {
-    gap: 5,
+    gap: 4,
   },
   formItemLabel: {
     fontSize: 12,
@@ -495,10 +499,10 @@ const styles = StyleSheet.create({
   },
   categoryDropdownTrigger: {
     backgroundColor: COLORS.softWarmBg,
-    borderRadius: 12,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: COLORS.softWarmBorder,
-    minHeight: 44,
+    borderColor: '#CBD5E1',
+    minHeight: 42,
   },
   simpleTextInputWrapper: {
     backgroundColor: COLORS.softWarmBg,
@@ -506,7 +510,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
-    minHeight: 44,
+    minHeight: 42,
     justifyContent: 'center',
   },
   simpleTextInput: {
@@ -520,13 +524,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 100,
+    paddingVertical: 6,
+    minHeight: 84,
+    maxHeight: 105,
   },
   simpleTextAreaInput: {
     fontSize: 12.5,
     color: COLORS.textPrimary,
-    minHeight: 84,
+    minHeight: 70,
     textAlignVertical: 'top',
     paddingTop: 2,
   },
@@ -536,22 +541,22 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: '#CBD5E1',
-    paddingVertical: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 8,
   },
   uploadCardMainText: {
     fontSize: 12.5,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    marginTop: 2,
   },
   uploadCardSubRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 1,
   },
   uploadCardSubText: {
     fontSize: 10.5,
@@ -591,9 +596,9 @@ const styles = StyleSheet.create({
   markUrgentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+    paddingVertical: 2,
   },
   markUrgentLabel: {
     fontSize: 12.5,
@@ -608,7 +613,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 4,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

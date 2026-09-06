@@ -112,6 +112,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const [previewImageModal, setPreviewImageModal] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (visible && !loadingMessages) {
@@ -122,23 +123,32 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   }, [visible, loadingMessages, chatMessages.length]);
 
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const handleShow = (e: any) => {
+      const kh = e?.endCoordinates?.height || 0;
+      if (kh > 0) {
+        setKeyboardHeight(kh);
+        setIsKeyboardVisible(true);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 60);
+      }
+    };
 
-    const showSub = Keyboard.addListener(showEvent, () => {
-      setIsKeyboardVisible(true);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 50);
-    });
-
-    const hideSub = Keyboard.addListener(hideEvent, () => {
+    const handleHide = () => {
+      setKeyboardHeight(0);
       setIsKeyboardVisible(false);
-    });
+    };
+
+    const s1 = Keyboard.addListener('keyboardWillShow', handleShow);
+    const s2 = Keyboard.addListener('keyboardDidShow', handleShow);
+    const h1 = Keyboard.addListener('keyboardWillHide', handleHide);
+    const h2 = Keyboard.addListener('keyboardDidHide', handleHide);
 
     return () => {
-      showSub.remove();
-      hideSub.remove();
+      s1.remove();
+      s2.remove();
+      h1.remove();
+      h2.remove();
     };
   }, []);
 
@@ -147,8 +157,13 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   const canSend = (replyMessage.trim().length > 0 || !!selectedAttachment) && !sendingReply;
 
   return (
-    <SafeAreaView style={styles.modalContainer} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}
+    >
+      <SafeAreaView style={styles.modalContainer} edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
         {/* Top Header Bar */}
         <View style={styles.headerBar}>
@@ -173,24 +188,21 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
           </View>
         </View>
 
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={0}
-        >
-          {loadingMessages ? (
-            <View style={styles.loadingStateWrapper}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingStateText}>Loading conversation...</Text>
-            </View>
-          ) : (
-            <ScrollView
-              ref={scrollViewRef}
-              contentContainerStyle={[styles.messagesContainer, { paddingBottom: 16 }]}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
-            >
+        {loadingMessages ? (
+          <View style={styles.loadingStateWrapper}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingStateText}>Loading conversation...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesScrollView}
+            contentContainerStyle={[styles.messagesContainer, { paddingBottom: 16 }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+          >
             {chatMessages.map((msg, index) => {
               const isUser = msg.sender === 'user';
               const prevMsg = index > 0 ? chatMessages[index - 1] : null;
@@ -316,7 +328,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
                 onPress={onPickAttachment}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Paperclip size={20} color="#94A3B8" strokeWidth={2} />
+                <Paperclip size={20} color="#64748B" strokeWidth={2} />
               </TouchableOpacity>
 
               {/* Text Input with 'Enter Message' placeholder (Standard Text type, not password, non-scrollable) */}
@@ -344,28 +356,38 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
               {/* Direct Send Icon Button on Right */}
               <TouchableOpacity
                 activeOpacity={0.75}
-                style={styles.sendIconButton}
+                style={[
+                  styles.sendIconButton,
+                  canSend ? styles.sendIconButtonActive : styles.sendIconButtonInactive,
+                ]}
                 onPress={onSendReply}
                 disabled={!canSend}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 {sendingReply ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <ActivityIndicator size="small" color={canSend ? '#FFFFFF' : COLORS.primary} />
                 ) : (
-                  <Send size={20} color={canSend ? COLORS.primary : '#94A3B8'} />
+                  <Send size={16} color={canSend ? '#FFFFFF' : '#94A3B8'} strokeWidth={2.2} />
                 )}
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-  );
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    );
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoidContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  messagesScrollView: {
+    flex: 1,
   },
 
   /* Header */
@@ -566,39 +588,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 24,
+    borderWidth: 1.2,
     borderColor: '#CBD5E1',
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 7 : 4,
-    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === 'ios' ? 6 : 3,
+    minHeight: 46,
     shadowColor: '#0F172A',
-    shadowOpacity: 0.02,
+    shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   clipButton: {
     width: 32,
     height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 4,
+    marginRight: 2,
   },
   textInput: {
     flex: 1,
     fontSize: 13.5,
     color: COLORS.textPrimary,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
     minHeight: 36,
   },
   sendIconButton: {
     width: 32,
     height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
+  },
+  sendIconButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  sendIconButtonInactive: {
+    backgroundColor: '#F1F5F9',
   },
 
   /* Fullscreen Image Lightbox Modal */

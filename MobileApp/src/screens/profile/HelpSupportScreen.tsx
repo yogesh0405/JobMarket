@@ -434,7 +434,7 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
   if (selectedTicket) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <HelpSupportChatModal
           visible={true}
           onClose={() => setSelectedTicket(null)}

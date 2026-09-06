@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StatusBar,
   ImageBackground,
   Platform,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/theme';
@@ -15,8 +17,89 @@ interface Props {
   navigation: any;
 }
 
+const GREETINGS = ['HELLO !', 'WELCOME !', 'नमस्ते !'];
+
 export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const [greetingIndex, setGreetingIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const timeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const runMacBookAnimation = () => {
+      if (!isMounted) return;
+
+      // Display greeting, then trigger the signature Apple roll-up transition
+      timeoutRef.current = setTimeout(() => {
+        if (!isMounted) return;
+
+        // Exit: roll upward, fade out & subtly scale down (MacBook style exit)
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 380,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: -30,
+            duration: 380,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.94,
+            duration: 380,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+            useNativeDriver: true,
+          }),
+        ]).start(({ finished }) => {
+          if (!finished || !isMounted) return;
+
+          // Swap text and prepare next greeting just below the masked frame
+          setGreetingIndex((prev) => (prev + 1) % GREETINGS.length);
+          slideAnim.setValue(30);
+          scaleAnim.setValue(0.94);
+
+          // Entry: glide upward into frame, fade in & scale to 1.0 (Apple deceleration)
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 480,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 480,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 1.0,
+              duration: 480,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]).start(({ finished: enterFinished }) => {
+            if (!enterFinished || !isMounted) return;
+            runMacBookAnimation();
+          });
+        });
+      }, 2100);
+    };
+
+    runMacBookAnimation();
+
+    return () => {
+      isMounted = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [fadeAnim, slideAnim, scaleAnim]);
 
   const handleSelectRole = (role: 'candidate' | 'employer') => {
     navigation.navigate('EmployerLogin', { initialRole: role });
@@ -28,7 +111,7 @@ export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
 
   const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : insets.top;
   const topPadding = Math.max(insets.top || 0, statusBarHeight || 0) + 20;
-  const bottomPadding = Math.max(insets.bottom || 0, 24) + 44;
+  const bottomPadding = Math.max(insets.bottom || 0, 20) + 16;
 
   return (
     <View style={styles.container}>
@@ -42,7 +125,25 @@ export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={[styles.contentOverlay, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
           {/* TOP HEADER SECTION */}
           <View style={styles.headerSection}>
-            <Text style={styles.helloTitle}>HELLO</Text>
+            <View style={styles.titleContainer}>
+              <Animated.Text
+                style={[
+                  styles.helloTitle,
+                  {
+                    opacity: fadeAnim,
+                    transform: [
+                      { translateY: slideAnim },
+                      { scale: scaleAnim },
+                    ],
+                    letterSpacing: GREETINGS[greetingIndex].includes('नमस्ते') ? 0.5 : 1.5,
+                  },
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {GREETINGS[greetingIndex]}
+              </Animated.Text>
+            </View>
             <Text style={styles.helloSubtitle}>Choose how you want to continue</Text>
           </View>
 
@@ -89,7 +190,7 @@ export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#CEE7FB',
+    backgroundColor: '#E9F3FD',
   },
   backgroundImage: {
     flex: 1,
@@ -104,11 +205,16 @@ const styles = StyleSheet.create({
   headerSection: {
     marginTop: Platform.OS === 'android' ? 24 : 18,
   },
+  titleContainer: {
+    height: 46,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   helloTitle: {
-    fontSize: 44,
+    fontSize: 34,
     fontWeight: '900',
-    color: '#1E255E',
-    letterSpacing: 1.5,
+    color: '#0F172A',
+    letterSpacing: 1.2,
   },
   helloSubtitle: {
     fontSize: 15,
@@ -128,48 +234,46 @@ const styles = StyleSheet.create({
   },
   primaryPillButton: {
     width: '100%',
-    height: 48,
+    height: 38,
     backgroundColor: COLORS.primary,
-    borderRadius: 24,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
     elevation: 3,
   },
   primaryButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
   secondaryPillButton: {
     width: '100%',
-    height: 48,
+    height: 38,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    borderRadius: 24,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: COLORS.primary,
+    marginTop: 8,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
   secondaryButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.primary,
     letterSpacing: 0.2,
   },
   signUpRow: {
-    marginTop: 14,
-    paddingVertical: 6,
+    marginTop: 10,
+    paddingVertical: 4,
     paddingHorizontal: 12,
   },
   signUpPrompt: {
