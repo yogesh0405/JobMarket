@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../../shared/types';
 import { NotificationService } from '../../../../src/modules/notifications/services/NotificationService';
+import { DeviceTokenRepository } from '../../../../src/modules/notifications/repositories/DeviceTokenRepository';
 
 export class NotificationController {
   static async getNotifications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -72,6 +73,55 @@ export class NotificationController {
       const clearedCount = await NotificationService.clearAll(userId);
 
       res.status(200).json({ success: true, message: 'All notifications cleared', clearedCount });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async registerDeviceToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { fcmToken, deviceType } = req.body;
+      if (!fcmToken || typeof fcmToken !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'fcmToken is required and must be a valid string',
+        });
+      }
+
+      const platform = (deviceType === 'ios' ? 'ios' : 'android') as 'android' | 'ios';
+      const record = await DeviceTokenRepository.upsertToken(userId, fcmToken.trim(), platform);
+
+      res.status(200).json({
+        success: true,
+        message: 'Device token registered successfully',
+        data: record,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async unregisterDeviceToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const { fcmToken } = req.body;
+
+      if (!fcmToken || typeof fcmToken !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'fcmToken is required and must be a valid string',
+        });
+      }
+
+      const deleted = await DeviceTokenRepository.deleteToken(fcmToken.trim(), userId);
+
+      res.status(200).json({
+        success: true,
+        message: deleted ? 'Device token unregistered successfully' : 'Device token not found',
+      });
     } catch (error) {
       next(error);
     }
