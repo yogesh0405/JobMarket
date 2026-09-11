@@ -6,6 +6,25 @@ import { notificationApi } from '../api/notificationApi';
 
 const STORED_FCM_TOKEN_KEY = '@jobmarket_device_fcm_token';
 
+/**
+ * Lightweight in-process event bus so PushNotificationManager can signal
+ * the useNotifications hook to refresh immediately when a push arrives.
+ */
+type RefreshCallback = () => void;
+const refreshListeners = new Set<RefreshCallback>();
+
+export const onPushNotificationRefresh = (cb: RefreshCallback) => {
+  refreshListeners.add(cb);
+  return () => refreshListeners.delete(cb);
+};
+
+function triggerNotificationRefresh() {
+  refreshListeners.forEach((cb) => {
+    try { cb(); } catch { }
+  });
+}
+
+
 // Configure foreground notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -52,15 +71,19 @@ export class PushNotificationManager {
     // Clean up previous listeners if re-initializing
     this.cleanupListeners();
 
-    // 1. Foreground notification received listener
+    // 1. Foreground notification received listener — refresh badge + list immediately
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Push notification received in foreground:', notification.request.content.title);
+      console.log('[Push] Foreground notification received:', notification.request.content.title);
+      // Immediately signal all useNotifications subscribers to re-fetch
+      triggerNotificationRefresh();
     });
 
-    // 2. Notification tap response listener
+    // 2. Notification tap response listener — refresh + deep-link navigate
     this.responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      console.log('User tapped push notification:', data);
+      console.log('[Push] User tapped notification:', data);
+      // Refresh notification list (marks as seen state)
+      triggerNotificationRefresh();
       this.handleDeepLink(data);
     });
   }

@@ -1,3 +1,5 @@
+import '../../../src/config/firebase'; // Initialize Firebase for push notifications
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

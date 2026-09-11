@@ -7,6 +7,7 @@ import { pool } from '../../../config/database/pool';
 import { SupportRepository } from '../../support/repositories/SupportRepository';
 import { EmailService } from '../../auth/services/EmailService';
 import { NotificationService } from '../../notifications/services/NotificationService';
+import { PushNotificationService } from '../../notifications/services/PushNotificationService';
 import { logger } from '../../../utils/logger';
 import { S3Util } from '../../../utils/s3';
 
@@ -248,7 +249,7 @@ export class AdminService {
   static async broadcastNotifications(data: {
     targetAudience: 'ALL' | 'WORKERS' | 'EMPLOYERS' | 'CATEGORY_WORKERS';
     category?: string;
-    channels: ('IN_APP' | 'EMAIL')[];
+    channels: ('IN_APP' | 'EMAIL' | 'PUSH')[];
     subject: string;
     message: string;
     actionLink?: string;
@@ -256,7 +257,7 @@ export class AdminService {
     const { targetAudience, category, channels, subject, message, actionLink } = data;
 
     if (!channels || channels.length === 0) {
-      throw new BadRequestError('At least one notification channel (IN_APP or EMAIL) must be selected');
+      throw new BadRequestError('At least one notification channel (IN_APP, EMAIL, or PUSH) must be selected');
     }
     if (!subject || !subject.trim() || !message || !message.trim()) {
       throw new BadRequestError('Subject and message body are required');
@@ -278,10 +279,12 @@ export class AdminService {
 
     let inAppDelivered = 0;
     let emailsSent = 0;
+    let pushSent = 0;
+
+    const userIds = targetUsers.map(u => u.id);
 
     // 1. Deliver In-App Notifications in Batch
     if (channels.includes('IN_APP')) {
-      const userIds = targetUsers.map(u => u.id);
       inAppDelivered = await NotificationService.broadcast(userIds, subject, message, 'BROADCAST', actionLink);
     }
 
@@ -292,6 +295,21 @@ export class AdminService {
           .then(success => { if (success) emailsSent++; })
           .catch(err => logger.error(`Broadcast email failed for ${u.email}:`, err));
       }
+    }
+
+    // 3. Dispatch FCM Push Notifications to all target users' devices
+    if (channels.includes('PUSH')) {
+      PushNotificationService.sendToUsers(userIds, {
+        title: subject,
+        body: message,
+        data: {
+          type: 'BROADCAST',
+          screen: 'Notifications',
+          ...(actionLink ? { link: actionLink } : {})
+        }
+      })
+        .then(() => { pushSent = userIds.length; })
+        .catch(err => logger.error('Broadcast push notification failed:', err));
     }
 
     try {
@@ -312,6 +330,7 @@ export class AdminService {
       success: true,
       totalRecipients: targetUsers.length,
       inAppDelivered,
+      pushSent,
       message: `Broadcast successfully dispatched to ${targetUsers.length} users across selected channels.`
     };
   }

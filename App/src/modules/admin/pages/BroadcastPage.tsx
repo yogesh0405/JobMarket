@@ -8,7 +8,7 @@ export const BroadcastPage: React.FC = () => {
   const [targetAudience, setTargetAudience] = useState<'ALL' | 'WORKERS' | 'EMPLOYERS' | 'CATEGORY_WORKERS'>('ALL');
   const [category, setCategory] = useState('');
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
-  const [channels, setChannels] = useState<('IN_APP' | 'EMAIL')[]>(['IN_APP', 'EMAIL']);
+  const [channels, setChannels] = useState<('IN_APP' | 'EMAIL' | 'PUSH')[]>(['IN_APP', 'EMAIL', 'PUSH']);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [actionLink, setActionLink] = useState('');
@@ -38,7 +38,7 @@ export const BroadcastPage: React.FC = () => {
     fetchHistory();
   }, []);
 
-  const handleChannelToggle = (channel: 'IN_APP' | 'EMAIL') => {
+  const handleChannelToggle = (channel: 'IN_APP' | 'EMAIL' | 'PUSH') => {
     if (channels.includes(channel)) {
       if (channels.length === 1) {
         showToast('At least one notification channel must remain selected', 'warning');
@@ -191,7 +191,7 @@ export const BroadcastPage: React.FC = () => {
                 </svg>
                 Dispatch Channels
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '8px', border: channels.includes('IN_APP') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('IN_APP') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
                   <input
                     type="checkbox"
@@ -200,8 +200,8 @@ export const BroadcastPage: React.FC = () => {
                     style={{ width: '18px', height: '18px', accentColor: '#2563eb' }}
                   />
                   <div>
-                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>In-App Notification</span>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>App Drawer & Bell badge</span>
+                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>In-App</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Bell & Drawer</span>
                   </div>
                 </label>
 
@@ -213,8 +213,21 @@ export const BroadcastPage: React.FC = () => {
                     style={{ width: '18px', height: '18px', accentColor: '#2563eb' }}
                   />
                   <div>
-                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>Email Broadcast</span>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Brevo SMTP Delivery</span>
+                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>Email</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Brevo SMTP</span>
+                  </div>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '8px', border: channels.includes('PUSH') ? '2px solid #2563eb' : '1px solid #cbd5e1', background: channels.includes('PUSH') ? '#eff6ff' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                  <input
+                    type="checkbox"
+                    checked={channels.includes('PUSH')}
+                    onChange={() => handleChannelToggle('PUSH')}
+                    style={{ width: '18px', height: '18px', accentColor: '#2563eb' }}
+                  />
+                  <div>
+                    <span style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>Push</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>FCM Mobile</span>
                   </div>
                 </label>
               </div>

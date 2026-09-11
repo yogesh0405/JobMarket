@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { notificationApi, AppNotification } from '../api/notificationApi';
 import { useAuth } from './useAuth';
+import { onPushNotificationRefresh } from '../services/PushNotificationManager';
 
 export const isNotificationRead = (n: any): boolean => {
   if (!n) return true;
@@ -119,14 +120,20 @@ export const useNotifications = () => {
       // If we already have cache, don't block with loading spinner
       fetchNotifications(!globalHasFetched && globalNotificationsCache.length === 0);
 
-      // Live polling interval every 30 seconds
+      // Live polling interval every 30 seconds (fallback)
       const intervalId = setInterval(() => {
         fetchNotifications(false);
       }, 30000);
 
+      // Real-time refresh: immediately re-fetch when a push notification arrives
+      const unsubscribePush = onPushNotificationRefresh(() => {
+        fetchNotifications(false);
+      });
+
       return () => {
         isMounted.current = false;
         clearInterval(intervalId);
+        unsubscribePush();
       };
     } else {
       setNotifications([]);
