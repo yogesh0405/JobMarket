@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import './src/config/firebase'; // Initialize Firebase before starting services
+
 import authApp from './services/auth-service/src/app';
 import userApp from './services/user-service/src/app';
 import jobApp from './services/job-service/src/app';
