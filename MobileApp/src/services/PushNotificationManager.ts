@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { notificationApi } from '../api/notificationApi';
 
 const STORED_FCM_TOKEN_KEY = '@jobmarket_device_fcm_token';
