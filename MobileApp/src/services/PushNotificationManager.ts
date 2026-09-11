@@ -167,29 +167,142 @@ export class PushNotificationManager {
   }
 
   /**
-   * Route user based on notification payload data
+   * Route user to the correct screen based on notification type and entity data.
+   *
+   * Notification data shape (sent by backend PushNotificationService):
+   *   type         → notification type string (e.g. 'JOB_APPLICATION', 'JOB_STATUS', etc.)
+   *   entityType   → 'job' | 'application' | 'interview' | 'support' | 'ad'
+   *   entityId     → UUID of the related entity
+   *   screen       → optional explicit screen override
+   *   link         → optional URL hint
    */
   private static handleDeepLink(data: any) {
-    if (!data || !this.navigationRef?.isReady?.()) return;
+    if (!data) return;
 
-    try {
-      if (data.screen) {
-        this.navigationRef.navigate(data.screen, data.params || data);
-      } else if (data.link) {
-        // Handle deep link URL or route
-        const link = String(data.link);
-        if (link.includes('job/')) {
-          const jobId = link.split('job/')[1]?.split('?')[0];
-          if (jobId) {
-            this.navigationRef.navigate('JobDetail', { jobId });
+    // Wait until navigator is ready (retry up to 10 times with 200ms intervals)
+    const navigate = () => {
+      if (!this.navigationRef?.isReady?.()) return;
+      try {
+        this.performNavigation(data);
+      } catch (e) {
+        console.error('[PushNotificationManager] Navigation error:', e);
+      }
+    };
+
+    if (this.navigationRef?.isReady?.()) {
+      navigate();
+    } else {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (this.navigationRef?.isReady?.()) {
+          clearInterval(interval);
+          navigate();
+        } else if (attempts >= 10) {
+          clearInterval(interval);
+        }
+      }, 200);
+    }
+  }
+
+  /**
+   * Core routing logic — maps notification type/entity to the correct screen + params
+   */
+  private static performNavigation(data: any) {
+    const type: string = data.type || '';
+    const entityId: string = data.entityId || '';
+    const screen: string = data.screen || '';
+    const nav = this.navigationRef;
+
+    // 1. Explicit screen override from notification payload
+    if (screen && screen !== 'Notifications') {
+      const params: Record<string, string> = {};
+      if (entityId) {
+        // Pass entity ID with the right key for each screen type
+        if (screen === 'CandidateJobDetail') params.jobId = entityId;
+        else if (screen === 'JobApplicants') params.jobId = entityId;
+        else if (screen === 'ApplicantDetail') params.applicantId = entityId;
+        else if (screen === 'EmployerCandidateDetail') params.candidateId = entityId;
+        else if (screen === 'MyInterviews') { /* no params needed */ }
+        else if (screen === 'EmployerInterviews') { /* no params needed */ }
+        else params.id = entityId;
+      }
+      nav.navigate(screen, Object.keys(params).length > 0 ? params : undefined);
+      return;
+    }
+
+    // 2. Type-based routing map
+    switch (type) {
+      // Candidate received: employer applied / shortlisted their job
+      case 'JOB_APPLICATION':
+        // Candidate → go to their applications / job detail
+        if (entityId) {
+          nav.navigate('CandidateJobDetail', { jobId: entityId });
+        } else {
+          nav.navigate('Notifications');
+        }
+        break;
+
+      // Candidate received: their application status changed
+      case 'JOB_STATUS':
+        nav.navigate('Notifications');
+        break;
+
+      // Candidate or Employer: interview scheduled
+      case 'JOB_INTERVIEW':
+        // Try employer screen first; if not available, fallback to candidate
+        try {
+          nav.navigate('EmployerInterviews');
+        } catch {
+          nav.navigate('MyInterviews');
+        }
+        break;
+
+      // Employer: their job post was approved/rejected by admin
+      case 'JOB_APPROVAL':
+        if (entityId) {
+          nav.navigate('JobApplicants', { jobId: entityId });
+        } else {
+          nav.navigate('Notifications');
+        }
+        break;
+
+      // Employer: banner ad approved
+      case 'AD_APPROVED':
+      case 'AD_REJECTED':
+        nav.navigate('EmployerBanners');
+        break;
+
+      // Support ticket reply
+      case 'SUPPORT':
+        nav.navigate('HelpSupport');
+        break;
+
+      // Broadcast or system-wide alert
+      case 'BROADCAST':
+      case 'SYSTEM':
+      default:
+        // Fall back to link-based routing if provided
+        if (data.link) {
+          const link = String(data.link);
+          if (link.includes('/job/')) {
+            const jobId = link.split('/job/')[1]?.split('?')[0];
+            if (jobId) {
+              nav.navigate('CandidateJobDetail', { jobId });
+              return;
+            }
+          }
+          if (link.includes('/applicants/')) {
+            const jobId = link.split('/applicants/')[1]?.split('?')[0];
+            if (jobId) {
+              nav.navigate('JobApplicants', { jobId });
+              return;
+            }
           }
         }
-      } else {
-        // Default to Notifications screen
-        this.navigationRef.navigate('Notifications');
-      }
-    } catch (e) {
-      console.error('Error navigating from notification:', e);
+        nav.navigate('Notifications');
+        break;
     }
   }
 }
+
