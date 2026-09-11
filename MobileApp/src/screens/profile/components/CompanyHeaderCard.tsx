@@ -43,6 +43,10 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
   const topInset =
     (Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : (insets.top || 16)) + 4;
   const companyName = company?.name || '';
+  const rawCompanyName = (companyName || '').trim();
+  const nameParts = rawCompanyName.split(/\s+/).filter(Boolean);
+  const leadingName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : '';
+  const lastWord = nameParts.length > 0 ? nameParts[nameParts.length - 1] : rawCompanyName;
   const logoUrl = company?.logo || company?.logoUrl || null;
   const industry =
     company?.industry ||
@@ -114,10 +118,17 @@ export const CompanyHeaderCard: React.FC<CompanyHeaderCardProps> = ({
             <View style={styles.detailsCol}>
               {/* Company Name + Meta / Instagram Verified Badge */}
               <View style={styles.titleRow}>
-                <Text style={styles.companyTitle} numberOfLines={1}>
-                  {companyName}
-                </Text>
-                <MetaVerifiedBadge size={19} color="#0095F6" />
+                {leadingName ? (
+                  <Text style={styles.companyTitle}>
+                    {leadingName}{' '}
+                  </Text>
+                ) : null}
+                <View style={styles.lastWordBadgeGroup}>
+                  <Text style={styles.companyTitle}>
+                    {lastWord}
+                  </Text>
+                  <MetaVerifiedBadge size={19} color="#0095F6" style={styles.verifiedBadgeIcon} />
+                </View>
               </View>
 
               {/* Subtitle Category Chips (Single Row) */}
@@ -193,14 +204,22 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    flexWrap: 'wrap',
     marginBottom: 6,
+  },
+  lastWordBadgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedBadgeIcon: {
+    marginLeft: 6,
   },
   companyTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
+    lineHeight: 23,
   },
   verifiedCircleBadge: {
     width: 18,

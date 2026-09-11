@@ -17,6 +17,8 @@ MobileApp/.env.*
 !backend/.env.example
 !App/.env.example
 !MobileApp/.env.example
+*serviceAccountKey*.json
+*firebase-adminsdk*.json
 
 # ── DEPENDENCIES ──
 node_modules/
@@ -61,3 +63,15 @@ tmp/
 scratch/
 *.tmp
 test-cases/
+
+# ── TEST & QA CASES / SPREADSHEETS ──
+*.xlsx
+*.xls
+*.csv
+*test_case*
+*test-case*
+*Test_Case*
+*Test_Cases*
+*test_cases*
+*QA_Test*
+

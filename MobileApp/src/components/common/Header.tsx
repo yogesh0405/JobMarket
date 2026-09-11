@@ -157,9 +157,11 @@ export const Header: React.FC<HeaderProps> = ({
   const isBackAvailable = (showBack || !!onBack) && (onBack || canGoBackInNav);
 
   const isEmployer = (user?.role || '').toLowerCase() === 'employer';
-  const displayName = isEmployer
-    ? (user?.companyName || user?.company_name || user?.name || 'Company Profile')
+  const rawFullName = isEmployer
+    ? (user?.companyName || user?.company_name || user?.name || 'Company')
     : (user?.name || 'User');
+  // Display only the first name of employee or company in the side menu bar
+  const displayName = rawFullName.trim().split(/\s+/)[0] || rawFullName;
   const displayEmail = user?.email || 'user@jobmarket.com';
   const displayIndustry = user?.tradeSpecialization || (user as any)?.trade_specialization || (user as any)?.industry || (user as any)?.headline || '';
   const initialLetter = displayName.charAt(0).toUpperCase() || 'U';

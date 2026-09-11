@@ -99,6 +99,11 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
     skills && skills.length > 0 ? skills.length : user?.skills?.length || 0;
 
   const displayName = name || user?.name || 'Candidate';
+  const rawCandidateName = (displayName || '').trim();
+  const nameParts = rawCandidateName.split(/\s+/).filter(Boolean);
+  const leadingName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : '';
+  const lastWord = nameParts.length > 0 ? nameParts[nameParts.length - 1] : rawCandidateName;
+
   const getInitials = (str: string) => {
     if (!str) return 'C';
     const parts = str.trim().split(/\s+/);
@@ -189,10 +194,17 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
               <View style={styles.detailsCol}>
                 {/* Candidate Name + Meta / Instagram Verified Badge */}
                 <View style={styles.titleRow}>
-                  <Text style={styles.candidateTitle} numberOfLines={1}>
-                    {displayName}
-                  </Text>
-                  <MetaVerifiedBadge size={19} color="#0095F6" />
+                  {leadingName ? (
+                    <Text style={styles.candidateTitle}>
+                      {leadingName}{' '}
+                    </Text>
+                  ) : null}
+                  <View style={styles.lastWordBadgeGroup}>
+                    <Text style={styles.candidateTitle}>
+                      {lastWord}
+                    </Text>
+                    <MetaVerifiedBadge size={19} color="#0095F6" style={styles.verifiedBadgeIcon} />
+                  </View>
                 </View>
 
                 {/* Subtitle Category Chips on Blue Banner */}
@@ -458,14 +470,22 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    flexWrap: 'wrap',
     marginBottom: 6,
+  },
+  lastWordBadgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedBadgeIcon: {
+    marginLeft: 6,
   },
   candidateTitle: {
     fontSize: 19,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
+    lineHeight: 25,
   },
   verifiedCircleBadge: {
     width: 20,

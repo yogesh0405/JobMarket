@@ -26,7 +26,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { signupSchema } from '../../utils/validators';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { GoogleGLogo } from './components/GoogleGLogo';
 
 interface Props {
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.2,
     borderColor: '#BFDBFE',
-    borderRadius: 20,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 14,
     paddingVertical: 7,
     shadowColor: '#0F172A',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 23,
+    borderRadius: RADIUS.md,
     height: 48,
     paddingHorizontal: 18,
     fontSize: 14,
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 23,
+    borderRadius: RADIUS.md,
     height: 48,
     paddingHorizontal: 18,
   },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   signInPillBtn: {
     backgroundColor: COLORS.primary,
     height: 48,
-    borderRadius: 24,
+    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     height: 38,
     paddingHorizontal: 12,
-    borderRadius: 19,
+    borderRadius: RADIUS.md,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

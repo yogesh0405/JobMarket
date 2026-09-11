@@ -21,6 +21,7 @@
     },
     "android": {
       "package": "com.jobmarket.mobileapp",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png"
@@ -82,7 +83,14 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0066CC"
+        }
+      ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"

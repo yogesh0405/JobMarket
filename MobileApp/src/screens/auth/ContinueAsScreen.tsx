@@ -11,7 +11,7 @@ import {
   Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 38,
     backgroundColor: COLORS.primary,
-    borderRadius: 19,
+    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 38,
     backgroundColor: '#FFFFFF',
-    borderRadius: 19,
+    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,

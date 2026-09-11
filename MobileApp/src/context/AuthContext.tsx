@@ -12,6 +12,7 @@ import {
 } from '../utils/secureStorage';
 import { setGlobalCompanyLogo } from '../utils/companyLogos';
 import { LogoutProcessingModal } from '../components/common/LogoutProcessingModal';
+import { PushNotificationManager } from '../services/PushNotificationManager';
 
 interface AuthContextType {
   user: User | null;
@@ -183,6 +184,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
     };
   }, []);
+
+  // Register device push token whenever user logs in or auth state is restored
+  useEffect(() => {
+    if (user?.id) {
+      PushNotificationManager.registerForPushNotifications().catch(() => {});
+    }
+  }, [user?.id]);
 
   const login = async (emailOrPayload: any, password?: string, roleOrAuthMethod?: string, payload?: any) => {
     setIsLoading(true);
@@ -459,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoggingOut(true);
     // Fire-and-forget server logout in background without blocking UI
     authApi.logout().catch(() => {});
+    PushNotificationManager.unregisterDeviceToken().catch(() => {});
 
     try {
       await clearAuthSession();

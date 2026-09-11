@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "133760154346",
+    "project_id": "jobmarket-dev-2ab1c",
+    "storage_bucket": "jobmarket-dev-2ab1c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:133760154346:android:e5d23c8c2fc31cc9877593",
+        "android_client_info": {
+          "package_name": "com.jobmarket.mobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8Knd1REsqe3WO62oFIyK7aC5lJsLdyWo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -49,4 +49,18 @@ export const notificationApi = {
       method: 'DELETE',
     });
   },
+
+  registerDeviceToken: async (fcmToken: string, deviceType: 'android' | 'ios' = 'android'): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/notifications/device-token', {
+      method: 'POST',
+      body: JSON.stringify({ fcmToken, deviceType }),
+    });
+  },
+
+  unregisterDeviceToken: async (fcmToken: string): Promise<ApiResponse> => {
+    return apiFetch('/api/v1/notifications/device-token', {
+      method: 'DELETE',
+      body: JSON.stringify({ fcmToken }),
+    });
+  },
 };

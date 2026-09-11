@@ -26,6 +26,7 @@ import { SplashScreen } from './src/components/common/SplashScreen';
 import { MaintenanceModal } from './src/components/common/MaintenanceModal';
 import { useAuth } from './src/hooks/useAuth';
 import { usePlatformSettings } from './src/hooks/usePlatformSettings';
+import { PushNotificationManager } from './src/services/PushNotificationManager';
 
 // Initialize OAuth browser session interception
 WebBrowser.maybeCompleteAuthSession();
@@ -75,6 +76,14 @@ function MainAppContent() {
       setShowSplash(false);
     }, 2000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Initialize Push Notification channels and listeners
+  useEffect(() => {
+    PushNotificationManager.init(navigationRef);
+    return () => {
+      PushNotificationManager.cleanupListeners();
+    };
   }, []);
 
   // Global Centralized Navigation Route Listener for Strict Status Bar Synchronization
