@@ -306,14 +306,15 @@ export const AdminLayout: React.FC = () => {
                         className="sidebar-badge-count"
                         style={{
                           marginLeft: 'auto',
-                          background: '#ef4444',
-                          color: '#ffffff',
+                          background: '#ffffff',
+                          color: '#000000',
                           fontSize: '11px',
                           fontWeight: '800',
                           padding: '2px 7px',
                           borderRadius: '999px',
                           lineHeight: '1',
-                          boxShadow: '0 2px 6px rgba(239, 68, 68, 0.45)',
+                          border: '1px solid #cbd5e1',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
                           flexShrink: 0,
                           ...(collapsed ? {
                             position: 'absolute',
