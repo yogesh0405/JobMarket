@@ -76,7 +76,16 @@ export const EmployerManagementPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED') => {
+  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', employerName?: string) => {
+    const nameStr = employerName || (selectedEmployer?.profile?.id === userId ? selectedEmployer.profile.name : '') || 'this employer';
+    const confirmPrompt = newStatus === 'BLOCKED'
+      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe employer will be blocked from posting jobs and accessing company features.`
+      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe employer account will be unlocked and granted full access to the platform.`;
+
+    if (!window.confirm(confirmPrompt)) {
+      return;
+    }
+
     try {
       await AdminApiService.updateUserStatus(userId, newStatus);
       showToast(`Employer status successfully updated to ${newStatus}`, 'success');
@@ -197,11 +206,11 @@ export const EmployerManagementPage: React.FC = () => {
                           <Eye size={12} /> View Profile
                         </button>
                         {emp.status === 'BLOCKED' ? (
-                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleStatusChange(emp.id, 'ACTIVE')}>
+                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleStatusChange(emp.id, 'ACTIVE', emp.name)}>
                             Activate
                           </button>
                         ) : (
-                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--danger)' }} onClick={() => handleStatusChange(emp.id, 'BLOCKED')}>
+                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--danger)' }} onClick={() => handleStatusChange(emp.id, 'BLOCKED', emp.name)}>
                             Block
                           </button>
                         )}
@@ -405,11 +414,11 @@ export const EmployerManagementPage: React.FC = () => {
               <div style={{ padding: '16px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   {selectedEmployer.profile.status === 'BLOCKED' ? (
-                    <button className="btn btn-primary" style={{ background: '#16a34a', color: '#ffffff', border: 'none', padding: '8px 16px' }} onClick={() => handleStatusChange(selectedEmployer.profile.id, 'ACTIVE')}>
+                    <button className="btn btn-primary" style={{ background: '#16a34a', color: '#ffffff', border: 'none', padding: '8px 16px' }} onClick={() => handleStatusChange(selectedEmployer.profile.id, 'ACTIVE', selectedEmployer.profile.name)}>
                       Activate Employer
                     </button>
                   ) : (
-                    <button className="btn btn-outline" style={{ color: '#dc2626', borderColor: '#fca5a5', padding: '8px 16px' }} onClick={() => handleStatusChange(selectedEmployer.profile.id, 'BLOCKED')}>
+                    <button className="btn btn-outline" style={{ color: '#dc2626', borderColor: '#fca5a5', padding: '8px 16px' }} onClick={() => handleStatusChange(selectedEmployer.profile.id, 'BLOCKED', selectedEmployer.profile.name)}>
                       Block Employer
                     </button>
                   )}

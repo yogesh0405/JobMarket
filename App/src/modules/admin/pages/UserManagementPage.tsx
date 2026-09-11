@@ -78,7 +78,16 @@ export const UserManagementPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED') => {
+  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', userName?: string) => {
+    const nameStr = userName || (selectedUser?.profile?.id === userId ? selectedUser.profile.name : '') || 'this user';
+    const confirmPrompt = newStatus === 'BLOCKED'
+      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe user will be blocked from logging in, applying to jobs, and using the platform.`
+      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe user account will be unlocked and granted full access to the platform.`;
+
+    if (!window.confirm(confirmPrompt)) {
+      return;
+    }
+
     try {
       await AdminApiService.updateUserStatus(userId, newStatus);
       showToast(`User status successfully updated to ${newStatus}`, 'success');
@@ -226,13 +235,13 @@ export const UserManagementPage: React.FC = () => {
                           </svg>
                         </button>
                         {u.status === 'BLOCKED' ? (
-                          <button className="action-btn" title="Unblock User" onClick={() => handleStatusChange(u.id, 'ACTIVE')} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--success)' }}>
+                          <button className="action-btn" title="Unblock User" onClick={() => handleStatusChange(u.id, 'ACTIVE', u.name)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--success)' }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                             </svg>
                           </button>
                         ) : (
-                          <button className="action-btn" title="Block User" onClick={() => handleStatusChange(u.id, 'BLOCKED')} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
+                          <button className="action-btn" title="Block User" onClick={() => handleStatusChange(u.id, 'BLOCKED', u.name)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="12" r="10" />
                               <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
@@ -457,11 +466,11 @@ export const UserManagementPage: React.FC = () => {
 
             <div style={{ padding: '20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
               {selectedUser && selectedUser.profile.status === 'BLOCKED' ? (
-                <button className="btn btn-outline" style={{ flex: 1, borderColor: 'var(--success)', color: 'var(--success)' }} onClick={() => handleStatusChange(selectedUser.profile.id, 'ACTIVE')}>
+                <button className="btn btn-outline" style={{ flex: 1, borderColor: 'var(--success)', color: 'var(--success)' }} onClick={() => handleStatusChange(selectedUser.profile.id, 'ACTIVE', selectedUser.profile.name)}>
                   Unlock Account
                 </button>
               ) : (
-                <button className="btn" style={{ flex: 1, background: 'var(--danger)', color: 'white' }} onClick={() => selectedUser && handleStatusChange(selectedUser.profile.id, 'BLOCKED')}>
+                <button className="btn" style={{ flex: 1, background: 'var(--danger)', color: 'white' }} onClick={() => selectedUser && handleStatusChange(selectedUser.profile.id, 'BLOCKED', selectedUser.profile.name)}>
                   Deactivate & Block
                 </button>
               )}

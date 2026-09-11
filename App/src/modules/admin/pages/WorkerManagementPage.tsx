@@ -45,7 +45,16 @@ export const WorkerManagementPage: React.FC = () => {
     fetchWorkers();
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED') => {
+  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', workerName?: string) => {
+    const nameStr = workerName || 'this worker';
+    const confirmPrompt = newStatus === 'BLOCKED'
+      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe worker will be prevented from logging in and applying to jobs.`
+      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe worker account will be unlocked and granted full access to the platform.`;
+
+    if (!window.confirm(confirmPrompt)) {
+      return;
+    }
+
     try {
       await AdminApiService.updateUserStatus(userId, newStatus);
       showToast(`Worker status successfully updated to ${newStatus}`, 'success');
@@ -155,11 +164,11 @@ export const WorkerManagementPage: React.FC = () => {
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                         {worker.status === 'BLOCKED' ? (
-                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleStatusChange(worker.id, 'ACTIVE')}>
+                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleStatusChange(worker.id, 'ACTIVE', worker.name)}>
                             Activate
                           </button>
                         ) : (
-                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--danger)' }} onClick={() => handleStatusChange(worker.id, 'BLOCKED')}>
+                          <button className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--danger)' }} onClick={() => handleStatusChange(worker.id, 'BLOCKED', worker.name)}>
                             Block
                           </button>
                         )}
