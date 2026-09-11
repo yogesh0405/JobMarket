@@ -152,7 +152,7 @@
   user-select: none;
 }
 
-.admin-sidebar .sidebar-menu-item span {
+.admin-sidebar .sidebar-menu-item span:not(.sidebar-badge-count) {
   color: #ffffff !important;
 }
 
@@ -171,7 +171,7 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 
-.admin-sidebar .sidebar-menu-item:hover span {
+.admin-sidebar .sidebar-menu-item:hover span:not(.sidebar-badge-count) {
   color: #ffffff !important;
 }
 
@@ -188,7 +188,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
-.admin-sidebar .sidebar-menu-item.active span {
+.admin-sidebar .sidebar-menu-item.active span:not(.sidebar-badge-count) {
   color: #1B4FDF !important;
 }
 
@@ -201,8 +201,9 @@
   display: none;
 }
 
-/* Sidebar Badge Count Styling */
-.admin-sidebar .sidebar-menu-item .sidebar-badge-count {
+/* Sidebar Badge Count Styling — Inactive (White Pill with Blue Number) */
+.admin-sidebar .sidebar-menu-item .sidebar-badge-count,
+.admin-sidebar .sidebar-menu-item:hover .sidebar-badge-count {
   background: #ffffff !important;
   color: #1B4FDF !important;
   font-weight: 800 !important;
@@ -214,7 +215,9 @@
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
-.admin-sidebar .sidebar-menu-item.active .sidebar-badge-count {
+/* Sidebar Badge Count Styling — Active (Blue Pill with White Number) */
+.admin-sidebar .sidebar-menu-item.active .sidebar-badge-count,
+.admin-sidebar .sidebar-menu-item.active:hover .sidebar-badge-count {
   background: #1B4FDF !important;
   color: #ffffff !important;
   font-weight: 800 !important;
