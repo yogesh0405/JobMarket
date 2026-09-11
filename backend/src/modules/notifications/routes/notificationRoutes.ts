@@ -10,5 +10,7 @@ router.patch('/notifications/read-all', requireAuth, NotificationController.mark
 router.patch('/notifications/:id/read', requireAuth, NotificationController.markNotificationRead);
 router.delete('/notifications/clear-all', requireAuth, NotificationController.clearAllNotifications);
 router.delete('/notifications/:id', requireAuth, NotificationController.deleteNotification);
+router.post('/notifications/device-token', requireAuth, NotificationController.registerDeviceToken);
+router.delete('/notifications/device-token', requireAuth, NotificationController.unregisterDeviceToken);
 
 export default router;

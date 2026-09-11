@@ -1,4 +1,6 @@
 import { NotificationRepository, NotificationRecord } from '../repositories/NotificationRepository';
+import { PushNotificationService } from './PushNotificationService';
+import { logger } from '../../../utils/logger';
 
 export class NotificationService {
   static async sendNotification(
@@ -11,7 +13,7 @@ export class NotificationService {
     entityId?: string | null,
     metadata?: any | null
   ): Promise<NotificationRecord> {
-    return NotificationRepository.createNotification(
+    const record = await NotificationRepository.createNotification(
       userId,
       title,
       message,
@@ -21,6 +23,23 @@ export class NotificationService {
       entityId,
       metadata
     );
+
+    // Asynchronously dispatch real-time Push Notification to user's registered devices
+    PushNotificationService.sendToUser(userId, {
+      title,
+      body: message,
+      data: {
+        notificationId: record?.id ? String(record.id) : '',
+        type: type || 'SYSTEM',
+        link: link || '',
+        entityType: entityType || '',
+        entityId: entityId || '',
+      },
+    }).catch((err) => {
+      logger.error(`Failed to dispatch push notification for user ${userId}:`, err?.message || err);
+    });
+
+    return record;
   }
 
   static async broadcast(
@@ -30,7 +49,21 @@ export class NotificationService {
     type: string = 'BROADCAST',
     link?: string | null
   ): Promise<number> {
-    return NotificationRepository.broadcastNotifications(userIds, title, message, type, link);
+    const count = await NotificationRepository.broadcastNotifications(userIds, title, message, type, link);
+
+    // Asynchronously dispatch real-time Push Notification to all users
+    PushNotificationService.sendToUsers(userIds, {
+      title,
+      body: message,
+      data: {
+        type: type || 'BROADCAST',
+        link: link || '',
+      },
+    }).catch((err) => {
+      logger.error('Failed to dispatch broadcast push notification:', err?.message || err);
+    });
+
+    return count;
   }
 
   static async getUserNotifications(userId: string, limit?: number): Promise<NotificationRecord[]> {

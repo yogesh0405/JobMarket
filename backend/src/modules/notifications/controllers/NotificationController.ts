@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../middlewares/authMiddleware';
 import { NotificationService } from '../services/NotificationService';
+import { DeviceTokenRepository } from '../repositories/DeviceTokenRepository';
 
 export class NotificationController {
   /**
@@ -113,6 +114,62 @@ export class NotificationController {
         success: true,
         message: 'All notifications cleared',
         clearedCount
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/notifications/device-token
+   * Register or update user device push token
+   */
+  static async registerDeviceToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const { fcmToken, deviceType } = req.body;
+
+      if (!fcmToken || typeof fcmToken !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'fcmToken is required and must be a valid string',
+        });
+      }
+
+      const platform = (deviceType === 'ios' ? 'ios' : 'android') as 'android' | 'ios';
+      const record = await DeviceTokenRepository.upsertToken(userId, fcmToken.trim(), platform);
+
+      res.status(200).json({
+        success: true,
+        message: 'Device token registered successfully',
+        data: record,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/notifications/device-token
+   * Remove device token on logout
+   */
+  static async unregisterDeviceToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.userId;
+      const { fcmToken } = req.body;
+
+      if (!fcmToken || typeof fcmToken !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'fcmToken is required and must be a valid string',
+        });
+      }
+
+      const deleted = await DeviceTokenRepository.deleteToken(fcmToken.trim(), userId);
+
+      res.status(200).json({
+        success: true,
+        message: deleted ? 'Device token unregistered successfully' : 'Device token not found',
       });
     } catch (error) {
       next(error);
