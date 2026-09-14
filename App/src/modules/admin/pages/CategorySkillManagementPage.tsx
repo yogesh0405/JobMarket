@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { CategoryIcon } from '../../../components/icons/CategoryIcon';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 
 export const CategorySkillManagementPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -17,6 +18,15 @@ export const CategorySkillManagementPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<any>(null); // { type: 'cat' | 'skill', id, name, icon, status }
 
   const { showToast } = useToast();
+
+  // Delete confirmation modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: 'cat' | 'skill' | null;
+    id: string;
+    name: string;
+  }>({ isOpen: false, type: null, id: '', name: '' });
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -99,18 +109,26 @@ export const CategorySkillManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteItem = async (type: 'cat' | 'skill', id: string) => {
-    if (!window.confirm(`Are you sure you want to delete this ${type === 'cat' ? 'category' : 'skill'}?`)) return;
+  const handleDeleteItem = (type: 'cat' | 'skill', id: string, name: string) => {
+    setDeleteModal({ isOpen: true, type, id, name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.type || !deleteModal.id) return;
+    setIsDeletingItem(true);
     try {
-      if (type === 'cat') {
-        await AdminApiService.deleteCategory(id);
+      if (deleteModal.type === 'cat') {
+        await AdminApiService.deleteCategory(deleteModal.id);
       } else {
-        await AdminApiService.deleteSkill(id);
+        await AdminApiService.deleteSkill(deleteModal.id);
       }
-      showToast('Item deleted successfully', 'success');
+      showToast(`${deleteModal.type === 'cat' ? 'Category' : 'Skill'} deleted successfully`, 'success');
+      setDeleteModal({ isOpen: false, type: null, id: '', name: '' });
       fetchData();
     } catch (err: any) {
       showToast(err.message || 'Failed to delete item', 'error');
+    } finally {
+      setIsDeletingItem(false);
     }
   };
 
@@ -179,7 +197,7 @@ export const CategorySkillManagementPage: React.FC = () => {
                           ✓ Approve & Add
                         </button>
                         <button 
-                          onClick={() => handleDeleteItem('cat', pc.id)} 
+                          onClick={() => handleDeleteItem('cat', pc.id, pc.name)} 
                           style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '7px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}
                         >
                           ✕ Reject
@@ -276,7 +294,7 @@ export const CategorySkillManagementPage: React.FC = () => {
                             <button 
                               className="action-btn delete" 
                               title="Delete Category" 
-                              onClick={() => handleDeleteItem('cat', c.id)} 
+                              onClick={() => handleDeleteItem('cat', c.id, c.name)} 
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#ef4444' }}
                             >
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -365,7 +383,7 @@ export const CategorySkillManagementPage: React.FC = () => {
                             <button 
                               className="action-btn delete" 
                               title="Delete Skill" 
-                              onClick={() => handleDeleteItem('skill', s.id)} 
+                              onClick={() => handleDeleteItem('skill', s.id, s.name)} 
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px', color: '#ef4444' }}
                             >
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -422,6 +440,28 @@ export const CategorySkillManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AdminConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete ${deleteModal.type === 'cat' ? 'Category' : 'Skill'}`}
+        message={
+          <>
+            Are you sure you want to permanently delete the{' '}
+            {deleteModal.type === 'cat' ? 'category' : 'skill'}{' '}
+            <strong>&ldquo;{deleteModal.name}&rdquo;</strong>?{' '}
+            Jobs and profiles using this {deleteModal.type === 'cat' ? 'category' : 'skill'} may be affected.
+          </>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeletingItem}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!isDeletingItem) setDeleteModal({ isOpen: false, type: null, id: '', name: '' });
+        }}
+      />
     </div>
   );
 };

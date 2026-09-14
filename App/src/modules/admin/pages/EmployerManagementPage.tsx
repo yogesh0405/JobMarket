@@ -16,8 +16,11 @@ import {
   X,
   CheckCircle2,
   XCircle,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 
 export const EmployerManagementPage: React.FC = () => {
   const [employers, setEmployers] = useState<any[]>([]);
@@ -32,6 +35,25 @@ export const EmployerManagementPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedEmployer, setSelectedEmployer] = useState<any>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+
+  // In-Screen Professional Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'primary' | 'success' | 'info';
+    icon?: React.ReactNode;
+    loading?: boolean;
+    showCancel?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const { showToast } = useToast();
 
@@ -76,31 +98,83 @@ export const EmployerManagementPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', employerName?: string) => {
+  const handleStatusChange = (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', employerName?: string) => {
     const nameStr = employerName || (selectedEmployer?.profile?.id === userId ? selectedEmployer.profile.name : '') || 'this employer';
-    const confirmPrompt = newStatus === 'BLOCKED'
-      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe employer will be blocked from posting jobs and accessing company features.`
-      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe employer account will be unlocked and granted full access to the platform.`;
-
-    if (!window.confirm(confirmPrompt)) {
-      return;
-    }
-
-    try {
-      await AdminApiService.updateUserStatus(userId, newStatus);
-      showToast(`Employer status successfully updated to ${newStatus}`, 'success');
-      if (selectedEmployer && selectedEmployer.profile.id === userId) {
-        setSelectedEmployer({
-          ...selectedEmployer,
-          profile: {
-            ...selectedEmployer.profile,
-            status: newStatus
+    
+    if (newStatus === 'BLOCKED') {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Block Employer Account?',
+        icon: <ShieldAlert size={28} />,
+        variant: 'danger',
+        confirmText: 'Yes, Block Employer',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to block <strong>"{nameStr}"</strong>?
+            <br />
+            The employer will be blocked from posting jobs, accessing applicants, and managing company listings.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'BLOCKED');
+            showToast('Employer status successfully updated to BLOCKED', 'success');
+            if (selectedEmployer && selectedEmployer.profile.id === userId) {
+              setSelectedEmployer({
+                ...selectedEmployer,
+                profile: {
+                  ...selectedEmployer.profile,
+                  status: 'BLOCKED'
+                }
+              });
+            }
+            fetchEmployers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
           }
-        });
-      }
-      fetchEmployers();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update status', 'error');
+        },
+      });
+    } else {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Activate Employer Account?',
+        icon: <ShieldCheck size={28} />,
+        variant: 'success',
+        confirmText: 'Yes, Activate Account',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to activate <strong>"{nameStr}"</strong>?
+            <br />
+            The employer account will be unlocked with full access to post jobs and search candidates.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'ACTIVE');
+            showToast('Employer status successfully updated to ACTIVE', 'success');
+            if (selectedEmployer && selectedEmployer.profile.id === userId) {
+              setSelectedEmployer({
+                ...selectedEmployer,
+                profile: {
+                  ...selectedEmployer.profile,
+                  status: 'ACTIVE'
+                }
+              });
+            }
+            fetchEmployers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+          }
+        },
+      });
     }
   };
 
@@ -431,6 +505,20 @@ export const EmployerManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* In-Screen Professional Confirmation Modal */}
+      <AdminConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        variant={confirmModal.variant}
+        icon={confirmModal.icon}
+        loading={confirmModal.loading}
+        showCancel={confirmModal.showCancel}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

@@ -3,6 +3,8 @@ import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { getInitials, safeJsonParse } from '../../../utils/helpers';
 import { ResumePreviewModal } from '../../../components/profile/ResumePreviewModal';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
 
 export const WorkerManagementPage: React.FC = () => {
   const [workers, setWorkers] = useState<any[]>([]);
@@ -14,6 +16,25 @@ export const WorkerManagementPage: React.FC = () => {
   const [status, setStatus] = useState('');
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [previewUserId, setPreviewUserId] = useState<string>('');
+
+  // In-Screen Professional Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'primary' | 'success' | 'info';
+    icon?: React.ReactNode;
+    loading?: boolean;
+    showCancel?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const { showToast } = useToast();
 
@@ -45,22 +66,65 @@ export const WorkerManagementPage: React.FC = () => {
     fetchWorkers();
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', workerName?: string) => {
+  const handleStatusChange = (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', workerName?: string) => {
     const nameStr = workerName || 'this worker';
-    const confirmPrompt = newStatus === 'BLOCKED'
-      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe worker will be prevented from logging in and applying to jobs.`
-      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe worker account will be unlocked and granted full access to the platform.`;
-
-    if (!window.confirm(confirmPrompt)) {
-      return;
-    }
-
-    try {
-      await AdminApiService.updateUserStatus(userId, newStatus);
-      showToast(`Worker status successfully updated to ${newStatus}`, 'success');
-      fetchWorkers();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update status', 'error');
+    
+    if (newStatus === 'BLOCKED') {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Block Worker Account?',
+        icon: <ShieldAlert size={28} />,
+        variant: 'danger',
+        confirmText: 'Yes, Block Worker',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to block <strong>"{nameStr}"</strong>?
+            <br />
+            The worker will be prevented from logging in, applying to jobs, and accessing their profile.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'BLOCKED');
+            showToast('Worker status successfully updated to BLOCKED', 'success');
+            fetchWorkers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+          }
+        },
+      });
+    } else {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Activate Worker Account?',
+        icon: <ShieldCheck size={28} />,
+        variant: 'success',
+        confirmText: 'Yes, Activate Account',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to activate <strong>"{nameStr}"</strong>?
+            <br />
+            The worker account will be unlocked with full access to apply for jobs.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'ACTIVE');
+            showToast('Worker status successfully updated to ACTIVE', 'success');
+            fetchWorkers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+          }
+        },
+      });
     }
   };
 
@@ -205,6 +269,21 @@ export const WorkerManagementPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* In-Screen Professional Confirmation Modal */}
+      <AdminConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        variant={confirmModal.variant}
+        icon={confirmModal.icon}
+        loading={confirmModal.loading}
+        showCancel={confirmModal.showCancel}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

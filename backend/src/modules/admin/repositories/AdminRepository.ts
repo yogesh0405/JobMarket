@@ -463,7 +463,11 @@ export class AdminRepository {
     return CacheService.getOrSet('cache:system:settings', 600, async () => {
       const query = 'SELECT key, value FROM system_settings;';
       const result = await pool.query(query);
-      const settings: Record<string, string> = {};
+      const settings: Record<string, string> = {
+        platform_name: 'JobMarket',
+        job_approval_toggle: 'true',
+        maintenance_mode: 'false'
+      };
       result.rows.forEach(row => {
         settings[row.key] = row.value;
       });

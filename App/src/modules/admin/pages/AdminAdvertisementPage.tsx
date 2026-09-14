@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Advertisement, AdvertisementType, AdvertisementPriority, AdvertisementAnalytics } from '../../../types/advertisement';
 import { apiFetch } from '../../../utils/api';
 import { useToast } from '../../../hooks/useToast';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 import '../../../styles/bannerSlider.css';
 
 export const AdminAdvertisementPage: React.FC = () => {
@@ -35,6 +36,12 @@ export const AdminAdvertisementPage: React.FC = () => {
   const [targetAudience, setTargetAudience] = useState('All Platform Users');
 
   const [submittingActionKey, setSubmittingActionKey] = useState<string | null>(null);
+
+  // Delete confirmation modal state
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean; adId: string | null; adTitle: string }>(
+    { isOpen: false, adId: null, adTitle: '' }
+  );
+  const [isDeletingAd, setIsDeletingAd] = useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -171,10 +178,16 @@ export const AdminAdvertisementPage: React.FC = () => {
     }
   };
 
-  // Handle Delete
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this banner?')) return;
+  // Handle Delete — opens confirmation modal
+  const handleDelete = (id: string, title: string) => {
+    setDeleteConfirmModal({ isOpen: true, adId: id, adTitle: title });
+  };
 
+  // Called when user confirms deletion in the modal
+  const handleConfirmDelete = async () => {
+    const id = deleteConfirmModal.adId;
+    if (!id) return;
+    setIsDeletingAd(true);
     setSubmittingActionKey(`delete-${id}`);
     try {
       const res = await apiFetch(`/api/v1/admin/advertisements/${id}`, {
@@ -182,9 +195,10 @@ export const AdminAdvertisementPage: React.FC = () => {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast('Advertisement banner deleted', 'info');
+        showToast('Advertisement banner permanently deleted.', 'info');
         window.dispatchEvent(new CustomEvent('notifications-updated'));
         if (previewAd?.id === id) setPreviewAd(null);
+        setDeleteConfirmModal({ isOpen: false, adId: null, adTitle: '' });
         loadData();
       } else {
         showToast(json.message || 'Failed to delete advertisement', 'error');
@@ -193,6 +207,7 @@ export const AdminAdvertisementPage: React.FC = () => {
       showToast('Error deleting advertisement', 'error');
     } finally {
       setSubmittingActionKey(null);
+      setIsDeletingAd(false);
     }
   };
 
@@ -630,7 +645,7 @@ export const AdminAdvertisementPage: React.FC = () => {
                                 Re-publish
                               </button>
                               <button
-                                onClick={() => handleDelete(ad.id)}
+                                onClick={() => handleDelete(ad.id, ad.title)}
                                 disabled={!!submittingActionKey}
                                 style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center' }}
                               >
@@ -810,7 +825,7 @@ export const AdminAdvertisementPage: React.FC = () => {
                     Re-publish Live
                   </button>
                   <button
-                    onClick={() => handleDelete(previewAd.id)}
+                    onClick={() => handleDelete(previewAd.id, previewAd.title)}
                     disabled={!!submittingActionKey}
                     style={{ padding: '10px 22px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
                   >
@@ -1024,7 +1039,7 @@ export const AdminAdvertisementPage: React.FC = () => {
               <button onClick={() => setCreateModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
             </div>
 
-            <form onSubmit={handleAdminCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <form onSubmit={handleCreateAdminBanner} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Image Upload */}
               <div>
                 <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '13px' }}>Banner Image *</label>
@@ -1118,6 +1133,26 @@ export const AdminAdvertisementPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* DELETE CONFIRMATION MODAL */}
+      <AdminConfirmationModal
+        isOpen={deleteConfirmModal.isOpen}
+        title="Delete Advertisement Banner"
+        message={
+          <>
+            Are you sure you want to <strong>permanently delete</strong> the banner{' '}
+            <strong>&ldquo;{deleteConfirmModal.adTitle}&rdquo;</strong>?{' '}
+            This action cannot be undone and all analytics data will also be removed.
+          </>
+        }
+        confirmText="Delete Permanently"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeletingAd}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!isDeletingAd) setDeleteConfirmModal({ isOpen: false, adId: null, adTitle: '' });
+        }}
+      />
     </div>
   );
 };

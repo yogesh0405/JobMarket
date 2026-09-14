@@ -486,15 +486,21 @@ export class JobController {
       // Trigger In-App Notification for Employer
       (async () => {
         try {
+          const isDirectlyLive = data.status === 'active' || data.status === 'APPROVED';
+          const notifTitle = isDirectlyLive ? 'Job Published & Live! 🎉' : 'Job Submitted for Admin Approval';
+          const notifMessage = isDirectlyLive
+            ? `Your job post "${data.title}" is now directly live and open for candidate applications!`
+            : `Your job post "${data.title}" has been submitted for admin approval. It will go live once approved by the JobMarket team.`;
+
           await NotificationService.sendNotification(
             employerId,
-            'Job Submitted for Admin Approval',
-            `Your job post "${data.title}" has been submitted for admin approval. It will go live once approved by the JobMarket team.`,
+            notifTitle,
+            notifMessage,
             'JOB_APPROVAL',
             '/dashboard?tab=manage',
             'JOB',
             data.id,
-            { jobId: data.id, title: data.title }
+            { jobId: data.id, title: data.title, isDirectlyLive }
           );
         } catch (notifErr) {
           // Non-blocking notification dispatch

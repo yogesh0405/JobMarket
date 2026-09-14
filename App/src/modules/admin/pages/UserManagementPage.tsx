@@ -3,6 +3,8 @@ import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { getInitials } from '../../../utils/helpers';
 import { ResumePreviewModal } from '../../../components/profile/ResumePreviewModal';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
+import { ShieldAlert, ShieldCheck, Trash2, KeyRound, Eye } from 'lucide-react';
 
 export const UserManagementPage: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -19,10 +21,28 @@ export const UserManagementPage: React.FC = () => {
   const [status, setStatus] = useState('');
   const [verified, setVerified] = useState('');
 
-  // Details drawer
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerLoading, setDrawerLoading] = useState(false);
+
+  // In-Screen Professional Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'primary' | 'success' | 'info';
+    icon?: React.ReactNode;
+    loading?: boolean;
+    showCancel?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const { showToast } = useToast();
 
@@ -78,53 +98,191 @@ export const UserManagementPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', userName?: string) => {
+  const handleStatusChange = (userId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED', userName?: string) => {
     const nameStr = userName || (selectedUser?.profile?.id === userId ? selectedUser.profile.name : '') || 'this user';
-    const confirmPrompt = newStatus === 'BLOCKED'
-      ? `Are you sure you want to BLOCK "${nameStr}"?\n\nThe user will be blocked from logging in, applying to jobs, and using the platform.`
-      : `Are you sure you want to ACTIVATE "${nameStr}"?\n\nThe user account will be unlocked and granted full access to the platform.`;
-
-    if (!window.confirm(confirmPrompt)) {
-      return;
+    
+    if (newStatus === 'BLOCKED') {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Block User Account?',
+        icon: <ShieldAlert size={28} />,
+        variant: 'danger',
+        confirmText: 'Yes, Block Account',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to block <strong>"{nameStr}"</strong>?
+            <br />
+            The user will be immediately logged out and prevented from accessing the platform or applying to jobs.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'BLOCKED');
+            showToast(`User account successfully blocked`, 'success');
+            if (selectedUser && selectedUser.profile.id === userId) {
+              setSelectedUser((prev: any) => ({
+                ...prev,
+                profile: { ...prev.profile, status: 'BLOCKED' }
+              }));
+            }
+            fetchUsers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update user status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+          }
+        },
+      });
+    } else {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Activate User Account?',
+        icon: <ShieldCheck size={28} />,
+        variant: 'success',
+        confirmText: 'Yes, Activate Account',
+        cancelText: 'Cancel',
+        message: (
+          <div>
+            Are you sure you want to activate <strong>"{nameStr}"</strong>?
+            <br />
+            The user account will be unlocked with full access to login and apply to jobs.
+          </div>
+        ),
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, loading: true }));
+          try {
+            await AdminApiService.updateUserStatus(userId, 'ACTIVE');
+            showToast(`User account successfully activated`, 'success');
+            if (selectedUser && selectedUser.profile.id === userId) {
+              setSelectedUser((prev: any) => ({
+                ...prev,
+                profile: { ...prev.profile, status: 'ACTIVE' }
+              }));
+            }
+            fetchUsers();
+          } catch (err: any) {
+            showToast(err.message || 'Failed to update user status', 'error');
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+          }
+        },
+      });
     }
+  };
 
-    try {
-      await AdminApiService.updateUserStatus(userId, newStatus);
-      showToast(`User status successfully updated to ${newStatus}`, 'success');
-      
-      // Update drawer state if open
-      if (selectedUser && selectedUser.profile.id === userId) {
-        setSelectedUser((prev: any) => ({
-          ...prev,
-          profile: { ...prev.profile, status: newStatus }
-        }));
+  const handleResetPassword = (userId: string, userName?: string) => {
+    const nameStr = userName || (selectedUser?.profile?.id === userId ? selectedUser.profile.name : '') || 'this user';
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reset User Password?',
+      icon: <KeyRound size={28} />,
+      variant: 'warning',
+      confirmText: 'Reset Password',
+      cancelText: 'Cancel',
+      message: (
+        <div>
+          Are you sure you want to generate a new temporary password for <strong>"{nameStr}"</strong>?
+          <br />
+          Their existing password will be invalidated immediately.
+        </div>
+      ),
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, loading: true }));
+        try {
+          const res = await AdminApiService.resetUserPassword(userId);
+          setConfirmModal({
+            isOpen: true,
+            title: 'Password Successfully Reset',
+            icon: <KeyRound size={28} />,
+            variant: 'info',
+            confirmText: 'Done',
+            showCancel: false,
+            message: (
+              <div>
+                <p style={{ margin: '0 0 12px 0' }}>Share this temporary password with the user:</p>
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px dashed #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  fontSize: '16px',
+                  fontWeight: '800',
+                  color: '#0f172a',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <code>{res.tempPassword}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(res.tempPassword);
+                      showToast('Password copied to clipboard!', 'success');
+                    }}
+                    style={{
+                      background: '#eff6ff',
+                      color: '#1b4fdf',
+                      border: '1px solid #bfdbfe',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            ),
+            onConfirm: () => {
+              setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+          });
+        } catch (err: any) {
+          showToast(err.message || 'Failed to reset password', 'error');
+          setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+        }
       }
-      fetchUsers();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update user status', 'error');
-    }
+    });
   };
 
-  const handleResetPassword = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to reset this user\'s password?')) return;
-    try {
-      const res = await AdminApiService.resetUserPassword(userId);
-      window.alert(`Password successfully reset! Temporary Password: ${res.tempPassword}\n\nPlease copy this password and share it with the user.`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to reset password', 'error');
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('WARNING: Deleting a user will permanently remove their profile, jobs, and application records. This action cannot be undone. Are you sure you want to proceed?')) return;
-    try {
-      await AdminApiService.deleteUser(userId);
-      showToast('User deleted successfully', 'success');
-      setDrawerOpen(false);
-      fetchUsers();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete user', 'error');
-    }
+  const handleDeleteUser = (userId: string, userName?: string) => {
+    const nameStr = userName || (selectedUser?.profile?.id === userId ? selectedUser.profile.name : '') || 'this user';
+    setConfirmModal({
+      isOpen: true,
+      title: 'Permanently Delete User?',
+      icon: <Trash2 size={28} />,
+      variant: 'danger',
+      confirmText: 'Yes, Delete Permanently',
+      cancelText: 'Cancel',
+      message: (
+        <div>
+          Are you sure you want to delete <strong>"{nameStr}"</strong>?
+          <br />
+          <span style={{ color: '#dc2626', fontWeight: '600' }}>
+            Warning: This will permanently remove their profile, jobs, and applications. This action cannot be undone.
+          </span>
+        </div>
+      ),
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, loading: true }));
+        try {
+          await AdminApiService.deleteUser(userId);
+          showToast('User permanently deleted', 'success');
+          setDrawerOpen(false);
+          fetchUsers();
+        } catch (err: any) {
+          showToast(err.message || 'Failed to delete user', 'error');
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, loading: false }));
+        }
+      }
+    });
   };
 
   return (
@@ -227,34 +385,14 @@ export const UserManagementPage: React.FC = () => {
                     </td>
                     <td>{new Date(u.created_at).toLocaleDateString()}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button className="action-btn edit" title="View Profile Drawer" onClick={() => handleOpenDrawer(u.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </button>
-                        {u.status === 'BLOCKED' ? (
-                          <button className="action-btn" title="Unblock User" onClick={() => handleStatusChange(u.id, 'ACTIVE', u.name)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--success)' }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg>
-                          </button>
-                        ) : (
-                          <button className="action-btn" title="Block User" onClick={() => handleStatusChange(u.id, 'BLOCKED', u.name)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                            </svg>
-                          </button>
-                        )}
-                        <button className="action-btn delete" title="Delete User Profile" onClick={() => handleDeleteUser(u.id)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px', color: 'var(--danger)' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }} 
+                          onClick={() => handleOpenDrawer(u.id)}
+                          title="View Profile"
+                        >
+                          <Eye size={12} /> View Profile
                         </button>
                       </div>
                     </td>
@@ -491,6 +629,21 @@ export const UserManagementPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* In-Screen Professional Confirmation Modal */}
+      <AdminConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        variant={confirmModal.variant}
+        icon={confirmModal.icon}
+        loading={confirmModal.loading}
+        showCancel={confirmModal.showCancel}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

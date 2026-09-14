@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 
 export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
@@ -10,6 +11,14 @@ export const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const { showToast } = useToast();
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    reportId: string;
+    action: 'ignore' | 'delete_content' | 'suspend_user' | null;
+  }>({ isOpen: false, reportId: '', action: null });
+  const [isResolvingReport, setIsResolvingReport] = useState(false);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -28,26 +37,27 @@ export const ReportsPage: React.FC = () => {
     fetchReports();
   }, [page]);
 
-  const handleResolveAction = async (reportId: string, action: 'ignore' | 'delete_content' | 'suspend_user') => {
-    const confirmationMsg = action === 'delete_content' 
-      ? 'Are you sure you want to delete the reported content?' 
-      : action === 'suspend_user' 
-      ? 'Are you sure you want to deactivate the violating user account?' 
-      : 'Are you sure you want to ignore this report?';
-      
-    if (!window.confirm(confirmationMsg)) return;
+  const handleResolveAction = (reportId: string, action: 'ignore' | 'delete_content' | 'suspend_user') => {
+    setConfirmModal({ isOpen: true, reportId, action });
+  };
 
+  const handleConfirmResolve = async () => {
+    if (!confirmModal.action || !confirmModal.reportId) return;
+    setIsResolvingReport(true);
     try {
-      await AdminApiService.resolveReport(reportId, action);
+      await AdminApiService.resolveReport(confirmModal.reportId, confirmModal.action);
       showToast('Report resolved successfully', 'success');
+      setConfirmModal({ isOpen: false, reportId: '', action: null });
       fetchReports();
     } catch (err: any) {
       showToast(err.message || 'Failed to resolve report', 'error');
+    } finally {
+      setIsResolvingReport(false);
     }
   };
 
   return (
-    <div>
+    <>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>Content Moderation & Reports</h1>
         <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Audit flagged listings, review reporting details, and suspend violations</p>
@@ -145,7 +155,40 @@ export const ReportsPage: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+
+      {/* REPORT ACTION CONFIRMATION MODAL */}
+      <AdminConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={
+          confirmModal.action === 'delete_content'
+            ? 'Delete Reported Content'
+            : confirmModal.action === 'suspend_user'
+            ? 'Suspend User Account'
+            : 'Ignore Report'
+        }
+        message={
+          confirmModal.action === 'delete_content'
+            ? 'This will permanently remove the flagged content from the platform. This action cannot be undone.'
+            : confirmModal.action === 'suspend_user'
+            ? "This will deactivate the violating user's account. They will lose access to the platform immediately."
+            : 'This report will be marked as ignored and removed from the active queue. No action will be taken against the content or user.'
+        }
+        confirmText={
+          confirmModal.action === 'delete_content'
+            ? 'Delete Content'
+            : confirmModal.action === 'suspend_user'
+            ? 'Suspend Account'
+            : 'Ignore Report'
+        }
+        cancelText="Cancel"
+        variant={confirmModal.action === 'ignore' ? 'warning' : 'danger'}
+        loading={isResolvingReport}
+        onConfirm={handleConfirmResolve}
+        onCancel={() => {
+          if (!isResolvingReport) setConfirmModal({ isOpen: false, reportId: '', action: null });
+        }}
+      />
+    </>
   );
 };
 export default ReportsPage;

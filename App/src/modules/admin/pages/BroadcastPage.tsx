@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
+import { Megaphone } from 'lucide-react';
 
 export const BroadcastPage: React.FC = () => {
   const { showToast } = useToast();
@@ -14,6 +16,7 @@ export const BroadcastPage: React.FC = () => {
   const [actionLink, setActionLink] = useState('');
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -66,12 +69,13 @@ export const BroadcastPage: React.FC = () => {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to dispatch this broadcast to target audience "${targetAudience}"?`)) {
-      return;
-    }
+    setShowConfirmModal(true);
+  };
 
+  const executeSendBroadcast = async () => {
     try {
       setSending(true);
+      setShowConfirmModal(false);
       const res = await AdminApiService.broadcastNotifications({
         targetAudience,
         category: targetAudience === 'CATEGORY_WORKERS' ? category : undefined,
@@ -434,6 +438,37 @@ export const BroadcastPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* In-Screen Professional Confirmation Modal */}
+      <AdminConfirmationModal
+        isOpen={showConfirmModal}
+        title="Dispatch Broadcast Announcement?"
+        variant="primary"
+        icon={<Megaphone size={28} />}
+        confirmText="Yes, Send Broadcast"
+        cancelText="Cancel"
+        loading={sending}
+        message={
+          <div>
+            You are about to dispatch this announcement to{' '}
+            <strong>
+              {targetAudience === 'ALL'
+                ? 'ALL Platform Users'
+                : targetAudience === 'WORKERS'
+                ? 'All Candidates / Workers'
+                : targetAudience === 'EMPLOYERS'
+                ? 'All Employers / Recruiters'
+                : `Workers in "${category}"`}
+            </strong>{' '}
+            via{' '}
+            <strong>{channels.join(', ')}</strong>.
+            <br />
+            Are you sure you want to proceed?
+          </div>
+        }
+        onConfirm={executeSendBroadcast}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 };

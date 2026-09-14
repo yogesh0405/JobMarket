@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../../utils/api';
 import { useToast } from '../../../hooks/useToast';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 
 interface SupportTicket {
   id: string;
@@ -38,6 +39,14 @@ interface SupportMessage {
 
 export const SupportManagementPage: React.FC = () => {
   const { showToast } = useToast();
+
+  // Delete confirmation modal state
+  const [deleteTicketModal, setDeleteTicketModal] = useState<{
+    isOpen: boolean;
+    ticketId: string;
+    ticketNumber: string;
+  }>({ isOpen: false, ticketId: '', ticketNumber: '' });
+  const [isDeletingTicket, setIsDeletingTicket] = useState(false);
   
   // Listings and pagination state
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -334,19 +343,27 @@ export const SupportManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTicket = async (id: string) => {
-    if (!window.confirm('WARNING: Are you sure you want to delete this ticket permanently? This action cannot be undone.')) return;
+  const handleDeleteTicket = (id: string, ticketNumber: string) => {
+    setDeleteTicketModal({ isOpen: true, ticketId: id, ticketNumber });
+  };
+
+  const handleConfirmDeleteTicket = async () => {
+    if (!deleteTicketModal.ticketId) return;
+    setIsDeletingTicket(true);
     try {
-      const res = await apiFetch(`/api/admin/support/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/admin/support/${deleteTicketModal.ticketId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         showToast('Ticket deleted successfully', 'success');
         setSelectedTicket(null);
+        setDeleteTicketModal({ isOpen: false, ticketId: '', ticketNumber: '' });
         fetchTickets();
         fetchAnalytics();
       }
     } catch (err) {
       showToast('Failed to delete ticket', 'error');
+    } finally {
+      setIsDeletingTicket(false);
     }
   };
 
@@ -615,7 +632,7 @@ export const SupportManagementPage: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>Manage Ticket</h3>
                 <button
-                  onClick={() => handleDeleteTicket(selectedTicket.id)}
+                  onClick={() => handleDeleteTicket(selectedTicket.id, selectedTicket.ticket_number)}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -1012,6 +1029,26 @@ export const SupportManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* DELETE TICKET CONFIRMATION MODAL */}
+      <AdminConfirmationModal
+        isOpen={deleteTicketModal.isOpen}
+        title="Delete Support Ticket"
+        message={
+          <>
+            Are you sure you want to <strong>permanently delete</strong> ticket{' '}
+            <strong>{deleteTicketModal.ticketNumber}</strong>?{' '}
+            All messages and history associated with this ticket will be permanently lost.
+          </>
+        }
+        confirmText="Delete Ticket"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeletingTicket}
+        onConfirm={handleConfirmDeleteTicket}
+        onCancel={() => {
+          if (!isDeletingTicket) setDeleteTicketModal({ isOpen: false, ticketId: '', ticketNumber: '' });
+        }}
+      />
     </div>
   );
 };

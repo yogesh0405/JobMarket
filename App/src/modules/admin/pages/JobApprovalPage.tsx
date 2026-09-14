@@ -3,6 +3,7 @@ import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
 import { formatNumber, formatDate } from '../../../utils/helpers';
 import { CompanyDefaultLogo } from '../../../components/company/CompanyDefaultLogo';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 import {
   Eye,
   CheckCircle2,
@@ -27,7 +28,9 @@ import {
   ListChecks,
   X,
   Sparkles,
-  Building
+  Building,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 
 export const JobApprovalPage: React.FC = () => {
@@ -40,6 +43,12 @@ export const JobApprovalPage: React.FC = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [jobToApprove, setJobToApprove] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Approval Queue Mode Switcher State
+  const [queueEnabled, setQueueEnabled] = useState(true);
+  const [toggleModalOpen, setToggleModalOpen] = useState(false);
+  const [pendingToggleValue, setPendingToggleValue] = useState(true);
+  const [toggleUpdating, setToggleUpdating] = useState(false);
 
   const { showToast } = useToast();
 
@@ -56,8 +65,20 @@ export const JobApprovalPage: React.FC = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await AdminApiService.getSettings();
+      if (res) {
+        setQueueEnabled(res.job_approval_toggle !== 'false' && res.job_approval_required !== 'false');
+      }
+    } catch (err) {
+      console.warn('Could not fetch settings in JobApprovalPage', err);
+    }
+  };
+
   useEffect(() => {
     fetchPendingJobs();
+    fetchSettings();
   }, []);
 
   const handleOpenDetails = async (jobId: string) => {
@@ -118,11 +139,179 @@ export const JobApprovalPage: React.FC = () => {
     }
   };
 
+  const handleToggleClick = (targetVal: boolean) => {
+    if (targetVal === queueEnabled) return;
+    setPendingToggleValue(targetVal);
+    setToggleModalOpen(true);
+  };
+
+  const confirmToggleQueue = async () => {
+    setToggleUpdating(true);
+    try {
+      const newToggleStr = pendingToggleValue ? 'true' : 'false';
+      await AdminApiService.updateSettings({
+        job_approval_toggle: newToggleStr
+      });
+      setQueueEnabled(pendingToggleValue);
+      setToggleModalOpen(false);
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: { job_approval_toggle: newToggleStr } }));
+
+      if (pendingToggleValue) {
+        showToast('Job Posting Approval Queue is now ENABLED. All new postings will require admin review.', 'success');
+      } else {
+        showToast('Approval Queue is now DISABLED. New employer job posts will publish directly LIVE!', 'warning');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update approval queue setting', 'error');
+    } finally {
+      setToggleUpdating(false);
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>Job Approvals Queue</h1>
         <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Review and approve new job postings from factories and employers</p>
+      </div>
+
+      {/* Approval Queue Setting Banner */}
+      <div
+        className="admin-card"
+        style={{
+          margin: '0 0 24px 0',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          border: queueEnabled ? '1px solid #E2E8F0' : '1.5px solid #F59E0B',
+          background: queueEnabled 
+            ? 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)' 
+            : 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '20px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', maxWidth: '680px' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              backgroundColor: queueEnabled ? '#EFF6FF' : '#FEF3C7',
+              color: queueEnabled ? '#1B4FDF' : '#D97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: queueEnabled ? '0 4px 12px rgba(27, 79, 223, 0.15)' : '0 4px 12px rgba(217, 119, 6, 0.18)'
+            }}
+          >
+            {queueEnabled ? <ShieldCheck size={26} /> : <Zap size={26} />}
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  letterSpacing: '0.5px',
+                  padding: '3px 9px',
+                  borderRadius: '6px',
+                  backgroundColor: queueEnabled ? '#DCFCE7' : '#FEE2E2',
+                  color: queueEnabled ? '#15803D' : '#DC2626',
+                  border: queueEnabled ? '1px solid #86EFAC' : '1px solid #FECACA',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    backgroundColor: queueEnabled ? '#16A34A' : '#DC2626'
+                  }}
+                />
+                {queueEnabled ? 'APPROVAL QUEUE: ACTIVE' : 'APPROVAL QUEUE: DISABLED (DIRECT LIVE)'}
+              </span>
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
+                {jobs.length} pending review
+              </span>
+            </div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: '800', color: '#0F172A' }}>
+              {queueEnabled ? 'Job Postings Pre-Publication Moderation' : 'Direct Live Publishing Mode'}
+            </h3>
+            <p style={{ margin: 0, fontSize: '13px', color: queueEnabled ? '#64748B' : '#92400E', lineHeight: '1.5' }}>
+              {queueEnabled
+                ? 'All new employer postings are held in this queue. When an admin clicks Approve, they are immediately listed in the live candidate app.'
+                : 'Approval queue is bypassed. Employer job postings will be directly LIVE on the candidate app immediately upon submission without admin review.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Toggle Switch */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              padding: '4px',
+              borderRadius: '10px',
+              border: '1.5px solid #CBD5E1',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              gap: '4px'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleToggleClick(true)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '7px',
+                border: 'none',
+                backgroundColor: queueEnabled ? '#1B4FDF' : 'transparent',
+                color: queueEnabled ? '#FFFFFF' : '#64748B',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <ShieldCheck size={14} /> Queue ON (Review)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleClick(false)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '7px',
+                border: 'none',
+                backgroundColor: !queueEnabled ? '#D97706' : 'transparent',
+                color: !queueEnabled ? '#FFFFFF' : '#64748B',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Zap size={14} /> Queue OFF (Direct Live)
+            </button>
+          </div>
+          <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>
+            Click button to toggle approval policy
+          </span>
+        </div>
       </div>
 
       {loading ? (
@@ -569,6 +758,42 @@ export const JobApprovalPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Toggle Confirmation Modal */}
+      <AdminConfirmationModal
+        isOpen={toggleModalOpen}
+        title={pendingToggleValue ? 'Enable Job Approval Queue?' : 'Disable Job Approval Queue (Direct Live)?'}
+        variant={pendingToggleValue ? 'primary' : 'warning'}
+        confirmText={pendingToggleValue ? 'Yes, Enable Approval Queue' : 'Yes, Turn Off Queue (Direct Live)'}
+        cancelText="Cancel"
+        loading={toggleUpdating}
+        onCancel={() => !toggleUpdating && setToggleModalOpen(false)}
+        onConfirm={confirmToggleQueue}
+        message={
+          pendingToggleValue ? (
+            <div>
+              <p style={{ margin: '0 0 10px 0' }}>
+                Enabling the <strong>Job Approval Queue</strong> ensures that all new employer postings and updates are held in review.
+              </p>
+              <p style={{ margin: 0 }}>
+                Jobs will <strong>only become visible to candidates</strong> once an administrator evaluates and approves them here.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p style={{ margin: '0 0 10px 0', color: '#B45309', fontWeight: '600' }}>
+                ⚠️ <strong>Warning:</strong> You are switching to Direct Live Publishing mode!
+              </p>
+              <p style={{ margin: '0 0 10px 0' }}>
+                Employer job postings will <strong>immediately become live on the candidate app</strong> upon submission without waiting for admin approval.
+              </p>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748B' }}>
+                You can turn the approval queue back ON at any time.
+              </p>
+            </div>
+          )
+        }
+      />
     </div>
   );
 };

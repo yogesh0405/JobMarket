@@ -2,6 +2,7 @@ import { pool } from '../../../config/database/pool';
 import { GeocodingService } from '../services/geocodingService';
 import { CacheService } from '../../../utils/redisCache';
 import { safeJsonParse } from '../../../utils/jsonUtils';
+import { AdminRepository } from '../../admin/repositories/AdminRepository';
 
 export interface JobData {
   title: string;
@@ -470,6 +471,17 @@ export class JobRepository {
       }
     }
 
+    // Check system settings for job approval queue requirement
+    let initialStatus = 'PENDING_REVIEW';
+    try {
+      const settings = await AdminRepository.getSettings();
+      if (settings && (settings.job_approval_toggle === 'false' || settings.job_approval_required === 'false')) {
+        initialStatus = 'APPROVED';
+      }
+    } catch (settingErr) {
+      initialStatus = 'PENDING_REVIEW';
+    }
+
     const query = `
       INSERT INTO jobs (
         employer_id, company, company_logo, company_color, title, industry, location, 
@@ -493,7 +505,7 @@ export class JobRepository {
         $36, $37, $38, $39, $40,
         $41, $42, $43, $44, $45, $46,
         $47, $48, $49, $50, $51, $52,
-        $53, $54, $55, $56, $57, $58, $59, $60, $61, 'PENDING_REVIEW'
+        $53, $54, $55, $56, $57, $58, $59, $60, $61, $62
       ) RETURNING *
     `;
 
@@ -558,16 +570,17 @@ export class JobRepository {
       jobData.walkInContactPerson || null,
       jobData.walkInContactNumber || null,
       jobData.walkInDocuments || null,
-      jobData.educationRequirement || '10th Pass'
+      jobData.educationRequirement || '10th Pass',
+      initialStatus
     ];
 
     if (jobData.industry) {
       try {
         await pool.query(
           `INSERT INTO categories (name, icon, status) 
-           VALUES ($1, '💼', 'PENDING_REVIEW') 
+           VALUES ($1, '💼', $2) 
            ON CONFLICT (name) DO NOTHING;`,
-          [jobData.industry]
+          [jobData.industry, initialStatus]
         );
       } catch (catErr) {
         console.warn('Custom category auto-registration notice:', catErr);
@@ -677,8 +690,18 @@ export class JobRepository {
     `;
 
     let targetStatus: string | null = null;
+    let approvalToggle = 'true';
+    try {
+      const settings = await AdminRepository.getSettings();
+      if (settings && (settings.job_approval_toggle === 'false' || settings.job_approval_required === 'false')) {
+        approvalToggle = 'false';
+      }
+    } catch {
+      approvalToggle = 'true';
+    }
+
     if (currentJob.status === 'REJECTED' || jobData.resubmit) {
-      targetStatus = 'PENDING_REVIEW';
+      targetStatus = approvalToggle === 'false' ? 'APPROVED' : 'PENDING_REVIEW';
     } else if (jobData.status !== undefined) {
       targetStatus = jobData.status === 'active' ? 'APPROVED' : (jobData.status === 'pending' ? 'PENDING_REVIEW' : 'CLOSED');
     }

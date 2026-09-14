@@ -925,12 +925,15 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       };
 
       if (isEdit && id) {
-        await updateJob(id, jobData);
+        const updatedJob = await updateJob(id, jobData);
         setIsSubmitting(false);
+        const isLive = updatedJob?.status === 'active' || updatedJob?.status === 'APPROVED';
         setSuccessModalConfig({
           visible: true,
-          title: 'Job Updated Successfully !',
-          message: `Your updated job post "${finalTitle}" has been submitted for admin review and approval. It will go live once approved by the JobMarket team.`,
+          title: isLive ? 'Job Updated & Live ! 🎉' : 'Job Updated Successfully !',
+          message: isLive
+            ? `Your updated job post "${finalTitle}" is now live and updated across the platform!`
+            : `Your updated job post "${finalTitle}" has been submitted for admin review and approval. It will go live once approved by the JobMarket team.`,
           buttonText: 'Manage Jobs',
           onButtonPress: () => {
             setSuccessModalConfig((prev) => ({ ...prev, visible: false }));
@@ -938,12 +941,15 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           },
         });
       } else {
-        await createJob(jobData);
+        const newJob = await createJob(jobData);
         setIsSubmitting(false);
+        const isLive = newJob?.status === 'active' || newJob?.status === 'APPROVED';
         setSuccessModalConfig({
           visible: true,
-          title: 'Job Submitted for Approval !',
-          message: `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
+          title: isLive ? 'Job Published Successfully ! 🎉' : 'Job Submitted for Approval !',
+          message: isLive
+            ? `Your job opening "${finalTitle}" is now directly live! Candidates can view and apply for it immediately.`
+            : `Your job post "${finalTitle}" has been sent for admin review and approval. It will go live once approved by the JobMarket admin team.`,
           buttonText: 'Manage Jobs',
           onButtonPress: () => {
             setSuccessModalConfig((prev) => ({ ...prev, visible: false }));

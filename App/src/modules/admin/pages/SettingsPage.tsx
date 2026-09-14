@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { AdminApiService } from '../services/adminApi';
 import { useToast } from '../../../hooks/useToast';
-import { Upload, Trash2, Image as ImageIcon, CheckCircle, RefreshCw, AlertTriangle, X, RotateCcw } from 'lucide-react';
+import { Upload, Trash2, Image as ImageIcon, CheckCircle, RefreshCw, AlertTriangle, X, RotateCcw, ShieldCheck, Zap } from 'lucide-react';
 import { compressImageIfNecessary } from '../../../utils/uploadToCloudinary';
+import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
 
 export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<Record<string, string>>({
@@ -11,7 +12,8 @@ export const SettingsPage: React.FC = () => {
     logo_url: '',
     support_email: 'support@csnjobmarket.com',
     contact_number: '+91 240 2554000',
-    maintenance_mode: 'false'
+    maintenance_mode: 'false',
+    job_approval_toggle: 'true'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,6 +21,9 @@ export const SettingsPage: React.FC = () => {
   const [showEnableMaintenanceModal, setShowEnableMaintenanceModal] = useState(false);
   const [showDisableMaintenanceModal, setShowDisableMaintenanceModal] = useState(false);
   const [typedConfirmation, setTypedConfirmation] = useState('');
+  const [showApprovalToggleModal, setShowApprovalToggleModal] = useState(false);
+  const [pendingApprovalToggle, setPendingApprovalToggle] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { showToast } = useToast();
@@ -87,6 +92,37 @@ export const SettingsPage: React.FC = () => {
       showToast('Maintenance mode deactivated. Platform is now LIVE!', 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to update maintenance mode', 'error');
+    }
+  };
+
+  const handleApprovalToggleClick = (targetVal: boolean) => {
+    const isCurrentActive = settings.job_approval_toggle !== 'false' && settings.job_approval_required !== 'false';
+    if (targetVal === isCurrentActive) return;
+    setPendingApprovalToggle(targetVal);
+    setShowApprovalToggleModal(true);
+  };
+
+  const confirmApprovalToggle = async () => {
+    setToggleLoading(true);
+    try {
+      const updated = {
+        ...settings,
+        job_approval_toggle: pendingApprovalToggle ? 'true' : 'false'
+      };
+      setSettings(updated);
+      await AdminApiService.updateSettings(updated);
+      setShowApprovalToggleModal(false);
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: updated }));
+
+      if (pendingApprovalToggle) {
+        showToast('Job Posting Approval Queue is now ENABLED. All new postings will require admin review.', 'success');
+      } else {
+        showToast('Approval Queue is now DISABLED. New employer job posts will publish directly LIVE!', 'warning');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update job approval setting', 'error');
+    } finally {
+      setToggleLoading(false);
     }
   };
 
@@ -415,6 +451,69 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
 
+            <hr style={{ border: 'none', borderBottom: '1px solid #f1f5f9', margin: '0' }} />
+
+            {/* Job Posting Approval Queue Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+              <div style={{ maxWidth: '560px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                  <strong style={{ fontSize: '13.5px', color: '#0f172a', fontWeight: '700' }}>Job Posting Approval Queue</strong>
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: '800',
+                      padding: '2px 8px',
+                      borderRadius: '5px',
+                      backgroundColor: settings.job_approval_toggle !== 'false' ? '#DCFCE7' : '#FEF3C7',
+                      color: settings.job_approval_toggle !== 'false' ? '#15803D' : '#D97706',
+                      border: settings.job_approval_toggle !== 'false' ? '1px solid #86EFAC' : '1px solid #FDE68A'
+                    }}
+                  >
+                    {settings.job_approval_toggle !== 'false' ? 'QUEUE ACTIVE (MODERATION)' : 'DIRECT LIVE (QUEUE OFF)'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
+                  When ON, new employer postings are held in the approval queue until approved by admin. When OFF, postings go directly live on the platform.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f1f5f9', padding: '3px', borderRadius: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleApprovalToggleClick(true)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    backgroundColor: settings.job_approval_toggle !== 'false' ? '#1B4FDF' : 'transparent',
+                    color: settings.job_approval_toggle !== 'false' ? '#ffffff' : '#64748b'
+                  }}
+                >
+                  QUEUE ON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApprovalToggleClick(false)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    backgroundColor: settings.job_approval_toggle === 'false' ? '#D97706' : 'transparent',
+                    color: settings.job_approval_toggle === 'false' ? '#ffffff' : '#64748b'
+                  }}
+                >
+                  DIRECT LIVE
+                </button>
+              </div>
+            </div>
+
           </div>
 
           <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -677,6 +776,41 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* 3. Confirmation Modal for Job Approval Queue Toggle */}
+      <AdminConfirmationModal
+        isOpen={showApprovalToggleModal}
+        title={pendingApprovalToggle ? 'Enable Job Approval Queue?' : 'Disable Job Approval Queue (Direct Live)?'}
+        variant={pendingApprovalToggle ? 'primary' : 'warning'}
+        confirmText={pendingApprovalToggle ? 'Yes, Enable Approval Queue' : 'Yes, Turn Off Queue (Direct Live)'}
+        cancelText="Cancel"
+        loading={toggleLoading}
+        onCancel={() => !toggleLoading && setShowApprovalToggleModal(false)}
+        onConfirm={confirmApprovalToggle}
+        message={
+          pendingApprovalToggle ? (
+            <div>
+              <p style={{ margin: '0 0 10px 0' }}>
+                Enabling the <strong>Job Approval Queue</strong> ensures that all new employer job postings and revisions are reviewed before going live.
+              </p>
+              <p style={{ margin: 0 }}>
+                Jobs will remain in review status until an administrator evaluates and approves them.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p style={{ margin: '0 0 10px 0', color: '#B45309', fontWeight: '600' }}>
+                ⚠️ <strong>Warning:</strong> You are activating Direct Live Publishing mode!
+              </p>
+              <p style={{ margin: '0 0 10px 0' }}>
+                Employer job postings will <strong>immediately become live on the platform</strong> upon submission without prior admin review.
+              </p>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748B' }}>
+                You can revert back to the approval queue at any time.
+              </p>
+            </div>
+          )
+        }
+      />
     </div>
   );
 };
