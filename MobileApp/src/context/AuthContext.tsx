@@ -185,12 +185,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Register device push token whenever user logs in or auth state is restored
+  // Register device push token and sync user role whenever user logs in or auth state is restored
   useEffect(() => {
     if (user?.id) {
       PushNotificationManager.registerForPushNotifications().catch(() => {});
+      // Keep push notification router aware of the current user role
+      PushNotificationManager.setUserRole(user.role || 'candidate');
     }
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   const login = async (emailOrPayload: any, password?: string, roleOrAuthMethod?: string, payload?: any) => {
     setIsLoading(true);

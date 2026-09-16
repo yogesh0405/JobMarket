@@ -2,19 +2,20 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   Platform,
   StatusBar,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Users, ClipboardCheck, PlusCircle, LayoutList, BellRing } from 'lucide-react-native';
+import { Users, ClipboardCheck, PlusCircle, LayoutList, Building2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CandidatesScreen } from '../screens/candidates/CandidatesScreen';
 import { JobApplicantsScreen } from '../screens/jobs/JobApplicantsScreen';
 import { JobPostScreen } from '../screens/jobs/JobPostScreen';
 import { EmployerJobsListScreen } from '../screens/jobs/EmployerJobsListScreen';
-import { NotificationScreen } from '../screens/notifications/NotificationScreen';
+import { CompanyProfileScreen } from '../screens/profile/CompanyProfileScreen';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
 import { COLORS, FONTS } from '../constants/theme';
@@ -40,7 +41,19 @@ const PostTabRedirectScreen: React.FC<{ navigation: any; route?: any }> = ({ nav
 // Custom Full-Width Bottom Dock Navigation Bar with 3D Active Buttons & Labels
 const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
-  const { unreadCount } = useNotifications();
+  const { user } = useAuth();
+
+  // Resolve company profile picture for the Company tab
+  const companyPhotoUri =
+    (user as any)?.profilePictureUrl ||
+    (user as any)?.profile_picture_url ||
+    (user as any)?.avatarUrl ||
+    (user as any)?.avatar_url ||
+    (user as any)?.companyLogo ||
+    (user as any)?.company_logo ||
+    (user as any)?.logoUrl ||
+    (user as any)?.logo_url ||
+    null;
 
   // Enforce Status Bar styling strictly based on the active tab
   React.useEffect(() => {
@@ -92,15 +105,15 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
             } else if (route.name === 'PostTab') {
               IconComponent = PlusCircle;
               labelText = 'Post';
-            } else if (route.name === 'NotificationsTab') {
-              IconComponent = BellRing;
-              labelText = 'Alerts';
             } else if (route.name === 'ManageJobsTab') {
               IconComponent = LayoutList;
-              labelText = 'Manage Jobs';
+              labelText = 'Manage';
+            } else if (route.name === 'CompanyProfileTab') {
+              labelText = 'Company';
             }
 
             const iconColor = isFocused ? COLORS.employerPrimary : '#64748B';
+            const isCompanyTab = route.name === 'CompanyProfileTab';
 
             return (
               <TouchableOpacity
@@ -117,17 +130,31 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
                 )}
 
                 <View style={styles.iconPillBox}>
-                  <IconComponent
-                    size={23}
-                    color={iconColor}
-                    fill="none"
-                    strokeWidth={isFocused ? 2.4 : 1.8}
-                  />
-                  {route.name === 'NotificationsTab' && unreadCount > 0 ? (
-                    <View style={styles.notifBadge}>
-                      <Text style={styles.notifText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                    </View>
-                  ) : null}
+                  {isCompanyTab ? (
+                    companyPhotoUri ? (
+                      <Image
+                        source={{ uri: companyPhotoUri }}
+                        style={[
+                          styles.companyAvatar,
+                          isFocused && styles.companyAvatarActive,
+                        ]}
+                      />
+                    ) : (
+                      <Building2
+                        size={23}
+                        color={iconColor}
+                        fill="none"
+                        strokeWidth={isFocused ? 2.4 : 1.8}
+                      />
+                    )
+                  ) : (
+                    <IconComponent
+                      size={23}
+                      color={iconColor}
+                      fill="none"
+                      strokeWidth={isFocused ? 2.4 : 1.8}
+                    />
+                  )}
                 </View>
 
                 <Text style={[styles.tabLabelText, isFocused && styles.tabLabelTextActive]} numberOfLines={1}>
@@ -153,8 +180,8 @@ export const EmployerTabNavigator: React.FC = () => {
       <Tab.Screen name="CandidatesTab" component={CandidatesScreen} />
       <Tab.Screen name="ApplicantsTab" component={DefaultApplicantsScreen} />
       <Tab.Screen name="PostTab" component={PostTabRedirectScreen} />
-      <Tab.Screen name="NotificationsTab" component={NotificationScreen} />
       <Tab.Screen name="ManageJobsTab" component={EmployerJobsListScreen} />
+      <Tab.Screen name="CompanyProfileTab" component={CompanyProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -255,5 +282,16 @@ const styles = StyleSheet.create({
     color: COLORS.employerPrimary,
     fontFamily: FONTS.bold,
     fontWeight: '800',
+  },
+  companyAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+  },
+  companyAvatarActive: {
+    borderColor: COLORS.employerPrimary,
+    borderWidth: 2,
   },
 });

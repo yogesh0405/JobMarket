@@ -1516,9 +1516,11 @@ export const HomePage: React.FC = () => {
               <>
                 {roleFilteredJobs.slice(0, 8).map((job) => {
                   const isSaved = savedJobIds.includes(job.id);
+                  const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
                   const minExp = job.minExperience ?? (job as any).min_experience ?? 0;
-                  const maxExp = job.maxExperience ?? (job as any).max_experience ?? (minExp + 2);
-                  const expStr = minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`;
+                  const maxExp = job.maxExperience ?? (job as any).max_experience ?? 0;
+                  const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+                  const expStr = isFresher ? 'Freshers' : (minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`);
 
                   let salaryStr = '3-5 Lacs';
                   const sMin = job.salaryMin ?? (job as any).salary_min;

@@ -11,7 +11,6 @@ export const CategorySkillManagementPage: React.FC = () => {
 
   // Forms states
   const [catName, setCatName] = useState('');
-  const [catIcon, setCatIcon] = useState('');
   const [skillName, setSkillName] = useState('');
 
   // Editing state
@@ -50,15 +49,14 @@ export const CategorySkillManagementPage: React.FC = () => {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!catName.trim() || !catIcon.trim()) {
-      showToast('Please specify both category name and emoji icon', 'warning');
+    if (!catName.trim()) {
+      showToast('Please specify a category name', 'warning');
       return;
     }
     try {
-      await AdminApiService.createCategory({ name: catName, icon: catIcon });
+      await AdminApiService.createCategory({ name: catName, icon: '💼' });
       showToast(`Category "${catName}" created!`, 'success');
       setCatName('');
-      setCatIcon('');
       fetchData();
     } catch (err: any) {
       showToast(err.message || 'Failed to create category', 'error');
@@ -225,19 +223,7 @@ export const CategorySkillManagementPage: React.FC = () => {
                     required 
                   />
                 </div>
-                <div style={{ width: '90px' }}>
-                  <label className="form-label" style={{ fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '6px', display: 'block' }}>Emoji Icon</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', fontSize: '16px', textAlign: 'center', width: '100%' }} 
-                    placeholder="🔌" 
-                    value={catIcon} 
-                    onChange={e => setCatIcon(e.target.value)} 
-                    required 
-                  />
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px', background: '#344BFD', borderRadius: '8px', fontWeight: '700', fontSize: '14px', border: 'none' }}>
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px 24px', background: '#344BFD', borderRadius: '8px', fontWeight: '700', fontSize: '14px', border: 'none', height: '42px' }}>
                   Add
                 </button>
               </form>
@@ -416,13 +402,6 @@ export const CategorySkillManagementPage: React.FC = () => {
                 <label className="form-label">Name</label>
                 <input type="text" className="form-input" style={{ background: 'var(--border-light)' }} value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} required />
               </div>
-              
-              {editingItem.type === 'cat' && (
-                <div className="form-group">
-                  <label className="form-label">Emoji Icon</label>
-                  <input type="text" className="form-input" style={{ background: 'var(--border-light)' }} value={editingItem.icon} onChange={e => setEditingItem({ ...editingItem, icon: e.target.value })} required />
-                </div>
-              )}
 
               <div className="form-group">
                 <label className="form-label">Status State</label>

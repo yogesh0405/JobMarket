@@ -192,7 +192,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
             </svg>
-            <span>{job.experienceRequired === false ? 'Fresher' : `${job.minExperience}–${job.maxExperience} Yrs`}</span>
+            <span>
+              {job.experienceRequired === false || (job as any).experience_required === false || ((job.minExperience ?? (job as any).min_experience ?? 0) === 0 && ((job.maxExperience ?? (job as any).max_experience ?? 0) === 0))
+                ? 'Fresher'
+                : `${job.minExperience ?? 0}–${job.maxExperience ?? 0} Yrs`}
+            </span>
           </div>
 
           <span style={{ color: '#CBD5E1', flexShrink: 0 }}>|</span>

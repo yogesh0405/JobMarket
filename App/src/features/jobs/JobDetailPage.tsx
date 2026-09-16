@@ -219,8 +219,11 @@ export const JobDetailPage: React.FC = () => {
   if (job.attendance_bonus || (job as any).attendanceBonus) perksList.push('Attendance Bonus');
 
   const uniquePerks = Array.from(new Set(perksList));
+  const isExpNotRequired = job.experience_required === false || (job as any).experienceRequired === false;
   const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
-  const maxExp = job.max_experience ?? (job as any).maxExperience ?? 3;
+  const maxExp = job.max_experience ?? (job as any).maxExperience ?? 0;
+  const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+  const expDisplay = isFresher ? 'Freshers (No Exp)' : (minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`);
   const skillsList = ensureArray(job.skills);
   const respList = ensureArray(job.responsibilities);
   const reqList = ensureArray(job.requirements);
@@ -515,7 +518,7 @@ export const JobDetailPage: React.FC = () => {
 
                 <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
                   <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Experience Required</div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{minExp} - {maxExp} Years</div>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{expDisplay}</div>
                 </div>
 
                 {(job.work_mode || job.workMode || job.job_type || job.jobType) && (

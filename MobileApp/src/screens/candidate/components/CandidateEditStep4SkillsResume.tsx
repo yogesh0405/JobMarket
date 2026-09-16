@@ -70,7 +70,9 @@ export const CandidateEditStep4SkillsResume: React.FC<CandidateEditStep4SkillsRe
               placeholderTextColor="#94A3B8"
               value={skillInput}
               onChangeText={setSkillInput}
-              onFocus={onFocusSkillInput}
+              returnKeyType="done"
+              onSubmitEditing={onAddSkill}
+              blurOnSubmit={false}
             />
             <TouchableOpacity style={styles.addSkillBtn} onPress={onAddSkill}>
               <Plus size={16} color="#FFFFFF" />

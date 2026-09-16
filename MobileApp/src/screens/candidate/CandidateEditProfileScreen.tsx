@@ -636,7 +636,6 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             onPickResume={handlePickResume}
             onDeleteResume={handleDeleteResume}
             onOpenPdfModal={() => setShowPdfModal(true)}
-            onFocusSkillInput={(e) => handleFocusInput(e, scrollViewRef, 140)}
           />
         ) : null}
       </KeyboardAwareScrollView>

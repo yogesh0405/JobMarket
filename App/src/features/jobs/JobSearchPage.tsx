@@ -500,10 +500,15 @@ export const JobSearchPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filteredJobs.map((job) => {
               const isSaved = savedJobIds.includes(job.id);
-              const expText =
-                job.minExperience !== undefined
-                  ? `${job.minExperience}-${job.maxExperience ?? job.minExperience + 2} Yrs Exp`
-                  : '0-2 Yrs Exp';
+              const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
+              const minExp = job.minExperience ?? (job as any).min_experience;
+              const maxExp = job.maxExperience ?? (job as any).max_experience;
+              const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+              const expText = isFresher
+                ? 'Fresher'
+                : minExp !== undefined
+                ? `${minExp}-${maxExp ?? minExp + 2} Yrs Exp`
+                : 'Fresher';
               const salaryText =
                 job.salaryMin && job.salaryMax
                   ? `${(job.salaryMin / 100000).toFixed(1)}-${(job.salaryMax / 100000).toFixed(1)} Lacs PA`

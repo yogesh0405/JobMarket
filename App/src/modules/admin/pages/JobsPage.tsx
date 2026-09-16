@@ -256,7 +256,7 @@ export const JobsPage: React.FC = () => {
                       </div>
                     </td>
                     <td>{job.location}</td>
-                    <td>{job.min_experience} - {job.max_experience} Yrs</td>
+                    <td>{((job as any).experience_required === false || (job.min_experience === 0 && (job.max_experience === 0 || !job.max_experience))) ? 'Fresher' : `${job.min_experience} - ${job.max_experience} Yrs`}</td>
                     <td>₹{formatNumber(job.salary_min)} - ₹{formatNumber(job.salary_max)}</td>
                     <td>{job.openings}</td>
                     <td>
@@ -405,7 +405,11 @@ export const JobsPage: React.FC = () => {
                     </div>
                     <div>
                       <span style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>Experience Required</span>
-                      <strong style={{ color: '#0f172a' }}>{selectedJob.min_experience} - {selectedJob.max_experience} Years</strong>
+                      <strong style={{ color: '#0f172a' }}>
+                        {((selectedJob as any).experience_required === false || (selectedJob.min_experience === 0 && (selectedJob.max_experience === 0 || !selectedJob.max_experience)))
+                          ? 'Freshers (No Exp)'
+                          : `${selectedJob.min_experience} - ${selectedJob.max_experience} Years`}
+                      </strong>
                     </div>
                   </div>
 

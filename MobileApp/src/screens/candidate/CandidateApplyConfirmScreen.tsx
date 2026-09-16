@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   MapPin,
   Briefcase,
-  Clock,
   User,
   FileText,
   AlertTriangle,
@@ -24,7 +23,6 @@ import {
   Building2,
   Bus,
   Home,
-  ShieldCheck,
   Check,
   XCircle,
 } from 'lucide-react-native';
@@ -117,7 +115,7 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const noticePeriodVal = user?.notice_period || (user as any)?.noticePeriod ? String(user?.notice_period || (user as any)?.noticePeriod) : '';
   const requiresBus = user?.requiresBus ?? (user as any)?.requires_bus;
   const requiresAccommodation = user?.requiresAccommodation ?? (user as any)?.requires_accommodation;
-  const aadhaarVerified = Boolean(user?.aadhaarVerified ?? (user as any)?.aadhaar_verified);
+
 
   // Safe Education Parser & Text Formatter (prevents React child object errors)
   const formatEducationVal = (): string | null => {
@@ -400,24 +398,6 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
                 <Text style={styles.fieldBlockValue}>
                   {requiresAccommodation !== undefined ? (requiresAccommodation ? 'Required' : 'Own Arrangement') : 'Not provided'}
                 </Text>
-              </View>
-            </View>
-
-            {/* 11. Identity Verification */}
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldBlockLabel}>IDENTITY VERIFICATION</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                {aadhaarVerified ? (
-                  <>
-                    <ShieldCheck size={16} color="#16A34A" />
-                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: '#16A34A' }}>Aadhaar Verified</Text>
-                  </>
-                ) : (
-                  <>
-                    <Clock size={15} color="#D97706" />
-                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: '#D97706' }}>Pending Identity Verification</Text>
-                  </>
-                )}
               </View>
             </View>
 

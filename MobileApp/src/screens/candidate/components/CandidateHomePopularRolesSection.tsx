@@ -80,9 +80,11 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popularCardsCarousel}>
           {roleFilteredJobs.slice(0, 8).map((job) => {
             const isSaved = savedJobIds.includes(job.id);
+            const isExpNotRequired = job.experience_required === false || (job as any).experienceRequired === false;
             const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
-            const maxExp = job.max_experience ?? (job as any).maxExperience ?? 2;
-            const expStr = minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`;
+            const maxExp = job.max_experience ?? (job as any).maxExperience ?? 0;
+            const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+            const expStr = isFresher ? 'Freshers' : (minExp === maxExp ? `${minExp} Yrs` : `${minExp}-${maxExp} Yrs`);
 
             let salaryStr = '3-5 Lacs';
             const sMin = job.salary_min ?? (job as any).salaryMin;

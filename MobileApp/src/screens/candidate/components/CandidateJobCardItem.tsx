@@ -132,14 +132,18 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
     );
   }
 
+  const isExpNotRequired = job.experience_required === false || (job as any).experienceRequired === false;
   const minExp = job.min_experience ?? (job as any).minExperience;
   const maxExp = job.max_experience ?? (job as any).maxExperience;
+  const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
   const expText =
-    minExp !== undefined && maxExp !== undefined
+    isFresher
+      ? 'Fresher'
+      : minExp !== undefined && maxExp !== undefined
       ? `${minExp}-${maxExp} Yrs Exp`
       : minExp !== undefined
       ? `${minExp}+ Yrs Exp`
-      : '0-2 Yrs Exp';
+      : 'Fresher';
 
   const sMin = job.salary_min ?? (job as any).salaryMin;
   const sMax = job.salary_max ?? (job as any).salaryMax;

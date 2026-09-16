@@ -296,7 +296,11 @@ export const JobApplyPage: React.FC = () => {
             ) : null}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Clock size={14} color="#64748B" />
-              <span>{job.min_experience ?? 0} - {job.max_experience ?? 3} Years Exp</span>
+              <span>
+                {((job as any).experienceRequired === false || (job as any).experience_required === false || ((job.min_experience ?? (job as any).minExperience ?? 0) === 0 && ((job.max_experience ?? (job as any).maxExperience ?? 0) === 0)))
+                  ? 'Freshers (No Exp)'
+                  : `${job.min_experience ?? (job as any).minExperience ?? 0} - ${job.max_experience ?? (job as any).maxExperience ?? 0} Years Exp`}
+              </span>
             </span>
           </div>
         </div>

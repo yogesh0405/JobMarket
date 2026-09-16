@@ -48,7 +48,11 @@ export const JobPopupCard: React.FC<JobPopupCardProps> = ({ job, onSaveJob, isSa
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <Briefcase size={13} color="#64748b" />
-          <span>{job.minExperience} - {job.maxExperience} Yrs Exp • {job.workMode || 'On-site'}</span>
+          <span>
+            {((job as any).experienceRequired === false || (job as any).experience_required === false || ((job.minExperience ?? (job as any).min_experience ?? 0) === 0 && ((job.maxExperience ?? (job as any).max_experience ?? 0) === 0)))
+              ? 'Fresher'
+              : `${job.minExperience ?? 0} - ${job.maxExperience ?? 0} Yrs Exp`} • {job.workMode || 'On-site'}
+          </span>
         </div>
       </div>
 

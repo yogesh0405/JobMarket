@@ -460,6 +460,13 @@
 
 @media (max-width: 768px) {
   .navbar-toggle { display: flex !important; }
+  .navbar-actions:has(.navbar-profile-trigger) .navbar-toggle,
+  .navbar-actions .navbar-profile-trigger + .navbar-toggle {
+    display: none !important;
+  }
+  .navbar-profile-trigger .user-dropdown {
+    display: none !important;
+  }
   
   .navbar-nav {
     position: fixed;
@@ -531,160 +538,116 @@
 }
 
 /* ---- Mobile Bottom Navbar ---- */
-/* ---- Mobile Custom Notched Dock Bottom Navigation (100% MobileApp UI) ---- */
-.mobile-notched-dock-wrapper {
+/* ---- Mobile App Bottom Tab Navigation Dock (100% MobileApp UI Match) ---- */
+.mobile-app-tab-dock {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   width: 100%;
+  height: calc(58px + env(safe-area-inset-bottom, 0px));
+  background-color: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  box-shadow: 0 -2px 6px rgba(15, 23, 42, 0.04);
   z-index: 20005;
-  pointer-events: none;
   display: none;
-  justify-content: center;
+  box-sizing: border-box;
 }
 
-.mobile-notched-dock-container {
-  position: relative;
-  width: 100%;
-  height: calc(58px + env(safe-area-inset-bottom, 10px));
-  pointer-events: auto;
-  filter: drop-shadow(0 -4px 14px rgba(15, 23, 42, 0.08));
-}
-
-.mobile-notched-dock-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.mobile-notched-dock-row {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.mobile-app-tab-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-around;
-  padding-bottom: env(safe-area-inset-bottom, 6px);
+  width: 100%;
+  height: 100%;
+  padding: 0 6px env(safe-area-inset-bottom, 0px) 6px;
   box-sizing: border-box;
-  z-index: 2;
+  position: relative;
 }
 
-.mobile-notched-tab-item {
+.mobile-app-tab-item {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding-top: 4px;
+  position: relative;
   text-decoration: none;
-  flex: 1;
-  min-width: 0;
-  padding: 4px 0 2px 0;
-  color: #1E293B;
-  transition: all 0.15s ease;
+  color: #64748B;
+  transition: color 0.15s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-notched-tab-item .tab-icon-box {
-  width: 32px;
-  height: 24px;
+.mobile-app-tab-item .tab-top-indicator {
+  position: absolute;
+  top: 0;
+  width: 55%;
+  max-width: 44px;
+  height: 3px;
+  background-color: #1B4FDF;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.mobile-app-tab-item .tab-icon-box {
+  width: 36px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
-.mobile-notched-tab-item .tab-active-capsule {
-  width: 16px;
-  height: 2.5px;
-  border-radius: 2px;
-  background-color: #1B4FDF;
-  margin-top: 2px;
-  animation: fadeIn 0.2s ease forwards;
+.mobile-app-tab-item .tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  background-color: #EF4444;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  border: 1.5px solid #FFFFFF;
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 10px;
+  text-align: center;
 }
 
-.mobile-notched-tab-item .tab-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #1E293B;
-  margin-top: 2px;
+.mobile-app-tab-item .tab-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748B;
+  margin-top: 3px;
+  text-align: center;
   line-height: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 60px;
-  text-align: center;
+  max-width: 68px;
 }
 
-.mobile-notched-tab-item.active .tab-label {
-  color: #1B4FDF;
-  font-weight: 800;
-}
-
-/* Center Floating FAB Slot */
-.mobile-notched-center-slot {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  height: 100%;
-}
-
-.mobile-notched-fab-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  position: absolute;
-  top: -18px;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-notched-fab-btn .fab-circle-gradient {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1B4FDF 0%, #2563eb 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 18px rgba(27, 79, 223, 0.45), 0 2px 6px rgba(15, 23, 42, 0.12);
-  border: 2px solid #FFFFFF;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.mobile-notched-fab-btn:active .fab-circle-gradient {
-  transform: scale(0.94);
-}
-
-.mobile-notched-fab-btn .fab-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #0F172A;
-  margin-top: 4px;
-  line-height: 12px;
-  white-space: nowrap;
-}
-
-.mobile-notched-fab-btn.active .fab-label {
+.mobile-app-tab-item.active .tab-label {
   color: #1B4FDF;
   font-weight: 800;
 }
 
 @media (max-width: 768px) {
-  .mobile-notched-dock-wrapper {
+  .mobile-app-tab-dock {
     display: flex;
   }
   
   body {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 10px));
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 10px));
   }
 
   body.candidate-profile-open {
@@ -693,7 +656,7 @@
 
   body.candidate-profile-open .navbar,
   body.candidate-profile-open .mobile-header,
-  body.candidate-profile-open .mobile-notched-dock-wrapper,
+  body.candidate-profile-open .mobile-app-tab-dock,
   body.candidate-profile-open header {
     display: none !important;
   }
@@ -2242,8 +2205,8 @@
   }
 
   .navbar-header-row {
-    height: 36px !important;
-    min-height: 36px !important;
+    height: 40px !important;
+    min-height: 40px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -2254,7 +2217,7 @@
   .navbar-brand {
     display: flex !important;
     align-items: center !important;
-    height: 36px !important;
+    height: 40px !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -2262,7 +2225,7 @@
   .navbar-actions {
     display: flex !important;
     align-items: center !important;
-    height: 36px !important;
+    height: 40px !important;
     gap: 8px !important;
     margin: 0 !important;
     padding: 0 !important;

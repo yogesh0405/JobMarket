@@ -24,6 +24,7 @@ import {
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { NavbarNotificationBell } from '../Layout/NavbarNotificationBell';
 import { MetaVerifiedBadge } from './MetaVerifiedBadge';
+import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/helpers';
 import { apiFetch } from '../../utils/api';
@@ -58,7 +59,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, syncUser } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(propUnreadCount ?? 0);
 
@@ -245,27 +246,69 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               )
             )}
 
-            {/* Three-Dot Menu Button */}
-            {!hideMenu && (
-              <button
+            {/* Profile Avatar Button triggers menu; No three-dot menu for logged in users */}
+            {currentUser ? (
+              <div 
                 onClick={handleMenuTrigger}
                 style={{
-                  background: 'transparent',
-                  border: 'none',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  cursor: 'pointer',
-                  color: '#0F172A',
-                  padding: 0
+                  overflow: 'hidden',
+                  border: '1.5px solid #E2E8F0',
+                  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.12)',
+                  flexShrink: 0,
+                  background: isEmployer ? '#ffffff' : '#1764E8',
+                  color: '#ffffff'
                 }}
-                title="Menu"
+                title="Account Menu"
               >
-                <MoreVertical size={22} color="#0F172A" strokeWidth={2.2} />
-              </button>
+                {isEmployer ? (
+                  <CompanyDefaultLogo 
+                    logoUrl={userPhoto} 
+                    companyName={displayName} 
+                    size={36} 
+                    borderRadius="50%" 
+                  />
+                ) : userPhoto ? (
+                  <img 
+                    src={userPhoto} 
+                    alt={displayName} 
+                    referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                    {getInitials(displayName)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              !hideMenu && (
+                <button
+                  onClick={handleMenuTrigger}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    color: '#0F172A',
+                    padding: 0
+                  }}
+                  title="Menu"
+                >
+                  <MoreVertical size={22} color="#0F172A" strokeWidth={2.2} />
+                </button>
+              )
             )}
           </div>
         )}
@@ -348,7 +391,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 width: '46px',
                 height: '46px',
                 borderRadius: '50%',
-                backgroundColor: '#344BFD',
+                backgroundColor: isEmployer ? '#FFFFFF' : '#1764E8',
                 color: '#FFFFFF',
                 fontWeight: 800,
                 fontSize: '18px',
@@ -357,9 +400,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 justifyContent: 'center',
                 overflow: 'hidden',
                 flexShrink: 0,
-                boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)'
+                border: '1.5px solid #E2E8F0',
+                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.08)'
               }}>
-                {userPhoto && typeof userPhoto === 'string' ? (
+                {isEmployer ? (
+                  <CompanyDefaultLogo 
+                    logoUrl={userPhoto} 
+                    companyName={displayName} 
+                    size={46} 
+                    borderRadius="50%" 
+                  />
+                ) : userPhoto && typeof userPhoto === 'string' ? (
                   <img 
                     key={userPhoto}
                     src={userPhoto} 

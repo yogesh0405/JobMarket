@@ -136,7 +136,9 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                 />
               </View>
             </View>
-          ) : null}
+          ) : (
+            <Text style={styles.toggleOffSubtext}>Fresher welcome — No experience required.</Text>
+          )}
 
           {/* Education Qualification Requirement */}
           <View style={{ marginTop: SPACING.md }}>
@@ -192,7 +194,9 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                 />
               </View>
             </View>
-          ) : null}
+          ) : (
+            <Text style={styles.toggleOffSubtext}>Salary hidden from job listing — Displayed as "Salary Not Disclosed".</Text>
+          )}
 
           <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Work Mode</Text>
           <View style={styles.segmentedRow}>
@@ -472,5 +476,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#334155',
+  },
+  toggleOffSubtext: {
+    fontSize: 12,
+    color: '#64748B',
+    fontStyle: 'italic',
+    marginTop: 4,
+    marginBottom: 4,
   },
 });

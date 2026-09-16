@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { notificationApi } from '../api/notificationApi';
+import { resolveMobileNotificationRoute } from '../utils/notificationRouter';
 
 const STORED_FCM_TOKEN_KEY = '@jobmarket_device_fcm_token';
 
@@ -40,6 +41,15 @@ export class PushNotificationManager {
   private static notificationListener: any = null;
   private static responseListener: any = null;
   private static navigationRef: any = null;
+  private static userRole: string = 'candidate';
+
+  /**
+   * Set the current logged-in user's role so push navigation routes correctly.
+   * Should be called from AuthContext whenever user changes.
+   */
+  static setUserRole(role: string) {
+    this.userRole = (role || 'candidate').toLowerCase();
+  }
 
   /**
    * Set global navigation reference for handling deep links from notification clicks
@@ -191,13 +201,6 @@ export class PushNotificationManager {
 
   /**
    * Route user to the correct screen based on notification type and entity data.
-   *
-   * Notification data shape (sent by backend PushNotificationService):
-   *   type         → notification type string (e.g. 'JOB_APPLICATION', 'JOB_STATUS', etc.)
-   *   entityType   → 'job' | 'application' | 'interview' | 'support' | 'ad'
-   *   entityId     → UUID of the related entity
-   *   screen       → optional explicit screen override
-   *   link         → optional URL hint
    */
   private static handleDeepLink(data: any) {
     if (!data) return;
@@ -229,103 +232,53 @@ export class PushNotificationManager {
   }
 
   /**
-   * Core routing logic — maps notification type/entity to the correct screen + params
+   * Core routing logic — uses resolveMobileNotificationRoute for consistent,
+   * role-aware navigation across all notification types.
+   *
+   * Notification data shape (sent by backend PushNotificationService):
+   *   type         → notification type string (e.g. 'JOB_APPLICATION', 'JOB_STATUS', etc.)
+   *   entityType   → 'job' | 'application' | 'interview' | 'support' | 'ad'
+   *   entityId     → UUID of the related entity
+   *   screen       → optional explicit screen override
+   *   link         → optional URL hint
    */
   private static performNavigation(data: any) {
-    const type: string = data.type || '';
-    const entityId: string = data.entityId || '';
-    const screen: string = data.screen || '';
     const nav = this.navigationRef;
+    const role = this.userRole;
 
-    // 1. Explicit screen override from notification payload
-    if (screen && screen !== 'Notifications') {
-      const params: Record<string, string> = {};
-      if (entityId) {
-        // Pass entity ID with the right key for each screen type
-        if (screen === 'CandidateJobDetail') params.jobId = entityId;
-        else if (screen === 'JobApplicants') params.jobId = entityId;
-        else if (screen === 'ApplicantDetail') params.applicantId = entityId;
-        else if (screen === 'EmployerCandidateDetail') params.candidateId = entityId;
-        else if (screen === 'MyInterviews') { /* no params needed */ }
-        else if (screen === 'EmployerInterviews') { /* no params needed */ }
-        else params.id = entityId;
+    // Build a notification-router-compatible payload from raw push data
+    const payload = {
+      id: data.id || '',
+      title: data.title || '',
+      message: data.message || data.body || '',
+      type: data.type || data.notificationType || '',
+      link: data.link || data.url || '',
+      entityType: data.entityType || data.entity_type || '',
+      entity_type: data.entity_type || data.entityType || '',
+      entityId: data.entityId || data.entity_id || data.jobId || '',
+      entity_id: data.entity_id || data.entityId || data.jobId || '',
+      metadata: data.metadata || {},
+    };
+
+    // Use resolveMobileNotificationRoute which handles ALL notification types + roles
+    const target = resolveMobileNotificationRoute(payload, role);
+
+    if (target && target.screen) {
+      console.log('[Push] Navigating to:', target.screen, target.params);
+      if (target.params) {
+        nav.navigate(target.screen, target.params);
+      } else {
+        nav.navigate(target.screen);
       }
-      nav.navigate(screen, Object.keys(params).length > 0 ? params : undefined);
       return;
     }
 
-    // 2. Type-based routing map
-    switch (type) {
-      // Candidate received: employer applied / shortlisted their job
-      case 'JOB_APPLICATION':
-        // Candidate → go to their applications / job detail
-        if (entityId) {
-          nav.navigate('CandidateJobDetail', { jobId: entityId });
-        } else {
-          nav.navigate('Notifications');
-        }
-        break;
-
-      // Candidate received: their application status changed
-      case 'JOB_STATUS':
-        nav.navigate('Notifications');
-        break;
-
-      // Candidate or Employer: interview scheduled
-      case 'JOB_INTERVIEW':
-        // Try employer screen first; if not available, fallback to candidate
-        try {
-          nav.navigate('EmployerInterviews');
-        } catch {
-          nav.navigate('MyInterviews');
-        }
-        break;
-
-      // Employer: their job post was approved/rejected by admin
-      case 'JOB_APPROVAL':
-        if (entityId) {
-          nav.navigate('JobApplicants', { jobId: entityId });
-        } else {
-          nav.navigate('Notifications');
-        }
-        break;
-
-      // Employer: banner ad approved
-      case 'AD_APPROVED':
-      case 'AD_REJECTED':
-        nav.navigate('EmployerBanners');
-        break;
-
-      // Support ticket reply
-      case 'SUPPORT':
-        nav.navigate('HelpSupport');
-        break;
-
-      // Broadcast or system-wide alert
-      case 'BROADCAST':
-      case 'SYSTEM':
-      default:
-        // Fall back to link-based routing if provided
-        if (data.link) {
-          const link = String(data.link);
-          if (link.includes('/job/')) {
-            const jobId = link.split('/job/')[1]?.split('?')[0];
-            if (jobId) {
-              nav.navigate('CandidateJobDetail', { jobId });
-              return;
-            }
-          }
-          if (link.includes('/applicants/')) {
-            const jobId = link.split('/applicants/')[1]?.split('?')[0];
-            if (jobId) {
-              nav.navigate('JobApplicants', { jobId });
-              return;
-            }
-          }
-        }
-        nav.navigate('Notifications');
-        break;
+    // If route cannot be resolved, open Notifications screen as fallback
+    console.log('[Push] No route resolved, falling back to Notifications');
+    try {
+      nav.navigate('Notifications');
+    } catch {
+      // Screen may not be registered — silently ignore
     }
   }
 }
-

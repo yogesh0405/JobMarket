@@ -281,6 +281,7 @@ export const EditCompanyProfileModal: React.FC<EditCompanyProfileModalProps> = (
         throw new Error(json.error || json.message || 'Failed to update company profile.');
       }
 
+      window.dispatchEvent(new CustomEvent('profile-updated'));
       onSaveSuccess(json.data || json);
       onClose();
     } catch (err: any) {

@@ -383,6 +383,11 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     return () => { isMounted = false; };
   }, []);
 
+  const displayedIndustries = Array.from(new Set([
+    ...(availableCategories || []),
+    ...INDUSTRY_LIST
+  ])).filter(Boolean);
+
   const [currentRoleOptions, setCurrentRoleOptions] = useState<string[]>([]);
 
   // Dynamic Industry & Role active names
@@ -550,7 +555,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       setAcceptResume(existingJob.acceptResume !== false);
       const ind = existingJob.industry || existingJob.trade || '';
       
-      const knownIndustries = INDUSTRY_LIST.map(i => typeof i === 'string' ? i : (i as any).name || String(i));
+      const knownIndustries = displayedIndustries.map(i => typeof i === 'string' ? i : (i as any).name || String(i));
       if (ind && !knownIndustries.includes(ind)) {
         setIndustry('Other');
         setCustomIndustry(ind);
@@ -1179,7 +1184,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   style={{ fontWeight: '600', borderColor: industry ? '#344BFD' : undefined }}
                 >
                   <option value="">Select Industry / Sector...</option>
-                  {INDUSTRY_LIST.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+                  {displayedIndustries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
                   <option value="Other">+ Other Industry Sector...</option>
                 </select>
                 {industry === 'Other' && (

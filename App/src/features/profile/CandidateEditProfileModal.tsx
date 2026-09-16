@@ -215,6 +215,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
       setProfilePhotoUrl(base64);
       try {
         await updateUser({ profilePictureUrl: base64 });
+        window.dispatchEvent(new CustomEvent('profile-updated'));
         showToast('Profile photo updated!', 'success');
       } catch (err) {
         setInlineError('Failed to save profile photo.');
@@ -455,6 +456,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
 
       if (res.success) {
         setSaveProgress(100);
+        window.dispatchEvent(new CustomEvent('profile-updated'));
         showToast('Profile updated and saved successfully!', 'success');
         if (onSuccess) onSuccess();
         onClose();

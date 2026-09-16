@@ -24,6 +24,7 @@ import { INDUSTRY_LIST } from './JobPostConstants';
 interface JobPostStep1BasicProps {
   companyLogo: string;
   onPickLogo: () => void;
+  availableCategories?: string[];
   industry: string;
   customIndustry: string;
   setCustomIndustry: (val: string) => void;
@@ -50,6 +51,7 @@ interface JobPostStep1BasicProps {
 export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
   companyLogo,
   onPickLogo,
+  availableCategories,
   industry,
   customIndustry,
   setCustomIndustry,
@@ -72,6 +74,10 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
   setMidcZone,
   midcList,
 }) => {
+  const displayedIndustries = Array.from(new Set([
+    ...(availableCategories || []),
+    ...INDUSTRY_LIST
+  ])).filter(Boolean);
   return (
     <View style={styles.formCard}>
       <View style={styles.cardHeaderRow}>
@@ -117,7 +123,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
             required
             placeholder="Select Industry / Sector..."
             value={industry}
-            options={[...INDUSTRY_LIST, 'Other']}
+            options={[...displayedIndustries, 'Other']}
             onSelect={(val) => onIndustryChange(val)}
             triggerStyle={{ borderRadius: 8 }}
           />

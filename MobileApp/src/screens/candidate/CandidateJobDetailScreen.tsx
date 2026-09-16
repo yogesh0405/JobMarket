@@ -382,8 +382,11 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (job.attendance_bonus || job.attendanceBonus) perksList.push('Attendance Bonus');
 
   const uniquePerks = Array.from(new Set(perksList));
+  const isExpNotRequired = job.experience_required === false || (job as any).experienceRequired === false;
   const minExp = job.min_experience ?? (job as any).minExperience ?? 0;
-  const maxExp = job.max_experience ?? (job as any).maxExperience ?? 3;
+  const maxExp = job.max_experience ?? (job as any).maxExperience ?? 0;
+  const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+  const expDisplay = isFresher ? 'Freshers (No Exp)' : (minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`);
 
   return (
     <View style={styles.container}>
@@ -443,7 +446,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
                 <View style={styles.specGridItem}>
                   <Text style={styles.specLabelText}>Experience Required</Text>
-                  <Text style={styles.specValueText} numberOfLines={1}>{minExp} - {maxExp} Years</Text>
+                  <Text style={styles.specValueText} numberOfLines={1}>{expDisplay}</Text>
                 </View>
 
                 {(job.work_mode || job.workMode || job.job_type || job.jobType) ? (

@@ -372,7 +372,7 @@ export const JobApprovalPage: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <GraduationCap size={14} style={{ color: '#2563eb' }} />
-                        <strong>Exp:</strong>&nbsp;{job.min_experience} - {job.max_experience} Yrs
+                        <strong>Exp:</strong>&nbsp;{((job as any).experience_required === false || (job.min_experience === 0 && (job.max_experience === 0 || !job.max_experience))) ? 'Fresher' : `${job.min_experience} - ${job.max_experience} Yrs`}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Users size={14} style={{ color: '#2563eb' }} />

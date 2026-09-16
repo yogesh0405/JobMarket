@@ -72,10 +72,14 @@ export interface Job {
   minExperience?: number;
   max_experience: number;
   maxExperience?: number;
+  experience_required?: boolean;
+  experienceRequired?: boolean;
   salary_min: number;
   salaryMin?: number;
   salary_max: number;
   salaryMax?: number;
+  disclose_salary?: boolean;
+  discloseSalary?: boolean;
   openings: number;
   filledOpenings?: number;
   filled_openings?: number;

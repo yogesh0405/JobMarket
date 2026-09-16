@@ -190,6 +190,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
           <JobPostStep1Basic
             companyLogo={form.companyLogo}
             onPickLogo={form.handlePickLogo}
+            availableCategories={form.availableCategories}
             industry={form.industry}
             customIndustry={form.customIndustry}
             setCustomIndustry={form.setCustomIndustry}

@@ -28,9 +28,10 @@ import { HeaderSearchBar } from './HeaderSearchBar';
 import { NavbarNotificationBell } from './NavbarNotificationBell';
 import { JobMarketLogoSvg } from '../common/JobMarketLogoSvg';
 import { MetaVerifiedBadge } from '../common/MetaVerifiedBadge';
+import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, syncUser } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,9 +41,32 @@ export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<{ logo_url?: string; platform_name?: string }>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (syncUser) {
+      syncUser();
+    }
+    const handleProfileUpdate = () => {
+      setAvatarImgError(false);
+      if (syncUser) syncUser();
+    };
+    window.addEventListener('profile-updated', handleProfileUpdate);
+    window.addEventListener('focus', handleProfileUpdate);
+    window.addEventListener('storage', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate);
+      window.removeEventListener('focus', handleProfileUpdate);
+      window.removeEventListener('storage', handleProfileUpdate);
+    };
+  }, [syncUser]);
+
+  useEffect(() => {
+    setAvatarImgError(false);
+  }, [currentUser?.profilePictureUrl, (currentUser as any)?.logo, (currentUser as any)?.companyLogo]);
 
   useEffect(() => {
     const loadSettings = () => {
@@ -86,6 +110,17 @@ export const Navbar: React.FC = () => {
     logout();
     showToast('Logged out successfully', 'success');
     navigate('/');
+  };
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    if (window.innerWidth <= 768) {
+      e.stopPropagation();
+      setDropdownOpen(false);
+      setMobileMenuOpen(prev => !prev);
+      if (syncUser) syncUser();
+    } else {
+      setDropdownOpen(prev => !prev);
+    }
   };
 
   const isActive = (path: string) => {
@@ -246,31 +281,54 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <NavbarNotificationBell />
 
               {currentUser ? (
                 <div 
                   className="navbar-profile-trigger" 
-                  onClick={() => setDropdownOpen(!dropdownOpen)} 
+                  onClick={handleProfileClick} 
                   ref={dropdownRef} 
                   style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center', position: 'relative' }}
                   title="Account Menu"
                 >
-                  <div className="navbar-avatar" style={{ background: '#344BFD', color: '#ffffff', width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(52, 75, 253, 0.2)' }}>
-                    {userPhoto ? (
+                  <div 
+                    className="navbar-avatar" 
+                    style={{ 
+                      width: '34px', 
+                      height: '34px', 
+                      borderRadius: '50%', 
+                      overflow: 'hidden', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      background: isEmployer ? '#ffffff' : '#1764E8', 
+                      color: '#ffffff', 
+                      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
+                      border: '1.5px solid #DBEAFE',
+                      flexShrink: 0
+                    }}
+                  >
+                    {isEmployer ? (
+                      <CompanyDefaultLogo 
+                        logoUrl={userPhoto} 
+                        companyName={userDisplayName} 
+                        size={34} 
+                        borderRadius="50%" 
+                      />
+                    ) : userPhoto && !avatarImgError ? (
                       <img 
                         key={String(userPhoto)}
                         src={userPhoto} 
                         alt={userDisplayName} 
                         referrerPolicy="no-referrer"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
+                        onError={() => setAvatarImgError(true)}
                       />
                     ) : (
-                      getInitials(userDisplayName)
+                      <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                        {getInitials(userDisplayName)}
+                      </span>
                     )}
                   </div>
 
@@ -316,19 +374,21 @@ export const Navbar: React.FC = () => {
                 </div>
               )}
 
-              <button 
-                type="button"
-                className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
-                onClick={() => {
-                  const nextOpen = !mobileMenuOpen;
-                  setMobileMenuOpen(nextOpen);
-                  if (nextOpen && syncUser) syncUser();
-                }}
-                title="Menu"
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
-              </button>
+              {/* Only show mobile three-dot toggle when NOT logged in (Guest) */}
+              {!currentUser && (
+                <button 
+                  type="button"
+                  className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
+                  onClick={() => {
+                    const nextOpen = !mobileMenuOpen;
+                    setMobileMenuOpen(nextOpen);
+                  }}
+                  title="Menu"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -353,13 +413,36 @@ export const Navbar: React.FC = () => {
                 className="mobile-drawer-user-info"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="mobile-drawer-avatar">
-                  {userPhoto ? (
+                <div 
+                  className="mobile-drawer-avatar"
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: isEmployer ? '#ffffff' : 'var(--gradient-primary)',
+                    border: '1.5px solid #E2E8F0',
+                    flexShrink: 0
+                  }}
+                >
+                  {isEmployer ? (
+                    <CompanyDefaultLogo 
+                      logoUrl={userPhoto} 
+                      companyName={userDisplayName} 
+                      size={48} 
+                      borderRadius="50%" 
+                    />
+                  ) : userPhoto && !avatarImgError ? (
                     <img 
                       key={String(userPhoto)}
                       src={userPhoto} 
                       alt={userDisplayName} 
-                      onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                      referrerPolicy="no-referrer"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={() => setAvatarImgError(true)}
                     />
                   ) : (
                     <span>{getInitials(userDisplayName)}</span>

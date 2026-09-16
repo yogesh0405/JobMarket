@@ -23,12 +23,29 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [companyLogo, setCompanyLogo] = useState(defaultProfileLogo);
 
   // Form State
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [industry, setIndustry] = useState('');
   const [customIndustry, setCustomIndustry] = useState('');
   const [title, setTitle] = useState('');
   const [customTitle, setCustomTitle] = useState('');
   const [currentRoleOptions, setCurrentRoleOptions] = useState<string[]>([]);
   const [openingsInput, setOpeningsInput] = useState<string>('1');
+
+  useEffect(() => {
+    let isMounted = true;
+    jobsApi.getCategories()
+      .then((res: any) => {
+        if (!isMounted) return;
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = res.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean);
+          setAvailableCategories(names);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [targetIti, setTargetIti] = useState(false);
   const [itiTrade, setItiTrade] = useState('');
@@ -671,6 +688,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     isEdit,
     companyLogo,
     handlePickLogo,
+    availableCategories,
     industry,
     customIndustry,
     setCustomIndustry,
