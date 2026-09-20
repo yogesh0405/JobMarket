@@ -433,5 +433,85 @@ if (fs.existsSync(metroFileMapIndexPath)) {
   }
 }
 
+// Patch 30: expo-notifications/build/warnOfExpoGoPushUsage.js (Non-fatal warning in Expo Go on Android)
+const warnOfExpoGoPushPath = path.join(__dirname, '../node_modules/expo-notifications/build/warnOfExpoGoPushUsage.js');
+if (fs.existsSync(warnOfExpoGoPushPath)) {
+  let content = fs.readFileSync(warnOfExpoGoPushPath, 'utf8');
+  if (content.includes("throw new Error(message);")) {
+    content = content.replace(
+      "throw new Error(message);",
+      "didWarn = true;\n            console.warn(message);"
+    );
+    fs.writeFileSync(warnOfExpoGoPushPath, content, 'utf8');
+    console.log('[patch-expo-cli] Patched warnOfExpoGoPushUsage.js (non-fatal Expo Go warning)');
+  }
+}
+
+// Patch 31: expo-notifications/build/TopicSubscriptionModule.android.js (Safe fallback in Expo Go)
+const topicSubModulePath = path.join(__dirname, '../node_modules/expo-notifications/build/TopicSubscriptionModule.android.js');
+if (fs.existsSync(topicSubModulePath)) {
+  let content = fs.readFileSync(topicSubModulePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patchedContent = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoTopicSubscriptionModule') : null) || requireNativeModule('ExpoTopicSubscriptionModule');
+} catch (e) {
+  mod = {
+    addListener: () => { },
+    removeListeners: () => { },
+    subscribeToTopicAsync: () => Promise.resolve(null),
+    unsubscribeFromTopicAsync: () => Promise.resolve(null),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(topicSubModulePath, patchedContent, 'utf8');
+    console.log('[patch-expo-cli] Patched TopicSubscriptionModule.android.js (Expo Go fallback)');
+  }
+}
+
+// Patch 32: expo-notifications/build/ServerRegistrationModule.native.js (Safe fallback in Expo Go)
+const serverRegModulePath = path.join(__dirname, '../node_modules/expo-notifications/build/ServerRegistrationModule.native.js');
+if (fs.existsSync(serverRegModulePath)) {
+  let content = fs.readFileSync(serverRegModulePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patchedContent = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('NotificationsServerRegistrationModule') : null) || requireNativeModule('NotificationsServerRegistrationModule');
+} catch (e) {
+  mod = {};
+}
+export default mod;
+`;
+    fs.writeFileSync(serverRegModulePath, patchedContent, 'utf8');
+    console.log('[patch-expo-cli] Patched ServerRegistrationModule.native.js (Expo Go fallback)');
+  }
+}
+
+// Patch 33: expo-notifications/build/PushTokenManager.native.js (Safe fallback in Expo Go)
+const pushTokenModulePath = path.join(__dirname, '../node_modules/expo-notifications/build/PushTokenManager.native.js');
+if (fs.existsSync(pushTokenModulePath)) {
+  let content = fs.readFileSync(pushTokenModulePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patchedContent = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoPushTokenManager') : null) || requireNativeModule('ExpoPushTokenManager');
+} catch (e) {
+  mod = {
+    addListener: () => ({ remove: () => {} }),
+    removeListeners: () => {},
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(pushTokenModulePath, patchedContent, 'utf8');
+    console.log('[patch-expo-cli] Patched PushTokenManager.native.js (Expo Go fallback)');
+  }
+}
+
 console.log('[patch-expo-cli] Expo CLI patches applied successfully.');
+
 

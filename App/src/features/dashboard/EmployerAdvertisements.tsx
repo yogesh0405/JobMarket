@@ -29,6 +29,7 @@ import { Advertisement, AdvertisementType, AdvertisementPriority, AdvertisementA
 import { apiFetch } from '../../utils/api';
 import { useToast } from '../../hooks/useToast';
 import { Job } from '../../types';
+import { BannerPreviewThumbnail } from '../../components/common/BannerPreviewThumbnail';
 
 interface EmployerAdvertisementsProps {
   employerJobs: Job[];
@@ -508,16 +509,35 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
               </div>
             )}
 
-            {/* Image Upload */}
+            {/* Image Upload & Live Card Preview */}
             <div>
               <label style={{ display: 'block', fontWeight: '700', marginBottom: '6px', fontSize: '12.5px', color: '#0F172A' }}>Banner Image (PNG, JPG, WEBP - Max 5MB)</label>
               {bannerImage ? (
-                <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '8px', overflow: 'hidden', background: '#0F172A', marginBottom: '8px' }}>
-                  <img src={bannerImage} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '10px', overflow: 'hidden', background: '#0F172A', marginBottom: '8px', border: '1px solid #CBD5E1' }}>
+                  <img src={bannerImage} alt="Banner Preview" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* Dark gradient overlay */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.65) 60%, rgba(15,23,42,0.2) 100%)', zIndex: 1 }} />
+                  {/* Banner Content Live Overlay */}
+                  <div style={{ position: 'absolute', inset: 0, zIndex: 2, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', color: '#ffffff', maxWidth: '80%' }}>
+                    <div style={{ background: '#F97316', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.3px' }}>
+                      {(advertisementType || 'URGENT_HIRING').replace(/_/g, ' ')}
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', margin: '0 0 4px 0', lineHeight: 1.2, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+                      {title || 'Your Promotional Banner Title'}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#E2E8F0', margin: '0 0 10px 0', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                      {description || 'Short summary and benefits for your plant opening.'}
+                    </div>
+                    <div style={{ padding: '4px 10px', background: '#2563EB', color: '#ffffff', borderRadius: '4px', fontWeight: '800', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span>Apply Now</span>
+                      <ArrowRight size={11} color="#FFFFFF" strokeWidth={2.4} />
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setBannerImage('')}
-                    style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10, background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Remove custom image"
                   >
                     ✕
                   </button>
@@ -969,23 +989,15 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                 <tbody>
                   {filteredAds.map((ad) => (
                     <tr key={ad.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                      {/* Thumbnail */}
+                      {/* Complete Banner Composite Thumbnail */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ width: '130px', height: '65px', borderRadius: '6px', overflow: 'hidden', background: '#0F172A', position: 'relative', border: '1px solid #E2E8F0', cursor: 'pointer' }} onClick={() => setSelectedAdForAnalytics(ad)}>
-                          <img
-                            src={
-                              ad.banner_image && ad.banner_image.trim().length > 5
-                                ? ad.banner_image.trim()
-                                : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
-                            }
-                            alt={ad.title}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
-                            }}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </div>
+                        <BannerPreviewThumbnail
+                          ad={ad}
+                          width="135px"
+                          height="68px"
+                          borderRadius="6px"
+                          onClick={() => setSelectedAdForAnalytics(ad)}
+                        />
                       </td>
 
                       {/* Title & Type */}
@@ -1096,41 +1108,17 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                     boxSizing: 'border-box'
                   }}
                 >
-                  {/* 1. 16:9 Image Thumbnail with Badge & Status Overlays */}
-                  <div style={{ position: 'relative', width: '100%', height: '100px', background: '#0F172A' }}>
-                    <img
-                      src={
-                        ad.banner_image && ad.banner_image.trim().length > 5
-                          ? ad.banner_image.trim()
-                          : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'
-                      }
-                      alt={ad.title}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src =
-                          'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
-                      }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  {/* 1. Complete Banner Thumbnail with Status Overlay */}
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <BannerPreviewThumbnail
+                      ad={ad}
+                      width="100%"
+                      height="115px"
+                      borderRadius="0"
+                      onClick={() => setSelectedAdForAnalytics(ad)}
                     />
-
-                    {/* Gradient Overlay for Title */}
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.3) 60%, transparent 100%)' }} />
-
-                    {/* Top Floating Badges */}
-                    <div style={{ position: 'absolute', top: '6px', left: '8px', zIndex: 2 }}>
-                      <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                        {(ad.advertisement_type || 'FEATURED_JOB').replace(/_/g, ' ')}
-                      </span>
-                    </div>
-
-                    <div style={{ position: 'absolute', top: '6px', right: '8px', zIndex: 2 }}>
+                    <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
                       {getStatusPill(ad)}
-                    </div>
-
-                    {/* Banner Title on Image */}
-                    <div style={{ position: 'absolute', bottom: '6px', left: '8px', right: '8px', zIndex: 2 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '800', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.6)', lineHeight: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ad.title}
-                      </div>
                     </div>
                   </div>
 

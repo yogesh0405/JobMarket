@@ -2,10 +2,16 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { notificationApi } from '../api/notificationApi';
 import { resolveMobileNotificationRoute } from '../utils/notificationRouter';
 
 const STORED_FCM_TOKEN_KEY = '@jobmarket_device_fcm_token';
+
+// Safely detect if running inside the Expo Go client app
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+  (Constants as any)?.appOwnership === 'expo';
 
 /**
  * Lightweight in-process event bus so PushNotificationManager can signal
@@ -25,17 +31,20 @@ function triggerNotificationRefresh() {
   });
 }
 
-
-// Configure foreground notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Configure foreground notification behavior safely
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch (e) {
+  console.warn('[PushNotificationManager] Could not set notification handler:', e);
+}
 
 export class PushNotificationManager {
   private static notificationListener: any = null;
@@ -66,36 +75,48 @@ export class PushNotificationManager {
       this.navigationRef = navigationRef;
     }
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'General Notifications',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#0066CC',
-        sound: 'default',
-        enableVibrate: true,
-        showBadge: true,
-      });
+    // Remote push notifications are not supported in Expo Go on Android (SDK 53+)
+    if (Platform.OS === 'android' && isExpoGo) {
+      console.log(
+        '[PushNotificationManager] Running in Expo Go on Android: remote push notifications are disabled in Expo Go. Use a development build (npx expo run:android) or standalone APK for push notifications.'
+      );
+      return;
     }
 
-    // Clean up previous listeners if re-initializing
-    this.cleanupListeners();
+    try {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'General Notifications',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#0066CC',
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
+        });
+      }
 
-    // 1. Foreground notification received listener — refresh badge + list immediately
-    this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('[Push] Foreground notification received:', notification.request.content.title);
-      // Immediately signal all useNotifications subscribers to re-fetch
-      triggerNotificationRefresh();
-    });
+      // Clean up previous listeners if re-initializing
+      this.cleanupListeners();
 
-    // 2. Notification tap response listener — refresh + deep-link navigate
-    this.responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      console.log('[Push] User tapped notification:', data);
-      // Refresh notification list (marks as seen state)
-      triggerNotificationRefresh();
-      this.handleDeepLink(data);
-    });
+      // 1. Foreground notification received listener — refresh badge + list immediately
+      this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+        console.log('[Push] Foreground notification received:', notification.request.content.title);
+        // Immediately signal all useNotifications subscribers to re-fetch
+        triggerNotificationRefresh();
+      });
+
+      // 2. Notification tap response listener — refresh + deep-link navigate
+      this.responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data;
+        console.log('[Push] User tapped notification:', data);
+        // Refresh notification list (marks as seen state)
+        triggerNotificationRefresh();
+        this.handleDeepLink(data);
+      });
+    } catch (err) {
+      console.warn('[PushNotificationManager] Listener initialization skipped or failed:', err);
+    }
   }
 
   /**
@@ -103,6 +124,11 @@ export class PushNotificationManager {
    */
   static async registerForPushNotifications(): Promise<string | null> {
     try {
+      if (isExpoGo) {
+        console.log('[PushNotificationManager] Push token registration skipped: running inside Expo Go client.');
+        return null;
+      }
+
       if (!Device.isDevice) {
         console.log('Push notifications require a physical device');
         return null;
@@ -185,17 +211,21 @@ export class PushNotificationManager {
    * Clean up notification listeners on unmount
    */
   static cleanupListeners() {
-    if (this.notificationListener) {
-      if (typeof this.notificationListener.remove === 'function') {
-        this.notificationListener.remove();
+    try {
+      if (this.notificationListener) {
+        if (typeof this.notificationListener.remove === 'function') {
+          this.notificationListener.remove();
+        }
+        this.notificationListener = null;
       }
-      this.notificationListener = null;
-    }
-    if (this.responseListener) {
-      if (typeof this.responseListener.remove === 'function') {
-        this.responseListener.remove();
+      if (this.responseListener) {
+        if (typeof this.responseListener.remove === 'function') {
+          this.responseListener.remove();
+        }
+        this.responseListener = null;
       }
-      this.responseListener = null;
+    } catch (err) {
+      // Silently ignore cleanup errors
     }
   }
 

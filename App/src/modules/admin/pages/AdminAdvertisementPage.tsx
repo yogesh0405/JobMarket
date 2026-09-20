@@ -3,6 +3,7 @@ import { Advertisement, AdvertisementType, AdvertisementPriority, AdvertisementA
 import { apiFetch } from '../../../utils/api';
 import { useToast } from '../../../hooks/useToast';
 import { AdminConfirmationModal } from '../components/AdminConfirmationModal';
+import { BannerPreviewThumbnail } from '../../../components/common/BannerPreviewThumbnail';
 import '../../../styles/bannerSlider.css';
 
 export const AdminAdvertisementPage: React.FC = () => {
@@ -492,14 +493,12 @@ export const AdminAdvertisementPage: React.FC = () => {
               {analytics.top_clicked.map((top, idx) => (
                 <div key={top.id || idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#64748b', width: '24px' }}>#{idx + 1}</div>
-                  <div style={{ width: '90px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#0f172a' }}>
-                    <img
-                      src={top.banner_image && top.banner_image.trim().length > 5 ? top.banner_image.trim() : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'}
-                      alt={top.title}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'; }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
+                  <BannerPreviewThumbnail
+                    ad={top}
+                    width="120px"
+                    height="60px"
+                    borderRadius="8px"
+                  />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '700', color: '#1e293b' }}>{top.title}</div>
                     <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 'bold' }}>{top.advertisement_type.replace('_', ' ')}</div>
@@ -541,16 +540,15 @@ export const AdminAdvertisementPage: React.FC = () => {
                 <tbody>
                   {displayedAds.map((ad) => (
                     <tr key={ad.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      {/* Banner Thumbnail */}
+                      {/* Banner Complete Thumbnail Preview */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ width: '110px', height: '55px', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', cursor: 'pointer' }} onClick={() => setPreviewAd(ad)}>
-                          <img
-                            src={ad.banner_image && ad.banner_image.trim().length > 5 ? ad.banner_image.trim() : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'}
-                            alt={ad.title}
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80'; }}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </div>
+                        <BannerPreviewThumbnail
+                          ad={ad}
+                          width="135px"
+                          height="68px"
+                          borderRadius="8px"
+                          onClick={() => setPreviewAd(ad)}
+                        />
                       </td>
 
                       {/* Title & Type */}
