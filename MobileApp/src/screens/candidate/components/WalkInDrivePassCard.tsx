@@ -12,14 +12,13 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Building2,
   PhoneCall,
-  Navigation2,
   ExternalLink,
   ChevronRight,
 } from 'lucide-react-native';
 import { InterviewItem } from '../../../api/candidateApi';
 import { COLORS, RADIUS } from '../../../constants/theme';
+import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 
 interface Props {
   item: InterviewItem;
@@ -73,23 +72,14 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
     (item.walk_in_start_time
       ? `${item.walk_in_start_time}${item.walk_in_end_time ? ' - ' + item.walk_in_end_time : ''}`
       : '10:00 AM - 04:00 PM');
-  const venueAddress = item.venue_address || item.job_location || 'Company Factory Premises';
-
-  const handleOpenMap = () => {
-    if (item.maps_link && typeof item.maps_link === 'string' && item.maps_link.trim().startsWith('http')) {
-      Linking.openURL(item.maps_link.trim()).catch(() => {});
-      return;
-    }
-    const query = encodeURIComponent(`${venueAddress} ${item.company || ''}`);
-    const mapUrl = Platform.select({
-      ios: `maps:0,0?q=${query}`,
-      android: `geo:0,0?q=${query}`,
-      default: `https://www.google.com/maps/search/?api=1&query=${query}`,
-    });
-    if (mapUrl) {
-      Linking.openURL(mapUrl).catch(() => {});
-    }
-  };
+  const companyName = item.company_name || item.company || 'Company';
+  const logoUrl =
+    item.company_logo ||
+    (item as any).companyLogo ||
+    (item as any).logoUrl ||
+    (item as any).logo_url ||
+    (item as any).logo ||
+    (item as any).employer_logo;
 
   const handleCallCoordinator = () => {
     if (item.walk_in_contact_number) {
@@ -106,8 +96,8 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
         id: item.job_id,
         title: item.job_title,
         job_title: item.job_title,
-        company: item.company_name || item.company,
-        company_name: item.company_name || item.company,
+        company: companyName,
+        company_name: companyName,
         location: item.job_location || item.venue_address,
       },
     });
@@ -119,10 +109,10 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
       style={[styles.cardContainer, isPast && styles.cardPast]}
       onPress={() => onPressPass(item)}
     >
-      {/* Top Header Ticket Banner */}
+      {/* Card Header Banner */}
       <View style={[styles.headerBanner, isPast && styles.headerBannerPast]}>
         <View style={styles.headerLeft}>
-          <Ticket size={14} color="#FFFFFF" strokeWidth={2.4} />
+          <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
           <Text style={styles.headerTitleText}>WALK-IN DRIVE ENTRY PASS</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -133,20 +123,16 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
         </View>
       </View>
 
-      {/* Ticket Perforated Connector */}
-      <View style={styles.perforatedConnector}>
-        <View style={styles.perforatedNotchLeft} />
-        <View style={styles.perforatedDottedLine} />
-        <View style={styles.perforatedNotchRight} />
-      </View>
-
-      {/* Ticket Content Body */}
+      {/* Card Body */}
       <View style={styles.contentBody}>
         {/* Job Title & Company */}
         <View style={styles.topInfoRow}>
-          <View style={styles.companyIconBox}>
-            <Building2 size={16} color={isPast ? '#94A3B8' : COLORS.primary} strokeWidth={2.2} />
-          </View>
+          <CompanyLogoAvatar
+            logoUrl={logoUrl}
+            companyName={companyName}
+            size={38}
+            borderRadius={RADIUS.xs}
+          />
           <View style={{ flex: 1, minWidth: 0 }}>
             <TouchableOpacity activeOpacity={0.8} onPress={handleOpenJobDetails}>
               <Text style={[styles.jobTitleText, isPast && styles.textMuted]} numberOfLines={1}>
@@ -154,7 +140,7 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
               </Text>
             </TouchableOpacity>
             <Text style={[styles.companyText, isPast && styles.textMuted2]} numberOfLines={1}>
-              {item.company_name || item.company}
+              {companyName}
               {item.job_location ? ` • ${item.job_location}` : ''}
             </Text>
           </View>
@@ -201,23 +187,6 @@ export const WalkInDrivePassCard: React.FC<Props> = ({
             </View>
             <Text style={[styles.scheduleCellValue, isPast && styles.textMuted]}>{displayTime}</Text>
           </View>
-        </View>
-
-        {/* Section Divider */}
-        <View style={styles.sectionDividerSlate} />
-
-        {/* Venue Address Row */}
-        <View style={styles.venueRowBlock}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.venueLabel}>VENUE & GATE ADDRESS</Text>
-            <Text style={[styles.venueValueText, isPast && styles.textMuted]} numberOfLines={2}>
-              {venueAddress}
-            </Text>
-          </View>
-          <TouchableOpacity activeOpacity={0.8} style={styles.navigateMiniBtn} onPress={handleOpenMap}>
-            <Navigation2 size={12} color={COLORS.primary} strokeWidth={2.4} />
-            <Text style={styles.navigateMiniBtnText}>Map</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Coordinator Info (if available) */}
@@ -274,13 +243,19 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#94A3B8',
+    borderColor: '#E2E8F0',
     borderRadius: RADIUS.card,
     overflow: 'hidden',
     marginBottom: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardPast: {
-    borderColor: '#CBD5E1',
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E8ECF0',
     opacity: 0.88,
   },
   headerBanner: {
@@ -288,10 +263,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#1764E8',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 9,
-    borderTopLeftRadius: RADIUS.card,
-    borderTopRightRadius: RADIUS.card,
   },
   headerBannerPast: {
     backgroundColor: '#64748B',
@@ -319,58 +292,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.6,
   },
-  perforatedConnector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 12,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  perforatedNotchLeft: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#F7F7F7',
-    marginLeft: -6,
-    borderWidth: 1,
-    borderColor: '#94A3B8',
-  },
-  perforatedDottedLine: {
-    flex: 1,
-    height: 1,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderStyle: 'dashed',
-    marginHorizontal: 4,
-  },
-  perforatedNotchRight: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#F7F7F7',
-    marginRight: -6,
-    borderWidth: 1,
-    borderColor: '#94A3B8',
-  },
   contentBody: {
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    paddingTop: 4,
+    padding: 14,
+    gap: 10,
   },
   topInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  companyIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.xs,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   jobTitleText: {
     fontSize: 14,
@@ -429,8 +358,8 @@ const styles = StyleSheet.create({
   },
   sectionDividerSlate: {
     height: 1,
-    backgroundColor: '#94A3B8',
-    marginVertical: 6,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
   },
   scheduleGrid: {
     flexDirection: 'row',
@@ -461,41 +390,6 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#CBD5E1',
     marginHorizontal: 10,
-  },
-  venueRowBlock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  venueLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  venueValueText: {
-    fontSize: 11.5,
-    fontWeight: '500',
-    color: '#334155',
-    lineHeight: 16,
-  },
-  navigateMiniBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: RADIUS.xs,
-  },
-  navigateMiniBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.primary,
   },
   coordinatorRow: {
     flexDirection: 'row',

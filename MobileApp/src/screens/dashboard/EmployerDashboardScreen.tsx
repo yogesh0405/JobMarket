@@ -31,6 +31,7 @@ import { COLORS, RADIUS } from '../../constants/theme';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { EmployerDashboardHeader } from './components/EmployerDashboardHeader';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 
 interface Props {
   navigation: any;
@@ -118,7 +119,22 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
     user?.profilePictureUrl ||
     'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=150&q=80';
 
-  const totalApplicants = jobs.reduce((acc, j) => acc + (j.applicants_count || 0), 0);
+  const totalApplicants = jobs.reduce((acc, j) => {
+    const storeCount = appliedJobsStore
+      .getAppliedJobs()
+      .filter(
+        (a) => String(a.jobId || a.job?.id).toLowerCase() === String(j.id).toLowerCase()
+      ).length;
+    const jobAppCount =
+      typeof (j as any).applicants_count === 'number' && (j as any).applicants_count > 0
+        ? (j as any).applicants_count
+        : typeof (j as any).applicantsCount === 'number' && (j as any).applicantsCount > 0
+        ? (j as any).applicantsCount
+        : Array.isArray((j as any).applicants)
+        ? (j as any).applicants.length
+        : 0;
+    return acc + Math.max(jobAppCount, storeCount);
+  }, 0);
 
   const dynamicLocations = React.useMemo(() => {
     if (jobs.length === 0) {
@@ -422,7 +438,20 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                   >
                     <Users size={14} color={COLORS.primary} />
                     <Text style={styles.applicantBtnText}>
-                      {job.applicants_count || 0} Candidates
+                      {Math.max(
+                        typeof (job as any).applicants_count === 'number' && (job as any).applicants_count > 0
+                          ? (job as any).applicants_count
+                          : 0,
+                        typeof (job as any).applicantsCount === 'number' && (job as any).applicantsCount > 0
+                          ? (job as any).applicantsCount
+                          : 0,
+                        Array.isArray((job as any).applicants) ? (job as any).applicants.length : 0,
+                        appliedJobsStore
+                          .getAppliedJobs()
+                          .filter(
+                            (a) => String(a.jobId || a.job?.id).toLowerCase() === String(job.id).toLowerCase()
+                          ).length
+                      )} Candidates
                     </Text>
                   </TouchableOpacity>
 

@@ -41,6 +41,8 @@ import {
   Sparkles,
   FileSpreadsheet,
   Download,
+  Ticket,
+  Users,
 } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -53,9 +55,12 @@ import { ClockTimePickerModal } from '../../components/common/ClockTimePickerMod
 import { ResumePdfViewerModal } from '../../components/common/ResumePdfViewerModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
 import { WhatsAppIcon } from '../../components/common/WhatsAppIcon';
+import { EmployerWalkInDriveCard } from './components/EmployerWalkInDriveCard';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
+import { applicantsApi } from '../../api/applicantsApi';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { Job } from '../../types';
 import { COLORS, RADIUS, SPACING } from '../../constants/theme';
 
@@ -122,6 +127,7 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [filterType, setFilterType] = useState<'ALL' | 'WALK_IN' | 'SCHEDULED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -163,12 +169,16 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
     message: '',
   });
 
+  // All applicants across employer's jobs
+  const [allApplicantsList, setAllApplicantsList] = useState<any[]>([]);
+
   const fetchInterviews = async (isPullToRefresh = false) => {
     if (!isPullToRefresh) setLoading(true);
     try {
-      const [interviewRes, jobsRes] = await Promise.all([
+      const [interviewRes, jobsRes, allApplicantsRes] = await Promise.all([
         apiFetch('/api/v1/jobs/employer/interviews'),
         jobsApi.getMyJobs().catch(() => ({ success: false, data: [] })),
+        applicantsApi.getAllApplicants().catch(() => ({ success: false, data: [] })),
       ]);
       const data = interviewRes?.data || interviewRes;
       if (data) {
@@ -177,6 +187,9 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
       }
       if (jobsRes?.success && Array.isArray(jobsRes.data)) {
         setEmployerJobs(jobsRes.data);
+      }
+      if (allApplicantsRes?.success && Array.isArray(allApplicantsRes.data)) {
+        setAllApplicantsList(allApplicantsRes.data);
       }
     } catch (err) {
       console.warn('Failed to fetch employer interviews:', err);
@@ -191,6 +204,13 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
       fetchInterviews();
     }, [])
   );
+
+  useEffect(() => {
+    const unsub = appliedJobsStore.subscribe(() => {
+      fetchInterviews(true);
+    });
+    return unsub;
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -412,27 +432,261 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
     return pastList.filter((item) => String(item.job_id) === String(selectedJobId));
   }, [pastList, selectedJobId]);
 
-  const currentList = activeTab === 'upcoming' ? filteredUpcoming : filteredPast;
+  // Helper to identify walk-in jobs
+  const isWalkInJob = (job: Job) => {
+    const hm = (job.hiringMethod || (job as any).hiring_method || '').toUpperCase();
+    return (
+      hm === 'WALK_IN' ||
+      Boolean(job.isWalkIn) ||
+      Boolean(job.is_walk_in) ||
+      Boolean(job.walkInDate) ||
+      Boolean(job.walk_in_date)
+    );
+  };
 
-  // Search Filter
-  const filteredList = useMemo(() => {
-    if (!searchQuery.trim()) return currentList;
+  // Walk-in drives extracted from employer's job postings
+  const walkInDrives = useMemo(() => {
+    return employerJobs.filter(isWalkInJob);
+  }, [employerJobs]);
+
+  // Upcoming Walk-in Drives (today or in future)
+  const upcomingWalkIns = useMemo(() => {
+    return walkInDrives.filter((job) => {
+      if (selectedJobId !== 'ALL' && String(job.id) !== String(selectedJobId)) {
+        return false;
+      }
+      const dateStr = job.walkInDate || job.walk_in_date;
+      if (!dateStr) return true;
+      return getDaysFromToday(dateStr) >= 0;
+    });
+  }, [walkInDrives, selectedJobId]);
+
+  // Past Walk-in Drives (before today)
+  const pastWalkIns = useMemo(() => {
+    return walkInDrives.filter((job) => {
+      if (selectedJobId !== 'ALL' && String(job.id) !== String(selectedJobId)) {
+        return false;
+      }
+      const dateStr = job.walkInDate || job.walk_in_date;
+      if (!dateStr) return false;
+      return getDaysFromToday(dateStr) < 0;
+    });
+  }, [walkInDrives, selectedJobId]);
+
+  // Pre-calculate candidate applicant count for each job
+  const getJobApplicantCount = useCallback(
+    (job: Job) => {
+      const jobIdStr = String(job.id).toLowerCase();
+      const uniqueCandidateIds = new Set<string>();
+
+      // 1. Check job.applicants array from getMyJobs()
+      if (Array.isArray((job as any).applicants)) {
+        (job as any).applicants.forEach((a: any) => {
+          const uId = a.userId || a.user_id || a.id || a.email || a.phone;
+          if (uId) {
+            uniqueCandidateIds.add(String(uId).toLowerCase());
+          } else {
+            uniqueCandidateIds.add(`job-applicant-${uniqueCandidateIds.size + 1}`);
+          }
+        });
+      }
+
+      // 2. Check allApplicantsList from applicantsApi.getAllApplicants()
+      if (Array.isArray(allApplicantsList)) {
+        allApplicantsList.forEach((a: any) => {
+          const targetJId = String(a.jobId || a.job_id || a.job?.id || '').toLowerCase();
+          if (targetJId === jobIdStr) {
+            const uId = a.userId || a.user_id || a.user?.id || a.id || a.email || a.phone;
+            if (uId) {
+              uniqueCandidateIds.add(String(uId).toLowerCase());
+            } else {
+              uniqueCandidateIds.add(`applicant-${uniqueCandidateIds.size + 1}`);
+            }
+          }
+        });
+      }
+
+      // 3. Check allInterviews (upcomingList + pastList)
+      const allInterviews = [...upcomingList, ...pastList];
+      allInterviews.forEach((i) => {
+        if (String(i.job_id).toLowerCase() === jobIdStr) {
+          const uId = i.candidate_id || i.application_id || i.candidate_phone || i.candidate_email;
+          if (uId) uniqueCandidateIds.add(String(uId).toLowerCase());
+        }
+      });
+
+      // 4. Check persistent appliedJobsStore
+      const storeApps = appliedJobsStore.getAppliedJobs();
+      storeApps.forEach((item: any) => {
+        const targetJId = String(item.jobId || item.job?.id || item.id || '').toLowerCase();
+        if (targetJId === jobIdStr) {
+          const uId = item.id || item.userId || item.user_id || `store-${targetJId}`;
+          uniqueCandidateIds.add(String(uId).toLowerCase());
+        }
+      });
+
+      // 5. Check explicit numeric count properties
+      const explicitCount = Number(
+        job.applicants_count ??
+        (job as any).applicantsCount ??
+        (job as any).applications_count ??
+        (job as any).applicationsCount ??
+        0
+      );
+
+      return Math.max(uniqueCandidateIds.size, explicitCount);
+    },
+    [allApplicantsList, upcomingList, pastList]
+  );
+
+  const currentScheduledList = activeTab === 'upcoming' ? filteredUpcoming : filteredPast;
+  const currentWalkInList = activeTab === 'upcoming' ? upcomingWalkIns : pastWalkIns;
+
+  // Search Filter for Candidate Interviews
+  const searchedInterviews = useMemo(() => {
+    if (!searchQuery.trim()) return currentScheduledList;
     const q = searchQuery.toLowerCase().trim();
-    return currentList.filter((item) => {
+    return currentScheduledList.filter((item) => {
       return (
         item.candidate_name?.toLowerCase().includes(q) ||
         item.job_title?.toLowerCase().includes(q) ||
         item.trade_specialization?.toLowerCase().includes(q) ||
-        item.candidate_phone?.toLowerCase().includes(q)
+        item.candidate_phone?.toLowerCase().includes(q) ||
+        item.venue_address?.toLowerCase().includes(q)
       );
     });
-  }, [currentList, searchQuery]);
+  }, [currentScheduledList, searchQuery]);
+
+  // Search Filter for Walk-in Drives
+  const searchedWalkIns = useMemo(() => {
+    if (!searchQuery.trim()) return currentWalkInList;
+    const q = searchQuery.toLowerCase().trim();
+    return currentWalkInList.filter((job) => {
+      const contactPerson = job.walkInContactPerson || (job as any).walk_in_contact_person || '';
+      const contactPhone = job.walkInContactNumber || (job as any).walk_in_contact_number || '';
+      const venue =
+        job.interviewAddress || (job as any).interview_address || job.location || '';
+      const company = job.company || (job as any).company_name || '';
+      return (
+        job.title?.toLowerCase().includes(q) ||
+        (job.trade && job.trade.toLowerCase().includes(q)) ||
+        contactPerson.toLowerCase().includes(q) ||
+        contactPhone.toLowerCase().includes(q) ||
+        venue.toLowerCase().includes(q) ||
+        company.toLowerCase().includes(q)
+      );
+    });
+  }, [currentWalkInList, searchQuery]);
 
   const [exportingCsv, setExportingCsv] = useState(false);
 
-  // Export Scheduled/Evaluated Interviews to Excel/CSV
+  // Export Scheduled/Evaluated Interviews or Walk-in Drives to Excel/CSV
   const handleExportCsv = async (exportType: 'upcoming' | 'past' = activeTab) => {
     const isUpcoming = exportType === 'upcoming';
+
+    // Export Walk-in Drives if WALK_IN filter is selected
+    if (filterType === 'WALK_IN') {
+      const targetWalkIns = isUpcoming ? upcomingWalkIns : pastWalkIns;
+      if (targetWalkIns.length === 0) {
+        Alert.alert(
+          'No Records',
+          `There are no ${isUpcoming ? 'upcoming' : 'past'} walk-in drive records to export.`
+        );
+        return;
+      }
+
+      setExportingCsv(true);
+      try {
+        const headers = [
+          'Job Title',
+          'Company',
+          'Trade / Role',
+          'Drive Date',
+          'Time Window',
+          'Venue Address',
+          'Coordinator Name',
+          'Coordinator Contact',
+          'Registered Candidates',
+          'Status',
+          'Maps Link',
+        ];
+
+        const escapeCsv = (str?: any) => {
+          if (str === null || str === undefined) return '""';
+          const formatted = String(str).replace(/"/g, '""');
+          return `"${formatted}"`;
+        };
+
+        const rows = targetWalkIns.map((job) => {
+          const days = getDaysFromToday(job.walkInDate || job.walk_in_date || '');
+          const statusText = isUpcoming
+            ? days === 0
+              ? 'Today'
+              : days === 1
+              ? 'Tomorrow'
+              : `${days}d left`
+            : 'Completed';
+          const startTime = job.walkInStartTime || (job as any).walk_in_start_time || '10:00 AM';
+          const endTime = job.walkInEndTime || (job as any).walk_in_end_time || '04:00 PM';
+          const venue =
+            job.interviewAddress ||
+            (job as any).interview_address ||
+            (job as any).venue_address ||
+            job.location ||
+            'N/A';
+          const coordinator =
+            job.walkInContactPerson || (job as any).walk_in_contact_person || 'Recruiting Team';
+          const contactPhone =
+            job.walkInContactNumber || (job as any).walk_in_contact_number || 'N/A';
+          const count = getJobApplicantCount(job);
+
+          return [
+            escapeCsv(job.title),
+            escapeCsv(job.company || (job as any).company_name || 'N/A'),
+            escapeCsv(job.trade || 'N/A'),
+            escapeCsv(job.walkInDate || job.walk_in_date || 'TBD'),
+            escapeCsv(`${startTime} - ${endTime}`),
+            escapeCsv(venue),
+            escapeCsv(coordinator),
+            escapeCsv(contactPhone),
+            escapeCsv(count),
+            escapeCsv(statusText),
+            escapeCsv(job.googleMapsUrl || (job as any).google_maps_url || ''),
+          ];
+        });
+
+        const csvContent =
+          '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+
+        const dateTag = new Date().toISOString().split('T')[0];
+        const prefix = isUpcoming ? 'Upcoming_WalkIn_Drives' : 'Past_WalkIn_Drives';
+        const fileName = `${prefix}_${dateTag}.csv`;
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+        await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: `Download Walk-in Drives (${prefix})`,
+            UTI: 'public.comma-separated-values-text',
+          });
+        } else {
+          Alert.alert('Download Ready', `File saved to device storage: ${fileName}`);
+        }
+      } catch (err: any) {
+        console.warn('Failed to export CSV:', err);
+        Alert.alert('Export Error', err?.message || 'Failed to generate excel file.');
+      } finally {
+        setExportingCsv(false);
+      }
+      return;
+    }
+
+    // Default: Candidate Interviews export
     const targetList = isUpcoming ? filteredUpcoming : filteredPast;
 
     if (targetList.length === 0) {
@@ -522,40 +776,228 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const renderInterviewCard = (item: EmployerInterviewItem) => {
+    const days = getDaysFromToday(item.interview_date);
+    const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
+    const isPostponed = item.interview_status === 'postponed';
+
+    return (
+      <View key={item.application_id} style={styles.interviewCard}>
+        {/* Distinct Date & Status Header Band with soft grey background */}
+        <View style={styles.cardTopHeader}>
+          <View style={styles.dateTimeBadge}>
+            <Calendar size={13} color="#1764E8" strokeWidth={2} />
+            <Text style={styles.dateTimeText}>
+              {formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}
+            </Text>
+          </View>
+
+          {isCompleted ? (
+            <View style={styles.statusCompletedBadge}>
+              <CheckCircle2 size={12} color="#16A34A" />
+              <Text style={styles.statusCompletedText}>Interviewed</Text>
+            </View>
+          ) : isPostponed ? (
+            <View style={styles.statusPostponedBadge}>
+              <Clock3 size={12} color="#D97706" />
+              <Text style={styles.statusPostponedText}>Postponed</Text>
+            </View>
+          ) : days === 0 ? (
+            <View style={styles.statusTodayBadge}>
+              <Text style={styles.statusTodayText}>TODAY</Text>
+            </View>
+          ) : days === 1 ? (
+            <View style={styles.statusTomorrowBadge}>
+              <Text style={styles.statusTomorrowText}>TOMORROW</Text>
+            </View>
+          ) : (
+            <View style={styles.statusUpcomingBadge}>
+              <Text style={styles.statusUpcomingText}>{days > 0 ? `${days}d left` : 'Upcoming'}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Card Main Body */}
+        <View style={styles.cardBody}>
+          {/* Candidate Info Block */}
+          <View style={styles.candidateRow}>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => handleOpenCandidateProfile(item)}
+              style={[styles.avatarCircle, { overflow: 'hidden' }]}
+            >
+              {item.candidate_avatar && (item.candidate_avatar.startsWith('http') || item.candidate_avatar.startsWith('data:') || item.candidate_avatar.startsWith('/')) ? (
+                <Image source={{ uri: item.candidate_avatar }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <Text style={styles.avatarInitials}>
+                  {(item.candidate_name || 'C').charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.candidateDetails}>
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => handleOpenCandidateProfile(item)}
+                style={styles.candidateNameRow}
+              >
+                <Text style={[styles.candidateName, { color: COLORS.primary }]} numberOfLines={1}>
+                  {item.candidate_name}
+                </Text>
+                <ExternalLink size={11} color={COLORS.primary} style={{ marginLeft: 3 }} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => {
+                  if (item.job_id) {
+                    navigation.navigate('CandidateJobDetail', {
+                      jobId: item.job_id,
+                      job: {
+                        ...item,
+                        id: item.job_id,
+                        title: item.job_title,
+                        job_title: item.job_title,
+                        company: (item as any).company_name || user?.companyName || user?.company_name || 'Industrial Partner',
+                        location: item.venue_address,
+                      },
+                    });
+                  }
+                }}
+                style={styles.jobAppliedLinkRow}
+              >
+                <Text style={styles.jobAppliedTitle} numberOfLines={1}>
+                  Applied for: <Text style={styles.jobAppliedLinkText}>{item.job_title}</Text>
+                </Text>
+                <ExternalLink size={11} color="#1764E8" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
+
+              {item.candidate_phone && (
+                <View style={styles.metaRow}>
+                  <Phone size={12} color="#64748B" />
+                  <Text style={styles.metaText}>{item.candidate_phone}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Venue / Location Row */}
+          {item.venue_address && (
+            <View style={styles.venueRow}>
+              <MapPin size={13} color="#64748B" style={{ marginTop: 2 }} />
+              <Text style={styles.venueText} numberOfLines={2}>
+                {item.venue_address}
+              </Text>
+            </View>
+          )}
+
+          {/* Star Rating Display if Interviewed */}
+          {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
+            <View style={styles.ratingDisplayBlock}>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <Star
+                    key={star}
+                    size={14}
+                    color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
+                    fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
+                  />
+                ))}
+                <Text style={styles.ratingScoreText}>({item.interview_rating}/5)</Text>
+              </View>
+              {item.interview_feedback && (
+                <Text style={styles.feedbackSnippet} numberOfLines={1}>
+                  "{item.interview_feedback}"
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Postponed Reason Display */}
+          {isPostponed && item.postponed_reason && (
+            <View style={styles.postponedNotice}>
+              <AlertCircle size={12} color="#D97706" />
+              <Text style={styles.postponedReasonText} numberOfLines={1}>
+                Rescheduled: {item.postponed_reason}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.sectionSeparator} />
+
+          {/* Card Action Footer */}
+          <View style={styles.cardFooterRow}>
+            <View style={styles.quickActionIcons}>
+              {item.candidate_phone && (
+                <TouchableOpacity
+                  style={styles.quickIconBtn}
+                  onPress={() => handleCallCandidate(item.candidate_phone)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <Phone size={16} color="#1764E8" />
+                </TouchableOpacity>
+              )}
+              {item.candidate_phone && (
+                <TouchableOpacity
+                  style={styles.quickIconBtn}
+                  onPress={() => handleWhatsAppCandidate(item.candidate_phone, item.candidate_name)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <WhatsAppIcon size={16} />
+                </TouchableOpacity>
+              )}
+              {item.venue_address && (
+                <TouchableOpacity
+                  style={styles.quickIconBtn}
+                  onPress={() => handleOpenMap(item.venue_address, item.maps_link)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <Navigation2 size={16} color="#334155" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.actionCtaBtn}
+              activeOpacity={0.8}
+              onPress={() => handleOpenDetailModal(item)}
+            >
+              <Text style={styles.actionCtaText}>
+                {isCompleted ? 'View Evaluation' : 'Evaluate & Update'}
+              </Text>
+              <ChevronRight size={14} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const currentExportCount =
+    filterType === 'WALK_IN'
+      ? (activeTab === 'upcoming' ? upcomingWalkIns.length : pastWalkIns.length)
+      : filterType === 'SCHEDULED'
+      ? (activeTab === 'upcoming' ? filteredUpcoming.length : filteredPast.length)
+      : (activeTab === 'upcoming' ? filteredUpcoming.length + upcomingWalkIns.length : filteredPast.length + pastWalkIns.length);
+
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
-      {/* Screen Header with Back Button */}
+      {/* Screen Header with Back Button and Integrated Search Bar */}
       <Header
-        title="Scheduled Interviews"
-        subtitle="Manage & Evaluate Candidates"
         showBack={true}
         onBack={() => navigation.goBack()}
+        searchPlaceholder="Search candidate, job, venue..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
         hideBell={true}
         hideMenu={true}
         hideRightActions={true}
       />
-
-      {/* Metrics Summary Strip */}
-      <View style={styles.metricsStrip}>
-        <View style={styles.metricItem}>
-          <Text style={styles.metricValue}>{filteredUpcoming.length + filteredPast.length}</Text>
-          <Text style={styles.metricLabel}>Total Scheduled</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: '#1764E8' }]}>{filteredUpcoming.length}</Text>
-          <Text style={styles.metricLabel}>Upcoming</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: '#16A34A' }]}>
-            {filteredPast.filter((p) => p.interview_status === 'interviewed' || p.application_status === 'interviewed').length}
-          </Text>
-          <Text style={styles.metricLabel}>Evaluated</Text>
-        </View>
-      </View>
 
       {/* Job Posting Type Filter Dropdown Trigger */}
       <View style={styles.jobFilterWrapper}>
@@ -590,12 +1032,12 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         >
           <CalendarClock size={16} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
           <Text style={[styles.tabButtonText, activeTab === 'upcoming' && styles.tabButtonTextActive]}>
-            Upcoming Interviews
+            Upcoming
           </Text>
-          {filteredUpcoming.length > 0 && (
+          {filteredUpcoming.length + upcomingWalkIns.length > 0 && (
             <View style={[styles.tabBadge, activeTab === 'upcoming' && styles.tabBadgeActive]}>
               <Text style={[styles.tabBadgeText, activeTab === 'upcoming' && styles.tabBadgeTextActive]}>
-                {filteredUpcoming.length}
+                {filteredUpcoming.length + upcomingWalkIns.length}
               </Text>
             </View>
           )}
@@ -610,31 +1052,57 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={[styles.tabButtonText, activeTab === 'past' && styles.tabButtonTextActive]}>
             Past & Evaluated
           </Text>
-          {filteredPast.length > 0 && (
+          {filteredPast.length + pastWalkIns.length > 0 && (
             <View style={[styles.tabBadge, activeTab === 'past' && styles.tabBadgeActive]}>
               <Text style={[styles.tabBadgeText, activeTab === 'past' && styles.tabBadgeTextActive]}>
-                {filteredPast.length}
+                {filteredPast.length + pastWalkIns.length}
               </Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <Search size={16} color="#64748B" style={{ marginRight: 8 }} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by candidate name, trade, job..."
-          placeholderTextColor="#94A3B8"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <X size={16} color="#64748B" />
-          </TouchableOpacity>
-        )}
+      {/* Sub-Filter Pill Row (Capsule Shape) */}
+      <View style={styles.subFilterRow}>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'ALL' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('ALL')}
+        >
+          <Text style={[styles.subFilterText, filterType === 'ALL' && styles.subFilterTextActive]}>
+            All ({currentWalkInList.length + currentScheduledList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'WALK_IN' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('WALK_IN')}
+        >
+          <Ticket
+            size={12}
+            color={filterType === 'WALK_IN' ? '#FFFFFF' : '#1764E8'}
+            style={{ marginRight: 4 }}
+          />
+          <Text style={[styles.subFilterText, filterType === 'WALK_IN' && styles.subFilterTextActive]}>
+            Walk-in Drives ({currentWalkInList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'SCHEDULED' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('SCHEDULED')}
+        >
+          <CalendarClock
+            size={12}
+            color={filterType === 'SCHEDULED' ? '#FFFFFF' : '#1764E8'}
+            style={{ marginRight: 4 }}
+          />
+          <Text style={[styles.subFilterText, filterType === 'SCHEDULED' && styles.subFilterTextActive]}>
+            1-on-1 Interviews ({currentScheduledList.length})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Export Excel Bar (Available for both Upcoming and Past sections) */}
@@ -651,9 +1119,11 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
               activeTab === 'upcoming' && styles.exportSectionCountTextUpcoming,
             ]}
           >
-            {activeTab === 'upcoming'
-              ? `${filteredUpcoming.length} Upcoming Interview${filteredUpcoming.length !== 1 ? 's' : ''}`
-              : `${filteredPast.length} Evaluated Record${filteredPast.length !== 1 ? 's' : ''}`}
+            {filterType === 'WALK_IN'
+              ? `${searchedWalkIns.length} Walk-in Drive${searchedWalkIns.length !== 1 ? 's' : ''}`
+              : filterType === 'SCHEDULED'
+              ? `${searchedInterviews.length} Scheduled Interview${searchedInterviews.length !== 1 ? 's' : ''}`
+              : `${searchedWalkIns.length + searchedInterviews.length} Schedule${searchedWalkIns.length + searchedInterviews.length !== 1 ? 's' : ''}`}
           </Text>
           <Text
             style={[
@@ -669,15 +1139,11 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
           style={[
             styles.exportExcelButton,
             activeTab === 'upcoming' && styles.exportExcelButtonUpcoming,
-            (activeTab === 'upcoming' ? filteredUpcoming.length === 0 : filteredPast.length === 0) &&
-              styles.exportExcelButtonDisabled,
+            currentExportCount === 0 && styles.exportExcelButtonDisabled,
           ]}
           activeOpacity={0.8}
           onPress={() => handleExportCsv(activeTab)}
-          disabled={
-            (activeTab === 'upcoming' ? filteredUpcoming.length === 0 : filteredPast.length === 0) ||
-            exportingCsv
-          }
+          disabled={currentExportCount === 0 || exportingCsv}
         >
           {exportingCsv ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -708,222 +1174,128 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#1764E8" />
-            <Text style={styles.loadingText}>Loading interview schedule...</Text>
-          </View>
-        ) : filteredList.length === 0 ? (
-          <View style={styles.emptyStateCard}>
-            <View style={styles.emptyIconCircle}>
-              <Calendar size={32} color="#94A3B8" />
-            </View>
-            <Text style={styles.emptyTitle}>
-              {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {activeTab === 'upcoming'
-                ? 'When you schedule interviews from candidate applications, they will appear here.'
-                : 'Completed and historic interviews with candidate ratings will be listed here.'}
-            </Text>
+            <Text style={styles.loadingText}>Loading schedules and interviews...</Text>
           </View>
         ) : (
-          filteredList.map(item => {
-            const days = getDaysFromToday(item.interview_date);
-            const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';
-            const isPostponed = item.interview_status === 'postponed';
-
-            return (
-              <View key={item.application_id} style={styles.interviewCard}>
-                {/* Distinct Date & Status Header Band with soft grey background */}
-                <View style={styles.cardTopHeader}>
-                  <View style={styles.dateTimeBadge}>
-                    <Calendar size={13} color="#1764E8" strokeWidth={2} />
-                    <Text style={styles.dateTimeText}>
-                      {formatDate(item.interview_date)} • {item.interview_time || '10:00 AM'}
-                    </Text>
+          <>
+            {/* Filter: WALK-IN DRIVES ONLY */}
+            {filterType === 'WALK_IN' && (
+              searchedWalkIns.length === 0 ? (
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyIconCircle}>
+                    <Ticket size={32} color="#94A3B8" />
                   </View>
-
-                  {isCompleted ? (
-                    <View style={styles.statusCompletedBadge}>
-                      <CheckCircle2 size={12} color="#16A34A" />
-                      <Text style={styles.statusCompletedText}>Interviewed</Text>
-                    </View>
-                  ) : isPostponed ? (
-                    <View style={styles.statusPostponedBadge}>
-                      <Clock3 size={12} color="#D97706" />
-                      <Text style={styles.statusPostponedText}>Postponed</Text>
-                    </View>
-                  ) : days === 0 ? (
-                    <View style={styles.statusTodayBadge}>
-                      <Text style={styles.statusTodayText}>TODAY</Text>
-                    </View>
-                  ) : days === 1 ? (
-                    <View style={styles.statusTomorrowBadge}>
-                      <Text style={styles.statusTomorrowText}>TOMORROW</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.statusUpcomingBadge}>
-                      <Text style={styles.statusUpcomingText}>{days > 0 ? `${days}d left` : 'Upcoming'}</Text>
-                    </View>
-                  )}
+                  <Text style={styles.emptyTitle}>
+                    {activeTab === 'upcoming' ? 'No Upcoming Walk-in Drives' : 'No Past Walk-in Drives'}
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    {activeTab === 'upcoming'
+                      ? 'When you post jobs with Walk-in Drive hiring mode, their schedule and candidate admit passes will appear here.'
+                      : 'Completed walk-in drives and historical recruitment events will be listed here.'}
+                  </Text>
                 </View>
+              ) : (
+                searchedWalkIns.map((job) => (
+                  <EmployerWalkInDriveCard
+                    key={job.id}
+                    job={job}
+                    applicantCount={getJobApplicantCount(job)}
+                    isPast={activeTab === 'past'}
+                    navigation={navigation}
+                    onOpenMap={handleOpenMap}
+                    onCallCoordinator={handleCallCandidate}
+                    onWhatsAppCoordinator={handleWhatsAppCandidate}
+                  />
+                ))
+              )
+            )}
 
-                {/* Card Main Body */}
-                <View style={styles.cardBody}>
-                  {/* Candidate Info Block */}
-                  <View style={styles.candidateRow}>
-                    <TouchableOpacity
-                      activeOpacity={0.75}
-                      onPress={() => handleOpenCandidateProfile(item)}
-                      style={[styles.avatarCircle, { overflow: 'hidden' }]}
-                    >
-                      {item.candidate_avatar && (item.candidate_avatar.startsWith('http') || item.candidate_avatar.startsWith('data:') || item.candidate_avatar.startsWith('/')) ? (
-                        <Image source={{ uri: item.candidate_avatar }} style={{ width: '100%', height: '100%' }} />
-                      ) : (
-                        <Text style={styles.avatarInitials}>
-                          {(item.candidate_name || 'C').charAt(0).toUpperCase()}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
+            {/* Filter: 1-ON-1 INTERVIEWS ONLY */}
+            {filterType === 'SCHEDULED' && (
+              searchedInterviews.length === 0 ? (
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyIconCircle}>
+                    <Calendar size={32} color="#94A3B8" />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    {activeTab === 'upcoming' ? 'No Upcoming 1-on-1 Interviews' : 'No Past Interviews'}
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    {activeTab === 'upcoming'
+                      ? 'When you schedule 1-on-1 interviews with candidates from applications, they will appear here.'
+                      : 'Completed and evaluated interviews with candidate ratings will be listed here.'}
+                  </Text>
+                </View>
+              ) : (
+                searchedInterviews.map((item) => renderInterviewCard(item))
+              )
+            )}
 
-                    <View style={styles.candidateDetails}>
-                      <TouchableOpacity
-                        activeOpacity={0.75}
-                        onPress={() => handleOpenCandidateProfile(item)}
-                        style={styles.candidateNameRow}
-                      >
-                        <Text style={[styles.candidateName, { color: COLORS.primary }]} numberOfLines={1}>
-                          {item.candidate_name}
-                        </Text>
-                        <ExternalLink size={11} color={COLORS.primary} style={{ marginLeft: 3 }} />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        activeOpacity={0.75}
-                        onPress={() => {
-                          if (item.job_id) {
-                            navigation.navigate('CandidateJobDetail', {
-                              jobId: item.job_id,
-                              job: {
-                                ...item,
-                                id: item.job_id,
-                                title: item.job_title,
-                                job_title: item.job_title,
-                                company: (item as any).company_name || user?.companyName || user?.company_name || 'Industrial Partner',
-                                location: item.venue_address,
-                              },
-                            });
-                          }
-                        }}
-                        style={styles.jobAppliedLinkRow}
-                      >
-                        <Text style={styles.jobAppliedTitle} numberOfLines={1}>
-                          Applied for: <Text style={styles.jobAppliedLinkText}>{item.job_title}</Text>
-                        </Text>
-                        <ExternalLink size={11} color="#1764E8" style={{ marginLeft: 4 }} />
-                      </TouchableOpacity>
-
-                      {item.candidate_phone && (
-                        <View style={styles.metaRow}>
-                          <Phone size={12} color="#64748B" />
-                          <Text style={styles.metaText}>{item.candidate_phone}</Text>
+            {/* Filter: ALL (Walk-in Drives + 1-on-1 Interviews) */}
+            {filterType === 'ALL' && (
+              searchedWalkIns.length === 0 && searchedInterviews.length === 0 ? (
+                <View style={styles.emptyStateCard}>
+                  <View style={styles.emptyIconCircle}>
+                    <Calendar size={32} color="#94A3B8" />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    {activeTab === 'upcoming' ? 'No Upcoming Schedules' : 'No Past Schedules'}
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    {activeTab === 'upcoming'
+                      ? 'No upcoming walk-in drives or 1-on-1 scheduled candidate interviews found.'
+                      : 'Completed walk-in drives and evaluated candidate interviews will be archived here.'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Walk-in Drives Group */}
+                  {searchedWalkIns.length > 0 && (
+                    <View style={{ marginBottom: searchedInterviews.length > 0 ? 6 : 0 }}>
+                      {searchedInterviews.length > 0 && (
+                        <View style={styles.sectionHeaderRow}>
+                          <Text style={styles.sectionHeaderText}>
+                            Walk-in Drives ({searchedWalkIns.length})
+                          </Text>
                         </View>
                       )}
-                    </View>
-                  </View>
-
-                  {/* Venue / Location Row */}
-                  {item.venue_address && (
-                    <View style={styles.venueRow}>
-                      <MapPin size={13} color="#64748B" style={{ marginTop: 2 }} />
-                      <Text style={styles.venueText} numberOfLines={2}>
-                        {item.venue_address}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Star Rating Display if Interviewed */}
-                  {isCompleted && item.interview_rating !== undefined && item.interview_rating !== null && (
-                    <View style={styles.ratingDisplayBlock}>
-                      <View style={styles.starsRow}>
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <Star
-                            key={star}
-                            size={14}
-                            color={star <= Number(item.interview_rating) ? '#F59E0B' : '#CBD5E1'}
-                            fill={star <= Number(item.interview_rating) ? '#F59E0B' : 'transparent'}
-                          />
-                        ))}
-                        <Text style={styles.ratingScoreText}>({item.interview_rating}/5)</Text>
-                      </View>
-                      {item.interview_feedback && (
-                        <Text style={styles.feedbackSnippet} numberOfLines={1}>
-                          "{item.interview_feedback}"
-                        </Text>
-                      )}
+                      {searchedWalkIns.map((job) => (
+                        <EmployerWalkInDriveCard
+                          key={job.id}
+                          job={job}
+                          applicantCount={getJobApplicantCount(job)}
+                          isPast={activeTab === 'past'}
+                          navigation={navigation}
+                          onOpenMap={handleOpenMap}
+                          onCallCoordinator={handleCallCandidate}
+                          onWhatsAppCoordinator={handleWhatsAppCandidate}
+                        />
+                      ))}
                     </View>
                   )}
 
-                  {/* Postponed Reason Display */}
-                  {isPostponed && item.postponed_reason && (
-                    <View style={styles.postponedNotice}>
-                      <AlertCircle size={12} color="#D97706" />
-                      <Text style={styles.postponedReasonText} numberOfLines={1}>
-                        Rescheduled: {item.postponed_reason}
-                      </Text>
-                    </View>
+                  {/* Section Separator when both groups are visible */}
+                  {searchedWalkIns.length > 0 && searchedInterviews.length > 0 && (
+                    <View style={styles.sectionDivider} />
                   )}
 
-                  <View style={styles.sectionSeparator} />
-
-                  {/* Card Action Footer */}
-                  <View style={styles.cardFooterRow}>
-                    <View style={styles.quickActionIcons}>
-                      {item.candidate_phone && (
-                        <TouchableOpacity
-                          style={styles.quickIconBtn}
-                          onPress={() => handleCallCandidate(item.candidate_phone)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.7}
-                        >
-                          <Phone size={16} color="#1764E8" />
-                        </TouchableOpacity>
+                  {/* 1-on-1 Scheduled Interviews Group */}
+                  {searchedInterviews.length > 0 && (
+                    <View>
+                      {searchedWalkIns.length > 0 && (
+                        <View style={styles.sectionHeaderRow}>
+                          <Text style={styles.sectionHeaderText}>
+                            1-on-1 Interviews ({searchedInterviews.length})
+                          </Text>
+                        </View>
                       )}
-                      {item.candidate_phone && (
-                        <TouchableOpacity
-                          style={styles.quickIconBtn}
-                          onPress={() => handleWhatsAppCandidate(item.candidate_phone, item.candidate_name)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.7}
-                        >
-                          <WhatsAppIcon size={16} />
-                        </TouchableOpacity>
-                      )}
-                      {item.venue_address && (
-                        <TouchableOpacity
-                          style={styles.quickIconBtn}
-                          onPress={() => handleOpenMap(item.venue_address, item.maps_link)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.7}
-                        >
-                          <Navigation2 size={16} color="#334155" />
-                        </TouchableOpacity>
-                      )}
+                      {searchedInterviews.map((item) => renderInterviewCard(item))}
                     </View>
-
-                    <TouchableOpacity
-                      style={styles.actionCtaBtn}
-                      activeOpacity={0.8}
-                      onPress={() => handleOpenDetailModal(item)}
-                    >
-                      <Text style={styles.actionCtaText}>
-                        {isCompleted ? 'View Evaluation' : 'Evaluate & Update'}
-                      </Text>
-                      <ChevronRight size={14} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          })
+                  )}
+                </>
+              )
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -1380,32 +1752,30 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#E2E8F0',
   },
+  /* Tabular Tab Bar Underline */
   tabBarContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    gap: 10,
+    paddingHorizontal: 16,
   },
   tabButton: {
     flex: 1,
+    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
     gap: 6,
+    borderBottomWidth: 2.5,
+    borderBottomColor: 'transparent',
+    marginBottom: -1,
   },
   tabButtonActive: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderBottomColor: '#1764E8',
   },
   tabButtonText: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -1414,40 +1784,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabBadge: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
+    paddingVertical: 1.5,
+    borderRadius: 8,
   },
   tabBadgeActive: {
-    backgroundColor: '#1764E8',
+    backgroundColor: '#EEF4FF',
   },
   tabBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#334155',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
   },
   tabBadgeTextActive: {
-    color: '#FFFFFF',
-  },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#0F172A',
-    paddingVertical: 4,
+    color: '#1764E8',
+    fontWeight: '700',
   },
   scrollBody: {
     flex: 1,
@@ -2203,5 +2555,61 @@ const styles = StyleSheet.create({
   exportExcelButtonUpcoming: {
     backgroundColor: COLORS.primary,
     shadowColor: COLORS.primary,
+  },
+
+  /* Sub-Filter Pill Row (Capsule Shape) */
+  subFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  subFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  subFilterPillActive: {
+    backgroundColor: '#1764E8',
+    borderColor: '#1764E8',
+  },
+  subFilterText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  subFilterTextActive: {
+    color: '#FFFFFF',
+  },
+
+  /* Section Groups for ALL view */
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 6,
   },
 });

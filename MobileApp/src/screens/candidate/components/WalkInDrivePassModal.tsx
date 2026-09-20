@@ -26,6 +26,7 @@ import {
 import { InterviewItem } from '../../../api/candidateApi';
 import { COLORS, RADIUS } from '../../../constants/theme';
 import { shareWalkInPass } from '../../../utils/shareUtils';
+import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
 
 interface Props {
   visible: boolean;
@@ -177,11 +178,28 @@ export const WalkInDrivePassModal: React.FC<Props> = ({
             {/* Job & Drive Schedule Block */}
             <View style={styles.jobDriveBlock}>
               <Text style={styles.blockSectionLabel}>DRIVE SPECIFICATIONS</Text>
-              <Text style={styles.jobTitleText}>{item.job_title}</Text>
-              <Text style={styles.companyNameText}>
-                {item.company_name || item.company}
-                {item.job_location ? ` • ${item.job_location}` : ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 }}>
+                <CompanyLogoAvatar
+                  logoUrl={
+                    item.company_logo ||
+                    (item as any).companyLogo ||
+                    (item as any).logoUrl ||
+                    (item as any).logo_url ||
+                    (item as any).logo ||
+                    (item as any).employer_logo
+                  }
+                  companyName={item.company_name || item.company}
+                  size={40}
+                  borderRadius={RADIUS.xs}
+                />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.jobTitleText}>{item.job_title}</Text>
+                  <Text style={styles.companyNameText}>
+                    {item.company_name || item.company}
+                    {item.job_location ? ` • ${item.job_location}` : ''}
+                  </Text>
+                </View>
+              </View>
 
               <View style={styles.scheduleRowGrid}>
                 <View style={styles.scheduleBox}>
@@ -318,8 +336,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#94A3B8',
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   passHeaderStrip: {
     flexDirection: 'row',

@@ -36,6 +36,8 @@ import { COLORS, SPACING } from '../../constants/theme';
 import { safeValue, APPLICANT_SEARCH_SUGGESTIONS } from './components/JobApplicantsUtils';
 import { JobApplicantsCard } from './components/JobApplicantsCard';
 import { JobApplicantsDetailModal, ModalTabType } from './components/JobApplicantsDetailModal';
+import { useAuth } from '../../hooks/useAuth';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 
 interface Props {
   route: any;
@@ -45,6 +47,7 @@ interface Props {
 type TabType = 'ALL' | 'applied' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
 
 export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { user } = useAuth();
   const jobId = route?.params?.jobId;
   const jobTitle = route?.params?.jobTitle || 'Job Applicants';
 
@@ -195,52 +198,180 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           } catch (_) {}
         }
 
+        const combinedList: JobApplication[] = [];
+        const seenCandidateKeys = new Set<string>();
+
+        const addCandidate = (mappedApp: JobApplication) => {
+          const key = String(
+            mappedApp.user_id ||
+            mappedApp.id ||
+            mappedApp.user?.email ||
+            mappedApp.user?.phone ||
+            ''
+          ).toLowerCase();
+          if (key && !seenCandidateKeys.has(key)) {
+            seenCandidateKeys.add(key);
+            combinedList.push(mappedApp);
+          }
+        };
+
+        // 1. Fetch direct endpoint for job
         try {
           const res = await applicantsApi.getApplicantsForJob(activeTargetId);
           if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-            const mapped = res.data.map((item: any) => mapApplicantItem(item, activeTargetId, foundJob));
-            setApplicants(mapped);
-            return;
+            res.data.forEach((item: any) =>
+              addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
+            );
           }
         } catch (apiErr) {
           // If direct endpoint is restricted, continue to fallback
         }
 
+        // 2. Check embedded job.applicants array from getMyJobs()
         if (foundJob && Array.isArray((foundJob as any).applicants) && (foundJob as any).applicants.length > 0) {
-          const mapped = (foundJob as any).applicants.map((item: any) => mapApplicantItem(item, activeTargetId, foundJob));
-          setApplicants(mapped);
-          return;
+          (foundJob as any).applicants.forEach((item: any) =>
+            addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
+          );
         }
 
-        setApplicants([]);
+        // 3. Check allApplicants endpoint
+        try {
+          const allAppsRes = await applicantsApi.getAllApplicants();
+          if (allAppsRes.success && Array.isArray(allAppsRes.data)) {
+            allAppsRes.data
+              .filter(
+                (item: any) =>
+                  String(item.jobId || item.job_id || item.job?.id).toLowerCase() ===
+                  String(activeTargetId).toLowerCase()
+              )
+              .forEach((item: any) =>
+                addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
+              );
+          }
+        } catch (_) {}
+
+        // 4. Check persistent local appliedJobsStore
+        const storeItems = appliedJobsStore
+          .getAppliedJobs()
+          .filter(
+            (s) =>
+              String(s.jobId || s.job?.id).toLowerCase() === String(activeTargetId).toLowerCase()
+          );
+
+        storeItems.forEach((s: any) => {
+          addCandidate({
+            id: s.id || `store-app-${s.jobId}`,
+            user_id: user?.id || 'candidate-1',
+            job_id: activeTargetId,
+            status: (s.status || 'applied').toLowerCase() as any,
+            applied_at: s.appliedAt || new Date().toISOString(),
+            job: foundJob || s.job,
+            user: {
+              id: user?.id || 'candidate-1',
+              name: user?.name || 'Walk-in Candidate',
+              email: user?.email || '',
+              phone: user?.phone || '',
+              role: 'candidate' as const,
+              headline:
+                (user as any)?.trade ||
+                user?.headline ||
+                (user as any)?.tradeSpecialization ||
+                foundJob?.trade ||
+                'Technical Specialist',
+              location: user?.location || foundJob?.location || 'Local MIDC',
+              experience: user?.experience || '1-3 Years',
+              skills: Array.isArray(user?.skills) ? user.skills : (foundJob?.skills || []),
+              profilePictureUrl: user?.profilePictureUrl || (user as any)?.avatar || (user as any)?.profile_picture_url,
+              aadhaar_verified: true,
+              education: user?.education || 'ITI / Diploma',
+              resume_url: (user as any)?.resumeUrl || '',
+              resumeUrl: (user as any)?.resumeUrl || '',
+            },
+          });
+        });
+
+        setApplicants(combinedList);
         return;
       }
 
       // If 'ALL' is selected, fetch all applicants via dedicated endpoint with embedded fallback
+      const combinedAll: JobApplication[] = [];
+      const seenAllKeys = new Set<string>();
+
+      const addAllCandidate = (mappedApp: JobApplication) => {
+        const key = String(
+          mappedApp.user_id ||
+          mappedApp.id ||
+          mappedApp.user?.email ||
+          mappedApp.user?.phone ||
+          ''
+        ).toLowerCase();
+        if (key && !seenAllKeys.has(key)) {
+          seenAllKeys.add(key);
+          combinedAll.push(mappedApp);
+        }
+      };
+
       try {
         const allAppsRes = await applicantsApi.getAllApplicants();
         if (allAppsRes.success && Array.isArray(allAppsRes.data) && allAppsRes.data.length > 0) {
-          const mapped = allAppsRes.data.map((item: any) => {
+          allAppsRes.data.forEach((item: any) => {
             const matchedJob = jobsList.find((j) => j.id === item.jobId || j.id === item.job_id);
-            return mapApplicantItem(item, item.jobId || item.job_id, matchedJob);
+            addAllCandidate(mapApplicantItem(item, item.jobId || item.job_id, matchedJob));
           });
-          setApplicants(mapped);
-          return;
         }
       } catch (_) {}
 
       // Fallback: aggregate all applicants across all employer's jobs
-      const allApps: JobApplication[] = [];
       jobsList.forEach((j: any) => {
         const rawApps = Array.isArray((j as any).applicants) ? (j as any).applicants : [];
         rawApps.forEach((item: any) => {
           if (item && typeof item === 'object') {
-            allApps.push(mapApplicantItem(item, j.id, j));
+            addAllCandidate(mapApplicantItem(item, j.id, j));
           }
         });
       });
 
-      setApplicants(allApps);
+      // Merge store applications
+      appliedJobsStore.getAppliedJobs().forEach((s: any) => {
+        const matchedJob = jobsList.find(
+          (j) =>
+            String(j.id).toLowerCase() === String(s.jobId || s.job?.id).toLowerCase()
+        );
+        if (matchedJob) {
+          addAllCandidate({
+            id: s.id || `store-app-${s.jobId}`,
+            user_id: user?.id || 'candidate-1',
+            job_id: String(matchedJob.id),
+            status: (s.status || 'applied').toLowerCase() as any,
+            applied_at: s.appliedAt || new Date().toISOString(),
+            job: matchedJob,
+            user: {
+              id: user?.id || 'candidate-1',
+              name: user?.name || 'Walk-in Candidate',
+              email: user?.email || '',
+              phone: user?.phone || '',
+              role: 'candidate' as const,
+              headline:
+                (user as any)?.trade ||
+                user?.headline ||
+                (user as any)?.tradeSpecialization ||
+                matchedJob?.trade ||
+                'Technical Specialist',
+              location: user?.location || matchedJob?.location || 'Local MIDC',
+              experience: user?.experience || '1-3 Years',
+              skills: Array.isArray(user?.skills) ? user.skills : (matchedJob?.skills || []),
+              profilePictureUrl: user?.profilePictureUrl || (user as any)?.avatar || (user as any)?.profile_picture_url,
+              aadhaar_verified: true,
+              education: user?.education || 'ITI / Diploma',
+              resume_url: (user as any)?.resumeUrl || '',
+              resumeUrl: (user as any)?.resumeUrl || '',
+            },
+          });
+        }
+      });
+
+      setApplicants(combinedAll);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch applicants');
       setApplicants([]);
@@ -248,10 +379,17 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [jobId, selectedJobId]);
+  }, [jobId, selectedJobId, user]);
 
   useEffect(() => {
     fetchApplicants();
+  }, [fetchApplicants]);
+
+  useEffect(() => {
+    const unsub = appliedJobsStore.subscribe(() => {
+      fetchApplicants();
+    });
+    return unsub;
   }, [fetchApplicants]);
 
   const onRefresh = () => {

@@ -44,6 +44,7 @@ import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { ManageVacanciesModal } from '../../components/jobs/ManageVacanciesModal';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface Props {
@@ -202,11 +203,20 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
     const totalVacancies = item.openings ?? (item as any).openings ?? 1;
     const filledVacancies = item.filledOpenings ?? (item as any).filled_openings ?? (item as any).filledOpenings ?? 0;
-    const actualApplicantCount = typeof (item as any).applicants_count === 'number'
-      ? (item as any).applicants_count
-      : (typeof (item as any).applicantsCount === 'number'
-          ? (item as any).applicantsCount
-          : (Array.isArray((item as any).applicants) ? (item as any).applicants.length : 0));
+    const storeAppsCount = appliedJobsStore
+      .getAppliedJobs()
+      .filter(
+        (a) => String(a.jobId || a.job?.id).toLowerCase() === String(item.id).toLowerCase()
+      ).length;
+    const backendApplicantCount =
+      typeof (item as any).applicants_count === 'number' && (item as any).applicants_count > 0
+        ? (item as any).applicants_count
+        : typeof (item as any).applicantsCount === 'number' && (item as any).applicantsCount > 0
+        ? (item as any).applicantsCount
+        : Array.isArray((item as any).applicants)
+        ? (item as any).applicants.length
+        : 0;
+    const actualApplicantCount = Math.max(backendApplicantCount, storeAppsCount);
 
     const locationText = item.location || (item as any).midcZone || 'MIDC Area';
     const tradeText = (item as any).tradeSpecialization || (item as any).trade_specialization || item.industry;

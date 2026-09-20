@@ -34,6 +34,7 @@ import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoad
 import { COLORS, RADIUS } from '../../constants/theme';
 import { WalkInDrivePassCard } from './components/WalkInDrivePassCard';
 import { WalkInDrivePassModal } from './components/WalkInDrivePassModal';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 
 interface Props {
   navigation: any;
@@ -126,9 +127,19 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigatio
     >
       {/* Company & Days Remaining Row */}
       <View style={styles.cardTopRow}>
-        <View style={styles.companyDot}>
-          <Building2 size={16} color={isPast ? '#94A3B8' : COLORS.primary} />
-        </View>
+        <CompanyLogoAvatar
+          logoUrl={
+            item.company_logo ||
+            (item as any).companyLogo ||
+            (item as any).logoUrl ||
+            (item as any).logo_url ||
+            (item as any).logo ||
+            (item as any).employer_logo
+          }
+          companyName={item.company_name || item.company}
+          size={36}
+          borderRadius={RADIUS.xs}
+        />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.companyName, isPast && styles.textMuted]} numberOfLines={1}>
             {item.company_name || item.company}
