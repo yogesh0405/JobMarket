@@ -169,8 +169,8 @@ export class AdvertisementController {
     try {
       const id = req.params.id as string;
       const adminId = req.headers['x-user-id'] as string || req.user?.userId || 'admin';
-      const { rejectionReason, notes } = req.body || {};
-      const data = await AdvertisementService.rejectAdvertisement(id, adminId, rejectionReason || notes);
+      const { rejectionReason, notes, reason } = req.body || {};
+      const data = await AdvertisementService.rejectAdvertisement(id, adminId, reason || rejectionReason || notes);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

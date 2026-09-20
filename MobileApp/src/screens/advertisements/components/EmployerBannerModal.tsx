@@ -10,11 +10,14 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { UploadCloud, ArrowRight, X } from 'lucide-react-native';
+import { UploadCloud, ArrowRight, X, AlertCircle, EyeOff } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePickerField } from '../../../components/common/DatePickerField';
 import { Advertisement, AdvertisementType, Job } from '../../../types';
 import { COLORS } from '../../../constants/theme';
+
+const DEFAULT_BANNER_IMAGE =
+  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80';
 
 interface EmployerBannerModalProps {
   visible: boolean;
@@ -89,6 +92,27 @@ export const EmployerBannerModal: React.FC<EmployerBannerModalProps> = ({
           </View>
 
           <ScrollView style={styles.modalFormScroll} showsVerticalScrollIndicator={false}>
+            {editingBanner && (editingBanner.status === 'REJECTED' || editingBanner.status === 'UNPUBLISHED' || !editingBanner.is_active) && (
+              <View style={editingBanner.status === 'REJECTED' ? styles.moderationAlertBoxRejected : styles.moderationAlertBoxUnpublished}>
+                <View style={styles.alertHeaderRow}>
+                  {editingBanner.status === 'REJECTED' ? (
+                    <AlertCircle size={15} color="#DC2626" strokeWidth={2.4} />
+                  ) : (
+                    <EyeOff size={15} color="#D97706" strokeWidth={2.4} />
+                  )}
+                  <Text style={editingBanner.status === 'REJECTED' ? styles.alertTitleRejected : styles.alertTitleUnpublished}>
+                    {editingBanner.status === 'REJECTED' ? 'REJECTION FEEDBACK / REASON' : 'UNPUBLISHED REASON / ADMIN NOTE'}
+                  </Text>
+                </View>
+                <Text style={editingBanner.status === 'REJECTED' ? styles.alertBodyRejected : styles.alertBodyUnpublished}>
+                  {(editingBanner.rejection_reason || (editingBanner as any).rejectionReason || (editingBanner as any).admin_reason || (editingBanner as any).adminReason || (editingBanner as any).unpublish_reason || (editingBanner as any).unpublishReason || (editingBanner as any).notes || (editingBanner as any).reason) ||
+                    (editingBanner.status === 'REJECTED'
+                      ? 'This banner was rejected by administrators. Please update the necessary details and resubmit.'
+                      : 'This banner was unpublished from the homepage by administrators. You can update and resubmit it.')}
+                </Text>
+              </View>
+            )}
+
             <Text style={styles.inputLabel}>Banner Title *</Text>
             <TextInput
               style={styles.textInput}
@@ -112,7 +136,10 @@ export const EmployerBannerModal: React.FC<EmployerBannerModalProps> = ({
                 { id: 'FEATURED_JOB', label: 'Featured Job' },
                 { id: 'URGENT_HIRING', label: 'Urgent Hiring' },
                 { id: 'WALK_IN_DRIVE', label: 'Walk-In Drive' },
+                { id: 'HIRING_EVENT', label: 'Recruitment Drive' },
                 { id: 'COMPANY_PROMOTION', label: 'Company Spotlight' },
+                { id: 'APPRENTICESHIP', label: 'Apprenticeship' },
+                { id: 'INTERNSHIP', label: 'Internship' },
               ].map((type) => (
                 <TouchableOpacity
                   key={type.id}
@@ -178,6 +205,7 @@ export const EmployerBannerModal: React.FC<EmployerBannerModalProps> = ({
                 'Apply Now',
                 'View Job Details',
                 'Register Spot Interview',
+                'Join Recruitment Drive',
                 'Explore Jobs',
                 'Direct Walk-In',
                 'Contact Recruiter',
@@ -242,37 +270,46 @@ export const EmployerBannerModal: React.FC<EmployerBannerModalProps> = ({
             />
 
             <Text style={styles.inputLabel}>Live Homepage Banner Preview</Text>
+
+            {/* Exact replica of CandidateHomePromoSlider card */}
             <View style={styles.liveHomepageBannerCard}>
               <Image
                 source={{
-                  uri: bannerImage.trim() || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=70',
+                  uri:
+                    bannerImage.trim().length > 5
+                      ? bannerImage.trim()
+                      : DEFAULT_BANNER_IMAGE,
                 }}
                 style={styles.livePromoImage}
                 resizeMode="cover"
               />
-
               <View style={styles.livePromoOverlay}>
                 <View style={styles.livePromoBadgeOrange}>
                   <Text style={styles.livePromoBadgeOrangeText}>
-                    {(advertisementType || 'FEATURED_JOB').replace('_', ' ')}
+                    {(advertisementType || 'PROMOTIONAL').replace(/_/g, ' ')}
                   </Text>
                 </View>
-
-                <View style={{ gap: 2 }}>
-                  <Text style={styles.livePromoTitle} numberOfLines={1}>
-                    {title.trim() || 'Sample Banner Title'}
-                  </Text>
+                <Text style={styles.livePromoTitle}>
+                  {title.trim() || 'Sample Banner Title'}
+                </Text>
+                {description.trim() ? (
                   <Text style={styles.livePromoDesc} numberOfLines={2}>
-                    {description.trim() || 'Sample description text preview as shown to candidates on homepage.'}
+                    {description.trim()}
                   </Text>
-                </View>
-
-                <View style={styles.livePromoActionBtnBlue}>
+                ) : (
+                  <Text style={styles.livePromoDesc} numberOfLines={2}>
+                    {'Short description shown below the title on the homepage slider.'}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.livePromoActionBtnBlue}
+                >
                   <Text style={styles.livePromoActionBtnText}>
-                    {buttonText || 'Apply Now'}
+                    {buttonText.trim() || 'Apply Now'}
                   </Text>
-                  <ArrowRight size={13} color="#FFFFFF" />
-                </View>
+                  <ArrowRight size={14} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -408,57 +445,69 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   liveHomepageBannerCard: {
-    height: 130,
-    borderRadius: 8,
+    height: 168,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
-    marginTop: 4,
+    backgroundColor: '#0F172A',
+    marginTop: 6,
   },
   livePromoImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   livePromoOverlay: {
-    ...StyleSheet.absoluteFill,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(15, 23, 42, 0.55)',
-    padding: 10,
-    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    justifyContent: 'center',
   },
   livePromoBadgeOrange: {
     alignSelf: 'flex-start',
-    backgroundColor: '#EA580C',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#F97316',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
     borderRadius: 4,
+    marginBottom: 5,
   },
   livePromoBadgeOrangeText: {
     fontSize: 9.5,
     fontWeight: '800',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
   livePromoTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     color: '#FFFFFF',
+    lineHeight: 20,
   },
   livePromoDesc: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#E2E8F0',
-    lineHeight: 14,
+    marginTop: 3,
+    lineHeight: 16,
   },
   livePromoActionBtnBlue: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 6.5,
+    borderRadius: 6,
+    marginTop: 10,
   },
   livePromoActionBtnText: {
-    fontSize: 10.5,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   submitBtn: {
@@ -474,5 +523,55 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  moderationAlertBoxRejected: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 14,
+  },
+  moderationAlertBoxUnpublished: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderLeftWidth: 4,
+    borderLeftColor: '#D97706',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 14,
+  },
+  alertHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  alertTitleRejected: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#991B1B',
+    letterSpacing: 0.4,
+  },
+  alertTitleUnpublished: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.4,
+  },
+  alertBodyRejected: {
+    fontSize: 12,
+    color: '#7F1D1D',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  alertBodyUnpublished: {
+    fontSize: 12,
+    color: '#78350F',
+    fontWeight: '500',
+    lineHeight: 17,
   },
 });

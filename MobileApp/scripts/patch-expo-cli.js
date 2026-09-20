@@ -512,6 +512,276 @@ export default mod;
   }
 }
 
+// Patch 34: expo-notifications/build/NotificationPresenterModule.native.js (Safe fallback on iOS / Expo Go)
+const notifPresenterPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationPresenterModule.native.js');
+if (fs.existsSync(notifPresenterPath)) {
+  let content = fs.readFileSync(notifPresenterPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationPresenter') : null) || requireNativeModule('ExpoNotificationPresenter');
+} catch (e) {
+  mod = {
+    getPresentedNotificationsAsync: () => Promise.resolve([]),
+    presentNotificationAsync: () => Promise.resolve(''),
+    dismissNotificationWithIdAsync: () => Promise.resolve(),
+    dismissAllNotificationsAsync: () => Promise.resolve(),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifPresenterPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationPresenterModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 35: expo-notifications/build/NotificationsHandlerModule.native.js (Safe fallback on iOS / Expo Go)
+const notifHandlerPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationsHandlerModule.native.js');
+if (fs.existsSync(notifHandlerPath)) {
+  let content = fs.readFileSync(notifHandlerPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationsHandlerModule') : null) || requireNativeModule('ExpoNotificationsHandlerModule');
+} catch (e) {
+  mod = {
+    handleNotificationAsync: () => Promise.resolve(),
+    registerType: () => {},
+    unregisterType: () => {},
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifHandlerPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationsHandlerModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 36: expo-notifications/build/NotificationScheduler.native.js (Safe fallback on iOS / Expo Go)
+const notifSchedulerPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationScheduler.native.js');
+if (fs.existsSync(notifSchedulerPath)) {
+  let content = fs.readFileSync(notifSchedulerPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationScheduler') : null) || requireNativeModule('ExpoNotificationScheduler');
+} catch (e) {
+  mod = {
+    getAllScheduledNotificationsAsync: () => Promise.resolve([]),
+    scheduleNotificationAsync: () => Promise.resolve(''),
+    cancelScheduledNotificationAsync: () => Promise.resolve(),
+    cancelAllScheduledNotificationsAsync: () => Promise.resolve(),
+    getNextTriggerDateAsync: () => Promise.resolve(null),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifSchedulerPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationScheduler.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 37: expo-notifications/build/NotificationPermissionsModule.native.js (Safe fallback on iOS / Expo Go)
+const notifPermissionsPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationPermissionsModule.native.js');
+if (fs.existsSync(notifPermissionsPath)) {
+  let content = fs.readFileSync(notifPermissionsPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationPermissionsModule') : null) || requireNativeModule('ExpoNotificationPermissionsModule');
+} catch (e) {
+  mod = {
+    getPermissionsAsync: () => Promise.resolve({ status: 'undetermined', granted: false, canAskAgain: true, expires: 'never' }),
+    requestPermissionsAsync: () => Promise.resolve({ status: 'undetermined', granted: false, canAskAgain: true, expires: 'never' }),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifPermissionsPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationPermissionsModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 38: expo-notifications/build/NotificationCategoriesModule.native.js (Safe fallback on iOS / Expo Go)
+const notifCategoriesPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationCategoriesModule.native.js');
+if (fs.existsSync(notifCategoriesPath)) {
+  let content = fs.readFileSync(notifCategoriesPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationCategoriesModule') : null) || requireNativeModule('ExpoNotificationCategoriesModule');
+} catch (e) {
+  mod = {
+    getNotificationCategoriesAsync: () => Promise.resolve([]),
+    setNotificationCategoryAsync: () => Promise.resolve([]),
+    deleteNotificationCategoryAsync: () => Promise.resolve(false),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifCategoriesPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationCategoriesModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 39: expo-notifications/build/NotificationChannelManager.native.js (Safe fallback on iOS / Expo Go)
+const notifChannelPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationChannelManager.native.js');
+if (fs.existsSync(notifChannelPath)) {
+  let content = fs.readFileSync(notifChannelPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationChannelManager') : null) || requireNativeModule('ExpoNotificationChannelManager');
+} catch (e) {
+  mod = {
+    getNotificationChannelsAsync: () => Promise.resolve([]),
+    getNotificationChannelAsync: () => Promise.resolve(null),
+    setNotificationChannelAsync: () => Promise.resolve(null),
+    deleteNotificationChannelAsync: () => Promise.resolve(),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifChannelPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationChannelManager.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 40: expo-notifications/build/NotificationChannelGroupManager.native.js (Safe fallback on iOS / Expo Go)
+const notifChannelGroupPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationChannelGroupManager.native.js');
+if (fs.existsSync(notifChannelGroupPath)) {
+  let content = fs.readFileSync(notifChannelGroupPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationChannelGroupManager') : null) || requireNativeModule('ExpoNotificationChannelGroupManager');
+} catch (e) {
+  mod = {
+    getNotificationChannelGroupsAsync: () => Promise.resolve([]),
+    getNotificationChannelGroupAsync: () => Promise.resolve(null),
+    setNotificationChannelGroupAsync: () => Promise.resolve(null),
+    deleteNotificationChannelGroupAsync: () => Promise.resolve(),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifChannelGroupPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationChannelGroupManager.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 41: expo-notifications/build/BadgeModule.native.js (Safe fallback on iOS / Expo Go)
+const badgeModulePath = path.join(__dirname, '../node_modules/expo-notifications/build/BadgeModule.native.js');
+if (fs.existsSync(badgeModulePath)) {
+  let content = fs.readFileSync(badgeModulePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let nativeModule;
+try {
+  nativeModule = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoBadgeModule') : null) || requireNativeModule('ExpoBadgeModule');
+} catch (e) {
+  nativeModule = {
+    getBadgeCountAsync: () => Promise.resolve(0),
+    setBadgeCountAsync: () => Promise.resolve(true),
+  };
+}
+export default {
+  ...nativeModule,
+  setBadgeCountAsync: async (badgeCount, options) => {
+    return (await nativeModule?.setBadgeCountAsync?.(badgeCount)) ?? true;
+  },
+};
+`;
+    fs.writeFileSync(badgeModulePath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched BadgeModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 42: expo-notifications/build/BackgroundNotificationTasksModule.native.js (Safe fallback on iOS / Expo Go)
+const bgTasksModulePath = path.join(__dirname, '../node_modules/expo-notifications/build/BackgroundNotificationTasksModule.native.js');
+if (fs.existsSync(bgTasksModulePath)) {
+  let content = fs.readFileSync(bgTasksModulePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoBackgroundNotificationTasksModule') : null) || requireNativeModule('ExpoBackgroundNotificationTasksModule');
+} catch (e) {
+  mod = {
+    registerTaskAsync: () => Promise.resolve(),
+    unregisterTaskAsync: () => Promise.resolve(),
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(bgTasksModulePath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched BackgroundNotificationTasksModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 43: expo-notifications/build/NotificationsEmitterModule.native.js (Safe fallback on iOS / Expo Go)
+const notifEmitterPath = path.join(__dirname, '../node_modules/expo-notifications/build/NotificationsEmitterModule.native.js');
+if (fs.existsSync(notifEmitterPath)) {
+  let content = fs.readFileSync(notifEmitterPath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoNotificationsEmitter') : null) || requireNativeModule('ExpoNotificationsEmitter');
+} catch (e) {
+  mod = {
+    addListener: () => ({ remove: () => {} }),
+    removeListeners: () => {},
+    startObserving: () => {},
+    stopObserving: () => {},
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(notifEmitterPath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched NotificationsEmitterModule.native.js (Expo Go / iOS fallback)');
+  }
+}
+
+// Patch 44: expo-device/build/ExpoDevice.js (Safe fallback on iOS / Expo Go)
+const expoDevicePath = path.join(__dirname, '../node_modules/expo-device/build/ExpoDevice.js');
+if (fs.existsSync(expoDevicePath)) {
+  let content = fs.readFileSync(expoDevicePath, 'utf8');
+  if (!content.includes('try {')) {
+    const patched = `import { requireNativeModule, requireOptionalNativeModule } from 'expo-modules-core';
+let mod;
+try {
+  mod = (typeof requireOptionalNativeModule === 'function' ? requireOptionalNativeModule('ExpoDevice') : null) || requireNativeModule('ExpoDevice');
+} catch (e) {
+  mod = {
+    isDevice: true,
+    brand: null,
+    manufacturer: null,
+    modelName: null,
+    deviceYearClass: null,
+    totalMemory: null,
+    supportedCpuArchitectures: null,
+    osName: null,
+    osVersion: null,
+    osBuildId: null,
+    osInternalBuildId: null,
+    deviceName: null,
+  };
+}
+export default mod;
+`;
+    fs.writeFileSync(expoDevicePath, patched, 'utf8');
+    console.log('[patch-expo-cli] Patched ExpoDevice.js (Expo Go / iOS fallback)');
+  }
+}
+
 console.log('[patch-expo-cli] Expo CLI patches applied successfully.');
 
 

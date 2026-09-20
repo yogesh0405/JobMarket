@@ -20,6 +20,7 @@ import {
   Plus,
   X,
   Clock,
+  Calendar,
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { DatePickerField } from '../../../components/common/DatePickerField';
@@ -33,8 +34,8 @@ interface JobPostStep4EligibilityProps {
   setMinAgeInput: (val: string) => void;
   maxAgeInput: string;
   setMaxAgeInput: (val: string) => void;
-  hiringMethod: 'STANDARD' | 'WALK_IN';
-  setHiringMethod: (val: 'STANDARD' | 'WALK_IN') => void;
+  hiringMethod: 'SCHEDULED_INTERVIEW' | 'WALK_IN';
+  setHiringMethod: (val: 'SCHEDULED_INTERVIEW' | 'WALK_IN') => void;
   walkInDate: string;
   setWalkInDate: (val: string) => void;
   walkInStartTime: string;
@@ -200,24 +201,8 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               style={[
                 styles.hiringTabBtn,
                 styles.tabBtnBorderRight,
-                hiringMethod === 'STANDARD' && styles.hiringTabBtnActive,
+                hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive,
               ]}
-              onPress={() => setHiringMethod('STANDARD')}
-            >
-              <FileText size={14} color={hiringMethod === 'STANDARD' ? '#FFFFFF' : '#64748B'} />
-              <Text
-                style={[
-                  styles.hiringTabText,
-                  hiringMethod === 'STANDARD' && { color: '#FFFFFF', fontWeight: '800' },
-                ]}
-              >
-                Standard
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.hiringTabBtn, hiringMethod === 'WALK_IN' && styles.hiringTabBtnActive]}
               onPress={() => setHiringMethod('WALK_IN')}
             >
               <Building2 size={14} color={hiringMethod === 'WALK_IN' ? '#FFFFFF' : '#64748B'} />
@@ -230,7 +215,32 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
                 Walk-In Drive
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.hiringTabBtn, hiringMethod === 'SCHEDULED_INTERVIEW' && styles.hiringTabBtnActive]}
+              onPress={() => setHiringMethod('SCHEDULED_INTERVIEW')}
+            >
+              <Calendar size={14} color={hiringMethod === 'SCHEDULED_INTERVIEW' ? '#FFFFFF' : '#64748B'} />
+              <Text
+                style={[
+                  styles.hiringTabText,
+                  hiringMethod === 'SCHEDULED_INTERVIEW' && { color: '#FFFFFF', fontWeight: '800' },
+                ]}
+              >
+                Scheduled Interview
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {hiringMethod === 'SCHEDULED_INTERVIEW' && (
+            <View style={styles.scheduledInfoBox}>
+              <Text style={styles.scheduledInfoTitle}>Structured 1-on-1 Interview Flow</Text>
+              <Text style={styles.scheduledInfoDesc}>
+                Candidates submit applications online. You review profiles, shortlist candidates, and schedule 1-on-1 interview slots individually.
+              </Text>
+            </View>
+          )}
 
           {hiringMethod === 'WALK_IN' ? (
             <View style={{ marginTop: 8, gap: 10 }}>
@@ -423,6 +433,12 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               <Text style={styles.addSkillBtnText}>Add</Text>
             </TouchableOpacity>
           </View>
+
+          {skillsTags.length === 0 ? (
+            <Text style={styles.skillsRequiredHint}>
+              * Please add at least 1 key skill (select suggestions below or type and tap Add)
+            </Text>
+          ) : null}
 
           {skillsTags.length > 0 ? (
             <View style={styles.selectedTagsWrap}>
@@ -667,5 +683,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#475569',
+  },
+  skillsRequiredHint: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  scheduledInfoBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 0,
+    padding: 10,
+    marginTop: 8,
+  },
+  scheduledInfoTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  scheduledInfoDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
   },
 });

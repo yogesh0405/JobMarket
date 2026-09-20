@@ -31,15 +31,17 @@ import { PushNotificationManager } from './src/services/PushNotificationManager'
 // Initialize OAuth browser session interception
 WebBrowser.maybeCompleteAuthSession();
 
+const envApiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+const envWebUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://job-market-wine.vercel.app';
+
 // Industry-Standard Deep Linking & Universal Link Configuration
 const linking: LinkingOptions<any> = {
   prefixes: [
-    'https://job-market-wine.vercel.app',
-    'http://job-market-wine.vercel.app',
-    'https://jobmarket-ongn.onrender.com',
-    'http://jobmarket-ongn.onrender.com',
     'jobmarket://',
     'exp://',
+    envWebUrl,
+    envWebUrl.replace('https://', 'http://'),
+    ...(envApiUrl ? [envApiUrl, envApiUrl.replace('https://', 'http://')] : []),
   ],
   config: {
     screens: {

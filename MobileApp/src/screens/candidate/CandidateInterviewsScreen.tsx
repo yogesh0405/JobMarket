@@ -22,13 +22,18 @@ import {
   XCircle,
   AlertCircle,
   Navigation2,
+  Ticket,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../hooks/useAuth';
 import { candidateApi, InterviewItem } from '../../api/candidateApi';
+import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { COLORS, RADIUS } from '../../constants/theme';
+import { WalkInDrivePassCard } from './components/WalkInDrivePassCard';
+import { WalkInDrivePassModal } from './components/WalkInDrivePassModal';
 
 interface Props {
   navigation: any;
@@ -187,62 +192,257 @@ const InterviewCard: React.FC<{ item: InterviewItem; isPast?: boolean; navigatio
   );
 };
 
-const EmptyState: React.FC<{ tab: TabType }> = ({ tab }) => (
+const EmptyState: React.FC<{
+  tab: TabType;
+  filterType: 'ALL' | 'WALK_IN' | 'SCHEDULED';
+  navigation: any;
+}> = ({ tab, filterType, navigation }) => (
   <View style={styles.emptyContainer}>
     <View style={styles.emptyIconBox}>
-      <Calendar size={36} color="#CBD5E1" />
+      {filterType === 'WALK_IN' ? (
+        <Ticket size={36} color="#CBD5E1" />
+      ) : (
+        <Calendar size={36} color="#CBD5E1" />
+      )}
     </View>
     <Text style={styles.emptyTitle}>
-      {tab === 'upcoming' ? 'No Upcoming Interviews' : 'No Interview History'}
+      {filterType === 'WALK_IN'
+        ? tab === 'upcoming'
+          ? 'No Active Walk-in Passes'
+          : 'No Past Walk-in History'
+        : tab === 'upcoming'
+        ? 'No Upcoming Interviews'
+        : 'No Interview History'}
     </Text>
     <Text style={styles.emptyDesc}>
-      {tab === 'upcoming'
-        ? 'When employers schedule you for an interview, it will appear here.'
+      {filterType === 'WALK_IN'
+        ? 'When you apply to jobs with Walk-in Drives, your verified digital gate entry tickets will appear here automatically.'
+        : tab === 'upcoming'
+        ? 'When employers schedule you for an interview or walk-in drive, it will appear here.'
         : 'Your completed and previous interview history will be listed here.'}
     </Text>
+    {filterType === 'WALK_IN' ? (
+      <TouchableOpacity
+        style={styles.exploreJobsBtn}
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('CandidateJobsTab')}
+      >
+        <Text style={styles.exploreJobsBtnText}>Explore Walk-in Vacancies</Text>
+      </TouchableOpacity>
+    ) : null}
   </View>
 );
 
 export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [filterType, setFilterType] = useState<'ALL' | 'WALK_IN' | 'SCHEDULED'>('ALL');
   const [upcoming, setUpcoming] = useState<InterviewItem[]>([]);
   const [past, setPast] = useState<InterviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPassItem, setSelectedPassItem] = useState<InterviewItem | null>(null);
+  const [showPassModal, setShowPassModal] = useState(false);
 
   const fetchInterviews = useCallback(async () => {
     try {
-      const res = await candidateApi.getMyInterviews();
-      if (res.success && res.data) {
-        setUpcoming(res.data.upcoming || []);
-        setPast(res.data.past || []);
-      }
+      const [interviewsRes, appliedRes] = await Promise.allSettled([
+        candidateApi.getMyInterviews(),
+        candidateApi.getAppliedJobs(),
+      ]);
+
+      const rawUpcoming =
+        interviewsRes.status === 'fulfilled' && interviewsRes.value.success && interviewsRes.value.data
+          ? interviewsRes.value.data.upcoming || []
+          : [];
+      const rawPast =
+        interviewsRes.status === 'fulfilled' && interviewsRes.value.success && interviewsRes.value.data
+          ? interviewsRes.value.data.past || []
+          : [];
+
+      // Gather applied jobs from both backend API & local persistent store
+      const appliedFromApi =
+        appliedRes.status === 'fulfilled' && appliedRes.value.success && Array.isArray(appliedRes.value.data)
+          ? appliedRes.value.data
+          : [];
+      const appliedFromStore = appliedJobsStore.getAppliedJobs();
+
+      const combinedApplied = [...appliedFromApi];
+      appliedFromStore.forEach((stored) => {
+        const targetId = stored.jobId || stored.job?.id;
+        if (!targetId) return;
+        const exists = combinedApplied.some((a: any) => {
+          const aId = a.jobId || a.job_id || a.job?.id || a.id;
+          return String(aId).toLowerCase() === String(targetId).toLowerCase();
+        });
+        if (!exists) {
+          combinedApplied.push(stored);
+        }
+      });
+
+      // Map walk-in drive applications into interview items
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const walkInItems: InterviewItem[] = [];
+
+      combinedApplied.forEach((item: any) => {
+        const job = item.job || item;
+        const hm = (job.hiringMethod || job.hiring_method || '').toUpperCase();
+        const isWalkIn =
+          hm === 'WALK_IN' ||
+          Boolean(job.isWalkIn) ||
+          Boolean(job.is_walk_in) ||
+          Boolean(job.walkInDate) ||
+          Boolean(job.walk_in_date);
+
+        if (!isWalkIn) return;
+
+        const dateStr =
+          job.walkInDate || job.walk_in_date || item.interviewDate || item.interview_date || '';
+        const timeStr =
+          item.interviewTime ||
+          item.interview_time ||
+          (job.walkInStartTime
+            ? `${job.walkInStartTime}${job.walkInEndTime ? ' - ' + job.walkInEndTime : ''}`
+            : '10:00 AM - 04:00 PM');
+        const venue =
+          job.interviewAddress ||
+          job.interview_address ||
+          item.venueAddress ||
+          item.venue_address ||
+          job.location ||
+          'Company Factory Premises';
+
+        const passNum = `PASS-WID-${String(job.id || 'WID').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || '7842'}-${String(item.id || item.jobId || 'APL').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || '9120'}`;
+
+        walkInItems.push({
+          application_id: String(item.id || item.jobId || job.id),
+          job_id: String(job.id || item.jobId || item.job_id),
+          status: item.status || 'applied',
+          applied_at: item.appliedAt || job.postedAt || new Date().toISOString(),
+          interview_date: dateStr,
+          interview_time: timeStr,
+          venue_address: venue,
+          maps_link: job.googleMapsUrl || job.google_maps_url || item.mapsLink || item.maps_link || '',
+          job_title: job.title || item.title || 'Technical Specialist',
+          company: job.company || item.company || 'Industrial Company',
+          company_name: job.company || item.company || 'Industrial Company',
+          company_logo: job.companyLogo || job.company_logo || item.companyLogo || '',
+          job_location: job.location || item.location || '',
+          industry: job.industry || item.industry,
+          job_type: job.job_type || job.jobType,
+          work_mode: job.work_mode || job.workMode,
+          salary_min: job.salary_min || job.salaryMin,
+          salary_max: job.salary_max || job.salaryMax,
+          is_walk_in: true,
+          hiring_method: 'WALK_IN',
+          walk_in_date: dateStr,
+          walk_in_start_time: job.walkInStartTime || job.walk_in_start_time || '10:00 AM',
+          walk_in_end_time: job.walkInEndTime || job.walk_in_end_time || '04:00 PM',
+          walk_in_contact_person: job.walkInContactPerson || job.walk_in_contact_person || job.contactPerson || '',
+          walk_in_contact_number: job.walkInContactNumber || job.walk_in_contact_number || '',
+          walk_in_documents: job.walkInDocuments || job.walk_in_documents || '',
+          ticket_number: passNum,
+          candidate_name: user?.name,
+          candidate_phone: user?.phone,
+        });
+      });
+
+      // Merge and enrich rawUpcoming & rawPast
+      const finalUpcoming: InterviewItem[] = [];
+      const finalPast: InterviewItem[] = [];
+      const processedJobIds = new Set<string>();
+
+      // 1. Process regular interviews from backend
+      rawUpcoming.forEach((item) => {
+        const matchingWalkIn = walkInItems.find(
+          (w) => String(w.job_id).toLowerCase() === String(item.job_id).toLowerCase()
+        );
+        if (matchingWalkIn) {
+          processedJobIds.add(String(item.job_id).toLowerCase());
+          finalUpcoming.push({ ...item, ...matchingWalkIn });
+        } else {
+          processedJobIds.add(String(item.job_id).toLowerCase());
+          finalUpcoming.push(item);
+        }
+      });
+
+      rawPast.forEach((item) => {
+        const matchingWalkIn = walkInItems.find(
+          (w) => String(w.job_id).toLowerCase() === String(item.job_id).toLowerCase()
+        );
+        if (matchingWalkIn) {
+          processedJobIds.add(String(item.job_id).toLowerCase());
+          finalPast.push({ ...item, ...matchingWalkIn });
+        } else {
+          processedJobIds.add(String(item.job_id).toLowerCase());
+          finalPast.push(item);
+        }
+      });
+
+      // 2. Add remaining walk-in drive passes
+      walkInItems.forEach((w) => {
+        const jId = String(w.job_id).toLowerCase();
+        if (processedJobIds.has(jId)) return;
+        processedJobIds.add(jId);
+
+        let isTargetPast = false;
+        if (w.interview_date) {
+          const targetDate = new Date(w.interview_date);
+          targetDate.setHours(0, 0, 0, 0);
+          if (!isNaN(targetDate.getTime()) && targetDate < today) {
+            isTargetPast = true;
+          }
+        }
+
+        if (isTargetPast) {
+          finalPast.push(w);
+        } else {
+          finalUpcoming.push(w);
+        }
+      });
+
+      setUpcoming(finalUpcoming);
+      setPast(finalPast);
     } catch (e) {
       console.log('Error fetching interviews:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.name, user?.phone]);
 
-  useFocusEffect(useCallback(() => {
-    setLoading(true);
-    fetchInterviews();
-  }, [fetchInterviews]));
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchInterviews();
+    }, [fetchInterviews])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchInterviews();
   };
 
-  const displayList = activeTab === 'upcoming' ? upcoming : past;
+  const currentTabList = activeTab === 'upcoming' ? upcoming : past;
+  const walkInCount = currentTabList.filter((i) => i.is_walk_in).length;
+  const scheduledCount = currentTabList.filter((i) => !i.is_walk_in).length;
+
+  const displayList =
+    filterType === 'WALK_IN'
+      ? currentTabList.filter((i) => i.is_walk_in)
+      : filterType === 'SCHEDULED'
+      ? currentTabList.filter((i) => !i.is_walk_in)
+      : currentTabList;
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <Header
         title="My Interviews"
-        subtitle="Interview schedule & history"
+        subtitle="Interview schedule & walk-in passes"
         showBack={true}
         onBack={() => navigation.goBack()}
         hideBell={true}
@@ -273,20 +473,63 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
       </View>
       <View style={styles.tabDivider} />
 
+      {/* Sub-Filter Pill Row */}
+      <View style={styles.subFilterRow}>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'ALL' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('ALL')}
+        >
+          <Text style={[styles.subFilterText, filterType === 'ALL' && styles.subFilterTextActive]}>
+            All ({currentTabList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'WALK_IN' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('WALK_IN')}
+        >
+          <Ticket size={11} color={filterType === 'WALK_IN' ? '#FFFFFF' : '#1764E8'} style={{ marginRight: 4 }} />
+          <Text style={[styles.subFilterText, filterType === 'WALK_IN' && styles.subFilterTextActive]}>
+            Walk-in Drive ({walkInCount})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.subFilterPill, filterType === 'SCHEDULED' && styles.subFilterPillActive]}
+          onPress={() => setFilterType('SCHEDULED')}
+        >
+          <Text style={[styles.subFilterText, filterType === 'SCHEDULED' && styles.subFilterTextActive]}>
+            Other ({scheduledCount})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Content */}
       {loading ? (
         <View style={{ padding: 16, gap: 12 }}>
           {[1, 2, 3].map((key) => (
-            <View key={key} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', padding: 14 }}>
+            <View
+              key={key}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: RADIUS.card,
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
+                padding: 14,
+              }}
+            >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-                <SkeletonLoader width={120} height={16} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={70} height={18} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={120} height={16} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={70} height={18} style={{ borderRadius: RADIUS.xs }} />
               </View>
-              <SkeletonLoader width="80%" height={18} style={{ borderRadius: 4, marginBottom: 8 }} />
-              <SkeletonLoader width="60%" height={14} style={{ borderRadius: 4, marginBottom: 12 }} />
-              <View style={{ paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'space-between' }}>
-                <SkeletonLoader width={100} height={14} style={{ borderRadius: 4 }} />
-                <SkeletonLoader width={80} height={14} style={{ borderRadius: 4 }} />
+              <SkeletonLoader width="80%" height={18} style={{ borderRadius: RADIUS.xs, marginBottom: 8 }} />
+              <SkeletonLoader width="60%" height={14} style={{ borderRadius: RADIUS.xs, marginBottom: 12 }} />
+              <View style={{ flexDirection: 'row', gap: 16 }}>
+                <SkeletonLoader width={100} height={14} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={80} height={14} style={{ borderRadius: RADIUS.xs }} />
               </View>
             </View>
           ))}
@@ -298,14 +541,46 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
           {displayList.length === 0 ? (
-            <EmptyState tab={activeTab} />
+            <EmptyState tab={activeTab} filterType={filterType} navigation={navigation} />
           ) : (
-            displayList.map((item) => (
-              <InterviewCard key={item.application_id} item={item} isPast={activeTab === 'past'} navigation={navigation} />
-            ))
+            displayList.map((item) =>
+              item.is_walk_in ? (
+                <WalkInDrivePassCard
+                  key={item.application_id || item.job_id}
+                  item={item}
+                  isPast={activeTab === 'past'}
+                  candidateName={user?.name}
+                  candidatePhone={user?.phone}
+                  onPressPass={(p) => {
+                    setSelectedPassItem(p);
+                    setShowPassModal(true);
+                  }}
+                  navigation={navigation}
+                />
+              ) : (
+                <InterviewCard
+                  key={item.application_id || item.job_id}
+                  item={item}
+                  isPast={activeTab === 'past'}
+                  navigation={navigation}
+                />
+              )
+            )
           )}
         </ScrollView>
       )}
+
+      {/* Official Walk-in Drive Admit Card Pass Modal */}
+      <WalkInDrivePassModal
+        visible={showPassModal}
+        item={selectedPassItem}
+        candidateName={user?.name}
+        candidatePhone={user?.phone}
+        onClose={() => {
+          setShowPassModal(false);
+          setSelectedPassItem(null);
+        }}
+      />
     </View>
   );
 };
@@ -379,7 +654,7 @@ const styles = StyleSheet.create({
   companyDot: {
     width: 36,
     height: 36,
-    borderRadius: 0,
+    borderRadius: RADIUS.xs,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
@@ -414,6 +689,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderRadius: RADIUS.xs,
     padding: 8,
   },
   venueText: { flex: 1, fontSize: 12, fontWeight: '500', color: '#475569', lineHeight: 17 },
@@ -429,6 +705,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BFDBFE',
     backgroundColor: '#EFF6FF',
+    borderRadius: RADIUS.xs,
   },
   directionBtnText: { fontSize: 11, fontWeight: '800', color: COLORS.primary },
 
@@ -448,10 +725,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderRadius: RADIUS.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   emptyTitle: { fontSize: 15, fontWeight: '800', color: '#334155', textAlign: 'center' },
   emptyDesc: { fontSize: 13, fontWeight: '500', color: '#94A3B8', textAlign: 'center', lineHeight: 20 },
+  exploreJobsBtn: {
+    backgroundColor: '#1764E8',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: RADIUS.card,
+    marginTop: 8,
+  },
+  exploreJobsBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  subFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  subFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  subFilterPillActive: {
+    backgroundColor: '#1764E8',
+    borderColor: '#1764E8',
+  },
+  subFilterText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  subFilterTextActive: {
+    color: '#FFFFFF',
+  },
 });

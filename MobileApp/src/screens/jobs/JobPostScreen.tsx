@@ -8,8 +8,9 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Keyboard,
 } from 'react-native';
-import { Check, ArrowLeft } from 'lucide-react-native';
+import { Check, ArrowLeft, AlertTriangle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
@@ -37,6 +38,23 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   const pendingActionRef = useRef<any>(null);
 
   const form = useJobPostForm(navigation, route);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Intercept back navigation & show user confirmation modal dialog
   useEffect(() => {
@@ -128,6 +146,13 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const handleFormSubmit = async () => {
+    const success = await form.handleSubmitJob();
+    if (success === false) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  };
+
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const bottomInset = Math.max(insets.bottom || 0, Platform.OS === 'android' ? 24 : 16);
 
@@ -184,6 +209,30 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Admin Rejection Remarks Banner */}
+        {form.isRejected && (
+          <View style={styles.rejectionNoticeCard}>
+            <View style={styles.rejectionHeaderRow}>
+              <View style={styles.rejectionIconBadge}>
+                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.4} />
+              </View>
+              <View style={styles.rejectionTitleCol}>
+                <Text style={styles.rejectionTitle}>ADMIN REVISION REQUESTED</Text>
+                <Text style={styles.rejectionSubtitle}>This job listing was returned with feedback during moderation</Text>
+              </View>
+            </View>
+            <View style={styles.rejectionBodyBox}>
+              <Text style={styles.rejectionReasonLabel}>MODERATOR REMARKS & REJECTION REASON:</Text>
+              <Text style={styles.rejectionReasonText}>
+                {form.rejectReason || 'This listing requires revisions to meet platform guidelines. Please review the details, update the necessary information, and resubmit for approval.'}
+              </Text>
+            </View>
+            <Text style={styles.rejectionTipText}>
+              Please review and correct the flagged fields across the 4 steps, then tap <Text style={{ fontWeight: '700', color: '#B91C1C' }}>"Resubmit for Approval"</Text> at Step 4.
+            </Text>
+          </View>
+        )}
+
         {form.error ? <ErrorBanner message={form.error} /> : null}
 
         {form.currentStep === 1 ? (
@@ -315,50 +364,60 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             onAddCustomSkill={form.handleAddCustomSkill}
             onToggleSkill={form.handleToggleSkill}
             availableSkills={form.availableSkills}
-            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 160)}
+            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 24)}
           />
         ) : null}
       </KeyboardAwareScrollView>
 
-      {/* Fixed Sticky Action Bar at Bottom (with Safe Area & System Navigation Menu Clearance) */}
-      <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
-        {form.currentStep === 1 ? (
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            activeOpacity={0.85}
-            onPress={() => {
-              if (form.isSubmittedRef) form.isSubmittedRef.current = true;
-              if (navigation && typeof navigation.navigate === 'function') {
-                navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
-              } else if (navigation?.canGoBack && navigation.canGoBack()) {
-                navigation.goBack();
-              }
-            }}
-          >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.prevBtn} activeOpacity={0.85} onPress={handlePrevStep}>
-            <ArrowLeft size={15} color={COLORS.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.prevBtnText}>Back</Text>
-          </TouchableOpacity>
-        )}
+      {/* Fixed Sticky Action Bar at Bottom (Hidden while typing so Back/Next buttons do not move up with the keyboard) */}
+      {!isKeyboardVisible && (
+        <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
+          {form.currentStep === 1 ? (
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                if (form.isSubmittedRef) form.isSubmittedRef.current = true;
+                if (navigation && typeof navigation.navigate === 'function') {
+                  navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+                } else if (navigation?.canGoBack && navigation.canGoBack()) {
+                  navigation.goBack();
+                }
+              }}
+            >
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.prevBtn} activeOpacity={0.85} onPress={handlePrevStep}>
+              <ArrowLeft size={15} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.prevBtnText}>Back</Text>
+            </TouchableOpacity>
+          )}
 
-        {form.currentStep < 4 ? (
-          <TouchableOpacity style={styles.nextBtn} activeOpacity={0.85} onPress={handleNextStep}>
-            <Text style={styles.nextBtnText}>Next Step</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.submitBtn, form.loading && styles.submitBtnDisabled]}
-            activeOpacity={0.85}
-            disabled={form.loading}
-            onPress={form.handleSubmitJob}
-          >
-            <Text style={styles.submitBtnText}>{form.loading ? 'Submitting...' : 'Submit'}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          {form.currentStep < 4 ? (
+            <TouchableOpacity style={styles.nextBtn} activeOpacity={0.85} onPress={handleNextStep}>
+              <Text style={styles.nextBtnText}>Next Step</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.submitBtn, form.loading && styles.submitBtnDisabled]}
+              activeOpacity={0.85}
+              disabled={form.loading}
+              onPress={handleFormSubmit}
+            >
+              <Text style={styles.submitBtnText}>
+                {form.loading
+                  ? form.isRejected
+                    ? 'Resubmitting...'
+                    : 'Submitting...'
+                  : form.isRejected
+                  ? 'Resubmit for Approval'
+                  : 'Submit'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Themed Discard Job Post Draft Confirmation Modal */}
       <ConfirmationModal
@@ -383,12 +442,12 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
         }}
       />
 
-      {/* Themed Success Modal for Job Submission / Update */}
+      {/* Themed Submission Success Modal */}
       <SuccessModal
         visible={form.successModalConfig.visible}
         title={form.successModalConfig.title}
         message={form.successModalConfig.message}
-        buttonText={form.successModalConfig.buttonText || 'Manage Jobs'}
+        buttonText={form.successModalConfig.buttonText}
         onButtonPress={form.successModalConfig.onButtonPress}
         onClose={form.successModalConfig.onButtonPress || (() => form.setSuccessModalConfig((prev) => ({ ...prev, visible: false })))}
       />
@@ -547,5 +606,69 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  rejectionNoticeCard: {
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 0,
+    padding: 14,
+    marginBottom: 16,
+  },
+  rejectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  rejectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 0,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  rejectionTitleCol: {
+    flex: 1,
+  },
+  rejectionTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#991B1B',
+    letterSpacing: 0.3,
+  },
+  rejectionSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  rejectionBodyBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    borderRadius: 0,
+    padding: 10,
+    marginBottom: 8,
+  },
+  rejectionReasonLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#DC2626',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  rejectionReasonText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#1E293B',
+    fontWeight: '500',
+  },
+  rejectionTipText: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: '#475569',
   },
 });

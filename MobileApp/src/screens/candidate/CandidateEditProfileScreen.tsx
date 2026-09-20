@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   BackHandler,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -52,6 +54,23 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [preferredShift, setPreferredShift] = useState(user?.preferredShift || user?.preferred_shift || 'Day Shift');
   const [requiresBus, setRequiresBus] = useState(!!(user?.requiresBus || user?.requires_bus));
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const initialUserPhoto =
     user?.profile_picture_url ||
@@ -591,7 +610,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             profilePhotoUrl={profilePhotoUrl}
             uploadingPhoto={uploadingPhoto}
             onPickPhoto={handlePickPhoto}
-            onFocusBio={(e) => handleFocusInput(e, scrollViewRef, 150)}
+            onFocusBio={(e) => handleFocusInput(e, scrollViewRef, 24)}
           />
         ) : null}
 
@@ -640,31 +659,33 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
         ) : null}
       </KeyboardAwareScrollView>
 
-      {/* Bottom Action Bar */}
-      <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom + 10, 20) }]}>
-        {currentStep === 1 ? (
-          <TouchableOpacity style={styles.cancelBtn} onPress={handleConfirmBack}>
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.prevBtn} onPress={handlePrevStep}>
-            <Text style={styles.prevBtnText}>Back</Text>
-          </TouchableOpacity>
-        )}
+      {/* Bottom Action Bar (Hidden while typing so Back/Next buttons do not move up with the keyboard) */}
+      {!isKeyboardVisible && (
+        <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom + 10, 20) }]}>
+          {currentStep === 1 ? (
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleConfirmBack}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.prevBtn} onPress={handlePrevStep}>
+              <Text style={styles.prevBtnText}>Back</Text>
+            </TouchableOpacity>
+          )}
 
-        {currentStep < 4 ? (
-          <TouchableOpacity style={styles.nextBtn} onPress={handleNextStep}>
-            <Text style={styles.nextBtnText}>Next Step</Text>
-          </TouchableOpacity>
-        ) : (
-          <Button
-            title="Save Profile"
-            onPress={handleSaveProfile}
-            loading={saving}
-            style={{ flex: 1.5, height: 44, borderRadius: 8 }}
-          />
-        )}
-      </View>
+          {currentStep < 4 ? (
+            <TouchableOpacity style={styles.nextBtn} onPress={handleNextStep}>
+              <Text style={styles.nextBtnText}>Next Step</Text>
+            </TouchableOpacity>
+          ) : (
+            <Button
+              title="Save Profile"
+              onPress={handleSaveProfile}
+              loading={saving}
+              style={{ flex: 1.5, height: 44, borderRadius: 8 }}
+            />
+          )}
+        </View>
+      )}
 
       <CandidateEditModals
         tradeModalOpen={tradeModalOpen}

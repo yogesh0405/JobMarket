@@ -220,10 +220,10 @@ export class AdvertisementService {
     if (!updated) throw new Error('Failed to approve advertisement');
 
     if (existing.owner_id) {
-      // 1. Create In-App Notification
+      // 1. Create In-App Notification & Real-Time Push Notification
       await AdvertisementRepository.createNotification(
         existing.owner_id,
-        'Advertisement Approved!',
+        'Banner Approved & Published Live!',
         `Congratulations! Your advertisement banner "${existing.title}" was approved and is now live on the homepage.`,
         'AD_APPROVED',
         `/dashboard?tab=advertisements`
@@ -265,11 +265,11 @@ export class AdvertisementService {
     if (!updated) throw new Error('Failed to reject advertisement');
 
     if (existing.owner_id) {
-      // 1. Create In-App Notification
+      // 1. Create In-App Notification & Real-Time Push Notification
       await AdvertisementRepository.createNotification(
         existing.owner_id,
-        'Advertisement Needs Revision',
-        `Your advertisement banner "${existing.title}" was rejected for reason: ${reason}. Please update and resubmit.`,
+        'Banner Rejected: Revision Required',
+        `Your advertisement banner "${existing.title}" was rejected. Reason: ${reason}. Please update and resubmit.`,
         'AD_REJECTED',
         `/dashboard?tab=advertisements`
       );

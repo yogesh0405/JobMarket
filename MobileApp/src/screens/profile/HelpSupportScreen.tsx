@@ -691,7 +691,10 @@ export const HelpSupportScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               activeOpacity={0.75}
               style={styles.contactOptionCard}
-              onPress={() => Linking.openURL('https://jobmarket-ongn.onrender.com')}
+              onPress={() => {
+                const targetUrl = process.env.EXPO_PUBLIC_WEB_URL || process.env.EXPO_PUBLIC_API_URL || 'https://jobmarket.com';
+                Linking.openURL(targetUrl);
+              }}
             >
               <View style={styles.contactOptionLeft}>
                 <Globe size={19} color="#0F172A" strokeWidth={2.2} />

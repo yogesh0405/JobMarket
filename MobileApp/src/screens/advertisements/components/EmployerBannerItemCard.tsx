@@ -12,6 +12,7 @@ import {
   AlertCircle,
   EyeOff,
   RefreshCw,
+  ArrowRight,
 } from 'lucide-react-native';
 import { Advertisement } from '../../../types';
 import { COLORS } from '../../../constants/theme';
@@ -84,7 +85,7 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
 
   return (
     <View style={styles.cardWrapper}>
-      {/* 1. Image Banner Area with Top Badges & Bottom Overlay Title */}
+      {/* 1. Image Banner — Live Slider Style */}
       <View style={styles.imageBox}>
         <Image
           source={{ uri: imageUri }}
@@ -93,62 +94,72 @@ export const EmployerBannerItemCard: React.FC<EmployerBannerItemCardProps> = ({
           resizeMode="cover"
         />
 
-        {/* Top Badges Row */}
-        <View style={styles.imageTopRow}>
-          {/* Tag Pill (e.g. FEATURED JOB) */}
-          <View style={styles.featuredJobTag}>
-            <Text style={styles.featuredJobTagText}>{adTypeLabel}</Text>
+        {/* Full dark overlay — identical to CandidateHomePromoSlider */}
+        <View style={styles.sliderOverlay}>
+          {/* Row: type badge (left) + status badge (right) */}
+          <View style={styles.overlayTopRow}>
+            <View style={styles.promoBadgeOrange}>
+              <Text style={styles.promoBadgeOrangeText}>{adTypeLabel}</Text>
+            </View>
+
+            {/* Status badge floated right */}
+            {isInReview && (
+              <View style={styles.statusBadgeReview}>
+                <Clock size={12} color="#B45309" strokeWidth={2.4} />
+                <Text style={styles.statusTextReview}>In Review</Text>
+              </View>
+            )}
+            {isResubmitted && (
+              <View style={styles.statusBadgeResubmitted}>
+                <RefreshCw size={11} color="#1D4ED8" strokeWidth={2.5} />
+                <Text style={styles.statusTextResubmitted}>Resubmitted</Text>
+              </View>
+            )}
+            {isLive && (
+              <View style={styles.statusBadgeLive}>
+                <CheckCircle2 size={12} color="#15803D" strokeWidth={2.4} />
+                <Text style={styles.statusTextLive}>Live</Text>
+              </View>
+            )}
+            {isPast && (
+              <View style={styles.statusBadgeExpired}>
+                <Calendar size={12} color="#64748B" strokeWidth={2.4} />
+                <Text style={styles.statusTextExpired}>Expired</Text>
+              </View>
+            )}
+            {isRejected && (
+              <View style={styles.statusBadgeRejected}>
+                <XCircle size={12} color="#DC2626" strokeWidth={2.4} />
+                <Text style={styles.statusTextRejected}>Rejected</Text>
+              </View>
+            )}
+            {isUnpublished && (
+              <View style={styles.statusBadgeUnpublished}>
+                <EyeOff size={12} color="#D97706" strokeWidth={2.4} />
+                <Text style={styles.statusTextUnpublished}>Unpublished</Text>
+              </View>
+            )}
           </View>
 
-          {/* Status Badge (In Review / Resubmitted / Live / Rejected / Unpublished / Expired) */}
-          {isInReview && (
-            <View style={styles.statusBadgeReview}>
-              <Clock size={13} color="#B45309" strokeWidth={2.4} />
-              <Text style={styles.statusTextReview}>In Review</Text>
-            </View>
-          )}
-
-          {isResubmitted && (
-            <View style={styles.statusBadgeResubmitted}>
-              <RefreshCw size={12} color="#1D4ED8" strokeWidth={2.5} />
-              <Text style={styles.statusTextResubmitted}>Resubmitted</Text>
-            </View>
-          )}
-
-          {isLive && (
-            <View style={styles.statusBadgeLive}>
-              <CheckCircle2 size={13} color="#15803D" strokeWidth={2.4} />
-              <Text style={styles.statusTextLive}>Live</Text>
-            </View>
-          )}
-
-          {isPast && (
-            <View style={styles.statusBadgeExpired}>
-              <Calendar size={13} color="#64748B" strokeWidth={2.4} />
-              <Text style={styles.statusTextExpired}>Expired</Text>
-            </View>
-          )}
-
-          {isRejected && (
-            <View style={styles.statusBadgeRejected}>
-              <XCircle size={13} color="#DC2626" strokeWidth={2.4} />
-              <Text style={styles.statusTextRejected}>Rejected</Text>
-            </View>
-          )}
-
-          {isUnpublished && (
-            <View style={styles.statusBadgeUnpublished}>
-              <EyeOff size={13} color="#D97706" strokeWidth={2.4} />
-              <Text style={styles.statusTextUnpublished}>Unpublished</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Dark Gradient Overlay for Title */}
-        <View style={styles.titleGradientOverlay}>
-          <Text style={styles.bannerTitleText} numberOfLines={2}>
-            {banner.title || 'Simple and easy applying for job'}
+          {/* Title */}
+          <Text style={styles.sliderTitle}>
+            {banner.title || 'Promotional Banner'}
           </Text>
+
+          {/* Description (conditional, same as live slider) */}
+          {!!banner.description && (
+            <Text style={styles.sliderDesc} numberOfLines={2}>
+              {banner.description}
+            </Text>
+          )}
+
+          {/* CTA Button */}
+          <TouchableOpacity activeOpacity={0.85} style={styles.sliderCTABtn}>
+            <Text style={styles.sliderCTAText}>
+              {banner.button_text || 'Apply Now'}
+            </Text>
+            <ArrowRight size={14} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -259,11 +270,11 @@ const styles = StyleSheet.create({
     elevation: 1.5,
   },
 
-  /* 1. Image Thumbnail & Overlays */
+  /* 1. Image Thumbnail — Live Slider Style */
   imageBox: {
     width: '100%',
-    height: 145,
-    borderRadius: 8,
+    height: 168,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#0F172A',
@@ -271,29 +282,66 @@ const styles = StyleSheet.create({
   bannerImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
-  imageTopRow: {
+  /* Full overlay identical to CandidateHomePromoSlider */
+  sliderOverlay: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    justifyContent: 'center',
+  },
+  overlayTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 10,
+    marginBottom: 5,
   },
-  featuredJobTag: {
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+  promoBadgeOrange: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F97316',
     paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingVertical: 2.5,
     borderRadius: 4,
   },
-  featuredJobTagText: {
-    fontSize: 10,
+  promoBadgeOrangeText: {
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#FFFFFF',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  sliderTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  sliderDesc: {
+    fontSize: 12,
+    color: '#E2E8F0',
+    marginTop: 3,
+    lineHeight: 16,
+  },
+  sliderCTABtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 6.5,
+    borderRadius: 6,
+    marginTop: 10,
+  },
+  sliderCTAText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   /* Status Badges */
@@ -304,12 +352,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderWidth: 1,
     borderColor: '#FDE68A',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextReview: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#B45309',
   },
@@ -320,12 +368,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     borderWidth: 1,
     borderColor: '#BBF7D0',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextLive: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#15803D',
   },
@@ -336,12 +384,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     borderWidth: 1,
     borderColor: '#FECACA',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextRejected: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#DC2626',
   },
@@ -352,12 +400,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderWidth: 1,
     borderColor: '#FDE68A',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextUnpublished: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#D97706',
   },
@@ -365,15 +413,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(241, 245, 249, 0.9)',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextExpired: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -384,31 +432,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   statusTextResubmitted: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#1D4ED8',
-  },
-
-  titleGradientOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 10,
-    paddingBottom: 8,
-    paddingTop: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-  },
-  bannerTitleText: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    lineHeight: 18,
   },
 
   /* 2. Linked Job */

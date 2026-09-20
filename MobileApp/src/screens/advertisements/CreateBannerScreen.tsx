@@ -239,7 +239,7 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
                 </Text>
               </View>
               <Text style={editingBanner.status === 'REJECTED' ? styles.alertBodyRejected : styles.alertBodyUnpublished}>
-                {(editingBanner.rejection_reason || (editingBanner as any).unpublish_reason || (editingBanner as any).notes || (editingBanner as any).reason) ||
+                {(editingBanner.rejection_reason || (editingBanner as any).rejectionReason || (editingBanner as any).admin_reason || (editingBanner as any).adminReason || (editingBanner as any).unpublish_reason || (editingBanner as any).unpublishReason || (editingBanner as any).notes || (editingBanner as any).reason) ||
                   (editingBanner.status === 'REJECTED'
                     ? 'This banner was rejected by administrators. Please update the necessary details and resubmit.'
                     : 'This banner was unpublished from the homepage by administrators. You can update and resubmit it.')}
@@ -278,7 +278,10 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
                 { id: 'FEATURED_JOB', label: 'Featured Job' },
                 { id: 'URGENT_HIRING', label: 'Urgent Hiring' },
                 { id: 'WALK_IN_DRIVE', label: 'Walk-In Drive' },
+                { id: 'HIRING_EVENT', label: 'Recruitment Drive' },
                 { id: 'COMPANY_PROMOTION', label: 'Company Spotlight' },
+                { id: 'APPRENTICESHIP', label: 'Apprenticeship' },
+                { id: 'INTERNSHIP', label: 'Internship' },
               ].map((type) => (
                 <TouchableOpacity
                   key={type.id}
@@ -369,6 +372,7 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
                 'Apply Now',
                 'View Job Details',
                 'Register Spot Interview',
+                'Join Recruitment Drive',
                 'Explore Jobs',
                 'Direct Walk-In',
               ].map((preset) => (
@@ -456,7 +460,12 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {/* Section 4: Live Preview */}
           <View style={styles.formCard}>
-            <Text style={styles.sectionHeaderTitle}>LIVE BANNER PREVIEW</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Text style={styles.sectionHeaderTitle}>LIVE BANNER PREVIEW</Text>
+              <Text style={styles.previewTagHint}>Live Homepage Style</Text>
+            </View>
+
+            {/* Exact replica of CandidateHomePromoSlider card */}
             <View style={styles.liveHomepageBannerCard}>
               <Image
                 source={{
@@ -468,30 +477,33 @@ export const CreateBannerScreen: React.FC<Props> = ({ navigation, route }) => {
                 style={styles.livePromoImage}
                 resizeMode="cover"
               />
-
               <View style={styles.livePromoOverlay}>
                 <View style={styles.livePromoBadgeOrange}>
                   <Text style={styles.livePromoBadgeOrangeText}>
-                    {(advertisementType || 'FEATURED_JOB').replace(/_/g, ' ')}
+                    {(advertisementType || 'PROMOTIONAL').replace(/_/g, ' ')}
                   </Text>
                 </View>
-
-                <View style={{ gap: 2 }}>
-                  <Text style={styles.livePromoTitle} numberOfLines={1}>
-                    {title.trim() || 'Sample Banner Title'}
-                  </Text>
+                <Text style={styles.livePromoTitle}>
+                  {title.trim() || 'Sample Banner Title'}
+                </Text>
+                {description.trim() ? (
                   <Text style={styles.livePromoDesc} numberOfLines={2}>
-                    {description.trim() ||
-                      'Sample description preview as shown to job seekers on the homepage slider.'}
+                    {description.trim()}
                   </Text>
-                </View>
-
-                <View style={styles.livePromoActionBtnBlue}>
+                ) : (
+                  <Text style={styles.livePromoDesc} numberOfLines={2}>
+                    {'Short description shown below the title on the homepage slider.'}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.livePromoActionBtnBlue}
+                >
                   <Text style={styles.livePromoActionBtnText}>
-                    {buttonText || 'Apply Now'}
+                    {buttonText.trim() || 'Apply Now'}
                   </Text>
-                  <ArrowRight size={13} color="#2563EB" />
-                </View>
+                  <ArrowRight size={14} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -676,18 +688,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2563EB',
   },
+  previewTagHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
   liveHomepageBannerCard: {
-    height: 160,
-    borderRadius: 10,
+    height: 168,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#0F172A',
-    marginTop: 4,
+    marginTop: 6,
   },
   livePromoImage: {
     width: '100%',
     height: '100%',
-    opacity: 0.5,
+    resizeMode: 'cover',
   },
   livePromoOverlay: {
     position: 'absolute',
@@ -695,48 +716,52 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 12,
-    justifyContent: 'space-between',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    justifyContent: 'center',
   },
   livePromoBadgeOrange: {
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
     alignSelf: 'flex-start',
+    backgroundColor: '#F97316',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 4,
+    marginBottom: 5,
   },
   livePromoBadgeOrangeText: {
-    color: '#FFFFFF',
     fontSize: 9.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
   livePromoTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     color: '#FFFFFF',
+    lineHeight: 20,
   },
   livePromoDesc: {
-    fontSize: 11.5,
+    fontSize: 12,
     color: '#E2E8F0',
-    lineHeight: 15,
+    marginTop: 3,
+    lineHeight: 16,
   },
   livePromoActionBtnBlue: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
     alignSelf: 'flex-start',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 6.5,
+    borderRadius: 6,
+    marginTop: 10,
   },
   livePromoActionBtnText: {
-    color: '#2563EB',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   submitBtn: {
     backgroundColor: '#2563EB',

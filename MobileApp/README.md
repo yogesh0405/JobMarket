@@ -6,16 +6,24 @@ Production-grade Expo React Native Mobile Application for JobMarket industrial w
 
 ## ⚡ Quick Start (Fresh Clone Setup)
 
-This project requires **zero manual configuration** out-of-the-box. When cloned, it automatically targets the **live production Render backend API** (`https://jobmarket-ongn.onrender.com`).
+### 1. Configure Environment
+Copy `.env.example` to `.env` and set your backend API URL:
+```bash
+cp .env.example .env
+```
+Add your API URL in `.env`:
+```env
+EXPO_PUBLIC_API_URL=https://your-backend-api.onrender.com
+```
 
-### 1. Install Dependencies
+### 2. Install Dependencies
 ```bash
 cd MobileApp
 npm install
 ```
 > **Note:** The `postinstall` hook (`node scripts/patch-expo-cli.js`) runs automatically upon `npm install` to optimize Metro packager performance and offline startup.
 
-### 2. Start the App
+### 3. Start the App
 ```bash
 npm start
 ```
@@ -30,12 +38,9 @@ npm run web     # Run in Browser Web View
 
 ## 🌐 Backend API Configuration
 
-- **Default Live Backend URL**: `https://jobmarket-ongn.onrender.com`
-- **Fallback Logic**: Configured in `src/api/client.ts`. If `EXPO_PUBLIC_API_URL` is omitted, the app defaults to the live production server automatically.
-- **Custom Backend URL (Optional)**: You can override the backend URL in `.env`:
-  ```env
-  EXPO_PUBLIC_API_URL=https://jobmarket-ongn.onrender.com
-  ```
+- **Environment-Driven**: Configured via `EXPO_PUBLIC_API_URL` in `.env`.
+- **Fallback Logic**: During local dev without `.env`, the app automatically resolves your local network IP (`http://<LAN_IP>:5000`).
+- **Security**: `.env` is ignored by Git in `.gitignore` to prevent any credentials or server endpoints from being committed.
 
 ---
 

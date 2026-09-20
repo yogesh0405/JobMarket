@@ -1017,6 +1017,28 @@ export const EmployerAdvertisements: React.FC<EmployerAdvertisementsProps> = ({ 
                       {/* Status */}
                       <td style={{ padding: '14px 16px' }}>
                         <div>{getStatusPill(ad)}</div>
+                        {isAdRejected(ad) && (
+                          <div style={{ marginTop: '6px', maxWidth: '240px', background: '#FEF2F2', border: '1px solid #FECACA', borderLeft: '3px solid #DC2626', borderRadius: '4px', padding: '5px 8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#991B1B', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', marginBottom: '2px' }}>
+                              <AlertCircle size={11} color="#DC2626" />
+                              <span>Reason:</span>
+                            </div>
+                            <div style={{ color: '#7F1D1D', fontSize: '11px', lineHeight: '1.3', wordBreak: 'break-word', fontWeight: '500' }}>
+                              {ad.rejection_reason || (ad as any).rejectionReason || (ad as any).admin_reason || (ad as any).adminReason || (ad as any).reason || 'Please review platform guidelines and update banner details.'}
+                            </div>
+                          </div>
+                        )}
+                        {isAdUnpublished(ad) && (
+                          <div style={{ marginTop: '6px', maxWidth: '240px', background: '#FFFBEB', border: '1px solid #FDE68A', borderLeft: '3px solid #D97706', borderRadius: '4px', padding: '5px 8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#92400E', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', marginBottom: '2px' }}>
+                              <EyeOff size={11} color="#D97706" />
+                              <span>Unpublished Reason:</span>
+                            </div>
+                            <div style={{ color: '#78350F', fontSize: '11px', lineHeight: '1.3', wordBreak: 'break-word', fontWeight: '500' }}>
+                              {ad.rejection_reason || (ad as any).rejectionReason || (ad as any).unpublish_reason || (ad as any).unpublishReason || (ad as any).admin_reason || (ad as any).adminReason || (ad as any).reason || 'Administrative moderation update.'}
+                            </div>
+                          </div>
+                        )}
                         <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', fontWeight: '600' }}>
                           Priority: {ad.priority}
                         </div>

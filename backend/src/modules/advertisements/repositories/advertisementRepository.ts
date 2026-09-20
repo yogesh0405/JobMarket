@@ -1,6 +1,7 @@
 import { pool } from '../../../config/database/pool';
 import { CacheService } from '../../../utils/redisCache';
 import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
+import { NotificationService } from '../../notifications/services/NotificationService';
 import {
   Advertisement,
   CreateAdvertisementInput,
@@ -555,7 +556,14 @@ export class AdvertisementRepository {
     type: string,
     link?: string
   ): Promise<SystemNotification> {
-    const rec = await NotificationRepository.createNotification(userId, title, message, type, link);
+    const rec = await NotificationService.sendNotification(
+      userId,
+      title,
+      message,
+      type,
+      link,
+      'ADVERTISEMENT'
+    );
     return rec as any;
   }
 

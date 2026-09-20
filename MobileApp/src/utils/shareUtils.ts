@@ -108,3 +108,56 @@ export const shareCandidate = async (params: ShareCandidateParams): Promise<bool
     return false;
   }
 };
+
+export interface ShareWalkInPassParams {
+  passNumber: string;
+  candidateName?: string;
+  candidatePhone?: string;
+  jobTitle: string;
+  company: string;
+  walkInDate: string;
+  walkInTime?: string;
+  venueAddress: string;
+  contactPerson?: string;
+  contactNumber?: string;
+}
+
+export const shareWalkInPass = async (params: ShareWalkInPassParams): Promise<boolean> => {
+  try {
+    const candidateStr = params.candidateName ? `👤 Candidate: ${params.candidateName}\n` : '';
+    const phoneStr = params.candidatePhone ? `📞 Phone: ${params.candidatePhone}\n` : '';
+    const coordStr = params.contactPerson
+      ? `\n👨‍💼 Coordinator: ${params.contactPerson}${params.contactNumber ? ` (${params.contactNumber})` : ''}\n`
+      : '';
+
+    const shareMsg =
+      `🎫 *WALK-IN DRIVE ENTRY PASS*\n` +
+      `Pass ID: ${params.passNumber}\n\n` +
+      candidateStr +
+      phoneStr +
+      `📋 Role: ${params.jobTitle}\n` +
+      `🏢 Company: ${params.company}\n` +
+      `📅 Date: ${params.walkInDate}\n` +
+      `⏰ Reporting Time: ${params.walkInTime || '10:00 AM - 04:00 PM'}\n` +
+      `📍 Venue: ${params.venueAddress}\n` +
+      coordStr +
+      `\n📌 Required Documents:\n` +
+      `• 2 Hard copies of updated Resume\n` +
+      `• Original Govt Photo ID (Aadhaar / Voter ID)\n` +
+      `• ITI / Educational Marksheets\n` +
+      `• 2 Passport size photographs\n\n` +
+      `Verified by JobMarket`;
+
+    const titleStr = `Walk-in Pass - ${params.jobTitle} at ${params.company}`;
+    if (Platform.OS === 'ios') {
+      await Share.share({ title: titleStr, message: shareMsg });
+    } else {
+      await Share.share({ title: titleStr, message: shareMsg }, { dialogTitle: titleStr });
+    }
+    return true;
+  } catch (err: any) {
+    if (err && err.name === 'AbortError') return false;
+    console.warn('Share error:', err);
+    return false;
+  }
+};

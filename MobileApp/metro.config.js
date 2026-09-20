@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('expo/metro-config');
+try { require('./scripts/patch-expo-cli'); } catch (_) {}
 
 const config = getDefaultConfig(__dirname);
 

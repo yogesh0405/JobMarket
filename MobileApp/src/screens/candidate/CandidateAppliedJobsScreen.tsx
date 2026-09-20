@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Send,
   Award,
+  Ticket,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { candidateApi } from '../../api/candidateApi';
@@ -48,13 +49,20 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const filteredApplications = appliedList.filter((item: any) => {
     const rawStatus = item.status || item.applicationStatus || item.job?.status;
     const s = normalizeApplicationStatus(rawStatus);
-    if (filterTab === 'INTERVIEW' && s !== 'shortlisted') return false;
+    const job = item.job || item;
+    const isWalkIn =
+      (job.hiringMethod || job.hiring_method || '').toUpperCase() === 'WALK_IN' ||
+      Boolean(job.isWalkIn) ||
+      Boolean(job.is_walk_in) ||
+      Boolean(job.walkInDate) ||
+      Boolean(job.walk_in_date);
+
+    if (filterTab === 'INTERVIEW' && s !== 'shortlisted' && !isWalkIn) return false;
     if (filterTab === 'REVIEW' && s !== 'applied' && s !== 'reviewed') return false;
     if (filterTab === 'DECISIONS' && s !== 'hired' && s !== 'rejected') return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const job = item.job || item;
       const title = (job.title || item.title || '').toLowerCase();
       const comp = (job.company || job.company_name || item.companyName || '').toLowerCase();
       const loc = (job.location || item.location || '').toLowerCase();
@@ -68,7 +76,14 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
   const interviewCount = appliedList.filter((item: any) => {
     const rawStatus = item.status || item.applicationStatus || item.job?.status;
     const s = normalizeApplicationStatus(rawStatus);
-    return s === 'shortlisted';
+    const job = item.job || item;
+    const isWalkIn =
+      (job.hiringMethod || job.hiring_method || '').toUpperCase() === 'WALK_IN' ||
+      Boolean(job.isWalkIn) ||
+      Boolean(job.is_walk_in) ||
+      Boolean(job.walkInDate) ||
+      Boolean(job.walk_in_date);
+    return s === 'shortlisted' || isWalkIn;
   }).length;
 
   const reviewCount = appliedList.filter((item: any) => {
@@ -393,8 +408,49 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     ) : null}
                   </View>
 
-                  {/* Interview Schedule Sub-Layout */}
-                  {isShortlisted && (item.interviewDate || item.interview_date) ? (
+                  {/* Walk-in Drive Entry Pass Callout */}
+                  {(job.hiringMethod === 'WALK_IN' || job.hiring_method === 'WALK_IN' || job.isWalkIn || job.is_walk_in || job.walkInDate || job.walk_in_date) ? (
+                    <View style={styles.walkInPassSubLayout}>
+                      <View style={styles.walkInPassHeaderRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <Ticket size={13} color="#1764E8" strokeWidth={2.4} />
+                          <Text style={styles.walkInPassTitle}>Walk-in Drive Entry Pass</Text>
+                        </View>
+                        <View style={styles.walkInPassBadge}>
+                          <Text style={styles.walkInPassBadgeText}>PASS ISSUED</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.interviewDetailsRow}>
+                        <Text style={styles.detailLabel}>DRIVE DATE & TIME:</Text>
+                        <Text style={styles.detailValue} numberOfLines={2} ellipsizeMode="tail">
+                          {job.walkInDate || job.walk_in_date || item.interviewDate || 'Walk-in Drive'}
+                          {job.walkInStartTime ? ` (${job.walkInStartTime}${job.walkInEndTime ? ' - ' + job.walkInEndTime : ''})` : ''}
+                        </Text>
+                      </View>
+
+                      {(job.interviewAddress || job.interview_address || item.venueAddress || job.location) ? (
+                        <View style={styles.venueContainer}>
+                          <Text style={styles.venueLabel}>DRIVE VENUE:</Text>
+                          <Text style={styles.venueAddressText} numberOfLines={3} ellipsizeMode="tail">
+                            {job.interviewAddress || job.interview_address || item.venueAddress || job.location}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        style={styles.viewPassActionBtn}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          navigation.navigate('MyInterviews');
+                        }}
+                      >
+                        <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
+                        <Text style={styles.viewPassActionBtnText}>View Entry Pass in Interviews</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : isShortlisted && (item.interviewDate || item.interview_date) ? (
                     <View style={styles.interviewSubLayout}>
                       <View style={styles.interviewHeaderRow}>
                         <Calendar size={14} color={COLORS.primary} strokeWidth={2.2} />
@@ -635,6 +691,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#475569',
     flexShrink: 1,
+  },
+  walkInPassSubLayout: {
+    backgroundColor: '#F0F7FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderLeftWidth: 3,
+    borderLeftColor: '#1764E8',
+    borderRadius: 0,
+    padding: 10,
+    gap: 6,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  walkInPassHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    width: '100%',
+  },
+  walkInPassTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1764E8',
+    flex: 1,
+  },
+  walkInPassBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 0,
+  },
+  walkInPassBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#1764E8',
+    letterSpacing: 0.5,
+  },
+  viewPassActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#1764E8',
+    paddingVertical: 8,
+    borderRadius: 0,
+    marginTop: 3,
+  },
+  viewPassActionBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   interviewSubLayout: {
     backgroundColor: '#F8FAFC',

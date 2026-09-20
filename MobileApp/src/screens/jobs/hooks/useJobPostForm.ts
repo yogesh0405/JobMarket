@@ -95,7 +95,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [minAgeInput, setMinAgeInput] = useState<string>('');
   const [maxAgeInput, setMaxAgeInput] = useState<string>('');
 
-  const [hiringMethod, setHiringMethod] = useState<'STANDARD' | 'WALK_IN'>('STANDARD');
+  const [hiringMethod, setHiringMethod] = useState<'SCHEDULED_INTERVIEW' | 'WALK_IN'>('SCHEDULED_INTERVIEW');
   const [walkInDate, setWalkInDate] = useState('');
   const [walkInStartTime, setWalkInStartTime] = useState('');
   const [walkInEndTime, setWalkInEndTime] = useState('');
@@ -118,6 +118,8 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [resolvingMap, setResolvingMap] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [successModalConfig, setSuccessModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -289,7 +291,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setGenderPreference('No Preference');
     setMinAgeInput('');
     setMaxAgeInput('');
-    setHiringMethod('STANDARD');
+    setHiringMethod('SCHEDULED_INTERVIEW');
     setWalkInDate('');
     setWalkInStartTime('');
     setWalkInEndTime('');
@@ -305,11 +307,32 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setRequirements('');
     setSkillsTags([]);
     setError(null);
+    setJobStatus(null);
+    setRejectReason(null);
   }, [defaultProfileLogo]);
 
   useFocusEffect(
     useCallback(() => {
       const targetJobId = route?.params?.jobId;
+      const initialJob = route?.params?.job as any;
+
+      if (initialJob) {
+        if (initialJob.status || initialJob.dbStatus) {
+          setJobStatus(initialJob.status || initialJob.dbStatus);
+        }
+        const initialReason =
+          initialJob.rejectReason ||
+          initialJob.reject_reason ||
+          initialJob.rejection_reason ||
+          initialJob.rejectionReason ||
+          initialJob.admin_notes ||
+          initialJob.adminNotes ||
+          initialJob.notes;
+        if (initialReason) {
+          setRejectReason(initialReason);
+        }
+      }
+
       if (targetJobId) {
         setLoading(true);
         jobsApi
@@ -318,6 +341,20 @@ export const useJobPostForm = (navigation: any, route: any) => {
             setLoading(false);
             if (res.success && res.data) {
               const j = res.data as any;
+              const status = j.status || j.dbStatus || initialJob?.status || null;
+              setJobStatus(status);
+              const reason =
+                j.rejectReason ||
+                j.reject_reason ||
+                j.rejection_reason ||
+                j.rejectionReason ||
+                j.admin_notes ||
+                j.adminNotes ||
+                j.notes ||
+                initialJob?.rejectReason ||
+                initialJob?.reject_reason ||
+                null;
+              setRejectReason(reason);
               setCompanyLogo(j.companyLogo || j.company_logo || defaultProfileLogo);
               const ind = j.industry || j.trade || 'Industrial Manufacturing';
               setIndustry(ind);
@@ -369,8 +406,8 @@ export const useJobPostForm = (navigation: any, route: any) => {
               setGenderPreference(j.gender || j.genderPreference || 'No Preference');
               setMinAgeInput((j.minAge ?? 18).toString());
               setMaxAgeInput((j.maxAge ?? 60).toString());
-              const hm = j.hiringMethod || (j.isWalkIn || j.walk_in_date ? 'WALK_IN' : 'STANDARD');
-              setHiringMethod(hm);
+              const hm = j.hiringMethod || (j.isWalkIn || j.walk_in_date ? 'WALK_IN' : 'SCHEDULED_INTERVIEW');
+              setHiringMethod(hm === 'WALK_IN' ? 'WALK_IN' : 'SCHEDULED_INTERVIEW');
               setWalkInDate(j.walk_in_date || j.walkInDate || '');
               setWalkInStartTime(j.walkInStartTime || '10:00 AM');
               setWalkInEndTime(j.walkInEndTime || '04:00 PM');
@@ -469,26 +506,37 @@ export const useJobPostForm = (navigation: any, route: any) => {
 
     if (!finalIndustry) {
       setError('Please select Industry Type / Sector first.');
-      return;
+      return false;
     }
     if (!finalTitle) {
       setError('Please select or specify a Job Role.');
-      return;
+      return false;
     }
     if (!location.trim()) {
       setError('Please specify City Location / Factory Address.');
-      return;
+      return false;
     }
     if (isMidcLocation && !finalMidcZone) {
       setError('Please select an MIDC Zone.');
-      return;
+      return false;
     }
     if (!description.trim() || description.trim().length < 5) {
       setError('Job Description is mandatory. Please provide a detailed description (at least 5 characters).');
-      return;
+      return false;
     }
 
-    const deadlineValue = applicationDeadline.trim() || getDefaultDeadline();
+    if (!applicationDeadline || !applicationDeadline.trim()) {
+      setError('Application Deadline is mandatory. Please select a deadline date.');
+      return false;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (applicationDeadline.trim() < todayStr) {
+      setError('Application Deadline cannot be a past date. Please select today or a future date.');
+      return false;
+    }
+
+    const deadlineValue = applicationDeadline.trim();
     const parsedMinExp = experienceRequired ? parseInt(minExperience, 10) || 0 : 0;
     const parsedMaxExp = experienceRequired ? parseInt(maxExperience, 10) || 0 : 0;
     const parsedSalaryMin = discloseSalary ? parseInt(salaryMin, 10) || 0 : 0;
@@ -496,26 +544,38 @@ export const useJobPostForm = (navigation: any, route: any) => {
 
     if (experienceRequired && parsedMinExp > parsedMaxExp) {
       setError('Minimum Experience cannot be greater than Maximum Experience.');
-      return;
+      return false;
     }
     if (discloseSalary && parsedSalaryMin > parsedSalaryMax) {
       setError('Minimum Salary cannot be greater than Maximum Salary.');
-      return;
+      return false;
     }
     if (hiringMethod === 'WALK_IN') {
       if (!walkInDate) {
         setError('Please select a Walk-in Drive Date.');
-        return;
+        return false;
       }
       if (!interviewAddress.trim()) {
         setError('Please enter the Interview Venue Address for Walk-in Drive.');
-        return;
+        return false;
       }
+    }
+
+    let activeSkills = [...skillsTags];
+    if (customSkillInput.trim() && !activeSkills.includes(customSkillInput.trim())) {
+      activeSkills.push(customSkillInput.trim());
+      setSkillsTags(activeSkills);
+      setCustomSkillInput('');
+    }
+
+    if (activeSkills.length === 0) {
+      setError('Key Skills are mandatory. Please select or add at least one skill.');
+      return false;
     }
 
     const respArray = showResponsibilities ? responsibilities.split('\n').map((r) => r.trim()).filter(Boolean) : [];
     const reqArray = showRequirements ? requirements.split('\n').map((r) => r.trim()).filter(Boolean) : [];
-    const finalSkills = Array.from(new Set([...skillsTags, finalTitle, finalIndustry]));
+    const finalSkills = Array.from(new Set([...activeSkills, finalTitle, finalIndustry]));
 
     const workplaceType = workMode === 'Remote' ? 'REMOTE' : workMode === 'Hybrid' ? 'HYBRID' : 'ON_SITE';
     const employmentType =
@@ -639,10 +699,19 @@ export const useJobPostForm = (navigation: any, route: any) => {
           isSubmittedRef.current = true;
           DeviceEventEmitter.emit('JOB_UPDATED');
           const isLive = res.data?.status === 'active' || res.data?.status === 'APPROVED';
+          const wasRejected =
+            (jobStatus || '').toUpperCase() === 'REJECTED' ||
+            (route?.params?.job as any)?.status?.toUpperCase() === 'REJECTED';
           setSuccessModalConfig({
             visible: true,
-            title: isLive ? 'Job Updated & Live ! 🎉' : 'Job Updated Successfully !',
-            message: isLive
+            title: wasRejected
+              ? 'Job Resubmitted for Approval !'
+              : isLive
+              ? 'Job Updated & Live ! 🎉'
+              : 'Job Updated Successfully !',
+            message: wasRejected
+              ? `Your revised job listing "${finalTitle}" has been resubmitted for admin review and approval. It will go live once approved by the JobMarket team.`
+              : isLive
               ? `Your updated job post "${finalTitle}" is now live and updated across the platform!`
               : `Your updated job post "${finalTitle}" has been submitted for admin review and approval. It will go live once approved by the JobMarket team.`,
             buttonText: 'Manage Jobs',
@@ -653,6 +722,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
           });
         } else {
           setError(res.message || 'Failed to update job posting');
+          return false;
         }
       } else {
         const res = await jobsApi.createJob(jobPayload);
@@ -676,11 +746,14 @@ export const useJobPostForm = (navigation: any, route: any) => {
           });
         } else {
           setError(res.message || 'Failed to create job posting');
+          return false;
         }
       }
+      return true;
     } catch (err: any) {
       setLoading(false);
       setError(err.message || 'Network error while uploading job data');
+      return false;
     }
   };
 
@@ -814,5 +887,12 @@ export const useJobPostForm = (navigation: any, route: any) => {
     isSubmittedRef,
     successModalConfig,
     setSuccessModalConfig,
+    jobStatus,
+    setJobStatus,
+    rejectReason,
+    setRejectReason,
+    isRejected:
+      (jobStatus || '').toUpperCase() === 'REJECTED' ||
+      (route?.params?.job as any)?.status?.toUpperCase() === 'REJECTED',
   };
 };

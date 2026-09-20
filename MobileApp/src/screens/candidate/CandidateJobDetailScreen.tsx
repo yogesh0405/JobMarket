@@ -16,6 +16,7 @@ import {
   Send,
   ArrowLeft,
   MapPin,
+  Ticket,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -560,22 +561,62 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       {/* BOTTOM FIXED CTA ACTION BAR */}
       {!isEmployer && (
         <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom + 10, 20) }]}>
-          {hasApplied ? (
-            <View style={styles.appliedStatusCard}>
-              <CheckCircle2 size={18} color="#16A34A" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.appliedStatusTitle}>Application Submitted</Text>
-                <Text style={styles.appliedStatusSub}>
-                  Status: {(appliedItem?.status || 'APPLIED').toUpperCase()}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.applyCtaBtn} activeOpacity={0.85} onPress={handleApply}>
-              <Send size={16} color="#FFFFFF" strokeWidth={2.5} />
-              <Text style={styles.applyCtaBtnText}>Apply Now</Text>
-            </TouchableOpacity>
-          )}
+          {(() => {
+            const targetJob = job || passedJob;
+            const isWalkIn =
+              (targetJob?.hiringMethod || targetJob?.hiring_method || '').toUpperCase() === 'WALK_IN' ||
+              Boolean(targetJob?.isWalkIn) ||
+              Boolean((targetJob as any)?.is_walk_in) ||
+              Boolean(targetJob?.walkInDate) ||
+              Boolean(targetJob?.walk_in_date);
+
+            if (hasApplied) {
+              return (
+                <View style={styles.appliedStatusCard}>
+                  {isWalkIn ? (
+                    <Ticket size={18} color="#1764E8" strokeWidth={2.4} />
+                  ) : (
+                    <CheckCircle2 size={18} color="#16A34A" />
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.appliedStatusTitle}>
+                      {isWalkIn ? 'Walk-in Pass Issued' : 'Application Submitted'}
+                    </Text>
+                    <Text style={styles.appliedStatusSub}>
+                      {isWalkIn
+                        ? 'Confirmed Admit Card available'
+                        : `Status: ${(appliedItem?.status || 'APPLIED').toUpperCase()}`}
+                    </Text>
+                  </View>
+                  {isWalkIn ? (
+                    <TouchableOpacity
+                      style={styles.viewPassBarBtn}
+                      activeOpacity={0.8}
+                      onPress={() => navigation.navigate('MyInterviews')}
+                    >
+                      <Text style={styles.viewPassBarBtnText}>View Pass</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              );
+            }
+
+            return (
+              <TouchableOpacity style={styles.applyCtaBtn} activeOpacity={0.85} onPress={handleApply}>
+                {isWalkIn ? (
+                  <>
+                    <Ticket size={16} color="#FFFFFF" strokeWidth={2.4} />
+                    <Text style={styles.applyCtaBtnText}>Register for Walk-in Drive</Text>
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} color="#FFFFFF" strokeWidth={2.5} />
+                    <Text style={styles.applyCtaBtnText}>Apply Now</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            );
+          })()}
         </View>
       )}
     </View>
@@ -719,5 +760,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#166534',
     marginTop: 1,
+  },
+  viewPassBarBtn: {
+    backgroundColor: '#1764E8',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 0,
+  },
+  viewPassBarBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '800',
   },
 });

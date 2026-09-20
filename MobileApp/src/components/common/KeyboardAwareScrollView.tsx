@@ -10,6 +10,7 @@ import {
   findNodeHandle,
   NativeSyntheticEvent,
   TargetedEvent,
+  Dimensions,
 } from 'react-native';
 
 interface KeyboardAwareScrollViewProps extends ScrollViewProps {
@@ -20,7 +21,7 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
 export const handleFocusInput = (
   event: NativeSyntheticEvent<TargetedEvent> | any,
   scrollRef: React.RefObject<ScrollView | null>,
-  extraScrollMargin = 20
+  extraScrollMargin = 24
 ) => {
   const node = event?.nativeEvent?.target || event?.target;
   if (!node || !scrollRef?.current) return;
@@ -35,23 +36,28 @@ export const handleFocusInput = (
           scrollTag,
           () => {},
           (x, y, width, height) => {
-            // For screens with large fixed bottom actions, keep high clearance (extraScrollMargin > 50)
-            // For auth screens and standard forms, smoothly scroll focused field into upper viewport
-            const targetY = extraScrollMargin > 50
-              ? Math.max(0, y - 100 + extraScrollMargin)
-              : Math.max(0, y - 36);
-            scrollRef.current?.scrollTo({ y: targetY, animated: true });
+            UIManager.measure(
+              scrollTag,
+              (_sx, _sy, _sWidth, sHeight) => {
+                const screenH = Dimensions.get('window').height;
+                const visibleHeight = sHeight > 100 ? sHeight : screenH * 0.55;
+                // Position input field comfortably just above keyboard with extraScrollMargin clearance (24px)
+                // Bottom of input (y + height) will be placed at (visibleHeight - extraScrollMargin)
+                const targetY = Math.max(0, y + height + extraScrollMargin - visibleHeight);
+                scrollRef.current?.scrollTo({ y: targetY, animated: true });
+              }
+            );
           }
         );
       }
     } catch (e) {
       // Fallback
     }
-  }, Platform.OS === 'ios' ? 70 : 130);
+  }, Platform.OS === 'ios' ? 60 : 110);
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
-  ({ children, extraScrollHeight = 120, contentContainerStyle, style, ...props }, ref) => {
+  ({ children, extraScrollHeight = 24, contentContainerStyle, style, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
     const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
@@ -83,7 +89,9 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
         ? (flattenedStyle as any).paddingBottom
         : 30;
 
-    const dynamicPaddingBottom = keyboardHeight > 0 ? keyboardHeight + extraScrollHeight : basePaddingBottom;
+    const dynamicPaddingBottom = keyboardHeight > 0 
+      ? Math.max(basePaddingBottom, extraScrollHeight + 16) 
+      : basePaddingBottom;
 
     return (
       <KeyboardAvoidingView

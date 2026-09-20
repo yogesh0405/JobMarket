@@ -288,7 +288,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [contractDuration, setContractDuration] = useState('');
 
   // Application Preferences & Governance
-  const [hiringMethod, setHiringMethod] = useState<'STANDARD' | 'WALK_IN' | 'SCHEDULED_INTERVIEW'>('STANDARD');
+  const [hiringMethod, setHiringMethod] = useState<'WALK_IN' | 'SCHEDULED_INTERVIEW'>('SCHEDULED_INTERVIEW');
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [walkInDate, setWalkInDate] = useState('');
   const [walkInTime, setWalkInTime] = useState('');
@@ -299,7 +299,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   const [walkInContactPerson, setWalkInContactPerson] = useState<string>('');
   const [walkInContactNumber, setWalkInContactNumber] = useState<string>('');
   const [walkInDocuments, setWalkInDocuments] = useState<string>('Resume, Govt Photo ID (Aadhaar/PAN), 2 Passport Photos');
-  const [activeTooltip, setActiveTooltip] = useState<'STANDARD' | 'WALK_IN' | 'SCHEDULED_INTERVIEW' | null>(null);
+  const [activeTooltip, setActiveTooltip] = useState<'WALK_IN' | 'SCHEDULED_INTERVIEW' | null>(null);
 
   const [acceptFreshers, setAcceptFreshers] = useState(true);
   const [acceptExperienced, setAcceptExperienced] = useState(true);
@@ -653,9 +653,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         setEducationRequirement('10th Pass');
       }
 
-      const hm = existingJob.hiringMethod || (existingJob.isWalkIn || existingJob.walkInDate ? 'WALK_IN' : 'STANDARD');
-      setHiringMethod(hm as any);
-      setIsWalkIn(hm === 'WALK_IN');
+      const hm = existingJob.hiringMethod || (existingJob.isWalkIn || existingJob.walkInDate ? 'WALK_IN' : 'SCHEDULED_INTERVIEW');
+      const resolvedHm: 'WALK_IN' | 'SCHEDULED_INTERVIEW' = hm === 'WALK_IN' ? 'WALK_IN' : 'SCHEDULED_INTERVIEW';
+      setHiringMethod(resolvedHm);
+      setIsWalkIn(resolvedHm === 'WALK_IN');
       
       // Date formatting to YYYY-MM-DD for HTML5 date inputs
       if (existingJob.walkInDate) {
@@ -2047,62 +2048,9 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               </p>
             </div>
 
-            {/* 3 Hiring Method Cards */}
+            {/* 2 Hiring Method Cards */}
             <div className="hiring-methods-grid">
-              {/* Card 1: Standard Hiring */}
-              <div 
-                className={`hiring-method-card ${hiringMethod === 'STANDARD' ? 'selected' : ''}`}
-                onClick={() => setHiringMethod('STANDARD')}
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setHiringMethod('STANDARD'); }}
-                role="radio"
-                aria-checked={hiringMethod === 'STANDARD'}
-              >
-                <div className="hiring-card-header">
-                  <div className="hiring-card-icon-box">
-                    <FileText size={20} className="hiring-card-icon" />
-                  </div>
-                  <div className="hiring-card-info">
-                    <h4 className="hiring-card-title">Standard Hiring (Default)</h4>
-                    <span className="hiring-card-subtitle">Review & schedule</span>
-                  </div>
-                  <div className="hiring-card-action">
-                    <div 
-                      className="info-icon-btn" 
-                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'STANDARD' ? null : 'STANDARD'); }}
-                      onMouseEnter={() => setActiveTooltip('STANDARD')}
-                      onMouseLeave={() => setActiveTooltip(null)}
-                      title="Click or hover for hiring method details"
-                      aria-label="Information about Standard Hiring"
-                    >
-                      <Info size={16} />
-                    </div>
-                    {hiringMethod === 'STANDARD' && (
-                      <div className="hiring-check-indicator">
-                        <CheckCircle2 size={18} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <p className="hiring-card-desc">
-                  Employer reviews applications first and manually schedules interviews for shortlisted candidates.
-                </p>
-
-                {/* Information Tooltip Popover */}
-                {activeTooltip === 'STANDARD' && (
-                  <div className="hiring-tooltip-popover" onClick={(e) => e.stopPropagation()}>
-                    <div className="tooltip-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={15} style={{ color: '#60A5FA' }} />
-                      <span>Standard Hiring Workflow</span>
-                    </div>
-                    <p className="tooltip-body">
-                      Candidates submit applications normally. Employers review applications, shortlist suitable candidates, and schedule interviews manually. Recommended for most hiring scenarios.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Card 2: Walk-in Drive */}
+              {/* Card 1: Walk-in Drive */}
               <div 
                 className={`hiring-method-card ${hiringMethod === 'WALK_IN' ? 'selected' : ''}`}
                 onClick={() => setHiringMethod('WALK_IN')}
@@ -2162,7 +2110,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 )}
               </div>
 
-              {/* Card 3: Scheduled Interview */}
+              {/* Card 2: Scheduled Interview */}
               <div 
                 className={`hiring-method-card ${hiringMethod === 'SCHEDULED_INTERVIEW' ? 'selected' : ''}`}
                 onClick={() => setHiringMethod('SCHEDULED_INTERVIEW')}

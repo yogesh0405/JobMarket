@@ -183,11 +183,12 @@ export class AdvertisementController {
     try {
       const adminId = req.user!.userId;
       const id = req.params.id as string;
-      const { reason } = req.body;
-      if (!reason) {
+      const { reason, rejectionReason, notes } = req.body || {};
+      const finalReason = reason || rejectionReason || notes;
+      if (!finalReason) {
         return res.status(400).json({ success: false, message: 'Rejection reason is required' });
       }
-      const rejected = await AdvertisementService.rejectAdvertisement(id, adminId, reason);
+      const rejected = await AdvertisementService.rejectAdvertisement(id, adminId, finalReason);
       res.json({
         success: true,
         message: 'Advertisement rejected with reason',

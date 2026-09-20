@@ -25,6 +25,7 @@ import {
   Home,
   Check,
   XCircle,
+  Ticket,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
@@ -477,38 +478,73 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
 
       {/* FIXED BOTTOM SUBMIT FOOTER */}
       <View style={[styles.bottomFooterBar, { paddingBottom: bottomSafePadding }]}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={handleApplySubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <>
-              <Send size={18} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>Submit Application</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {(() => {
+          const isWalkIn =
+            (job?.hiringMethod || job?.hiring_method || '').toUpperCase() === 'WALK_IN' ||
+            Boolean(job?.isWalkIn) ||
+            Boolean(job?.is_walk_in) ||
+            Boolean(job?.walkInDate) ||
+            Boolean(job?.walk_in_date);
+
+          return (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+              onPress={handleApplySubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : isWalkIn ? (
+                <>
+                  <Ticket size={18} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={styles.submitButtonText}>Confirm & Generate Walk-in Pass</Text>
+                </>
+              ) : (
+                <>
+                  <Send size={18} color="#FFFFFF" />
+                  <Text style={styles.submitButtonText}>Submit Application</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })()}
       </View>
 
       {/* Success Modal */}
-      <SuccessModal
-        visible={showSuccessModal}
-        title="Application Submitted Successfully !"
-        message={`Your application for "${job?.title || 'Industrial Position'}" has been sent to the recruiter.`}
-        buttonText="View Applied Jobs"
-        onClose={() => {
-          setShowSuccessModal(false);
-          navigation.goBack();
-        }}
-        onButtonPress={() => {
-          setShowSuccessModal(false);
-          navigation.navigate('CandidateMain', { screen: 'CandidateAppliedTab' });
-        }}
-      />
+      {(() => {
+        const isWalkIn =
+          (job?.hiringMethod || job?.hiring_method || '').toUpperCase() === 'WALK_IN' ||
+          Boolean(job?.isWalkIn) ||
+          Boolean(job?.is_walk_in) ||
+          Boolean(job?.walkInDate) ||
+          Boolean(job?.walk_in_date);
+
+        return (
+          <SuccessModal
+            visible={showSuccessModal}
+            title={isWalkIn ? 'Walk-in Entry Pass Issued !' : 'Application Submitted Successfully !'}
+            message={
+              isWalkIn
+                ? `Your Walk-in Drive Entry Pass for "${job?.title || 'Industrial Position'}" at ${job?.company || 'Recruiter'} is generated! You can present this digital pass on arrival.`
+                : `Your application for "${job?.title || 'Industrial Position'}" has been sent to the recruiter.`
+            }
+            buttonText={isWalkIn ? 'View Pass in Interviews' : 'View Applied Jobs'}
+            onClose={() => {
+              setShowSuccessModal(false);
+              navigation.goBack();
+            }}
+            onButtonPress={() => {
+              setShowSuccessModal(false);
+              if (isWalkIn) {
+                navigation.navigate('MyInterviews');
+              } else {
+                navigation.navigate('CandidateMain', { screen: 'CandidateAppliedTab' });
+              }
+            }}
+          />
+        );
+      })()}
     </View>
   );
 };

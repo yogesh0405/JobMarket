@@ -35,6 +35,18 @@ export interface InterviewItem {
   salary_max?: number;
   employer_name?: string;
   company_name?: string;
+  // Walk-in Drive Entry Pass properties
+  is_walk_in?: boolean;
+  hiring_method?: string;
+  walk_in_date?: string;
+  walk_in_start_time?: string;
+  walk_in_end_time?: string;
+  walk_in_contact_person?: string;
+  walk_in_contact_number?: string;
+  walk_in_documents?: string;
+  ticket_number?: string;
+  candidate_name?: string;
+  candidate_phone?: string;
 }
 
 export interface MyInterviewsResponse {

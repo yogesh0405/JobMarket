@@ -27,6 +27,7 @@ import {
   Layers,
   Building2,
   MapPin,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
@@ -263,6 +264,17 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
+        {/* Rejection / Changes Requested Notice Banner */}
+        {((item.status || '').toUpperCase() === 'REJECTED' || (item as any).dbStatus === 'REJECTED') && (
+          <View style={styles.rejectedNoticeBanner}>
+            <AlertTriangle size={12} color="#DC2626" strokeWidth={2.4} />
+            <Text style={styles.rejectedNoticeBannerText} numberOfLines={2}>
+              <Text style={{ fontWeight: '700' }}>Admin Remark: </Text>
+              {(item as any).rejectReason || (item as any).reject_reason || (item as any).rejection_reason || 'Listing was rejected during moderation. Click Edit & Resubmit to review notes and update.'}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.cardRowDivider} />
 
         {/* Action Footer Bar */}
@@ -298,7 +310,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.resubmitBtn}
               activeOpacity={0.8}
               onPress={() => {
-                navigation.navigate('PostTab', { jobId: item.id });
+                navigation.navigate('JobPost', { jobId: item.id, job: item });
               }}
             >
               <Edit3 size={12} color="#FFFFFF" strokeWidth={2.4} />
@@ -621,17 +633,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#FEF2F2',
+    borderLeftWidth: 3,
+    borderLeftColor: '#DC2626',
     borderWidth: 1,
     borderColor: '#FECACA',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 0,
     marginTop: 8,
   },
   rejectedNoticeBannerText: {
     fontSize: 10.5,
+    lineHeight: 15,
     fontWeight: '600',
-    color: '#B91C1C',
+    color: '#991B1B',
     flex: 1,
   },
   cardRowDivider: {

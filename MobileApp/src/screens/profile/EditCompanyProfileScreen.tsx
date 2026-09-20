@@ -891,39 +891,41 @@ export const EditCompanyProfileScreen: React.FC<{ navigation: any; route: any }>
           )}
         </ScrollView>
 
-        {/* Footer Navigation Action Bar */}
-        <View style={[styles.bottomFooter, { paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
-          <TouchableOpacity
-            style={styles.secondaryNavBtn}
-            activeOpacity={0.8}
-            onPress={handlePrevStep}
-          >
-            <Text style={styles.secondaryNavBtnText}>{currentStep === 1 ? 'Cancel' : 'Previous'}</Text>
-          </TouchableOpacity>
+        {/* Footer Navigation Action Bar (Hidden while typing so buttons do not move up with the keyboard) */}
+        {keyboardHeight === 0 && (
+          <View style={[styles.bottomFooter, { paddingBottom: Math.max(insets.bottom + 12, 16) }]}>
+            <TouchableOpacity
+              style={styles.secondaryNavBtn}
+              activeOpacity={0.8}
+              onPress={handlePrevStep}
+            >
+              <Text style={styles.secondaryNavBtnText}>{currentStep === 1 ? 'Cancel' : 'Previous'}</Text>
+            </TouchableOpacity>
 
-          {currentStep < 4 ? (
-            <TouchableOpacity
-              style={styles.primaryNavBtn}
-              activeOpacity={0.85}
-              onPress={handleNextStep}
-            >
-              <Text style={styles.primaryNavBtnText}>Next Step</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.primaryNavBtn, isSubmitting && { opacity: 0.7 }]}
-              activeOpacity={0.85}
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.primaryNavBtnText}>Save & Update Profile</Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
+            {currentStep < 4 ? (
+              <TouchableOpacity
+                style={styles.primaryNavBtn}
+                activeOpacity={0.85}
+                onPress={handleNextStep}
+              >
+                <Text style={styles.primaryNavBtnText}>Next Step</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.primaryNavBtn, isSubmitting && { opacity: 0.7 }]}
+                activeOpacity={0.85}
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.primaryNavBtnText}>Save & Update Profile</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Selection Center Dialog Modal */}

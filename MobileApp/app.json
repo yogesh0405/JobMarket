@@ -11,8 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jobmarket.mobileapp",
       "associatedDomains": [
-        "applinks:job-market-wine.vercel.app",
-        "applinks:jobmarket-ongn.onrender.com"
+        "applinks:job-market-wine.vercel.app"
       ],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "JobMarket requires access to your photo library to let you upload profile pictures and resume documents.",
@@ -46,16 +45,6 @@
             {
               "scheme": "https",
               "host": "job-market-wine.vercel.app",
-              "pathPrefix": "/jobs"
-            },
-            {
-              "scheme": "https",
-              "host": "jobmarket-ongn.onrender.com",
-              "pathPrefix": "/job"
-            },
-            {
-              "scheme": "https",
-              "host": "jobmarket-ongn.onrender.com",
               "pathPrefix": "/jobs"
             },
             {

@@ -33,15 +33,17 @@ function triggerNotificationRefresh() {
 
 // Configure foreground notification behavior safely
 try {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+  if (!isExpoGo) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
 } catch (e) {
   console.warn('[PushNotificationManager] Could not set notification handler:', e);
 }
@@ -75,10 +77,10 @@ export class PushNotificationManager {
       this.navigationRef = navigationRef;
     }
 
-    // Remote push notifications are not supported in Expo Go on Android (SDK 53+)
-    if (Platform.OS === 'android' && isExpoGo) {
+    // Remote push notifications are not supported in Expo Go (iOS & Android)
+    if (isExpoGo) {
       console.log(
-        '[PushNotificationManager] Running in Expo Go on Android: remote push notifications are disabled in Expo Go. Use a development build (npx expo run:android) or standalone APK for push notifications.'
+        `[PushNotificationManager] Running in Expo Go on ${Platform.OS}: remote push notifications are disabled in Expo Go. Use a development build or standalone app for push notifications.`
       );
       return;
     }
