@@ -183,7 +183,7 @@ export const HelpSupportTicketsView: React.FC<HelpSupportTicketsViewProps> = ({
 
         <KeyboardAvoidingView
           style={styles.fixedTicketContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.fixedFormContent}>
             {formError ? <ErrorBanner message={formError} style={{ marginBottom: 4 }} /> : null}

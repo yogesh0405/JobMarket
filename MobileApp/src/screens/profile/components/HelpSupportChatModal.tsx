@@ -159,7 +159,7 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoidContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
       <SafeAreaView style={styles.modalContainer} edges={['top']}>
@@ -176,11 +176,13 @@ export const HelpSupportChatModal: React.FC<HelpSupportChatModalProps> = ({
               <Text style={styles.headerTitle} numberOfLines={1}>
                 Ticket #{ticket.ticketNumber}
               </Text>
-              <View style={[styles.statusPill, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillResolved : styles.statusPillOpen]}>
-                <Text style={[styles.statusPillText, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillTextResolved : styles.statusPillTextOpen]}>
-                  {ticket.status}
-                </Text>
-              </View>
+              {ticket.status && !ticket.status.toLowerCase().replace(/_/g, ' ').includes('waiting') ? (
+                <View style={[styles.statusPill, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillResolved : styles.statusPillOpen]}>
+                  <Text style={[styles.statusPillText, ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? styles.statusPillTextResolved : styles.statusPillTextOpen]}>
+                    {ticket.status.replace(/_/g, ' ')}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <Text style={styles.headerSubtitle} numberOfLines={1}>
               {ticket.subject}
