@@ -57,7 +57,8 @@ export class NotificationController {
 
   static async deleteNotification(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const userId = req.headers['x-user-id'] as string || req.user?.userId || req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
       const { id } = req.params;
       await NotificationService.deleteNotification(id, userId);
 
@@ -69,7 +70,8 @@ export class NotificationController {
 
   static async clearAllNotifications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.headers['x-user-id'] as string || req.user?.userId;
+      const userId = req.headers['x-user-id'] as string || req.user?.userId || req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
       const clearedCount = await NotificationService.clearAll(userId);
 
       res.status(200).json({ success: true, message: 'All notifications cleared', clearedCount });

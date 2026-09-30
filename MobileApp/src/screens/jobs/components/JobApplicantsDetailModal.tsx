@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  Image,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User as UserIcon,
@@ -159,6 +159,8 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                     <Image
                       source={{ uri: userPhotoUrl }}
                       style={styles.avatarImg}
+                      contentFit="cover"
+                      transition={150}
                     />
                   ) : (
                     <UserIcon size={18} color="#1764E8" strokeWidth={2} />

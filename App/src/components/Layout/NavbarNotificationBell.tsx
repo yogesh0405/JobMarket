@@ -26,6 +26,9 @@ export const NavbarNotificationBell: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isClearing, setIsClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -183,8 +186,18 @@ export const NavbarNotificationBell: React.FC = () => {
 
   const deleteNotification = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    const backup = [...notifications];
     setNotifications(prev => prev.filter(n => n.id !== id));
-    apiFetch(`/api/v1/notifications/${id}`, { method: 'DELETE' }).catch(() => {});
+    try {
+      const res = await apiFetch(`/api/v1/notifications/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        setNotifications(backup);
+      } else {
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
+      }
+    } catch {
+      setNotifications(backup);
+    }
   };
 
   const markAllAsRead = async () => {
@@ -193,8 +206,26 @@ export const NavbarNotificationBell: React.FC = () => {
   };
 
   const clearAllNotifications = async () => {
+    if (isClearing || notifications.length === 0) return;
+    setIsClearing(true);
+    setClearError(null);
+    const backup = [...notifications];
     setNotifications([]);
-    apiFetch('/api/v1/notifications/clear-all', { method: 'DELETE' }).catch(() => {});
+
+    try {
+      const res = await apiFetch('/api/v1/notifications/clear-all', { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('Failed to permanently clear notifications');
+      }
+      setShowClearConfirm(false);
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
+    } catch (err: any) {
+      console.error('Failed to clear notifications:', err);
+      setNotifications(backup);
+      setClearError('Could not clear notifications. Please try again.');
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   const renderIcon = (type: NotificationItem['type']) => {
@@ -431,21 +462,30 @@ export const NavbarNotificationBell: React.FC = () => {
                 {notifications.length > 0 && (
                   <button
                     type="button"
-                    onClick={clearAllNotifications}
-                    title="Clear all notifications"
+                    onClick={() => setShowClearConfirm(true)}
+                    disabled={isClearing}
+                    title="Clear all notifications permanently"
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#94a3b8',
-                      cursor: 'pointer',
+                      color: isClearing ? '#94a3b8' : '#ef4444',
+                      cursor: isClearing ? 'wait' : 'pointer',
                       padding: '4px',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      opacity: isClearing ? 0.6 : 1
                     }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    {isClearing ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin">
+                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" stroke="currentColor" />
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    )}
                   </button>
                 )}
 
@@ -471,6 +511,67 @@ export const NavbarNotificationBell: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Clear All Confirmation Banner */}
+            {showClearConfirm && (
+              <div
+                style={{
+                  padding: '10px 16px',
+                  background: '#fef2f2',
+                  borderBottom: '1px solid #fee2e2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}
+              >
+                <div style={{ fontSize: '12px', color: '#991b1b', fontWeight: '500' }}>
+                  Permanently delete all notifications?
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowClearConfirm(false)}
+                    disabled={isClearing}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      padding: '4px 9px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      color: '#475569',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearAllNotifications}
+                    disabled={isClearing}
+                    style={{
+                      background: '#dc2626',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 9px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      color: '#ffffff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isClearing ? 'Deleting...' : 'Clear All'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {clearError && (
+              <div style={{ padding: '8px 16px', background: '#fee2e2', color: '#b91c1c', fontSize: '12px', textAlign: 'center' }}>
+                {clearError}
+              </div>
+            )}
 
             {/* Notifications Scroll Body */}
             <div

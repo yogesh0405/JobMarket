@@ -11,6 +11,7 @@ import {
   PanResponder,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {
   Bell,
@@ -251,7 +252,28 @@ export const NotificationModal: React.FC<Props> = ({
               ) : null}
 
               {notifications.length > 0 ? (
-                <TouchableOpacity style={styles.actionBtn} onPress={onClearAll}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => {
+                    Alert.alert(
+                      'Clear All Notifications',
+                      'Are you sure you want to permanently delete all notifications? This action cannot be undone.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Clear All',
+                          style: 'destructive',
+                          onPress: async () => {
+                            const res: any = await onClearAll();
+                            if (res && res.success === false) {
+                              Alert.alert('Error', res.error || 'Failed to clear notifications. Please try again.');
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
                   <Trash2 size={14} color="#DC2626" />
                   <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Clear All</Text>
                 </TouchableOpacity>

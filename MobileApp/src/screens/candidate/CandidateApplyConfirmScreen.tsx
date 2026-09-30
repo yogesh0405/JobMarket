@@ -118,10 +118,10 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
   const requiresAccommodation = user?.requiresAccommodation ?? (user as any)?.requires_accommodation;
 
 
-  // Safe Education Parser & Text Formatter (prevents React child object errors)
-  const formatEducationVal = (): string | null => {
+  // Safe Education Parser — returns array of individual formatted strings
+  const parseEducationItems = (): string[] => {
     const rawEdu = user?.education || (user as any)?.highest_education || (user as any)?.qualification;
-    if (!rawEdu) return null;
+    if (!rawEdu) return [];
 
     const formatSingleEduObj = (item: any): string | null => {
       if (!item) return null;
@@ -131,34 +131,45 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
           try {
             return formatSingleEduObj(JSON.parse(trimmed));
           } catch (_) {
-            return trimmed;
+            return trimmed || null;
           }
         }
         return trimmed || null;
       }
-      if (Array.isArray(item)) {
-        const list = item.map(formatSingleEduObj).filter(Boolean);
-        return list.length > 0 ? list.join(' • ') : null;
-      }
-      if (typeof item === 'object') {
+      if (typeof item === 'object' && !Array.isArray(item)) {
         const degree = item.degree || item.qualification || item.title || item.course || item.name;
         const institution = item.institution || item.college || item.university || item.school;
         const year = item.year || item.passingYear || item.passing_year || item.duration;
-
         const parts: string[] = [];
         if (degree) parts.push(String(degree).trim());
         if (institution) parts.push(String(institution).trim());
         if (year) parts.push(`(${String(year).trim()})`);
-
-        return parts.length > 0 ? parts.join(' - ') : null;
+        return parts.length > 0 ? parts.join(' — ') : null;
       }
       return String(item);
     };
 
-    return formatSingleEduObj(rawEdu);
+    if (Array.isArray(rawEdu)) {
+      return rawEdu.map(formatSingleEduObj).filter(Boolean) as string[];
+    }
+    // Try to parse string that might be JSON array
+    if (typeof rawEdu === 'string') {
+      const trimmed = rawEdu.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed.map(formatSingleEduObj).filter(Boolean) as string[];
+          }
+        } catch (_) {}
+      }
+    }
+    const single = formatSingleEduObj(rawEdu);
+    return single ? [single] : [];
   };
 
-  const educationVal = formatEducationVal();
+  const educationItems = parseEducationItems();
+  const educationVal = educationItems.length > 0 ? educationItems[0] : null; // kept for missing-check compat
   
   // Experience Parser & Safe Text Formatter
   const expList: any[] = Array.isArray(user?.experience)
@@ -169,27 +180,37 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
     ? (user as any).work_experience
     : [];
 
-  const formatExpVal = (): string | null => {
+  // Format individual experience records into display strings
+  const parseExpItems = (): string[] => {
     const raw = (user as any)?.totalExperience || (user as any)?.total_experience || (user as any)?.experienceYears || (user as any)?.experience_years;
-    if (raw && typeof raw !== 'object') {
-      return typeof raw === 'number' ? `${raw} Years Exp` : String(raw);
+    // If there's a plain scalar summary AND no structured list, use it as single item
+    if (raw && typeof raw !== 'object' && expList.length === 0) {
+      return [typeof raw === 'number' ? `${raw} Years Exp` : String(raw)];
     }
     if (Array.isArray(expList) && expList.length > 0) {
-      const first = expList[0];
-      if (typeof first === 'string' && first.trim()) return first.trim();
-      if (first && typeof first === 'object') {
-        const role = first.designation || first.title || first.role || first.company || first.companyName;
-        const duration = first.years || first.duration || first.experience;
-        if (role && duration) return `${role} (${duration})`;
-        if (role) return role;
-        if (duration) return `${duration}`;
-      }
-      return `${expList.length} Work Experience Record(s)`;
+      return expList.map((item: any): string | null => {
+        if (typeof item === 'string' && item.trim()) return item.trim();
+        if (item && typeof item === 'object') {
+          const role = item.designation || item.title || item.role || item.position;
+          const company = item.company || item.companyName || item.company_name || item.employer;
+          const duration = item.years || item.duration || item.experience || item.period;
+          const parts: string[] = [];
+          if (role) parts.push(String(role).trim());
+          if (company) parts.push(String(company).trim());
+          if (duration) parts.push(`(${String(duration).trim()})`);
+          return parts.length > 0 ? parts.join(' — ') : null;
+        }
+        return null;
+      }).filter(Boolean) as string[];
     }
-    return null;
+    if (raw && typeof raw !== 'object') {
+      return [typeof raw === 'number' ? `${raw} Years Exp` : String(raw)];
+    }
+    return [];
   };
 
-  const expVal = formatExpVal();
+  const expItems = parseExpItems();
+  const expVal = expItems.length > 0 ? expItems[0] : null; // kept for missing-check compat
 
   // Technical Skills List
   const skillsList: string[] = Array.isArray(user?.skills)
@@ -348,20 +369,34 @@ export const CandidateApplyConfirmScreen: React.FC<Props> = ({ navigation, route
               </Text>
             </View>
 
-            {/* 6. Work Experience */}
+            {/* 6. Work Experience — each record on its own row */}
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldBlockLabel}>TOTAL WORK EXPERIENCE</Text>
-              <Text style={[styles.fieldBlockValue, !expVal && expList.length === 0 && styles.fieldBlockValueMissing]}>
-                {expVal || (expList.length > 0 ? `${expList.length} records` : 'Not provided')}
-              </Text>
+              <Text style={styles.fieldBlockLabel}>WORK EXPERIENCE</Text>
+              {expItems.length > 0 ? (
+                expItems.map((item, idx) => (
+                  <View key={idx} style={idx > 0 ? styles.itemSubRow : undefined}>
+                    {idx > 0 && <View style={styles.itemSubDivider} />}
+                    <Text style={styles.fieldBlockValue}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.fieldBlockValue, styles.fieldBlockValueMissing]}>Not provided</Text>
+              )}
             </View>
 
-            {/* 7. Highest Education */}
+            {/* 7. Education — each entry on its own row */}
             <View style={styles.fieldRow}>
-              <Text style={styles.fieldBlockLabel}>HIGHEST EDUCATION</Text>
-              <Text style={[styles.fieldBlockValue, !educationVal && styles.fieldBlockValueMissing]}>
-                {educationVal || 'Not provided'}
-              </Text>
+              <Text style={styles.fieldBlockLabel}>EDUCATION</Text>
+              {educationItems.length > 0 ? (
+                educationItems.map((item, idx) => (
+                  <View key={idx} style={idx > 0 ? styles.itemSubRow : undefined}>
+                    {idx > 0 && <View style={styles.itemSubDivider} />}
+                    <Text style={styles.fieldBlockValue}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.fieldBlockValue, styles.fieldBlockValueMissing]}>Not provided</Text>
+              )}
             </View>
 
             {/* 8. Technical Skills */}
@@ -622,6 +657,14 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+  },
+  itemSubRow: {
+    marginTop: 6,
+  },
+  itemSubDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 6,
   },
   fieldBlockLabel: {
     fontSize: 11,

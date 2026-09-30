@@ -31,6 +31,41 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+const normalizeUserData = (rawUser: any): User => {
+  if (!rawUser || typeof rawUser !== 'object') return rawUser;
+  const photo =
+    rawUser.profile_picture_url ||
+    rawUser.profilePictureUrl ||
+    rawUser.avatar_url ||
+    rawUser.avatarUrl ||
+    rawUser.avatar ||
+    rawUser.profilePhotoUrl ||
+    rawUser.companyLogo ||
+    rawUser.company_logo ||
+    rawUser.logoUrl ||
+    rawUser.logo_url ||
+    rawUser.logo;
+
+  const normalizedPhoto = typeof photo === 'string'
+    ? photo.trim()
+    : (typeof photo === 'object' && photo !== null ? (photo.url || photo.secure_url || '') : '');
+
+  const normalized = {
+    ...rawUser,
+    ...(normalizedPhoto ? {
+      profile_picture_url: normalizedPhoto,
+      profilePictureUrl: normalizedPhoto,
+      avatar_url: normalizedPhoto,
+      avatarUrl: normalizedPhoto,
+      avatar: normalizedPhoto,
+      company_logo: normalizedPhoto,
+      companyLogo: normalizedPhoto,
+    } : {}),
+  };
+
+  return normalized as User;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -106,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Merge: local state FIRST, server data SECOND so live server profile updates take precedence
-        const mergedUser = { ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData };
+        const mergedUser = normalizeUserData({ ...storedUser, ...user, ...fetchedUser, ...cleanedServerData, ...photoNormalizedData });
 
         if (fetchedUser.company_name || fetchedUser.companyName) {
           mergedUser.company_name = fetchedUser.company_name || fetchedUser.companyName;
@@ -146,13 +181,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(mergedUser);
         await saveStoredUser(mergedUser);
       } else if (storedUser && Object.keys(storedUser).length > 0) {
-        setUser(storedUser as User);
+        setUser(normalizeUserData(storedUser as User));
       }
     } catch (error) {
       console.warn('Background profile refresh notice:', error);
       const storedUser = await getStoredUser();
       if (storedUser) {
-        setUser(storedUser);
+        setUser(normalizeUserData(storedUser));
       }
     }
   };
@@ -167,7 +202,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const storedUser = await getStoredUser();
 
         if ((token || refreshToken) && storedUser && mounted) {
-          setUser(storedUser);
+          setUser(normalizeUserData(storedUser));
+          // Proactively refresh latest profile from backend so fresh photo is immediately loaded
+          refreshUser().catch(() => {});
         }
       } catch (error) {
         console.warn('Failed to restore auth state:', error);
@@ -250,8 +287,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         await saveTokens({ accessToken: validAccessToken, refreshToken: validRefreshToken }, validSessionId);
         if (userData) {
-          await saveStoredUser(userData);
-          setUser(userData);
+          const normalized = normalizeUserData(userData);
+          await saveStoredUser(normalized);
+          setUser(normalized);
         }
         return { success: true };
       } else {
@@ -291,8 +329,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.success && accessToken) {
         await saveTokens({ accessToken, refreshToken }, sessionId);
         if (userData) {
-          await saveStoredUser(userData);
-          setUser(userData);
+          const normalized = normalizeUserData(userData);
+          await saveStoredUser(normalized);
+          setUser(normalized);
         }
         return { success: true, user: userData };
       } else {
@@ -330,8 +369,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (autoLogin && accessToken) {
           await saveTokens({ accessToken, refreshToken: refreshToken || '' }, sessionId);
           if (userData) {
-            await saveStoredUser(userData);
-            setUser(userData);
+            const normalized = normalizeUserData(userData);
+            await saveStoredUser(normalized);
+            setUser(normalized);
           }
         }
         return { success: true, user: userData };
@@ -437,7 +477,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const returnedUser = (res.data as any)?.user || res.data || {};
-    const finalUser = { ...storedUser, ...user, ...returnedUser, ...normalizedData } as User;
+    const finalUser = normalizeUserData({ ...storedUser, ...user, ...returnedUser, ...normalizedData });
 
     setUser(finalUser);
     await saveStoredUser(finalUser);
@@ -454,9 +494,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!validToken) {
           throw new Error('Invalid authentication tokens from server');
         }
+        const normalized = normalizeUserData(userData);
         await saveTokens({ accessToken: validToken, refreshToken }, sessionId);
-        await saveStoredUser(userData);
-        setUser(userData);
+        await saveStoredUser(normalized);
+        setUser(normalized);
         return;
       }
       throw new Error(res.message || res.error || 'Google Sign-In failed on server.');

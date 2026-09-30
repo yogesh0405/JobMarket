@@ -85,17 +85,17 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
         ? cleanName
         : companyName.trim() || cleanEmail.split('@')[0] || 'Employer';
 
-    const fallbackPhone = '98' + Math.floor(10000000 + Math.random() * 90000000).toString();
-
-    const payload = {
+    const payload: any = {
       name: derivedName,
       email: cleanEmail,
       password,
       confirmPassword,
-      phone: fallbackPhone,
-      companyName: role === 'employer' ? companyName.trim() : `${derivedName}'s Candidate Profile`,
       role,
     };
+
+    if (role === 'employer') {
+      payload.companyName = companyName.trim();
+    }
 
     if (role === 'employer' && !payload.companyName) {
       setError('Company / Factory name is required for Employer registration.');
@@ -206,7 +206,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             </Text>
           </View>
 
-          {error ? <ErrorBanner message={error} style={{ marginBottom: 12 }} /> : null}
+          {error ? <ErrorBanner message={error} onRetry={handleSignup} style={{ marginBottom: 12 }} /> : null}
 
           {/* FULL NAME (CANDIDATE ONLY) */}
           {role === 'candidate' && (
@@ -266,7 +266,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
             <View style={styles.pillPasswordWrapper}>
               <TextInput
                 style={styles.pillPasswordInput}
-                placeholder="Password (Min 6 characters)"
+                placeholder="Password (Min 8 characters)"
                 placeholderTextColor="#94A3B8"
                 secureTextEntry={!showPassword}
                 value={password}

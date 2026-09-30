@@ -12,6 +12,7 @@ export const isNotificationRead = (n: any): boolean => {
 let globalNotificationsCache: AppNotification[] = [];
 let globalHasFetched = false;
 let globalIsFetching = false;
+let globalIsClearedAll = false;
 const listeners = new Set<(list: AppNotification[]) => void>();
 
 function updateGlobalCache(list: AppNotification[]) {
@@ -69,7 +70,7 @@ export const useNotifications = () => {
     try {
       const res = await notificationApi.getNotifications();
       if (res.success && isMounted.current) {
-        if (isClearedAllRef.current) {
+        if (globalIsClearedAll || isClearedAllRef.current) {
           updateGlobalCache([]);
           return;
         }
@@ -171,24 +172,49 @@ export const useNotifications = () => {
     }
   }, [notifications]);
 
-  const removeNotification = useCallback(async (id: string) => {
+  const removeNotification = useCallback(async (id: string): Promise<boolean> => {
     deletedIdsRef.current.add(id);
+    const backup = [...notifications];
     const updated = notifications.filter((n) => n.id !== id);
     updateGlobalCache(updated);
     try {
-      await notificationApi.deleteNotification(id);
-    } catch (e) {
-      // Ignore
+      const res = await notificationApi.deleteNotification(id);
+      if (res && (res as any).success === false) {
+        deletedIdsRef.current.delete(id);
+        updateGlobalCache(backup);
+        return false;
+      }
+      return true;
+    } catch {
+      deletedIdsRef.current.delete(id);
+      updateGlobalCache(backup);
+      return false;
     }
   }, [notifications]);
 
-  const clearAll = useCallback(async () => {
+  const clearAll = useCallback(async (): Promise<{ success: boolean; error?: string; count?: number }> => {
+    globalIsClearedAll = true;
     isClearedAllRef.current = true;
+    const backup = [...globalNotificationsCache];
     updateGlobalCache([]);
+
     try {
-      await notificationApi.clearAll();
-    } catch (e) {
-      // Ignore
+      const res = await notificationApi.clearAll();
+      if (res && (res as any).success === false) {
+        throw new Error((res as any).error || (res as any).message || 'Failed to clear notifications');
+      }
+      globalNotificationsCache = [];
+      globalIsClearedAll = false;
+      isClearedAllRef.current = false;
+      return { success: true, count: (res as any)?.clearedCount ?? backup.length };
+    } catch (err: any) {
+      globalIsClearedAll = false;
+      isClearedAllRef.current = false;
+      updateGlobalCache(backup);
+      return {
+        success: false,
+        error: err?.message || 'Network error while clearing notifications',
+      };
     }
   }, []);
 

@@ -11,6 +11,8 @@ import {
   TouchableWithoutFeedback,
   StatusBar,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   BellRing,
@@ -222,6 +224,7 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -413,7 +416,25 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => {
                   setMenuVisible(false);
-                  onClearAllNotif();
+                  Alert.alert(
+                    'Clear All Notifications',
+                    'Are you sure you want to permanently delete all notifications? This action cannot be undone.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Clear All',
+                        style: 'destructive',
+                        onPress: async () => {
+                          setIsClearingAll(true);
+                          const res = await onClearAllNotif();
+                          setIsClearingAll(false);
+                          if (res && res.success === false) {
+                            Alert.alert('Error', res.error || 'Failed to clear notifications. Please try again.');
+                          }
+                        },
+                      },
+                    ]
+                  );
                 }}
               >
                 <Trash2 size={16} color="#DC2626" style={{ marginRight: 10 }} />

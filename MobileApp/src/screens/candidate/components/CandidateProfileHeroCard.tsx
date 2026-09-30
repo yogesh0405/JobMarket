@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   Platform,
   ImageBackground,
   StatusBar,
   Share,
 } from 'react-native';
+import { Image } from 'expo-image';
 import {
   Camera,
   Edit3,
@@ -183,6 +183,8 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                   <Image
                     source={{ uri: profilePhotoUrl.trim() }}
                     style={styles.heroAvatarImage}
+                    contentFit="cover"
+                    transition={150}
                   />
                 ) : null}
                 <View style={styles.heroCameraBadge}>

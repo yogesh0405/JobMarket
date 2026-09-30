@@ -112,6 +112,14 @@ export const JobSearchPage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Sync search query from URL params when navigating from Home page or external links
+  useEffect(() => {
+    const kw = searchParams.get('keyword');
+    if (kw !== null) {
+      setSearchQuery(kw);
+    }
+  }, [searchParams]);
+
   // Filter drawer options state
   const [activeFilters, setActiveFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
 
@@ -148,17 +156,41 @@ export const JobSearchPage: React.FC = () => {
         }
       }
 
-      // Keyword query
+      // Keyword query — rich multi-field token matching
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const titleMatch = (job.title || '').toLowerCase().includes(q);
-        const compMatch = (job.company || '').toLowerCase().includes(q);
-        const locMatch = (job.location || '').toLowerCase().includes(q);
-        const zoneMatch = (job.midcZone || job.midc_zone || '').toLowerCase();
-        const tradeMatch = (job.trade || '').toLowerCase().includes(q);
-        if (!titleMatch && !compMatch && !locMatch && !zoneMatch && !tradeMatch) {
-          return false;
-        }
+        const tokens = q.split(/[\s/&,-]+/).filter((t) => t.length > 0 && !['and', 'or', 'in', 'of', 'for', 'the'].includes(t));
+        const fullJobText = [
+          job.title,
+          job.company,
+          job.description,
+          job.location,
+          job.industry,
+          (job as any).industryType,
+          job.trade,
+          (job as any).itiTrade,
+          job.workMode,
+          job.jobType,
+          job.midcZone,
+          (job as any).shiftDetails,
+          job.educationRequirement,
+          (job as any).education_requirement,
+          (job as any).education_level,
+          ...(job.skills || []),
+          ...(job.requirements || []),
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        const matches = tokens.length > 0
+          ? tokens.some((token) => {
+              if (token.length <= 3) {
+                const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp(`\\b${escaped}\\b`, 'i').test(fullJobText);
+              }
+              return fullJobText.includes(token);
+            })
+          : true;
+
+        if (!matches) return false;
       }
 
       // 1. Zone
@@ -250,6 +282,7 @@ export const JobSearchPage: React.FC = () => {
     setSearchQuery('');
     setSelectedCategory('All Jobs');
     setActiveFilters(DEFAULT_JOB_FILTERS);
+    setSearchParams({});
   };
 
   return (
@@ -320,7 +353,10 @@ export const JobSearchPage: React.FC = () => {
             />
             {searchQuery.length > 0 && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchParams({});
+                }}
                 style={{
                   background: '#F1F5F9',
                   border: 'none',

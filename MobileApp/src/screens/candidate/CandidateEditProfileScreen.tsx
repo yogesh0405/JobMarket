@@ -236,7 +236,8 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
           return;
         }
 
-        const base64Data = `data:image/webp;base64,${asset.base64}`;
+        const mime = (asset as any).mimeType || (asset.base64.startsWith('/9j/') ? 'image/jpeg' : (asset.base64.startsWith('iVBOR') ? 'image/png' : 'image/jpeg'));
+        const base64Data = `data:${mime};base64,${asset.base64}`;
         const uploadRes = await candidateApi.uploadProfilePicture(base64Data);
         const finalUrl = uploadRes?.data?.url || (uploadRes as any)?.url || base64Data;
 
@@ -610,7 +611,8 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             profilePhotoUrl={profilePhotoUrl}
             uploadingPhoto={uploadingPhoto}
             onPickPhoto={handlePickPhoto}
-            onFocusBio={(e) => handleFocusInput(e, scrollViewRef, 24)}
+            onFocusBio={(e) => handleFocusInput(e, scrollViewRef, 36)}
+            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 36)}
           />
         ) : null}
 
@@ -624,6 +626,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             onOpenTradeModal={() => setTradeModalOpen(true)}
             onOpenEduModal={() => setEduModalOpen(true)}
             onRemoveEducation={handleRemoveEducation}
+            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 36)}
           />
         ) : null}
 
@@ -655,6 +658,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             onPickResume={handlePickResume}
             onDeleteResume={handleDeleteResume}
             onOpenPdfModal={() => setShowPdfModal(true)}
+            onFocusSkillInput={(e) => handleFocusInput(e, scrollViewRef, 36)}
           />
         ) : null}
       </KeyboardAwareScrollView>

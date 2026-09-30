@@ -18,15 +18,30 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
   children: React.ReactNode;
 }
 
+let globalActiveKeyboardHeight = 0;
+
+Keyboard.addListener(
+  Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+  (e) => {
+    globalActiveKeyboardHeight = e?.endCoordinates?.height || 280;
+  }
+);
+Keyboard.addListener(
+  Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+  () => {
+    globalActiveKeyboardHeight = 0;
+  }
+);
+
 export const handleFocusInput = (
   event: NativeSyntheticEvent<TargetedEvent> | any,
   scrollRef: React.RefObject<ScrollView | null>,
-  extraScrollMargin = 24
+  extraScrollMargin = 30
 ) => {
   const node = event?.nativeEvent?.target || event?.target;
   if (!node || !scrollRef?.current) return;
 
-  setTimeout(() => {
+  const scrollToInput = () => {
     try {
       const reactTag = findNodeHandle(node as any);
       const scrollTag = findNodeHandle(scrollRef.current);
@@ -35,14 +50,20 @@ export const handleFocusInput = (
           reactTag,
           scrollTag,
           () => {},
-          (x, y, width, height) => {
+          (_x, y, _width, height) => {
             UIManager.measure(
               scrollTag,
               (_sx, _sy, _sWidth, sHeight) => {
                 const screenH = Dimensions.get('window').height;
-                const visibleHeight = sHeight > 100 ? sHeight : screenH * 0.55;
-                // Position input field comfortably just above keyboard with extraScrollMargin clearance (24px)
-                // Bottom of input (y + height) will be placed at (visibleHeight - extraScrollMargin)
+                const kbHeight = globalActiveKeyboardHeight > 0 
+                  ? globalActiveKeyboardHeight 
+                  : (Platform.OS === 'ios' ? 300 : 280);
+                const totalContainerH = sHeight > 100 ? sHeight : screenH;
+                const visibleHeight = sHeight < (screenH - kbHeight + 50)
+                  ? sHeight
+                  : Math.max(160, totalContainerH - kbHeight);
+
+                // Position input field comfortably just above keyboard with extraScrollMargin clearance
                 const targetY = Math.max(0, y + height + extraScrollMargin - visibleHeight);
                 scrollRef.current?.scrollTo({ y: targetY, animated: true });
               }
@@ -53,26 +74,30 @@ export const handleFocusInput = (
     } catch (e) {
       // Fallback
     }
-  }, Platform.OS === 'ios' ? 60 : 110);
+  };
+
+  setTimeout(scrollToInput, Platform.OS === 'ios' ? 80 : 150);
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
-  ({ children, extraScrollHeight = 24, contentContainerStyle, style, ...props }, ref) => {
+  ({ children, extraScrollHeight = 30, contentContainerStyle, style, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
-    const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+    const [keyboardHeight, setKeyboardHeight] = useState<number>(globalActiveKeyboardHeight);
 
     useEffect(() => {
       const showSub = Keyboard.addListener(
         Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
         (e) => {
-          const height = e.endCoordinates ? e.endCoordinates.height : 280;
+          const height = e?.endCoordinates?.height || 280;
+          globalActiveKeyboardHeight = height;
           setKeyboardHeight(height);
         }
       );
       const hideSub = Keyboard.addListener(
         Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
         () => {
+          globalActiveKeyboardHeight = 0;
           setKeyboardHeight(0);
         }
       );
@@ -90,7 +115,7 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
         : 30;
 
     const dynamicPaddingBottom = keyboardHeight > 0 
-      ? Math.max(basePaddingBottom, extraScrollHeight + 16) 
+      ? basePaddingBottom + keyboardHeight + extraScrollHeight 
       : basePaddingBottom;
 
     return (

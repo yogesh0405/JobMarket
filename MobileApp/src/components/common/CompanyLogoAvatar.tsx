@@ -1,6 +1,7 @@
 import { COLORS } from '../../constants/theme';
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Building2 } from 'lucide-react-native';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
 
@@ -119,7 +120,8 @@ export function CompanyLogoAvatar({
           <Image
             source={{ uri: cleanUrl }}
             style={{ width: '92%', height: '92%', borderRadius: Math.max(0, borderRadius - 2) }}
-            resizeMode="contain"
+            contentFit="contain"
+            transition={150}
             onError={() => setImageError(true)}
           />
         </View>

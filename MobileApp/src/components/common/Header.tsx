@@ -9,11 +9,11 @@ import {
   ScrollView,
   Animated,
   Easing,
-  Image,
   Platform,
   StatusBar,
   TextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeft,
@@ -230,7 +230,8 @@ export const Header: React.FC<HeaderProps> = ({
                       key={userPhotoUri.trim()}
                       source={{ uri: userPhotoUri.trim() }}
                       style={styles.headerAvatarImage}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      transition={150}
                     />
                   ) : (
                     <Text style={styles.headerAvatarLetter}>{initialLetter}</Text>
@@ -459,6 +460,8 @@ export const Header: React.FC<HeaderProps> = ({
                       key={userPhotoUri.trim()}
                       source={{ uri: userPhotoUri.trim() }}
                       style={[styles.avatarImage, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+                      contentFit="cover"
+                      transition={150}
                     />
                   ) : null}
                 </View>

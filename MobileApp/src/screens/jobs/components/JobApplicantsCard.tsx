@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { User as UserIcon, Briefcase, MapPin, ChevronRight } from 'lucide-react-native';
 import { JobApplication } from '../../../types';
 import { Badge } from '../../../components/common/Badge';
@@ -21,6 +22,7 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
     item.user?.profilePictureUrl ||
     item.user?.profile_picture_url ||
     (item.user as any)?.profilePhotoUrl ||
+    (item.user as any)?.avatar_url ||
     (item.user as any)?.avatar;
 
   return (
@@ -35,7 +37,8 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
             <Image
               source={{ uri: avatarUri }}
               style={styles.avatarImg}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={150}
             />
           ) : (
             <UserIcon size={18} color="#1764E8" strokeWidth={2} />

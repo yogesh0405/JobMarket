@@ -5,12 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   Alert,
   Modal,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
@@ -440,7 +440,12 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
 
           <View style={styles.headerAvatarBox}>
             {userPhotoUrl ? (
-              <Image source={{ uri: userPhotoUrl }} style={styles.headerAvatarImg} />
+              <Image
+                source={{ uri: userPhotoUrl }}
+                style={styles.headerAvatarImg}
+                contentFit="cover"
+                transition={150}
+              />
             ) : (
               <Text style={styles.headerAvatarInitials}>
                 {getInitials(currentApplicant?.user?.name || (currentApplicant as any)?.name || 'Candidate')}

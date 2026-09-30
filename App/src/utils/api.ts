@@ -27,7 +27,7 @@ export const getApiBaseUrl = (): string => {
     ) {
       return '';
     }
-    return 'https://jobmarket-ongn.onrender.com';
+    return 'https://jobmarket-8c0p.onrender.com';
   }
   return '';
 };

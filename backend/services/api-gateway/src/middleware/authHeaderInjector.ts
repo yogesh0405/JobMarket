@@ -14,7 +14,8 @@ export const authHeaderInjector = async (req: Request, res: Response, next: Next
     const token = authHeader.split(' ')[1];
     try {
       const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as any;
-      if (decoded && decoded.userId) {
+      const resolvedUserId = decoded?.userId || decoded?.id;
+      if (decoded && resolvedUserId) {
         // Real-time Revocation Verification
         if (decoded.sessionId) {
           const isRevoked = await SessionRepository.isSessionRevoked(String(decoded.sessionId));
@@ -29,7 +30,7 @@ export const authHeaderInjector = async (req: Request, res: Response, next: Next
           req.headers['x-session-id'] = String(decoded.sessionId);
         }
 
-        req.headers['x-user-id'] = String(decoded.userId);
+        req.headers['x-user-id'] = String(resolvedUserId);
         req.headers['x-user-role'] = String(decoded.role || 'candidate');
       }
     } catch {

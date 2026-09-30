@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native';
 import { Calendar, ChevronLeft, ChevronRight, Clock, Check } from 'lucide-react-native';
@@ -98,6 +99,30 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
   candidateRole,
   pdfUrl,
 }) => {
+  const [modalKeyboardHeight, setModalKeyboardHeight] = useState(0);
+  const expScrollViewRef = useRef<ScrollView>(null);
+  const eduScrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setModalKeyboardHeight(e?.endCoordinates?.height || 280);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setModalKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const currentSelectedYear = eduYear || String(new Date().getFullYear());
 
   const startNum = parseInt(expStartYear || '2022', 10);
@@ -153,14 +178,42 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
-            contentContainerStyle={styles.modalScrollContent}
+            ref={expScrollViewRef}
+            contentContainerStyle={[
+              styles.modalScrollContent,
+              modalKeyboardHeight > 0 && {
+                justifyContent: 'flex-start',
+                paddingTop: Platform.OS === 'ios' ? 40 : 20,
+                paddingBottom: Platform.OS === 'ios' ? 30 : modalKeyboardHeight + 30,
+              },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Add Work Experience</Text>
-              <Input label="Job Title" placeholder="e.g. VMC Operator" value={expTitle} onChangeText={setExpTitle} />
-              <Input label="Company Name" placeholder="e.g. Bajaj Auto MIDC Waluj" value={expCompany} onChangeText={setExpCompany} />
+              <Input
+                label="Job Title"
+                placeholder="e.g. VMC Operator"
+                value={expTitle}
+                onChangeText={setExpTitle}
+                onFocus={() => {
+                  setTimeout(() => {
+                    expScrollViewRef.current?.scrollTo({ y: 0, animated: true });
+                  }, 80);
+                }}
+              />
+              <Input
+                label="Company Name"
+                placeholder="e.g. Bajaj Auto MIDC Waluj"
+                value={expCompany}
+                onChangeText={setExpCompany}
+                onFocus={() => {
+                  setTimeout(() => {
+                    expScrollViewRef.current?.scrollTo({ y: 60, animated: true });
+                  }, 80);
+                }}
+              />
               
               {/* Start Year & End Year side-by-side inputs (Matching provided reference design) */}
               <View style={styles.dateRow}>
@@ -262,7 +315,20 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
                 </Text>
               </View>
 
-              <Input label="Job Description / Responsibilities" placeholder="Describe duties, machines operated..." multiline value={expDesc} onChangeText={setExpDesc} />
+              <Input
+                label="Job Description / Responsibilities"
+                placeholder="Describe duties, machines operated..."
+                multiline
+                numberOfLines={3}
+                inputContainerStyle={{ minHeight: 90 }}
+                value={expDesc}
+                onChangeText={setExpDesc}
+                onFocus={() => {
+                  setTimeout(() => {
+                    expScrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, Platform.OS === 'ios' ? 80 : 150);
+                }}
+              />
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
                 <Button title="Cancel" variant="outline" onPress={onCloseExpModal} style={{ flex: 1 }} />
                 <Button title="Add Entry" onPress={onAddExperience} style={{ flex: 1 }} />
@@ -279,14 +345,42 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView
-            contentContainerStyle={styles.modalScrollContent}
+            ref={eduScrollViewRef}
+            contentContainerStyle={[
+              styles.modalScrollContent,
+              modalKeyboardHeight > 0 && {
+                justifyContent: 'flex-start',
+                paddingTop: Platform.OS === 'ios' ? 40 : 20,
+                paddingBottom: Platform.OS === 'ios' ? 30 : modalKeyboardHeight + 30,
+              },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Add Education / ITI Certificate</Text>
-              <Input label="Degree / Trade Certificate" placeholder="e.g. ITI Fitter" value={eduDegree} onChangeText={setEduDegree} />
-              <Input label="Institute / College" placeholder="e.g. Govt ITI Aurangabad" value={eduInstitution} onChangeText={setEduInstitution} />
+              <Input
+                label="Degree / Trade Certificate"
+                placeholder="e.g. ITI Fitter"
+                value={eduDegree}
+                onChangeText={setEduDegree}
+                onFocus={() => {
+                  setTimeout(() => {
+                    eduScrollViewRef.current?.scrollTo({ y: 0, animated: true });
+                  }, 80);
+                }}
+              />
+              <Input
+                label="Institute / College"
+                placeholder="e.g. Govt ITI Aurangabad"
+                value={eduInstitution}
+                onChangeText={setEduInstitution}
+                onFocus={() => {
+                  setTimeout(() => {
+                    eduScrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, Platform.OS === 'ios' ? 80 : 150);
+                }}
+              />
               
               {/* Inline Year Spinner Stepper (No Large Popup) */}
               <View style={styles.formGroup}>

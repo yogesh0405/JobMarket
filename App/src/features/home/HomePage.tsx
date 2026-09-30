@@ -102,12 +102,12 @@ const ITI_TRADES_GRID = [
 ];
 
 const EDUCATION_GRID = [
-  { name: '10th / 12th Pass', icon: GraduationCap, keyword: 'pass' },
-  { name: 'ITI Certified', icon: Award, keyword: 'iti' },
-  { name: 'Diploma Holder', icon: GraduationCap, keyword: 'diploma' },
-  { name: 'B.E. / B.Tech', icon: GraduationCap, keyword: 'engineering' },
-  { name: 'Graduate Degree', icon: GraduationCap, keyword: 'graduate' },
-  { name: 'Post Graduate', icon: GraduationCap, keyword: 'master' },
+  { name: '10th / 12th Pass', icon: GraduationCap, keyword: '10th 12th ssc hsc' },
+  { name: 'ITI Certified', icon: Award, keyword: 'iti fitter welder electrician turner' },
+  { name: 'Diploma Holder', icon: GraduationCap, keyword: 'diploma polytechnic' },
+  { name: 'B.E. / B.Tech', icon: GraduationCap, keyword: 'b.e b.tech engineering engineer' },
+  { name: 'Graduate Degree', icon: GraduationCap, keyword: 'graduate graduation bachelor degree' },
+  { name: 'Post Graduate', icon: GraduationCap, keyword: 'postgraduate master mba mca' },
 ];
 
 const HOSPITAL_GRID = [
@@ -206,12 +206,6 @@ export const HomePage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Hero Card State
-  const [selectedIndustry, setSelectedIndustry] = useState('Select Industry');
-  const [selectedEducation, setSelectedEducation] = useState('Select Education');
-  const [locationQuery, setLocationQuery] = useState('');
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-
   // Active Role Tab
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
 
@@ -258,11 +252,37 @@ export const HomePage: React.FC = () => {
     (keyword: string) => {
       const q = keyword.toLowerCase().trim();
       if (!q) return allJobs.length;
+      const tokens = q.split(/[\s/&,-]+/).filter((t) => t.length > 0 && !['and', 'or', 'in', 'of', 'for', 'the'].includes(t));
       return allJobs.filter((j) => {
-        const titleMatch = (j.title || '').toLowerCase().includes(q);
-        const indMatch = (j.industry || '').toLowerCase().includes(q);
-        const tradeMatch = (j.trade || '').toLowerCase().includes(q);
-        return titleMatch || indMatch || tradeMatch;
+        const fullJobText = [
+          j.title,
+          j.company,
+          j.description,
+          j.location,
+          j.industry,
+          (j as any).industryType,
+          j.trade,
+          (j as any).itiTrade,
+          j.workMode,
+          j.jobType,
+          j.midcZone,
+          (j as any).shiftDetails,
+          j.educationRequirement,
+          (j as any).education_requirement,
+          (j as any).education_level,
+          ...(j.skills || []),
+          ...(j.requirements || []),
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return tokens.length > 0
+          ? tokens.some((token) => {
+              if (token.length <= 3) {
+                const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp(`\\b${escaped}\\b`, 'i').test(fullJobText);
+              }
+              return fullJobText.includes(token);
+            })
+          : true;
       }).length;
     },
     [allJobs]
@@ -389,10 +409,15 @@ export const HomePage: React.FC = () => {
     const tabObj = DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab);
     const keyword = tabObj?.keyword || activeRoleTab.toLowerCase();
     return allJobs.filter((j) => {
-      const titleMatch = (j.title || '').toLowerCase().includes(keyword);
-      const tradeMatch = (j.trade || '').toLowerCase().includes(keyword);
-      const indMatch = (j.industry || '').toLowerCase().includes(keyword);
-      return titleMatch || tradeMatch || indMatch;
+      const fullText = [
+        j.title,
+        j.trade,
+        (j as any).itiTrade,
+        j.industry,
+        (j as any).industryType,
+        ...(j.skills || []),
+      ].filter(Boolean).join(' ').toLowerCase();
+      return fullText.includes(keyword);
     });
   }, [activeRoleTab, allJobs]);
 
@@ -400,9 +425,7 @@ export const HomePage: React.FC = () => {
     if (e) e.preventDefault();
     const params = new URLSearchParams();
     if (topSearch.trim()) params.set('keyword', topSearch.trim());
-    if (selectedIndustry !== 'Select Industry') params.set('industry', selectedIndustry);
-    if (selectedEducation !== 'Select Education') params.set('education', selectedEducation);
-    if (locationQuery.trim()) params.set('location', locationQuery.trim());
+    if (selectedLocation && selectedLocation !== 'All Locations') params.set('location', selectedLocation);
     navigate(`/jobs?${params.toString()}`);
   };
 
@@ -446,12 +469,6 @@ export const HomePage: React.FC = () => {
     if (applied.overtime) params.set('ot', 'true');
     navigate(`/jobs?${params.toString()}`);
   };
-
-  const matchingMidcZones = useMemo(() => {
-    const query = locationQuery.trim().toLowerCase();
-    if (!query) return MIDC_ZONES.slice(0, 4);
-    return MIDC_ZONES.filter((zone) => zone.toLowerCase().includes(query)).slice(0, 5);
-  }, [locationQuery]);
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
@@ -571,41 +588,6 @@ export const HomePage: React.FC = () => {
           .home-trending-btn {
             font-size: 11px !important;
             padding: 3.5px 8px !important;
-          }
-
-          /* Discover Section Mobile */
-          .home-discover-section {
-            margin-top: 2px !important;
-          }
-          .home-discover-badge {
-            font-size: 10.5px !important;
-            padding: 3px 10px !important;
-            margin-bottom: 6px !important;
-          }
-          .home-discover-title {
-            font-size: 16px !important;
-            margin-bottom: 4px !important;
-            line-height: 20px !important;
-          }
-          .home-discover-sub {
-            font-size: 11px !important;
-            line-height: 15px !important;
-            margin-bottom: 10px !important;
-          }
-          .home-discover-form-card {
-            padding: 12px 10px !important;
-            gap: 8px !important;
-            border-radius: 8px !important;
-          }
-          .home-discover-select,
-          .home-discover-input-row {
-            height: 40px !important;
-            font-size: 12.5px !important;
-          }
-          .home-discover-submit-btn {
-            height: 40px !important;
-            font-size: 13px !important;
-            border-radius: 6px !important;
           }
 
           /* Popular Roles Section Mobile */
@@ -1157,241 +1139,6 @@ export const HomePage: React.FC = () => {
           <BannerSlider />
         </div>
 
-        {/* Discover Factory & Technical Jobs Section */}
-        <div className="home-discover-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginTop: '4px' }}>
-          {/* Centered Pill Badge */}
-          <div className="home-discover-badge" style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: '#EFF6FF',
-            padding: '4px 14px',
-            borderRadius: '999px',
-            border: '1px solid #DBEAFE',
-            marginBottom: '10px',
-          }}>
-            <Star size={13} color="#1B4FDF" />
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1B4FDF' }}>
-              Industrial & Factory Jobs
-            </span>
-          </div>
-
-          {/* Centered Main Title */}
-          <h2 className="home-discover-title" style={{
-            fontSize: '20px',
-            fontWeight: 800,
-            color: '#0F172A',
-            margin: '0 0 6px 0',
-            textAlign: 'center',
-            letterSpacing: '-0.2px',
-          }}>
-            Discover Factory & Technical Jobs near you
-          </h2>
-
-          {/* Centered Subtitle */}
-          <p className="home-discover-sub" style={{
-            fontSize: '12.5px',
-            color: '#64748B',
-            textAlign: 'center',
-            margin: '0 0 14px 0',
-            lineHeight: '18px',
-            maxWidth: '520px',
-          }}>
-            Direct hiring for ITI, CNC operators, Welders, Fitters & Helpers in MIDC industrial clusters.
-          </p>
-
-          {/* White Form Card */}
-          <div className="home-discover-form-card" style={{
-            width: '100%',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '10px',
-            border: '1px solid #CBD5E1',
-            padding: '16px',
-            boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            boxSizing: 'border-box',
-          }}>
-            {/* Industry Selector */}
-            <div style={{ position: 'relative' }}>
-              <select
-                className="home-discover-select"
-                value={selectedIndustry}
-                onChange={(e) => setSelectedIndustry(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '44px',
-                  padding: '0 36px 0 38px',
-                  borderRadius: '8px',
-                  border: '1px solid #CBD5E1',
-                  backgroundColor: '#F8FAFC',
-                  fontSize: '13px',
-                  fontWeight: selectedIndustry !== 'Select Industry' ? 700 : 500,
-                  color: selectedIndustry !== 'Select Industry' ? '#0F172A' : '#64748B',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                }}
-              >
-                {INDUSTRIES.map((ind) => (
-                  <option key={ind} value={ind}>
-                    {ind}
-                  </option>
-                ))}
-              </select>
-              <Briefcase size={16} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '14px', pointerEvents: 'none' }} />
-              <ChevronDown size={16} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '14px', pointerEvents: 'none' }} />
-            </div>
-
-            {/* Education Selector */}
-            <div style={{ position: 'relative' }}>
-              <select
-                className="home-discover-select"
-                value={selectedEducation}
-                onChange={(e) => setSelectedEducation(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '44px',
-                  padding: '0 36px 0 38px',
-                  borderRadius: '8px',
-                  border: '1px solid #CBD5E1',
-                  backgroundColor: '#F8FAFC',
-                  fontSize: '13px',
-                  fontWeight: selectedEducation !== 'Select Education' ? 700 : 500,
-                  color: selectedEducation !== 'Select Education' ? '#0F172A' : '#64748B',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                }}
-              >
-                {EDUCATIONS.map((ed) => (
-                  <option key={ed} value={ed}>
-                    {ed}
-                  </option>
-                ))}
-              </select>
-              <GraduationCap size={16} color="#1B4FDF" style={{ position: 'absolute', left: '12px', top: '14px', pointerEvents: 'none' }} />
-              <ChevronDown size={16} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '14px', pointerEvents: 'none' }} />
-            </div>
-
-            {/* Location Query Input with Auto MIDC Suggestions */}
-            <div style={{ position: 'relative' }}>
-              <div className="home-discover-input-row" style={{
-                display: 'flex',
-                alignItems: 'center',
-                height: '44px',
-                padding: '0 12px',
-                borderRadius: '8px',
-                border: '1px solid #CBD5E1',
-                backgroundColor: '#F8FAFC',
-                gap: '8px',
-              }}>
-                <MapPin size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search MIDC Zone or City (e.g. Chakan, Waluj)"
-                  value={locationQuery}
-                  onChange={(e) => {
-                    setLocationQuery(e.target.value);
-                    setShowLocationSuggestions(true);
-                  }}
-                  onFocus={() => setShowLocationSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    background: 'transparent',
-                    fontSize: '13px',
-                    color: '#0F172A',
-                    fontWeight: 500,
-                    padding: 0,
-                    margin: 0,
-                    width: '100%',
-                  }}
-                />
-                {locationQuery.length > 0 && (
-                  <button
-                    onClick={() => setLocationQuery('')}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px' }}
-                  >
-                    <X size={13} color="#64748B" />
-                  </button>
-                )}
-              </div>
-
-              {showLocationSuggestions && (
-                <div style={{
-                  position: 'absolute',
-                  top: '48px',
-                  left: 0,
-                  right: 0,
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '8px',
-                  border: '1px solid #CBD5E1',
-                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.1)',
-                  zIndex: 200,
-                  overflow: 'hidden',
-                }}>
-                  {matchingMidcZones.map((zone) => (
-                    <div
-                      key={zone}
-                      onClick={() => {
-                        setLocationQuery(zone);
-                        setShowLocationSuggestions(false);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: '12px',
-                        color: '#334155',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        borderBottom: '1px solid #F1F5F9',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <MapPin size={12} color="#94A3B8" />
-                      <span>{zone}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Search Submit Button */}
-            <button
-              className="home-discover-submit-btn"
-              onClick={() => handleSearchSubmit()}
-              style={{
-                backgroundColor: '#1B4FDF',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                border: 'none',
-                height: '44px',
-                fontSize: '14px',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(27, 79, 223, 0.25)',
-                width: '100%',
-                marginTop: '2px',
-              }}
-            >
-              <Search size={16} color="#FFFFFF" />
-              <span>Search Jobs</span>
-            </button>
-          </div>
-        </div>
-
         {/* Popular Role Picks Section (Horizontal Carousel matching MobileApp) */}
         <div className="home-popular-roles-section" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', margin: '48px 0 44px 0' }}>
           {/* Section Header */}
@@ -1782,7 +1529,7 @@ export const HomePage: React.FC = () => {
                 <div
                   key={idx}
                   className="home-chip-card"
-                  onClick={() => handleQuickTradeSearch(trade.keyword)}
+                  onClick={() => handleQuickTradeSearch(trade.name)}
                   style={{
                     backgroundColor: '#FFFFFF',
                     border: '1px solid #CBD5E1',
@@ -1869,7 +1616,7 @@ export const HomePage: React.FC = () => {
                 <div
                   key={idx}
                   className="home-chip-card"
-                  onClick={() => handleQuickTradeSearch(qual.keyword)}
+                  onClick={() => handleQuickTradeSearch(qual.name)}
                   style={{
                     backgroundColor: '#FFFFFF',
                     border: '1px solid #CBD5E1',
@@ -1953,7 +1700,7 @@ export const HomePage: React.FC = () => {
               <div
                 key={idx}
                 className="home-chip-card"
-                onClick={() => handleQuickTradeSearch(h.keyword)}
+                onClick={() => handleQuickTradeSearch(h.name)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #CBD5E1',
@@ -2027,7 +1774,7 @@ export const HomePage: React.FC = () => {
               <div
                 key={idx}
                 className="home-chip-card"
-                onClick={() => handleQuickTradeSearch(h.keyword)}
+                onClick={() => handleQuickTradeSearch(h.name)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #CBD5E1',

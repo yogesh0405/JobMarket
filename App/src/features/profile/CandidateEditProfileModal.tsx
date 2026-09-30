@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { EducationYearPicker, ExperienceDateSelector } from '../../components/common/CandidateDateSelectors';
 
 interface CandidateEditProfileModalProps {
   isOpen: boolean;
@@ -99,12 +100,15 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
   const [showAddEduModal, setShowAddEduModal] = useState(false);
   const [eduDegree, setEduDegree] = useState('');
   const [eduInstitution, setEduInstitution] = useState('');
-  const [eduYear, setEduYear] = useState('');
+  const [eduYear, setEduYear] = useState(String(new Date().getFullYear()));
 
   const [showAddExpModal, setShowAddExpModal] = useState(false);
   const [expTitle, setExpTitle] = useState('');
   const [expCompany, setExpCompany] = useState('');
   const [expDuration, setExpDuration] = useState('');
+  const [expStartYear, setExpStartYear] = useState('2022');
+  const [expEndYear, setExpEndYear] = useState(String(new Date().getFullYear()));
+  const [expIsCurrent, setExpIsCurrent] = useState(false);
   const [expDesc, setExpDesc] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
@@ -317,15 +321,16 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
       showToast('Qualification / Degree title is required', 'error');
       return;
     }
+    const finalYear = eduYear.trim() || String(new Date().getFullYear());
     const newEdu = {
       degree: eduDegree.trim(),
       institution: eduInstitution.trim() || 'Govt ITI College',
-      year: eduYear.trim() || '2022'
+      year: finalYear
     };
     setEducationList([...educationList, newEdu]);
     setEduDegree('');
     setEduInstitution('');
-    setEduYear('');
+    setEduYear(String(new Date().getFullYear()));
     setShowAddEduModal(false);
     showToast('Education entry added', 'success');
   };
@@ -341,15 +346,26 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
       showToast('Job Title and Company Name are required', 'error');
       return;
     }
+    const start = parseInt(expStartYear || '2022', 10);
+    const end = expIsCurrent ? new Date().getFullYear() : parseInt(expEndYear || String(new Date().getFullYear()), 10);
+    const diffYears = Math.max(end - start, 0);
+    const diffText = diffYears === 0 ? '< 1 Year' : diffYears === 1 ? '1 Year' : `${diffYears} Years`;
+    const formattedDuration = `${diffText} (${start} - ${expIsCurrent ? 'Present' : end})`;
+
     const newExp = {
       title: expTitle.trim(),
       company: expCompany.trim(),
-      duration: expDuration.trim() || '2022-2025',
+      startYear: String(start),
+      endYear: expIsCurrent ? 'Present' : String(end),
+      duration: formattedDuration,
       description: expDesc.trim()
     };
     setExperienceList([...experienceList, newExp]);
     setExpTitle('');
     setExpCompany('');
+    setExpStartYear('2022');
+    setExpEndYear(String(new Date().getFullYear()));
+    setExpIsCurrent(false);
     setExpDuration('');
     setExpDesc('');
     setShowAddExpModal(false);
@@ -1684,10 +1700,12 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>College / Govt Institute Name</label>
                 <input type="text" value={eduInstitution} onChange={(e) => setEduInstitution(e.target.value)} placeholder="e.g. Govt ITI College, Chakan" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '0px', fontSize: '13px', outline: 'none' }} />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>Passing Year</label>
-                <input type="text" value={eduYear} onChange={(e) => setEduYear(e.target.value)} placeholder="e.g. 2022" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '0px', fontSize: '13px', outline: 'none' }} />
-              </div>
+              <EducationYearPicker
+                value={eduYear}
+                onChange={setEduYear}
+                label="Passing Year / Year of Completion"
+                required
+              />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
                 <button type="button" onClick={() => setShowAddEduModal(false)} style={{ padding: '8px 14px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '13px', fontWeight: '600' }}>Cancel</button>
                 <button type="submit" style={{ padding: '8px 18px', border: 'none', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '13px', fontWeight: '700' }}>Add Entry</button>
@@ -1730,10 +1748,14 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>Company Name *</label>
                 <input type="text" required value={expCompany} onChange={(e) => setExpCompany(e.target.value)} placeholder="e.g. Tata Motors Ltd" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '0px', fontSize: '13px', outline: 'none' }} />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>Duration / Years</label>
-                <input type="text" value={expDuration} onChange={(e) => setExpDuration(e.target.value)} placeholder="e.g. 2022 - 2025" style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '0px', fontSize: '13px', outline: 'none' }} />
-              </div>
+              <ExperienceDateSelector
+                startYear={expStartYear}
+                onChangeStartYear={setExpStartYear}
+                endYear={expEndYear}
+                onChangeEndYear={setExpEndYear}
+                isCurrent={expIsCurrent}
+                onChangeIsCurrent={setExpIsCurrent}
+              />
               <div>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>Role Description</label>
                 <textarea rows={2} value={expDesc} onChange={(e) => setExpDesc(e.target.value)} placeholder="e.g. Operated MIG welding machine and part assembly..." style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '0px', fontSize: '13px', outline: 'none', resize: 'vertical' }} />

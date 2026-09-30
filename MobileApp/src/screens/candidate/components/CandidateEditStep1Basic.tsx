@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   TextInput,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Camera } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 
@@ -26,6 +26,7 @@ interface CandidateEditStep1BasicProps {
   uploadingPhoto: boolean;
   onPickPhoto: () => void;
   onFocusBio?: (e: any) => void;
+  onFocusInput?: (e: any) => void;
 }
 
 export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = ({
@@ -43,6 +44,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
   uploadingPhoto,
   onPickPhoto,
   onFocusBio,
+  onFocusInput,
 }) => {
   return (
     <View style={styles.masterEditCard}>
@@ -60,7 +62,12 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
           style={styles.avatarCircleBorderWrapper}
         >
           {profilePhotoUrl ? (
-            <Image source={{ uri: profilePhotoUrl }} style={styles.avatarImage} />
+            <Image
+              source={{ uri: profilePhotoUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              transition={150}
+            />
           ) : (
             <View style={styles.avatarFallbackLetterBox}>
               <Text style={styles.avatarFallbackLetterText}>
@@ -93,6 +100,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
             required
             value={name}
             onChangeText={setName}
+            onFocus={onFocusInput}
             inputContainerStyle={{ borderRadius: 6 }}
           />
 
@@ -101,6 +109,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
             value={headline}
             placeholder="e.g. ITI VMC Operator & CNC Setter"
             onChangeText={setHeadline}
+            onFocus={onFocusInput}
             inputContainerStyle={{ borderRadius: 6 }}
           />
 
@@ -110,6 +119,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
             value={location}
             placeholder="e.g. Waluj MIDC, Chhatrapati Sambhajinagar"
             onChangeText={setLocation}
+            onFocus={onFocusInput}
             inputContainerStyle={{ borderRadius: 6 }}
           />
 
@@ -120,6 +130,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
             keyboardType="number-pad"
             maxLength={10}
             onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, '').slice(0, 10))}
+            onFocus={onFocusInput}
             inputContainerStyle={{ borderRadius: 6 }}
           />
 
@@ -133,7 +144,7 @@ export const CandidateEditStep1Basic: React.FC<CandidateEditStep1BasicProps> = (
               placeholderTextColor="#94A3B8"
               value={bio}
               onChangeText={setBio}
-              onFocus={onFocusBio}
+              onFocus={onFocusBio || onFocusInput}
             />
           </View>
         </View>

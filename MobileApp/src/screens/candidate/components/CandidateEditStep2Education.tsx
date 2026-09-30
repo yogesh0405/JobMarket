@@ -13,6 +13,7 @@ interface CandidateEditStep2EducationProps {
   onOpenTradeModal: () => void;
   onOpenEduModal: () => void;
   onRemoveEducation: (index: number) => void;
+  onFocusInput?: (e: any) => void;
 }
 
 export const CandidateEditStep2Education: React.FC<CandidateEditStep2EducationProps> = ({
@@ -24,6 +25,7 @@ export const CandidateEditStep2Education: React.FC<CandidateEditStep2EducationPr
   onOpenTradeModal,
   onOpenEduModal,
   onRemoveEducation,
+  onFocusInput,
 }) => {
   return (
     <View style={styles.masterEditCard}>
@@ -55,6 +57,7 @@ export const CandidateEditStep2Education: React.FC<CandidateEditStep2EducationPr
               placeholder="e.g. Laser Cutting Operator / PLC Automation Programmer"
               value={customTrade}
               onChangeText={setCustomTrade}
+              onFocus={onFocusInput}
               inputContainerStyle={{ borderRadius: 6 }}
               allowClear={true}
               onClear={() => setCustomTrade('')}

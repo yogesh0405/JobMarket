@@ -142,22 +142,34 @@ export const candidateApi = {
       return { success: false, error: 'Invalid image data' };
     }
 
-    // 1. WebP Format formatting so backend AuthController.uploadProfilePicture Cloudinary validation succeeds 100%
-    let webpFormattedImage = base64Image;
-    if (base64Image.startsWith('data:image/') && !base64Image.startsWith('data:image/webp;base64,')) {
-      const commaIdx = base64Image.indexOf(',');
-      if (commaIdx !== -1) {
-        webpFormattedImage = 'data:image/webp;base64,' + base64Image.substring(commaIdx + 1);
-      }
-    } else if (!base64Image.startsWith('data:')) {
-      webpFormattedImage = 'data:image/webp;base64,' + base64Image;
+    // 1. Detect genuine MIME type from base64 data to prevent saving JPEGs with invalid WebP headers
+    let formattedImage = base64Image.trim();
+    let rawBase64 = formattedImage;
+    if (formattedImage.includes(',')) {
+      rawBase64 = formattedImage.split(',')[1];
     }
 
-    // 2. Upload to Live Backend Cloudinary via POST /api/v1/auth/profile/picture
+    let mimeType = 'image/jpeg';
+    if (rawBase64.startsWith('/9j/')) {
+      mimeType = 'image/jpeg';
+    } else if (rawBase64.startsWith('iVBOR')) {
+      mimeType = 'image/png';
+    } else if (rawBase64.startsWith('UklGR')) {
+      mimeType = 'image/webp';
+    } else if (formattedImage.startsWith('data:image/')) {
+      const match = formattedImage.match(/^data:(image\/[^;]+);base64,/);
+      if (match) {
+        mimeType = match[1];
+      }
+    }
+
+    formattedImage = `data:${mimeType};base64,${rawBase64}`;
+
+    // 2. Upload to Live Backend via POST /api/v1/auth/profile/picture
     try {
       const res = await apiFetch('/api/v1/auth/profile/picture', {
         method: 'POST',
-        body: JSON.stringify({ image: webpFormattedImage }),
+        body: JSON.stringify({ image: formattedImage }),
       });
       if (res && res.success && res.data) {
         const returnedUser = (res.data as any).user || res.data;

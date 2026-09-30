@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  ImageBackground,
+  Image,
   Platform,
   Animated,
   Easing,
@@ -117,72 +117,72 @@ export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-      <ImageBackground
+      <Image
         source={require('../../../assets/welcome_city_bg.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
-      >
-        <View style={[styles.contentOverlay, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
-          {/* TOP HEADER SECTION */}
-          <View style={styles.headerSection}>
-            <View style={styles.titleContainer}>
-              <Animated.Text
-                style={[
-                  styles.helloTitle,
-                  {
-                    opacity: fadeAnim,
-                    transform: [
-                      { translateY: slideAnim },
-                      { scale: scaleAnim },
-                    ],
-                    letterSpacing: GREETINGS[greetingIndex].includes('नमस्ते') ? 0.5 : 1.5,
-                  },
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {GREETINGS[greetingIndex]}
-              </Animated.Text>
-            </View>
-            <Text style={styles.helloSubtitle}>Choose how you want to continue</Text>
+      />
+
+      <View style={[styles.contentOverlay, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
+        {/* TOP HEADER SECTION */}
+        <View style={styles.headerSection}>
+          <View style={styles.titleContainer}>
+            <Animated.Text
+              style={[
+                styles.helloTitle,
+                {
+                  opacity: fadeAnim,
+                  transform: [
+                    { translateY: slideAnim },
+                    { scale: scaleAnim },
+                  ],
+                  letterSpacing: GREETINGS[greetingIndex].includes('नमस्ते') ? 0.5 : 1.5,
+                },
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {GREETINGS[greetingIndex]}
+            </Animated.Text>
           </View>
-
-          {/* SPACER ALLOWS THE CITYSCAPE ILLUSTRATION TO SHINE */}
-          <View style={styles.spacer} />
-
-          {/* BOTTOM BUTTONS SECTION */}
-          <View style={styles.bottomSection}>
-            {/* Primary Pill Button: Candidate / Job Seeker */}
-            <TouchableOpacity
-              style={styles.primaryPillButton}
-              activeOpacity={0.85}
-              onPress={() => handleSelectRole('candidate')}
-            >
-              <Text style={styles.primaryButtonText}>Continue as Job Seeker</Text>
-            </TouchableOpacity>
-
-            {/* Secondary Pill Button: Employer */}
-            <TouchableOpacity
-              style={styles.secondaryPillButton}
-              activeOpacity={0.85}
-              onPress={() => handleSelectRole('employer')}
-            >
-              <Text style={styles.secondaryButtonText}>Continue as Employer</Text>
-            </TouchableOpacity>
-
-            {/* Subtle Sign Up Link */}
-            <TouchableOpacity
-              style={styles.signUpRow}
-              activeOpacity={0.7}
-              onPress={handleSignUp}
-            >
-              <Text style={styles.signUpPrompt}>
-                Don't have an account? <Text style={styles.signUpHighlight}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.helloSubtitle}>Choose how you want to continue</Text>
         </View>
-      </ImageBackground>
+
+        {/* SPACER ALLOWS THE CITYSCAPE ILLUSTRATION TO SHINE */}
+        <View style={styles.spacer} />
+
+        {/* BOTTOM BUTTONS SECTION */}
+        <View style={styles.bottomSection}>
+          {/* Primary Pill Button: Candidate / Job Seeker */}
+          <TouchableOpacity
+            style={styles.primaryPillButton}
+            activeOpacity={0.85}
+            onPress={() => handleSelectRole('candidate')}
+          >
+            <Text style={styles.primaryButtonText}>Continue as Job Seeker</Text>
+          </TouchableOpacity>
+
+          {/* Secondary Pill Button: Employer */}
+          <TouchableOpacity
+            style={styles.secondaryPillButton}
+            activeOpacity={0.85}
+            onPress={() => handleSelectRole('employer')}
+          >
+            <Text style={styles.secondaryButtonText}>Continue as Employer</Text>
+          </TouchableOpacity>
+
+          {/* Subtle Sign Up Link */}
+          <TouchableOpacity
+            style={styles.signUpRow}
+            activeOpacity={0.7}
+            onPress={handleSignUp}
+          >
+            <Text style={styles.signUpPrompt}>
+              Don't have an account? <Text style={styles.signUpHighlight}>Sign Up</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E9F3FD',
   },
   backgroundImage: {
-    flex: 1,
+    ...StyleSheet.absoluteFill,
     width: '100%',
     height: '100%',
   },

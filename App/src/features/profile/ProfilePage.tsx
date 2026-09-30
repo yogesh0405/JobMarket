@@ -14,6 +14,7 @@ import { EditCompanyProfileModal } from '../company/EditCompanyProfileModal';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { calculateCandidateProfileCompletion } from '../../utils/profileCompleteness';
 import { MobileHeader } from '../../components/common/MobileHeader';
+import { EducationYearPicker, ExperienceDateSelector } from '../../components/common/CandidateDateSelectors';
 import { 
   Camera, 
   Mail, 
@@ -91,10 +92,13 @@ export const ProfilePage: React.FC = () => {
   const [expTitle, setExpTitle] = useState('');
   const [expCompany, setExpCompany] = useState('');
   const [expDuration, setExpDuration] = useState('');
+  const [expStartYear, setExpStartYear] = useState('2022');
+  const [expEndYear, setExpEndYear] = useState(String(new Date().getFullYear()));
+  const [expIsCurrent, setExpIsCurrent] = useState(false);
   const [expDesc, setExpDesc] = useState('');
   const [eduDegree, setEduDegree] = useState('');
   const [eduInstitution, setEduInstitution] = useState('');
-  const [eduYear, setEduYear] = useState('');
+  const [eduYear, setEduYear] = useState(String(new Date().getFullYear()));
 
   // About Modal States
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
@@ -354,10 +358,16 @@ export const ProfilePage: React.FC = () => {
   const handleAddExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
-    if (!expTitle || !expCompany || !expDuration) {
+    if (!expTitle || !expCompany) {
       showToast('Please fill in required fields', 'error');
       return;
     }
+
+    const start = parseInt(expStartYear || '2022', 10);
+    const end = expIsCurrent ? new Date().getFullYear() : parseInt(expEndYear || String(new Date().getFullYear()), 10);
+    const diffYears = Math.max(end - start, 0);
+    const diffText = diffYears === 0 ? '< 1 Year' : diffYears === 1 ? '1 Year' : `${diffYears} Years`;
+    const formattedDuration = `${diffText} (${start} - ${expIsCurrent ? 'Present' : end})`;
 
     setIsSaving(true);
     try {
@@ -370,7 +380,9 @@ export const ProfilePage: React.FC = () => {
       const newExpItem = {
         title: expTitle,
         company: expCompany,
-        duration: expDuration,
+        startYear: String(start),
+        endYear: expIsCurrent ? 'Present' : String(end),
+        duration: formattedDuration,
         description: expDesc
       };
       const updatedExp = [...currentExp, newExpItem];
@@ -380,6 +392,9 @@ export const ProfilePage: React.FC = () => {
         showToast('Experience added successfully', 'success');
         setExpTitle('');
         setExpCompany('');
+        setExpStartYear('2022');
+        setExpEndYear(String(new Date().getFullYear()));
+        setExpIsCurrent(false);
         setExpDuration('');
         setExpDesc('');
       } else {
@@ -422,7 +437,8 @@ export const ProfilePage: React.FC = () => {
   const handleAddEducation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
-    if (!eduDegree || !eduInstitution || !eduYear) {
+    const finalYear = eduYear.trim() || String(new Date().getFullYear());
+    if (!eduDegree || !eduInstitution) {
       showToast('Please fill in required fields', 'error');
       return;
     }
@@ -438,7 +454,7 @@ export const ProfilePage: React.FC = () => {
       const newEduItem = {
         degree: eduDegree,
         institution: eduInstitution,
-        year: eduYear
+        year: finalYear
       };
       const updatedEdu = [...currentEdu, newEduItem];
       
@@ -447,7 +463,7 @@ export const ProfilePage: React.FC = () => {
         showToast('Education added successfully', 'success');
         setEduDegree('');
         setEduInstitution('');
-        setEduYear('');
+        setEduYear(String(new Date().getFullYear()));
       } else {
         showToast(result.error || 'Failed to add education', 'error');
       }
@@ -2320,10 +2336,14 @@ export const ProfilePage: React.FC = () => {
                   <label className="form-label">Company Name *</label>
                   <input type="text" className="form-input" required value={expCompany} onChange={(e) => setExpCompany(e.target.value)} placeholder="e.g. Tata Motors" />
                 </div>
-                <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
-                  <label className="form-label">Duration *</label>
-                  <input type="text" className="form-input" required value={expDuration} onChange={(e) => setExpDuration(e.target.value)} placeholder="e.g. 2021 - Present or 2 Years" />
-                </div>
+                <ExperienceDateSelector
+                  startYear={expStartYear}
+                  onChangeStartYear={setExpStartYear}
+                  endYear={expEndYear}
+                  onChangeEndYear={setExpEndYear}
+                  isCurrent={expIsCurrent}
+                  onChangeIsCurrent={setExpIsCurrent}
+                />
                 <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
                   <label className="form-label">Description</label>
                   <textarea className="form-input" value={expDesc} onChange={(e) => setExpDesc(e.target.value)} placeholder="e.g. Managed heavy parts welding and assembly..." style={{ minHeight: '80px', resize: 'vertical' }} />
@@ -2394,10 +2414,12 @@ export const ProfilePage: React.FC = () => {
                   <label className="form-label">Institution / School *</label>
                   <input type="text" className="form-input" required value={eduInstitution} onChange={(e) => setEduInstitution(e.target.value)} placeholder="e.g. Government ITI College" />
                 </div>
-                <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
-                  <label className="form-label">Year of Completion *</label>
-                  <input type="text" className="form-input" required value={eduYear} onChange={(e) => setEduYear(e.target.value)} placeholder="e.g. 2020" />
-                </div>
+                <EducationYearPicker
+                  value={eduYear}
+                  onChange={setEduYear}
+                  label="Year of Completion"
+                  required
+                />
                 <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
                   {isSaving ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>

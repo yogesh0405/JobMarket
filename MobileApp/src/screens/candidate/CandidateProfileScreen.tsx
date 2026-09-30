@@ -76,6 +76,10 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [showPdfModal, setShowPdfModal] = useState(false);
 
   useEffect(() => {
+    refreshUser().catch(() => {});
+  }, []);
+
+  useEffect(() => {
     setName(user?.name || '');
     setHeadline(user?.headline || '');
     setLocation(user?.location || '');
@@ -120,7 +124,8 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
           return;
         }
 
-        const base64Data = `data:image/webp;base64,${file.base64}`;
+        const mime = (file as any).mimeType || (file.base64.startsWith('/9j/') ? 'image/jpeg' : (file.base64.startsWith('iVBOR') ? 'image/png' : 'image/jpeg'));
+        const base64Data = `data:${mime};base64,${file.base64}`;
 
         try {
           const apiRes = await candidateApi.uploadProfilePicture(base64Data);
