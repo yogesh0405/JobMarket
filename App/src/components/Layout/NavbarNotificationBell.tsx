@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,10 +13,143 @@ export interface NotificationItem {
   time: string;
   read: boolean;
   group: 'TODAY' | 'EARLIER';
-  type: 'device' | 'info' | 'job' | 'support';
+  type: 'device' | 'info' | 'job' | 'support' | string;
+  rawType?: string;
+  entityType?: string;
   link?: string;
   createdAtTimestamp: number;
 }
+
+export type NotificationCategory = 'ALL' | 'JOB_POSTINGS' | 'APPLICATIONS' | 'INTERVIEWS' | 'BANNERS' | 'PLATFORM' | 'OTHER';
+
+export const EMPLOYER_CATEGORY_FILTERS = [
+  { key: 'ALL', label: 'All' },
+  { key: 'JOB_POSTINGS', label: 'Job Postings' },
+  { key: 'APPLICATIONS', label: 'Applications' },
+  { key: 'BANNERS', label: 'Banners' },
+  { key: 'PLATFORM', label: 'Platform' },
+];
+
+export const CANDIDATE_CATEGORY_FILTERS = [
+  { key: 'ALL', label: 'All' },
+  { key: 'APPLICATIONS', label: 'Applications' },
+  { key: 'INTERVIEWS', label: 'Interviews' },
+  { key: 'PLATFORM', label: 'Platform' },
+];
+
+export const classifyNotification = (n: NotificationItem): NotificationCategory => {
+  const type = (n.rawType || n.type || '').toUpperCase().trim();
+  const entityType = (n.entityType || '').toUpperCase().trim();
+  const title = (n.title || '').toUpperCase().trim();
+  const msg = (n.message || '').toUpperCase().trim();
+  const link = (n.link || '').toUpperCase().trim();
+
+  // 1. BANNER / ADVERTISEMENTS
+  if (
+    entityType === 'BANNER' ||
+    entityType === 'ADVERTISEMENT' ||
+    entityType === 'AD' ||
+    type.startsWith('BANNER') ||
+    type.startsWith('AD_') ||
+    link.includes('BANNERS') ||
+    title.includes('BANNER') ||
+    title.includes('ADVERTISEMENT') ||
+    title.includes('AD CAMPAIGN')
+  ) {
+    return 'BANNERS';
+  }
+
+  // 2. INTERVIEWS & SCHEDULED CALLS
+  if (
+    entityType === 'INTERVIEW' ||
+    type.includes('INTERVIEW') ||
+    link.includes('INTERVIEW') ||
+    title.includes('INTERVIEW') ||
+    title.includes('WALK-IN') ||
+    msg.includes('SCHEDULED AN INTERVIEW') ||
+    msg.includes('INTERVIEW FOR')
+  ) {
+    return 'INTERVIEWS';
+  }
+
+  // 3. CANDIDATE APPLICATIONS & STATUSES
+  if (
+    entityType === 'APPLICATION' ||
+    type === 'JOB_APPLICATION' ||
+    type === 'APPLICATION_CONFIRMATION' ||
+    type === 'APPLICATION_STATUS' ||
+    type === 'APPLICATION_RECEIVED' ||
+    type.includes('APPLICANT') ||
+    type.includes('APPLICATION') ||
+    link.includes('TAB=APPLICANTS') ||
+    link.includes('/APPLICANTS') ||
+    link.includes('TAB=APPLIED') ||
+    link.includes('/APPLIED') ||
+    title.includes('APPLICATION') ||
+    title.includes('APPLICANT') ||
+    title.startsWith('APPLICATION STATUS') ||
+    msg.includes('APPLIED FOR') ||
+    msg.includes('YOUR APPLICATION FOR')
+  ) {
+    return 'APPLICATIONS';
+  }
+
+  // 4. JOB POSTINGS & VACANCY MANAGEMENT
+  if (
+    entityType === 'JOB' ||
+    type === 'JOB_APPROVAL' ||
+    type === 'JOB_APPROVED' ||
+    type === 'JOB_REJECTED' ||
+    type === 'JOB_POSTED' ||
+    type === 'JOB_EXPIRED' ||
+    type === 'JOB_CREATED' ||
+    type === 'JOB_UPDATED' ||
+    type === 'JOB_EXPIRY' ||
+    type.startsWith('JOB_') ||
+    link.includes('TAB=MANAGE') ||
+    link.includes('/EMPLOYER/JOBS') ||
+    link.includes('/MANAGE-JOBS') ||
+    title.includes('JOB POST') ||
+    title.includes('JOB SUBMITTED') ||
+    title.includes('JOB APPROVED') ||
+    title.includes('JOB REJECTED') ||
+    title.includes('VACANCY') ||
+    msg.includes('YOUR JOB POST') ||
+    msg.includes('JOB HAS BEEN')
+  ) {
+    return 'JOB_POSTINGS';
+  }
+
+  // 5. PLATFORM & ADMIN NOTIFICATIONS
+  if (
+    entityType === 'SUPPORT' ||
+    entityType === 'TICKET' ||
+    entityType === 'ADMIN' ||
+    entityType === 'SYSTEM' ||
+    entityType === 'KYC' ||
+    entityType === 'VERIFICATION' ||
+    type.includes('SUPPORT') ||
+    type.includes('TICKET') ||
+    type.includes('ADMIN') ||
+    type.includes('SYSTEM') ||
+    type.includes('BROADCAST') ||
+    type.includes('KYC') ||
+    type.includes('VERIF') ||
+    type.includes('AADHAAR') ||
+    type.includes('ACCOUNT') ||
+    type.includes('SECURITY') ||
+    link.includes('SUPPORT') ||
+    link.includes('TICKETS') ||
+    link.includes('ADMIN') ||
+    link.includes('SECURITY') ||
+    title.includes('SUPPORT') ||
+    title.includes('TICKET')
+  ) {
+    return 'PLATFORM';
+  }
+
+  return 'OTHER';
+};
 
 export const NavbarNotificationBell: React.FC = () => {
   const navigate = useNavigate();
@@ -84,6 +217,8 @@ export const NavbarNotificationBell: React.FC = () => {
             read: isRead,
             group: isToday ? 'TODAY' : 'EARLIER',
             type: notifType,
+            rawType: item.type || '',
+            entityType: item.entity_type || item.entityType || '',
             link: item.link || '/dashboard',
             createdAtTimestamp: createdMs
           });
@@ -253,8 +388,39 @@ export const NavbarNotificationBell: React.FC = () => {
     );
   };
 
-  const todayItems = notifications.filter(n => n.group === 'TODAY');
-  const earlierItems = notifications.filter(n => n.group === 'EARLIER');
+  const isEmployer = (currentUser?.role || '').toLowerCase() === 'employer';
+  const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+
+  const categoryFilterOptions = useMemo(() => {
+    return isEmployer ? EMPLOYER_CATEGORY_FILTERS : CANDIDATE_CATEGORY_FILTERS;
+  }, [isEmployer]);
+
+  const displayedList = useMemo(() => {
+    return notifications.filter((n) => {
+      // 1. Read / Unread tab filter
+      if (filter === 'UNREAD' && n.read) {
+        return false;
+      }
+
+      // 2. Category capsule filter
+      if (selectedCategory !== 'ALL') {
+        const cat = classifyNotification(n);
+        if (selectedCategory === 'PLATFORM') {
+          if (cat !== 'PLATFORM' && cat !== 'OTHER') {
+            return false;
+          }
+        } else if (cat !== selectedCategory) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [notifications, filter, selectedCategory]);
+
+  const todayItems = displayedList.filter((n) => n.group === 'TODAY');
+  const earlierItems = displayedList.filter((n) => n.group === 'EARLIER');
 
   const renderItemCard = (item: NotificationItem) => {
     const isUnread = !item.read;
@@ -573,6 +739,130 @@ export const NavbarNotificationBell: React.FC = () => {
               </div>
             )}
 
+            {/* Tab Bar: ALL vs UNREAD (Matching MobileApp Notification Screen) */}
+            <div
+              style={{
+                display: 'flex',
+                borderBottom: '1px solid #f1f5f9',
+                padding: '0 20px',
+                background: '#ffffff',
+                flexShrink: 0,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setFilter('ALL')}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: filter === 'ALL' ? '2.5px solid #1b4fdf' : '2.5px solid transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  fontWeight: filter === 'ALL' ? 700 : 600,
+                  color: filter === 'ALL' ? '#1b4fdf' : '#64748b',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>All</span>
+                <span
+                  style={{
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    backgroundColor: filter === 'ALL' ? '#eff6ff' : '#f1f5f9',
+                    color: filter === 'ALL' ? '#1b4fdf' : '#64748b',
+                  }}
+                >
+                  {notifications.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFilter('UNREAD')}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: filter === 'UNREAD' ? '2.5px solid #1b4fdf' : '2.5px solid transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  fontWeight: filter === 'UNREAD' ? 700 : 600,
+                  color: filter === 'UNREAD' ? '#1b4fdf' : '#64748b',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>Unread</span>
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      backgroundColor: filter === 'UNREAD' ? '#fef2f2' : '#f1f5f9',
+                      color: filter === 'UNREAD' ? '#dc2626' : '#64748b',
+                    }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* LinkedIn-Style Horizontal Capsule Filter Pills (Matching Mobile Notification Screen) */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+                background: '#ffffff',
+                borderBottom: '1px solid #f1f5f9',
+                flexShrink: 0,
+              }}
+            >
+              {categoryFilterOptions.map((cat) => {
+                const isActive = selectedCategory === cat.key;
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.key)}
+                    style={{
+                      padding: '5px 13px',
+                      borderRadius: '9999px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      border: isActive ? '1px solid #1b4fdf' : '1px solid #e2e8f0',
+                      backgroundColor: isActive ? '#1b4fdf' : '#f8fafc',
+                      color: isActive ? '#ffffff' : '#475569',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Notifications Scroll Body */}
             <div
               style={{
@@ -585,13 +875,23 @@ export const NavbarNotificationBell: React.FC = () => {
                 <div style={{ padding: '36px 0', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
                   Loading real notifications...
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : displayedList.length === 0 ? (
                 <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px auto', color: '#94a3b8' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
                   </div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>No notifications yet</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Real hiring events, support replies, and application status updates will appear here.</div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>
+                    {filter === 'UNREAD'
+                      ? 'No unread notifications'
+                      : selectedCategory !== 'ALL'
+                      ? `No ${categoryFilterOptions.find((c) => c.key === selectedCategory)?.label || ''} notifications`
+                      : 'No notifications yet'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    {filter === 'UNREAD'
+                      ? 'You have caught up with all updates!'
+                      : 'Real hiring events, support replies, and application status updates will appear here.'}
+                  </div>
                 </div>
               ) : (
                 <>

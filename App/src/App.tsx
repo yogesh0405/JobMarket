@@ -24,6 +24,7 @@ import { PrivacyPage } from './features/static/PrivacyPage';
 import { CompanyProfilePage } from './features/company/CompanyProfilePage';
 import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
 import { SecurityPage } from './features/security/SecurityPage';
+import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { useAuth } from './hooks/useAuth';
 import { apiFetch } from './utils/api';
 import { useStore } from './store/useStore';
@@ -227,6 +228,8 @@ export const App: React.FC = () => {
           <Route path="/p/:id" element={<PublicProfilePage />} />
           <Route path="/interviews" element={<Navigate to="/dashboard?tab=interviews" replace />} />
           <Route path="/scheduled-interviews" element={<Navigate to="/dashboard?tab=interviews" replace />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/alerts" element={<NotificationsPage />} />
           <Route path="/security" element={<Navigate to="/dashboard?tab=security" replace />} />
           <Route path="/about" element={currentUser ? <Navigate to="/dashboard?tab=about" replace /> : <AboutPage />} />
           <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />

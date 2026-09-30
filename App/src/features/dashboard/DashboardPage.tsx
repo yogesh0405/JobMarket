@@ -26,6 +26,7 @@ import { EmployerAdvertisements } from './EmployerAdvertisements';
 import { EmployerInterviewsTab } from '../interviews/EmployerInterviewsTab';
 import { CandidateInterviewsTab } from '../interviews/CandidateInterviewsTab';
 import { SecuritySettings } from '../../components/profile/SecuritySettings';
+import { NotificationsPage } from '../notifications/NotificationsPage';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import {
@@ -562,6 +563,8 @@ export const DashboardPage: React.FC = () => {
           <main className="dashboard-main">
             {tab === 'security' ? (
               <SecuritySettings />
+            ) : tab === 'notifications' || tab === 'alerts' ? (
+              <NotificationsPage />
             ) : tab === 'about' ? (
               <AboutPage />
             ) : tab === 'support' ? (
