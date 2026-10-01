@@ -16,8 +16,7 @@ import {
   User, 
   FileText, 
   Building2, 
-  Home,
-  Search
+  Home
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -25,7 +24,6 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { getInitials } from '../../utils/helpers';
 import { apiFetch } from '../../utils/api';
-import { HeaderSearchBar } from './HeaderSearchBar';
 import { NavbarNotificationBell } from './NavbarNotificationBell';
 import { JobMarketLogoSvg } from '../common/JobMarketLogoSvg';
 import { MetaVerifiedBadge } from '../common/MetaVerifiedBadge';
@@ -120,7 +118,7 @@ export const Navbar: React.FC = () => {
       setMobileMenuOpen(prev => !prev);
       if (syncUser) syncUser();
     } else {
-      setDropdownOpen(prev => !prev);
+      navigate(currentUser?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }
   };
 
@@ -283,66 +281,48 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => navigate('/search')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#0F172A',
-                  borderRadius: '50%',
-                }}
-                title="Search"
-              >
-                <Search size={20} color="#0F172A" />
-              </button>
-
               <NavbarNotificationBell />
 
-              {currentUser ? (
-                <div 
-                  className="navbar-profile-trigger desktop-only-avatar" 
-                  onClick={handleProfileClick} 
-                  ref={dropdownRef} 
+              {/* Avatar — desktop only, navigates straight to dashboard */}
+              {currentUser && (
+                <div
+                  className="navbar-profile-trigger desktop-only-avatar"
+                  onClick={handleProfileClick}
+                  ref={dropdownRef}
                   style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center', position: 'relative' }}
-                  title="Account Menu"
+                  title="Dashboard"
                 >
-                  <div 
-                    className="navbar-avatar" 
-                    style={{ 
-                      width: '34px', 
-                      height: '34px', 
-                      borderRadius: '50%', 
-                      overflow: 'hidden', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      background: isEmployer ? '#ffffff' : '#1764E8', 
-                      color: '#ffffff', 
+                  <div
+                    className="navbar-avatar"
+                    style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isEmployer ? '#ffffff' : '#1764E8',
+                      color: '#ffffff',
                       boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
                       border: '1.5px solid #DBEAFE',
                       flexShrink: 0
                     }}
                   >
                     {isEmployer ? (
-                      <CompanyDefaultLogo 
-                        logoUrl={userPhoto} 
-                        companyName={userDisplayName} 
-                        size={34} 
-                        borderRadius="50%" 
+                      <CompanyDefaultLogo
+                        logoUrl={userPhoto}
+                        companyName={userDisplayName}
+                        size={34}
+                        borderRadius="50%"
                       />
                     ) : userPhoto && !avatarImgError ? (
-                      <img 
+                      <img
                         key={String(userPhoto)}
-                        src={userPhoto} 
-                        alt={userDisplayName} 
+                        src={userPhoto}
+                        alt={userDisplayName}
                         referrerPolicy="no-referrer"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={() => setAvatarImgError(true)}
                       />
                     ) : (
@@ -351,63 +331,30 @@ export const Navbar: React.FC = () => {
                       </span>
                     )}
                   </div>
-
-                  {dropdownOpen && (
-                    <div className="user-dropdown" style={{ position: 'absolute', right: 0, top: '100%', marginTop: '8px', zIndex: 1000, minWidth: '220px' }}>
-                      <div style={{ padding: '10px 14px', borderBottom: '1px solid #F1F5F9' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {userDisplayName}
-                          </span>
-                          {isEmployer && <MetaVerifiedBadge size={15} color="#0095F6" title="Verified Employer" />}
-                        </div>
-                        {userIndustry ? (
-                          <div style={{ fontSize: '11.5px', fontWeight: '600', color: '#1764E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
-                            {userIndustry}
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '11.5px', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
-                            {currentUser.email}
-                          </div>
-                        )}
-                      </div>
-                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate(currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard'); }}>
-                        <Briefcase size={16} style={{ marginRight: 8 }} />
-                        {t.dashboard}
-                      </button>
-                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/security'); }}>
-                        <ShieldCheck size={16} style={{ marginRight: 8 }} />
-                        Security & Sessions
-                      </button>
-                      <div className="dropdown-divider"></div>
-                      <button className="dropdown-item danger" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
-                        <LogOut size={16} style={{ marginRight: 8 }} />
-                        {t.logout}
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ) : (
+              )}
+
+              {/* ── MOBILE THREE-DOT MENU — always shown on mobile ── */}
+              <button
+                type="button"
+                className="navbar-mobile-dots-btn"
+                onClick={() => {
+                  const nextOpen = !mobileMenuOpen;
+                  setMobileMenuOpen(nextOpen);
+                  if (nextOpen && syncUser) syncUser();
+                }}
+                title="Menu"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MoreVertical size={22} color="#1E293B" strokeWidth={2.2} />
+              </button>
+
+              {/* Desktop guest auth buttons */}
+              {!currentUser && (
                 <div className="header-auth-buttons">
                   <Link to="/login" className="btn btn-ghost btn-sm">{t.login}</Link>
                   <Link to="/signup" className="btn btn-primary btn-sm btn-pill" style={{ background: 'var(--gradient-accent)' }}>{t.signup}</Link>
                 </div>
-              )}
-
-              {/* Only show mobile three-dot toggle when NOT logged in (Guest) */}
-              {!currentUser && (
-                <button 
-                  type="button"
-                  className={`navbar-toggle ${mobileMenuOpen ? 'open' : ''}`} 
-                  onClick={() => {
-                    const nextOpen = !mobileMenuOpen;
-                    setMobileMenuOpen(nextOpen);
-                  }}
-                  title="Menu"
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <MoreVertical size={20} color="#1E293B" strokeWidth={2.2} />
-                </button>
               )}
             </div>
           </div>

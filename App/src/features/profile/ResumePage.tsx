@@ -6,7 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
 import { uploadResumeFast } from '../../utils/uploadToCloudinary';
 
-export const ResumePage: React.FC = () => {
+export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embeddedInDashboard = false }) => {
   const navigate = useNavigate();
   const { currentUser, syncUser, deleteResume, updateUser } = useAuth();
   const { showToast } = useToast();
@@ -302,8 +302,8 @@ export const ResumePage: React.FC = () => {
     }) : 'Recently';
 
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
-        {renderHeader('My Resume', 'Manage your active candidate document')}
+      <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: '#FFFFFF' }}>
+        {!embeddedInDashboard && renderHeader('My Resume', 'Manage your active candidate document')}
         <div className="resume-page" style={{ padding: '20px 16px 60px' }}>
           <div style={{ maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0 auto' }}>
             {/* Main Card */}
@@ -589,8 +589,8 @@ export const ResumePage: React.FC = () => {
   const isImageFile = selectedFile ? selectedFile.type.startsWith('image/') : false;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
-      {renderHeader('Upload Resume', 'Upload candidate resume document')}
+    <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: '#FFFFFF' }}>
+      {!embeddedInDashboard && renderHeader('Upload Resume', 'Upload candidate resume document')}
       <div className="resume-page" style={{ padding: '28px 16px 60px' }}>
         <div style={{ maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0 auto' }}>
         {/* Main Upload Card */}

@@ -40,11 +40,6 @@ const CATEGORIES = [
   'Packaging',
 ];
 
-const SEARCH_PLACEHOLDERS = [
-  'Search jobs...',
-  'Search trades (CNC, Welder, Fitter)...',
-  'Search locations (Waluj, Chakan)...',
-];
 
 function formatTimeAgo(dateString?: string): string {
   if (!dateString) return 'Just now';
@@ -77,7 +72,6 @@ export const JobSearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   // Saved Jobs Local State
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
@@ -104,13 +98,6 @@ export const JobSearchPage: React.FC = () => {
     });
   };
 
-  // Rotating placeholder
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
-    }, 2500);
-    return () => clearInterval(timer);
-  }, []);
 
   // Sync search query from URL params when navigating from Home page or external links
   useEffect(() => {
@@ -357,6 +344,7 @@ export const JobSearchPage: React.FC = () => {
             onClick={() => navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
             style={{
               flex: 1,
+              minWidth: 0,
               display: 'flex',
               alignItems: 'center',
               backgroundColor: '#F8FAFC',
@@ -373,6 +361,7 @@ export const JobSearchPage: React.FC = () => {
             <div
               style={{
                 flex: 1,
+                minWidth: 0,
                 fontSize: '12.5px',
                 color: searchQuery ? '#0F172A' : '#64748B',
                 fontWeight: searchQuery ? 600 : 500,
@@ -382,7 +371,7 @@ export const JobSearchPage: React.FC = () => {
                 textOverflow: 'ellipsis',
               }}
             >
-              {searchQuery || SEARCH_PLACEHOLDERS[placeholderIndex]}
+              {searchQuery || 'Search jobs...'}
             </div>
             {searchQuery.length > 0 && (
               <button
@@ -412,7 +401,7 @@ export const JobSearchPage: React.FC = () => {
             <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
 
             <button
-              onClick={() => setFilterDrawerOpen(true)}
+              onClick={(e) => { e.stopPropagation(); setFilterDrawerOpen(true); }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -463,6 +452,7 @@ export const JobSearchPage: React.FC = () => {
             gap: '2px',
             height: '40px',
             boxSizing: 'border-box',
+            flexShrink: 0,
           }}>
             <button
               onClick={() => setViewMode('grid')}

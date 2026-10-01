@@ -435,6 +435,12 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             background-color: transparent !important;
             padding: 0 0 40px 0;
           }
+          .cand-desktop-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+          }
           .cand-metrics-bar {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -448,12 +454,25 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           .cand-metric-tag {
             font-size: 12px;
           }
-          .cand-toolbar-row {
+          .cand-toolbar-top-row {
+            display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
             gap: 16px;
+            margin-bottom: 10px;
+          }
+          .cand-toolbar-filter-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+          }
+          .cand-toolbar-row {
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 0;
           }
           .cand-tab-strip {
             background-color: #FFFFFF;
@@ -461,6 +480,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             border-radius: 8px;
             padding: 6px;
             width: auto;
+            border-bottom: 1px solid #E2E8F0;
           }
           .cand-tab-btn {
             font-size: 13px;
@@ -471,7 +491,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             border: 1px solid #E2E8F0;
             border-radius: 8px;
             margin: 0;
-            min-width: 320px;
+            min-width: 260px;
             padding: 8px 14px;
           }
           .cand-list-wrap {
@@ -486,6 +506,9 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           .cand-card-company-name {
             font-size: 14px !important;
           }
+          .cand-filter-chips-mobile {
+            display: none;
+          }
         }
 
         @media (max-width: 767px) {
@@ -495,6 +518,21 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           .cand-inner-content {
             padding: 0 0 32px 0;
             background-color: #F8FAFC !important;
+          }
+          /* Hide desktop-only rows on mobile */
+          .cand-toolbar-top-row {
+            display: none !important;
+          }
+          .cand-toolbar-filter-row {
+            display: none !important;
+          }
+          /* Show mobile toolbar */
+          .cand-filter-chips-mobile {
+            display: flex !important;
+          }
+          .cand-desktop-wrap {
+            max-width: 100%;
+            padding: 0;
           }
           .cand-list-wrap {
             padding: 8px 12px;
@@ -581,6 +619,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
       </div>
 
       <div className="cand-inner-content">
+        <div className="cand-desktop-wrap">
         {/* Top Metrics Strip */}
         <div className="cand-metrics-bar">
           <div className="cand-metric-box">
@@ -605,8 +644,8 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           </div>
         </div>
 
-        {/* Tab Strip & Search Bar Row */}
-        <div className="cand-toolbar-row">
+        {/* Desktop: Top row — Tabs + Search */}
+        <div className="cand-toolbar-top-row">
           <div className="cand-tab-strip">
             <button
               type="button"
@@ -619,14 +658,13 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                 <span className="cand-tab-counter">{upcomingList.length}</span>
               )}
             </button>
-
             <button
               type="button"
               className={`cand-tab-btn ${activeTab === 'past' ? 'active' : ''}`}
               onClick={() => setActiveTab('past')}
             >
               <CalendarCheck2 size={16} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
-              <span>Past & Completed</span>
+              <span>Past &amp; Completed</span>
               {pastList.length > 0 && (
                 <span className="cand-tab-counter">{pastList.length}</span>
               )}
@@ -660,7 +698,126 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               </button>
             )}
           </div>
-          {/* Sub-filters for Walk-in Passes vs 1-on-1 Interviews */}
+        </div>
+
+        {/* Desktop: Filter chips row */}
+        <div className="cand-toolbar-filter-row">
+          <button
+            type="button"
+            onClick={() => setFilterType('ALL')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: filterType === 'ALL' ? 800 : 600,
+              backgroundColor: filterType === 'ALL' ? '#1D4ED8' : '#FFFFFF',
+              color: filterType === 'ALL' ? '#FFFFFF' : '#64748B',
+              border: `1px solid ${filterType === 'ALL' ? '#1D4ED8' : '#CBD5E1'}`,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            All Schedules ({currentList.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('WALK_IN')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: filterType === 'WALK_IN' ? 800 : 600,
+              backgroundColor: filterType === 'WALK_IN' ? '#1D4ED8' : '#FFFFFF',
+              color: filterType === 'WALK_IN' ? '#FFFFFF' : '#64748B',
+              border: `1px solid ${filterType === 'WALK_IN' ? '#1D4ED8' : '#CBD5E1'}`,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Ticket size={12} />
+            <span>Walk-in Passes ({currentList.filter(i => i.is_walk_in).length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('SCHEDULED')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: filterType === 'SCHEDULED' ? 800 : 600,
+              backgroundColor: filterType === 'SCHEDULED' ? '#1D4ED8' : '#FFFFFF',
+              color: filterType === 'SCHEDULED' ? '#FFFFFF' : '#64748B',
+              border: `1px solid ${filterType === 'SCHEDULED' ? '#1D4ED8' : '#CBD5E1'}`,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            1-on-1 Interviews ({currentList.filter(i => !i.is_walk_in).length})
+          </button>
+        </div>
+
+        {/* Mobile: Toolbar (hidden on desktop via CSS) */}
+        <div className="cand-toolbar-row cand-filter-chips-mobile">
+          <div className="cand-tab-strip">
+            <button
+              type="button"
+              className={`cand-tab-btn ${activeTab === 'upcoming' ? 'active' : ''}`}
+              onClick={() => setActiveTab('upcoming')}
+            >
+              <CalendarClock size={16} color={activeTab === 'upcoming' ? '#1764E8' : '#64748B'} />
+              <span>Upcoming Interviews</span>
+              {upcomingList.length > 0 && (
+                <span className="cand-tab-counter">{upcomingList.length}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              className={`cand-tab-btn ${activeTab === 'past' ? 'active' : ''}`}
+              onClick={() => setActiveTab('past')}
+            >
+              <CalendarCheck2 size={16} color={activeTab === 'past' ? '#1764E8' : '#64748B'} />
+              <span>Past &amp; Completed</span>
+              {pastList.length > 0 && (
+                <span className="cand-tab-counter">{pastList.length}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="cand-search-input-wrap">
+            <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Search company, job..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                border: 'none',
+                outline: 'none',
+                fontSize: '13px',
+                color: '#0F172A',
+                width: '100%',
+                backgroundColor: 'transparent'
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#64748B' }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          {/* Sub-filters */}
           <div
             className="no-scrollbar"
             style={{
@@ -1127,6 +1284,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             </div>
           )}
         </div>
+        </div>{/* end cand-desktop-wrap */}
       </div>
 
       {/* Official Walk-in Drive Admit Card Pass Modal */}

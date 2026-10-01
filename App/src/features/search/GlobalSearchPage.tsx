@@ -336,158 +336,189 @@ export const GlobalSearchPage: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Header matching Mobile App */}
+      <style>{`
+        .gsp-header-inner {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 0 16px;
+          box-sizing: border-box;
+        }
+        .gsp-tabs-inner {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 0 16px;
+          box-sizing: border-box;
+        }
+        @media (max-width: 767px) {
+          .gsp-header-inner {
+            max-width: 100%;
+            padding: 0 4px 0 0;
+          }
+          .gsp-tabs-inner {
+            max-width: 100%;
+            padding: 0 12px;
+          }
+        }
+      `}</style>
+
+      {/* Top Header */}
       <div style={{
         position: 'sticky',
         top: 0,
         zIndex: 1000,
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #F1F5F9',
-        padding: '10px 8px 10px 4px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
+        padding: '10px 0',
         boxSizing: 'border-box'
       }}>
-        <button
-          type="button"
-          onClick={handleBack}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '6px 4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#0F172A',
-            borderRadius: '50%',
-            flexShrink: 0
-          }}
-          title="Back"
-        >
-          <ArrowLeft size={22} color="#0F172A" strokeWidth={2} />
-        </button>
-
-        {/* Pill Search Input Wrapper */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '0 10px',
-          height: '36px',
-          border: '1.2px solid #CBD5E1',
-          boxSizing: 'border-box'
-        }}>
-          <Search size={15} color="#64748B" style={{ marginRight: '6px', flexShrink: 0 }} />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleExecuteSearch(searchQuery);
-              }
-            }}
-            placeholder={
-              activeCategory === 'companies'
-                ? 'Search companies, factories, MIDC zones...'
-                : activeCategory === 'jobs'
-                ? 'Search jobs, trades, roles, skills...'
-                : 'Search jobs, companies, skills, locations...'
-            }
-            style={{
-              flex: 1,
-              fontSize: '12px',
-              color: '#0F172A',
-              fontWeight: 500,
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              padding: 0,
-              margin: 0,
-              width: '100%'
-            }}
-          />
-          {searchQuery.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                searchInputRef.current?.focus();
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#64748B'
-              }}
-            >
-              <X size={14} color="#64748B" />
-            </button>
-          )}
-        </div>
-
-        {searchQuery.trim().length > 0 && (
+        <div className="gsp-header-inner">
           <button
             type="button"
-            onClick={() => handleExecuteSearch(searchQuery)}
+            onClick={handleBack}
             style={{
               background: 'none',
               border: 'none',
-              color: '#1D4ED8',
-              fontSize: '12px',
-              fontWeight: 700,
               cursor: 'pointer',
               padding: '6px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#0F172A',
+              borderRadius: '50%',
               flexShrink: 0
             }}
+            title="Back"
           >
-            Search
+            <ArrowLeft size={22} color="#0F172A" strokeWidth={2} />
           </button>
-        )}
+
+          {/* Pill Search Input Wrapper */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            padding: '0 10px',
+            height: '36px',
+            border: '1.2px solid #CBD5E1',
+            boxSizing: 'border-box'
+          }}>
+            <Search size={15} color="#64748B" style={{ marginRight: '6px', flexShrink: 0 }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleExecuteSearch(searchQuery);
+                }
+              }}
+              placeholder={
+                activeCategory === 'companies'
+                  ? 'Search companies, factories, MIDC zones...'
+                  : activeCategory === 'jobs'
+                  ? 'Search jobs, trades, roles, skills...'
+                  : 'Search jobs, companies, skills, locations...'
+              }
+              style={{
+                flex: 1,
+                fontSize: '13px',
+                color: '#0F172A',
+                fontWeight: 500,
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                padding: 0,
+                margin: 0,
+                width: '100%'
+              }}
+            />
+            {searchQuery.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  searchInputRef.current?.focus();
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B'
+                }}
+              >
+                <X size={14} color="#64748B" />
+              </button>
+            )}
+          </div>
+
+          {searchQuery.trim().length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleExecuteSearch(searchQuery)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#1D4ED8',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '6px 4px',
+                flexShrink: 0
+              }}
+            >
+              Search
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Scope Category Filter Tabs: All, Jobs, Companies */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '8px 12px',
         borderBottom: '1px solid #F1F5F9',
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#FFFFFF',
+        padding: '8px 0',
       }}>
-        {(['all', 'jobs', 'companies'] as const).map((cat) => {
-          const isActive = activeCategory === cat;
-          const label = cat === 'all' ? 'All' : cat === 'jobs' ? 'Jobs' : 'Companies';
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setActiveCategory(cat)}
-              style={{
-                padding: '3.5px 12px',
-                borderRadius: '14px',
-                fontSize: '11px',
-                fontWeight: isActive ? 700 : 600,
-                backgroundColor: isActive ? '#1D4ED8' : '#F1F5F9',
-                color: isActive ? '#FFFFFF' : '#475569',
-                border: isActive ? '1px solid #1D4ED8' : '1px solid #E2E8F0',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
+        <div className="gsp-tabs-inner">
+          {(['all', 'jobs', 'companies'] as const).map((cat) => {
+            const isActive = activeCategory === cat;
+            const label = cat === 'all' ? 'All' : cat === 'jobs' ? 'Jobs' : 'Companies';
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '3.5px 12px',
+                  borderRadius: '14px',
+                  fontSize: '11px',
+                  fontWeight: isActive ? 700 : 600,
+                  backgroundColor: isActive ? '#1D4ED8' : '#F1F5F9',
+                  color: isActive ? '#FFFFFF' : '#475569',
+                  border: isActive ? '1px solid #1D4ED8' : '1px solid #E2E8F0',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Content Scroll View */}

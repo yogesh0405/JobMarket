@@ -2192,6 +2192,10 @@
   background: #eff6ff;
 }
 
+.navbar-mobile-dots-btn {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .navbar {
     height: auto !important;
@@ -2316,6 +2320,10 @@
 
   .desktop-only-avatar {
     display: none !important;
+  }
+
+  .navbar-mobile-dots-btn {
+    display: flex !important;
   }
 
   /* Candidate Details Modal Mobile Alignment */

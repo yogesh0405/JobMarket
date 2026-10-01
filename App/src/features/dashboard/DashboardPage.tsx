@@ -119,13 +119,10 @@ export const DashboardPage: React.FC = () => {
   }, [currentUser, navigate, showToast]);
 
   useEffect(() => {
-    if (rawTab === 'resume') {
-      navigate('/resume', { replace: true });
-    }
     if (typeof window !== 'undefined' && window.innerWidth <= 768 && (tab === 'notifications' || tab === 'alerts')) {
       navigate('/notifications', { replace: true });
     }
-  }, [rawTab, tab, navigate]);
+  }, [tab, navigate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -514,7 +511,7 @@ export const DashboardPage: React.FC = () => {
                   <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
                   <button
                     className={`dashboard-nav-item tab-resume ${tab === 'resume' ? 'active' : ''}`}
-                    onClick={() => navigate('/resume')}
+                    onClick={() => setTab('resume')}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -568,7 +565,9 @@ export const DashboardPage: React.FC = () => {
 
           {/* Main Dashboard Content */}
           <main className="dashboard-main">
-            {tab === 'security' ? (
+            {tab === 'resume' ? (
+              <ResumePage embeddedInDashboard />
+            ) : tab === 'security' ? (
               <SecuritySettings />
             ) : tab === 'notifications' || tab === 'alerts' ? (
               <NotificationsPage />
