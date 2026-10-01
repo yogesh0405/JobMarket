@@ -320,40 +320,42 @@ export const JobSearchPage: React.FC = () => {
           boxSizing: 'border-box'
         }}>
           {/* Search Input Box */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#F8FAFC',
-            border: '1px solid #CBD5E1',
-            borderRadius: '6px',
-            padding: '0 10px',
-            height: '40px',
-            gap: '8px',
-            boxSizing: 'border-box',
-          }}>
+          <div
+            onClick={() => navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              borderRadius: '6px',
+              padding: '0 10px',
+              height: '40px',
+              gap: '8px',
+              boxSizing: 'border-box',
+              cursor: 'pointer',
+            }}
+          >
             <Search size={16} color="#64748B" style={{ flexShrink: 0 }} />
-            <input
-              type="text"
-              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            <div
               style={{
                 flex: 1,
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
                 fontSize: '12.5px',
-                color: '#0F172A',
-                fontWeight: 500,
-                padding: 0,
-                margin: 0,
-                width: '100%'
+                color: searchQuery ? '#0F172A' : '#64748B',
+                fontWeight: searchQuery ? 600 : 500,
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
-            />
+            >
+              {searchQuery || SEARCH_PLACEHOLDERS[placeholderIndex]}
+            </div>
             {searchQuery.length > 0 && (
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
                   setSearchQuery('');
                   setSearchParams({});
                 }}

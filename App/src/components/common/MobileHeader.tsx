@@ -19,7 +19,8 @@ import {
   HelpCircle,
   LogOut,
   LayoutDashboard,
-  Sparkles
+  Sparkles,
+  Search
 } from 'lucide-react';
 import { JobMarketLogoSvg } from './JobMarketLogoSvg';
 import { NavbarNotificationBell } from '../Layout/NavbarNotificationBell';
@@ -201,7 +202,25 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
         {/* Right: Bell Icon & Three Dot Menu Icon (100% Mobile App Match) */}
         {!hideRightActions && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/search')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#0F172A',
+                borderRadius: '50%',
+              }}
+              title="Search"
+            >
+              <Search size={20} color="#0F172A" strokeWidth={2} />
+            </button>
             {!hideBell && (
               onBellClick ? (
                 <div 

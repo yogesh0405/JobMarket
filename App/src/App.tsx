@@ -23,6 +23,7 @@ import { TermsPage } from './features/static/TermsPage';
 import { PrivacyPage } from './features/static/PrivacyPage';
 import { CompanyProfilePage } from './features/company/CompanyProfilePage';
 import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
+import { GlobalSearchPage } from './features/search/GlobalSearchPage';
 import { SecurityPage } from './features/security/SecurityPage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { useAuth } from './hooks/useAuth';
@@ -204,6 +205,7 @@ export const App: React.FC = () => {
         <Route element={<Layout />}>
           {/* Candidate / Public Only Routes (Employers redirected to /dashboard) */}
           <Route path="/" element={<CandidateOrGuestOnly><HomePage /></CandidateOrGuestOnly>} />
+          <Route path="/search" element={<GlobalSearchPage />} />
           <Route path="/jobs" element={<CandidateOrGuestOnly><JobSearchPage /></CandidateOrGuestOnly>} />
           <Route path="/jobs/map" element={<CandidateOrGuestOnly><JobMapPage /></CandidateOrGuestOnly>} />
           <Route path="/job/:id" element={<JobDetailPage />} />

@@ -184,10 +184,7 @@ export const HomePage: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setShowSuggestions(true);
-        setIsInputFocused(true);
+        navigate('/search');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -749,80 +746,46 @@ export const HomePage: React.FC = () => {
       <div className="home-main-container">
         {/* Top Search Bar & Live Autocomplete */}
         <div style={{ position: 'relative', width: '100%', zIndex: 100 }} ref={searchContainerRef}>
-          <div className="home-top-search-bar" style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#FFFFFF',
-            border: isInputFocused ? '1.5px solid #1B4FDF' : '1px solid #CBD5E1',
-            borderRadius: '8px',
-            padding: '0 14px',
-            height: '48px',
-            gap: '10px',
-            boxSizing: 'border-box',
-            boxShadow: isInputFocused ? '0 0 0 3px rgba(27, 79, 223, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06)' : '0 1px 3px rgba(15, 23, 42, 0.05)',
-            transition: 'all 0.15s ease',
-          }}>
-            <Search
-              size={18}
-              color={isInputFocused ? '#1B4FDF' : '#64748B'}
-              style={{ flexShrink: 0, cursor: 'pointer' }}
-              onClick={() => handleSearchSubmit()}
-            />
+          <div
+            className="home-top-search-bar"
+            onClick={() => navigate('/search')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              padding: '0 14px',
+              height: '48px',
+              gap: '10px',
+              boxSizing: 'border-box',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+              <Search
+                size={18}
+                color="#1B4FDF"
+                style={{ flexShrink: 0 }}
+              />
 
-            <input
-              ref={searchInputRef}
-              className="home-top-search-input"
-              type="text"
-              placeholder={isInputFocused ? 'Search by role, trade, company or MIDC zone...' : SEARCH_PLACEHOLDERS[placeholderIndex]}
-              value={topSearch}
-              onChange={(e) => {
-                setTopSearch(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => {
-                setIsInputFocused(true);
-                setShowSuggestions(true);
-              }}
-              onKeyDown={handleInputKeyDown}
-              style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
-                fontSize: '14.5px',
-                color: '#0F172A',
-                fontWeight: 600,
-                padding: 0,
-                margin: 0,
-                width: '100%',
-              }}
-            />
-
-            {topSearch.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setTopSearch('');
-                  searchInputRef.current?.focus();
-                }}
+              <div
                 style={{
-                  background: '#F1F5F9',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  padding: 0,
-                  flexShrink: 0,
+                  flex: 1,
+                  fontSize: '14.5px',
+                  color: '#64748B',
+                  fontWeight: 500,
+                  userSelect: 'none',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
-                title="Clear search"
               >
-                <X size={14} color="#64748B" />
-              </button>
-            ) : (
+                {SEARCH_PLACEHOLDERS[placeholderIndex]}
+              </div>
+
               <kbd style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -840,13 +803,16 @@ export const HomePage: React.FC = () => {
               }}>
                 ⌘K
               </kbd>
-            )}
+            </div>
 
             <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0', flexShrink: 0 }} />
 
             <button
               type="button"
-              onClick={() => setHomeFilterDrawerOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setHomeFilterDrawerOpen(true);
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -887,8 +853,8 @@ export const HomePage: React.FC = () => {
             </button>
           </div>
 
-          {/* Autocomplete Dropdown Overlay */}
-          {showSuggestions && (
+          {/* Autocomplete Dropdown Overlay disabled - search opens dedicated /search page */}
+          {false && showSuggestions && (
             <div style={{
               position: 'absolute',
               top: '54px',

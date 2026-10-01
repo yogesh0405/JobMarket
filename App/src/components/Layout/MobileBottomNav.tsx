@@ -72,7 +72,8 @@ export const MobileBottomNav: React.FC = () => {
     isContactSection ||
     isSecuritySection ||
     location.pathname === '/notifications' ||
-    location.pathname === '/alerts'
+    location.pathname === '/alerts' ||
+    location.pathname === '/search'
   ) {
     return null;
   }

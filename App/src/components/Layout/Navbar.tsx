@@ -16,7 +16,8 @@ import {
   User, 
   FileText, 
   Building2, 
-  Home
+  Home,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -282,6 +283,25 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/search')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#0F172A',
+                  borderRadius: '50%',
+                }}
+                title="Search"
+              >
+                <Search size={20} color="#0F172A" />
+              </button>
+
               <NavbarNotificationBell />
 
               {currentUser ? (

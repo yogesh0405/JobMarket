@@ -72,8 +72,11 @@ export const Layout: React.FC = () => {
                           location.pathname.startsWith('/employer') ||
                           location.pathname.startsWith('/candidates');
 
+  const isGlobalSearchRoute = location.pathname === '/search';
+
   const hideFooter = isEmployer ||
                      isEmployerRoute ||
+                     isGlobalSearchRoute ||
                      location.pathname.startsWith('/job/') ||
                      location.pathname.startsWith('/about') ||
                      location.pathname.startsWith('/terms') ||
@@ -99,7 +102,7 @@ export const Layout: React.FC = () => {
 
   const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
 
-  const hideNavbar = isCandidateProfileRoute || isJobDetailRoute || isCompanyProfileRoute;
+  const hideNavbar = isCandidateProfileRoute || isJobDetailRoute || isCompanyProfileRoute || isGlobalSearchRoute;
 
   return (
     <>

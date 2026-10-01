@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, safeParseJson } from '../../utils/api';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { MobileHeader } from '../../components/common/MobileHeader';
@@ -114,6 +114,7 @@ const COMPANY_SIZES = [
 type CompanyFilterCategoryKey = 'LOCATION' | 'INDUSTRY' | 'TYPE' | 'SIZE' | 'HIRING';
 
 export const CompaniesDirectoryPage: React.FC = () => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanyItem[]>(getInitialCachedCompanies);
   const [loading, setLoading] = useState(() => getInitialCachedCompanies().length === 0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -394,41 +395,45 @@ export const CompaniesDirectoryPage: React.FC = () => {
           width: '100%',
           boxSizing: 'border-box',
         }}>
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #CBD5E1',
-            borderRadius: '6px',
-            padding: '0 10px',
-            height: '40px',
-            gap: '8px',
-            boxSizing: 'border-box',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
-          }}>
+          <div
+            onClick={() => navigate(`/search?cat=companies${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ''}`)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '6px',
+              padding: '0 10px',
+              height: '40px',
+              gap: '8px',
+              boxSizing: 'border-box',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+              cursor: 'pointer',
+            }}
+          >
             <Search size={16} color="#64748B" style={{ flexShrink: 0 }} />
-            <input
-              type="text"
-              placeholder="Search companies by name, MIDC zone, industry..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            <div
               style={{
                 flex: 1,
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
                 fontSize: '12.5px',
-                color: '#0F172A',
-                fontWeight: 500,
-                padding: 0,
-                margin: 0,
-                width: '100%',
+                color: searchQuery ? '#0F172A' : '#64748B',
+                fontWeight: searchQuery ? 600 : 500,
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
-            />
+            >
+              {searchQuery || "Search companies by name, MIDC zone, industry..."}
+            </div>
             {searchQuery.length > 0 && (
               <button
-                onClick={() => setSearchQuery('')}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery('');
+                }}
                 style={{
                   background: '#F1F5F9',
                   border: 'none',
