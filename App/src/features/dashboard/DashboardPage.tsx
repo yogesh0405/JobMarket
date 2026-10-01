@@ -88,7 +88,7 @@ export const DashboardPage: React.FC = () => {
   const handleLogout = () => {
     logout();
     showToast('Logged out successfully', 'success');
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -108,8 +108,6 @@ export const DashboardPage: React.FC = () => {
 
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
-  const [selectedWalkInPass, setSelectedWalkInPass] = useState<WalkInPassData | null>(null);
-  const [isWalkInPassModalOpen, setIsWalkInPassModalOpen] = useState(false);
 
   const rawTab = searchParams.get('tab') || (currentUser?.role === 'employer' ? 'profile' : 'profile');
   const tab = rawTab === 'candidate' ? 'candidates' : rawTab;
@@ -117,11 +115,11 @@ export const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(!currentUser);
 
   useEffect(() => {
-    if (!currentUser) {
-      showToast('Please log in to access the dashboard', 'warning');
-      navigate('/login');
+    // Only redirect if unauthenticated and not intentionally logged out
+    if (!currentUser && !localStorage.getItem('accessToken')) {
+      navigate('/', { replace: true });
     }
-  }, [currentUser, navigate, showToast]);
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth <= 768 && (tab === 'notifications' || tab === 'alerts')) {
@@ -650,6 +648,8 @@ interface CandidateProps {
 const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getAppliedJobs, getSavedJobs, toggleSaveJob, setTab, t }) => {
   const [removedSavedIds, setRemovedSavedIds] = useState<string[]>([]);
   const [filterTab, setFilterTab] = useState<'ALL' | 'INTERVIEW' | 'REVIEW' | 'DECISIONS'>('ALL');
+  const [selectedWalkInPass, setSelectedWalkInPass] = useState<WalkInPassData | null>(null);
+  const [isWalkInPassModalOpen, setIsWalkInPassModalOpen] = useState(false);
   const appliedJobs = getAppliedJobs();
   const savedJobs = getSavedJobs().filter(j => !removedSavedIds.includes(j.id));
 
@@ -3472,6 +3472,16 @@ const CandidatesTab: React.FC<{
           )}
         </div>
       )}
+
+      {/* Official Walk-In Drive Admit Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={isWalkInPassModalOpen}
+        onClose={() => {
+          setIsWalkInPassModalOpen(false);
+          setSelectedWalkInPass(null);
+        }}
+        data={selectedWalkInPass}
+      />
     </div>
   );
 };
@@ -5151,16 +5161,6 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         </div>,
         document.body
       )}
-
-      {/* Official Walk-In Drive Admit Pass Modal */}
-      <WalkInDrivePassModal
-        isOpen={isWalkInPassModalOpen}
-        onClose={() => {
-          setIsWalkInPassModalOpen(false);
-          setSelectedWalkInPass(null);
-        }}
-        data={selectedWalkInPass}
-      />
     </>
   );
 };

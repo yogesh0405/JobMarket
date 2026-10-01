@@ -48,23 +48,25 @@ import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-// Route Guard: Prevents Employers from accessing candidate/employee sections (Home, Jobs Search, Map, Job Detail/Apply, Companies Directory)
+// Route Guard: Prevents logged-in Employers from accessing candidate/employee sections (Home, Jobs Search, Map, Job Detail/Apply, Companies Directory)
 const CandidateOrGuestOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const isEmployer = !!token && currentUser?.role?.toLowerCase() === 'employer';
   if (isEmployer) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
 };
 
-// Route Guard: Ensures only Employers can access employer actions (Post Job, Edit Job, Job Applicants)
+// Route Guard: Ensures only active logged-in Employers can access employer actions (Post Job, Edit Job, Job Applicants)
 const EmployerOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
-  if (!currentUser) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (!token || !currentUser) {
     return <Navigate to="/login" replace />;
   }
+  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
   if (!isEmployer) {
     return <Navigate to="/dashboard" replace />;
   }

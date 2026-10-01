@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { User, UserRole } from '../types';
 import { apiFetch } from '../utils/api';
@@ -48,6 +48,11 @@ const normalizeProfilePicture = (val: any): string => {
 
 export const useAuth = () => {
   const { state, dispatch } = useStore();
+  const currentUserRef = useRef(state.currentUser);
+
+  useEffect(() => {
+    currentUserRef.current = state.currentUser;
+  }, [state.currentUser]);
 
   useEffect(() => {
     const handleAuthLogout = () => {
@@ -260,10 +265,31 @@ export const useAuth = () => {
   }, []);
 
   const logout = useCallback(() => {
+    // 1. Immediately wipe all auth and session identifiers from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('sessionId');
+    localStorage.removeItem('token');
+    localStorage.removeItem('saved_jobs_ids');
+
+    // 2. Synchronously nullify currentUser in persisted local storage so instant reloads never revive user
+    try {
+      const saved = localStorage.getItem('jobMarketplace_react');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        parsed.currentUser = null;
+        localStorage.setItem('jobMarketplace_react', JSON.stringify(parsed));
+      }
+    } catch (_) {}
+
+    // 3. Dispatch LOGOUT to React store
     dispatch({ type: 'LOGOUT' });
+
+    // 4. Fire background server-side logout (fire-and-forget)
+    apiFetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
+
+    // 5. Broadcast logout event to any listening components
+    window.dispatchEvent(new Event('auth:logout'));
   }, [dispatch]);
 
   const updateUser = useCallback(async (updates: Partial<User>) => {
@@ -404,56 +430,64 @@ export const useAuth = () => {
 
     try {
       const response = await apiFetch('/api/v1/auth/me');
+      // If user logged out while request was in flight, abort immediately
+      if (!localStorage.getItem('accessToken')) return;
+
       if (response.ok) {
         const data = await response.json();
+        // Check token once more before updating store
+        if (!localStorage.getItem('accessToken')) return;
+
         if (data.success && (data.data || data.user)) {
           const rawApiUser = data.data?.user || data.data || data.user;
+          const current = currentUserRef.current;
           const apiUser = {
-            ...(state.currentUser || {}),
+            ...(current || {}),
             ...rawApiUser,
           };
           const user: User = {
-            id: apiUser.id || state.currentUser?.id || '',
-            name: typeof apiUser.name === 'string' ? apiUser.name : (state.currentUser?.name || ''),
-            email: apiUser.email || state.currentUser?.email || '',
-            role: (apiUser.role || state.currentUser?.role || 'candidate') as UserRole,
-            phone: apiUser.phone || state.currentUser?.phone || '',
-            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo || state.currentUser?.profilePictureUrl),
-            createdAt: apiUser.created_at || apiUser.createdAt || state.currentUser?.createdAt || new Date().toISOString(),
+            id: apiUser.id || current?.id || '',
+            name: typeof apiUser.name === 'string' ? apiUser.name : (current?.name || ''),
+            email: apiUser.email || current?.email || '',
+            role: (apiUser.role || current?.role || 'candidate') as UserRole,
+            phone: apiUser.phone || current?.phone || '',
+            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo || current?.profilePictureUrl),
+            createdAt: apiUser.created_at || apiUser.createdAt || current?.createdAt || new Date().toISOString(),
             profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.tradeSpecialization || !!apiUser.company_name || !!apiUser.companyName,
-            resume: parseResumeField(apiUser.resume !== undefined ? apiUser.resume : state.currentUser?.resume),
-            experience: parseArrayField(apiUser.experience !== undefined ? apiUser.experience : state.currentUser?.experience),
-            education: parseArrayField(apiUser.education !== undefined ? apiUser.education : state.currentUser?.education),
-            skills: parseArrayField(apiUser.skills !== undefined ? apiUser.skills : state.currentUser?.skills),
-            savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs || state.currentUser?.savedJobs),
-            appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs),
-            appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus),
-            headline: apiUser.headline || state.currentUser?.headline || '',
-            location: apiUser.location || apiUser.address || apiUser.city || state.currentUser?.location || '',
-            tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || state.currentUser?.tradeSpecialization || '',
-            preferredShift: apiUser.preferred_shift || apiUser.preferredShift || state.currentUser?.preferredShift || '',
-            requiresBus: apiUser.requires_bus !== undefined ? !!apiUser.requires_bus : (apiUser.requiresBus !== undefined ? !!apiUser.requiresBus : !!state.currentUser?.requiresBus),
-            requiresAccommodation: apiUser.requires_accommodation !== undefined ? !!apiUser.requires_accommodation : (apiUser.requiresAccommodation !== undefined ? !!apiUser.requiresAccommodation : !!state.currentUser?.requiresAccommodation),
-            isResumePublic: apiUser.is_resume_public !== undefined ? apiUser.is_resume_public !== false : (apiUser.isResumePublic !== undefined ? apiUser.isResumePublic !== false : state.currentUser?.isResumePublic !== false),
-            companyName: apiUser.company_name || apiUser.companyName || state.currentUser?.companyName || '',
-            companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || state.currentUser?.companyDescription || '',
-            bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || state.currentUser?.bio || '',
-            gstNumber: apiUser.gst_number || apiUser.gstNumber || state.currentUser?.gstNumber || '',
-            companyType: apiUser.company_type || apiUser.companyType || state.currentUser?.companyType || '',
-            companySize: apiUser.company_size || apiUser.companySize || state.currentUser?.companySize || '',
-            foundedYear: apiUser.founded_year || apiUser.foundedYear || state.currentUser?.foundedYear || undefined,
-            midcZone: apiUser.midc_zone || apiUser.midcZone || state.currentUser?.midcZone || '',
-            website: apiUser.website || state.currentUser?.website || '',
-            address: apiUser.address || state.currentUser?.address || '',
-            city: apiUser.city || state.currentUser?.city || '',
-            state: apiUser.state || state.currentUser?.state || '',
-            logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || state.currentUser?.logo || '',
-            is_two_factor_enabled: apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : (apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : state.currentUser?.is_two_factor_enabled),
-            isTwoFactorEnabled: apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : (apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : state.currentUser?.isTwoFactorEnabled),
-            has_password: apiUser.has_password !== undefined ? apiUser.has_password : state.currentUser?.has_password,
-            hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : state.currentUser?.hasPassword,
-            auth_provider: apiUser.auth_provider || state.currentUser?.auth_provider,
+            resume: parseResumeField(apiUser.resume !== undefined ? apiUser.resume : current?.resume),
+            experience: parseArrayField(apiUser.experience !== undefined ? apiUser.experience : current?.experience),
+            education: parseArrayField(apiUser.education !== undefined ? apiUser.education : current?.education),
+            skills: parseArrayField(apiUser.skills !== undefined ? apiUser.skills : current?.skills),
+            savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs || current?.savedJobs),
+            appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || current?.appliedJobs),
+            appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || current?.appliedJobsWithStatus),
+            headline: apiUser.headline || current?.headline || '',
+            location: apiUser.location || apiUser.address || apiUser.city || current?.location || '',
+            tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || current?.tradeSpecialization || '',
+            preferredShift: apiUser.preferred_shift || apiUser.preferredShift || current?.preferredShift || '',
+            requiresBus: apiUser.requires_bus !== undefined ? !!apiUser.requires_bus : (apiUser.requiresBus !== undefined ? !!apiUser.requiresBus : !!current?.requiresBus),
+            requiresAccommodation: apiUser.requires_accommodation !== undefined ? !!apiUser.requires_accommodation : (apiUser.requiresAccommodation !== undefined ? !!apiUser.requiresAccommodation : !!current?.requiresAccommodation),
+            isResumePublic: apiUser.is_resume_public !== undefined ? apiUser.is_resume_public !== false : (apiUser.isResumePublic !== undefined ? apiUser.isResumePublic !== false : current?.isResumePublic !== false),
+            companyName: apiUser.company_name || apiUser.companyName || current?.companyName || '',
+            companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || current?.companyDescription || '',
+            bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || current?.bio || '',
+            gstNumber: apiUser.gst_number || apiUser.gstNumber || current?.gstNumber || '',
+            companyType: apiUser.company_type || apiUser.companyType || current?.companyType || '',
+            companySize: apiUser.company_size || apiUser.companySize || current?.companySize || '',
+            foundedYear: apiUser.founded_year || apiUser.foundedYear || current?.foundedYear || undefined,
+            midcZone: apiUser.midc_zone || apiUser.midcZone || current?.midcZone || '',
+            website: apiUser.website || current?.website || '',
+            address: apiUser.address || current?.address || '',
+            city: apiUser.city || current?.city || '',
+            state: apiUser.state || current?.state || '',
+            logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || current?.logo || '',
+            is_two_factor_enabled: apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : (apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : current?.is_two_factor_enabled),
+            isTwoFactorEnabled: apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : (apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : current?.isTwoFactorEnabled),
+            has_password: apiUser.has_password !== undefined ? apiUser.has_password : current?.has_password,
+            hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : current?.hasPassword,
+            auth_provider: apiUser.auth_provider || current?.auth_provider,
           };
+          if (!localStorage.getItem('accessToken')) return;
           dispatch({ type: 'UPDATE_USER', payload: user });
           dispatch({ type: 'LOGIN', payload: user });
         }
@@ -461,7 +495,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Failed to sync user:', error);
     }
-  }, [dispatch, state.currentUser]);
+  }, [dispatch]);
 
   const loginWithGoogle = useCallback(async (tokenOrPayload: string | { idToken?: string; accessToken?: string; picture?: string; name?: string; email?: string }, role: UserRole) => {
     try {

@@ -46,12 +46,12 @@ export const Navbar: React.FC = () => {
   const mobileMenuRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (syncUser) {
+    if (syncUser && localStorage.getItem('accessToken')) {
       syncUser();
     }
     const handleProfileUpdate = () => {
       setAvatarImgError(false);
-      if (syncUser) syncUser();
+      if (syncUser && localStorage.getItem('accessToken')) syncUser();
     };
     window.addEventListener('profile-updated', handleProfileUpdate);
     window.addEventListener('focus', handleProfileUpdate);
@@ -108,7 +108,7 @@ export const Navbar: React.FC = () => {
   const handleLogout = () => {
     logout();
     showToast('Logged out successfully', 'success');
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const handleProfileClick = (e: React.MouseEvent) => {
