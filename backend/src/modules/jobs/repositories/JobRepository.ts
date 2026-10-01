@@ -864,7 +864,7 @@ export class JobRepository {
       applicationStatus: row.applicationStatus,
       status: row.applicationStatus || 'applied',
       jobStatus: row.status,
-      appliedAt: row.appliedAt,
+      appliedAt: row.appliedAt ? new Date(row.appliedAt).toISOString() : (row.applied_at ? new Date(row.applied_at).toISOString() : null),
       interviewDate: row.interviewDate,
       interviewTime: row.interviewTime,
       venueAddress: row.venueAddress,

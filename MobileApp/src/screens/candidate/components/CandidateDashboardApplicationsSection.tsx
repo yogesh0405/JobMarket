@@ -47,7 +47,8 @@ export const CandidateDashboardApplicationsSection: React.FC<CandidateDashboardA
         <View style={{ marginTop: 4 }}>
           {appliedJobs.slice(0, 4).map((item, index) => {
             const job = item.job || item;
-            const appliedDate = formatAppliedDate(item.appliedAt || item.applied_at || item.createdAt);
+            const rawAppliedAt = item.appliedAt || item.applied_at || (job as any)?.appliedAt || (job as any)?.applied_at;
+            const appliedDate = formatAppliedDate(rawAppliedAt);
             return (
               <TouchableOpacity
                 key={item.jobId || job.id || index}

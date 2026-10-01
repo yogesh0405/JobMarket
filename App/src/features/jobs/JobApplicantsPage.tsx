@@ -90,7 +90,7 @@ export const JobApplicantsPage: React.FC = () => {
     jobId: jobId,
     jobTitle: jobTitle || item.jobTitle || item.job_title || '',
     status: (item.status || 'applied').toLowerCase(),
-    appliedAt: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+    appliedAt: item.appliedAt || item.applied_at || new Date().toISOString(),
     user: {
       id: item.userId || item.user_id || item.user?.id,
       name: item.name || item.user?.name || item.candidate?.name || 'Applicant',

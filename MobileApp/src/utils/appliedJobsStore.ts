@@ -185,7 +185,8 @@ class AppliedJobsStore {
         appliedAt:
           item?.appliedAt ||
           item?.applied_at ||
-          item?.created_at ||
+          item?.applied_date ||
+          (targetJobId && this.appliedJobs.find((x) => x.jobId === targetJobId)?.appliedAt) ||
           new Date().toISOString(),
         interviewDate: item?.interviewDate || item?.interview_date,
         interviewTime: item?.interviewTime || item?.interview_time,

@@ -125,7 +125,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
     mondayOfThisWeek.setHours(0, 0, 0, 0);
 
     appliedJobs.forEach((item) => {
-      const dateStr = item.appliedAt || item.applied_at || item.createdAt || item.created_at;
+      const dateStr = item.appliedAt || item.applied_at || (item.job as any)?.appliedAt || (item.job as any)?.applied_at;
       if (dateStr) {
         const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {

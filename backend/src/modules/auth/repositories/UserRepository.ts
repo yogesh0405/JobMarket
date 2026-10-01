@@ -130,12 +130,13 @@ export class UserRepository {
 
       // Fetch applied job IDs and status
       try {
-        const appsQuery = 'SELECT job_id, status, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id::text = $1::text;';
+        const appsQuery = 'SELECT job_id, status, applied_at, interview_date, interview_time, venue_address, maps_link FROM job_applications WHERE user_id::text = $1::text ORDER BY applied_at DESC;';
         const appsResult = await pool.query(appsQuery, [id]);
         user.appliedJobs = appsResult.rows.map(row => row.job_id);
         (user as any).appliedJobsWithStatus = appsResult.rows.map(row => ({
           jobId: row.job_id,
           status: row.status,
+          appliedAt: row.applied_at ? new Date(row.applied_at).toISOString() : null,
           interviewDate: row.interview_date,
           interviewTime: row.interview_time,
           venueAddress: row.venue_address,

@@ -80,6 +80,8 @@ export const Layout: React.FC = () => {
                      location.pathname.startsWith('/privacy') ||
                      location.pathname.startsWith('/contact') ||
                      location.pathname.startsWith('/support') ||
+                     location.pathname.startsWith('/notifications') ||
+                     location.pathname.startsWith('/alerts') ||
                      location.pathname.startsWith('/settings') ||
                      location.pathname === '/jobs/map' ||
                      location.search.includes('tab=support') ||

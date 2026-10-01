@@ -70,7 +70,9 @@ export const MobileBottomNav: React.FC = () => {
     isInterviewsSection ||
     isAboutSection ||
     isContactSection ||
-    isSecuritySection
+    isSecuritySection ||
+    location.pathname === '/notifications' ||
+    location.pathname === '/alerts'
   ) {
     return null;
   }
@@ -236,15 +238,15 @@ export const MobileBottomNav: React.FC = () => {
 
             {/* 4. Alerts */}
             <NavLink
-              to="/dashboard?tab=notifications"
-              className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=notifications') ? 'active' : ''}`}
+              to="/notifications"
+              className={`mobile-app-tab-item ${location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications') ? 'active' : ''}`}
             >
-              {isTabActive('/dashboard?tab=notifications') && <div className="tab-top-indicator" />}
+              {(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) && <div className="tab-top-indicator" />}
               <div className="tab-icon-box">
                 <Bell
                   size={23}
-                  color={isTabActive('/dashboard?tab=notifications') ? '#1B4FDF' : '#64748B'}
-                  strokeWidth={isTabActive('/dashboard?tab=notifications') ? 2.4 : 1.8}
+                  color={(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) ? '#1B4FDF' : '#64748B'}
+                  strokeWidth={(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) ? 2.4 : 1.8}
                 />
                 {unreadCount > 0 && (
                   <span className="tab-badge">

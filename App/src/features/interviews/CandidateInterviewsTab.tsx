@@ -19,9 +19,12 @@ import {
   CalendarClock,
   Clock3,
   Briefcase,
+  Ticket,
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { MobileHeader } from '../../components/common/MobileHeader';
+import { WalkInDrivePassCard } from './components/WalkInDrivePassCard';
+import { WalkInDrivePassModal, WalkInPassData } from './components/WalkInDrivePassModal';
 
 export interface CandidateInterviewItem {
   application_id: string;
@@ -49,6 +52,18 @@ export interface CandidateInterviewItem {
   company_name?: string;
   employer_phone?: string;
   employer_email?: string;
+  // Walk-in Drive Properties
+  is_walk_in?: boolean;
+  hiring_method?: string;
+  walk_in_date?: string;
+  walk_in_start_time?: string;
+  walk_in_end_time?: string;
+  walk_in_contact_person?: string;
+  walk_in_contact_number?: string;
+  walk_in_documents?: string;
+  ticket_number?: string;
+  candidate_name?: string;
+  candidate_phone?: string;
 }
 
 type TabType = 'upcoming' | 'past';
@@ -97,23 +112,119 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
   const routerNavigate = useNavigate();
   const handleNavigate = navigate || routerNavigate;
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [filterType, setFilterType] = useState<'ALL' | 'WALK_IN' | 'SCHEDULED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [upcomingList, setUpcomingList] = useState<CandidateInterviewItem[]>([]);
   const [pastList, setPastList] = useState<CandidateInterviewItem[]>([]);
 
+  // Official Walk-in Admit Pass Modal State
+  const [selectedPassData, setSelectedPassData] = useState<WalkInPassData | null>(null);
+  const [isPassModalOpen, setIsPassModalOpen] = useState(false);
+
   const fetchInterviews = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('/api/v1/jobs/interviews/my-interviews');
-      if (res.ok) {
-        const json = await res.json();
-        const data = json?.data || json;
-        if (data) {
-          setUpcomingList(Array.isArray(data.upcoming) ? data.upcoming : []);
-          setPastList(Array.isArray(data.past) ? data.past : []);
+      const [intRes, appRes] = await Promise.all([
+        apiFetch('/api/v1/jobs/interviews/my-interviews').catch(() => null),
+        apiFetch('/api/v1/jobs/applied/my-applications').catch(() => null)
+      ]);
+
+      let rawUpcoming: CandidateInterviewItem[] = [];
+      let rawPast: CandidateInterviewItem[] = [];
+
+      if (intRes && intRes.ok) {
+        const intJson = await intRes.json();
+        const intData = intJson?.data || intJson;
+        if (intData) {
+          rawUpcoming = Array.isArray(intData.upcoming) ? intData.upcoming : [];
+          rawPast = Array.isArray(intData.past) ? intData.past : [];
         }
       }
+
+      // Map walk-in drive applications into interview items
+      const walkInItems: CandidateInterviewItem[] = [];
+      if (appRes && appRes.ok) {
+        const appJson = await appRes.json();
+        const appList = Array.isArray(appJson?.data) ? appJson.data : [];
+
+        appList.forEach((job: any) => {
+          const hm = (job.hiringMethod || job.hiring_method || '').toUpperCase();
+          const isWalkIn =
+            hm === 'WALK_IN' ||
+            Boolean(job.isWalkIn) ||
+            Boolean(job.is_walk_in) ||
+            Boolean(job.walkInDate) ||
+            Boolean(job.walk_in_date);
+
+          if (!isWalkIn) return;
+
+          const dateStr = job.walkInDate || job.walk_in_date || job.interviewDate || job.interview_date || '';
+          const timeStr =
+            job.interviewTime ||
+            job.interview_time ||
+            (job.walkInStartTime
+              ? `${job.walkInStartTime}${job.walkInEndTime ? ' - ' + job.walkInEndTime : ''}`
+              : '10:00 AM - 04:00 PM');
+          const venue =
+            job.interviewAddress ||
+            job.interview_address ||
+            job.venueAddress ||
+            job.venue_address ||
+            job.location ||
+            'Company Campus / Factory Premises';
+
+          const passNum = `PASS-WID-${String(job.id || 'WID').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || '7842'}-${String(job.application_id || job.applicationId || 'APL').replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || '9120'}`;
+
+          walkInItems.push({
+            application_id: String(job.application_id || job.id),
+            job_id: String(job.id),
+            status: job.applicationStatus || job.status || 'applied',
+            applied_at: job.appliedAt || job.applied_at || new Date().toISOString(),
+            interview_date: dateStr,
+            interview_time: timeStr,
+            venue_address: venue,
+            maps_link: job.googleMapsUrl || job.google_maps_url || job.mapsLink || job.maps_link || '',
+            job_title: job.title || 'Technical Specialist',
+            company: job.company || 'Industrial Company',
+            company_name: job.company || 'Industrial Company',
+            company_logo: job.companyLogo || job.company_logo || '',
+            job_location: job.location || '',
+            industry: job.industry,
+            job_type: job.jobType || job.job_type,
+            work_mode: job.workMode || job.work_mode,
+            salary_min: job.salaryMin || job.salary_min,
+            salary_max: job.salaryMax || job.salary_max,
+            is_walk_in: true,
+            hiring_method: 'WALK_IN',
+            walk_in_date: dateStr,
+            walk_in_start_time: job.walkInStartTime || '10:00 AM',
+            walk_in_end_time: job.walkInEndTime || '04:00 PM',
+            walk_in_contact_person: job.walkInContactPerson || '',
+            walk_in_contact_number: job.walkInContactNumber || '',
+            walk_in_documents: job.walkInDocuments || '',
+            ticket_number: passNum,
+            candidate_name: currentUser?.name,
+            candidate_phone: currentUser?.phone,
+          });
+        });
+      }
+
+      // Merge and partition
+      const finalUpcoming: CandidateInterviewItem[] = [...rawUpcoming];
+      const finalPast: CandidateInterviewItem[] = [...rawPast];
+
+      walkInItems.forEach(wItem => {
+        const d = getDaysFromToday(wItem.walk_in_date || wItem.interview_date);
+        if (d >= 0) {
+          finalUpcoming.push(wItem);
+        } else {
+          finalPast.push(wItem);
+        }
+      });
+
+      setUpcomingList(finalUpcoming);
+      setPastList(finalPast);
     } catch (err) {
       console.warn('Failed to fetch candidate interviews:', err);
     } finally {
@@ -137,18 +248,27 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
 
   const currentList = activeTab === 'upcoming' ? upcomingList : pastList;
   const filteredList = useMemo(() => {
-    if (!searchQuery.trim()) return currentList;
+    let list = currentList;
+
+    if (filterType === 'WALK_IN') {
+      list = list.filter(item => item.is_walk_in);
+    } else if (filterType === 'SCHEDULED') {
+      list = list.filter(item => !item.is_walk_in);
+    }
+
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase().trim();
-    return currentList.filter(item => {
+    return list.filter(item => {
       return (
         item.job_title?.toLowerCase().includes(q) ||
         item.company?.toLowerCase().includes(q) ||
         item.company_name?.toLowerCase().includes(q) ||
         item.employer_name?.toLowerCase().includes(q) ||
-        item.venue_address?.toLowerCase().includes(q)
+        item.venue_address?.toLowerCase().includes(q) ||
+        item.ticket_number?.toLowerCase().includes(q)
       );
     });
-  }, [currentList, searchQuery]);
+  }, [currentList, filterType, searchQuery]);
 
   return (
     <div className="cand-interviews-page-root">
@@ -540,6 +660,78 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               </button>
             )}
           </div>
+          {/* Sub-filters for Walk-in Passes vs 1-on-1 Interviews */}
+          <div
+            className="no-scrollbar"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0 16px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setFilterType('ALL')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: filterType === 'ALL' ? 800 : 600,
+                backgroundColor: filterType === 'ALL' ? '#1D4ED8' : '#FFFFFF',
+                color: filterType === 'ALL' ? '#FFFFFF' : '#64748B',
+                border: `1px solid ${filterType === 'ALL' ? '#1D4ED8' : '#CBD5E1'}`,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              All Schedules ({currentList.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('WALK_IN')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: filterType === 'WALK_IN' ? 800 : 600,
+                backgroundColor: filterType === 'WALK_IN' ? '#1D4ED8' : '#FFFFFF',
+                color: filterType === 'WALK_IN' ? '#FFFFFF' : '#64748B',
+                border: `1px solid ${filterType === 'WALK_IN' ? '#1D4ED8' : '#CBD5E1'}`,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Ticket size={12} />
+              <span>Walk-in Passes ({currentList.filter(i => i.is_walk_in).length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('SCHEDULED')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: filterType === 'SCHEDULED' ? 800 : 600,
+                backgroundColor: filterType === 'SCHEDULED' ? '#1D4ED8' : '#FFFFFF',
+                color: filterType === 'SCHEDULED' ? '#FFFFFF' : '#64748B',
+                border: `1px solid ${filterType === 'SCHEDULED' ? '#1D4ED8' : '#CBD5E1'}`,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              1-on-1 Interviews ({currentList.filter(i => !i.is_walk_in).length})
+            </button>
+          </div>
         </div>
 
         {/* Main List */}
@@ -573,17 +765,34 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                 <Calendar size={32} color="#94A3B8" />
               </div>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
-                {activeTab === 'upcoming' ? 'No Upcoming Interviews' : 'No Past Interviews'}
+                {activeTab === 'upcoming' ? 'No Upcoming Interviews or Drives' : 'No Past Interviews'}
               </h3>
               <p style={{ fontSize: '12.5px', color: '#64748B', margin: 0, lineHeight: '18px' }}>
                 {activeTab === 'upcoming'
-                  ? 'When employers schedule you for an interview, it will appear here.'
+                  ? 'When employers schedule interviews or when you register for Walk-in Drives, they will appear here.'
                   : 'Past and completed interviews will appear here with feedback.'}
               </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
               {filteredList.map((item) => {
+                if (item.is_walk_in) {
+                  return (
+                    <WalkInDrivePassCard
+                      key={item.application_id || item.job_id}
+                      item={item}
+                      isPast={activeTab === 'past'}
+                      candidateName={currentUser?.name}
+                      candidatePhone={currentUser?.phone}
+                      onPressPass={(p) => {
+                        setSelectedPassData(p);
+                        setIsPassModalOpen(true);
+                      }}
+                      onNavigateJob={handleOpenJobDetails}
+                    />
+                  );
+                }
+
                 const days = getDaysFromToday(item.interview_date);
                 const isCompleted = item.interview_status === 'interviewed' || item.status === 'interviewed';
                 const isPostponed = item.interview_status === 'postponed';
@@ -919,6 +1128,16 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           )}
         </div>
       </div>
+
+      {/* Official Walk-in Drive Admit Card Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={isPassModalOpen}
+        onClose={() => {
+          setIsPassModalOpen(false);
+          setSelectedPassData(null);
+        }}
+        data={selectedPassData}
+      />
     </div>
   );
 };

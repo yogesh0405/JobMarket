@@ -331,8 +331,9 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
               const isShortlisted = status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
               const rawLogo = job.companyLogo || job.company_logo || job.logoUrl || job.logo_url || job.logo || item.companyLogo || item.company_logo || (job as any).companyLogoUrl;
               const logoUrl = getCompanyLogoUrl(job.company || 'Enterprise', rawLogo);
-              const appliedDateFormatted = item.appliedAt
-                ? new Date(item.appliedAt).toLocaleDateString('en-IN', {
+              const rawAppliedAt = item.appliedAt || item.applied_at || (job as any)?.appliedAt || (job as any)?.applied_at;
+              const appliedDateFormatted = rawAppliedAt && !isNaN(new Date(rawAppliedAt).getTime())
+                ? new Date(rawAppliedAt).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',
@@ -498,7 +499,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <Clock size={12} color="#94A3B8" />
                       <Text style={styles.appliedDateText}>
-                        Applied {appliedDateFormatted}
+                        {appliedDateFormatted !== 'Recently' ? `Applied on ${appliedDateFormatted}` : 'Applied Recently'}
                       </Text>
                     </View>
 

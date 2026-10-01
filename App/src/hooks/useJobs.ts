@@ -285,11 +285,12 @@ export const useJobs = () => {
           const statusMap = new Map(currentWithStatus.map((item: any) => [item.jobId, item]));
 
           json.data.forEach((j: any) => {
+            const rawAppliedAt = j.appliedAt || j.applied_at || (statusMap.get(j.id) as any)?.appliedAt;
             statusMap.set(j.id, {
               ...(statusMap.get(j.id) || {}),
               jobId: j.id,
               status: j.applicationStatus || j.status || 'applied',
-              appliedAt: j.appliedAt || j.created_at || (statusMap.get(j.id) as any)?.appliedAt || new Date().toISOString(),
+              appliedAt: rawAppliedAt || null,
               interviewDate: j.interviewDate,
               interviewTime: j.interviewTime,
               venueAddress: j.venueAddress,
@@ -378,7 +379,23 @@ export const useJobs = () => {
       ...appliedIds,
       ...appliedWithStatus.map((a: any) => a?.jobId).filter(Boolean)
     ]));
-    return allAppliedIds.map(id => getJobById(id)).filter(Boolean) as Job[];
+    const list = allAppliedIds.map(id => {
+      const job = getJobById(id);
+      if (!job) return null;
+      const statusObj = appliedWithStatus.find((a: any) => a?.jobId === id);
+      const appliedAt = statusObj?.appliedAt || (job as any).appliedAt || (job as any).applied_at || null;
+      return {
+        ...job,
+        appliedAt,
+        applicationStatus: statusObj?.status || (job as any).applicationStatus || 'applied'
+      };
+    }).filter(Boolean) as Job[];
+
+    return list.sort((a, b) => {
+      const timeA = (a as any).appliedAt ? new Date((a as any).appliedAt).getTime() : 0;
+      const timeB = (b as any).appliedAt ? new Date((b as any).appliedAt).getTime() : 0;
+      return timeB - timeA;
+    });
   }, [state.currentUser, getJobById]);
 
   const getSavedJobs = useCallback(() => {

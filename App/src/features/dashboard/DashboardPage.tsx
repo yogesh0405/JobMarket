@@ -25,6 +25,7 @@ import { SavedJobsPage } from './SavedJobsPage';
 import { EmployerAdvertisements } from './EmployerAdvertisements';
 import { EmployerInterviewsTab } from '../interviews/EmployerInterviewsTab';
 import { CandidateInterviewsTab } from '../interviews/CandidateInterviewsTab';
+import { WalkInDrivePassModal, WalkInPassData } from '../interviews/components/WalkInDrivePassModal';
 import { SecuritySettings } from '../../components/profile/SecuritySettings';
 import { NotificationsPage } from '../notifications/NotificationsPage';
 import { JobMarketLogoSvg } from '../../components/common/JobMarketLogoSvg';
@@ -58,6 +59,7 @@ import {
   AlertCircle,
   Bell,
   MoreVertical,
+  Ticket,
   SlidersHorizontal,
   Trash2,
   Edit3,
@@ -120,7 +122,10 @@ export const DashboardPage: React.FC = () => {
     if (rawTab === 'resume') {
       navigate('/resume', { replace: true });
     }
-  }, [rawTab, navigate]);
+    if (typeof window !== 'undefined' && window.innerWidth <= 768 && (tab === 'notifications' || tab === 'alerts')) {
+      navigate('/notifications', { replace: true });
+    }
+  }, [rawTab, tab, navigate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -169,6 +174,8 @@ export const DashboardPage: React.FC = () => {
 
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [selectedWalkInPass, setSelectedWalkInPass] = useState<WalkInPassData | null>(null);
+  const [isWalkInPassModalOpen, setIsWalkInPassModalOpen] = useState(false);
 
   const setTab = (newTab: string) => {
     setSearchParams({ tab: newTab });
@@ -735,7 +742,12 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                         <tr key={job.id}>
                           <td><strong>{job.title}</strong></td>
                           <td>{job.company}</td>
-                          <td>{app ? timeAgo(app.appliedAt) : 'N/A'}</td>
+                          <td>
+                            {(() => {
+                              const rawDate = app?.appliedAt || app?.applied_at || (job as any).appliedAt || (job as any).applied_at;
+                              return rawDate ? timeAgo(rawDate) : 'Recently';
+                            })()}
+                          </td>
                           <td>
                             <span className={`status-badge status-${app?.status || 'applied'}`}>
                               {capitalize(app?.status || 'applied')}
@@ -926,8 +938,8 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                   IconComp = AlertCircle;
                 }
 
-                const rawDate = appDetails?.appliedAt || job.postedAt;
-                const appliedDateFormatted = rawDate
+                const rawDate = appDetails?.appliedAt || appDetails?.applied_at || (job as any).appliedAt || (job as any).applied_at;
+                const appliedDateFormatted = rawDate && !isNaN(new Date(rawDate).getTime())
                   ? new Date(rawDate).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -993,7 +1005,107 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                       ) : null}
                     </div>
 
-                    {isShortlisted && (appDetails?.interviewDate || (appDetails as any)?.interview_date) && (
+                    {/* Walk-in Drive Entry Pass Callout */}
+                    {Boolean(
+                      (job.hiringMethod || (job as any).hiring_method || '').toUpperCase() === 'WALK_IN' ||
+                      job.isWalkIn ||
+                      (job as any).is_walk_in ||
+                      job.walkInDate ||
+                      (job as any).walk_in_date
+                    ) ? (
+                      <div style={{
+                        background: '#F0F9FF',
+                        border: '1px solid #BAE6FD',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Ticket size={14} color="#0284C7" strokeWidth={2.4} />
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#0369A1' }}>Walk-in Drive Entry Pass</span>
+                          </div>
+                          <span style={{
+                            background: '#E0F2FE',
+                            border: '1px solid #7DD3FC',
+                            padding: '1.5px 6px',
+                            borderRadius: '4px',
+                            fontSize: '9.5px',
+                            fontWeight: 800,
+                            color: '#0284C7',
+                            letterSpacing: '0.4px'
+                          }}>PASS ISSUED</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', flexShrink: 0, marginTop: '1px' }}>DRIVE DATE & TIME:</span>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A', flex: 1 }}>
+                            {job.walkInDate || (job as any).walk_in_date || appDetails?.interviewDate || 'Walk-in Drive'}
+                            {job.walkInStartTime || (job as any).walk_in_start_time ? ` (${job.walkInStartTime || (job as any).walk_in_start_time}${(job.walkInEndTime || (job as any).walk_in_end_time) ? ' - ' + (job.walkInEndTime || (job as any).walk_in_end_time) : ''})` : ''}
+                          </span>
+                        </div>
+
+                        {(job.interviewAddress || (job as any).interview_address || appDetails?.venueAddress || job.location) && (
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', flexShrink: 0, marginTop: '1px' }}>VENUE:</span>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#334155', flex: 1 }}>
+                              {job.interviewAddress || (job as any).interview_address || appDetails?.venueAddress || job.location}
+                            </span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedWalkInPass({
+                              jobId: job.id,
+                              applicationId: appDetails?.id || item.id,
+                              ticketNumber: appDetails?.ticketNumber || (item as any)?.ticketNumber,
+                              jobTitle: job.title,
+                              company: job.company,
+                              companyLogo: job.companyLogo || (job as any).logo,
+                              location: job.location,
+                              walkInDate: job.walkInDate || (job as any).walk_in_date,
+                              walkInStartTime: job.walkInStartTime || (job as any).walk_in_start_time,
+                              walkInEndTime: job.walkInEndTime || (job as any).walk_in_end_time,
+                              interviewAddress: job.interviewAddress || (job as any).interview_address || job.location,
+                              walkInContactPerson: job.walkInContactPerson || (job as any).walk_in_contact_person,
+                              walkInContactNumber: job.walkInContactNumber || (job as any).walk_in_contact_number,
+                              walkInDocuments: job.walkInDocuments || (job as any).walk_in_documents,
+                              candidateName: currentUser?.name || currentUser?.fullName,
+                              candidatePhone: currentUser?.phone,
+                              candidateEmail: currentUser?.email,
+                              appliedAt: appDetails?.appliedAt || (item as any)?.appliedAt || (item as any)?.createdAt
+                            });
+                            setIsWalkInPassModalOpen(true);
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            background: '#0284C7',
+                            color: '#FFFFFF',
+                            padding: '7px 12px',
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                            fontWeight: 800,
+                            border: 'none',
+                            cursor: 'pointer',
+                            marginTop: '2px',
+                            width: 'fit-content'
+                          }}
+                        >
+                          <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
+                          <span>View Official Entry Pass</span>
+                        </button>
+                      </div>
+                    ) : isShortlisted && (appDetails?.interviewDate || (appDetails as any)?.interview_date) ? (
                       <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px', width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%' }}>
                           <Calendar size={14} color="#1B4FDF" strokeWidth={2.2} />
@@ -1045,13 +1157,13 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                           </a>
                         )}
                       </div>
-                    )}
+                    ) : null}
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #F1F5F9', marginTop: '1px', width: '100%' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Clock size={12} color="#94A3B8" />
                         <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
-                          Applied {appliedDateFormatted}
+                          {appliedDateFormatted !== 'Recently' ? `Applied on ${appliedDateFormatted}` : 'Applied Recently'}
                         </span>
                       </div>
 
@@ -5035,6 +5147,16 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         </div>,
         document.body
       )}
+
+      {/* Official Walk-In Drive Admit Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={isWalkInPassModalOpen}
+        onClose={() => {
+          setIsWalkInPassModalOpen(false);
+          setSelectedWalkInPass(null);
+        }}
+        data={selectedWalkInPass}
+      />
     </>
   );
 };

@@ -160,8 +160,8 @@ export const Navbar: React.FC = () => {
   const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
   const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
   const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
-  const isPostJobSection = location.pathname.startsWith('/post-job') || location.pathname.startsWith('/edit-job') || (location.pathname.startsWith('/dashboard') && (location.search.includes('tab=post-job') || location.search.includes('tab=post') || location.search.includes('tab=create-job')));
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection;
+  const isNotificationsRoute = location.pathname === '/notifications' || location.pathname === '/alerts';
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection || isNotificationsRoute;
 
   // Determine current active section title dynamically
   const getCurrentSectionTitle = () => {

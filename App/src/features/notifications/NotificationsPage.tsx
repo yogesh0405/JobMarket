@@ -15,7 +15,8 @@ import {
   Info,
   Clock,
   ArrowLeft,
-  X
+  X,
+  MoreVertical
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -187,14 +188,19 @@ export const NotificationsPage: React.FC = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isMountedRef = useRef(true);
+  const isFetchingRef = useRef(false);
+  const notificationsRef = useRef<NotificationItem[]>([]);
+  notificationsRef.current = notifications;
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
   const categoryFilterOptions = isEmployer ? EMPLOYER_CATEGORY_FILTERS : CANDIDATE_CATEGORY_FILTERS;
 
   const fetchRealNotifications = async (isInitial = false) => {
-    if (!currentUser) {
+    if (!currentUser?.id) {
       if (isMountedRef.current) {
         setNotifications([]);
         setLoading(false);
@@ -202,12 +208,21 @@ export const NotificationsPage: React.FC = () => {
       return;
     }
 
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      if (isInitial && isMountedRef.current) {
+      // Only show skeleton loader on initial fetch if we have 0 items
+      if (isInitial && notificationsRef.current.length === 0 && isMountedRef.current) {
         setLoading(true);
       }
 
-      const sysRes = await apiFetch('/api/v1/notifications').catch(() => null);
+      // 5-second timeout protection so request never hangs indefinitely
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const sysRes = await apiFetch('/api/v1/notifications', { signal: controller.signal }).catch(() => null);
+      clearTimeout(timeoutId);
 
       if (sysRes && sysRes.ok) {
         const sysData = await sysRes.json();
@@ -254,6 +269,7 @@ export const NotificationsPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to load notifications from DB:', err);
     } finally {
+      isFetchingRef.current = false;
       if (isMountedRef.current) {
         setLoading(false);
       }
@@ -262,18 +278,55 @@ export const NotificationsPage: React.FC = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
+
+    // Failsafe timer: guarantee loading never exceeds 2.5s under any condition
+    const failsafeTimer = setTimeout(() => {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }, 2500);
+
+    if (!currentUser?.id) {
+      setNotifications([]);
+      setLoading(false);
+      return () => clearTimeout(failsafeTimer);
+    }
+
     fetchRealNotifications(true);
 
-    const handleFocus = () => fetchRealNotifications(false);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('notifications-updated', handleFocus);
+    const handleUpdate = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRealNotifications(false);
+      }
+    };
+
+    window.addEventListener('focus', handleUpdate);
+    window.addEventListener('notifications-updated', handleUpdate);
 
     return () => {
+      clearTimeout(failsafeTimer);
       isMountedRef.current = false;
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('notifications-updated', handleFocus);
+      window.removeEventListener('focus', handleUpdate);
+      window.removeEventListener('notifications-updated', handleUpdate);
     };
-  }, [currentUser]);
+  }, [currentUser?.id]);
+
+  // Close three-dot menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
@@ -395,63 +448,178 @@ export const NotificationsPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(isEmployer ? '/dashboard' : '/');
+    }
+  };
+
   return (
-    <div style={{ minHeight: '80vh', backgroundColor: '#f8fafc', padding: '24px 16px' }}>
-      <div
-        style={{
-          maxWidth: '680px',
-          margin: '0 auto',
-          background: '#ffffff',
-          borderRadius: '16px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.06)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
+    <div className="notifications-page-container">
+      <style>{`
+        .notifications-page-container {
+          min-height: 100vh;
+          background-color: #f8fafc;
+          box-sizing: border-box;
+        }
+        .notifications-card-box {
+          background: #ffffff;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+        .notifications-top-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #ffffff;
+          box-sizing: border-box;
+        }
+        .notifications-back-btn {
+          background: transparent;
+          border: none;
+          color: #0f172a;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          margin-right: 4px;
+          margin-left: -4px;
+          flex-shrink: 0;
+          transition: background 0.15s ease;
+        }
+        .notifications-back-btn:hover {
+          background-color: #f1f5f9;
+        }
+        .notifications-back-btn:active {
+          background-color: #e2e8f0;
+        }
+        .notifications-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 12.5px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        @media (max-width: 768px) {
+          .notifications-page-container {
+            padding: 0 !important;
+            background-color: #ffffff !important;
+          }
+          .notifications-card-box {
+            max-width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            min-height: 100vh !important;
+          }
+          .notifications-top-header {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 50 !important;
+            padding: 10px 14px !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+          }
+          .notifications-action-text {
+            display: none !important;
+          }
+          .notifications-action-btn {
+            padding: 7px !important;
+            width: 36px !important;
+            height: 36px !important;
+            justify-content: center !important;
+          }
+          .notifications-tab-strip {
+            padding: 0 14px !important;
+          }
+          .notifications-capsules-strip {
+            padding: 10px 14px !important;
+          }
+          .notifications-list-container {
+            padding: 4px 12px 64px 12px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .notifications-page-container {
+            padding: 28px 16px 48px 16px !important;
+          }
+          .notifications-card-box {
+            max-width: 700px !important;
+            margin: 0 auto !important;
+            border-radius: 12px !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
+          }
+          .notifications-top-header {
+            padding: 18px 24px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+          }
+          .notifications-tab-strip {
+            padding: 0 24px !important;
+          }
+          .notifications-capsules-strip {
+            padding: 12px 24px !important;
+          }
+          .notifications-list-container {
+            padding: 8px 18px 24px 18px !important;
+          }
+        }
+        @keyframes notifPulse {
+          0%, 100% { opacity: 0.95; }
+          50% { opacity: 0.35; }
+        }
+        @keyframes fadeInMenu {
+          from {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
+
+      <div className="notifications-card-box">
         {/* Top Header Card */}
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #f1f5f9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: '#ffffff',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="notifications-top-header">
+          <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, gap: '4px' }}>
             <button
               type="button"
-              onClick={() => navigate(-1)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '4px',
-                borderRadius: '8px',
-                transition: 'background 0.15s ease'
-              }}
+              onClick={handleBack}
+              className="notifications-back-btn"
               title="Go Back"
+              aria-label="Go Back"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={22} color="#0f172a" strokeWidth={2.3} />
             </button>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+            <h1 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
               Notifications
             </h1>
             {unreadCount > 0 && (
               <span
                 style={{
+                  marginLeft: '6px',
                   background: '#eff6ff',
                   color: '#1b4fdf',
                   fontSize: '11px',
                   fontWeight: '700',
                   padding: '2px 8px',
                   borderRadius: '9999px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {unreadCount > 9 ? '9+' : unreadCount} new
@@ -459,59 +627,123 @@ export const NotificationsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Quick Header Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* Mark All As Read */}
+          {/* Three-Dot Menu Options (Read all, Clear all) */}
+          <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
             <button
               type="button"
-              onClick={markAllAsRead}
-              title="Mark all as read"
-              disabled={unreadCount === 0}
+              onClick={() => setMenuOpen(prev => !prev)}
+              title="More options"
+              aria-label="More options"
+              aria-expanded={menuOpen}
               style={{
-                display: 'inline-flex',
+                background: menuOpen ? '#f1f5f9' : 'transparent',
+                border: 'none',
+                color: '#334155',
+                cursor: 'pointer',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
+                justifyContent: 'center',
+                width: '38px',
+                height: '38px',
                 borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                background: unreadCount > 0 ? '#ffffff' : '#f8fafc',
-                color: unreadCount > 0 ? '#1b4fdf' : '#94a3b8',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: unreadCount > 0 ? 'pointer' : 'default',
                 transition: 'all 0.15s ease'
               }}
             >
-              <CheckCheck size={15} />
-              <span>Mark all read</span>
+              <MoreVertical size={20} strokeWidth={2.2} />
             </button>
 
-            {/* Clear All */}
-            {notifications.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowClearConfirm(true)}
-                disabled={isClearing}
-                title="Clear all notifications permanently"
+            {menuOpen && (
+              <div
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #fee2e2',
-                  background: '#fef2f2',
-                  color: '#dc2626',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: isClearing ? 'wait' : 'pointer',
-                  opacity: isClearing ? 0.6 : 1,
-                  transition: 'all 0.15s ease'
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  right: 0,
+                  width: '185px',
+                  background: '#ffffff',
+                  borderRadius: '10px',
+                  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.08)',
+                  border: '1px solid #e2e8f0',
+                  padding: '6px',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards'
                 }}
               >
-                <Trash2 size={15} />
-                <span>{isClearing ? 'Clearing...' : 'Clear all'}</span>
-              </button>
+                {/* Option 1: Read all */}
+                <button
+                  type="button"
+                  disabled={unreadCount === 0}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    markAllAsRead();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '9px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: '6px',
+                    color: unreadCount > 0 ? '#0f172a' : '#94a3b8',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: unreadCount > 0 ? 'pointer' : 'default',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (unreadCount > 0) e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <CheckCheck size={16} color={unreadCount > 0 ? '#1b4fdf' : '#94a3b8'} strokeWidth={2.2} />
+                  <span>Read all</span>
+                </button>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: '#f1f5f9', margin: '3px 0' }} />
+
+                {/* Option 2: Clear all */}
+                <button
+                  type="button"
+                  disabled={notifications.length === 0 || isClearing}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setShowClearConfirm(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '9px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: '6px',
+                    color: notifications.length > 0 ? '#dc2626' : '#94a3b8',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: notifications.length > 0 ? 'pointer' : 'default',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (notifications.length > 0) e.currentTarget.style.backgroundColor = '#fef2f2';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <Trash2 size={16} color={notifications.length > 0 ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
+                  <span>Clear all</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -579,10 +811,10 @@ export const NotificationsPage: React.FC = () => {
 
         {/* Tab Bar: ALL vs UNREAD (Matching MobileApp Notification Screen) */}
         <div
+          className="notifications-tab-strip"
           style={{
             display: 'flex',
             borderBottom: '1px solid #f1f5f9',
-            padding: '0 24px',
             background: '#ffffff',
             flexShrink: 0,
           }}
@@ -662,11 +894,11 @@ export const NotificationsPage: React.FC = () => {
 
         {/* LinkedIn-Style Horizontal Capsule Filter Pills (Matching Mobile Notification Screen) */}
         <div
+          className="notifications-capsules-strip"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '12px 24px',
             overflowX: 'auto',
             scrollbarWidth: 'none',
             background: '#ffffff',
@@ -702,21 +934,73 @@ export const NotificationsPage: React.FC = () => {
         </div>
 
         {/* Notification Items List */}
-        <div style={{ padding: '8px 16px', minHeight: '360px' }}>
+        <div className="notifications-list-container" style={{ minHeight: '360px' }}>
           {loading && notifications.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+            <div style={{ padding: '8px 12px' }}>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '14px',
+                    padding: '16px 12px',
+                    borderBottom: '1px solid #f1f5f9',
+                    animation: 'notifPulse 1.4s ease-in-out infinite'
+                  }}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e2e8f0', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ width: '40%', height: '14px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
+                      <div style={{ width: '15%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
+                    </div>
+                    <div style={{ width: '80%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px', marginBottom: '6px' }} />
+                    <div style={{ width: '55%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !currentUser?.id ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
               <div
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  border: '3px solid #e2e8f0',
-                  borderTopColor: '#1b4fdf',
+                  width: '56px',
+                  height: '56px',
                   borderRadius: '50%',
-                  margin: '0 auto 12px auto',
-                  animation: 'spin 1s linear infinite'
+                  background: '#eff6ff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto',
+                  color: '#1b4fdf',
                 }}
-              />
-              Loading notifications...
+              >
+                <Bell size={26} />
+              </div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                Sign in to view notifications
+              </h3>
+              <p style={{ margin: '0 auto 18px', maxWidth: '340px', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+                Stay updated with interview schedules, job applications, and important announcements.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                style={{
+                  padding: '9px 22px',
+                  backgroundColor: '#1b4fdf',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)'
+                }}
+              >
+                Sign In
+              </button>
             </div>
           ) : displayedList.length === 0 ? (
             <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
@@ -818,12 +1102,15 @@ export const NotificationsPage: React.FC = () => {
                     border: 'none',
                     color: '#cbd5e1',
                     cursor: 'pointer',
-                    padding: '4px',
+                    padding: '6px',
+                    width: '32px',
+                    height: '32px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: '6px',
                     transition: 'all 0.15s ease',
+                    flexShrink: 0
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = '#ef4444';

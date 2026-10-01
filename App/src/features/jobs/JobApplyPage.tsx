@@ -19,10 +19,12 @@ import {
   Edit3,
   ExternalLink,
   ShieldCheck,
-  Send
+  Send,
+  Ticket
 } from 'lucide-react';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { ensureArray, formatDate } from '../../utils/helpers';
+import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
 
 export const JobApplyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +41,7 @@ export const JobApplyPage: React.FC = () => {
   const [isFetching, setIsFetching] = useState(!job);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -118,29 +121,48 @@ export const JobApplyPage: React.FC = () => {
   const appliedAtDate = userAppWithStatus?.appliedAt || applicantRecord?.appliedAt || (job as any).appliedAt || null;
   const applicationStatus = userAppWithStatus?.status || applicantRecord?.status || (job as any).applicationStatus || 'applied';
 
+  const isWalkIn = Boolean(
+    (job.hiringMethod || (job as any).hiring_method || '').toUpperCase() === 'WALK_IN' ||
+    job.isWalkIn ||
+    (job as any).is_walk_in ||
+    job.walkInDate ||
+    (job as any).walk_in_date
+  );
+
   if (hasApplied && !submittedSuccess) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '40px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', padding: '36px 28px', borderRadius: '8px', maxWidth: '520px', width: '100%', textAlign: 'center', boxShadow: '0 8px 24px rgba(15,23,42,0.08)' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-            <CheckCircle2 size={32} strokeWidth={2.5} />
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isWalkIn ? '#E0F2FE' : '#DCFCE7', color: isWalkIn ? '#0284C7' : '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+            {isWalkIn ? <Ticket size={32} strokeWidth={2.4} /> : <CheckCircle2 size={32} strokeWidth={2.5} />}
           </div>
 
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-            Application Already Submitted
+            {isWalkIn ? 'Walk-in Drive Pass Already Issued' : 'Application Already Submitted'}
           </h2>
 
           <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 8px 0' }}>
-            You have already applied for <strong>{job.title}</strong> at <strong>{job.company}</strong>.
+            {isWalkIn
+              ? <>You are already registered for the walk-in drive for <strong>{job.title}</strong> at <strong>{job.company}</strong>.</>
+              : <>You have already applied for <strong>{job.title}</strong> at <strong>{job.company}</strong>.</>}
           </p>
 
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: '700', color: '#15803D', margin: '8px 0 24px 0' }}>
-            <span>{appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: isWalkIn ? '#F0F9FF' : '#F0FDF4', border: isWalkIn ? '1px solid #BAE6FD' : '1px solid #BBF7D0', padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: '700', color: isWalkIn ? '#0284C7' : '#15803D', margin: '8px 0 24px 0' }}>
+            <span>{appliedAtDate ? `${isWalkIn ? 'Registered' : 'Applied'} on ${formatDate(appliedAtDate)}` : (isWalkIn ? 'Pass Active' : 'Applied')}</span>
             <span>•</span>
-            <span style={{ textTransform: 'capitalize' }}>Status: {applicationStatus}</span>
+            <span style={{ textTransform: 'capitalize' }}>{isWalkIn ? 'Admit Card Available' : `Status: ${applicationStatus}`}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {isWalkIn && (
+              <button
+                onClick={() => setShowWalkInPassModal(true)}
+                style={{ backgroundColor: '#0284C7', color: '#FFFFFF', border: 'none', padding: '10px 18px', borderRadius: '6px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Ticket size={14} color="#FFFFFF" strokeWidth={2.4} />
+                <span>View Official Entry Pass</span>
+              </button>
+            )}
             <button
               onClick={() => navigate(`/job/${job.id}`)}
               style={{ backgroundColor: '#FFFFFF', color: '#475569', border: '1px solid #CBD5E1', padding: '10px 18px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
@@ -155,6 +177,32 @@ export const JobApplyPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Walk-in Admit Pass Modal */}
+        <WalkInDrivePassModal
+          isOpen={showWalkInPassModal}
+          onClose={() => setShowWalkInPassModal(false)}
+          data={{
+            jobId: job.id,
+            applicationId: userAppWithStatus?.id || applicantRecord?.id,
+            ticketNumber: userAppWithStatus?.ticketNumber || applicantRecord?.ticketNumber,
+            jobTitle: job.title,
+            company: job.company,
+            companyLogo: job.companyLogo || (job as any).logo,
+            location: job.location,
+            walkInDate: job.walkInDate || (job as any).walk_in_date,
+            walkInStartTime: job.walkInStartTime || (job as any).walk_in_start_time,
+            walkInEndTime: job.walkInEndTime || (job as any).walk_in_end_time,
+            interviewAddress: job.interviewAddress || (job as any).interview_address || job.location,
+            walkInContactPerson: job.walkInContactPerson || (job as any).walk_in_contact_person,
+            walkInContactNumber: job.walkInContactNumber || (job as any).walk_in_contact_number,
+            walkInDocuments: job.walkInDocuments || (job as any).walk_in_documents,
+            candidateName: currentUser?.name || currentUser?.fullName,
+            candidatePhone: currentUser?.phone,
+            candidateEmail: currentUser?.email,
+            appliedAt: appliedAtDate || undefined
+          }}
+        />
       </div>
     );
   }
@@ -215,23 +263,63 @@ export const JobApplyPage: React.FC = () => {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '40px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', padding: '36px 28px', borderRadius: '8px', maxWidth: '520px', width: '100%', textAlign: 'center', boxShadow: '0 8px 24px rgba(15,23,42,0.08)' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-            <CheckCircle2 size={32} strokeWidth={2.5} />
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isWalkIn ? '#E0F2FE' : '#DCFCE7', color: isWalkIn ? '#0284C7' : '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+            {isWalkIn ? <Ticket size={32} strokeWidth={2.4} /> : <CheckCircle2 size={32} strokeWidth={2.5} />}
           </div>
 
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-            Application Submitted Successfully!
+            {isWalkIn ? 'Walk-in Registration Confirmed!' : 'Application Submitted Successfully!'}
           </h2>
 
           <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-            Your application for <strong>{job.title}</strong> at <strong>{job.company}</strong> has been transmitted directly to the hiring employer.
+            {isWalkIn
+              ? <>Your entry pass for <strong>{job.title}</strong> at <strong>{job.company}</strong> has been generated successfully. Please present your pass at the venue.</>
+              : <>Your application for <strong>{job.title}</strong> at <strong>{job.company}</strong> has been transmitted directly to the hiring employer.</>}
           </p>
 
-          {job.isWalkIn && (
-            <div style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '6px', padding: '14px', marginBottom: '20px', textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '800', color: '#B45309', marginBottom: '4px' }}>WALK-IN INTERVIEW ENTRY PASS GENERATED</div>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>Venue: {job.interviewAddress || job.location}</div>
-              {job.walkInDocuments && <div style={{ fontSize: '12px', color: '#78350F', marginTop: '4px' }}>Documents to Carry: {job.walkInDocuments}</div>}
+          {isWalkIn && (
+            <div style={{ backgroundColor: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '8px', padding: '14px 16px', marginBottom: '20px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Ticket size={15} color="#0284C7" strokeWidth={2.4} />
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#0369A1' }}>OFFICIAL ADMIT PASS GENERATED</span>
+                </div>
+                <span style={{ backgroundColor: '#E0F2FE', color: '#0284C7', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800' }}>READY</span>
+              </div>
+              <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>
+                Drive Date: {job.walkInDate || (job as any).walk_in_date || 'Walk-in Drive'}
+                {job.walkInStartTime || (job as any).walk_in_start_time ? ` (${job.walkInStartTime || (job as any).walk_in_start_time} - ${job.walkInEndTime || (job as any).walk_in_end_time || '04:00 PM'})` : ''}
+              </div>
+              <div style={{ fontSize: '12px', color: '#334155', marginBottom: '6px' }}>
+                Venue: {job.interviewAddress || (job as any).interview_address || job.location}
+              </div>
+              {Boolean(job.walkInDocuments || (job as any).walk_in_documents) && (
+                <div style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '1.4' }}>
+                  <strong>Carry:</strong> {job.walkInDocuments || (job as any).walk_in_documents}
+                </div>
+              )}
+              <button
+                onClick={() => setShowWalkInPassModal(true)}
+                style={{
+                  marginTop: '10px',
+                  width: '100%',
+                  padding: '9px 14px',
+                  backgroundColor: '#0284C7',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '12.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Ticket size={14} color="#FFFFFF" strokeWidth={2.4} />
+                <span>View & Print Official Admit Pass</span>
+              </button>
             </div>
           )}
 
@@ -250,6 +338,30 @@ export const JobApplyPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Walk-in Admit Pass Modal */}
+        <WalkInDrivePassModal
+          isOpen={showWalkInPassModal}
+          onClose={() => setShowWalkInPassModal(false)}
+          data={{
+            jobId: job.id,
+            jobTitle: job.title,
+            company: job.company,
+            companyLogo: job.companyLogo || (job as any).logo,
+            location: job.location,
+            walkInDate: job.walkInDate || (job as any).walk_in_date,
+            walkInStartTime: job.walkInStartTime || (job as any).walk_in_start_time,
+            walkInEndTime: job.walkInEndTime || (job as any).walk_in_end_time,
+            interviewAddress: job.interviewAddress || (job as any).interview_address || job.location,
+            walkInContactPerson: job.walkInContactPerson || (job as any).walk_in_contact_person,
+            walkInContactNumber: job.walkInContactNumber || (job as any).walk_in_contact_number,
+            walkInDocuments: job.walkInDocuments || (job as any).walk_in_documents,
+            candidateName: currentUser?.name || currentUser?.fullName,
+            candidatePhone: currentUser?.phone,
+            candidateEmail: currentUser?.email,
+            appliedAt: new Date().toISOString()
+          }}
+        />
       </div>
     );
   }
@@ -267,7 +379,9 @@ export const JobApplyPage: React.FC = () => {
             <ArrowLeft size={18} />
             <span>Back to Job Details</span>
           </button>
-          <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563EB' }}>Confirm Job Application</span>
+          <span style={{ fontSize: '14px', fontWeight: '800', color: '#2563EB' }}>
+            {isWalkIn ? 'Register for Walk-in Drive' : 'Confirm Job Application'}
+          </span>
         </div>
       </div>
 
@@ -501,7 +615,12 @@ export const JobApplyPage: React.FC = () => {
             {isSubmitting ? (
               <>
                 <div style={{ width: '16px', height: '16px', border: '2px solid #FFFFFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                <span>Submitting Application...</span>
+                <span>{isWalkIn ? 'Generating Entry Pass...' : 'Submitting Application...'}</span>
+              </>
+            ) : isWalkIn ? (
+              <>
+                <Ticket size={16} strokeWidth={2.4} color="#FFFFFF" />
+                <span>Register & Generate Pass</span>
               </>
             ) : (
               <>
@@ -513,6 +632,31 @@ export const JobApplyPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Walk-in Admit Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={showWalkInPassModal}
+        onClose={() => setShowWalkInPassModal(false)}
+        data={{
+          jobId: job.id,
+          applicationId: userAppWithStatus?.id || applicantRecord?.id,
+          ticketNumber: userAppWithStatus?.ticketNumber || applicantRecord?.ticketNumber,
+          jobTitle: job.title,
+          company: job.company,
+          companyLogo: job.companyLogo || (job as any).logo,
+          location: job.location,
+          walkInDate: job.walkInDate || (job as any).walk_in_date,
+          walkInStartTime: job.walkInStartTime || (job as any).walk_in_start_time,
+          walkInEndTime: job.walkInEndTime || (job as any).walk_in_end_time,
+          interviewAddress: job.interviewAddress || (job as any).interview_address || job.location,
+          walkInContactPerson: job.walkInContactPerson || (job as any).walk_in_contact_person,
+          walkInContactNumber: job.walkInContactNumber || (job as any).walk_in_contact_number,
+          walkInDocuments: job.walkInDocuments || (job as any).walk_in_documents,
+          candidateName: currentUser?.name || currentUser?.fullName,
+          candidatePhone: currentUser?.phone,
+          candidateEmail: currentUser?.email,
+          appliedAt: appliedAtDate || undefined
+        }}
+      />
     </div>
   );
 };

@@ -23,12 +23,17 @@ import {
   Clock3,
   RotateCcw,
   Sparkles,
+  Ticket,
+  Users,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { CalendarDatePickerModal } from '../../components/common/CalendarDatePickerModal';
 import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { CandidateDetailsModal } from '../../components/candidate/CandidateDetailsModal';
+import { EmployerWalkInDriveCard } from './components/EmployerWalkInDriveCard';
 
 export interface EmployerInterviewItem {
   application_id: string;
@@ -98,10 +103,13 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
   const routerNavigate = useNavigate();
   const handleNavigate = navigate || routerNavigate;
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [filterType, setFilterType] = useState<'ALL' | 'WALK_IN' | 'SCHEDULED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [upcomingList, setUpcomingList] = useState<EmployerInterviewItem[]>([]);
   const [pastList, setPastList] = useState<EmployerInterviewItem[]>([]);
+  const [employerJobs, setEmployerJobs] = useState<any[]>([]);
+  const [allApplicantsList, setAllApplicantsList] = useState<any[]>([]);
 
   // Selected Interview for Detail / Evaluation Modal
   const [selectedInterview, setSelectedInterview] = useState<EmployerInterviewItem | null>(null);
@@ -144,17 +152,34 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
   const fetchInterviews = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch('/api/v1/jobs/employer/interviews');
-      if (res.ok) {
-        const json = await res.json();
+      const [intRes, jobsRes, appsRes] = await Promise.all([
+        apiFetch('/api/v1/jobs/employer/interviews').catch(() => null),
+        apiFetch('/api/v1/jobs/employer/my-jobs').catch(() => null),
+        apiFetch('/api/v1/jobs/employer/applicants').catch(() => null),
+      ]);
+
+      if (intRes && intRes.ok) {
+        const json = await intRes.json();
         const data = json?.data || json;
         if (data) {
           setUpcomingList(Array.isArray(data.upcoming) ? data.upcoming : []);
           setPastList(Array.isArray(data.past) ? data.past : []);
         }
       }
+
+      if (jobsRes && jobsRes.ok) {
+        const jJson = await jobsRes.json();
+        const jData = jJson?.data || jJson;
+        setEmployerJobs(Array.isArray(jData) ? jData : []);
+      }
+
+      if (appsRes && appsRes.ok) {
+        const aJson = await appsRes.json();
+        const aData = aJson?.data || aJson;
+        setAllApplicantsList(Array.isArray(aData) ? aData : []);
+      }
     } catch (err) {
-      console.warn('Failed to fetch employer interviews:', err);
+      console.warn('Failed to fetch employer interviews and jobs:', err);
     } finally {
       setLoading(false);
     }
@@ -281,6 +306,101 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
       );
     });
   }, [currentList, searchQuery]);
+
+  const isWalkInJob = (job: any) => {
+    const hm = (job.hiringMethod || job.hiring_method || '').toUpperCase();
+    return (
+      hm === 'WALK_IN' ||
+      Boolean(job.isWalkIn) ||
+      Boolean(job.is_walk_in) ||
+      Boolean(job.walkInDate) ||
+      Boolean(job.walk_in_date)
+    );
+  };
+
+  const walkInDrives = useMemo(() => {
+    return employerJobs.filter(isWalkInJob);
+  }, [employerJobs]);
+
+  const upcomingWalkIns = useMemo(() => {
+    return walkInDrives.filter((job) => {
+      const dateStr = job.walkInDate || job.walk_in_date;
+      if (!dateStr) return true;
+      return getDaysFromToday(dateStr) >= 0;
+    });
+  }, [walkInDrives]);
+
+  const pastWalkIns = useMemo(() => {
+    return walkInDrives.filter((job) => {
+      const dateStr = job.walkInDate || job.walk_in_date;
+      if (!dateStr) return false;
+      return getDaysFromToday(dateStr) < 0;
+    });
+  }, [walkInDrives]);
+
+  const currentWalkIns = activeTab === 'upcoming' ? upcomingWalkIns : pastWalkIns;
+
+  const getJobApplicantCount = useCallback((jobId: string) => {
+    const jId = String(jobId).toLowerCase();
+    const count = allApplicantsList.filter(a => String(a.jobId || a.job_id || a.job?.id || '').toLowerCase() === jId).length;
+    return count;
+  }, [allApplicantsList]);
+
+  const searchedWalkIns = useMemo(() => {
+    if (!searchQuery.trim()) return currentWalkIns;
+    const q = searchQuery.toLowerCase().trim();
+    return currentWalkIns.filter(j => {
+      return (
+        j.title?.toLowerCase().includes(q) ||
+        j.company?.toLowerCase().includes(q) ||
+        j.location?.toLowerCase().includes(q) ||
+        j.interviewAddress?.toLowerCase().includes(q)
+      );
+    });
+  }, [currentWalkIns, searchQuery]);
+
+  const handleExportCsv = () => {
+    const rows = [
+      ['Category', 'Job Title', 'Candidate / Registered Applicants', 'Contact Phone', 'Date', 'Time Window', 'Venue Address', 'Status']
+    ];
+
+    currentList.forEach((item) => {
+      rows.push([
+        '1-on-1 Interview',
+        item.job_title || 'N/A',
+        item.candidate_name || 'Candidate',
+        item.candidate_phone || 'N/A',
+        item.interview_date || 'TBD',
+        item.interview_time || 'TBD',
+        item.venue_address || 'TBD',
+        item.interview_status || item.application_status || 'Scheduled'
+      ]);
+    });
+
+    currentWalkIns.forEach((job) => {
+      const regCount = getJobApplicantCount(job.id);
+      rows.push([
+        'Walk-in Drive',
+        job.title || 'N/A',
+        `${regCount} Candidates Registered`,
+        job.walkInContactNumber || 'N/A',
+        job.walkInDate || job.walk_in_date || 'TBD',
+        `${job.walkInStartTime || '10:00 AM'} - ${job.walkInEndTime || '04:00 PM'}`,
+        job.interviewAddress || job.location || 'TBD',
+        activeTab === 'upcoming' ? 'Upcoming Drive' : 'Completed Drive'
+      ]);
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Employer_Interviews_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (showToast) showToast('Interview and walk-in drive schedules exported successfully!', 'success');
+  };
 
   return (
     <div className="interviews-page-root">
@@ -709,6 +829,103 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               </button>
             )}
           </div>
+
+          {/* Sub-filter row: All Schedules | Walk-in Drives | 1-on-1 Interviews + Download Excel */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', gap: '8px', flexWrap: 'wrap' }}>
+            <div
+              className="no-scrollbar"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setFilterType('ALL')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: filterType === 'ALL' ? 800 : 600,
+                  backgroundColor: filterType === 'ALL' ? '#1D4ED8' : '#FFFFFF',
+                  color: filterType === 'ALL' ? '#FFFFFF' : '#64748B',
+                  border: `1px solid ${filterType === 'ALL' ? '#1D4ED8' : '#CBD5E1'}`,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                All Schedules ({currentList.length + currentWalkIns.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType('WALK_IN')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: filterType === 'WALK_IN' ? 800 : 600,
+                  backgroundColor: filterType === 'WALK_IN' ? '#1D4ED8' : '#FFFFFF',
+                  color: filterType === 'WALK_IN' ? '#FFFFFF' : '#64748B',
+                  border: `1px solid ${filterType === 'WALK_IN' ? '#1D4ED8' : '#CBD5E1'}`,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Ticket size={12} />
+                <span>Walk-in Drives ({currentWalkIns.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType('SCHEDULED')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: filterType === 'SCHEDULED' ? 800 : 600,
+                  backgroundColor: filterType === 'SCHEDULED' ? '#1D4ED8' : '#FFFFFF',
+                  color: filterType === 'SCHEDULED' ? '#FFFFFF' : '#64748B',
+                  border: `1px solid ${filterType === 'SCHEDULED' ? '#1D4ED8' : '#CBD5E1'}`,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                1-on-1 Interviews ({currentList.length})
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              style={{
+                backgroundColor: '#16A34A',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                whiteSpace: 'nowrap',
+              }}
+              title="Download Excel / CSV schedule"
+            >
+              <FileSpreadsheet size={13} color="#FFFFFF" />
+              <span>Download Excel</span>
+            </button>
+          </div>
         </div>
 
         {/* Main List Body */}
@@ -718,7 +935,54 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
               <div className="spinner" style={{ margin: '0 auto 8px auto' }} />
               <div style={{ fontSize: '11.5px', fontWeight: 500 }}>Loading interview schedule...</div>
             </div>
-          ) : filteredList.length === 0 ? (
+          ) : filterType === 'WALK_IN' ? (
+            searchedWalkIns.length === 0 ? (
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                padding: '24px 16px',
+                textAlign: 'center',
+                marginTop: '8px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '24px',
+                  backgroundColor: '#F1F5F9',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '10px'
+                }}>
+                  <Ticket size={24} color="#94A3B8" />
+                </div>
+                <h3 style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
+                  {activeTab === 'upcoming' ? 'No Upcoming Walk-in Drives' : 'No Past Walk-in Drives'}
+                </h3>
+                <p style={{ fontSize: '11.5px', color: '#64748B', margin: 0, lineHeight: '16px' }}>
+                  {activeTab === 'upcoming'
+                    ? 'When you post jobs with Walk-in Drive hiring mode, their schedule and candidate admit passes will appear here.'
+                    : 'Completed walk-in drives and historical recruitment events will be listed here.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                {searchedWalkIns.map(job => (
+                  <EmployerWalkInDriveCard
+                    key={job.id}
+                    job={job}
+                    applicantCount={getJobApplicantCount(job.id)}
+                    isPast={activeTab === 'past'}
+                    onViewApplicants={(jId) => handleNavigate(`/dashboard?tab=applicants&jobId=${jId}`)}
+                    onEditJob={(jId) => handleNavigate(`/job/edit/${jId}`)}
+                  />
+                ))}
+              </div>
+            )
+          ) : (filterType === 'SCHEDULED' ? filteredList.length === 0 : (filteredList.length === 0 && searchedWalkIns.length === 0)) ? (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '6px',
@@ -752,6 +1016,31 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+              {/* If ALL is selected, show Walk-in drives first if any */}
+              {filterType === 'ALL' && searchedWalkIns.length > 0 && (
+                <>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
+                    <Ticket size={13} color="#1D4ED8" />
+                    <span>WALK-IN DRIVES ({searchedWalkIns.length})</span>
+                  </div>
+                  {searchedWalkIns.map(job => (
+                    <EmployerWalkInDriveCard
+                      key={`wid-${job.id}`}
+                      job={job}
+                      applicantCount={getJobApplicantCount(job.id)}
+                      isPast={activeTab === 'past'}
+                      onViewApplicants={(jId) => handleNavigate(`/dashboard?tab=applicants&jobId=${jId}`)}
+                      onEditJob={(jId) => handleNavigate(`/job/edit/${jId}`)}
+                    />
+                  ))}
+                  {filteredList.length > 0 && (
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '12px' }}>
+                      <Calendar size={13} color="#0F172A" />
+                      <span>1-ON-1 SCHEDULED INTERVIEWS ({filteredList.length})</span>
+                    </div>
+                  )}
+                </>
+              )}
               {filteredList.map((item) => {
                 const days = getDaysFromToday(item.interview_date);
                 const isCompleted = item.interview_status === 'interviewed' || item.application_status === 'interviewed';

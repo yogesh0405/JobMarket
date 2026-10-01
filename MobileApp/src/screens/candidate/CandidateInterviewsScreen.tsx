@@ -332,7 +332,7 @@ export const CandidateInterviewsScreen: React.FC<Props> = ({ navigation }) => {
           application_id: String(item.id || item.jobId || job.id),
           job_id: String(job.id || item.jobId || item.job_id),
           status: item.status || 'applied',
-          applied_at: item.appliedAt || job.postedAt || new Date().toISOString(),
+          applied_at: item.appliedAt || item.applied_at || (job as any)?.appliedAt || (job as any)?.applied_at || new Date().toISOString(),
           interview_date: dateStr,
           interview_time: timeStr,
           venue_address: venue,

@@ -26,8 +26,10 @@ import {
   Briefcase,
   Award,
   Send,
-  ExternalLink
+  ExternalLink,
+  Ticket
 } from 'lucide-react';
+import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
 
 const ensureArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.filter(Boolean).map(String);
@@ -209,6 +211,14 @@ export const JobDetailPage: React.FC = () => {
 
   const appliedAtDate = userAppWithStatus?.appliedAt || applicantRecord?.appliedAt || (job as any).appliedAt || null;
   const applicationStatus = userAppWithStatus?.status || applicantRecord?.status || (job as any).applicationStatus || 'applied';
+
+  const isWalkIn = Boolean(
+    (job.hiringMethod || (job as any).hiring_method || '').toUpperCase() === 'WALK_IN' ||
+    job.isWalkIn ||
+    (job as any).is_walk_in ||
+    job.walkInDate ||
+    (job as any).walk_in_date
+  );
 
   const perksList: string[] = ensureArray(job.perks);
   if (job.bus_facility || (job as any).busFacility) perksList.push('Bus / Transport Facility');
@@ -482,6 +492,116 @@ export const JobDetailPage: React.FC = () => {
         }}>
           {activeTab === 'job_overview' ? (
             <>
+              {isWalkIn && (
+                <div style={{
+                  backgroundColor: '#F0F9FF',
+                  border: '1.5px solid #BAE6FD',
+                  borderRadius: '8px',
+                  padding: '14px 16px',
+                  marginBottom: '16px',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.06)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Ticket size={18} color="#0284C7" strokeWidth={2.4} />
+                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0369A1' }}>
+                        Mega Walk-in Interview Drive
+                      </span>
+                    </div>
+                    <span style={{
+                      backgroundColor: '#E0F2FE',
+                      border: '1px solid #7DD3FC',
+                      color: '#0284C7',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      letterSpacing: '0.4px'
+                    }}>
+                      DIRECT INTERVIEW
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>DRIVE DATE & TIMING</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Calendar size={13} color="#0284C7" />
+                        <span>{job.walkInDate || (job as any).walk_in_date || 'Drive Date Announced'}</span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Clock size={12} color="#64748B" />
+                        <span>{job.walkInStartTime || (job as any).walk_in_start_time || '10:00 AM'} - {job.walkInEndTime || (job as any).walk_in_end_time || '04:00 PM'}</span>
+                      </div>
+                    </div>
+
+                    {(job.walkInContactPerson || (job as any).walk_in_contact_person || job.walkInContactNumber || (job as any).walk_in_contact_number) && (
+                      <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>DRIVE COORDINATOR</div>
+                        <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>
+                          {job.walkInContactPerson || (job as any).walk_in_contact_person || 'HR Department'}
+                        </div>
+                        {(job.walkInContactNumber || (job as any).walk_in_contact_number) && (
+                          <a
+                            href={`tel:${String(job.walkInContactNumber || (job as any).walk_in_contact_number).replace(/[^0-9+]/g, '')}`}
+                            style={{
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              color: '#0284C7',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              marginTop: '2px'
+                            }}
+                          >
+                            <Phone size={11} color="#0284C7" />
+                            <span>{job.walkInContactNumber || (job as any).walk_in_contact_number}</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {(job.interviewAddress || (job as any).interview_address || job.location) && (
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '3px' }}>INTERVIEW VENUE ADDRESS</div>
+                      <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#334155', lineHeight: 1.45 }}>
+                        {job.interviewAddress || (job as any).interview_address || job.location}
+                      </p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.interviewAddress || (job as any).interview_address || job.location)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: '#0284C7',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          marginTop: '6px'
+                        }}
+                      >
+                        <MapPin size={12} color="#0284C7" />
+                        <span>Open Directions in Google Maps</span>
+                        <ExternalLink size={11} color="#0284C7" />
+                      </a>
+                    </div>
+                  )}
+
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '6px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#475569', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                      MANDATORY DOCUMENTS TO CARRY
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#334155', fontWeight: 600, lineHeight: 1.45 }}>
+                      {job.walkInDocuments || (job as any).walk_in_documents || 'Updated Resume (2 Copies), Aadhar Card, Educational Marksheets, Passport Size Photographs, Bank Passbook'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 10px 0' }}>
                 Key Specifications
               </h3>
@@ -650,11 +770,11 @@ export const JobDetailPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
-                backgroundColor: '#F0FDF4',
-                border: '1.5px solid #86EFAC',
+                backgroundColor: isWalkIn ? '#F0F9FF' : '#F0FDF4',
+                border: isWalkIn ? '1.5px solid #7DD3FC' : '1.5px solid #86EFAC',
                 padding: '8px 14px',
                 borderRadius: '8px',
-                boxShadow: '0 1px 4px rgba(22, 163, 74, 0.08)',
+                boxShadow: isWalkIn ? '0 1px 4px rgba(2, 132, 199, 0.08)' : '0 1px 4px rgba(22, 163, 74, 0.08)',
                 boxSizing: 'border-box'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
@@ -662,44 +782,75 @@ export const JobDetailPage: React.FC = () => {
                     width: '32px',
                     height: '32px',
                     borderRadius: '50%',
-                    backgroundColor: '#DCFCE7',
+                    backgroundColor: isWalkIn ? '#E0F2FE' : '#DCFCE7',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <CheckCircle2 size={18} color="#16A34A" strokeWidth={2.5} />
+                    {isWalkIn ? (
+                      <Ticket size={18} color="#0284C7" strokeWidth={2.5} />
+                    ) : (
+                      <CheckCircle2 size={18} color="#16A34A" strokeWidth={2.5} />
+                    )}
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#15803D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}
+                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: isWalkIn ? '#0369A1' : '#15803D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {isWalkIn ? 'Walk-in Pass Issued' : (appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied')}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#166534', fontWeight: '600', marginTop: '1px' }}>
-                      Status: <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{applicationStatus}</span>
+                    <div style={{ fontSize: '11px', color: isWalkIn ? '#0284C7' : '#166534', fontWeight: '600', marginTop: '1px' }}>
+                      {isWalkIn ? 'Confirmed Admit Card available' : <>Status: <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{applicationStatus}</span></>}
                     </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => navigate('/dashboard?tab=applied')}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    color: '#15803D',
-                    border: '1px solid #86EFAC',
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-                >
-                  Track Status
-                </button>
+                {isWalkIn ? (
+                  <button
+                    onClick={() => setShowWalkInPassModal(true)}
+                    style={{
+                      backgroundColor: '#0284C7',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '8px 14px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0369A1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0284C7')}
+                  >
+                    <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
+                    <span>View Pass</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/dashboard?tab=applied')}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      color: '#15803D',
+                      border: '1px solid #86EFAC',
+                      padding: '8px 14px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                  >
+                    Track Status
+                  </button>
+                )}
               </div>
             ) : isEmployer ? (
               <button
@@ -729,7 +880,7 @@ export const JobDetailPage: React.FC = () => {
                 style={{
                   width: '100%',
                   height: '46px',
-                  backgroundColor: isApplying ? '#6366F1' : '#2563EB',
+                  backgroundColor: isApplying ? '#6366F1' : (isWalkIn ? '#1D4ED8' : '#2563EB'),
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
@@ -743,8 +894,17 @@ export const JobDetailPage: React.FC = () => {
                   transition: 'background 0.2s ease'
                 }}
               >
-                <Send size={16} strokeWidth={2.5} color="#FFFFFF" />
-                <span>{isApplying ? 'Applying...' : 'Apply Now'}</span>
+                {isWalkIn ? (
+                  <>
+                    <Ticket size={16} strokeWidth={2.4} color="#FFFFFF" />
+                    <span>{isApplying ? 'Registering...' : 'Register for Walk-in Drive'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} strokeWidth={2.5} color="#FFFFFF" />
+                    <span>{isApplying ? 'Applying...' : 'Apply Now'}</span>
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -762,6 +922,32 @@ export const JobDetailPage: React.FC = () => {
           isApplying={isApplying}
         />
       )}
+
+      {/* Official Walk-In Drive Admit Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={showWalkInPassModal}
+        onClose={() => setShowWalkInPassModal(false)}
+        data={{
+          jobId: job.id,
+          applicationId: userAppWithStatus?.id || applicantRecord?.id,
+          ticketNumber: userAppWithStatus?.ticketNumber || applicantRecord?.ticketNumber,
+          jobTitle: job.title,
+          company: job.company,
+          companyLogo: job.companyLogo || (job as any).logo,
+          location: job.location,
+          walkInDate: job.walkInDate || (job as any).walk_in_date,
+          walkInStartTime: job.walkInStartTime || (job as any).walk_in_start_time,
+          walkInEndTime: job.walkInEndTime || (job as any).walk_in_end_time,
+          interviewAddress: job.interviewAddress || (job as any).interview_address || job.location,
+          walkInContactPerson: job.walkInContactPerson || (job as any).walk_in_contact_person,
+          walkInContactNumber: job.walkInContactNumber || (job as any).walk_in_contact_number,
+          walkInDocuments: job.walkInDocuments || (job as any).walk_in_documents,
+          candidateName: currentUser?.name || currentUser?.fullName,
+          candidatePhone: currentUser?.phone,
+          candidateEmail: currentUser?.email,
+          appliedAt: appliedAtDate || undefined
+        }}
+      />
     </div>
   );
 };

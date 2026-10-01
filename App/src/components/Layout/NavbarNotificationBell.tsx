@@ -319,6 +319,17 @@ export const NavbarNotificationBell: React.FC = () => {
     }
   };
 
+  const handleBellClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const isMobileView = typeof window !== 'undefined' && window.innerWidth <= 768;
+    if (isMobileView) {
+      setIsOpen(false);
+      navigate('/notifications');
+      return;
+    }
+    setIsOpen(!isOpen);
+  };
+
   const deleteNotification = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const backup = [...notifications];
@@ -935,6 +946,43 @@ export const NavbarNotificationBell: React.FC = () => {
                 </>
               )}
             </div>
+
+            {/* Desktop Drawer Footer: View All in Notifications Page */}
+            <div
+              style={{
+                padding: '12px 20px',
+                borderTop: '1px solid #f1f5f9',
+                background: '#f8fafc',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/notifications');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563eb',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>View all in Notifications</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>,
         document.body
@@ -947,7 +995,7 @@ export const NavbarNotificationBell: React.FC = () => {
       <button
         type="button"
         className="notification-bell-btn"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
         aria-label="Notifications"
         style={{
           position: 'relative',

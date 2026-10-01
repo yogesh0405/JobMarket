@@ -150,7 +150,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       user_id: item.userId || item.user_id,
       job_id: finalJobId,
       status: (item.status || 'applied').toLowerCase() as any,
-      applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+      applied_at: item.appliedAt || item.applied_at || new Date().toISOString(),
       job: parentJob || item.job,
       user: {
         id: item.userId || item.user_id,
