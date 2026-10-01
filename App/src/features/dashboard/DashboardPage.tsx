@@ -618,14 +618,19 @@ export const DashboardPage: React.FC = () => {
         <CandidateEditProfileModal 
           isOpen={editModalOpen} 
           onClose={() => setEditModalOpen(false)} 
-          onSuccess={() => syncUser()} 
+          currentUser={currentUser}
+          onSuccess={() => {
+            try { syncUser(); } catch (e) { console.error('syncUser error:', e); }
+          }} 
         />
       ) : (
         <EditCompanyProfileModal 
           isOpen={editModalOpen} 
           onClose={() => setEditModalOpen(false)} 
           company={currentUser} 
-          onSaveSuccess={() => syncUser()} 
+          onSaveSuccess={() => {
+            try { syncUser(); } catch (e) { console.error('syncUser error:', e); }
+          }} 
         />
       )}
     </>

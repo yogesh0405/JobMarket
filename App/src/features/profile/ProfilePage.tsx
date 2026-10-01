@@ -313,7 +313,9 @@ export const ProfilePage: React.FC = () => {
     const trimmed = newSkill.trim();
     if (!trimmed) return;
 
-    const currentSkills = currentUser.skills || [];
+    const currentSkills = Array.isArray(currentUser.skills)
+      ? currentUser.skills
+      : (typeof currentUser.skills === 'string' ? (currentUser.skills as string).split(',').map(s => s.trim()).filter(Boolean) : []);
     if (currentSkills.includes(trimmed)) {
       showToast('Skill already added', 'error');
       return;
@@ -340,7 +342,9 @@ export const ProfilePage: React.FC = () => {
     if (!currentUser) return;
     setIsSaving(true);
     try {
-      const currentSkills = currentUser.skills || [];
+      const currentSkills = Array.isArray(currentUser.skills)
+        ? currentUser.skills
+        : (typeof currentUser.skills === 'string' ? (currentUser.skills as string).split(',').map(s => s.trim()).filter(Boolean) : []);
       const updatedSkills = currentSkills.filter(s => s !== skillToDelete);
       const result = await updateUser({ skills: updatedSkills });
       if (result.success) {
@@ -612,8 +616,10 @@ export const ProfilePage: React.FC = () => {
     setGstNumber(currentUser.gstNumber || '');
     setHeadline(currentUser.headline || '');
     setLocation(currentUser.location || '');
-    setPhone(currentUser.phone || '');
-    setSkills((currentUser.skills || []).join(', '));
+    const safeSkills = Array.isArray(currentUser.skills)
+      ? currentUser.skills
+      : (typeof currentUser.skills === 'string' ? (currentUser.skills as string).split(',').map(s => s.trim()).filter(Boolean) : []);
+    setSkills(safeSkills.join(', '));
     
     const currentSpecialty = currentUser.tradeSpecialization || '';
     if (currentSpecialty && !TRADES_LIST.includes(currentSpecialty)) {
@@ -686,21 +692,26 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  let experienceList: any[] = currentUser.experience || [];
+  let experienceList: any[] = Array.isArray(currentUser.experience) ? currentUser.experience : [];
   if (typeof experienceList === 'string') {
     try { experienceList = JSON.parse(experienceList); } catch (_) { experienceList = []; }
   }
   if (!Array.isArray(experienceList)) experienceList = [];
 
-  let educationList: any[] = currentUser.education || [];
+  let educationList: any[] = Array.isArray(currentUser.education) ? currentUser.education : [];
   if (typeof educationList === 'string') {
     try { educationList = JSON.parse(educationList); } catch (_) { educationList = []; }
   }
   if (!Array.isArray(educationList)) educationList = [];
 
-  let skillsList: string[] = currentUser.skills || [];
+  let skillsList: string[] = Array.isArray(currentUser.skills) ? currentUser.skills : [];
   if (typeof skillsList === 'string') {
-    try { skillsList = JSON.parse(skillsList); } catch (_) { skillsList = []; }
+    try { 
+      const parsed = JSON.parse(currentUser.skills);
+      skillsList = Array.isArray(parsed) ? parsed : (currentUser.skills as string).split(',').map(s => s.trim()).filter(Boolean); 
+    } catch (_) { 
+      skillsList = (currentUser.skills as string).split(',').map(s => s.trim()).filter(Boolean); 
+    }
   }
   if (!Array.isArray(skillsList)) skillsList = [];
 
@@ -1966,10 +1977,11 @@ export const ProfilePage: React.FC = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {experienceList.map((item: any, idx: number) => {
+                        if (!item || typeof item !== 'object') return null;
                         const isCurrent = idx === 0;
                         const itemSkills = Array.isArray(item.skills) ? item.skills : [];
                         const achievementsList = Array.isArray(item.achievements) ? item.achievements : [];
-                        const durationText = item.duration || '2020 - Present';
+                        const durationText = item.duration || (item.startYear ? `${item.startYear} - ${item.endYear || 'Present'}` : '2020 - Present');
                         const roleCompanyTitle = item.company ? `${item.title || 'Role'} at ${item.company}` : (item.title || 'Role Position');
 
                         return (
@@ -2107,6 +2119,7 @@ export const ProfilePage: React.FC = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {educationList.map((item: any, idx: number) => {
+                        if (!item || typeof item !== 'object') return null;
                         const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
                         return (
                           <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -2161,7 +2174,7 @@ export const ProfilePage: React.FC = () => {
                   Resume
                 </h2>
 
-                {currentUser.resume ? (
+                {currentUser.resume && (currentUser.resume.name || currentUser.resume.url) ? (
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
@@ -2305,14 +2318,19 @@ export const ProfilePage: React.FC = () => {
         <CandidateEditProfileModal 
           isOpen={editModalOpen} 
           onClose={() => setEditModalOpen(false)} 
-          onSuccess={() => syncUser()} 
+          currentUser={currentUser} 
+          onSuccess={() => {
+            try { syncUser(); } catch (e) { console.error('syncUser error:', e); }
+          }} 
         />
       ) : (
         <EditCompanyProfileModal 
           isOpen={editModalOpen} 
           onClose={() => setEditModalOpen(false)} 
           company={currentUser} 
-          onSaveSuccess={() => syncUser()} 
+          onSaveSuccess={() => {
+            try { syncUser(); } catch (e) { console.error('syncUser error:', e); }
+          }} 
         />
       )}
 

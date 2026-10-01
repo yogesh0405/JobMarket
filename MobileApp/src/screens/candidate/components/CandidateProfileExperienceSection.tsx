@@ -20,15 +20,21 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
   resumeName,
   onOpenPdf,
 }) => {
+  const safeSkills: string[] = Array.isArray(skills)
+    ? skills
+    : (typeof skills === 'string' ? (skills as string).split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+  const safeExp: any[] = Array.isArray(experience) ? experience : [];
+  const safeEdu: any[] = Array.isArray(education) ? education : [];
+
   return (
     <>
       {/* 1. SKILLS CARD */}
       <View style={styles.sectionCard}>
         <Text style={styles.serifCardTitle}>Skills & Expertise</Text>
 
-        {skills.length > 0 ? (
+        {safeSkills.length > 0 ? (
           <View style={styles.skillsTagRow}>
-            {skills.map((s, idx) => (
+            {safeSkills.map((s, idx) => (
               <View key={idx} style={styles.skillPill}>
                 <Text style={styles.skillPillText}>{s}</Text>
               </View>
@@ -46,7 +52,7 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
         <Text style={styles.serifCardTitle}>Work Experience</Text>
 
         <View style={{ marginTop: 2 }}>
-          {experience.length === 0 ? (
+          {safeExp.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptySubText}>No work experience entries added yet.</Text>
             </View>
@@ -54,7 +60,8 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
             <View style={styles.timelineContainer}>
               <View style={styles.timelineVerticalBar} />
 
-              {experience.map((item, idx) => {
+              {safeExp.map((item, idx) => {
+                if (!item || typeof item !== 'object') return null;
                 const isCurrent = idx === 0;
                 const itemSkills = Array.isArray(item.skills) ? item.skills : [];
                 const achievementsList = Array.isArray(item.achievements) ? item.achievements : [];
@@ -124,7 +131,7 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
         <Text style={styles.serifCardTitle}>Education & Qualifications</Text>
 
         <View style={{ marginTop: 2 }}>
-          {education.length === 0 ? (
+          {safeEdu.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptySubText}>No education or ITI certificate added yet.</Text>
             </View>
@@ -132,7 +139,8 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
             <View style={styles.timelineContainer}>
               <View style={styles.timelineVerticalBar} />
 
-              {education.map((item, idx) => {
+              {safeEdu.map((item, idx) => {
+                if (!item || typeof item !== 'object') return null;
                 const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
                 return (
                   <View key={idx} style={styles.timelineRow}>

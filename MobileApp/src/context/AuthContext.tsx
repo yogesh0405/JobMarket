@@ -50,8 +50,58 @@ const normalizeUserData = (rawUser: any): User => {
     ? photo.trim()
     : (typeof photo === 'object' && photo !== null ? (photo.url || photo.secure_url || '') : '');
 
+  let safeSkills = rawUser.skills;
+  if (typeof safeSkills === 'string') {
+    try {
+      const parsed = JSON.parse(safeSkills);
+      safeSkills = Array.isArray(parsed) ? parsed : safeSkills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    } catch (_) {
+      safeSkills = safeSkills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(safeSkills)) safeSkills = safeSkills ? [safeSkills] : [];
+
+  let safeExperience = rawUser.experience;
+  if (typeof safeExperience === 'string') {
+    try {
+      const parsed = JSON.parse(safeExperience);
+      safeExperience = Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      safeExperience = [];
+    }
+  }
+  if (!Array.isArray(safeExperience)) safeExperience = [];
+
+  let safeEducation = rawUser.education;
+  if (typeof safeEducation === 'string') {
+    try {
+      const parsed = JSON.parse(safeEducation);
+      safeEducation = Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      safeEducation = [];
+    }
+  }
+  if (!Array.isArray(safeEducation)) safeEducation = [];
+
+  let safeResume = rawUser.resume;
+  if (typeof safeResume === 'string' && safeResume.trim()) {
+    try {
+      const parsed = JSON.parse(safeResume);
+      safeResume = typeof parsed === 'object' && parsed !== null ? parsed : { url: safeResume, name: 'Candidate_Resume.pdf' };
+    } catch (_) {
+      safeResume = { url: safeResume, name: 'Candidate_Resume.pdf' };
+    }
+  }
+  if (safeResume && typeof safeResume === 'object' && !safeResume.url && !safeResume.name && !safeResume.size) {
+    safeResume = null;
+  }
+
   const normalized = {
     ...rawUser,
+    skills: safeSkills,
+    experience: safeExperience,
+    education: safeEducation,
+    resume: safeResume,
     ...(normalizedPhoto ? {
       profile_picture_url: normalizedPhoto,
       profilePictureUrl: normalizedPhoto,

@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../utils/api';
 import {
   Users,
   ClipboardCheck,
   PlusCircle,
-  Bell,
   LayoutList,
   Home,
   Building2,
   Search,
+  User,
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  const [profileImgError, setProfileImgError] = useState(false);
+  const [companyLogoError, setCompanyLogoError] = useState(false);
+
+  const userPhoto = currentUser?.profilePictureUrl || (currentUser as any)?.photoURL || (currentUser as any)?.avatar || (currentUser as any)?.profile_picture_url || (currentUser as any)?.avatar_url;
+  const companyLogo = (currentUser as any)?.logo || (currentUser as any)?.companyLogo || currentUser?.profilePictureUrl;
+
+  useEffect(() => {
+    setProfileImgError(false);
+  }, [userPhoto]);
+
+  useEffect(() => {
+    setCompanyLogoError(false);
+  }, [companyLogo]);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileImgError(false);
+      setCompanyLogoError(false);
+    };
+    window.addEventListener('profile-updated', handleProfileUpdate);
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate);
+  }, []);
 
   const isEmployer = currentUser?.role === 'employer';
 
@@ -40,24 +61,6 @@ export const MobileBottomNav: React.FC = () => {
   const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
   const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
 
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    const fetchUnread = () => {
-      apiFetch('/api/v1/notifications')
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          const list = Array.isArray(data) ? data : (data?.data || []);
-          if (Array.isArray(list)) {
-            const count = list.filter((n: any) => !n.read).length;
-            setUnreadCount(count);
-          }
-        })
-        .catch(() => {});
-    };
-    fetchUnread();
-    window.addEventListener('notifications-updated', fetchUnread);
-    return () => window.removeEventListener('notifications-updated', fetchUnread);
-  }, [currentUser?.id]);
 
   // Do not render on full screen dedicated detail pages
   if (
@@ -178,11 +181,27 @@ export const MobileBottomNav: React.FC = () => {
             >
               {isTabActive('/dashboard?tab=profile') && <div className="tab-top-indicator" />}
               <div className="tab-icon-box">
-                <Building2
-                  size={23}
-                  color={isTabActive('/dashboard?tab=profile') ? '#1B4FDF' : '#64748B'}
-                  strokeWidth={isTabActive('/dashboard?tab=profile') ? 2.4 : 1.8}
-                />
+                {currentUser && companyLogo && !companyLogoError ? (
+                  <img
+                    src={companyLogo}
+                    alt="Company"
+                    referrerPolicy="no-referrer"
+                    style={{
+                      width: '23px',
+                      height: '23px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: isTabActive('/dashboard?tab=profile') ? '2px solid #1B4FDF' : '1.5px solid #94A3B8',
+                    }}
+                    onError={() => setCompanyLogoError(true)}
+                  />
+                ) : (
+                  <Building2
+                    size={23}
+                    color={isTabActive('/dashboard?tab=profile') ? '#1B4FDF' : '#64748B'}
+                    strokeWidth={isTabActive('/dashboard?tab=profile') ? 2.4 : 1.8}
+                  />
+                )}
               </div>
               <span className="tab-label">Company</span>
             </NavLink>
@@ -237,28 +256,7 @@ export const MobileBottomNav: React.FC = () => {
               <span className="tab-label">Jobs</span>
             </NavLink>
 
-            {/* 4. Alerts */}
-            <NavLink
-              to="/notifications"
-              className={`mobile-app-tab-item ${location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications') ? 'active' : ''}`}
-            >
-              {(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) && <div className="tab-top-indicator" />}
-              <div className="tab-icon-box">
-                <Bell
-                  size={23}
-                  color={(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) ? '#1B4FDF' : '#64748B'}
-                  strokeWidth={(location.pathname === '/notifications' || isTabActive('/dashboard?tab=notifications')) ? 2.4 : 1.8}
-                />
-                {unreadCount > 0 && (
-                  <span className="tab-badge">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </div>
-              <span className="tab-label">Alerts</span>
-            </NavLink>
-
-            {/* 5. Applied */}
+            {/* 4. Applied */}
             <NavLink
               to={currentUser ? '/dashboard?tab=applied' : '/login'}
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}
@@ -272,6 +270,40 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Applied</span>
+            </NavLink>
+
+            {/* 5. Profile */}
+            <NavLink
+              to={currentUser ? (currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile') : '/login'}
+              className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile') ? 'active' : ''}`}
+            >
+              {(isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile')) && <div className="tab-top-indicator" />}
+              <div className="tab-icon-box">
+                {currentUser && userPhoto && !profileImgError ? (
+                  <img
+                    src={userPhoto}
+                    alt={currentUser?.name || 'Profile'}
+                    referrerPolicy="no-referrer"
+                    style={{
+                      width: '23px',
+                      height: '23px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: (isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile'))
+                        ? '2px solid #1B4FDF'
+                        : '1.5px solid #94A3B8',
+                    }}
+                    onError={() => setProfileImgError(true)}
+                  />
+                ) : (
+                  <User
+                    size={23}
+                    color={(isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile')) ? '#1B4FDF' : '#64748B'}
+                    strokeWidth={(isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile')) ? 2.4 : 1.8}
+                  />
+                )}
+              </div>
+              <span className="tab-label">Profile</span>
             </NavLink>
           </>
         )}

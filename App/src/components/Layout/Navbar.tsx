@@ -306,7 +306,7 @@ export const Navbar: React.FC = () => {
 
               {currentUser ? (
                 <div 
-                  className="navbar-profile-trigger" 
+                  className="navbar-profile-trigger desktop-only-avatar" 
                   onClick={handleProfileClick} 
                   ref={dropdownRef} 
                   style={{ border: 'none', padding: 0, background: 'transparent', cursor: 'pointer', alignItems: 'center', position: 'relative' }}

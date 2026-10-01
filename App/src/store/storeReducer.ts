@@ -72,8 +72,9 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       }
 
       const updatedJobs = safeJobs.map(j => {
-        if (!j.applicants || j.applicants.length === 0) return j;
+        if (!Array.isArray(j.applicants) || j.applicants.length === 0) return j;
         const updatedApplicants = j.applicants.map(app => {
+          if (!app || typeof app !== 'object') return app;
           if (app.userId === userWithSavedJobs.id || app.id === userWithSavedJobs.id) {
             return {
               ...app,
@@ -213,8 +214,9 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       }
 
       const updatedJobs = safeJobs.map(j => {
-        if (!j.applicants || j.applicants.length === 0) return j;
-        const updatedApplicants = (Array.isArray(j.applicants) ? j.applicants : []).map(app => {
+        if (!Array.isArray(j.applicants) || j.applicants.length === 0) return j;
+        const updatedApplicants = j.applicants.map(app => {
+          if (!app || typeof app !== 'object') return app;
           if (app.userId === targetUserId || app.id === targetUserId) {
             return {
               ...app,

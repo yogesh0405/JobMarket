@@ -459,7 +459,10 @@
 }
 
 @media (max-width: 768px) {
-  .navbar-toggle { display: flex !important; }
+  .navbar-profile-trigger {
+    display: none !important;
+  }
+  .navbar-toggle { display: none !important; }
   .navbar-actions:has(.navbar-profile-trigger) .navbar-toggle,
   .navbar-actions .navbar-profile-trigger + .navbar-toggle {
     display: none !important;

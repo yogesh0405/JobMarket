@@ -474,7 +474,13 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         setSaveProgress(100);
         window.dispatchEvent(new CustomEvent('profile-updated'));
         showToast('Profile updated and saved successfully!', 'success');
-        if (onSuccess) onSuccess();
+        if (onSuccess) {
+          try {
+            onSuccess();
+          } catch (e) {
+            console.error('onSuccess error:', e);
+          }
+        }
         onClose();
       } else {
         setSaveProgress(0);

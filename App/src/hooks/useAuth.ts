@@ -18,11 +18,17 @@ const parseArrayField = (val: any): any[] => {
 
 const parseResumeField = (val: any): any => {
   if (!val) return null;
-  if (typeof val === 'object' && val !== null) return val;
+  if (typeof val === 'object' && val !== null) {
+    if (!val.url && !val.name && !val.size && !val.uploadedAt) return null;
+    return val;
+  }
   if (typeof val === 'string' && val.trim()) {
     try {
       const parsed = JSON.parse(val);
-      if (typeof parsed === 'object' && parsed !== null) return parsed;
+      if (typeof parsed === 'object' && parsed !== null) {
+        if (!parsed.url && !parsed.name && !parsed.size && !parsed.uploadedAt) return null;
+        return parsed;
+      }
     } catch (_) {
       return { url: val, name: 'Candidate_Resume.pdf' };
     }
@@ -279,43 +285,53 @@ export const useAuth = () => {
         return { success: false, error: data.error || data.message || 'Failed to update profile.' };
       }
 
-      const apiUser = data.data;
+      const rawApiUser = data.data?.user || data.data || data.user || updates;
+      if (!rawApiUser) {
+        return { success: true };
+      }
+
+      const apiUser = {
+        ...(state.currentUser || {}),
+        ...updates,
+        ...rawApiUser,
+      };
+
       const user: User = {
-        id: apiUser.id,
-        name: typeof apiUser.name === 'string' ? apiUser.name : '',
-        email: apiUser.email || '',
-        role: apiUser.role as UserRole,
-        phone: apiUser.phone || '',
-        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo),
-        createdAt: apiUser.created_at || new Date().toISOString(),
-        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.company_name,
-        resume: parseResumeField(apiUser.resume),
-        experience: parseArrayField(apiUser.experience),
-        education: parseArrayField(apiUser.education),
-        skills: parseArrayField(apiUser.skills),
+        id: apiUser.id || state.currentUser?.id || '',
+        name: typeof apiUser.name === 'string' ? apiUser.name : (state.currentUser?.name || ''),
+        email: apiUser.email || state.currentUser?.email || '',
+        role: (apiUser.role || state.currentUser?.role || 'candidate') as UserRole,
+        phone: apiUser.phone || state.currentUser?.phone || '',
+        profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo || state.currentUser?.profilePictureUrl),
+        createdAt: apiUser.created_at || apiUser.createdAt || state.currentUser?.createdAt || new Date().toISOString(),
+        profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.tradeSpecialization || !!apiUser.company_name || !!apiUser.companyName,
+        resume: parseResumeField(apiUser.resume !== undefined ? apiUser.resume : state.currentUser?.resume),
+        experience: parseArrayField(apiUser.experience !== undefined ? apiUser.experience : state.currentUser?.experience),
+        education: parseArrayField(apiUser.education !== undefined ? apiUser.education : state.currentUser?.education),
+        skills: parseArrayField(apiUser.skills !== undefined ? apiUser.skills : state.currentUser?.skills),
         savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs || state.currentUser?.savedJobs),
         appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs),
         appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus),
-        headline: apiUser.headline || '',
-        location: apiUser.location || apiUser.address || apiUser.city || '',
-        tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || '',
-        preferredShift: apiUser.preferred_shift || '',
-        requiresBus: !!apiUser.requires_bus,
-        requiresAccommodation: !!apiUser.requires_accommodation,
-        isResumePublic: apiUser.is_resume_public !== false,
-        companyName: apiUser.company_name || apiUser.companyName || '',
-        companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || '',
-        bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || '',
-        gstNumber: apiUser.gst_number || apiUser.gstNumber || '',
-        companyType: apiUser.company_type || apiUser.companyType || '',
-        companySize: apiUser.company_size || apiUser.companySize || '',
-        foundedYear: apiUser.founded_year || apiUser.foundedYear || undefined,
-        midcZone: apiUser.midc_zone || apiUser.midcZone || '',
-        website: apiUser.website || '',
-        address: apiUser.address || '',
-        city: apiUser.city || '',
-        state: apiUser.state || '',
-        logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || '',
+        headline: apiUser.headline || state.currentUser?.headline || '',
+        location: apiUser.location || apiUser.address || apiUser.city || state.currentUser?.location || '',
+        tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || state.currentUser?.tradeSpecialization || '',
+        preferredShift: apiUser.preferred_shift || apiUser.preferredShift || state.currentUser?.preferredShift || '',
+        requiresBus: apiUser.requires_bus !== undefined ? !!apiUser.requires_bus : (apiUser.requiresBus !== undefined ? !!apiUser.requiresBus : !!state.currentUser?.requiresBus),
+        requiresAccommodation: apiUser.requires_accommodation !== undefined ? !!apiUser.requires_accommodation : (apiUser.requiresAccommodation !== undefined ? !!apiUser.requiresAccommodation : !!state.currentUser?.requiresAccommodation),
+        isResumePublic: apiUser.is_resume_public !== undefined ? apiUser.is_resume_public !== false : (apiUser.isResumePublic !== undefined ? apiUser.isResumePublic !== false : state.currentUser?.isResumePublic !== false),
+        companyName: apiUser.company_name || apiUser.companyName || state.currentUser?.companyName || '',
+        companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || state.currentUser?.companyDescription || '',
+        bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || state.currentUser?.bio || '',
+        gstNumber: apiUser.gst_number || apiUser.gstNumber || state.currentUser?.gstNumber || '',
+        companyType: apiUser.company_type || apiUser.companyType || state.currentUser?.companyType || '',
+        companySize: apiUser.company_size || apiUser.companySize || state.currentUser?.companySize || '',
+        foundedYear: apiUser.founded_year || apiUser.foundedYear || state.currentUser?.foundedYear || undefined,
+        midcZone: apiUser.midc_zone || apiUser.midcZone || state.currentUser?.midcZone || '',
+        website: apiUser.website || state.currentUser?.website || '',
+        address: apiUser.address || state.currentUser?.address || '',
+        city: apiUser.city || state.currentUser?.city || '',
+        state: apiUser.state || state.currentUser?.state || '',
+        logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || state.currentUser?.logo || '',
       };
 
       dispatch({ type: 'UPDATE_USER', payload: user });
@@ -363,44 +379,48 @@ export const useAuth = () => {
       const response = await apiFetch('/api/v1/auth/me');
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.data) {
-          const apiUser = data.data;
+        if (data.success && (data.data || data.user)) {
+          const rawApiUser = data.data?.user || data.data || data.user;
+          const apiUser = {
+            ...(state.currentUser || {}),
+            ...rawApiUser,
+          };
           const user: User = {
-            id: apiUser.id,
-            name: typeof apiUser.name === 'string' ? apiUser.name : '',
-            email: apiUser.email || '',
-            role: apiUser.role as UserRole,
-            phone: apiUser.phone || '',
-            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo),
-            createdAt: apiUser.created_at || new Date().toISOString(),
-            profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.company_name,
-            resume: parseResumeField(apiUser.resume),
-            experience: parseArrayField(apiUser.experience),
-            education: parseArrayField(apiUser.education),
-            skills: parseArrayField(apiUser.skills),
-            savedJobs: parseArrayField(apiUser.savedJobs || state.currentUser?.savedJobs),
-            appliedJobs: parseArrayField(apiUser.appliedJobs),
-            appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus),
-            headline: apiUser.headline || '',
-            location: apiUser.location || apiUser.address || apiUser.city || '',
-            tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || '',
-            preferredShift: apiUser.preferred_shift || '',
-            requiresBus: !!apiUser.requires_bus,
-            requiresAccommodation: !!apiUser.requires_accommodation,
-            isResumePublic: apiUser.is_resume_public !== false,
-            companyName: apiUser.company_name || apiUser.companyName || '',
-            companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || '',
-            bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || '',
-            gstNumber: apiUser.gst_number || apiUser.gstNumber || '',
-            companyType: apiUser.company_type || apiUser.companyType || '',
-            companySize: apiUser.company_size || apiUser.companySize || '',
-            foundedYear: apiUser.founded_year || apiUser.foundedYear || undefined,
-            midcZone: apiUser.midc_zone || apiUser.midcZone || '',
-            website: apiUser.website || '',
-            address: apiUser.address || '',
-            city: apiUser.city || '',
-            state: apiUser.state || '',
-            logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || '',
+            id: apiUser.id || state.currentUser?.id || '',
+            name: typeof apiUser.name === 'string' ? apiUser.name : (state.currentUser?.name || ''),
+            email: apiUser.email || state.currentUser?.email || '',
+            role: (apiUser.role || state.currentUser?.role || 'candidate') as UserRole,
+            phone: apiUser.phone || state.currentUser?.phone || '',
+            profilePictureUrl: normalizeProfilePicture(apiUser.profile_picture_url || apiUser.profilePictureUrl || apiUser.avatar_url || apiUser.avatar || apiUser.logo || state.currentUser?.profilePictureUrl),
+            createdAt: apiUser.created_at || apiUser.createdAt || state.currentUser?.createdAt || new Date().toISOString(),
+            profileComplete: !!apiUser.headline || !!apiUser.trade_specialization || !!apiUser.tradeSpecialization || !!apiUser.company_name || !!apiUser.companyName,
+            resume: parseResumeField(apiUser.resume !== undefined ? apiUser.resume : state.currentUser?.resume),
+            experience: parseArrayField(apiUser.experience !== undefined ? apiUser.experience : state.currentUser?.experience),
+            education: parseArrayField(apiUser.education !== undefined ? apiUser.education : state.currentUser?.education),
+            skills: parseArrayField(apiUser.skills !== undefined ? apiUser.skills : state.currentUser?.skills),
+            savedJobs: parseArrayField(apiUser.savedJobs || apiUser.saved_jobs || state.currentUser?.savedJobs),
+            appliedJobs: parseArrayField(apiUser.appliedJobs || apiUser.applied_jobs || state.currentUser?.appliedJobs),
+            appliedJobsWithStatus: parseArrayField(apiUser.appliedJobsWithStatus || apiUser.applied_jobs_with_status || state.currentUser?.appliedJobsWithStatus),
+            headline: apiUser.headline || state.currentUser?.headline || '',
+            location: apiUser.location || apiUser.address || apiUser.city || state.currentUser?.location || '',
+            tradeSpecialization: apiUser.trade_specialization || apiUser.tradeSpecialization || apiUser.industry || state.currentUser?.tradeSpecialization || '',
+            preferredShift: apiUser.preferred_shift || apiUser.preferredShift || state.currentUser?.preferredShift || '',
+            requiresBus: apiUser.requires_bus !== undefined ? !!apiUser.requires_bus : (apiUser.requiresBus !== undefined ? !!apiUser.requiresBus : !!state.currentUser?.requiresBus),
+            requiresAccommodation: apiUser.requires_accommodation !== undefined ? !!apiUser.requires_accommodation : (apiUser.requiresAccommodation !== undefined ? !!apiUser.requiresAccommodation : !!state.currentUser?.requiresAccommodation),
+            isResumePublic: apiUser.is_resume_public !== undefined ? apiUser.is_resume_public !== false : (apiUser.isResumePublic !== undefined ? apiUser.isResumePublic !== false : state.currentUser?.isResumePublic !== false),
+            companyName: apiUser.company_name || apiUser.companyName || state.currentUser?.companyName || '',
+            companyDescription: apiUser.company_description || apiUser.companyDescription || apiUser.bio || state.currentUser?.companyDescription || '',
+            bio: apiUser.bio || apiUser.company_description || apiUser.companyDescription || state.currentUser?.bio || '',
+            gstNumber: apiUser.gst_number || apiUser.gstNumber || state.currentUser?.gstNumber || '',
+            companyType: apiUser.company_type || apiUser.companyType || state.currentUser?.companyType || '',
+            companySize: apiUser.company_size || apiUser.companySize || state.currentUser?.companySize || '',
+            foundedYear: apiUser.founded_year || apiUser.foundedYear || state.currentUser?.foundedYear || undefined,
+            midcZone: apiUser.midc_zone || apiUser.midcZone || state.currentUser?.midcZone || '',
+            website: apiUser.website || state.currentUser?.website || '',
+            address: apiUser.address || state.currentUser?.address || '',
+            city: apiUser.city || state.currentUser?.city || '',
+            state: apiUser.state || state.currentUser?.state || '',
+            logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || state.currentUser?.logo || '',
           };
           dispatch({ type: 'UPDATE_USER', payload: user });
           dispatch({ type: 'LOGIN', payload: user });
