@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useJobs, JobFilters } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { Job } from '../../types';
@@ -64,8 +65,9 @@ function formatTimeAgo(dateString?: string): string {
 
 export const JobSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { getJobs } = useJobs();
+  const { getJobs, toggleSaveJob, isJobSaved, fetchCandidateSavedJobs } = useJobs();
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '');
@@ -73,29 +75,28 @@ export const JobSearchPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  // Saved Jobs Local State
-  const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('saved_jobs_ids');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+  // Sync candidate saved jobs from PostgreSQL on mount
+  useEffect(() => {
+    if (currentUser && fetchCandidateSavedJobs) {
+      fetchCandidateSavedJobs();
     }
-  });
+  }, [currentUser?.id, fetchCandidateSavedJobs]);
 
-  const toggleSaveJob = (jobId: string, e: React.MouseEvent) => {
+  const handleToggleSaveJob = (jobId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSavedJobIds((prev) => {
-      const exists = prev.includes(jobId);
-      const updated = exists ? prev.filter((id) => id !== jobId) : [...prev, jobId];
-      try {
-        localStorage.setItem('saved_jobs_ids', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+
+    if (!currentUser) {
+      showToast('Please log in to save jobs', 'warning');
+      navigate('/login');
+      return;
+    }
+
+    const isNowSaved = toggleSaveJob(jobId);
+    showToast(
+      isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved',
+      isNowSaved ? 'success' : 'info'
+    );
   };
 
 
@@ -560,7 +561,7 @@ export const JobSearchPage: React.FC = () => {
         {filteredJobs.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {filteredJobs.map((job) => {
-              const isSaved = savedJobIds.includes(job.id);
+              const isSaved = isJobSaved(job.id);
               const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
               const minExp = job.minExperience ?? (job as any).min_experience;
               const maxExp = job.maxExperience ?? (job as any).max_experience;
@@ -637,6 +638,29 @@ export const JobSearchPage: React.FC = () => {
                         </span>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleSaveJob(job.id, e)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '4px',
+                        flexShrink: 0
+                      }}
+                      title={isSaved ? 'Remove from Saved' : 'Save Job'}
+                      aria-label={isSaved ? 'Remove from Saved' : 'Save Job'}
+                    >
+                      <Bookmark
+                        size={18}
+                        color={isSaved ? '#1B4FDF' : '#94A3B8'}
+                        fill={isSaved ? '#1B4FDF' : 'transparent'}
+                      />
+                    </button>
                   </Link>
                 );
               }
@@ -696,17 +720,20 @@ export const JobSearchPage: React.FC = () => {
                       </h3>
 
                       <button
-                        onClick={(e) => toggleSaveJob(job.id, e)}
+                        type="button"
+                        onClick={(e) => handleToggleSaveJob(job.id, e)}
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          padding: '2px',
+                          padding: '4px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          borderRadius: '4px',
                         }}
                         title={isSaved ? 'Remove from Saved' : 'Save Job'}
+                        aria-label={isSaved ? 'Remove from Saved' : 'Save Job'}
                       >
                         <Bookmark
                           size={18}

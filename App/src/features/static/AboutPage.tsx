@@ -110,14 +110,9 @@ export const AboutPage: React.FC = () => {
           gap: 10px;
         }
 
+        /* Dedicated Header with Back Arrow - Mobile View Only */
         .about-header {
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          background-color: #FFFFFF;
-          border-bottom: 1px solid #E2E8F0;
-          width: 100%;
-          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          display: none;
         }
 
         .about-header-inner {
@@ -164,8 +159,18 @@ export const AboutPage: React.FC = () => {
           margin: 0;
         }
 
-        /* Mobile View (max-width: 767px) */
-        @media (max-width: 767px) {
+        /* Mobile View (max-width: 768px) */
+        @media (max-width: 768px) {
+          .about-header {
+            display: block;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            width: 100%;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          }
           .about-header-inner {
             padding: 0 14px;
             height: 48px;

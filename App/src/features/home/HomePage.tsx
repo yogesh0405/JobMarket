@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { BannerSlider } from '../../components/home/BannerSlider';
 import { Job } from '../../types';
@@ -166,8 +167,9 @@ function formatTimeAgo(dateString?: string): string {
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { getJobs } = useJobs();
+  const { getJobs, toggleSaveJob, isJobSaved, fetchCandidateSavedJobs } = useJobs();
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [topSearch, setTopSearch] = useState('');
@@ -206,31 +208,28 @@ export const HomePage: React.FC = () => {
   // Active Role Tab
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
 
-  // Saved Jobs
-  const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
-    try {
-      const s = localStorage.getItem('saved_jobs_ids');
-      return s ? JSON.parse(s) : [];
-    } catch {
-      return [];
+  // Sync candidate saved jobs from PostgreSQL on mount
+  useEffect(() => {
+    if (currentUser && fetchCandidateSavedJobs) {
+      fetchCandidateSavedJobs();
     }
-  });
+  }, [currentUser?.id, fetchCandidateSavedJobs]);
 
-  const toggleSaveJob = (jobId: string, e?: React.MouseEvent) => {
+  const handleToggleSaveJob = (jobId: string, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    setSavedJobIds((prev) => {
-      const exists = prev.includes(jobId);
-      const updated = exists ? prev.filter((id) => id !== jobId) : [...prev, jobId];
-      try {
-        localStorage.setItem('saved_jobs_ids', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+    if (!currentUser) {
+      showToast('Please log in to save jobs', 'warning');
+      navigate('/login');
+      return;
+    }
+    const isNowSaved = toggleSaveJob(jobId);
+    showToast(
+      isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved',
+      isNowSaved ? 'success' : 'info'
+    );
   };
 
   // Rotating placeholder
@@ -1221,7 +1220,7 @@ export const HomePage: React.FC = () => {
             ) : (
               <>
                 {roleFilteredJobs.slice(0, 8).map((job) => {
-                  const isSaved = savedJobIds.includes(job.id);
+                  const isSaved = isJobSaved(job.id);
                   const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
                   const minExp = job.minExperience ?? (job as any).min_experience ?? 0;
                   const maxExp = job.maxExperience ?? (job as any).max_experience ?? 0;
@@ -1282,11 +1281,9 @@ export const HomePage: React.FC = () => {
                           {job.title}
                         </h4>
                         <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleSaveJob(job.id, e);
-                          }}
+                          onClick={(e) => handleToggleSaveJob(job.id, e)}
+                          title={isSaved ? 'Remove from Saved' : 'Save Job'}
+                          aria-label={isSaved ? 'Remove from Saved' : 'Save Job'}
                           style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', flexShrink: 0 }}
                         >
                           <Bookmark
