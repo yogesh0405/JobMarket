@@ -343,10 +343,10 @@ export const GlobalSearchPage: React.FC = () => {
         zIndex: 1000,
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #F1F5F9',
-        padding: '10px 14px',
+        padding: '10px 8px 10px 4px',
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
+        gap: '6px',
         boxSizing: 'border-box'
       }}>
         <button
@@ -356,7 +356,7 @@ export const GlobalSearchPage: React.FC = () => {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '6px',
+            padding: '6px 4px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -376,12 +376,12 @@ export const GlobalSearchPage: React.FC = () => {
           alignItems: 'center',
           backgroundColor: '#FFFFFF',
           borderRadius: '24px',
-          padding: '0 12px',
-          height: '40px',
+          padding: '0 10px',
+          height: '36px',
           border: '1.2px solid #CBD5E1',
           boxSizing: 'border-box'
         }}>
-          <Search size={16} color="#64748B" style={{ marginRight: '8px', flexShrink: 0 }} />
+          <Search size={15} color="#64748B" style={{ marginRight: '6px', flexShrink: 0 }} />
           <input
             ref={searchInputRef}
             type="text"
@@ -401,7 +401,7 @@ export const GlobalSearchPage: React.FC = () => {
             }
             style={{
               flex: 1,
-              fontSize: '13.5px',
+              fontSize: '12px',
               color: '#0F172A',
               fontWeight: 500,
               border: 'none',
@@ -430,7 +430,7 @@ export const GlobalSearchPage: React.FC = () => {
                 color: '#64748B'
               }}
             >
-              <X size={15} color="#64748B" />
+              <X size={14} color="#64748B" />
             </button>
           )}
         </div>
@@ -443,7 +443,7 @@ export const GlobalSearchPage: React.FC = () => {
               background: 'none',
               border: 'none',
               color: '#1D4ED8',
-              fontSize: '13.5px',
+              fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
               padding: '6px 4px',
@@ -459,8 +459,8 @@ export const GlobalSearchPage: React.FC = () => {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '10px 16px',
+        gap: '6px',
+        padding: '8px 12px',
         borderBottom: '1px solid #F1F5F9',
         backgroundColor: '#FFFFFF'
       }}>
@@ -473,9 +473,9 @@ export const GlobalSearchPage: React.FC = () => {
               type="button"
               onClick={() => setActiveCategory(cat)}
               style={{
-                padding: '5px 14px',
-                borderRadius: '16px',
-                fontSize: '12.5px',
+                padding: '3.5px 12px',
+                borderRadius: '14px',
+                fontSize: '11px',
                 fontWeight: isActive ? 700 : 600,
                 backgroundColor: isActive ? '#1D4ED8' : '#F1F5F9',
                 color: isActive ? '#FFFFFF' : '#475569',
@@ -510,25 +510,25 @@ export const GlobalSearchPage: React.FC = () => {
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
             >
-              <Search size={17} color="#1D4ED8" style={{ marginRight: '12px', flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0, fontSize: '13.5px', color: '#0F172A' }}>
+              <Search size={16} color="#1D4ED8" style={{ marginRight: '10px', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0, fontSize: '12px', color: '#0F172A' }}>
                 Search for "<strong style={{ color: '#1D4ED8' }}>{searchQuery.trim()}</strong>"
               </div>
-              <ArrowUpRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+              <ArrowUpRight size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
             </div>
 
             {/* Skeletons when fetching initial network data if cache wasn't ready */}
             {isLoadingData && allJobs.length === 0 && (
               <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 600 }}>Searching matches...</div>
+                <div style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}>Searching matches...</div>
               </div>
             )}
 
             {!hasAnySuggestions && !isLoadingData && (
               <div style={{ padding: '40px 16px', textAlign: 'center' }}>
                 <div style={{
-                  width: '48px',
-                  height: '48px',
+                  width: '44px',
+                  height: '44px',
                   borderRadius: '50%',
                   backgroundColor: '#F1F5F9',
                   display: 'flex',
@@ -536,12 +536,12 @@ export const GlobalSearchPage: React.FC = () => {
                   justifyContent: 'center',
                   margin: '0 auto 12px auto'
                 }}>
-                  <SearchX size={24} color="#64748B" strokeWidth={2} />
+                  <SearchX size={22} color="#64748B" strokeWidth={2} />
                 </div>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+                <h3 style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
                   No Results Found
                 </h3>
-                <p style={{ fontSize: '12.5px', color: '#64748B', margin: '0 0 16px 0' }}>
+                <p style={{ fontSize: '11.5px', color: '#64748B', margin: '0 0 16px 0' }}>
                   No direct matches found for "{searchQuery.trim()}".
                 </p>
 
@@ -550,15 +550,15 @@ export const GlobalSearchPage: React.FC = () => {
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
                   borderRadius: '8px',
-                  padding: '12px 14px',
+                  padding: '10px 12px',
                   textAlign: 'left',
                   margin: '0 auto 20px auto',
                   maxWidth: '420px'
                 }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.4px', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#475569', letterSpacing: '0.4px', marginBottom: '4px' }}>
                     SUGGESTIONS & TIPS
                   </div>
-                  <div style={{ fontSize: '12px', color: '#334155', lineHeight: '1.5' }}>
+                  <div style={{ fontSize: '11px', color: '#334155', lineHeight: '1.5' }}>
                     • Check for spelling errors or alternative abbreviations<br />
                     • Search by general trade (e.g., CNC, VMC, Fitter, Welder)<br />
                     • Search by MIDC industrial area (e.g., Waluj, Chakan, Bhosari)
@@ -567,10 +567,10 @@ export const GlobalSearchPage: React.FC = () => {
 
                 {/* Popular Trades Quick Chips */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px', marginBottom: '8px' }}>
                     POPULAR INDUSTRIAL ROLES
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center' }}>
                     {TRENDING_ROLES.slice(0, 5).map((role) => (
                       <button
                         key={role}
@@ -579,18 +579,18 @@ export const GlobalSearchPage: React.FC = () => {
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '5px',
-                          padding: '6px 12px',
-                          borderRadius: '16px',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '14px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#FFFFFF',
-                          fontSize: '12px',
+                          fontSize: '11px',
                           fontWeight: 600,
                           color: '#0F172A',
                           cursor: 'pointer'
                         }}
                       >
-                        <TrendingUp size={12} color="#1D4ED8" />
+                        <TrendingUp size={11} color="#1D4ED8" />
                         <span>{role}</span>
                       </button>
                     ))}
@@ -601,8 +601,8 @@ export const GlobalSearchPage: React.FC = () => {
 
             {/* Standalone Matching Companies & Factories */}
             {autocompleteSuggestions.companies.length > 0 && (
-              <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-                <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+              <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+                <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                   COMPANIES & FACTORIES
                 </div>
                 {autocompleteSuggestions.companies.map((comp, idx) => {
@@ -617,7 +617,7 @@ export const GlobalSearchPage: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '10px 16px',
+                        padding: '9px 16px',
                         borderBottom: '1px solid #F1F5F9',
                         cursor: 'pointer',
                         backgroundColor: '#FFFFFF'
@@ -625,18 +625,18 @@ export const GlobalSearchPage: React.FC = () => {
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                     >
-                      <div style={{ marginRight: '12px', flexShrink: 0 }}>
-                        <CompanyDefaultLogo logoUrl={compLogo} companyName={compName} size={36} borderRadius="8px" />
+                      <div style={{ marginRight: '10px', flexShrink: 0 }}>
+                        <CompanyDefaultLogo logoUrl={compLogo} companyName={compName} size={32} borderRadius="6px" />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {compName}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '1.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {compInd} • {compLoc}
                         </div>
                       </div>
-                      <ChevronRight size={15} color="#CBD5E1" style={{ flexShrink: 0 }} />
+                      <ChevronRight size={14} color="#CBD5E1" style={{ flexShrink: 0 }} />
                     </div>
                   );
                 })}
@@ -645,8 +645,8 @@ export const GlobalSearchPage: React.FC = () => {
 
             {/* Matching Live Jobs */}
             {autocompleteSuggestions.jobs.length > 0 && (
-              <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-                <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+              <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+                <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                   MATCHING JOBS
                 </div>
                 {autocompleteSuggestions.jobs.map((job, idx) => {
@@ -658,7 +658,7 @@ export const GlobalSearchPage: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '10px 16px',
+                        padding: '9px 16px',
                         borderBottom: '1px solid #F1F5F9',
                         cursor: 'pointer',
                         backgroundColor: '#FFFFFF'
@@ -666,18 +666,18 @@ export const GlobalSearchPage: React.FC = () => {
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                     >
-                      <div style={{ marginRight: '12px', flexShrink: 0 }}>
-                        <CompanyDefaultLogo logoUrl={jobLogo} companyName={job.company} size={36} borderRadius="8px" />
+                      <div style={{ marginRight: '10px', flexShrink: 0 }}>
+                        <CompanyDefaultLogo logoUrl={jobLogo} companyName={job.company} size={32} borderRadius="6px" />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {job.title}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '1.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {job.company} • {job.location}
                         </div>
                       </div>
-                      <ChevronRight size={15} color="#CBD5E1" style={{ flexShrink: 0 }} />
+                      <ChevronRight size={14} color="#CBD5E1" style={{ flexShrink: 0 }} />
                     </div>
                   );
                 })}
@@ -691,27 +691,27 @@ export const GlobalSearchPage: React.FC = () => {
                     justifyContent: 'center',
                     gap: '6px',
                     width: '100%',
-                    padding: '11px 16px',
+                    padding: '9px 16px',
                     background: 'none',
                     border: 'none',
                     color: '#1D4ED8',
-                    fontSize: '12.5px',
+                    fontSize: '11.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     borderTop: '1px solid #F1F5F9'
                   }}
                 >
-                  <Briefcase size={14} color="#1D4ED8" />
+                  <Briefcase size={13} color="#1D4ED8" />
                   <span>Search all jobs matching "{searchQuery.trim()}" in Find Jobs</span>
-                  <ArrowUpRight size={14} color="#1D4ED8" />
+                  <ArrowUpRight size={13} color="#1D4ED8" />
                 </button>
               </div>
             )}
 
             {/* Matching Trades */}
             {autocompleteSuggestions.trades.length > 0 && (
-              <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-                <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+              <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+                <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                   POPULAR ROLES & TRADES
                 </div>
                 {autocompleteSuggestions.trades.map((trade, idx) => (
@@ -721,7 +721,7 @@ export const GlobalSearchPage: React.FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '10px 16px',
+                      padding: '9px 16px',
                       borderBottom: '1px solid #F1F5F9',
                       cursor: 'pointer',
                       backgroundColor: '#FFFFFF'
@@ -729,12 +729,12 @@ export const GlobalSearchPage: React.FC = () => {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                   >
-                    <TrendingUp size={16} color="#64748B" style={{ marginRight: '12px', flexShrink: 0 }} />
+                    <TrendingUp size={15} color="#64748B" style={{ marginRight: '10px', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#0F172A' }}>{trade}</div>
-                      <div style={{ fontSize: '11px', color: '#64748B' }}>Job Role / Trade</div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>{trade}</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748B' }}>Job Role / Trade</div>
                     </div>
-                    <ArrowUpRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    <ArrowUpRight size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
                   </div>
                 ))}
               </div>
@@ -742,8 +742,8 @@ export const GlobalSearchPage: React.FC = () => {
 
             {/* Matching Locations */}
             {autocompleteSuggestions.locations.length > 0 && (
-              <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-                <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+              <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+                <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                   LOCATIONS & MIDC ZONES
                 </div>
                 {autocompleteSuggestions.locations.map((loc, idx) => (
@@ -753,7 +753,7 @@ export const GlobalSearchPage: React.FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '10px 16px',
+                      padding: '9px 16px',
                       borderBottom: '1px solid #F1F5F9',
                       cursor: 'pointer',
                       backgroundColor: '#FFFFFF'
@@ -761,12 +761,12 @@ export const GlobalSearchPage: React.FC = () => {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                   >
-                    <MapPin size={17} color="#64748B" style={{ marginRight: '12px', flexShrink: 0 }} />
+                    <MapPin size={15} color="#64748B" style={{ marginRight: '10px', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#0F172A' }}>{loc}</div>
-                      <div style={{ fontSize: '11px', color: '#64748B' }}>Industrial Location</div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>{loc}</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748B' }}>Industrial Location</div>
                     </div>
-                    <ArrowUpRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    <ArrowUpRight size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
                   </div>
                 ))}
               </div>
@@ -782,9 +782,9 @@ export const GlobalSearchPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '8px 16px'
+                  padding: '6px 16px'
                 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                     RECENT SEARCHES
                   </span>
                   <button
@@ -794,7 +794,7 @@ export const GlobalSearchPage: React.FC = () => {
                       background: 'none',
                       border: 'none',
                       color: '#1D4ED8',
-                      fontSize: '11.5px',
+                      fontSize: '10.5px',
                       fontWeight: 700,
                       cursor: 'pointer',
                       padding: 0
@@ -812,7 +812,7 @@ export const GlobalSearchPage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '10px 16px',
+                      padding: '9px 16px',
                       borderBottom: '1px solid #F1F5F9',
                       cursor: 'pointer',
                       backgroundColor: '#FFFFFF'
@@ -820,9 +820,9 @@ export const GlobalSearchPage: React.FC = () => {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                      <Clock size={16} color="#64748B" style={{ flexShrink: 0 }} />
-                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                      <Clock size={15} color="#64748B" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {term}
                       </span>
                     </div>
@@ -841,7 +841,7 @@ export const GlobalSearchPage: React.FC = () => {
                       }}
                       title="Remove"
                     >
-                      <X size={15} color="#94A3B8" />
+                      <X size={14} color="#94A3B8" />
                     </button>
                   </div>
                 ))}
@@ -850,8 +850,8 @@ export const GlobalSearchPage: React.FC = () => {
 
             {/* 2. TOP INDUSTRIAL EMPLOYERS */}
             {platformCompanies.length > 0 && (
-              <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-                <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+              <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+                <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                   TOP INDUSTRIAL EMPLOYERS
                 </div>
                 {platformCompanies.map((comp, idx) => (
@@ -861,7 +861,7 @@ export const GlobalSearchPage: React.FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '10px 16px',
+                      padding: '9px 16px',
                       borderBottom: '1px solid #F1F5F9',
                       cursor: 'pointer',
                       backgroundColor: '#FFFFFF'
@@ -869,26 +869,26 @@ export const GlobalSearchPage: React.FC = () => {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                   >
-                    <div style={{ marginRight: '12px', flexShrink: 0 }}>
-                      <CompanyDefaultLogo logoUrl={comp.logo} companyName={comp.name} size={36} borderRadius="8px" />
+                    <div style={{ marginRight: '10px', flexShrink: 0 }}>
+                      <CompanyDefaultLogo logoUrl={comp.logo} companyName={comp.name} size={32} borderRadius="6px" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {comp.name}
                       </div>
-                      <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '1.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {comp.industry} • {comp.location}
                       </div>
                     </div>
-                    <ChevronRight size={15} color="#CBD5E1" style={{ flexShrink: 0 }} />
+                    <ChevronRight size={14} color="#CBD5E1" style={{ flexShrink: 0 }} />
                   </div>
                 ))}
               </div>
             )}
 
             {/* 3. TRENDING INDUSTRIAL ROLES */}
-            <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-              <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+            <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+              <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                 TRY SEARCHING FOR
               </div>
               {TRENDING_ROLES.map((role, idx) => (
@@ -898,7 +898,7 @@ export const GlobalSearchPage: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: '10px 16px',
+                    padding: '9px 16px',
                     borderBottom: '1px solid #F1F5F9',
                     cursor: 'pointer',
                     backgroundColor: '#FFFFFF'
@@ -906,18 +906,18 @@ export const GlobalSearchPage: React.FC = () => {
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                 >
-                  <TrendingUp size={16} color="#64748B" style={{ marginRight: '12px', flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0, fontSize: '13.5px', fontWeight: 600, color: '#0F172A' }}>
+                  <TrendingUp size={15} color="#64748B" style={{ marginRight: '10px', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0, fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>
                     {role}
                   </div>
-                  <ArrowUpRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                  <ArrowUpRight size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
                 </div>
               ))}
             </div>
 
             {/* 4. POPULAR INDUSTRIAL HUBS */}
-            <div style={{ marginTop: '12px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
-              <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.4px' }}>
+            <div style={{ marginTop: '8px', borderBottom: '6px solid #F8FAFC', paddingBottom: '4px' }}>
+              <div style={{ padding: '6px 16px', fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>
                 POPULAR INDUSTRIAL HUBS
               </div>
               {TRENDING_LOCATIONS.map((loc, idx) => (
@@ -927,7 +927,7 @@ export const GlobalSearchPage: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    padding: '10px 16px',
+                    padding: '9px 16px',
                     borderBottom: '1px solid #F1F5F9',
                     cursor: 'pointer',
                     backgroundColor: '#FFFFFF'
@@ -935,11 +935,11 @@ export const GlobalSearchPage: React.FC = () => {
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                 >
-                  <MapPin size={16} color="#64748B" style={{ marginRight: '12px', flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0, fontSize: '13.5px', fontWeight: 600, color: '#0F172A' }}>
+                  <MapPin size={15} color="#64748B" style={{ marginRight: '10px', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0, fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>
                     {loc}
                   </div>
-                  <ArrowUpRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                  <ArrowUpRight size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
                 </div>
               ))}
             </div>

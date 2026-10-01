@@ -243,8 +243,8 @@ export const JobFilterModal: React.FC<JobFilterModalProps> = ({
       accommodation: draftHostel,
       overtime: draftOt,
     };
-    onApplyFilters(applied);
     onClose();
+    onApplyFilters(applied);
   };
 
   // Real-time dynamic count calculation based on draft filters

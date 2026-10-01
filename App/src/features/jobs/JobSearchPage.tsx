@@ -121,7 +121,40 @@ export const JobSearchPage: React.FC = () => {
   }, [searchParams]);
 
   // Filter drawer options state
-  const [activeFilters, setActiveFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
+  const [activeFilters, setActiveFilters] = useState<JobFilterValues>(() => {
+    // Pre-populate from URL params (e.g. when navigating from Home page filter)
+    const p = new URLSearchParams(window.location.search);
+    return {
+      midcZone: p.get('location') || 'All Locations',
+      industry: p.get('industry') || 'All Industries',
+      trade: p.get('trade') || 'All Trades',
+      education: p.get('education') || 'All Education Levels',
+      jobType: p.get('jobType') || 'All Types',
+      workMode: p.get('workMode') || 'All Modes',
+      minExperience: p.get('exp') || 'All Experience',
+      busFacility: p.get('bus') === 'true',
+      canteen: p.get('canteen') === 'true',
+      accommodation: p.get('hostel') === 'true',
+      overtime: p.get('ot') === 'true',
+    };
+  });
+
+  // Sync activeFilters whenever the URL params change
+  useEffect(() => {
+    setActiveFilters({
+      midcZone: searchParams.get('location') || 'All Locations',
+      industry: searchParams.get('industry') || 'All Industries',
+      trade: searchParams.get('trade') || 'All Trades',
+      education: searchParams.get('education') || 'All Education Levels',
+      jobType: searchParams.get('jobType') || 'All Types',
+      workMode: searchParams.get('workMode') || 'All Modes',
+      minExperience: searchParams.get('exp') || 'All Experience',
+      busFacility: searchParams.get('bus') === 'true',
+      canteen: searchParams.get('canteen') === 'true',
+      accommodation: searchParams.get('hostel') === 'true',
+      overtime: searchParams.get('ot') === 'true',
+    });
+  }, [searchParams]);
 
   const allJobs = useMemo(() => {
     return getJobs({});

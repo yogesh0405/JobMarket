@@ -399,19 +399,16 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  // Home Filters state for side drawer — must be declared before roleFilteredJobs
+  const [homeFilters, setHomeFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
+
   const roleFilteredJobs = useMemo(() => {
-    if (activeRoleTab === 'All Opportunities') {
-      return allJobs;
-    }
+    if (activeRoleTab === 'All Opportunities') return allJobs;
     const tabObj = DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab);
     const keyword = tabObj?.keyword || activeRoleTab.toLowerCase();
     return allJobs.filter((j) => {
       const fullText = [
-        j.title,
-        j.trade,
-        (j as any).itiTrade,
-        j.industry,
-        (j as any).industryType,
+        j.title, j.trade, (j as any).itiTrade, j.industry, (j as any).industryType,
         ...(j.skills || []),
       ].filter(Boolean).join(' ').toLowerCase();
       return fullText.includes(keyword);
@@ -430,9 +427,6 @@ export const HomePage: React.FC = () => {
     navigate(`/jobs?keyword=${encodeURIComponent(tradeName)}`);
   };
 
-  // Home Filters state for side drawer
-  const [homeFilters, setHomeFilters] = useState<JobFilterValues>(DEFAULT_JOB_FILTERS);
-
   const activeHomeFilterCount = useMemo(() => {
     let count = 0;
     if (homeFilters.midcZone !== 'All Locations') count++;
@@ -450,8 +444,7 @@ export const HomePage: React.FC = () => {
   }, [homeFilters]);
 
   const handleApplyHomeFilters = (applied: JobFilterValues) => {
-    setHomeFilters(applied);
-    setHomeFilterDrawerOpen(false);
+    // Navigate to /jobs with filters as URL params so JobSearchPage picks them up
     const params = new URLSearchParams();
     if (applied.midcZone !== 'All Locations') params.set('location', applied.midcZone);
     if (applied.industry !== 'All Industries') params.set('industry', applied.industry);
