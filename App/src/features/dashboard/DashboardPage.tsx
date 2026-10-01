@@ -106,6 +106,11 @@ export const DashboardPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [selectedWalkInPass, setSelectedWalkInPass] = useState<WalkInPassData | null>(null);
+  const [isWalkInPassModalOpen, setIsWalkInPassModalOpen] = useState(false);
+
   const rawTab = searchParams.get('tab') || (currentUser?.role === 'employer' ? 'profile' : 'profile');
   const tab = rawTab === 'candidate' ? 'candidates' : rawTab;
 
@@ -168,11 +173,6 @@ export const DashboardPage: React.FC = () => {
       </div>
     );
   }
-
-  const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
-  const [pendingTab, setPendingTab] = useState<string | null>(null);
-  const [selectedWalkInPass, setSelectedWalkInPass] = useState<WalkInPassData | null>(null);
-  const [isWalkInPassModalOpen, setIsWalkInPassModalOpen] = useState(false);
 
   const setTab = (newTab: string) => {
     setSearchParams({ tab: newTab });
@@ -325,7 +325,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <>
-      <div className={`dashboard-page ${['applied', 'resume'].includes(tab) ? 'bg-white-page' : ''}`} style={['applied', 'resume'].includes(tab) ? { background: '#FFFFFF' } : undefined}>
+      <div className="dashboard-page">
       <div className="container">
         <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume', 'interviews', 'scheduled-interviews'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
           {/* Sidebar */}
@@ -781,13 +781,13 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
 
     case 'applied':
       return (
-        <div style={{ width: '100%', minHeight: '100vh', background: '#FFFFFF', boxSizing: 'border-box' }}>
+        <div className="applied-section-wrapper" style={{ width: '100%', minHeight: 'auto', background: 'transparent', boxSizing: 'border-box' }}>
           {/* Main Content Area */}
-          <div style={{
-            maxWidth: '580px',
-            margin: '0 auto',
-            padding: '16px',
-            paddingBottom: '40px',
+          <div className="applied-section-container" style={{
+            maxWidth: '100%',
+            width: '100%',
+            margin: '0',
+            padding: '0 0 40px 0',
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',

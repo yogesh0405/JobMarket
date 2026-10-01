@@ -56,7 +56,7 @@ function getClientPlatformInfo() {
 }
 
 export const SecuritySettings: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, syncUser, update2FAStatus } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   
@@ -104,12 +104,35 @@ export const SecuritySettings: React.FC = () => {
   const [isToggling2FA, setIsToggling2FA] = useState(false);
   const [show2FAConfirmModal, setShow2FAConfirmModal] = useState(false);
   const [pending2FATarget, setPending2FATarget] = useState<boolean | null>(null);
+  const [successModalConfig, setSuccessModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    isSuccess: boolean;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    isSuccess: true
+  });
 
+  // Fetch real authoritative 2FA status from server on mount
   useEffect(() => {
-    if (currentUser) {
-      setTwoFactorEnabled(Boolean((currentUser as any)?.is_two_factor_enabled || (currentUser as any)?.isTwoFactorEnabled));
-    }
-  }, [currentUser]);
+    let isMounted = true;
+    apiFetch('/api/v1/auth/me')
+      .then(res => (res.ok ? res.json() : null))
+      .then(json => {
+        if (!isMounted || !json) return;
+        const apiUser = json.data?.user || json.data || json.user;
+        if (apiUser) {
+          const is2FA = Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled);
+          setTwoFactorEnabled(is2FA);
+          update2FAStatus(is2FA);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, [update2FAStatus]);
 
   // Resend timer countdown
   useEffect(() => {
@@ -196,6 +219,22 @@ export const SecuritySettings: React.FC = () => {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to update password');
 
+      if (json.tokens) {
+        if (json.tokens.accessToken) {
+          localStorage.setItem('accessToken', json.tokens.accessToken);
+          localStorage.setItem('token', json.tokens.accessToken);
+        }
+        if (json.tokens.refreshToken) {
+          localStorage.setItem('refreshToken', json.tokens.refreshToken);
+        }
+      }
+      if (json.sessionId) {
+        localStorage.setItem('sessionId', json.sessionId);
+      }
+      if (syncUser) {
+        syncUser();
+      }
+
       showToast(userHasPassword ? 'Password changed successfully!' : 'Password set successfully!', 'success');
       setCurrentPassword('');
       setNewPassword('');
@@ -272,6 +311,22 @@ export const SecuritySettings: React.FC = () => {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to reset password');
 
+      if (json.tokens) {
+        if (json.tokens.accessToken) {
+          localStorage.setItem('accessToken', json.tokens.accessToken);
+          localStorage.setItem('token', json.tokens.accessToken);
+        }
+        if (json.tokens.refreshToken) {
+          localStorage.setItem('refreshToken', json.tokens.refreshToken);
+        }
+      }
+      if (json.sessionId) {
+        localStorage.setItem('sessionId', json.sessionId);
+      }
+      if (syncUser) {
+        syncUser();
+      }
+
       showToast('Password reset successfully! You can now use your new password.', 'success');
       setOtpCode('');
       setOtpNewPass('');
@@ -347,9 +402,26 @@ export const SecuritySettings: React.FC = () => {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to update 2FA setting');
 
-      setTwoFactorEnabled(nextState);
-      showToast(nextState ? '2FA protection enabled for your account!' : '2FA protection disabled.', nextState ? 'success' : 'info');
+      const serverState = Boolean(json.isTwoFactorEnabled ?? json.is_two_factor_enabled ?? nextState);
+      setTwoFactorEnabled(serverState);
       setShow2FAConfirmModal(false);
+
+      // Cleanly update client store without triggering PUT /profile
+      update2FAStatus(serverState);
+
+      setSuccessModalConfig({
+        visible: true,
+        title: serverState ? '2FA Protection Enabled' : '2FA Protection Disabled',
+        message: serverState
+          ? 'Two-Factor Authentication is now active. A 6-digit OTP security code will be sent to your registered email address whenever you sign in.'
+          : 'Two-Factor Authentication has been turned off. Your account will now sign in directly with your password.',
+        isSuccess: serverState
+      });
+
+      showToast(
+        serverState ? 'Two-Factor Authentication (2FA) is now enabled.' : 'Two-Factor Authentication (2FA) is now disabled.',
+        serverState ? 'success' : 'info'
+      );
     } catch (err: any) {
       showToast(err.message || 'Failed to update 2FA setting', 'error');
     } finally {
@@ -893,24 +965,65 @@ export const SecuritySettings: React.FC = () => {
         <div className="sec-card-box">
           <div className="sec-card-header-row">
             <div>
-              <h2 className="sec-card-title">Two-Factor Authentication (2FA)</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 className="sec-card-title">Two-Factor Authentication (2FA)</h2>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  backgroundColor: twoFactorEnabled ? '#DCFCE7' : '#F1F5F9',
+                  color: twoFactorEnabled ? '#15803D' : '#64748B',
+                  border: `1px solid ${twoFactorEnabled ? '#BBF7D0' : '#E2E8F0'}`
+                }}>
+                  <span style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: twoFactorEnabled ? '#16A34A' : '#94A3B8'
+                  }} />
+                  {twoFactorEnabled ? 'Active' : 'Disabled'}
+                </span>
+              </div>
               <p className="sec-card-subtitle">
                 Add an extra layer of security requiring an OTP verification code on sign in.
               </p>
             </div>
-            <div className="sec-card-icon-box">
-              <ShieldCheck size={17} />
+            <div className="sec-card-icon-box" style={{
+              backgroundColor: twoFactorEnabled ? '#EFF6FF' : '#F8FAFC',
+              color: twoFactorEnabled ? '#1764E8' : '#64748B'
+            }}>
+              <ShieldCheck size={18} />
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FAF9F6', border: '1px solid #ECEAE4', borderRadius: '6px', padding: '10px 12px', gap: '10px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: twoFactorEnabled ? '#F8FAFC' : '#FAF9F6',
+            border: `1px solid ${twoFactorEnabled ? '#E2E8F0' : '#ECEAE4'}`,
+            borderRadius: '8px',
+            padding: '12px 14px',
+            gap: '12px'
+          }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A' }}>
+              <div style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#0F172A',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
                 {twoFactorEnabled ? '2FA Protection Enabled' : '2FA Protection Disabled'}
               </div>
-              <p style={{ fontSize: '10.5px', color: '#64748B', lineHeight: '15px', margin: '2px 0 0', fontWeight: 400 }}>
+              <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '16px', margin: '3px 0 0', fontWeight: 400 }}>
                 {twoFactorEnabled
-                  ? 'Verification codes are sent to your registered email upon login.'
+                  ? `Verification codes will be sent to your registered email (${currentUser?.email || 'your email'}) upon login.`
                   : 'Enable this setting to secure your account against unauthorized access.'}
               </p>
             </div>
@@ -918,31 +1031,34 @@ export const SecuritySettings: React.FC = () => {
             {/* Toggle Switch */}
             <button
               type="button"
+              role="switch"
+              aria-checked={twoFactorEnabled}
               onClick={handleOpen2FAConfirm}
               disabled={isToggling2FA}
               style={{
-                width: '40px',
-                height: '22px',
-                borderRadius: '11px',
-                backgroundColor: twoFactorEnabled ? '#1B4FDF' : '#CBD5E1',
+                width: '44px',
+                height: '24px',
+                borderRadius: '12px',
+                backgroundColor: twoFactorEnabled ? '#1764E8' : '#CBD5E1',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: isToggling2FA ? 'wait' : 'pointer',
                 position: 'relative',
-                transition: 'background-color 0.2s ease',
+                transition: 'background-color 0.25s ease',
                 flexShrink: 0,
-                padding: '2px'
+                padding: '2px',
+                opacity: isToggling2FA ? 0.7 : 1
               }}
             >
               <div style={{
-                width: '18px',
-                height: '18px',
-                borderRadius: '9px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '10px',
                 backgroundColor: '#FFFFFF',
                 position: 'absolute',
                 top: '2px',
-                left: twoFactorEnabled ? '20px' : '2px',
-                transition: 'left 0.2s ease',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
+                left: twoFactorEnabled ? '22px' : '2px',
+                transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
               }} />
             </button>
           </div>
@@ -1179,6 +1295,92 @@ export const SecuritySettings: React.FC = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA SUCCESS / CONFIRMATION MODAL */}
+      {successModalConfig.visible && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px',
+          backdropFilter: 'blur(2px)'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            animation: 'fadeIn 0.15s ease'
+          }}>
+            {/* Center Circular Icon Badge */}
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '28px',
+              backgroundColor: successModalConfig.isSuccess ? '#EFF6FF' : '#F1F5F9',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              <ShieldCheck size={28} color={successModalConfig.isSuccess ? '#1764E8' : '#64748B'} strokeWidth={2.4} />
+            </div>
+
+            {/* Title */}
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: 800,
+              color: '#0F172A',
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.2px'
+            }}>
+              {successModalConfig.title}
+            </h3>
+
+            {/* Message */}
+            <p style={{
+              fontSize: '12.5px',
+              color: '#475569',
+              lineHeight: '19px',
+              margin: '0 0 20px 0',
+              fontWeight: 500
+            }}>
+              {successModalConfig.message}
+            </p>
+
+            {/* Got It Button */}
+            <button
+              type="button"
+              onClick={() => setSuccessModalConfig(prev => ({ ...prev, visible: false }))}
+              style={{
+                width: '100%',
+                height: '40px',
+                backgroundColor: '#1764E8',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                cursor: 'pointer'
+              }}
+            >
+              Got It
+            </button>
           </div>
         </div>
       )}

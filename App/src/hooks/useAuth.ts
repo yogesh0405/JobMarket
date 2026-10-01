@@ -124,6 +124,11 @@ export const useAuth = () => {
         isResumePublic: apiUser.is_resume_public !== false,
         companyName: apiUser.company_name || '',
         gstNumber: apiUser.gst_number || '',
+        is_two_factor_enabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled),
+        isTwoFactorEnabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled),
+        has_password: apiUser.has_password !== undefined ? apiUser.has_password : apiUser.hasPassword,
+        hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : apiUser.has_password,
+        auth_provider: apiUser.auth_provider,
       };
 
       dispatch({ type: 'LOGIN', payload: user });
@@ -182,6 +187,11 @@ export const useAuth = () => {
         isResumePublic: apiUser.is_resume_public !== false,
         companyName: apiUser.company_name || '',
         gstNumber: apiUser.gst_number || '',
+        is_two_factor_enabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled ?? true),
+        isTwoFactorEnabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled ?? true),
+        has_password: apiUser.has_password !== undefined ? apiUser.has_password : apiUser.hasPassword,
+        hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : apiUser.has_password,
+        auth_provider: apiUser.auth_provider,
       };
 
       dispatch({ type: 'LOGIN', payload: user });
@@ -292,8 +302,8 @@ export const useAuth = () => {
 
       const apiUser = {
         ...(state.currentUser || {}),
-        ...updates,
         ...rawApiUser,
+        ...updates,
       };
 
       const user: User = {
@@ -332,6 +342,11 @@ export const useAuth = () => {
         city: apiUser.city || state.currentUser?.city || '',
         state: apiUser.state || state.currentUser?.state || '',
         logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || state.currentUser?.logo || '',
+        is_two_factor_enabled: (updates as any).is_two_factor_enabled !== undefined ? Boolean((updates as any).is_two_factor_enabled) : (apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : (apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : state.currentUser?.is_two_factor_enabled)),
+        isTwoFactorEnabled: (updates as any).isTwoFactorEnabled !== undefined ? Boolean((updates as any).isTwoFactorEnabled) : (apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : (apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : state.currentUser?.isTwoFactorEnabled)),
+        has_password: (updates as any).has_password !== undefined ? (updates as any).has_password : (apiUser.has_password !== undefined ? apiUser.has_password : state.currentUser?.has_password),
+        hasPassword: (updates as any).hasPassword !== undefined ? (updates as any).hasPassword : (apiUser.hasPassword !== undefined ? apiUser.hasPassword : state.currentUser?.hasPassword),
+        auth_provider: apiUser.auth_provider || state.currentUser?.auth_provider,
       };
 
       dispatch({ type: 'UPDATE_USER', payload: user });
@@ -368,6 +383,18 @@ export const useAuth = () => {
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Network error. Please try again later.' };
+    }
+  }, [dispatch, state.currentUser]);
+
+  const update2FAStatus = useCallback((enabled: boolean) => {
+    if (state.currentUser) {
+      const updatedUser: User = {
+        ...state.currentUser,
+        is_two_factor_enabled: enabled,
+        isTwoFactorEnabled: enabled,
+      };
+      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+      dispatch({ type: 'LOGIN', payload: updatedUser });
     }
   }, [dispatch, state.currentUser]);
 
@@ -421,6 +448,11 @@ export const useAuth = () => {
             city: apiUser.city || state.currentUser?.city || '',
             state: apiUser.state || state.currentUser?.state || '',
             logo: apiUser.logo || apiUser.profile_picture_url || apiUser.profilePictureUrl || state.currentUser?.logo || '',
+            is_two_factor_enabled: apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : (apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : state.currentUser?.is_two_factor_enabled),
+            isTwoFactorEnabled: apiUser.isTwoFactorEnabled !== undefined ? Boolean(apiUser.isTwoFactorEnabled) : (apiUser.is_two_factor_enabled !== undefined ? Boolean(apiUser.is_two_factor_enabled) : state.currentUser?.isTwoFactorEnabled),
+            has_password: apiUser.has_password !== undefined ? apiUser.has_password : state.currentUser?.has_password,
+            hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : state.currentUser?.hasPassword,
+            auth_provider: apiUser.auth_provider || state.currentUser?.auth_provider,
           };
           dispatch({ type: 'UPDATE_USER', payload: user });
           dispatch({ type: 'LOGIN', payload: user });
@@ -489,6 +521,11 @@ export const useAuth = () => {
         isResumePublic: apiUser.is_resume_public !== false,
         companyName: apiUser.company_name || '',
         gstNumber: apiUser.gst_number || '',
+        is_two_factor_enabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled),
+        isTwoFactorEnabled: Boolean(apiUser.is_two_factor_enabled ?? apiUser.isTwoFactorEnabled),
+        has_password: apiUser.has_password !== undefined ? apiUser.has_password : apiUser.hasPassword,
+        hasPassword: apiUser.hasPassword !== undefined ? apiUser.hasPassword : apiUser.has_password,
+        auth_provider: apiUser.auth_provider || 'google',
       };
 
       dispatch({ type: 'LOGIN', payload: user });
@@ -508,7 +545,8 @@ export const useAuth = () => {
     logout,
     updateUser,
     deleteResume,
-    syncUser
+    syncUser,
+    update2FAStatus
   };
 };
 

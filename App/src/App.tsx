@@ -233,7 +233,7 @@ export const App: React.FC = () => {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/alerts" element={<NotificationsPage />} />
           <Route path="/security" element={<Navigate to="/dashboard?tab=security" replace />} />
-          <Route path="/about" element={currentUser ? <Navigate to="/dashboard?tab=about" replace /> : <AboutPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/help" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/support" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />

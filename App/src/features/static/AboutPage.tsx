@@ -74,15 +74,11 @@ export const AboutPage: React.FC = () => {
           font-family: inherit;
         }
 
-        .about-header-nav {
-          display: none;
-        }
-
         .about-container {
           width: 100%;
-          max-width: 100%;
-          margin: 0;
-          padding: 0;
+          max-width: 860px;
+          margin: 0 auto;
+          padding: 24px 20px 48px 20px;
           display: flex;
           flex-direction: column;
           gap: 16px;
@@ -114,28 +110,77 @@ export const AboutPage: React.FC = () => {
           gap: 10px;
         }
 
+        .about-header {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background-color: #FFFFFF;
+          border-bottom: 1px solid #E2E8F0;
+          width: 100%;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+
+        .about-header-inner {
+          max-width: 860px;
+          margin: 0 auto;
+          height: 52px;
+          padding: 0 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-sizing: border-box;
+        }
+
+        .about-back-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          background-color: transparent;
+          border: none;
+          cursor: pointer;
+          border-radius: 8px;
+          color: #0F172A;
+          padding: 0;
+          transition: background-color 0.15s ease;
+        }
+
+        .about-back-btn:hover {
+          background-color: #F1F5F9;
+        }
+
+        .about-header-title-box {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .about-header-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #0F172A;
+          letter-spacing: -0.2px;
+          margin: 0;
+        }
+
         /* Mobile View (max-width: 767px) */
         @media (max-width: 767px) {
+          .about-header-inner {
+            padding: 0 14px;
+            height: 48px;
+          }
+          .about-header-title {
+            font-size: 15px;
+          }
           .about-page-wrapper {
             background-color: #F8FAFC;
             min-height: 100vh;
             padding-bottom: 32px;
           }
-          .about-header-nav {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background-color: #FFFFFF;
-            border-bottom: 1px solid #E2E8F0;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-          }
           .about-container {
             max-width: 100%;
-            padding: 0 14px;
+            padding: 14px 14px 40px 14px;
             gap: 10px;
           }
           .about-card {
@@ -156,46 +201,33 @@ export const AboutPage: React.FC = () => {
         }
       `}</style>
 
-      {/* Top Fixed Header Nav (Mobile View Only) */}
-      <div className="about-header-nav">
-        <button
-          onClick={() => {
-            if (window.history.length > 1) {
-              navigate(-1);
-            } else {
-              navigate('/dashboard');
-            }
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '36px',
-            height: '36px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '8px',
-            color: '#0F172A'
-          }}
-        >
-          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
-        </button>
+      {/* Dedicated Header with Back Arrow */}
+      <header className="about-header">
+        <div className="about-header-inner">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/');
+              }
+            }}
+            className="about-back-btn"
+            title="Go back"
+            aria-label="Back"
+          >
+            <ArrowLeft size={20} color="#0F172A" strokeWidth={2.2} />
+          </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Building2 size={17} color="#1B4FDF" strokeWidth={2.2} />
-          <span style={{
-            fontSize: '16px',
-            fontWeight: 700,
-            color: '#0F172A',
-            letterSpacing: '-0.2px'
-          }}>
-            About JobMarket
-          </span>
+          <div className="about-header-title-box">
+            <Building2 size={18} color="#1B4FDF" strokeWidth={2.2} />
+            <h1 className="about-header-title">About JobMarket</h1>
+          </div>
+
+          <div style={{ width: '36px' }} />
         </div>
-
-        <div style={{ width: '36px' }} />
-      </div>
+      </header>
 
       <div className="about-container">
 

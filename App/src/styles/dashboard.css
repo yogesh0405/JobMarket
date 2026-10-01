@@ -90,6 +90,10 @@
   .applied-mobile-header + .applied-tab-bar {
     margin-top: -16px;
   }
+
+  .applied-section-container {
+    padding: 14px 16px 80px 16px !important;
+  }
 }
 
 @media (min-width: 769px) {

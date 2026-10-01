@@ -216,6 +216,7 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
       style={{
         margin: 0,
         width: '100%',
+        maxWidth: '100%',
         padding: '20px',
         display: 'flex',
         alignItems: 'center',
@@ -302,12 +303,12 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
     }) : 'Recently';
 
     return (
-      <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: '#FFFFFF' }}>
+      <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: 'transparent' }}>
         {!embeddedInDashboard && renderHeader('My Resume', 'Manage your active candidate document')}
-        <div className="resume-page" style={{ padding: '20px 16px 60px' }}>
-          <div style={{ maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0 auto' }}>
+        <div className="resume-page" style={{ padding: embeddedInDashboard ? '0 0 40px 0' : '20px 16px 60px' }}>
+          <div style={{ maxWidth: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0' }}>
             {/* Main Card */}
-            <div className="resume-card" style={{ margin: 0, width: '100%' }}>
+            <div className="resume-card" style={{ margin: 0, width: '100%', maxWidth: '100%' }}>
               <div style={{ marginBottom: '6px' }}>
                 <h2>My Resume</h2>
               </div>
@@ -589,12 +590,12 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
   const isImageFile = selectedFile ? selectedFile.type.startsWith('image/') : false;
 
   return (
-    <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: '#FFFFFF' }}>
+    <div style={{ minHeight: embeddedInDashboard ? 'auto' : '100vh', backgroundColor: 'transparent' }}>
       {!embeddedInDashboard && renderHeader('Upload Resume', 'Upload candidate resume document')}
-      <div className="resume-page" style={{ padding: '28px 16px 60px' }}>
-        <div style={{ maxWidth: '540px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0 auto' }}>
+      <div className="resume-page" style={{ padding: embeddedInDashboard ? '0 0 40px 0' : '28px 16px 60px' }}>
+        <div style={{ maxWidth: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0' }}>
         {/* Main Upload Card */}
-        <div className="resume-card" style={{ margin: 0, width: '100%' }}>
+        <div className="resume-card" style={{ margin: 0, width: '100%', maxWidth: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
             <h2>Upload Resume</h2>
             {showReplaceUpload && (

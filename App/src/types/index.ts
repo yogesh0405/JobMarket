@@ -96,6 +96,12 @@ export interface User {
   city?: string;
   state?: string;
   logo?: string;
+  // Security & Authentication Flags
+  is_two_factor_enabled?: boolean;
+  isTwoFactorEnabled?: boolean;
+  has_password?: boolean;
+  hasPassword?: boolean;
+  auth_provider?: string;
 }
 
 export interface Job {
