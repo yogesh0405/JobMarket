@@ -686,10 +686,11 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     return true;
   });
 
-  switch (tab) {
-    case 'interviews':
-    case 'scheduled-interviews':
-      return <CandidateInterviewsTab currentUser={currentUser} />;
+  const renderTabContent = () => {
+    switch (tab) {
+      case 'interviews':
+      case 'scheduled-interviews':
+        return <CandidateInterviewsTab currentUser={currentUser} />;
     case 'overview':
       return (
         <>
@@ -1283,7 +1284,24 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
 
     default:
       return null;
-  }
+    }
+  };
+
+  return (
+    <>
+      {renderTabContent()}
+
+      {/* Official Walk-In Drive Admit Pass Modal */}
+      <WalkInDrivePassModal
+        isOpen={isWalkInPassModalOpen}
+        onClose={() => {
+          setIsWalkInPassModalOpen(false);
+          setSelectedWalkInPass(null);
+        }}
+        data={selectedWalkInPass}
+      />
+    </>
+  );
 };
 
 const CandidateProfileDetailView: React.FC<{
@@ -3472,16 +3490,6 @@ const CandidatesTab: React.FC<{
           )}
         </div>
       )}
-
-      {/* Official Walk-In Drive Admit Pass Modal */}
-      <WalkInDrivePassModal
-        isOpen={isWalkInPassModalOpen}
-        onClose={() => {
-          setIsWalkInPassModalOpen(false);
-          setSelectedWalkInPass(null);
-        }}
-        data={selectedWalkInPass}
-      />
     </div>
   );
 };

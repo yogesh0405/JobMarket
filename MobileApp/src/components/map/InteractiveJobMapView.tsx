@@ -281,8 +281,10 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
             attributionControl: false
           });
 
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
           }).addTo(map);
 
           // Leaflet MarkerCluster Group with Custom Count Badges

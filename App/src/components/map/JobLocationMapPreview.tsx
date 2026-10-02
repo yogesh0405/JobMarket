@@ -59,10 +59,11 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         dragging: true
       });
 
-      // Add OpenStreetMap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
+      // Add high-performance CARTO Voyager tile layer (powered by OSM, no 403 policy blocking)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
       }).addTo(map);
 
       // Add marker pin (draggable if not readOnly or onLocationSelect provided)

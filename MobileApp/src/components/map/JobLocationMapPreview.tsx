@@ -102,9 +102,10 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
             touchZoom: true
           });
 
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            maxZoom: 19
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
           }).addTo(map);
 
           setTimeout(function() {

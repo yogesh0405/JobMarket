@@ -55,10 +55,11 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
       touchZoom: true
     });
 
-    // Add OpenStreetMap Tile Layer (100% Free)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
+    // Add high-performance CARTO Voyager tile layer (powered by OSM, no 403 policy blocking)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(map);
 
     // Add Scale Control
