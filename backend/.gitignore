@@ -1,0 +1,28 @@
+# Environment variables
+.env
+.env.*
+.env.local
+*.env
+!.env.example
+!services/*/.env.example
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# System & IDE files
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets & Credentials
+*serviceAccountKey*.json
+*firebase-adminsdk*.json

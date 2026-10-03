@@ -76,7 +76,13 @@ const CustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navigation }) 
               });
 
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
+                if (route.name === 'ApplicantsTab') {
+                  navigation.navigate('ApplicantsTab', { jobId: undefined, jobTitle: 'All Applicants' });
+                } else {
+                  navigation.navigate(route.name);
+                }
+              } else if (isFocused && route.name === 'ApplicantsTab') {
+                navigation.navigate('ApplicantsTab', { jobId: undefined, jobTitle: 'All Applicants' });
               }
             };
 

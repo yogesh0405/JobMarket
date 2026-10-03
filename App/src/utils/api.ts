@@ -71,6 +71,24 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     }
   }
 
+  // If account is suspended (403) — clear session and dispatch suspension event immediately
+  if (response.status === 403) {
+    let json403: any = {};
+    try { json403 = await response.clone().json(); } catch (_) {}
+    const errCode = json403?.errorCode;
+    if (errCode === 'ACCOUNT_BLOCKED' || errCode === 'ACCOUNT_INACTIVE') {
+      clearSession();
+      window.dispatchEvent(new CustomEvent('auth:suspended', {
+        detail: { errorCode: errCode, message: json403?.message || json403?.error }
+      }));
+      if (!url.includes('/api/v1/auth/')) {
+        const err: any = new Error(json403?.message || json403?.error || 'Your account has been suspended.');
+        err.errorCode = errCode;
+        throw err;
+      }
+    }
+  }
+
   // If token is invalid or expired (401 Unauthorized), try to refresh it
   if (response.status === 401) {
     if (url.includes('/api/v1/auth/refresh')) {

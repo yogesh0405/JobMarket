@@ -13,10 +13,16 @@ App/.env
 App/.env.*
 MobileApp/.env
 MobileApp/.env.*
+SuperAdmin/backend/.env
+SuperAdmin/backend/.env.*
+SuperAdmin/frontend/.env
+SuperAdmin/frontend/.env.*
 !.env.example
 !backend/.env.example
 !App/.env.example
 !MobileApp/.env.example
+!SuperAdmin/backend/.env.example
+!SuperAdmin/frontend/.env.example
 *serviceAccountKey*.json
 *firebase-adminsdk*.json
 

@@ -4,6 +4,7 @@ import { User, Job } from '../types';
 export type StoreAction =
   | { type: 'LOGIN'; payload: User }
   | { type: 'LOGOUT' }
+  | { type: 'ACCOUNT_SUSPENDED'; payload: { errorCode: string; message?: string } }
   | { type: 'SIGNUP'; payload: User }
   | { type: 'CREATE_JOB'; payload: Job }
   | { type: 'UPDATE_JOB'; payload: Job }
@@ -100,7 +101,17 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
     case 'LOGOUT':
       return {
         ...state,
-        currentUser: null
+        currentUser: null,
+        accountSuspended: false,
+        suspensionDetail: null
+      };
+
+    case 'ACCOUNT_SUSPENDED':
+      return {
+        ...state,
+        currentUser: null,
+        accountSuspended: true,
+        suspensionDetail: action.payload
       };
 
     case 'SIGNUP':
@@ -238,6 +249,22 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
         currentUser: state.currentUser?.id === targetUserId ? updatedUser : state.currentUser
       };
     }
+
+    case 'ACCOUNT_SUSPENDED':
+      return {
+        ...state,
+        accountSuspended: true,
+        suspensionDetail: action.payload,
+        currentUser: null
+      };
+
+    case 'LOGOUT':
+      return {
+        ...state,
+        currentUser: null,
+        accountSuspended: false,
+        suspensionDetail: null
+      };
 
     default:
       return state;

@@ -3,7 +3,7 @@ import { pool } from '../../../config/database/pool';
 import { SessionRepository } from '../repositories/SessionRepository';
 import { UserRepository } from '../repositories/UserRepository';
 import { generateTokens, verifyRefreshToken } from '../../../utils/jwt';
-import { UnauthorizedError } from '../../../errors/AppError';
+import { UnauthorizedError, ForbiddenError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
 
 export class TokenService {
@@ -46,6 +46,21 @@ export class TokenService {
       if (!user) {
         throw new UnauthorizedError('User not found');
       }
+
+      if (user.status === 'BLOCKED') {
+        await SessionRepository.revokeAllUserSessions(user.id);
+        throw new ForbiddenError(
+          'Your account has been suspended by the platform administrator. If you believe this is an error, please contact our support team at support@jobmarket.com',
+          'ACCOUNT_BLOCKED'
+        );
+      }
+
+      if (user.status === 'INACTIVE') {
+        throw new ForbiddenError(
+          'Your account is currently inactive. Please verify your email address to activate your account, or contact support if you need assistance.',
+          'ACCOUNT_INACTIVE'
+        );
+      }
       
       const { accessToken, refreshToken: newRefreshToken } = generateTokens({
         userId: payload.userId,
@@ -69,7 +84,7 @@ export class TokenService {
       };
     } catch (error: any) {
       logger.error('Refresh token failed:', error?.message || error);
-      if (error instanceof UnauthorizedError) {
+      if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
         throw error;
       }
       throw new UnauthorizedError('Invalid or expired refresh token');

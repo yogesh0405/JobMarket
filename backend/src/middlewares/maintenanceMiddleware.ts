@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AdminRepository } from '../modules/admin/repositories/AdminRepository';
+import { PlatformRepository } from '../modules/platform/repositories/PlatformRepository';
 import { verifyAccessToken } from '../utils/jwt';
 
 export const maintenanceMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -28,7 +28,7 @@ export const maintenanceMiddleware = async (req: Request, res: Response, next: N
     }
 
     // 2. Check maintenance mode state from system settings
-    const settings = await AdminRepository.getSettings().catch(() => ({}));
+    const settings: any = await PlatformRepository.getSettings().catch(() => ({}));
     if (settings && settings.maintenance_mode === 'true') {
       // 3. Allow Admins to bypass maintenance mode if authenticated with Admin token
       const authHeader = req.headers.authorization;

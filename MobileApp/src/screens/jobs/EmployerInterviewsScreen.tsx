@@ -997,6 +997,7 @@ export const EmployerInterviewsScreen: React.FC<Props> = ({ navigation }) => {
         hideBell={true}
         hideMenu={true}
         hideRightActions={true}
+        hideVoice={true}
       />
 
       {/* Job Posting Type Filter Dropdown Trigger */}

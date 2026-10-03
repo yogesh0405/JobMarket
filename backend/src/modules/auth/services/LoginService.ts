@@ -50,8 +50,19 @@ export class LoginService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    if (user.status !== 'ACTIVE') {
-      throw new ForbiddenError('Account is not verified. Please verify your OTP.');
+    if (user.status === 'BLOCKED') {
+      await AuditRepository.logAction('LOGIN_BLOCKED', user.id, 'Auth', ipAddress, userAgent);
+      throw new ForbiddenError(
+        'Your account has been suspended by the platform administrator. If you believe this is an error, please contact our support team at support@jobmarket.com',
+        'ACCOUNT_BLOCKED'
+      );
+    }
+
+    if (user.status === 'INACTIVE') {
+      throw new ForbiddenError(
+        'Your account is currently inactive. Please verify your email address to activate your account, or contact support if you need assistance.',
+        'ACCOUNT_INACTIVE'
+      );
     }
 
     if (role && !isRoleCompatible(user.role, role)) {

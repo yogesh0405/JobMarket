@@ -6,18 +6,16 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { env } from './config/env';
 import authRoutes from './modules/auth/routes/authRoutes';
-import adminRoutes from './modules/admin/routes/adminRoutes';
 import jobRoutes from './modules/jobs/routes/jobRoutes';
-import supportRoutes, { adminSupportRouter } from './modules/support/routes/supportRoutes';
+import supportRoutes from './modules/support/routes/supportRoutes';
 import {
   homeAdvertisementRouter,
   employerAdvertisementRouter,
-  adminAdvertisementRouter,
 } from './modules/advertisements/routes/advertisementRoutes';
 import unifiedNotificationRoutes from './modules/notifications/routes/notificationRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 
-import publicSettingsRouter from './modules/admin/routes/publicSettingsRoutes';
+import platformRouter from './modules/platform/routes/platformRoutes';
 import companyRoutes from './modules/companies/routes/companyRoutes';
 import { JobRepository } from './modules/jobs/repositories/JobRepository';
 import { maintenanceMiddleware } from './middlewares/maintenanceMiddleware';
@@ -115,17 +113,14 @@ app.use(maintenanceMiddleware);
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/v1/companies', companyRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/support', supportRoutes);
-app.use('/api/admin/support', adminSupportRouter);
 app.use('/api/v1/home', homeAdvertisementRouter);
 app.use('/api/v1/employer', employerAdvertisementRouter);
-app.use('/api/v1/admin', adminAdvertisementRouter);
-app.use('/api/v1', publicSettingsRouter);
+app.use('/api/v1', platformRouter);
 app.use('/api/v1', unifiedNotificationRoutes);
 
 // Android App Links verification route (Digital Asset Links)

@@ -65,6 +65,15 @@ export const JobApplicantsCard: React.FC<JobApplicantsCardProps> = ({ item, onPr
 
       {/* Meta Chips Row */}
       <View style={styles.metaChipsRow}>
+        {(item.job as any)?.title ? (
+          <View style={[styles.metaChip, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
+            <Briefcase size={11} color="#1764E8" style={{ flexShrink: 0 }} />
+            <Text style={[styles.metaChipText, { color: '#1764E8', fontWeight: '600' }]} numberOfLines={1} ellipsizeMode="tail">
+              {(item.job as any).title}
+            </Text>
+          </View>
+        ) : null}
+
         {candidateExp ? (
           <View style={styles.metaChip}>
             <Briefcase size={11} color="#657796" style={{ flexShrink: 0 }} />

@@ -958,6 +958,27 @@ export class AuthController {
 
       let user = await UserRepository.findByEmail(userEmail.toLowerCase().trim());
 
+      if (user) {
+        if (user.status === 'BLOCKED') {
+          return res.status(403).json({
+            success: false,
+            message: 'Your account has been suspended by the platform administrator. If you believe this is an error, please contact our support team at support@jobmarket.com',
+            errorCode: 'ACCOUNT_BLOCKED',
+            data: null,
+            errors: ['ACCOUNT_BLOCKED']
+          });
+        }
+        if (user.status === 'INACTIVE') {
+          return res.status(403).json({
+            success: false,
+            message: 'Your account is currently inactive. Please verify your email address to activate your account, or contact support if you need assistance.',
+            errorCode: 'ACCOUNT_INACTIVE',
+            data: null,
+            errors: ['ACCOUNT_INACTIVE']
+          });
+        }
+      }
+
       if (!user) {
         let permanentAvatarUrl: string | null = null;
         if (userPicture) {

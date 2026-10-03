@@ -8,7 +8,7 @@ import { AdvertisementRepository } from '../../advertisements/repositories/adver
 import { NotificationService } from '../../notifications/services/NotificationService';
 import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
 import { S3Util } from '../../../utils/s3';
-import { AdminRepository } from '../../admin/repositories/AdminRepository';
+import { PlatformRepository } from '../../platform/repositories/PlatformRepository';
 
 const isEmployerRole = (r?: string) => {
   const norm = (r || '').toLowerCase().trim();
@@ -18,7 +18,7 @@ const isEmployerRole = (r?: string) => {
 export class JobController {
   static async getCategories(req: any, res: Response, next: NextFunction) {
     try {
-      const data = await AdminRepository.getCategories();
+      const data = await PlatformRepository.getCategories();
       const activeOnly = data.filter((c: any) => c.status === 'ACTIVE' || !c.status);
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {
@@ -28,7 +28,7 @@ export class JobController {
 
   static async getSkills(req: any, res: Response, next: NextFunction) {
     try {
-      const data = await AdminRepository.getSkills();
+      const data = await PlatformRepository.getSkills();
       const activeOnly = data.filter((s: any) => s.status === 'ACTIVE' || !s.status);
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {

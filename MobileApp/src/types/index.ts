@@ -155,6 +155,14 @@ export interface JobApplication {
     location?: string;
     notes?: string;
   };
+  interviewDate?: string;
+  interviewTime?: string;
+  venueAddress?: string;
+  mapsLink?: string;
+  interviewStatus?: string;
+  interviewRating?: number | string;
+  interviewFeedback?: string;
+  postponedReason?: string;
 }
 
 export interface Session {

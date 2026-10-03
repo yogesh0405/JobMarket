@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { useStore } from '../../store/useStore';
 import { UserRole } from '../../types';
 import { ForgotPasswordModal } from '../../components/auth/ForgotPasswordModal';
 import { ShieldCheck, ArrowLeft, KeyRound, Eye, EyeOff, Check, Briefcase, User as UserIcon } from 'lucide-react';
@@ -24,6 +25,7 @@ export const LoginPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { login, loginWithGoogle, verify2FALogin, currentUser } = useAuth();
   const { showToast } = useToast();
+  const { dispatch } = useStore();
 
   const roleParam = searchParams.get('role') as UserRole;
   const role: UserRole = (roleParam === 'candidate' || roleParam === 'employer') ? roleParam : 'candidate';
@@ -49,12 +51,15 @@ export const LoginPage: React.FC = () => {
         const result = await loginWithGoogle({ accessToken: tokenResponse.access_token }, role);
         if (result.success) {
           showToast(`Welcome back, ${result.user?.name || ''}!`, 'success');
-          if (result.user?.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/dashboard');
-          }
+          navigate('/dashboard');
         } else {
+          if (result.errorCode === 'ACCOUNT_BLOCKED' || result.errorCode === 'ACCOUNT_INACTIVE') {
+            dispatch({
+              type: 'ACCOUNT_SUSPENDED',
+              payload: { errorCode: result.errorCode, message: result.error },
+            });
+            return;
+          }
           showToast(result.error || 'Google Sign-In failed.', 'error');
         }
       } catch (err: any) {
@@ -81,11 +86,7 @@ export const LoginPage: React.FC = () => {
           setIsLoading(false);
           if (result.success) {
             showToast(`Welcome back, ${result.user?.name}!`, 'success');
-            if (result.user?.role === 'admin') {
-              navigate('/admin/dashboard');
-            } else {
               navigate('/dashboard');
-            }
           } else {
             showToast(result.error || 'Google Login failed.', 'error');
           }
@@ -101,11 +102,7 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else {
         navigate('/dashboard', { replace: true });
-      }
     }
   }, [currentUser, navigate]);
 
@@ -130,12 +127,15 @@ export const LoginPage: React.FC = () => {
 
       if (result.success) {
         showToast(`Welcome back, ${result.user?.name}!`, 'success');
-        if (result.user?.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       } else {
+        if (result.errorCode === 'ACCOUNT_BLOCKED' || result.errorCode === 'ACCOUNT_INACTIVE') {
+          dispatch({
+            type: 'ACCOUNT_SUSPENDED',
+            payload: { errorCode: result.errorCode, message: result.error },
+          });
+          return;
+        }
         showToast(result.error || 'Login failed. Please check your credentials.', 'error');
       }
     } finally {
@@ -155,12 +155,15 @@ export const LoginPage: React.FC = () => {
       const result = await verify2FALogin(mfaToken, twoFactorOtp.trim());
       if (result.success) {
         showToast(`2FA Verified! Welcome back, ${result.user?.name}!`, 'success');
-        if (result.user?.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       } else {
+        if (result.errorCode === 'ACCOUNT_BLOCKED' || result.errorCode === 'ACCOUNT_INACTIVE') {
+          dispatch({
+            type: 'ACCOUNT_SUSPENDED',
+            payload: { errorCode: result.errorCode, message: result.error },
+          });
+          return;
+        }
         showToast(result.error || 'Invalid 2FA security code.', 'error');
       }
     } finally {

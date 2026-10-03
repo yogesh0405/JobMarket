@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
 import { MaintenancePage } from './components/common/MaintenancePage';
+import { AccountSuspendedPage } from './components/common/AccountSuspendedPage';
 import { HomePage } from './features/home/HomePage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
@@ -30,21 +31,7 @@ import { useAuth } from './hooks/useAuth';
 import { apiFetch } from './utils/api';
 import { useStore } from './store/useStore';
 
-// Admin imports
-import { AdminLayout } from './modules/admin/layouts/AdminLayout';
-import { AdminLoginPage } from './modules/admin/pages/AdminLoginPage';
-import { AdminDashboardPage } from './modules/admin/pages/AdminDashboardPage';
-import { JobApprovalPage } from './modules/admin/pages/JobApprovalPage';
-import { JobsPage } from './modules/admin/pages/JobsPage';
-import { UserManagementPage } from './modules/admin/pages/UserManagementPage';
-import { EmployerManagementPage } from './modules/admin/pages/EmployerManagementPage';
-import { WorkerManagementPage } from './modules/admin/pages/WorkerManagementPage';
-import { CategorySkillManagementPage } from './modules/admin/pages/CategorySkillManagementPage';
-import { ReportsPage } from './modules/admin/pages/ReportsPage';
-import { SettingsPage } from './modules/admin/pages/SettingsPage';
-import { SupportManagementPage } from './modules/admin/pages/SupportManagementPage';
-import { AdminAdvertisementPage } from './modules/admin/pages/AdminAdvertisementPage';
-import { BroadcastPage } from './modules/admin/pages/BroadcastPage';
+
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -83,7 +70,8 @@ export const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, syncUser, loginWithGoogle } = useAuth();
-  const { dispatch } = useStore();
+  const { dispatch, state } = useStore();
+  const { accountSuspended, suspensionDetail } = state;
   const [platformSettings, setPlatformSettings] = useState<{
     maintenance_mode?: string;
     platform_name?: string;
@@ -173,6 +161,18 @@ export const App: React.FC = () => {
     );
   }
 
+  if (accountSuspended) {
+    return (
+      <ErrorBoundary>
+        <AccountSuspendedPage
+          errorCode={suspensionDetail?.errorCode}
+          message={suspensionDetail?.message}
+          onSignOut={() => dispatch({ type: 'LOGOUT' })}
+        />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <Routes>
@@ -184,24 +184,8 @@ export const App: React.FC = () => {
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
 
-        {/* 2. Admin Module Routes (Isolated Portal) */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="login" element={<Navigate to="/admin/login" replace />} />
-          <Route path="job-approvals" element={<JobApprovalPage />} />
-          <Route path="advertisements" element={<AdminAdvertisementPage />} />
-          <Route path="jobs" element={<JobsPage />} />
-          <Route path="users" element={<UserManagementPage />} />
-          <Route path="employers" element={<EmployerManagementPage />} />
-          <Route path="workers" element={<WorkerManagementPage />} />
-          <Route path="categories" element={<CategorySkillManagementPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="support" element={<SupportManagementPage />} />
-          <Route path="broadcast" element={<BroadcastPage />} />
-        </Route>
+        {/* 2. Admin Module Routes (Shifted to standalone SuperAdmin portal) */}
+        <Route path="/admin/*" element={<Navigate to="/login" replace />} />
 
         {/* 3. Main Application Routes (WITH Navbar/Footer Layout) */}
         <Route element={<Layout />}>

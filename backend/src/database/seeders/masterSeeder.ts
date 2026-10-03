@@ -36,7 +36,14 @@ export async function runMasterSeeder(): Promise<void> {
       ) OR email LIKE 'hr@%.com';
     `);
 
-    const defaultPasswordHash = await bcrypt.hash('demo123', 10);
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be set before seeding.');
+    }
+
+    const defaultPasswordHash = await bcrypt.hash(adminPassword, 10);
 
     // 2. Insert Standard System Users (Admin & Candidate)
     console.log('👤 Seeding default admin & candidate test accounts...');
@@ -46,11 +53,11 @@ export async function runMasterSeeder(): Promise<void> {
         email, password_hash, name, phone, role, company_name, gst_number,
         aadhaar_verified, trade_specialization, status, location
       ) VALUES 
-        ('admin@demo.com', $1, 'System Admin', '9876543219', 'admin', NULL, NULL, TRUE, NULL, 'ACTIVE', 'Chhatrapati Sambhajinagar'),
-        ('worker@demo.com', $1, 'Ramesh Patil', '9876543212', 'candidate', NULL, NULL, TRUE, 'CNC Machinist', 'ACTIVE', 'Waluj MIDC, Chhatrapati Sambhajinagar')
+        ($2, $1, 'System Admin', '9876543219', 'admin', NULL, NULL, TRUE, NULL, 'ACTIVE', 'Chhatrapati Sambhajinagar'),
+        ('worker@jobmarket.local', $1, 'Ramesh Patil', '9876543212', 'candidate', NULL, NULL, TRUE, 'CNC Machinist', 'ACTIVE', 'Waluj MIDC, Chhatrapati Sambhajinagar')
       RETURNING id, email, role;
       `,
-      [defaultPasswordHash]
+      [defaultPasswordHash, adminEmail]
     );
 
     const workerId = userInsertResult.rows.find((r) => r.role === 'candidate')?.id;

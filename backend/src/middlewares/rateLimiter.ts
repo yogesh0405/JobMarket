@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 
 export const rateLimiter = (prefix: string, maxRequests: number, windowSeconds: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!redisClient.isOpen) {
+    if (!redisClient.isOpen || !redisClient.isReady) {
       // If redis is down, fallback to allowing the request
       return next();
     }

@@ -20,7 +20,7 @@ const MOBILE_USER_AGENT = `JobMarketApp/1.0 (${Platform.OS === 'android' ? 'Andr
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
-let onUnauthenticatedCallback: (() => void) | null = null;
+let onUnauthenticatedCallback: ((reason?: string) => void) | null = null;
 
 export function isValidId(id: any): boolean {
   if (id === null || id === undefined) return false;
@@ -29,7 +29,7 @@ export function isValidId(id: any): boolean {
   return true;
 }
 
-export const setOnUnauthenticated = (callback: () => void) => {
+export const setOnUnauthenticated = (callback: (reason?: string) => void) => {
   onUnauthenticatedCallback = callback;
 };
 
@@ -140,6 +140,27 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     response = await fetchWithTimeout(url, { ...options, headers });
   } catch (netErr: any) {
     throw new Error(netErr.message || 'Network error. Please check your internet connection.');
+  }
+
+  // Handle 403 Account Suspended — do NOT attempt refresh, force logout immediately
+  if (response.status === 403 && !isAuthEndpoint(endpoint)) {
+    let suspendedJson: any = {};
+    try { suspendedJson = JSON.parse(await response.clone().text()); } catch (_) {}
+    const errorCode = suspendedJson?.errorCode;
+    if (errorCode === 'ACCOUNT_BLOCKED' || errorCode === 'ACCOUNT_INACTIVE') {
+      await clearAuthSession();
+      if (onUnauthenticatedCallback) {
+        onUnauthenticatedCallback(errorCode);
+      }
+      const err: any = new Error(
+        suspendedJson?.error || suspendedJson?.message || 'Your account has been suspended.'
+      );
+      err.status = 403;
+      err.statusCode = 403;
+      err.errorCode = errorCode;
+      err.data = suspendedJson;
+      throw err;
+    }
   }
 
   // Handle Unauthorized 401 / 418 Token Expiry ONLY for protected non-auth endpoints
@@ -282,7 +303,12 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
       json?.message ||
       (Array.isArray(json?.errors) && typeof json.errors[0] === 'object' ? json.errors[0].message : json?.errors?.[0]) ||
       `Request failed with status ${response.status}`;
-    throw new Error(errorMsg);
+    const error: any = new Error(errorMsg);
+    error.status = response.status;
+    error.statusCode = response.status;
+    error.errorCode = json?.errorCode || (Array.isArray(json?.errors) && typeof json.errors[0] === 'string' ? json.errors[0] : undefined);
+    error.data = json;
+    throw error;
   }
 
   return json as T;

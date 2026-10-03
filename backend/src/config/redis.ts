@@ -3,6 +3,7 @@ import { env } from './env';
 
 export const redisClient = createClient({
   url: env.REDIS_URL,
+  disableOfflineQueue: true,
   socket: {
     reconnectStrategy: (retries) => {
       // Reconnect gracefully with exponential backoff up to 3s

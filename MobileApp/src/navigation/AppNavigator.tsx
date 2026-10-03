@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
+import { AccountSuspendedScreen } from '../screens/auth/AccountSuspendedScreen';
 import { ContinueAsScreen } from '../screens/auth/ContinueAsScreen';
 import { EmployerLoginScreen } from '../screens/auth/EmployerLoginScreen';
 import { EmployerSignupScreen } from '../screens/auth/EmployerSignupScreen';
@@ -40,8 +41,19 @@ import { CandidateSearchScreen } from '../screens/candidates/CandidateSearchScre
 const Stack = createNativeStackNavigator();
 
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, accountSuspended, suspensionReason, suspensionMessage, clearSuspension } = useAuth();
   const isCandidate = (user?.role || '').toLowerCase() === 'candidate';
+
+  // Show suspension screen globally — overrides all navigation
+  if (accountSuspended) {
+    return (
+      <AccountSuspendedScreen
+        reason={suspensionReason}
+        message={suspensionMessage}
+        onSignOut={clearSuspension}
+      />
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

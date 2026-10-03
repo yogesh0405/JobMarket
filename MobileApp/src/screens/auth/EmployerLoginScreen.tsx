@@ -13,6 +13,7 @@ import {
   Keyboard,
   ImageBackground,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -46,7 +47,7 @@ interface Props {
 export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
-  const { login, loginWithGoogle, verify2FALogin } = useAuth();
+  const { login, loginWithGoogle, verify2FALogin, triggerSuspension } = useAuth();
   const { showToast } = useToast();
 
   const [role, setRole] = useState<'employer' | 'candidate'>('candidate');
@@ -142,7 +143,24 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (err: any) {
       const errMsg = err.message || 'Login failed. Please check your credentials.';
 
-      // Case 1: Unverified Account -> Prompt to send verification OTP
+      // Case 1: Account suspended / restricted / blocked / inactive (PRIORITY CHECK)
+      const isSuspended =
+        err.errorCode === 'ACCOUNT_BLOCKED' ||
+        err.errorCode === 'ACCOUNT_INACTIVE' ||
+        err.status === 403 ||
+        errMsg.toLowerCase().includes('suspended') ||
+        errMsg.toLowerCase().includes('restricted') ||
+        errMsg.toLowerCase().includes('blocked');
+
+      if (isSuspended) {
+        triggerSuspension(
+          err.errorCode || 'ACCOUNT_BLOCKED',
+          errMsg
+        );
+        return;
+      }
+
+      // Case 2: Unverified Account -> Prompt to send verification OTP
       if (
         err.requiresVerification ||
         errMsg.toLowerCase().includes('verify your otp') ||
@@ -173,7 +191,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      // Case 2: Role Mismatch -> Offer switching tab
+      // Case 3: Role Mismatch -> Offer switching tab
       if (
         errMsg.toLowerCase().includes('does not belong to this role') ||
         errMsg.toLowerCase().includes('change the role')
@@ -193,23 +211,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
             setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
             setRole(oppositeRole);
             setError(null);
-          },
-        });
-        return;
-      }
-
-      // Case 3: Account restricted / blocked
-      if (err.status === 403 || errMsg.toLowerCase().includes('restricted') || errMsg.toLowerCase().includes('blocked')) {
-        setConfirmModalConfig({
-          visible: true,
-          title: 'Account Restricted',
-          message: errMsg,
-          confirmText: 'Contact Support',
-          cancelText: 'Close',
-          type: 'danger',
-          onConfirm: () => {
-            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
-            navigation.navigate('HelpSupport');
           },
         });
         return;

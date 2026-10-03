@@ -19,6 +19,11 @@ interface AuthContextType {
   isLoading: boolean;
   isLoggingOut: boolean;
   isAuthenticated: boolean;
+  accountSuspended: boolean;
+  suspensionReason: string | null;
+  suspensionMessage: string | null;
+  triggerSuspension: (reason?: string, message?: string) => void;
+  clearSuspension: () => void;
   login: (emailOrPayload: any, password?: string, authMethod?: string, payload?: any) => Promise<any>;
   loginWithGoogle: (payload: any) => Promise<void>;
   verify2FALogin: (mfaToken: string, otpCode: string) => Promise<any>;
@@ -120,10 +125,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const [accountSuspended, setAccountSuspended] = useState<boolean>(false);
+  const [suspensionReason, setSuspensionReason] = useState<string | null>(null);
+  const [suspensionMessage, setSuspensionMessage] = useState<string | null>(null);
+
+  const triggerSuspension = (reason?: string, message?: string) => {
+    setAccountSuspended(true);
+    setSuspensionReason(reason || 'ACCOUNT_BLOCKED');
+    setSuspensionMessage(message || null);
+    setUser(null);
+  };
+
+  const clearSuspension = () => {
+    setAccountSuspended(false);
+    setSuspensionReason(null);
+    setSuspensionMessage(null);
+  };
 
   // Automatically reset user to null ONLY when credentials are confirmed invalid
   useEffect(() => {
-    setOnUnauthenticated(async () => {
+    setOnUnauthenticated(async (reason?: string) => {
+      if (reason === 'ACCOUNT_BLOCKED' || reason === 'ACCOUNT_INACTIVE') {
+        triggerSuspension(reason);
+        return;
+      }
       const refreshToken = await getRefreshToken();
       if (!refreshToken) {
         setUser(null);
@@ -345,6 +370,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         throw new Error(res?.message || res?.error || 'Login failed. Please check credentials.');
       }
+    } catch (err: any) {
+      if (
+        err.errorCode === 'ACCOUNT_BLOCKED' ||
+        err.errorCode === 'ACCOUNT_INACTIVE' ||
+        err.status === 403 ||
+        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
+      ) {
+        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      }
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -387,6 +422,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         throw new Error(res.message || (res as any).error || '2FA OTP Verification failed');
       }
+    } catch (err: any) {
+      if (
+        err.errorCode === 'ACCOUNT_BLOCKED' ||
+        err.errorCode === 'ACCOUNT_INACTIVE' ||
+        err.status === 403 ||
+        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
+      ) {
+        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      }
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -551,6 +596,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       throw new Error(res.message || res.error || 'Google Sign-In failed on server.');
+    } catch (err: any) {
+      if (
+        err.errorCode === 'ACCOUNT_BLOCKED' ||
+        err.errorCode === 'ACCOUNT_INACTIVE' ||
+        err.status === 403 ||
+        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
+      ) {
+        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      }
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -566,6 +621,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await clearAuthSession();
       await new Promise((resolve) => setTimeout(resolve, 200));
       setUser(null);
+      clearSuspension();
     } finally {
       setIsLoggingOut(false);
     }
@@ -578,6 +634,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isLoggingOut,
         isAuthenticated: !!user,
+        accountSuspended,
+        suspensionReason,
+        suspensionMessage,
+        triggerSuspension,
+        clearSuspension,
         login,
         loginWithGoogle,
         verify2FALogin,

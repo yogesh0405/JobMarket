@@ -58,8 +58,16 @@ export const useAuth = () => {
     const handleAuthLogout = () => {
       dispatch({ type: 'LOGOUT' });
     };
+    const handleAuthSuspended = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      dispatch({ type: 'ACCOUNT_SUSPENDED', payload: detail });
+    };
     window.addEventListener('auth:logout', handleAuthLogout);
-    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+    window.addEventListener('auth:suspended', handleAuthSuspended);
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+      window.removeEventListener('auth:suspended', handleAuthSuspended);
+    };
   }, [dispatch]);
 
   const login = useCallback(async (email: string, password: string, role: UserRole) => {
@@ -74,6 +82,7 @@ export const useAuth = () => {
 
       if (!response.ok) {
         let errorMessage = data.error || data.message || 'Login failed';
+        const errorCode = data.errorCode || (data.errors && data.errors[0]);
         if (data.errors && data.errors.length > 0) {
           if (typeof data.errors[0] === 'object' && data.errors[0].message) {
             errorMessage = data.errors[0].message;
@@ -81,7 +90,7 @@ export const useAuth = () => {
             errorMessage = data.errors[0];
           }
         }
-        return { success: false, error: errorMessage };
+        return { success: false, error: errorMessage, errorCode };
       }
 
       if (data.data && data.data.require2FA) {
@@ -155,7 +164,8 @@ export const useAuth = () => {
 
       if (!response.ok) {
         let errorMessage = data.error || data.message || '2FA Verification failed';
-        return { success: false, error: errorMessage };
+        const errorCode = data.errorCode || (data.errors && data.errors[0]);
+        return { success: false, error: errorMessage, errorCode };
       }
 
       const { accessToken, refreshToken, sessionId, user: apiUser } = data.data || data;
@@ -513,7 +523,8 @@ export const useAuth = () => {
 
       if (!response.ok) {
         let errorMessage = data.error || data.message || 'Google Sign-In failed';
-        return { success: false, error: errorMessage };
+        const errorCode = data.errorCode || (data.errors && data.errors[0]);
+        return { success: false, error: errorMessage, errorCode };
       }
 
       const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;

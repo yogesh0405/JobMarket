@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../../../shared/types';
 import { JobRepository } from '../../../../src/modules/jobs/repositories/JobRepository';
 import { UserRepository } from '../../../../src/modules/auth/repositories/UserRepository';
-import { AdminRepository } from '../../../../src/modules/admin/repositories/AdminRepository';
+import { PlatformRepository } from '../../../../src/modules/platform/repositories/PlatformRepository';
 import { S3Util } from '../../../../shared/utils/s3';
 
 const isEmployerRole = (r?: string) => {
@@ -13,7 +13,7 @@ const isEmployerRole = (r?: string) => {
 export class JobController {
   static async getCategories(req: any, res: Response, next: NextFunction) {
     try {
-      const data = await AdminRepository.getCategories();
+      const data = await PlatformRepository.getCategories();
       const activeOnly = data.filter((c: any) => c.status === 'ACTIVE' || !c.status);
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {
@@ -23,7 +23,7 @@ export class JobController {
 
   static async getSkills(req: any, res: Response, next: NextFunction) {
     try {
-      const data = await AdminRepository.getSkills();
+      const data = await PlatformRepository.getSkills();
       const activeOnly = data.filter((s: any) => s.status === 'ACTIVE' || !s.status);
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {

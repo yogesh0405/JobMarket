@@ -4,7 +4,7 @@ import { UserRepository } from '../repositories/UserRepository';
 import { SessionRepository } from '../repositories/SessionRepository';
 import { AuditRepository } from '../repositories/AuditRepository';
 import { generateTokens } from '../../../utils/jwt';
-import { BadRequestError, NotFoundError } from '../../../errors/AppError';
+import { BadRequestError, NotFoundError, ForbiddenError } from '../../../errors/AppError';
 import { logger } from '../../../utils/logger';
 import { sanitizeUserForResponse } from '../controllers/AuthController';
 import { OtpStore } from '../../../utils/redisCache';
@@ -38,6 +38,22 @@ export class Verify2FALoginService {
     const user = await UserRepository.findById(payload.userId);
     if (!user) {
       throw new NotFoundError('User account not found');
+    }
+
+    if (user.status === 'BLOCKED') {
+      await OtpStore.del(redisKey);
+      throw new ForbiddenError(
+        'Your account has been suspended by the platform administrator. If you believe this is an error, please contact our support team at support@jobmarket.com',
+        'ACCOUNT_BLOCKED'
+      );
+    }
+
+    if (user.status === 'INACTIVE') {
+      await OtpStore.del(redisKey);
+      throw new ForbiddenError(
+        'Your account is currently inactive. Please verify your email address to activate your account, or contact support if you need assistance.',
+        'ACCOUNT_INACTIVE'
+      );
     }
 
     const client = await pool.connect();

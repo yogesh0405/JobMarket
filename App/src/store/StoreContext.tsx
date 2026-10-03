@@ -11,6 +11,8 @@ export interface StoreState {
   qualifications: Category[];
   currentUser: User | null;
   language: 'en' | 'mr' | 'hi';
+  accountSuspended: boolean;
+  suspensionDetail: { errorCode: string; message?: string } | null;
 }
 
 const LOCAL_STORAGE_KEY = 'jobMarketplace_react';
@@ -86,7 +88,9 @@ const getInitialState = (): StoreState => {
     categories: initialCategories,
     qualifications: initialQualifications,
     currentUser: null,
-    language: 'en'
+    language: 'en',
+    accountSuspended: false,
+    suspensionDetail: null
   };
 };
 

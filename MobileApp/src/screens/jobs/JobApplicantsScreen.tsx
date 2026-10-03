@@ -60,19 +60,11 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#FFFFFF', true);
-        StatusBar.setBarStyle('dark-content', true);
-        StatusBar.setTranslucent(false);
-      }
-    }, [])
-  );
-
   useEffect(() => {
-    if (jobId) {
+    if (jobId && jobId !== 'ALL') {
       setSelectedJobId(jobId);
+    } else {
+      setSelectedJobId('ALL');
     }
   }, [jobId]);
 
@@ -88,20 +80,6 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchEmployerJobs = async () => {
-      try {
-        const res = await jobsApi.getMyJobs();
-        if (res.success && Array.isArray(res.data)) {
-          setMyJobs(res.data);
-        }
-      } catch (e) {
-        // fallback
-      }
-    };
-    fetchEmployerJobs();
-  }, []);
 
   // Modal States
   const [selectedApplicant, setSelectedApplicant] = useState<JobApplication | null>(null);
@@ -143,25 +121,48 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       extractedResumeUrl = rawResume.url || rawResume.fileUrl || rawResume.uri || rawResume.path || '';
     }
 
-    const finalJobId = item.jobId || item.job_id || activeJobId || parentJob?.id || '';
+    const finalJobId = String(item.jobId || item.job_id || activeJobId || parentJob?.id || '');
+    const userId = String(item.userId || item.user_id || item.user?.id || item.id || '');
+    const appId = item.id || `app-${userId}-${finalJobId}`;
+
+    const resolvedJob = parentJob || item.job || {
+      id: finalJobId,
+      title: item.jobTitle || item.job_title || 'Industrial Position',
+      company: item.company || 'Company',
+    };
+
+    const rawSkills = item.skills || item.user?.skills;
+    const parsedSkills = Array.isArray(rawSkills)
+      ? rawSkills
+      : (typeof rawSkills === 'string' && rawSkills.trim()
+          ? (() => { try { const p = JSON.parse(rawSkills); return Array.isArray(p) ? p : []; } catch { return []; } })()
+          : []);
 
     return {
-      id: item.id || `app-${item.userId || item.user_id}-${finalJobId}`,
-      user_id: item.userId || item.user_id,
+      id: appId,
+      user_id: userId,
       job_id: finalJobId,
       status: (item.status || 'applied').toLowerCase() as any,
-      applied_at: item.appliedAt || item.applied_at || new Date().toISOString(),
-      job: parentJob || item.job,
+      applied_at: item.appliedAt || item.applied_at || item.createdAt || new Date().toISOString(),
+      job: resolvedJob,
+      interviewDate: item.interviewDate || item.interview_date,
+      interviewTime: item.interviewTime || item.interview_time,
+      venueAddress: item.venueAddress || item.venue_address,
+      mapsLink: item.mapsLink || item.maps_link,
+      interviewStatus: item.interviewStatus || item.interview_status,
+      interviewRating: item.interviewRating || item.interview_rating,
+      interviewFeedback: item.interviewFeedback || item.interview_feedback,
+      postponedReason: item.postponedReason || item.postponed_reason,
       user: {
-        id: item.userId || item.user_id,
-        name: item.name || item.user?.name || item.candidate?.name || 'Candidate',
+        id: userId,
+        name: item.name || item.user?.name || item.candidate?.name || 'Applicant',
         email: item.email || item.user?.email || item.candidate?.email || '',
         phone: item.phone || item.user?.phone || item.candidate?.phone || '',
         role: 'candidate' as const,
         headline: item.headline || item.tradeSpecialization || item.trade_specialization || item.user?.headline || 'Candidate',
         location: item.location || item.user?.location || 'Not Specified',
         experience: item.experience || item.user?.experience || 'Not Specified',
-        skills: Array.isArray(item.skills) ? item.skills : (Array.isArray(item.user?.skills) ? item.user.skills : []),
+        skills: parsedSkills,
         profilePictureUrl: item.profilePictureUrl || item.profile_picture_url || item.user?.profilePictureUrl || item.user?.profile_picture_url,
         aadhaar_verified: !!item.aadhaarVerified || !!item.aadhaar_verified || !!item.user?.aadhaar_verified,
         education: item.education || item.user?.education || 'Not Specified',
@@ -176,210 +177,157 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     setError(null);
     setLoading(true);
     try {
-      const myJobsRes = await jobsApi.getMyJobs();
+      // 1. Fetch employer jobs (guaranteed core endpoint matching web app behavior)
       let jobsList: Job[] = [];
-      if (myJobsRes.success && Array.isArray(myJobsRes.data)) {
-        jobsList = myJobsRes.data;
+      try {
+        const myJobsRes = await jobsApi.getMyJobs();
+        jobsList = Array.isArray(myJobsRes)
+          ? myJobsRes
+          : Array.isArray(myJobsRes?.data)
+          ? myJobsRes.data
+          : Array.isArray((myJobsRes as any)?.data?.jobs)
+          ? (myJobsRes as any).data.jobs
+          : Array.isArray((myJobsRes as any)?.jobs)
+          ? (myJobsRes as any).jobs
+          : [];
         setMyJobs(jobsList);
+      } catch (jobsErr) {
+        console.warn('Error loading employer jobs in JobApplicantsScreen:', jobsErr);
       }
 
-      const activeTargetId = selectedJobId !== 'ALL' ? selectedJobId : (isValidId(jobId) ? jobId : null);
-
-      if (activeTargetId && activeTargetId !== 'ALL') {
-        const foundJob = jobsList.find((j) => j.id === activeTargetId);
+      if (selectedJobId && selectedJobId !== 'ALL') {
+        const targetClean = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
+        const foundJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
         if (foundJob) {
           setJobDetails(foundJob);
         } else {
           try {
-            const singleJobRes = await jobsApi.getJobById(activeTargetId);
-            if (singleJobRes.success && singleJobRes.data) {
-              setJobDetails(singleJobRes.data);
+            const singleJobRes = await jobsApi.getJobById(selectedJobId);
+            if (singleJobRes && (singleJobRes.data || (singleJobRes as any).id)) {
+              setJobDetails(singleJobRes.data || (singleJobRes as any));
             }
           } catch (_) {}
         }
-
-        const combinedList: JobApplication[] = [];
-        const seenCandidateKeys = new Set<string>();
-
-        const addCandidate = (mappedApp: JobApplication) => {
-          const key = String(
-            mappedApp.user_id ||
-            mappedApp.id ||
-            mappedApp.user?.email ||
-            mappedApp.user?.phone ||
-            ''
-          ).toLowerCase();
-          if (key && !seenCandidateKeys.has(key)) {
-            seenCandidateKeys.add(key);
-            combinedList.push(mappedApp);
-          }
-        };
-
-        // 1. Fetch direct endpoint for job
-        try {
-          const res = await applicantsApi.getApplicantsForJob(activeTargetId);
-          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-            res.data.forEach((item: any) =>
-              addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
-            );
-          }
-        } catch (apiErr) {
-          // If direct endpoint is restricted, continue to fallback
-        }
-
-        // 2. Check embedded job.applicants array from getMyJobs()
-        if (foundJob && Array.isArray((foundJob as any).applicants) && (foundJob as any).applicants.length > 0) {
-          (foundJob as any).applicants.forEach((item: any) =>
-            addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
-          );
-        }
-
-        // 3. Check allApplicants endpoint
-        try {
-          const allAppsRes = await applicantsApi.getAllApplicants();
-          if (allAppsRes.success && Array.isArray(allAppsRes.data)) {
-            allAppsRes.data
-              .filter(
-                (item: any) =>
-                  String(item.jobId || item.job_id || item.job?.id).toLowerCase() ===
-                  String(activeTargetId).toLowerCase()
-              )
-              .forEach((item: any) =>
-                addCandidate(mapApplicantItem(item, activeTargetId, foundJob))
-              );
-          }
-        } catch (_) {}
-
-        // 4. Check persistent local appliedJobsStore
-        const storeItems = appliedJobsStore
-          .getAppliedJobs()
-          .filter(
-            (s) =>
-              String(s.jobId || s.job?.id).toLowerCase() === String(activeTargetId).toLowerCase()
-          );
-
-        storeItems.forEach((s: any) => {
-          addCandidate({
-            id: s.id || `store-app-${s.jobId}`,
-            user_id: user?.id || 'candidate-1',
-            job_id: activeTargetId,
-            status: (s.status || 'applied').toLowerCase() as any,
-            applied_at: s.appliedAt || new Date().toISOString(),
-            job: foundJob || s.job,
-            user: {
-              id: user?.id || 'candidate-1',
-              name: user?.name || 'Walk-in Candidate',
-              email: user?.email || '',
-              phone: user?.phone || '',
-              role: 'candidate' as const,
-              headline:
-                (user as any)?.trade ||
-                user?.headline ||
-                (user as any)?.tradeSpecialization ||
-                foundJob?.trade ||
-                'Technical Specialist',
-              location: user?.location || foundJob?.location || 'Local MIDC',
-              experience: user?.experience || '1-3 Years',
-              skills: Array.isArray(user?.skills) ? user.skills : (foundJob?.skills || []),
-              profilePictureUrl: user?.profilePictureUrl || (user as any)?.avatar || (user as any)?.profile_picture_url,
-              aadhaar_verified: true,
-              education: user?.education || 'ITI / Diploma',
-              resume_url: (user as any)?.resumeUrl || '',
-              resumeUrl: (user as any)?.resumeUrl || '',
-            },
-          });
-        });
-
-        setApplicants(combinedList);
-        return;
+      } else {
+        setJobDetails(null);
       }
 
-      // If 'ALL' is selected, fetch all applicants via dedicated endpoint with embedded fallback
-      const combinedAll: JobApplication[] = [];
-      const seenAllKeys = new Set<string>();
+      const allExtractedApps: JobApplication[] = [];
 
-      const addAllCandidate = (mappedApp: JobApplication) => {
-        const key = String(
-          mappedApp.user_id ||
-          mappedApp.id ||
-          mappedApp.user?.email ||
-          mappedApp.user?.phone ||
-          ''
-        ).toLowerCase();
-        if (key && !seenAllKeys.has(key)) {
-          seenAllKeys.add(key);
-          combinedAll.push(mappedApp);
+      // 2. Extract embedded applicants from jobs (identical to how web app does in DashboardPage)
+      jobsList.forEach((job: any) => {
+        const rawApps = job.applicants || job.applications;
+        let apps: any[] = [];
+        if (Array.isArray(rawApps)) {
+          apps = rawApps;
+        } else if (typeof rawApps === 'string' && rawApps.trim()) {
+          try {
+            const parsed = JSON.parse(rawApps);
+            if (Array.isArray(parsed)) apps = parsed;
+          } catch (_) {}
         }
-      };
 
-      try {
-        const allAppsRes = await applicantsApi.getAllApplicants();
-        if (allAppsRes.success && Array.isArray(allAppsRes.data) && allAppsRes.data.length > 0) {
-          allAppsRes.data.forEach((item: any) => {
-            const matchedJob = jobsList.find((j) => j.id === item.jobId || j.id === item.job_id);
-            addAllCandidate(mapApplicantItem(item, item.jobId || item.job_id, matchedJob));
-          });
-        }
-      } catch (_) {}
-
-      // Fallback: aggregate all applicants across all employer's jobs
-      jobsList.forEach((j: any) => {
-        const rawApps = Array.isArray((j as any).applicants) ? (j as any).applicants : [];
-        rawApps.forEach((item: any) => {
-          if (item && typeof item === 'object') {
-            addAllCandidate(mapApplicantItem(item, j.id, j));
+        apps.forEach((a: any) => {
+          if (a && typeof a === 'object') {
+            allExtractedApps.push(mapApplicantItem(a, job.id, job));
           }
         });
       });
 
-      // Merge store applications
-      appliedJobsStore.getAppliedJobs().forEach((s: any) => {
-        const matchedJob = jobsList.find(
-          (j) =>
-            String(j.id).toLowerCase() === String(s.jobId || s.job?.id).toLowerCase()
-        );
-        if (matchedJob) {
-          addAllCandidate({
-            id: s.id || `store-app-${s.jobId}`,
-            user_id: user?.id || 'candidate-1',
-            job_id: String(matchedJob.id),
-            status: (s.status || 'applied').toLowerCase() as any,
-            applied_at: s.appliedAt || new Date().toISOString(),
-            job: matchedJob,
-            user: {
-              id: user?.id || 'candidate-1',
-              name: user?.name || 'Walk-in Candidate',
-              email: user?.email || '',
-              phone: user?.phone || '',
-              role: 'candidate' as const,
-              headline:
-                (user as any)?.trade ||
-                user?.headline ||
-                (user as any)?.tradeSpecialization ||
-                matchedJob?.trade ||
-                'Technical Specialist',
-              location: user?.location || matchedJob?.location || 'Local MIDC',
-              experience: user?.experience || '1-3 Years',
-              skills: Array.isArray(user?.skills) ? user.skills : (matchedJob?.skills || []),
-              profilePictureUrl: user?.profilePictureUrl || (user as any)?.avatar || (user as any)?.profile_picture_url,
-              aadhaar_verified: true,
-              education: user?.education || 'ITI / Diploma',
-              resume_url: (user as any)?.resumeUrl || '',
-              resumeUrl: (user as any)?.resumeUrl || '',
-            },
+      // 3. Query allApplicants endpoint for real-time applications
+      try {
+        const allAppsRes = await applicantsApi.getAllApplicants();
+        const apiApps = Array.isArray(allAppsRes)
+          ? allAppsRes
+          : Array.isArray(allAppsRes?.data)
+          ? allAppsRes.data
+          : [];
+        apiApps.forEach((item: any) => {
+          const targetJid = String(item.jobId || item.job_id || item.job?.id || '');
+          const targetClean = targetJid.toLowerCase().trim().replace(/^job-/i, '');
+          const matchedJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
+          allExtractedApps.push(mapApplicantItem(item, targetJid, matchedJob));
+        });
+      } catch (_) {}
+
+      // 4. If a specific job is selected, also fetch applicants for that job
+      if (selectedJobId && selectedJobId !== 'ALL') {
+        try {
+          const singleJobRes = await applicantsApi.getApplicantsForJob(selectedJobId);
+          const singleApps = Array.isArray(singleJobRes)
+            ? singleJobRes
+            : Array.isArray(singleJobRes?.data)
+            ? singleJobRes.data
+            : [];
+          const targetClean = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
+          const matchedJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
+          singleApps.forEach((item: any) => {
+            allExtractedApps.push(mapApplicantItem(item, selectedJobId, matchedJob));
           });
+        } catch (_) {}
+      }
+
+      // 5. Merge persistent local appliedJobsStore
+      try {
+        appliedJobsStore.getAppliedJobs().forEach((s: any) => {
+          const sJobId = String(s.jobId || s.job?.id || '');
+          const targetClean = sJobId.toLowerCase().trim().replace(/^job-/i, '');
+          const matchedJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
+          if (matchedJob) {
+            allExtractedApps.push(mapApplicantItem(s, matchedJob.id, matchedJob));
+          }
+        });
+      } catch (_) {}
+
+      // 6. Deduplicate by composite key: jobId + candidateId
+      const seenKeys = new Set<string>();
+      const combinedAll: JobApplication[] = [];
+
+      allExtractedApps.forEach((mappedApp) => {
+        const jId = String(mappedApp.job_id || '').toLowerCase().trim().replace(/^job-/i, '');
+        const uId = String(
+          mappedApp.user_id || mappedApp.user?.id || mappedApp.user?.email || mappedApp.id || ''
+        ).toLowerCase().trim();
+        const key = `${jId}_${uId}`;
+        if (key && key !== '_' && !seenKeys.has(key)) {
+          seenKeys.add(key);
+          combinedAll.push(mappedApp);
         }
+      });
+
+      // 7. Sort by applied date descending (most recent first)
+      combinedAll.sort((a, b) => {
+        const timeA = new Date(a.applied_at || (a as any).appliedAt || 0).getTime();
+        const timeB = new Date(b.applied_at || (b as any).appliedAt || 0).getTime();
+        return timeB - timeA;
       });
 
       setApplicants(combinedAll);
     } catch (err: any) {
+      console.error('Error fetching applicants:', err);
       setError(err.message || 'Failed to fetch applicants');
-      setApplicants([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [jobId, selectedJobId, user]);
+  }, [selectedJobId, user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#FFFFFF', true);
+        StatusBar.setBarStyle('dark-content', true);
+        StatusBar.setTranslucent(false);
+      }
+      const routeJobId = route?.params?.jobId;
+      if (routeJobId && routeJobId !== 'ALL') {
+        setSelectedJobId(routeJobId);
+      } else if (!routeJobId) {
+        setSelectedJobId('ALL');
+      }
+      fetchApplicants();
+    }, [route?.params?.jobId, fetchApplicants])
+  );
 
   useEffect(() => {
     fetchApplicants();
@@ -543,8 +491,12 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const filteredApplicants = applicants.filter((app) => {
-    if (selectedJobId !== 'ALL' && app.job_id && app.job_id !== selectedJobId) {
-      return false;
+    if (selectedJobId && selectedJobId !== 'ALL') {
+      const targetJobId = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
+      const appJobId = String(app.job_id || (app.job as any)?.id || '').toLowerCase().trim().replace(/^job-/i, '');
+      if (appJobId !== targetJobId) {
+        return false;
+      }
     }
 
     let matchesTab = activeTab === 'ALL';
@@ -569,6 +521,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
     const skills = (app.user?.skills || []).join(' ').toLowerCase();
     const phone = (app.user?.phone || '').toLowerCase();
     const email = (app.user?.email || '').toLowerCase();
+    const jobTitleText = safeValue((app.job as any)?.title || (app as any)?.jobTitle).toLowerCase();
 
     return (
       name.includes(q) ||
@@ -577,7 +530,8 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       exp.includes(q) ||
       skills.includes(q) ||
       phone.includes(q) ||
-      email.includes(q)
+      email.includes(q) ||
+      jobTitleText.includes(q)
     );
   });
 
@@ -589,6 +543,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         showBack={false}
+        hideVoice={true}
       />
 
       {/* Filter Tabs Bar */}
@@ -611,7 +566,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             >
               {selectedJobId === 'ALL'
                 ? 'All Jobs'
-                : (myJobs.find((j) => j.id === selectedJobId)?.title?.replace(/^job-[\d]+$/i, 'Selected Job') || 'Selected Job')}
+                : (myJobs.find((j) => String(j.id).toLowerCase() === String(selectedJobId).toLowerCase())?.title?.replace(/^job-[\d]+$/i, 'Selected Job') || 'Selected Job')}
             </Text>
             <ChevronDown size={13} color={selectedJobId !== 'ALL' ? '#1764E8' : '#657796'} />
           </TouchableOpacity>
@@ -625,9 +580,16 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
             { key: 'rejected', label: 'Rejected' },
           ].map((tab) => {
             const isSelected = activeTab === tab.key;
-            const count = tab.key === 'ALL'
-              ? applicants.length
+            const relevantForJob = (!selectedJobId || selectedJobId === 'ALL')
+              ? applicants
               : applicants.filter((a) => {
+                  const targetJobId = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
+                  const appJobId = String(a.job_id || (a.job as any)?.id || '').toLowerCase().trim().replace(/^job-/i, '');
+                  return appJobId === targetJobId;
+                });
+            const count = tab.key === 'ALL'
+              ? relevantForJob.length
+              : relevantForJob.filter((a) => {
                   const s = (a.status || 'applied').toLowerCase();
                   if (tab.key === 'applied') {
                     return s === 'applied' || s === 'pending' || s === 'submitted' || s === 'received' || !a.status;
@@ -732,10 +694,27 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
           <JobCardSkeleton />
         </View>
       ) : filteredApplicants.length === 0 ? (
-        <EmptyState
-          title="No Applicants Found"
-          description={`No candidates in the "${activeTab}" status category yet.`}
-        />
+        <View style={styles.emptyContainer}>
+          <EmptyState
+            title="No Applicants Found"
+            description={
+              selectedJobId && selectedJobId !== 'ALL'
+                ? `No candidates applied for "${jobDetails?.title || 'this selected job'}" yet.`
+                : `No candidates in the "${activeTab}" status category yet.`
+            }
+          />
+          {selectedJobId && selectedJobId !== 'ALL' && applicants.length > 0 ? (
+            <TouchableOpacity
+              style={styles.switchAllBtn}
+              activeOpacity={0.85}
+              onPress={() => setSelectedJobId('ALL')}
+            >
+              <Text style={styles.switchAllBtnText}>
+                View All {applicants.length} Candidates (All Jobs)
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : (
         <FlatList
           data={filteredApplicants}
@@ -925,5 +904,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#657796',
     marginTop: 1,
+  },
+  emptyContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    alignItems: 'center',
+  },
+  switchAllBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#1764E8',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  switchAllBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

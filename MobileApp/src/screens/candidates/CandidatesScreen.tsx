@@ -374,6 +374,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
           handleResetAllFilters();
         }}
         showBack={false}
+        hideVoice={true}
       />
 
       {/* Filter Action Bar */}

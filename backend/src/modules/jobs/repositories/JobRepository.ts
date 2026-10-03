@@ -2,7 +2,7 @@ import { pool } from '../../../config/database/pool';
 import { GeocodingService } from '../services/geocodingService';
 import { CacheService } from '../../../utils/redisCache';
 import { safeJsonParse } from '../../../utils/jsonUtils';
-import { AdminRepository } from '../../admin/repositories/AdminRepository';
+import { PlatformRepository } from '../../platform/repositories/PlatformRepository';
 
 export interface JobData {
   title: string;
@@ -474,7 +474,7 @@ export class JobRepository {
     // Check system settings for job approval queue requirement
     let initialStatus = 'PENDING_REVIEW';
     try {
-      const settings = await AdminRepository.getSettings();
+      const settings = await PlatformRepository.getSettings();
       if (settings && (settings.job_approval_toggle === 'false' || settings.job_approval_required === 'false')) {
         initialStatus = 'APPROVED';
       }
@@ -692,7 +692,7 @@ export class JobRepository {
     let targetStatus: string | null = null;
     let approvalToggle = 'true';
     try {
-      const settings = await AdminRepository.getSettings();
+      const settings = await PlatformRepository.getSettings();
       if (settings && (settings.job_approval_toggle === 'false' || settings.job_approval_required === 'false')) {
         approvalToggle = 'false';
       }

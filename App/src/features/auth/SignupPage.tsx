@@ -26,11 +26,7 @@ export const SignupPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      if (currentUser.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else {
         navigate('/dashboard', { replace: true });
-      }
     }
   }, [currentUser, navigate]);
 
@@ -188,11 +184,7 @@ export const SignupPage: React.FC = () => {
         const result = await loginWithGoogle({ accessToken: tokenResponse.access_token }, role);
         if (result.success) {
           showToast(`Account ready! Welcome, ${result.user?.name || ''}!`, 'success');
-          if (result.user?.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else {
             navigate('/dashboard');
-          }
         } else {
           showToast(result.error || 'Google Registration failed.', 'error');
         }
@@ -220,11 +212,7 @@ export const SignupPage: React.FC = () => {
           setIsLoading(false);
           if (result.success) {
             showToast(`Account ready! Welcome, ${result.user?.name}!`, 'success');
-            if (result.user?.role === 'admin') {
-              navigate('/admin/dashboard');
-            } else {
               navigate('/dashboard');
-            }
           } else {
             showToast(result.error || 'Google Sign-Up failed.', 'error');
           }

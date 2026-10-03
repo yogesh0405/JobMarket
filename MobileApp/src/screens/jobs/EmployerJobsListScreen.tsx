@@ -32,6 +32,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { jobsApi } from '../../api/jobsApi';
+import { applicantsApi } from '../../api/applicantsApi';
 import { Job } from '../../types';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -61,17 +62,39 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [jobApplicantCounts, setJobApplicantCounts] = useState<Record<string, number>>({});
   const [manageVacanciesJob, setManageVacanciesJob] = useState<Job | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setError(null);
     try {
-      const res = await jobsApi.getMyJobs();
-      if (res.success && Array.isArray(res.data)) {
-        setJobs(res.data);
-      } else {
-        setJobs([]);
-      }
+      const [res, appsRes] = await Promise.all([
+        jobsApi.getMyJobs().catch(() => ({ success: false, data: [] } as any)),
+        applicantsApi.getAllApplicants().catch(() => ({ success: false, data: [] } as any)),
+      ]);
+
+      const counts: Record<string, number> = {};
+      const allApps = Array.isArray(appsRes)
+        ? appsRes
+        : Array.isArray(appsRes?.data)
+        ? appsRes.data
+        : [];
+      allApps.forEach((a: any) => {
+        const jid = String(a.jobId || a.job_id || a.job?.id || '').toLowerCase().trim().replace(/^job-/i, '');
+        if (jid) {
+          counts[jid] = (counts[jid] || 0) + 1;
+        }
+      });
+      setJobApplicantCounts(counts);
+
+      const jobsData = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray((res as any)?.data?.jobs)
+        ? (res as any).data.jobs
+        : [];
+      setJobs(jobsData);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch job postings');
     } finally {
@@ -208,14 +231,19 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
       .filter(
         (a) => String(a.jobId || a.job?.id).toLowerCase() === String(item.id).toLowerCase()
       ).length;
+    const rawApps = (item as any).applicants || (item as any).applications;
+    const parsedApps = Array.isArray(rawApps)
+      ? rawApps
+      : typeof rawApps === 'string' && rawApps.trim()
+      ? (() => { try { const p = JSON.parse(rawApps); return Array.isArray(p) ? p : []; } catch { return []; } })()
+      : [];
+    const directApiCount = jobApplicantCounts[String(item.id).toLowerCase().trim().replace(/^job-/i, '')] || 0;
     const backendApplicantCount =
       typeof (item as any).applicants_count === 'number' && (item as any).applicants_count > 0
         ? (item as any).applicants_count
         : typeof (item as any).applicantsCount === 'number' && (item as any).applicantsCount > 0
         ? (item as any).applicantsCount
-        : Array.isArray((item as any).applicants)
-        ? (item as any).applicants.length
-        : 0;
+        : Math.max(parsedApps.length, directApiCount);
     const actualApplicantCount = Math.max(backendApplicantCount, storeAppsCount);
 
     const locationText = item.location || (item as any).midcZone || 'MIDC Area';
@@ -367,6 +395,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         showBack={false}
+        hideVoice={true}
       />
 
       {/* Filter Tabs Bar - Industry Grade LinkedIn / iPhone Underline Tab Navigation */}

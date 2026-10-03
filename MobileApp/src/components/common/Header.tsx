@@ -72,6 +72,8 @@ interface HeaderProps {
   hideRightActions?: boolean;
   hideBell?: boolean;
   hideMenu?: boolean;
+  hideVoice?: boolean;
+  showVoice?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -93,6 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
   hideRightActions = false,
   hideBell = false,
   hideMenu = false,
+  hideVoice = false,
+  showVoice,
 }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -160,6 +164,7 @@ export const Header: React.FC<HeaderProps> = ({
   const isBackAvailable = (showBack || !!onBack) && (onBack || canGoBackInNav);
 
   const isEmployer = (user?.role || '').toLowerCase() === 'employer';
+  const showMic = showVoice !== undefined ? showVoice : (!hideVoice && !isEmployer);
   const rawFullName = isEmployer
     ? (user?.companyName || user?.company_name || user?.name || 'Company')
     : (user?.name || 'User');
@@ -281,20 +286,22 @@ export const Header: React.FC<HeaderProps> = ({
                     <X size={14} color="#64748B" />
                   </TouchableOpacity>
                 ) : null}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (onVoicePress) {
-                      onVoicePress();
-                    } else if (navigation && typeof navigation.navigate === 'function') {
-                      navigation.navigate('CandidateGlobalSearch', { startVoice: true });
-                    }
-                  }}
-                  style={styles.headerMicBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
-                </TouchableOpacity>
+                {showMic ? (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (onVoicePress) {
+                        onVoicePress();
+                      } else if (navigation && typeof navigation.navigate === 'function') {
+                        navigation.navigate('CandidateGlobalSearch', { startVoice: true });
+                      }
+                    }}
+                    style={styles.headerMicBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
+                  </TouchableOpacity>
+                ) : null}
                 {onFilterPress && (
                   <>
                     <View style={styles.inlineSearchFilterDivider} />
@@ -361,21 +368,23 @@ export const Header: React.FC<HeaderProps> = ({
                     <X size={14} color="#64748B" />
                   </TouchableOpacity>
                 ) : null}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    if (onVoicePress) {
-                      onVoicePress();
-                    } else if (navigation && typeof navigation.navigate === 'function') {
-                      navigation.navigate('CandidateGlobalSearch', { startVoice: true });
-                    }
-                  }}
-                  style={styles.headerMicBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
-                </TouchableOpacity>
+                {showMic ? (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (onVoicePress) {
+                        onVoicePress();
+                      } else if (navigation && typeof navigation.navigate === 'function') {
+                        navigation.navigate('CandidateGlobalSearch', { startVoice: true });
+                      }
+                    }}
+                    style={styles.headerMicBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
+                  </TouchableOpacity>
+                ) : null}
                 {onFilterPress && (
                   <>
                     <View style={styles.inlineSearchFilterDivider} />
