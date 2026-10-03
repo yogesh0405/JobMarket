@@ -271,6 +271,19 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             customMidcZone={form.customMidcZone}
             setCustomMidcZone={form.setCustomMidcZone}
             midcList={MIDC_LIST}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 85)}
+            onScrollToEnd={() => {
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 120);
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 280);
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 450);
+            }}
           />
         ) : null}
 
@@ -286,6 +299,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             latitude={form.latitude}
             longitude={form.longitude}
             resolvedAddress={form.resolvedAddress}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 70)}
           />
         ) : null}
 
@@ -329,6 +343,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             setUniform={form.setUniform}
             medicalInsurance={form.medicalInsurance}
             setMedicalInsurance={form.setMedicalInsurance}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 70)}
           />
         ) : null}
 

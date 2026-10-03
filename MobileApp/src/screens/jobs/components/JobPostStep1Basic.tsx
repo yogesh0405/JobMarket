@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,8 @@ interface JobPostStep1BasicProps {
   customMidcZone?: string;
   setCustomMidcZone?: (val: string) => void;
   midcList: string[];
+  onFocusInput?: (e?: any, extraMargin?: number) => void;
+  onScrollToEnd?: () => void;
 }
 
 export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
@@ -82,7 +84,10 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
   customMidcZone,
   setCustomMidcZone,
   midcList,
+  onFocusInput,
+  onScrollToEnd,
 }) => {
+  const customMidcInputRef = useRef<TextInput>(null);
   const displayedIndustries = Array.from(new Set([
     ...(availableCategories || []),
     ...INDUSTRY_LIST
@@ -142,6 +147,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
               placeholder="Type custom industry sector (e.g. Renewable Energy & Solar)"
               value={customIndustry}
               onChangeText={setCustomIndustry}
+              onFocus={(e) => onFocusInput?.(e, 75)}
               inputContainerStyle={{ borderRadius: 8 }}
               style={{ marginTop: -SPACING.xs }}
             />
@@ -167,6 +173,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
               placeholder="Type custom job role (e.g. Senior VMC Programmer)"
               value={customTitle}
               onChangeText={setCustomTitle}
+              onFocus={(e) => onFocusInput?.(e, 75)}
               inputContainerStyle={{ borderRadius: 8 }}
               style={{ marginTop: -SPACING.xs }}
             />
@@ -198,6 +205,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                   const sanitized = val.replace(/^0+/, '');
                   setOpeningsInput(sanitized);
                 }}
+                onFocus={(e) => onFocusInput?.(e, 75)}
                 onBlur={() => {
                   if (!openingsInput || parseInt(openingsInput, 10) < 1) {
                     setOpeningsInput('1');
@@ -270,6 +278,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                   placeholder="Type custom ITI Trade name (e.g. Wireman / Diesel Mechanic)"
                   value={customItiTrade || ''}
                   onChangeText={(val) => setCustomItiTrade?.(val)}
+                  onFocus={(e) => onFocusInput?.(e, 75)}
                   inputContainerStyle={{ borderRadius: 8 }}
                   style={{ marginTop: -SPACING.xs }}
                 />
@@ -281,12 +290,14 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
             style={styles.checkboxRow}
             activeOpacity={0.8}
             onPress={() => {
-              Keyboard.dismiss();
               const nextVal = !isMidcLocation;
+              Keyboard.dismiss();
               setIsMidcLocation(nextVal);
               if (!nextVal) {
                 setMidcZone('');
                 setCustomMidcZone?.('');
+              } else {
+                onScrollToEnd?.();
               }
             }}
           >
@@ -300,6 +311,8 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                 if (!val) {
                   setMidcZone('');
                   setCustomMidcZone?.('');
+                } else {
+                  onScrollToEnd?.();
                 }
               }}
               trackColor={{ true: COLORS.primary }}
@@ -317,6 +330,11 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                   setMidcZone(val);
                   if (val !== 'Other MIDC Zone...' && val !== 'Other') {
                     setCustomMidcZone?.('');
+                  } else {
+                    onScrollToEnd?.();
+                    setTimeout(() => {
+                      customMidcInputRef.current?.focus();
+                    }, 180);
                   }
                 }}
                 triggerStyle={{ borderRadius: 8 }}
@@ -324,9 +342,14 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
 
               {(midcZone === 'Other MIDC Zone...' || midcZone === 'Other') ? (
                 <Input
+                  ref={customMidcInputRef}
                   placeholder="Type custom MIDC Zone name (e.g. Kurkumbh MIDC)"
                   value={customMidcZone || ''}
                   onChangeText={(val) => setCustomMidcZone?.(val)}
+                  onFocus={(e) => {
+                    onFocusInput?.(e, 95);
+                    onScrollToEnd?.();
+                  }}
                   inputContainerStyle={{ borderRadius: 8 }}
                   style={{ marginTop: -SPACING.xs }}
                 />

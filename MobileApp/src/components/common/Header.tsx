@@ -39,6 +39,7 @@ import {
   Bookmark,
   FileText,
   SlidersHorizontal,
+  Mic,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -63,6 +64,7 @@ interface HeaderProps {
   onSearchPress?: () => void;
   onClearSearch?: () => void;
   onFilterPress?: () => void;
+  onVoicePress?: () => void;
   activeFilterCount?: number;
   hideSearch?: boolean;
   rightAction?: React.ReactNode;
@@ -83,6 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchPress,
   onClearSearch,
   onFilterPress,
+  onVoicePress,
   activeFilterCount,
   hideSearch = false,
   rightAction,
@@ -272,12 +275,26 @@ export const Header: React.FC<HeaderProps> = ({
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => onSearchChange('')}
-                    style={{ padding: 4, marginRight: onFilterPress ? 4 : 0 }}
+                    style={{ padding: 4, marginRight: 2 }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <X size={14} color="#64748B" />
                   </TouchableOpacity>
                 ) : null}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (onVoicePress) {
+                      onVoicePress();
+                    } else if (navigation && typeof navigation.navigate === 'function') {
+                      navigation.navigate('CandidateGlobalSearch', { startVoice: true });
+                    }
+                  }}
+                  style={styles.headerMicBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
+                </TouchableOpacity>
                 {onFilterPress && (
                   <>
                     <View style={styles.inlineSearchFilterDivider} />
@@ -338,12 +355,27 @@ export const Header: React.FC<HeaderProps> = ({
                       e.stopPropagation();
                       onClearSearch();
                     }}
-                    style={{ padding: 4, marginRight: onFilterPress ? 4 : 0 }}
+                    style={{ padding: 4, marginRight: 2 }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <X size={14} color="#64748B" />
                   </TouchableOpacity>
                 ) : null}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    if (onVoicePress) {
+                      onVoicePress();
+                    } else if (navigation && typeof navigation.navigate === 'function') {
+                      navigation.navigate('CandidateGlobalSearch', { startVoice: true });
+                    }
+                  }}
+                  style={styles.headerMicBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Mic size={16} color={COLORS.primary} strokeWidth={2.2} />
+                </TouchableOpacity>
                 {onFilterPress && (
                   <>
                     <View style={styles.inlineSearchFilterDivider} />
@@ -1023,6 +1055,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  headerMicBtn: {
+    padding: 2,
+    marginRight: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inlineSearchFilterBadge: {
     position: 'absolute',

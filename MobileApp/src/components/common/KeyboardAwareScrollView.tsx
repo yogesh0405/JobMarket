@@ -19,6 +19,7 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
 }
 
 let globalActiveKeyboardHeight = 0;
+let globalCurrentScrollY = 0;
 
 interface FocusedTargetInfo {
   node: any;
@@ -78,8 +79,9 @@ export const scrollToFocused = (
             const targetBottom = keyboardTop - extraScrollMargin;
             const delta = inputBottom - targetBottom;
             if (delta > 0) {
-              (scrollRef.current as any)?.scrollTo?.({
-                y: Math.max(0, delta + 60),
+              const targetY = Math.max(0, globalCurrentScrollY + delta + 20);
+              scrollRef.current?.scrollTo({
+                y: targetY,
                 animated: true,
               });
             }
@@ -87,8 +89,13 @@ export const scrollToFocused = (
         });
       },
       (_x, y, _width, height) => {
-        UIManager.measure(scrollTag, (_sx, sy, _sWidth, _sHeight) => {
-          const scrollviewTop = typeof sy === 'number' && sy >= 0 ? sy : 0;
+        UIManager.measure(scrollTag, (_sx, sy, _sWidth, _sHeight, _pageX, pageY) => {
+          const scrollviewTop =
+            typeof pageY === 'number' && pageY > 0
+              ? pageY
+              : typeof sy === 'number' && sy > 0
+              ? sy
+              : 0;
           // The visible area of the scroll view before the keyboard begins
           const availableViewportHeight = Math.max(
             150,
@@ -203,6 +210,11 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            globalCurrentScrollY = e.nativeEvent.contentOffset.y;
+            props.onScroll?.(e);
+          }}
           contentContainerStyle={[
             styles.scrollContent,
             contentContainerStyle,

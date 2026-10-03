@@ -169,7 +169,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <TouchableWithoutFeedback onPress={handleClose}>
             <View style={styles.backdrop} />
@@ -181,7 +181,6 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
               {
                 maxHeight: availableSheetHeight,
                 paddingBottom: keyboardHeight > 0 ? 12 : Math.max(bottomSafeInset + 16, 28),
-                marginBottom: Platform.OS === 'android' && keyboardHeight > 0 ? keyboardHeight : 0,
               },
             ]}
           >

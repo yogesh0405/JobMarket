@@ -52,6 +52,7 @@ interface JobPostStep3WorkPayProps {
   setUniform: (val: boolean) => void;
   medicalInsurance: boolean;
   setMedicalInsurance: (val: boolean) => void;
+  onFocusInput?: (e?: any, extraMargin?: number) => void;
 }
 
 export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
@@ -93,6 +94,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
   setUniform,
   medicalInsurance,
   setMedicalInsurance,
+  onFocusInput,
 }) => {
   return (
     <View style={styles.formCard}>
@@ -123,6 +125,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                   keyboardType="numeric"
                   value={minExperience}
                   onChangeText={setMinExperience}
+                  onFocus={(e) => onFocusInput?.(e, 70)}
                   inputContainerStyle={{ borderRadius: 8 }}
                 />
               </View>
@@ -132,6 +135,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                   keyboardType="numeric"
                   value={maxExperience}
                   onChangeText={setMaxExperience}
+                  onFocus={(e) => onFocusInput?.(e, 70)}
                   inputContainerStyle={{ borderRadius: 8 }}
                 />
               </View>
@@ -160,6 +164,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                 placeholder="Enter custom qualification (e.g. B.Tech Mechanical, CA, 8th Pass)"
                 value={customEducation}
                 onChangeText={setCustomEducation}
+                onFocus={(e) => onFocusInput?.(e, 70)}
                 inputContainerStyle={{ borderRadius: 8 }}
                 style={{ marginTop: -SPACING.xs }}
               />
@@ -179,6 +184,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                   keyboardType="numeric"
                   value={salaryMin}
                   onChangeText={setSalaryMin}
+                  onFocus={(e) => onFocusInput?.(e, 70)}
                   leftIcon={<IndianRupee size={15} color="#64748B" />}
                   inputContainerStyle={{ borderRadius: 8 }}
                 />
@@ -189,6 +195,7 @@ export const JobPostStep3WorkPay: React.FC<JobPostStep3WorkPayProps> = ({
                   keyboardType="numeric"
                   value={salaryMax}
                   onChangeText={setSalaryMax}
+                  onFocus={(e) => onFocusInput?.(e, 70)}
                   leftIcon={<IndianRupee size={15} color="#64748B" />}
                   inputContainerStyle={{ borderRadius: 8 }}
                 />

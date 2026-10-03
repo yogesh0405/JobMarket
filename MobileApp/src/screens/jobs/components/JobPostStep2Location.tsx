@@ -24,6 +24,7 @@ interface JobPostStep2LocationProps {
   latitude: number | null;
   longitude: number | null;
   resolvedAddress: string | null;
+  onFocusInput?: (e?: any, extraMargin?: number) => void;
 }
 
 export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
@@ -37,6 +38,7 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
   latitude,
   longitude,
   resolvedAddress,
+  onFocusInput,
 }) => {
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -77,11 +79,6 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
       </View>
 
       <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeaderRow}>
-          <MapPin size={16} color={COLORS.primary} />
-          <Text style={styles.sectionTitleText}>Work Location & Real GIS Mapping</Text>
-        </View>
-
         <View style={styles.cardBody}>
           <Input
             label="City Location / Factory Address"
@@ -89,6 +86,7 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
             placeholder="e.g. Plot E-42, Waluj MIDC, Chhatrapati Sambhajinagar"
             value={location}
             onChangeText={setLocation}
+            onFocus={(e) => onFocusInput?.(e, 70)}
             leftIcon={<MapPin size={16} color="#64748B" />}
             inputContainerStyle={{ borderRadius: 8 }}
           />
@@ -98,6 +96,7 @@ export const JobPostStep2Location: React.FC<JobPostStep2LocationProps> = ({
             placeholder="e.g. https://maps.app.goo.gl/... or https://google.com/maps/..."
             value={googleMapsUrl}
             onChangeText={setGoogleMapsUrl}
+            onFocus={(e) => onFocusInput?.(e, 70)}
             leftIcon={<Map size={16} color="#64748B" />}
             inputContainerStyle={{ borderRadius: 8 }}
             style={{ marginTop: SPACING.sm }}

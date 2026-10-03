@@ -36,6 +36,7 @@ import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
+import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
 
 const FALLBACK_JOBS: Job[] = [
   {
@@ -211,6 +212,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -653,6 +655,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         onSearchPress={() => {
           navigation.navigate('CandidateGlobalSearch', { initialQuery: searchQuery });
         }}
+        onVoicePress={() => {
+          setIsVoiceModalVisible(true);
+        }}
         onClearSearch={() => {
           setSearchQuery('');
           setSelectedCategory('All Jobs');
@@ -955,6 +960,15 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           ListFooterComponent={<View style={{ height: 32 }} />}
         />
       )}
+
+      {/* Native Voice Recognition Search Modal */}
+      <VoiceSearchModal
+        visible={isVoiceModalVisible}
+        onClose={() => setIsVoiceModalVisible(false)}
+        onSearchResult={(voiceQuery) => {
+          setSearchQuery(voiceQuery);
+        }}
+      />
     </View>
   );
 };

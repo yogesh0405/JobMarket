@@ -25,11 +25,13 @@ import {
   Building2,
   ChevronRight,
   ArrowUpRight,
+  Mic,
 } from 'lucide-react-native';
 import { COLORS } from '../../constants/theme';
 import { apiFetch } from '../../api/client';
 import { Job } from '../../types';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
 
 const RECENT_SEARCHES_STORAGE_KEY = '@jobmarket_recent_searches_v2';
 
@@ -67,6 +69,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(Boolean(route?.params?.startVoice));
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -417,6 +420,18 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
               <X size={15} color="#64748B" />
             </TouchableOpacity>
           ) : null}
+
+          <TouchableOpacity
+            style={styles.voiceMicBtn}
+            onPress={() => {
+              Keyboard.dismiss();
+              setIsVoiceModalVisible(true);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Mic size={17} color={COLORS.primary} strokeWidth={2.2} />
+          </TouchableOpacity>
         </View>
 
         {searchQuery.trim().length > 0 ? (
@@ -776,6 +791,16 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
           </View>
         )}
       </ScrollView>
+
+      {/* Voice Recognition Modal */}
+      <VoiceSearchModal
+        visible={isVoiceModalVisible}
+        onClose={() => setIsVoiceModalVisible(false)}
+        onSearchResult={(voiceQuery) => {
+          setSearchQuery(voiceQuery);
+          handleExecuteSearch(voiceQuery);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -824,6 +849,12 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
+  },
+  voiceMicBtn: {
+    padding: 4,
+    marginLeft: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchActionBtn: {
     paddingVertical: 6,

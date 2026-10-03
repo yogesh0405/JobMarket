@@ -15,7 +15,9 @@
       ],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "JobMarket requires access to your photo library to let you upload profile pictures and resume documents.",
-        "NSCameraUsageDescription": "JobMarket requires access to your camera to take profile photos."
+        "NSCameraUsageDescription": "JobMarket requires access to your camera to take profile photos.",
+        "NSSpeechRecognitionUsageDescription": "JobMarket requires speech recognition to transcribe your voice searches for jobs and companies.",
+        "NSMicrophoneUsageDescription": "JobMarket requires microphone access to enable voice search for jobs and companies."
       }
     },
     "android": {
@@ -78,6 +80,14 @@
         {
           "icon": "./assets/icon.png",
           "color": "#0066CC"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "JobMarket requires microphone access to enable voice search for jobs and companies.",
+          "speechRecognitionPermission": "JobMarket requires speech recognition to transcribe your voice searches for jobs and companies.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
       ]
     ],
