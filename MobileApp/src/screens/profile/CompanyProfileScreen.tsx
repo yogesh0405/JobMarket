@@ -221,92 +221,70 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     setLoadingCompany(false);
   };
 
-  // Load Live Company Job Openings from Live Backend API (Strictly Scoped to Employer Account)
+  // Load Live Company Job Openings from Live Backend API (Strictly Live & Active Positions Only)
   const loadCompanyJobs = async () => {
     setLoadingJobs(true);
 
-    // 1. If viewing as Owner / Employer of this company:
-    if (isOwner) {
-      try {
-        const res = await jobsApi.getMyJobs();
-        const myJobsList = Array.isArray(res) ? res : (res?.data || []);
-        if (Array.isArray(myJobsList)) {
-          // Strictly verify jobs belong to this employer's account
-          const ownedJobs = myJobsList.filter((j: any) => {
-            if (!j) return false;
-            const empId = (j.employer_id || j.employerId || '').toString().toLowerCase();
-            const currentUserId = (user?.id || '').toString().toLowerCase();
-            if (empId && currentUserId) {
-              return empId === currentUserId;
-            }
-            return true;
-          });
-          setJobs(ownedJobs);
-          setLoadingJobs(false);
-          return;
-        }
-      } catch (err) {
-        console.warn('Backend owner jobs fetch notice:', err);
-      }
-      // If isOwner and no jobs found or fetch failed, strictly set empty array!
-      // NEVER fall back to other companies' jobs!
-      setJobs([]);
-      setLoadingJobs(false);
-      return;
-    }
-
-    // 2. If viewing an external company profile:
-    const targetCompId = (company?.id || routeCompanyId || targetCompanyId || '').toString();
-    const targetCompName = (company?.name || routeCompany?.name || route?.params?.name || '').trim();
-    const targetEmployerId = (company?.employer_id || company?.employerId || routeCompany?.employer_id || '').toString();
+    const compId = (company?.id || routeCompanyId || '').toString().trim();
+    const compName = (company?.name || routeCompany?.name || route?.params?.name || userCompanyName || '').trim();
+    const employerId = (company?.employer_id || company?.employerId || routeCompany?.employer_id || (isOwner ? user?.id : '') || '').toString().trim();
 
     let resolvedJobs: any[] = [];
 
-    if (targetCompId && targetCompId !== 'My Company') {
+    // 1. Primary: Query the exact same backend company jobs endpoint as Web App
+    const queryCandidates = [employerId, compId, compName].filter(
+      (c) => c && c !== 'My Company' && c !== '00000000-0000-0000-0000-000000000000'
+    );
+
+    for (const candidate of queryCandidates) {
+      if (resolvedJobs.length > 0) break;
       try {
-        const companyQuery = encodeURIComponent(targetCompId);
-        const json = await apiFetch(`/api/v1/companies/${companyQuery}/jobs`);
+        const json = await apiFetch(`/api/v1/companies/${encodeURIComponent(candidate)}/jobs`);
         const list = Array.isArray(json) ? json : (json?.data || []);
-
         if (Array.isArray(list) && list.length > 0) {
-          // Strictly verify returned jobs match this company's employer ID or company name AND are live
-          resolvedJobs = list.filter((j: any) => {
-            if (!j) return false;
-            const jEmpId = (j.employer_id || j.employerId || '').toString();
-            const jComp = (j.company || j.company_name || '').trim().toLowerCase();
-            const compLower = targetCompName.toLowerCase();
-
-            let matches = false;
-            if (targetEmployerId && jEmpId) {
-              matches = jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
-            } else if (compLower && jComp) {
-              matches = jComp === compLower;
-            } else {
-              matches = true;
-            }
-            return matches && isJobLive(j);
-          });
+          resolvedJobs = list.filter((j: any) => j && isJobLive(j));
         }
       } catch (err) {
         console.warn('Backend company jobs fetch notice:', err);
       }
     }
 
-    // Fallback: If company jobs endpoint returned nothing, check all jobs strictly matching employer_id or exact company name
-    if (resolvedJobs.length === 0 && (targetEmployerId || targetCompName)) {
+    // 2. Secondary / Fallback: If company jobs endpoint returned nothing and isOwner, fetch getMyJobs strictly filtered by isJobLive
+    if (resolvedJobs.length === 0 && isOwner) {
+      try {
+        const res = await jobsApi.getMyJobs();
+        const myJobsList = Array.isArray(res) ? res : (res?.data || []);
+        if (Array.isArray(myJobsList) && myJobsList.length > 0) {
+          resolvedJobs = myJobsList.filter((j: any) => {
+            if (!j) return false;
+            const empId = (j.employer_id || j.employerId || '').toString().toLowerCase();
+            const currentUserId = (user?.id || '').toString().toLowerCase();
+            if (empId && currentUserId && empId !== currentUserId) {
+              return false;
+            }
+            return isJobLive(j);
+          });
+        }
+      } catch (err) {
+        console.warn('Backend owner jobs fetch notice:', err);
+      }
+    }
+
+    // 3. Fallback for external companies: /api/v1/jobs strictly filtered by company and isJobLive
+    if (resolvedJobs.length === 0 && (employerId || compName)) {
       try {
         const allJobsRes = await apiFetch('/api/v1/jobs');
         const allList = Array.isArray(allJobsRes) ? allJobsRes : (allJobsRes?.data || []);
         if (Array.isArray(allList) && allList.length > 0) {
+          const compLower = compName.toLowerCase();
           resolvedJobs = allList.filter((j: any) => {
             if (!j) return false;
             const jEmpId = (j.employer_id || j.employerId || '').toString();
             const jComp = (j.company || j.company_name || '').trim().toLowerCase();
-            const compLower = targetCompName.toLowerCase();
 
             let matches = false;
-            if (targetEmployerId && jEmpId) {
-              matches = jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+            if (employerId && jEmpId) {
+              matches = jEmpId.toLowerCase() === employerId.toLowerCase();
             } else if (compLower && jComp) {
               matches = jComp === compLower;
             }
@@ -316,7 +294,9 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       } catch (_) {}
     }
 
-    setJobs(resolvedJobs);
+    // Defensive final filter: strictly active & live job postings only!
+    const strictlyLiveJobs = resolvedJobs.filter(isJobLive);
+    setJobs(strictlyLiveJobs);
     setLoadingJobs(false);
   };
 
