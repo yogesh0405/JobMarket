@@ -1946,7 +1946,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               <div className="form-group">
                 <label className="form-label">Job Work Type</label>
                 <div className="work-toggle-group">
-                  {['Full-Time', 'Part-Time', 'Contract', 'Freelance'].map(wt => (
+                  {['Full-Time', 'Part-Time', 'Contract', 'Apprenticeship'].map(wt => (
                     <div
                       key={wt}
                       className={`work-toggle ${workType === wt ? 'selected' : ''}`}
@@ -2365,28 +2365,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                 </div>
               </div>
             )}
-
-            {/* Resume Acceptance Toggle */}
-            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
-              <div className="pref-setting-header">
-                <div>
-                  <label htmlFor="acceptResumeToggle" className="pref-setting-title">
-                    <FileText size={16} style={{ color: '#344BFD', flexShrink: 0 }} />
-                    <span>Accept Applicant Resume</span>
-                  </label>
-                  <span className="pref-setting-desc">
-                    When enabled, candidates submit their resume and employers can view it.
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="acceptResumeToggle"
-                  className="pref-setting-checkbox"
-                  checked={acceptResume}
-                  onChange={(e) => setAcceptResume(e.target.checked)}
-                />
-              </div>
-            </div>
 
             {/* 3. Maximum Applicants Cap */}
             <div className="form-row">

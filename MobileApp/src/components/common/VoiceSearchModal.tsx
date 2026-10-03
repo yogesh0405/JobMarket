@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   Animated,
   Easing,
-  Alert,
 } from 'react-native';
-import { Mic, MicOff, X, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react-native';
+import { Mic, MicOff, X, ArrowRight, AlertCircle, RefreshCw, Smartphone } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { COLORS, FONTS } from '../../constants/theme';
 import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from 'expo-speech-recognition';
-import { COLORS, TYPOGRAPHY, FONTS } from '../../constants/theme';
+  isVoiceRecognitionAvailable,
+  ExpoSpeechRecognition,
+  NativeVoiceEventsListener,
+} from '../../utils/safeSpeechRecognition';
 
 interface VoiceSearchModalProps {
   visible: boolean;
@@ -41,7 +40,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(true);
 
   // Animation values for the pulse effect
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -96,87 +94,71 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
     };
   }, [isListening, pulseAnim, pulseOpacity]);
 
-  // Speech recognition events
-  useSpeechRecognitionEvent('start', () => {
+  // Native event callbacks
+  const handleNativeStart = useCallback(() => {
     setIsListening(true);
     setErrorMessage(null);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (_) {}
-  });
+  }, []);
 
-  useSpeechRecognitionEvent('end', () => {
+  const handleNativeEnd = useCallback(() => {
     setIsListening(false);
-  });
+  }, []);
 
-  useSpeechRecognitionEvent('result', (event) => {
-    const candidateText = event.results[0]?.transcript || '';
-    if (candidateText.trim()) {
-      setTranscript(candidateText);
-      setErrorMessage(null);
+  const handleNativeResult = useCallback(
+    (event: any) => {
+      const candidateText = event.results?.[0]?.transcript || '';
+      if (candidateText.trim()) {
+        setTranscript(candidateText);
+        setErrorMessage(null);
 
-      // If recognition marked this as final, submit automatically after short pause
-      if (event.isFinal) {
-        if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-        autoSubmitTimeout.current = setTimeout(() => {
-          handleConfirmResult(candidateText);
-        }, 700);
+        // If recognition marked this as final, submit automatically after short pause
+        if (event.isFinal) {
+          if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+          autoSubmitTimeout.current = setTimeout(() => {
+            handleConfirmResult(candidateText);
+          }, 700);
+        }
       }
-    }
-  });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [transcript]
+  );
 
-  useSpeechRecognitionEvent('error', (event) => {
+  const handleNativeError = useCallback((event: any) => {
     setIsListening(false);
     if (event.error === 'no-speech') {
-      setErrorMessage("No speech detected. Please speak closer to the microphone.");
+      setErrorMessage('No speech detected. Please speak closer to the microphone.');
     } else if (event.error === 'not-allowed') {
       setErrorMessage('Microphone or speech permission was denied. Please allow permission in system settings.');
     } else if (event.error !== 'aborted') {
       setErrorMessage(event.message || 'Speech recognition encountered an issue. Please try again.');
     }
-  });
+  }, []);
 
-  // Start listening automatically whenever modal becomes visible
-  useEffect(() => {
-    if (visible) {
-      setTranscript('');
+  // Start listening session
+  const startListeningSession = useCallback(async () => {
+    if (!isVoiceRecognitionAvailable || !ExpoSpeechRecognition) {
       setErrorMessage(null);
-      startListeningSession();
-    } else {
-      stopListeningSession();
+      return;
     }
 
-    return () => {
-      if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
-      stopListeningSession();
-    };
-  }, [visible]);
-
-  const startListeningSession = async () => {
     try {
-      if (!ExpoSpeechRecognitionModule) {
-        setIsSupported(false);
-        setErrorMessage('Native voice recognition is not available in this build.');
-        return;
-      }
-
-      // Check module availability
-      const available = ExpoSpeechRecognitionModule.isRecognitionAvailable?.();
+      const available = ExpoSpeechRecognition.isRecognitionAvailable?.();
       if (available === false) {
-        setIsSupported(false);
         setErrorMessage('Speech recognition is not enabled or supported on this device.');
         return;
       }
 
-      // Request permission
-      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      const perm = await ExpoSpeechRecognition.requestPermissionsAsync();
       if (!perm.granted) {
         setErrorMessage('Microphone access is required to use voice search.');
         return;
       }
 
-      // Start native speech recognition with Indian English priority or system locale
-      ExpoSpeechRecognitionModule.start({
+      ExpoSpeechRecognition.start({
         lang: 'en-IN',
         interimResults: true,
         continuous: false,
@@ -186,34 +168,58 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       console.warn('Speech recognition start failed:', err);
       setErrorMessage(err?.message || 'Unable to start voice recognition.');
     }
-  };
+  }, []);
 
-  const stopListeningSession = () => {
-    try {
-      if (ExpoSpeechRecognitionModule) {
-        ExpoSpeechRecognitionModule.stop();
-      }
-    } catch (_) {}
+  const stopListeningSession = useCallback(() => {
+    if (ExpoSpeechRecognition) {
+      try {
+        ExpoSpeechRecognition.stop();
+      } catch (_) {}
+    }
     setIsListening(false);
-  };
+  }, []);
 
-  const handleConfirmResult = (textToUse?: string) => {
-    const finalQuery = (textToUse || transcript).trim();
-    if (!finalQuery) return;
+  const handleConfirmResult = useCallback(
+    (textToUse?: string) => {
+      const finalQuery = (textToUse || transcript).trim();
+      if (!finalQuery) return;
 
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (_) {}
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (_) {}
 
-    stopListeningSession();
-    onSearchResult(finalQuery);
-    onClose();
-  };
+      stopListeningSession();
+      onSearchResult(finalQuery);
+      onClose();
+    },
+    [transcript, stopListeningSession, onSearchResult, onClose]
+  );
 
-  const handleSelectHint = (hint: string) => {
-    setTranscript(hint);
-    handleConfirmResult(hint);
-  };
+  const handleSelectHint = useCallback(
+    (hint: string) => {
+      setTranscript(hint);
+      handleConfirmResult(hint);
+    },
+    [handleConfirmResult]
+  );
+
+  // Trigger when modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      setTranscript('');
+      setErrorMessage(null);
+      if (isVoiceRecognitionAvailable) {
+        startListeningSession();
+      }
+    } else {
+      stopListeningSession();
+    }
+
+    return () => {
+      if (autoSubmitTimeout.current) clearTimeout(autoSubmitTimeout.current);
+      stopListeningSession();
+    };
+  }, [visible, startListeningSession, stopListeningSession]);
 
   if (!visible) return null;
 
@@ -224,6 +230,16 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
+      {/* Native event listener (only mounts if native module exists) */}
+      {isVoiceRecognitionAvailable && (
+        <NativeVoiceEventsListener
+          onStart={handleNativeStart}
+          onEnd={handleNativeEnd}
+          onResult={handleNativeResult}
+          onError={handleNativeError}
+        />
+      )}
+
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           {/* Header Bar */}
@@ -231,7 +247,11 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             <View style={styles.headerTitleGroup}>
               <Text style={styles.headerTitle}>Voice Search</Text>
               <Text style={styles.headerSub}>
-                {isListening ? 'Listening for trade, role, or company...' : 'Paused'}
+                {!isVoiceRecognitionAvailable
+                  ? 'Expo Go Mode (Tap suggested role or build APK)'
+                  : isListening
+                  ? 'Listening for trade, role, or company...'
+                  : 'Paused'}
               </Text>
             </View>
             <TouchableOpacity
@@ -247,7 +267,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
           {/* Section Separator */}
           <View style={styles.sectionDivider} />
 
-          {/* Center Mic & Live Waveform Animation */}
+          {/* Center Mic & Visualizer */}
           <View style={styles.micSection}>
             <View style={styles.micAnimationWrapper}>
               {isListening && (
@@ -264,6 +284,12 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
               <TouchableOpacity
                 onPress={() => {
+                  if (!isVoiceRecognitionAvailable) {
+                    // In Expo Go, simulate voice prompt with first hint
+                    const sample = placeholderHints[0] || 'CNC Machine Operator';
+                    handleSelectHint(sample);
+                    return;
+                  }
                   if (isListening) {
                     stopListeningSession();
                   } else {
@@ -285,13 +311,25 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </View>
 
             <Text style={styles.statusLabel}>
-              {isListening
+              {!isVoiceRecognitionAvailable
+                ? 'Expo Go: Tap suggested query below'
+                : isListening
                 ? 'Speak now...'
                 : transcript
                 ? 'Speech captured'
                 : 'Tap microphone to speak'}
             </Text>
           </View>
+
+          {/* Expo Go Friendly Notice Banner */}
+          {!isVoiceRecognitionAvailable && (
+            <View style={styles.expoGoBanner}>
+              <Smartphone size={14} color="#0066CC" style={{ marginRight: 6 }} />
+              <Text style={styles.expoGoBannerText}>
+                Expo Go bypass active. On standalone APK (`npx expo run:android`), native mic recognition runs automatically.
+              </Text>
+            </View>
+          )}
 
           {/* Live Transcript Display Box */}
           <View style={styles.transcriptBox}>
@@ -309,14 +347,16 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             <View style={styles.errorBox}>
               <AlertCircle size={15} color="#DC2626" style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMessage}</Text>
-              <TouchableOpacity
-                onPress={startListeningSession}
-                style={styles.retryBtn}
-                activeOpacity={0.7}
-              >
-                <RefreshCw size={13} color="#DC2626" />
-                <Text style={styles.retryBtnText}>Retry</Text>
-              </TouchableOpacity>
+              {isVoiceRecognitionAvailable && (
+                <TouchableOpacity
+                  onPress={startListeningSession}
+                  style={styles.retryBtn}
+                  activeOpacity={0.7}
+                >
+                  <RefreshCw size={13} color="#DC2626" />
+                  <Text style={styles.retryBtnText}>Retry</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : null}
 
@@ -428,25 +468,25 @@ const styles = StyleSheet.create({
   micSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 14,
   },
   micAnimationWrapper: {
-    width: 88,
-    height: 88,
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pulseCircle: {
     position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#3B82F6',
   },
   micButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
@@ -465,15 +505,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#334155',
-    marginTop: 10,
+    marginTop: 8,
+  },
+  expoGoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginVertical: 4,
+  },
+  expoGoBannerText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#1E40AF',
+    lineHeight: 15,
   },
   transcriptBox: {
-    minHeight: 64,
+    minHeight: 56,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 0,
-    padding: 12,
+    padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 6,
@@ -521,7 +577,7 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   hintsSection: {
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: 4,
   },
   hintsTitle: {

@@ -1,5 +1,5 @@
 export type UserRole = 'candidate' | 'employer' | 'admin' | 'recruiter';
-export type JobType = 'Full-Time' | 'Part-Time' | 'Contract' | 'Freelance';
+export type JobType = 'Full-Time' | 'Part-Time' | 'Contract' | 'Apprenticeship' | 'Freelance';
 export type WorkMode = 'Remote' | 'Onsite' | 'Hybrid';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'rejected';
 export type JobStatus = 'active' | 'closed' | 'pending' | 'rejected';

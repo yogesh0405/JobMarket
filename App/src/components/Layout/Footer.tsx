@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
               <Link to="/jobs">Browse Jobs</Link>
               <Link to="/jobs?workMode=Remote">Remote Jobs</Link>
               <Link to="/jobs?jobType=Part-Time">Part-time Jobs</Link>
-              <Link to="/jobs?jobType=Freelance">Freelance Jobs</Link>
+              <Link to="/jobs?jobType=Apprenticeship">Apprenticeship Jobs</Link>
               <Link to="/resume">
                 {currentUser?.resume ? t.myResume : t.uploadResume}
               </Link>

@@ -67,7 +67,7 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.statValText}>{jobsCount || 0}</Text>
-          <Text style={styles.statLabelText}>{isOwner ? 'Jobs Posted' : 'Active Jobs'}</Text>
+          <Text style={styles.statLabelText}>Active Jobs</Text>
         </View>
       </View>
 

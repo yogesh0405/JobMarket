@@ -21,6 +21,7 @@ import {
   X,
   Clock,
   Calendar,
+  AlertCircle,
 } from 'lucide-react-native';
 import { Input } from '../../../components/common/Input';
 import { DatePickerField } from '../../../components/common/DatePickerField';
@@ -313,28 +314,71 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               </View>
             </View>
           ) : null}
+        </View>
+      </View>
 
-          <View style={[styles.rowTwo, { marginTop: 12 }]}>
-            <View style={{ flex: 1 }}>
-              <DatePickerField
-                label="Application Deadline"
-                required
-                placeholder="Select deadline date..."
-                value={applicationDeadline}
-                onChange={setApplicationDeadline}
-                minDate={new Date()}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Input
-                label="Max Applicants Cap"
-                placeholder="e.g. 50 (0 = Unlimited)"
-                keyboardType="numeric"
-                value={maxApplicantsInput}
-                onChangeText={setMaxApplicantsInput}
-                inputContainerStyle={{ borderRadius: 8 }}
-              />
-            </View>
+      {/* Application Deadline & Limits Section (Matches Web App) */}
+      <View style={styles.sectionSeparator} />
+
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <Calendar size={16} color={COLORS.primary} />
+          <Text style={styles.sectionTitleText}>Application Deadline & Auto-Close</Text>
+        </View>
+
+        <View style={styles.cardBody}>
+          <DatePickerField
+            label="Application Deadline Date"
+            required
+            placeholder="Select deadline date..."
+            value={applicationDeadline}
+            onChange={setApplicationDeadline}
+            minDate={new Date()}
+          />
+
+          {/* Quick Preset Buttons: +15d, +30d, +45d, +60d */}
+          <View style={styles.deadlinePresetRow}>
+            {[15, 30, 45, 60].map((days) => {
+              const target = new Date();
+              target.setDate(target.getDate() + days);
+              const y = target.getFullYear();
+              const m = String(target.getMonth() + 1).padStart(2, '0');
+              const d = String(target.getDate()).padStart(2, '0');
+              const dateStr = `${y}-${m}-${d}`;
+              const isSelected = applicationDeadline === dateStr;
+
+              return (
+                <TouchableOpacity
+                  key={`preset-${days}`}
+                  activeOpacity={0.7}
+                  style={[styles.deadlinePresetBtn, isSelected && styles.deadlinePresetBtnActive]}
+                  onPress={() => setApplicationDeadline(dateStr)}
+                >
+                  <Text style={[styles.deadlinePresetText, isSelected && styles.deadlinePresetTextActive]}>
+                    +{days} Days
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Auto Close Notice Banner matching Web App */}
+          <View style={styles.autoCloseNoticeBox}>
+            <AlertCircle size={15} color="#1E40AF" style={{ marginRight: 8, marginTop: 1 }} />
+            <Text style={styles.autoCloseNoticeText}>
+              ⚡ Auto Close Job: The job posting will automatically switch to Closed / Expired after this deadline.
+            </Text>
+          </View>
+
+          <View style={{ marginTop: 12 }}>
+            <Input
+              label="Maximum Applicants Cap (Optional)"
+              placeholder="e.g. 50 (Type 0 or leave empty for unlimited)"
+              keyboardType="numeric"
+              value={maxApplicantsInput}
+              onChangeText={setMaxApplicantsInput}
+              inputContainerStyle={{ borderRadius: 8 }}
+            />
           </View>
         </View>
       </View>
@@ -707,6 +751,53 @@ const styles = StyleSheet.create({
   scheduledInfoDesc: {
     fontSize: 11.5,
     color: '#64748B',
+    lineHeight: 16,
+  },
+  deadlinePresetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  deadlinePresetBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  deadlinePresetBtnActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#EFF6FF',
+  },
+  deadlinePresetText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  deadlinePresetTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  autoCloseNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 0,
+    marginTop: 10,
+  },
+  autoCloseNoticeText: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#1E40AF',
+    fontWeight: '600',
     lineHeight: 16,
   },
 });

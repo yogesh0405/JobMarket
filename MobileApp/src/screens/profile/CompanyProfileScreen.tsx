@@ -35,6 +35,7 @@ import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection'
 import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { shareCompany } from '../../utils/shareUtils';
+import { isJobLive } from '../../utils/jobStatusUtils';
 
 interface Props {
   navigation: any;
@@ -268,20 +269,22 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         const list = Array.isArray(json) ? json : (json?.data || []);
 
         if (Array.isArray(list) && list.length > 0) {
-          // Strictly verify returned jobs match this company's employer ID or company name
+          // Strictly verify returned jobs match this company's employer ID or company name AND are live
           resolvedJobs = list.filter((j: any) => {
             if (!j) return false;
             const jEmpId = (j.employer_id || j.employerId || '').toString();
             const jComp = (j.company || j.company_name || '').trim().toLowerCase();
             const compLower = targetCompName.toLowerCase();
 
+            let matches = false;
             if (targetEmployerId && jEmpId) {
-              return jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+              matches = jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+            } else if (compLower && jComp) {
+              matches = jComp === compLower;
+            } else {
+              matches = true;
             }
-            if (compLower && jComp) {
-              return jComp === compLower;
-            }
-            return false;
+            return matches && isJobLive(j);
           });
         }
       } catch (err) {
@@ -301,13 +304,13 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             const jComp = (j.company || j.company_name || '').trim().toLowerCase();
             const compLower = targetCompName.toLowerCase();
 
+            let matches = false;
             if (targetEmployerId && jEmpId) {
-              return jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+              matches = jEmpId.toLowerCase() === targetEmployerId.toLowerCase();
+            } else if (compLower && jComp) {
+              matches = jComp === compLower;
             }
-            if (compLower && jComp) {
-              return jComp === compLower;
-            }
-            return false;
+            return matches && isJobLive(j);
           });
         }
       } catch (_) {}
@@ -317,6 +320,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     setLoadingJobs(false);
   };
 
+  // Strictly memoize live active job postings only
+  const liveJobs = useMemo(() => {
+    return (jobs || []).filter(isJobLive);
+  }, [jobs]);
+
   // Fetch 100% Real Live Recruitment Analytics Data from Backend
   const fetchAnalytics = useCallback(async () => {
     if (!isOwner) return;
@@ -325,7 +333,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       const data = json?.data || json;
       if (data && typeof data === 'object') {
         const liveTotalJobs = Number(data.totalJobs ?? jobs.length);
-        const liveActiveJobs = Number(data.activeJobs ?? jobs.filter((j) => (j?.status || '').toUpperCase() === 'APPROVED' || (j?.status || '').toUpperCase() === 'ACTIVE').length);
+        const liveActiveJobs = Number(data.activeJobs ?? jobs.filter(isJobLive).length);
         const liveApplications = Number(data.totalApplications ?? 0);
         const liveShortlisted = Number(data.shortlisted ?? 0);
         const liveInterviewed = Number(data.interviewed ?? 0);
@@ -348,7 +356,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
     // Fallback: derive 100% real live metrics directly from loaded jobs array
     const realTotalJobs = jobs.length;
-    const realActiveJobs = jobs.filter((j) => (j?.status || '').toUpperCase() === 'APPROVED' || (j?.status || '').toUpperCase() === 'ACTIVE').length;
+    const realActiveJobs = jobs.filter(isJobLive).length;
     const realAppsCount = jobs.reduce((acc, j) => acc + Number(j?.applicationsCount || j?.applicants_count || j?.applications_count || 0), 0);
 
     setAnalyticsData((prev) => ({
@@ -520,9 +528,9 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           <CompanyProfileAnalyticsTab analyticsData={analyticsData} />
         ) : (
           <>
-            {/* 2. Metrics Bar with Jobs Posted, Profile Score %, and Post Job Action */}
+            {/* 2. Metrics Bar with Live Active Jobs, Profile Score %, and Post Job Action */}
             <CompanyMetricsBar
-              jobsCount={jobs.length}
+              jobsCount={liveJobs.length}
               completionPct={company?.completion_percentage || 75}
               midcZone={company?.midc_zone || company?.midcZone}
               isVerified={company?.verified !== false}
@@ -543,9 +551,9 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
               formattedLocation={formattedLocation}
             />
 
-            {/* 5. Active Job Openings Section */}
+            {/* 5. Active Job Openings Section - Strictly Live Openings Only */}
             <CompanyActiveJobsSection
-              jobs={jobs}
+              jobs={liveJobs}
               companyName={company?.name}
               onJobPress={(job: any) => {
                 navigation.navigate('CandidateJobDetail', { jobId: job.id, job });

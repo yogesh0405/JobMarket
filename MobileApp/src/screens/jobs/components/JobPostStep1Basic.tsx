@@ -331,10 +331,9 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                   if (val !== 'Other MIDC Zone...' && val !== 'Other') {
                     setCustomMidcZone?.('');
                   } else {
-                    onScrollToEnd?.();
                     setTimeout(() => {
                       customMidcInputRef.current?.focus();
-                    }, 180);
+                    }, 120);
                   }
                 }}
                 triggerStyle={{ borderRadius: 8 }}
@@ -347,11 +346,10 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                   value={customMidcZone || ''}
                   onChangeText={(val) => setCustomMidcZone?.(val)}
                   onFocus={(e) => {
-                    onFocusInput?.(e, 95);
-                    onScrollToEnd?.();
+                    onFocusInput?.(e, 24);
                   }}
                   inputContainerStyle={{ borderRadius: 8 }}
-                  style={{ marginTop: -SPACING.xs }}
+                  containerStyle={{ marginTop: 8 }}
                 />
               ) : null}
             </View>

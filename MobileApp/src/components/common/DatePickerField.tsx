@@ -129,7 +129,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
         <CalendarIcon size={18} color={value ? COLORS.primary : COLORS.slate400} style={styles.icon} />
 
         <Text style={[styles.inputText, !value && styles.placeholderText]}>
-          {value ? value : placeholder}
+          {value ? formatDisplayDate(value) : placeholder}
         </Text>
 
         {value ? (

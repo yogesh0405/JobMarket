@@ -78,8 +78,8 @@ export const scrollToFocused = (
             const inputBottom = wy + wheight;
             const targetBottom = keyboardTop - extraScrollMargin;
             const delta = inputBottom - targetBottom;
-            if (delta > 0) {
-              const targetY = Math.max(0, globalCurrentScrollY + delta + 20);
+            if (Math.abs(delta) > 8) {
+              const targetY = Math.max(0, globalCurrentScrollY + delta);
               scrollRef.current?.scrollTo({
                 y: targetY,
                 animated: true,

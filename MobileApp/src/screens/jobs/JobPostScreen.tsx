@@ -274,15 +274,6 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 85)}
             onScrollToEnd={() => {
               scrollViewRef.current?.scrollToEnd({ animated: true });
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 120);
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 280);
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 450);
             }}
           />
         ) : null}

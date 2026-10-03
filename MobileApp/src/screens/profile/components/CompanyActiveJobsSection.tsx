@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { RADIUS } from '../../../constants/theme';
 import { formatTimeAgo } from '../../candidate/components/CandidateJobSearchUtils';
+import { isJobLive } from '../../../utils/jobStatusUtils';
 
 interface JobItem {
   id?: string | number;
@@ -31,6 +32,15 @@ interface JobItem {
   created_at?: string;
   createdAt?: string;
   status?: string;
+  approval_status?: string;
+  approvalStatus?: string;
+  is_active?: boolean;
+  isActive?: boolean;
+  application_deadline?: string;
+  applicationDeadline?: string;
+  deadline?: string;
+  expires_at?: string;
+  expiresAt?: string;
 }
 
 interface CompanyActiveJobsSectionProps {
@@ -47,7 +57,8 @@ export const CompanyActiveJobsSection: React.FC<CompanyActiveJobsSectionProps> =
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const displayJobs: JobItem[] = jobs || [];
+  // Strictly filter only live and active job postings
+  const displayJobs: JobItem[] = (jobs || []).filter(isJobLive);
 
   const filteredJobs = displayJobs.filter((j) => {
     if (!searchQuery.trim()) return true;

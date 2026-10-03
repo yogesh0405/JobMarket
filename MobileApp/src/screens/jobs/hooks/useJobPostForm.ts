@@ -108,8 +108,13 @@ export const useJobPostForm = (navigation: any, route: any) => {
   const [interviewAddress, setInterviewAddress] = useState('');
   const [walkInContactPerson, setWalkInContactPerson] = useState('');
   const [walkInContactNumber, setWalkInContactNumber] = useState('');
+  const getDefaultDeadline = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  };
 
-  const [applicationDeadline, setApplicationDeadline] = useState('');
+  const [applicationDeadline, setApplicationDeadline] = useState(getDefaultDeadline());
   const [maxApplicantsInput, setMaxApplicantsInput] = useState<string>('');
 
   const [description, setDescription] = useState('');
@@ -139,12 +144,6 @@ export const useJobPostForm = (navigation: any, route: any) => {
   });
 
   const [currentStep, setCurrentStep] = useState(1);
-
-  const getDefaultDeadline = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  };
 
   // Google Maps URL change handler matching Web App logic
   const handleGoogleMapsUrlChange = async (inputUrl: string) => {
@@ -292,7 +291,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setInterviewAddress('');
     setWalkInContactPerson('');
     setWalkInContactNumber('');
-    setApplicationDeadline('');
+    setApplicationDeadline(getDefaultDeadline());
     setMaxApplicantsInput('');
     setDescription('');
     setShowResponsibilities(false);
